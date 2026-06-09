@@ -2,7 +2,11 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
+# export_presets.cfg is tracked on purpose: CI exports need it and ours
+# contains no signing credentials.
+
+# Local export output
+build/
 
 # Imported translations
 *.translation
