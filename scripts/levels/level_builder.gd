@@ -38,6 +38,8 @@ const MAT_CEIL := preload("res://assets/materials/ceiling_metal.tres")
 const MAT_PROP := preload("res://assets/materials/metal_steel.tres")
 const MAT_TRIM := preload("res://assets/materials/metal_dark.tres")
 const MAT_SEAM := preload("res://assets/materials/polymer_black.tres")
+const MAT_WALL_OUT := preload("res://assets/materials/concrete_weathered.tres")
+const MAT_PROP_B := preload("res://assets/materials/metal_plates_worn.tres")
 
 const WALL_HEIGHT := 6.0
 
@@ -88,7 +90,14 @@ func _build_environment(def: Dictionary) -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	if e.get("physical_sky", false):
+	if e.has("hdri"):
+		# Photographic sky (CC0 Poly Haven HDRI). Grounds outdoor levels far
+		# better than any procedural gradient, and feeds IBL/reflections too.
+		var pano := PanoramaSkyMaterial.new()
+		pano.panorama = load(e["hdri"])
+		pano.energy_multiplier = e.get("sky_energy", 1.0)
+		sky.sky_material = pano
+	elif e.get("physical_sky", false):
 		# Physically-based atmosphere (Rayleigh/Mie scattering) for naturalistic
 		# levels. Stylized faction levels keep the tinted procedural sky below.
 		var phys := PhysicalSkyMaterial.new()
@@ -237,16 +246,20 @@ func _build_geometry(def: Dictionary) -> void:
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
 	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf)
-	# Perimeter walls (concrete).
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -hz), Vector3(fs.x, WALL_HEIGHT, 1.0), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, hz), Vector3(fs.x, WALL_HEIGHT, 1.0), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(-hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), MAT_WALL, "surf_concrete")
+	# Perimeter walls — weathered concrete outdoors, panels indoors.
+	var wall_mat: Material = MAT_WALL_OUT if def.get("open_sky", false) else MAT_WALL
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -hz), Vector3(fs.x, WALL_HEIGHT, 1.0), wall_mat, "surf_concrete")
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, hz), Vector3(fs.x, WALL_HEIGHT, 1.0), wall_mat, "surf_concrete")
+	_add_box(Vector3(-hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), wall_mat, "surf_concrete")
+	_add_box(Vector3(hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), wall_mat, "surf_concrete")
 	if not def.get("open_sky", false):
 		_add_box(Vector3(0, WALL_HEIGHT + 0.2, 0), Vector3(fs.x, 0.4, fs.y), MAT_CEIL, "surf_metal")
-	# Interior cover / pillars (metal crates/machinery).
+	# Interior cover / pillars — alternate two plate materials so adjacent
+	# crates/machinery don't read as copies of one box.
+	var cover_i := 0
 	for w in def.get("walls", []):
-		_add_box(w["pos"], w["size"], MAT_PROP, "surf_metal")
+		_add_box(w["pos"], w["size"], MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B, "surf_metal")
+		cover_i += 1
 
 # ---------- wall detailing ----------
 

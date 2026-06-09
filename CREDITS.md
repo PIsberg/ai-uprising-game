@@ -11,7 +11,12 @@ by **SagePeeker** (https://sketchfab.com/SagePeeker), licensed under
 Required by the license: the author must be credited; commercial use is allowed.
 
 ### PBR surface textures (`assets/textures/pbr/`)
-Concrete034, Concrete036, and MetalPlates006 from **ambientCG** (https://ambientcg.com),
+Concrete031, Concrete034, Concrete036, MetalPlates006, and MetalPlates007 from
+**ambientCG** (https://ambientcg.com),
 released under **CC0 1.0** (public domain) — no attribution required, credited here as courtesy.
+
+### HDRI sky (`assets/environments/hdri/`)
+"Industrial Sunset (Pure Sky)" from **Poly Haven** (https://polyhaven.com/a/industrial_sunset_puresky),
+released under **CC0 1.0** — no attribution required, credited here as courtesy.
 
 All other models, materials, audio, and code in this project are original.
