@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.6.2"
+
+jobs:
+  # GDScript isn't compiled, so "build" for this project means: import all
+  # resources headlessly, run the headless regression tests, and load every
+  # playable scene watching for script/resource errors — the same verification
+  # workflow used locally (see README).
+  verify:
+    name: Verify (import, tests, scene loads)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-bin
+          curl -fsSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Add Godot to PATH
+        run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Import resources
+        # First import on a clean checkout may exit non-zero while generating
+        # .godot/; the strict scene loads below catch anything truly broken.
+        run: godot --headless --path . --import || true
+
+      - name: Run headless regression tests
+        # These scenes quit(1) on failure, so the exit code is the verdict.
+        run: |
+          godot --headless --path . res://tests/bevel_smoke.tscn
+          godot --headless --path . res://tests/android_pose_check.tscn
+
+      - name: Load-test all levels, cutscenes and menu
+        run: |
+          fail=0
+          for scene in scenes/levels/*.tscn scenes/cutscene/*.tscn scenes/ui/main_menu.tscn; do
+            res="res://${scene}"
+            echo "::group::${res}"
+            out=$(godot --headless --path . "$res" --quit-after 240 2>&1) || true
+            echo "$out"
+            echo "::endgroup::"
+            if echo "$out" | grep -qE "SCRIPT ERROR|ERROR:"; then
+              echo "::error::Errors while running ${res}"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  # Real game binaries (Linux + Windows, pck embedded). Runs on version tags
+  # and manual dispatch — the export templates are a ~1 GB download, so this
+  # is kept off the per-push path.
+  export:
+    name: Export game binaries
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-bin
+          curl -fsSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Add Godot to PATH
+        run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Cache export templates
+        id: cache-templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-templates-${{ env.GODOT_VERSION }}
+
+      - name: Download export templates
+        if: steps.cache-templates.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL -o templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates
+          unzip -q templates.tpz -d /tmp/templates
+          mv /tmp/templates/templates ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Import resources
+        run: godot --headless --path . --import || true
+
+      - name: Export Linux
+        run: |
+          mkdir -p build/linux
+          godot --headless --path . --export-release "Linux" build/linux/ai-uprising.x86_64
+
+      - name: Export Windows
+        run: |
+          mkdir -p build/windows
+          godot --headless --path . --export-release "Windows Desktop" build/windows/ai-uprising.exe
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-uprising-linux-x86_64
+          path: build/linux/
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-uprising-windows-x86_64
+          path: build/windows/
