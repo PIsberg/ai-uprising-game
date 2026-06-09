@@ -36,6 +36,10 @@ const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
 const MAT_CEIL := preload("res://assets/materials/ceiling_metal.tres")
 const MAT_PROP := preload("res://assets/materials/metal_steel.tres")
+const MAT_TRIM := preload("res://assets/materials/metal_dark.tres")
+const MAT_SEAM := preload("res://assets/materials/polymer_black.tres")
+const MAT_WALL_OUT := preload("res://assets/materials/concrete_weathered.tres")
+const MAT_PROP_B := preload("res://assets/materials/metal_plates_worn.tres")
 
 const WALL_HEIGHT := 6.0
 
@@ -59,6 +63,7 @@ func _ready() -> void:
 		return
 	_build_environment(def)
 	_build_geometry(def)
+	_build_wall_details(def)
 	_build_buildings(def)
 	_build_ramps(def)
 	_build_platforms(def)
@@ -85,7 +90,14 @@ func _build_environment(def: Dictionary) -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	if e.get("physical_sky", false):
+	if e.has("hdri"):
+		# Photographic sky (CC0 Poly Haven HDRI). Grounds outdoor levels far
+		# better than any procedural gradient, and feeds IBL/reflections too.
+		var pano := PanoramaSkyMaterial.new()
+		pano.panorama = load(e["hdri"])
+		pano.energy_multiplier = e.get("sky_energy", 1.0)
+		sky.sky_material = pano
+	elif e.get("physical_sky", false):
 		# Physically-based atmosphere (Rayleigh/Mie scattering) for naturalistic
 		# levels. Stylized faction levels keep the tinted procedural sky below.
 		var phys := PhysicalSkyMaterial.new()
@@ -234,16 +246,117 @@ func _build_geometry(def: Dictionary) -> void:
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
 	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf)
-	# Perimeter walls (concrete).
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -hz), Vector3(fs.x, WALL_HEIGHT, 1.0), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(0, WALL_HEIGHT * 0.5, hz), Vector3(fs.x, WALL_HEIGHT, 1.0), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(-hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), MAT_WALL, "surf_concrete")
-	_add_box(Vector3(hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), MAT_WALL, "surf_concrete")
+	# Perimeter walls — weathered concrete outdoors, panels indoors.
+	var wall_mat: Material = MAT_WALL_OUT if def.get("open_sky", false) else MAT_WALL
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, -hz), Vector3(fs.x, WALL_HEIGHT, 1.0), wall_mat, "surf_concrete")
+	_add_box(Vector3(0, WALL_HEIGHT * 0.5, hz), Vector3(fs.x, WALL_HEIGHT, 1.0), wall_mat, "surf_concrete")
+	_add_box(Vector3(-hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), wall_mat, "surf_concrete")
+	_add_box(Vector3(hx, WALL_HEIGHT * 0.5, 0), Vector3(1.0, WALL_HEIGHT, fs.y), wall_mat, "surf_concrete")
 	if not def.get("open_sky", false):
 		_add_box(Vector3(0, WALL_HEIGHT + 0.2, 0), Vector3(fs.x, 0.4, fs.y), MAT_CEIL, "surf_metal")
-	# Interior cover / pillars (metal crates/machinery).
+	# Interior cover / pillars — alternate two plate materials so adjacent
+	# crates/machinery don't read as copies of one box.
+	var cover_i := 0
 	for w in def.get("walls", []):
-		_add_box(w["pos"], w["size"], MAT_PROP, "surf_metal")
+		_add_box(w["pos"], w["size"], MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B, "surf_metal")
+		cover_i += 1
+
+# ---------- wall detailing ----------
+
+## Breaks up the big unbroken perimeter planes that make blockouts read as
+## "programmer art": skirting + cornice trim where walls meet floor/ceiling,
+## vertical rib columns every few metres, thin panel-seam strips at panel
+## heights, ceiling pipe runs indoors, and a physical fixture under every
+## point light so the light has a visible source. All visual-only (no
+## colliders), so the navmesh and gameplay are untouched. Density follows the
+## graphics tier, like the dust motes.
+func _build_wall_details(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var open_sky: bool = def.get("open_sky", false)
+	# Inner faces of the four 1m-thick perimeter walls. "dir yaw" rotates trim
+	# strips so their length runs along the wall.
+	var walls := [
+		{"c": Vector3(0, 0, -hz + 0.5), "n": Vector3(0, 0, 1), "len": fs.x, "yaw": 0.0},
+		{"c": Vector3(0, 0, hz - 0.5), "n": Vector3(0, 0, -1), "len": fs.x, "yaw": 0.0},
+		{"c": Vector3(-hx + 0.5, 0, 0), "n": Vector3(1, 0, 0), "len": fs.y, "yaw": PI * 0.5},
+		{"c": Vector3(hx - 0.5, 0, 0), "n": Vector3(-1, 0, 0), "len": fs.y, "yaw": PI * 0.5},
+	]
+	for w in walls:
+		var c: Vector3 = w["c"]
+		var n: Vector3 = w["n"]
+		var length: float = w["len"]
+		var yaw: float = w["yaw"]
+		# Skirting where the wall meets the floor.
+		var skirt := _beveled_box(Vector3(length - 1.2, 0.22, 0.12))
+		skirt.material = MAT_TRIM
+		_add_detail_mesh(skirt, c + n * 0.06 + Vector3(0, 0.11, 0), yaw)
+		# Cornice where it meets the ceiling (interiors only).
+		if not open_sky:
+			var cornice := _beveled_box(Vector3(length - 1.2, 0.18, 0.12))
+			cornice.material = MAT_TRIM
+			_add_detail_mesh(cornice, c + n * 0.06 + Vector3(0, WALL_HEIGHT - 0.09, 0), yaw)
+		# Thin panel-seam strips at panel heights.
+		for seam_y in [2.2, 4.1]:
+			var seam := BoxMesh.new()
+			seam.size = Vector3(length - 1.2, 0.07, 0.05)
+			seam.material = MAT_SEAM
+			_add_detail_mesh(seam, c + n * 0.025 + Vector3(0, seam_y, 0), yaw)
+		# Vertical rib columns; spacing widens on lower detail tiers.
+		var step := 4.0 / maxf(density, 0.34)
+		var rib_x := -length * 0.5 + 3.0
+		while rib_x <= length * 0.5 - 3.0:
+			var rib := _beveled_box(Vector3(0.28, WALL_HEIGHT, 0.2))
+			rib.material = MAT_TRIM
+			var along := Vector3(rib_x, 0, 0).rotated(Vector3.UP, yaw)
+			_add_detail_mesh(rib, c + along + n * 0.1 + Vector3(0, WALL_HEIGHT * 0.5, 0), yaw)
+			rib_x += step
+	# Ceiling pipe runs (interiors): two parallel lines plus one return line.
+	if not open_sky:
+		for pz in [-hz + 1.4, -hz + 1.85, hz - 1.6]:
+			var pipe := CylinderMesh.new()
+			pipe.top_radius = 0.1
+			pipe.bottom_radius = 0.1
+			pipe.height = fs.x - 3.0
+			pipe.radial_segments = 10
+			pipe.material = MAT_PROP
+			var mi := MeshInstance3D.new()
+			mi.mesh = pipe
+			mi.rotation.z = PI * 0.5 # lie the cylinder along X
+			mi.position = Vector3(0, WALL_HEIGHT - 0.4, pz)
+			add_child(mi)
+	# A housing + glowing diffuser plate under every point light, so light has
+	# a visible source instead of appearing from thin air.
+	for l in def.get("lights", []):
+		var pos: Vector3 = l["pos"]
+		var col: Color = l.get("color", Color(1, 1, 1))
+		var housing := _beveled_box(Vector3(0.5, 0.09, 0.5))
+		housing.material = MAT_TRIM
+		_add_detail_mesh(housing, pos + Vector3(0, 0.17, 0), 0.0)
+		var plate := BoxMesh.new()
+		plate.size = Vector3(0.4, 0.03, 0.4)
+		var em := StandardMaterial3D.new()
+		em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		em.albedo_color = col
+		em.emission_enabled = true
+		em.emission = col
+		em.emission_energy_multiplier = 3.0
+		plate.material = em
+		_add_detail_mesh(plate, pos + Vector3(0, 0.115, 0), 0.0)
+
+func _add_detail_mesh(mesh: Mesh, pos: Vector3, yaw: float) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.position = pos
+	mi.rotation.y = yaw
+	add_child(mi)
 
 # ---------- global illumination ----------
 
@@ -289,10 +402,8 @@ func _add_box(center: Vector3, size: Vector3, mat: Material, surface: String = "
 	if surface != "":
 		body.add_to_group(surface)
 	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = size
-	bm.material = mat
-	mi.mesh = bm
+	mi.mesh = _beveled_box(size)
+	mi.mesh.material = mat
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = size
@@ -300,6 +411,16 @@ func _add_box(center: Vector3, size: Vector3, mat: Material, surface: String = "
 	body.add_child(mi)
 	body.add_child(cs)
 	_nav_region.add_child(body)
+
+## Every visible builder box gets a small chamfer — edge highlights are what
+## separate "machined" geometry from raw extruded blocks. Collision shapes stay
+## exact boxes, so gameplay and navmesh baking are untouched.
+func _beveled_box(size: Vector3) -> BeveledBoxMesh:
+	var bm := BeveledBoxMesh.new()
+	bm.size = size
+	var min_d := minf(size.x, minf(size.y, size.z))
+	bm.bevel = clampf(min_d * 0.06, 0.01, 0.08)
+	return bm
 
 ## A simple opaque PBR material from a colour — used for tinted floors and the
 ## suburban house bodies (so outdoor levels don't read as grey metal boxes).
@@ -347,10 +468,8 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 	body.collision_mask = 0
 	body.transform = Transform3D(b, center)
 	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = size
-	bm.material = MAT_PROP
-	mi.mesh = bm
+	mi.mesh = _beveled_box(size)
+	mi.mesh.material = MAT_PROP
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = size
@@ -374,10 +493,8 @@ func _add_collider_box(center: Vector3, size: Vector3, mat: Material) -> void:
 	body.collision_mask = 0
 	body.position = center
 	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = size
-	bm.material = mat
-	mi.mesh = bm
+	mi.mesh = _beveled_box(size)
+	mi.mesh.material = mat
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = size

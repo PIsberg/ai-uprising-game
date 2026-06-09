@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0test0pose0001"]
+
+[ext_resource type="Script" path="res://tests/android_pose_check.gd" id="1_pose"]
+
+[node name="Root" type="Node3D"]
+script = ExtResource("1_pose")

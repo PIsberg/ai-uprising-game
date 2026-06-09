@@ -40,8 +40,9 @@ func _build_model() -> void:
 	# Tripod legs.
 	for a in [0.0, TAU / 3.0, 2.0 * TAU / 3.0]:
 		var leg := MeshInstance3D.new()
-		var lm := BoxMesh.new()
-		lm.size = Vector3(0.12, 1.1, 0.12)
+		var lm := BeveledBoxMesh.new()
+		lm.size = Vector3(0.11, 1.1, 0.11)
+		lm.bevel = 0.012
 		leg.mesh = lm
 		leg.material_override = steel
 		leg.position = Vector3(sin(a) * 0.5, 0.55, cos(a) * 0.5)
@@ -50,8 +51,9 @@ func _build_model() -> void:
 
 	# Body / housing.
 	var body := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.7, 0.5, 0.9)
+	var bm := BeveledBoxMesh.new()
+	bm.size = Vector3(0.62, 0.45, 0.85)
+	bm.bevel = 0.035
 	body.mesh = bm
 	body.material_override = steel
 	body.position = Vector3(0, 1.25, 0)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3 uid="uid://b0enemy0android01"]
+[gd_scene load_steps=43 format=3 uid="uid://b0enemy0android01"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_android.gd" id="1_and"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
@@ -10,14 +10,17 @@
 [ext_resource type="Material" uid="uid://b0mat0glowblue01" path="res://assets/materials/glow_blue.tres" id="8_gb"]
 [ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="9_gm"]
 [ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="10_gr"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="11_bvm"]
 
-[sub_resource type="BoxMesh" id="Mesh_pelvis"]
-size = Vector3(0.3, 0.2, 0.22)
+[sub_resource type="PrimitiveMesh" id="Mesh_pelvis"]
+script = ExtResource("11_bvm")
+size = Vector3(0.26, 0.16, 0.2)
+bevel = 0.02
 material = ExtResource("5_shell")
 
 [sub_resource type="CapsuleMesh" id="Mesh_torso"]
-radius = 0.27
-height = 0.8
+radius = 0.22
+height = 0.78
 material = ExtResource("5_shell")
 
 [sub_resource type="CapsuleMesh" id="Mesh_thigh"]
@@ -30,8 +33,10 @@ radius = 0.085
 height = 0.42
 material = ExtResource("6_md")
 
-[sub_resource type="BoxMesh" id="Mesh_foot"]
-size = Vector3(0.13, 0.08, 0.3)
+[sub_resource type="PrimitiveMesh" id="Mesh_foot"]
+script = ExtResource("11_bvm")
+size = Vector3(0.12, 0.07, 0.27)
+bevel = 0.015
 material = ExtResource("7_pb")
 
 [sub_resource type="CapsuleMesh" id="Mesh_upperarm"]
@@ -44,29 +49,37 @@ radius = 0.07
 height = 0.3
 material = ExtResource("6_md")
 
-[sub_resource type="BoxMesh" id="Mesh_shoulder"]
-size = Vector3(0.2, 0.16, 0.24)
+[sub_resource type="PrimitiveMesh" id="Mesh_shoulder"]
+script = ExtResource("11_bvm")
+size = Vector3(0.17, 0.13, 0.2)
+bevel = 0.02
 material = ExtResource("5_shell")
 
 [sub_resource type="SphereMesh" id="Mesh_head"]
-radius = 0.18
-height = 0.36
+radius = 0.15
+height = 0.3
 material = ExtResource("7_pb")
 
 [sub_resource type="BoxMesh" id="Mesh_eye"]
 size = Vector3(0.07, 0.025, 0.03)
 material = ExtResource("10_gr")
 
-[sub_resource type="BoxMesh" id="Mesh_core"]
+[sub_resource type="PrimitiveMesh" id="Mesh_core"]
+script = ExtResource("11_bvm")
 size = Vector3(0.12, 0.14, 0.05)
+bevel = 0.012
 material = ExtResource("8_gb")
 
-[sub_resource type="BoxMesh" id="Mesh_pack"]
-size = Vector3(0.34, 0.4, 0.16)
+[sub_resource type="PrimitiveMesh" id="Mesh_pack"]
+script = ExtResource("11_bvm")
+size = Vector3(0.26, 0.34, 0.12)
+bevel = 0.025
 material = ExtResource("6_md")
 
-[sub_resource type="BoxMesh" id="Mesh_gun_body"]
-size = Vector3(0.05, 0.08, 0.32)
+[sub_resource type="PrimitiveMesh" id="Mesh_gun_body"]
+script = ExtResource("11_bvm")
+size = Vector3(0.045, 0.075, 0.32)
+bevel = 0.008
 material = ExtResource("9_gm")
 
 [sub_resource type="CylinderMesh" id="Mesh_gun_barrel"]
@@ -76,13 +89,32 @@ height = 0.26
 radial_segments = 8
 material = ExtResource("6_md")
 
-[sub_resource type="BoxMesh" id="Mesh_gun_mag"]
-size = Vector3(0.04, 0.12, 0.05)
+[sub_resource type="PrimitiveMesh" id="Mesh_gun_mag"]
+script = ExtResource("11_bvm")
+size = Vector3(0.035, 0.11, 0.045)
+bevel = 0.006
 material = ExtResource("6_md")
 
-[sub_resource type="BoxMesh" id="Mesh_gun_stock"]
-size = Vector3(0.04, 0.06, 0.16)
+[sub_resource type="PrimitiveMesh" id="Mesh_gun_stock"]
+script = ExtResource("11_bvm")
+size = Vector3(0.035, 0.055, 0.15)
+bevel = 0.006
 material = ExtResource("7_pb")
+
+[sub_resource type="BoxMesh" id="Mesh_shin_glow"]
+size = Vector3(0.025, 0.28, 0.012)
+material = ExtResource("8_gb")
+
+[sub_resource type="BoxMesh" id="Mesh_pack_glow"]
+size = Vector3(0.03, 0.28, 0.012)
+material = ExtResource("8_gb")
+
+[sub_resource type="CylinderMesh" id="Mesh_antenna"]
+top_radius = 0.006
+bottom_radius = 0.012
+height = 0.22
+radial_segments = 6
+material = ExtResource("6_md")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.32
@@ -126,7 +158,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(-1.05, 0, 0.3)]
+"values": [Vector3(1.05, 0, 0.3)]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -138,7 +170,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(0.85, 0, 0)]
+"values": [Vector3(-0.85, 0, 0)]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -150,7 +182,7 @@ tracks/4/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(-1.2, 0, -0.15)]
+"values": [Vector3(1.2, 0, -0.15)]
 }
 tracks/5/type = "value"
 tracks/5/imported = false
@@ -162,7 +194,7 @@ tracks/5/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(0.95, 0, 0)]
+"values": [Vector3(-0.95, 0, 0)]
 }
 tracks/6/type = "value"
 tracks/6/imported = false
@@ -275,7 +307,7 @@ tracks/6/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(-1.05, 0, 0.3)]
+"values": [Vector3(1.05, 0, 0.3)]
 }
 tracks/7/type = "value"
 tracks/7/imported = false
@@ -287,7 +319,7 @@ tracks/7/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(0.85, 0, 0)]
+"values": [Vector3(-0.85, 0, 0)]
 }
 tracks/8/type = "value"
 tracks/8/imported = false
@@ -299,7 +331,7 @@ tracks/8/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(-1.2, 0, -0.15)]
+"values": [Vector3(1.2, 0, -0.15)]
 }
 tracks/9/type = "value"
 tracks/9/imported = false
@@ -311,7 +343,7 @@ tracks/9/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Vector3(0.95, 0, 0)]
+"values": [Vector3(-0.95, 0, 0)]
 }
 
 [sub_resource type="Animation" id="Animation_attack"]
@@ -327,7 +359,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.06, 0.3),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector3(-1.2, 0, -0.15), Vector3(-1.42, 0, -0.15), Vector3(-1.2, 0, -0.15)]
+"values": [Vector3(1.2, 0, -0.15), Vector3(1.42, 0, -0.15), Vector3(1.2, 0, -0.15)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -339,7 +371,7 @@ tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.06, 0.3),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector3(0.95, 0, 0), Vector3(1.1, 0, 0), Vector3(0.95, 0, 0)]
+"values": [Vector3(-0.95, 0, 0), Vector3(-1.1, 0, 0), Vector3(-0.95, 0, 0)]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -363,7 +395,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0, 0.06, 0.3),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector3(-1.05, 0, 0.3), Vector3(-1.18, 0, 0.3), Vector3(-1.05, 0, 0.3)]
+"values": [Vector3(1.05, 0, 0.3), Vector3(1.18, 0, 0.3), Vector3(1.05, 0, 0.3)]
 }
 
 [sub_resource type="Animation" id="Animation_stagger"]
@@ -480,6 +512,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
 mesh = SubResource("Mesh_shin")
 
+[node name="ShinGlowL" type="MeshInstance3D" parent="Rig/Hips/UpperLegL/LowerLegL"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -0.095)
+mesh = SubResource("Mesh_shin_glow")
+
 [node name="FootL" type="Node3D" parent="Rig/Hips/UpperLegL/LowerLegL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
 
@@ -500,6 +536,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
 [node name="ShinR" type="MeshInstance3D" parent="Rig/Hips/UpperLegR/LowerLegR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
 mesh = SubResource("Mesh_shin")
+
+[node name="ShinGlowR" type="MeshInstance3D" parent="Rig/Hips/UpperLegR/LowerLegR"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, -0.095)
+mesh = SubResource("Mesh_shin_glow")
 
 [node name="FootR" type="Node3D" parent="Rig/Hips/UpperLegR/LowerLegR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.42, 0)
@@ -523,6 +563,10 @@ mesh = SubResource("Mesh_core")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0.18)
 mesh = SubResource("Mesh_pack")
 
+[node name="PackGlow" type="MeshInstance3D" parent="Rig/Hips/Spine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0.245)
+mesh = SubResource("Mesh_pack_glow")
+
 [node name="Neck" type="Node3D" parent="Rig/Hips/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, 0)
 
@@ -530,12 +574,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
 mesh = SubResource("Mesh_head")
 
+[node name="Antenna" type="MeshInstance3D" parent="Rig/Hips/Spine/Neck"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0.3, 0.04)
+mesh = SubResource("Mesh_antenna")
+
 [node name="EyeL" type="MeshInstance3D" parent="Rig/Hips/Spine/Neck"]
-transform = Transform3D(0.94, -0.34, 0, 0.34, 0.94, 0, 0, 0, 1, 0.055, 0.14, -0.16)
+transform = Transform3D(0.94, -0.34, 0, 0.34, 0.94, 0, 0, 0, 1, 0.05, 0.13, -0.135)
 mesh = SubResource("Mesh_eye")
 
 [node name="EyeR" type="MeshInstance3D" parent="Rig/Hips/Spine/Neck"]
-transform = Transform3D(0.94, 0.34, 0, -0.34, 0.94, 0, 0, 0, 1, -0.055, 0.14, -0.16)
+transform = Transform3D(0.94, 0.34, 0, -0.34, 0.94, 0, 0, 0, 1, -0.05, 0.13, -0.135)
 mesh = SubResource("Mesh_eye")
 
 [node name="Eye" type="Node3D" parent="Rig/Hips/Spine/Neck"]
@@ -549,7 +597,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.06, 0, 0)
 mesh = SubResource("Mesh_shoulder")
 
 [node name="UpperArmL" type="Node3D" parent="Rig/Hips/Spine/ClavicleL"]
-transform = Transform3D(1, 0, 0, 0, 0.49757, 0.86741, 0, -0.86741, 0.49757, 0.08, -0.04, 0)
+transform = Transform3D(1, 0, 0, 0, 0.49757, -0.86741, 0, 0.86741, 0.49757, 0.08, -0.04, 0)
 
 [node name="UpperArmMeshL" type="MeshInstance3D" parent="Rig/Hips/Spine/ClavicleL/UpperArmL"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.17, 0)
@@ -573,7 +621,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06, 0, 0)
 mesh = SubResource("Mesh_shoulder")
 
 [node name="UpperArmR" type="Node3D" parent="Rig/Hips/Spine/ClavicleR"]
-transform = Transform3D(1, 0, 0, 0, 0.36236, 0.93204, 0, -0.93204, 0.36236, -0.08, -0.04, 0)
+transform = Transform3D(1, 0, 0, 0, 0.36236, -0.93204, 0, 0.93204, 0.36236, -0.08, -0.04, 0)
 
 [node name="UpperArmMeshR" type="MeshInstance3D" parent="Rig/Hips/Spine/ClavicleR/UpperArmR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.17, 0)

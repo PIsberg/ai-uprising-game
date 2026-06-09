@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://b0enemy0mech01"]
+[gd_scene load_steps=31 format=3 uid="uid://b0enemy0mech01"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_mech.gd" id="1_mech"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
@@ -6,29 +6,42 @@
 [ext_resource type="Material" uid="uid://b0mat0enemybody" path="res://assets/materials/enemy_chassis.tres" id="4_chassis"]
 [ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="5_md"]
 [ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="6_gr"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="7_bvm"]
 
-[sub_resource type="BoxMesh" id="Mesh_torso"]
-size = Vector3(1.8, 1.6, 1.2)
+[sub_resource type="PrimitiveMesh" id="Mesh_torso"]
+script = ExtResource("7_bvm")
+size = Vector3(1.55, 1.45, 1.05)
+bevel = 0.07
 material = ExtResource("4_chassis")
 
-[sub_resource type="BoxMesh" id="Mesh_head"]
-size = Vector3(0.7, 0.5, 0.7)
+[sub_resource type="PrimitiveMesh" id="Mesh_head"]
+script = ExtResource("7_bvm")
+size = Vector3(0.55, 0.4, 0.6)
+bevel = 0.04
 material = ExtResource("5_md")
 
-[sub_resource type="BoxMesh" id="Mesh_thigh"]
-size = Vector3(0.45, 0.85, 0.45)
+[sub_resource type="PrimitiveMesh" id="Mesh_thigh"]
+script = ExtResource("7_bvm")
+size = Vector3(0.38, 0.85, 0.38)
+bevel = 0.04
 material = ExtResource("5_md")
 
-[sub_resource type="BoxMesh" id="Mesh_shin"]
-size = Vector3(0.42, 0.8, 0.42)
+[sub_resource type="PrimitiveMesh" id="Mesh_shin"]
+script = ExtResource("7_bvm")
+size = Vector3(0.33, 0.8, 0.33)
+bevel = 0.035
 material = ExtResource("5_md")
 
-[sub_resource type="BoxMesh" id="Mesh_foot"]
-size = Vector3(0.55, 0.18, 0.75)
+[sub_resource type="PrimitiveMesh" id="Mesh_foot"]
+script = ExtResource("7_bvm")
+size = Vector3(0.5, 0.16, 0.7)
+bevel = 0.03
 material = ExtResource("5_md")
 
-[sub_resource type="BoxMesh" id="Mesh_arm"]
-size = Vector3(0.4, 1.0, 0.5)
+[sub_resource type="PrimitiveMesh" id="Mesh_arm"]
+script = ExtResource("7_bvm")
+size = Vector3(0.34, 1.0, 0.42)
+bevel = 0.035
 material = ExtResource("4_chassis")
 
 [sub_resource type="SphereMesh" id="Mesh_eye"]
@@ -36,13 +49,28 @@ radius = 0.12
 height = 0.24
 material = ExtResource("6_gr")
 
-[sub_resource type="BoxMesh" id="Mesh_reactor"]
+[sub_resource type="PrimitiveMesh" id="Mesh_reactor"]
+script = ExtResource("7_bvm")
 size = Vector3(0.55, 0.55, 0.12)
+bevel = 0.02
 material = ExtResource("6_gr")
 
-[sub_resource type="BoxMesh" id="Mesh_shoulder"]
-size = Vector3(0.7, 0.5, 0.85)
+[sub_resource type="PrimitiveMesh" id="Mesh_shoulder"]
+script = ExtResource("7_bvm")
+size = Vector3(0.62, 0.44, 0.78)
+bevel = 0.05
 material = ExtResource("4_chassis")
+
+[sub_resource type="BoxMesh" id="Mesh_vent"]
+size = Vector3(0.02, 0.6, 0.08)
+material = ExtResource("6_gr")
+
+[sub_resource type="CylinderMesh" id="Mesh_gun_barrel"]
+top_radius = 0.05
+bottom_radius = 0.06
+height = 0.5
+radial_segments = 10
+material = ExtResource("5_md")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.9
@@ -339,8 +367,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
 mesh = SubResource("Mesh_torso")
 
 [node name="Reactor" type="MeshInstance3D" parent="Rig/Hips/Spine"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.62)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.54)
 mesh = SubResource("Mesh_reactor")
+
+[node name="VentL" type="MeshInstance3D" parent="Rig/Hips/Spine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.785, 0, -0.15)
+mesh = SubResource("Mesh_vent")
+
+[node name="VentR" type="MeshInstance3D" parent="Rig/Hips/Spine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.785, 0, -0.15)
+mesh = SubResource("Mesh_vent")
 
 [node name="Head" type="MeshInstance3D" parent="Rig/Hips/Spine"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
@@ -384,6 +420,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -0.15, 0)
 [node name="ArmMeshR" type="MeshInstance3D" parent="Rig/Hips/Spine/ShoulderR/UpperArmR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 mesh = SubResource("Mesh_arm")
+
+[node name="GunBarrel" type="MeshInstance3D" parent="Rig/Hips/Spine/ShoulderR/UpperArmR"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, -0.5, -0.35)
+mesh = SubResource("Mesh_gun_barrel")
 
 [node name="Muzzle" type="Node3D" parent="Rig/Hips/Spine/ShoulderR/UpperArmR"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -0.6)

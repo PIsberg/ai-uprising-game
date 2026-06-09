@@ -444,6 +444,7 @@ static func _suburb() -> Dictionary:
 		"exit": Vector3(26, 1.5, 26),
 		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-22, 0, -22), "color": Color(1, 0.7, 0.3)},
 		"env": {
+			"hdri": "res://assets/environments/hdri/industrial_sunset_puresky_2k.hdr",
 			"physical_sky": true, "turbidity": 8.0,
 			"sky_top": Color(0.2, 0.32, 0.55), "sky_horizon": Color(0.95, 0.6, 0.38),
 			"ground": Color(0.12, 0.12, 0.13), "fog": Color(0.62, 0.5, 0.42),

@@ -40,8 +40,9 @@ func _build_model() -> void:
 	dark.roughness = 0.5
 	# Bulky torso.
 	var torso := MeshInstance3D.new()
-	var tm := BoxMesh.new()
-	tm.size = Vector3(1.1, 1.2, 0.75)
+	var tm := BeveledBoxMesh.new()
+	tm.size = Vector3(1.05, 1.15, 0.7)
+	tm.bevel = 0.05
 	torso.mesh = tm
 	torso.material_override = dark
 	torso.position = Vector3(0, 1.2, 0)
@@ -49,16 +50,18 @@ func _build_model() -> void:
 	# Squat legs.
 	for sx in [-0.34, 0.34]:
 		var leg := MeshInstance3D.new()
-		var lm := BoxMesh.new()
-		lm.size = Vector3(0.38, 1.0, 0.45)
+		var lm := BeveledBoxMesh.new()
+		lm.size = Vector3(0.36, 1.0, 0.42)
+		lm.bevel = 0.035
 		leg.mesh = lm
 		leg.material_override = dark
 		leg.position = Vector3(sx, 0.5, 0)
 		model.add_child(leg)
 	# Head + eye.
 	var head := MeshInstance3D.new()
-	var hm := BoxMesh.new()
-	hm.size = Vector3(0.5, 0.45, 0.5)
+	var hm := BeveledBoxMesh.new()
+	hm.size = Vector3(0.46, 0.42, 0.46)
+	hm.bevel = 0.03
 	head.mesh = hm
 	head.material_override = dark
 	head.position = Vector3(0, 1.95, 0)
@@ -78,8 +81,9 @@ func _build_model() -> void:
 	model.add_child(eyem)
 	# The big frontal shield slab (faces local -Z, the enemy's front).
 	var shield := MeshInstance3D.new()
-	var shm := BoxMesh.new()
+	var shm := BeveledBoxMesh.new()
 	shm.size = Vector3(1.5, 1.7, 0.16)
+	shm.bevel = 0.04
 	shield.mesh = shm
 	var smat := StandardMaterial3D.new()
 	smat.albedo_color = Color(0.18, 0.2, 0.24)
