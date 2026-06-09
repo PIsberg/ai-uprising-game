@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://b0proj0rocket01"]
+
+[ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_laser"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.1, 0.05, 1)
+emission_energy_multiplier = 9.0
+albedo_color = Color(1, 0.25, 0.15, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_laser"]
+material = SubResource("StandardMaterial3D_laser")
+top_radius = 0.026
+bottom_radius = 0.026
+height = 1.2
+radial_segments = 8
+rings = 2
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.08
+height = 1.2
+
+[node name="ProjectileRocket" type="Area3D"]
+collision_layer = 16
+collision_mask = 3
+script = ExtResource("1_proj")
+lifetime = 5.0
+gravity_scale = 0.0
+trail_color = Color(1, 0.55, 0.2, 1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_laser")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.15, 0.1, 1)
+light_energy = 3.5
+omni_range = 6.0

@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://bvh5hfpld6pdw"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/shotgun_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="6_gr"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_receiver"]
+size = Vector3(0.085, 0.1, 0.32)
+material = ExtResource("3_gm")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_barrel"]
+top_radius = 0.025
+bottom_radius = 0.025
+height = 0.5
+radial_segments = 14
+material = ExtResource("4_md")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_undertube"]
+top_radius = 0.022
+bottom_radius = 0.022
+height = 0.42
+radial_segments = 12
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_pump"]
+size = Vector3(0.075, 0.07, 0.13)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_stock"]
+size = Vector3(0.06, 0.13, 0.28)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.055, 0.15, 0.07)
+material = ExtResource("5_pb")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_choke"]
+top_radius = 0.035
+bottom_radius = 0.032
+height = 0.05
+radial_segments = 12
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_indicator"]
+size = Vector3(0.006, 0.008, 0.04)
+material = ExtResource("6_gr")
+
+[node name="Shotgun" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_receiver")
+
+[node name="Barrel" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.03, -0.42)
+mesh = SubResource("CylinderMesh_barrel")
+
+[node name="UnderTube" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, -0.025, -0.37)
+mesh = SubResource("CylinderMesh_undertube")
+
+[node name="Pump" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, -0.32)
+mesh = SubResource("BoxMesh_pump")
+
+[node name="Stock" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0.28)
+mesh = SubResource("BoxMesh_stock")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.13, 0.08)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Choke" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.03, -0.69)
+mesh = SubResource("CylinderMesh_choke")
+
+[node name="Indicator" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.038, 0.04, 0.05)
+mesh = SubResource("BoxMesh_indicator")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.71)

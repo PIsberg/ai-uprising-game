@@ -1,0 +1,77 @@
+[gd_scene load_steps=14 format=3 uid="uid://b0weap0pistol01"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/pistol_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowamber0" path="res://assets/materials/glow_amber.tres" id="6_ga"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_slide"]
+size = Vector3(0.07, 0.06, 0.26)
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_frame"]
+size = Vector3(0.065, 0.05, 0.22)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.055, 0.13, 0.08)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_mag"]
+size = Vector3(0.05, 0.05, 0.07)
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_trigguard"]
+size = Vector3(0.045, 0.045, 0.03)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="BoxMesh_sight"]
+size = Vector3(0.012, 0.014, 0.018)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_sight_dot"]
+size = Vector3(0.006, 0.008, 0.008)
+material = ExtResource("6_ga")
+
+[node name="Pistol" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Slide" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+mesh = SubResource("BoxMesh_slide")
+
+[node name="Frame" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.025, 0.01)
+mesh = SubResource("BoxMesh_frame")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0, 0.17, 0, 1, 0, -0.17, 0, 0.98, 0, -0.12, 0.06)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Magazine" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0, 0.17, 0, 1, 0, -0.17, 0, 0.98, 0.005, -0.19, 0.075)
+mesh = SubResource("BoxMesh_mag")
+
+[node name="TriggerGuard" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, 0.05)
+mesh = SubResource("BoxMesh_trigguard")
+
+[node name="RearSight" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, 0.11)
+mesh = SubResource("BoxMesh_sight")
+
+[node name="FrontSight" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, -0.12)
+mesh = SubResource("BoxMesh_sight")
+
+[node name="FrontDot" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.078, -0.115)
+mesh = SubResource("BoxMesh_sight_dot")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.16)

@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://bvexgwvhva5gd"]
+
+[ext_resource type="Script" path="res://scripts/ui/broadcast_intro.gd" id="1_bi"]
+
+[node name="BroadcastIntro" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_bi")
+
+[node name="BG" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="Header" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.32, 0.26, 1)
+theme_override_font_sizes/font_size = 30
+text = "// EMERGENCY BROADCAST //"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Body" type="Label" parent="Center/VBox"]
+custom_minimum_size = Vector2(920, 200)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.89, 0.92, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Prompt" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.62, 0.64, 1)
+theme_override_font_sizes/font_size = 15
+text = "[ Press Fire to continue ]"
+horizontal_alignment = 1

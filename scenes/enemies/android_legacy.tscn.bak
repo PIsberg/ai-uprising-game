@@ -1,0 +1,163 @@
+[gd_scene load_steps=17 format=3 uid="uid://b0enemy0android01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_android.gd" id="1_and"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" uid="uid://b0fx0tracerred" path="res://scenes/fx/tracer_red.tscn" id="3_tracer"]
+
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="4_mf"]
+[ext_resource type="Material" uid="uid://b0mat0andshell00" path="res://assets/materials/android_shell.tres" id="5_shell"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="6_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="7_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowblue01" path="res://assets/materials/glow_blue.tres" id="8_gb"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="9_gm"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="10_gr"]
+
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_torso"]
+radius = 0.28
+height = 0.95
+material = ExtResource("5_shell")
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.18
+height = 0.36
+material = ExtResource("7_pb")
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_limb"]
+radius = 0.09
+height = 0.7
+material = ExtResource("6_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_eye_angled"]
+size = Vector3(0.07, 0.025, 0.03)
+material = ExtResource("10_gr")
+
+
+[sub_resource type="BoxMesh" id="BoxMesh_gun_body"]
+size = Vector3(0.05, 0.08, 0.32)
+material = ExtResource("9_gm")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_gun_barrel"]
+top_radius = 0.012
+bottom_radius = 0.014
+height = 0.26
+radial_segments = 8
+material = ExtResource("6_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_gun_mag"]
+size = Vector3(0.04, 0.12, 0.05)
+material = ExtResource("6_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_gun_stock"]
+size = Vector3(0.04, 0.06, 0.16)
+material = ExtResource("7_pb")
+
+
+[sub_resource type="BoxMesh" id="BoxMesh_shoulder"]
+size = Vector3(0.2, 0.16, 0.26)
+material = ExtResource("5_shell")
+
+[sub_resource type="BoxMesh" id="BoxMesh_core"]
+size = Vector3(0.12, 0.14, 0.05)
+material = ExtResource("8_gb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_pack"]
+size = Vector3(0.34, 0.42, 0.16)
+material = ExtResource("6_md")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.32
+height = 1.8
+
+[node name="Android" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_and")
+tracer_scene = ExtResource("3_tracer")
+muzzle_flash_scene = ExtResource("4_mf")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="LegL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.13, 0.4, 0)
+mesh = SubResource("CapsuleMesh_limb")
+
+[node name="LegR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.13, 0.4, 0)
+mesh = SubResource("CapsuleMesh_limb")
+
+[node name="Torso" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+mesh = SubResource("CapsuleMesh_torso")
+
+[node name="ShoulderL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.6, 0)
+mesh = SubResource("BoxMesh_shoulder")
+
+[node name="ShoulderR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.6, 0)
+mesh = SubResource("BoxMesh_shoulder")
+
+[node name="ChestCore" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.42, -0.24)
+mesh = SubResource("BoxMesh_core")
+
+[node name="Backpack" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0.2)
+mesh = SubResource("BoxMesh_pack")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, 0)
+mesh = SubResource("SphereMesh_head")
+
+[node name="EyeL" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, -0.34, 0, 0.34, 0.94, 0, 0, 0, 1, 0.055, 1.97, -0.15)
+mesh = SubResource("BoxMesh_eye_angled")
+
+[node name="EyeR" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, 0.34, 0, -0.34, 0.94, 0, 0, 0, 1, -0.055, 1.97, -0.15)
+mesh = SubResource("BoxMesh_eye_angled")
+
+
+[node name="ArmL" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, 0.34, 0, -0.34, 0.94, 0, 0, 0, 1, 0.32, 1.35, 0)
+mesh = SubResource("CapsuleMesh_limb")
+
+[node name="ArmR" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.94, -0.34, 0, 0.34, 0.94, 0, 0, 0, 1, -0.32, 1.35, 0)
+mesh = SubResource("CapsuleMesh_limb")
+
+[node name="Gun" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 1.3, -0.3)
+
+[node name="Receiver" type="MeshInstance3D" parent="Gun"]
+mesh = SubResource("BoxMesh_gun_body")
+
+[node name="Barrel" type="MeshInstance3D" parent="Gun"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.26)
+mesh = SubResource("CylinderMesh_gun_barrel")
+
+[node name="Magazine" type="MeshInstance3D" parent="Gun"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.09, -0.06)
+mesh = SubResource("BoxMesh_gun_mag")
+
+[node name="Stock" type="MeshInstance3D" parent="Gun"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, 0.22)
+mesh = SubResource("BoxMesh_gun_stock")
+
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, -0.18)
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 1.3, -0.52)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 110.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.4
+height = 1.8

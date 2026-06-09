@@ -1,0 +1,46 @@
+[gd_scene load_steps=6 format=3 uid="uid://b0pickup0ammo00"]
+
+[ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate"]
+albedo_color = Color(0.32, 0.3, 0.22, 1)
+metallic = 0.5
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_stripe"]
+shading_mode = 0
+albedo_color = Color(1, 0.78, 0.2, 1)
+emission_enabled = true
+emission = Color(1, 0.7, 0.15, 1)
+emission_energy_multiplier = 3.5
+
+[sub_resource type="BoxMesh" id="Box_crate"]
+size = Vector3(0.6, 0.4, 0.45)
+material = SubResource("Mat_crate")
+
+[sub_resource type="BoxShape3D" id="Shape_1"]
+size = Vector3(0.9, 0.8, 0.8)
+
+[node name="AmmoBox" type="Area3D"]
+script = ExtResource("1_pickup")
+kind = 1
+amount = 40
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("Shape_1")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("Box_crate")
+
+[node name="Stripe" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1.02, 0, 0, 0, 0.25, 0, 0, 0, 1.02, 0, 0.05, 0)
+mesh = SubResource("Box_crate")
+surface_material_override/0 = SubResource("Mat_stripe")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+light_color = Color(1, 0.75, 0.3, 1)
+light_energy = 1.2
+omni_range = 3.5

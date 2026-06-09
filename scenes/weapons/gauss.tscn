@@ -1,0 +1,80 @@
+[gd_scene load_steps=12 format=3 uid="uid://b0weap0gauss01"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/gauss_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="3_md"]
+[ext_resource type="Material" uid="uid://b0mat0metalsteel" path="res://assets/materials/metal_steel.tres" id="4_ms"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowblue01" path="res://assets/materials/glow_blue.tres" id="6_gb"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(0.11, 0.13, 0.55)
+material = ExtResource("3_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_rail"]
+size = Vector3(0.028, 0.03, 0.85)
+material = ExtResource("4_ms")
+
+[sub_resource type="BoxMesh" id="BoxMesh_core"]
+size = Vector3(0.035, 0.035, 0.74)
+material = ExtResource("6_gb")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_coil"]
+top_radius = 0.075
+bottom_radius = 0.075
+height = 0.05
+radial_segments = 14
+material = ExtResource("4_ms")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.05, 0.16, 0.07)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_stock"]
+size = Vector3(0.08, 0.1, 0.22)
+material = ExtResource("3_md")
+
+[node name="Gauss" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_body")
+
+[node name="RailL" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0.05, -0.14)
+mesh = SubResource("BoxMesh_rail")
+
+[node name="RailR" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.05, -0.14)
+mesh = SubResource("BoxMesh_rail")
+
+[node name="Core" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.14)
+mesh = SubResource("BoxMesh_core")
+
+[node name="CoreLight" type="OmniLight3D" parent="Viewmodel/Core"]
+light_color = Color(0.5, 0.85, 1, 1)
+light_energy = 1.6
+omni_range = 1.8
+
+[node name="Coil1" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.05, -0.32)
+mesh = SubResource("CylinderMesh_coil")
+
+[node name="Coil2" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.05, -0.5)
+mesh = SubResource("CylinderMesh_coil")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.15, 0.12)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Stock" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0.3)
+mesh = SubResource("BoxMesh_stock")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.58)

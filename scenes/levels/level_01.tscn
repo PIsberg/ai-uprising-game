@@ -1,0 +1,306 @@
+[gd_scene load_steps=19 format=3 uid="uid://b0level0010001"]
+
+[ext_resource type="Environment" path="res://assets/environments/default_env.tres" id="1_env"]
+[ext_resource type="Script" path="res://scripts/levels/level_01.gd" id="0_level"]
+[ext_resource type="PackedScene" uid="uid://b0player00001" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://b0enemy0drone01" path="res://scenes/enemies/drone.tscn" id="3_drone"]
+[ext_resource type="PackedScene" uid="uid://b0enemy0android01" path="res://scenes/enemies/android.tscn" id="4_android"]
+[ext_resource type="PackedScene" uid="uid://b0enemy0mech01" path="res://scenes/enemies/mech.tscn" id="5_mech"]
+[ext_resource type="Script" path="res://scripts/systems/enemy_spawner.gd" id="6_spawner"]
+[ext_resource type="Script" path="res://scripts/systems/objective.gd" id="7_obj"]
+[ext_resource type="PackedScene" uid="uid://b0ui0hud0001" path="res://scenes/ui/hud.tscn" id="8_hud"]
+[ext_resource type="Material" uid="uid://b0mat0concrete0" path="res://assets/materials/concrete_floor.tres" id="9_floor"]
+[ext_resource type="Material" uid="uid://b0mat0wallpanel0" path="res://assets/materials/wall_panel.tres" id="10_wall"]
+[ext_resource type="Material" uid="uid://b0mat0ceilmetal0" path="res://assets/materials/ceiling_metal.tres" id="11_ceil"]
+[ext_resource type="Material" uid="uid://b0mat0crate0001" path="res://assets/materials/crate_metal.tres" id="12_crate"]
+[ext_resource type="PackedScene" uid="uid://b0pickup0health" path="res://scenes/pickups/health_pack.tscn" id="13_health"]
+[ext_resource type="PackedScene" uid="uid://b0pickup0ammo00" path="res://scenes/pickups/ammo_box.tscn" id="14_ammo"]
+[ext_resource type="PackedScene" uid="uid://b0ui0broadcast" path="res://scenes/ui/broadcast_intro.tscn" id="15_intro"]
+[ext_resource type="PackedScene" uid="uid://b0pickup0weapon" path="res://scenes/pickups/weapon_pickup.tscn" id="16_wpk"]
+[ext_resource type="PackedScene" uid="uid://b0weap0rifle001" path="res://scenes/weapons/rifle.tscn" id="17_rifle"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_exit"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(0.3, 1, 0.5, 1)
+emission_energy_multiplier = 3.0
+albedo_color = Color(0.4, 1, 0.6, 0.6)
+transparency = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(50, 0.4, 50)
+material = ExtResource("9_floor")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(50, 0.4, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_long"]
+size = Vector3(50, 5, 0.5)
+material = ExtResource("10_wall")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_long"]
+size = Vector3(50, 5, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_short"]
+size = Vector3(0.5, 5, 50)
+material = ExtResource("10_wall")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
+size = Vector3(0.5, 5, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+size = Vector3(1.5, 1.5, 1.5)
+material = ExtResource("12_crate")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
+size = Vector3(1.5, 1.5, 1.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
+size = Vector3(50, 0.4, 50)
+material = ExtResource("11_ceil")
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit"]
+size = Vector3(3, 3, 0.1)
+material = SubResource("StandardMaterial3D_exit")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(3, 3, 1)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_1"]
+cell_size = 0.25
+cell_height = 0.25
+agent_radius = 0.5
+agent_height = 1.75
+agent_max_climb = 0.5
+geometry_collision_mask = 1
+geometry_parsed_geometry_type = 1
+
+[node name="Level01" type="Node3D"]
+script = ExtResource("0_level")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_env")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 18, 0)
+light_color = Color(1, 0.92, 0.85, 1)
+light_energy = 1.2
+shadow_enabled = true
+shadow_bias = 0.02
+directional_shadow_max_distance = 80.0
+
+[node name="VoxelGI" type="VoxelGI" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+size = Vector3(52, 8, 52)
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_1")
+
+[node name="Floor" type="StaticBody3D" parent="NavigationRegion3D"]
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Floor"]
+mesh = SubResource("BoxMesh_floor")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Ceiling" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2, 0)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Ceiling"]
+mesh = SubResource("BoxMesh_ceiling")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Ceiling"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="WallN" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -25)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallN"]
+mesh = SubResource("BoxMesh_wall_long")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/WallN"]
+shape = SubResource("BoxShape3D_wall_long")
+
+[node name="WallS" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 25)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallS"]
+mesh = SubResource("BoxMesh_wall_long")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/WallS"]
+shape = SubResource("BoxShape3D_wall_long")
+
+[node name="WallE" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.7, 0)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallE"]
+mesh = SubResource("BoxMesh_wall_short")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/WallE"]
+shape = SubResource("BoxShape3D_wall_short")
+
+[node name="WallW" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2.7, 0)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallW"]
+mesh = SubResource("BoxMesh_wall_short")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/WallW"]
+shape = SubResource("BoxShape3D_wall_short")
+
+[node name="Crate1" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.95, -4)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate1"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Crate1"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate2" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.95, 5)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate2"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Crate2"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate3" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.95, -10)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate3"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Crate3"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate4" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.95, 12)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate4"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Crate4"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate5" type="StaticBody3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 14)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate5"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Collider" type="CollisionShape3D" parent="NavigationRegion3D/Crate5"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Spawn_Drone1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 2.5, 4)
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("3_drone")
+spawn_on_ready = true
+
+[node name="Spawn_Drone2" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2.5, 6)
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("3_drone")
+spawn_on_ready = false
+trigger_radius = 18.0
+
+[node name="Spawn_Android1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -2)
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("4_android")
+spawn_on_ready = true
+spawn_delay = 0.5
+
+[node name="Spawn_Android2" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -12)
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("4_android")
+spawn_on_ready = false
+trigger_radius = 16.0
+
+[node name="Spawn_Mech1" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 14)
+script = ExtResource("6_spawner")
+enemy_scene = ExtResource("5_mech")
+spawn_on_ready = false
+trigger_radius = 20.0
+
+[node name="ExitObjective" type="Area3D" parent="." groups=["objective"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1.5, 22)
+collision_layer = 64
+collision_mask = 2
+script = ExtResource("7_obj")
+objective_text = "Reach the extraction beacon"
+requires_all_enemies_dead = true
+
+[node name="Marker" type="MeshInstance3D" parent="ExitObjective"]
+mesh = SubResource("BoxMesh_exit")
+
+[node name="Collider" type="CollisionShape3D" parent="ExitObjective"]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="ExitLight" type="OmniLight3D" parent="ExitObjective"]
+light_color = Color(0.4, 1, 0.6, 1)
+light_energy = 4.0
+omni_range = 12.0
+
+[node name="AmbientLightA" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4.5, -10)
+light_color = Color(1, 0.85, 0.7, 1)
+light_energy = 2.0
+shadow_enabled = true
+shadow_bias = 0.03
+omni_range = 18.0
+
+[node name="AmbientLightB" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4.5, 10)
+light_color = Color(0.7, 0.85, 1, 1)
+light_energy = 1.6
+shadow_enabled = true
+shadow_bias = 0.03
+omni_range = 18.0
+
+[node name="AmbientLightC" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
+light_color = Color(1, 0.9, 0.75, 1)
+light_energy = 1.2
+shadow_enabled = true
+shadow_bias = 0.03
+omni_range = 15.0
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0.1, -18)
+
+[node name="Health1" parent="." instance=ExtResource("13_health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 2)
+
+[node name="Health2" parent="." instance=ExtResource("13_health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 16)
+
+[node name="Ammo1" parent="." instance=ExtResource("14_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -12)
+
+[node name="Ammo2" parent="." instance=ExtResource("14_ammo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -2)
+
+[node name="WeaponPickup_Rifle" parent="." instance=ExtResource("16_wpk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -14)
+weapon_scene = ExtResource("17_rifle")
+
+[node name="HUD" parent="." instance=ExtResource("8_hud")]
+
+[node name="BroadcastIntro" parent="." instance=ExtResource("15_intro")]

@@ -1,0 +1,52 @@
+[gd_scene format=3 uid="uid://c5iovrqv22exc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/devastator_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="3_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="4_pb"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_warn"]
+shading_mode = 0
+albedo_color = Color(1, 0.35, 0.28, 1)
+emission_enabled = true
+emission = Color(1, 0.3, 0.2, 1)
+emission_energy_multiplier = 3.5
+
+[sub_resource type="BoxMesh" id="Box_body"]
+size = Vector3(0.11, 0.13, 0.4)
+material = ExtResource("4_pb")
+
+[sub_resource type="CylinderMesh" id="Cyl_tube"]
+top_radius = 0.06
+bottom_radius = 0.06
+height = 0.46
+radial_segments = 16
+material = ExtResource("3_md")
+
+[sub_resource type="CylinderMesh" id="Cyl_maw"]
+top_radius = 0.075
+bottom_radius = 0.06
+height = 0.08
+radial_segments = 16
+material = SubResource("Mat_warn")
+
+[node name="Devastator" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.04, 0.05)
+mesh = SubResource("Box_body")
+
+[node name="Tube" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.02, -0.2)
+mesh = SubResource("Cyl_tube")
+
+[node name="Maw" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.02, -0.44)
+mesh = SubResource("Cyl_maw")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.5)

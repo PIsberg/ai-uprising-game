@@ -1,0 +1,55 @@
+class_name WeaponData
+extends Resource
+
+enum FireMode { SEMI, AUTO, BURST }
+enum DamageType { HITSCAN, PROJECTILE }
+
+@export var display_name: String = "Weapon"
+@export var fire_mode: FireMode = FireMode.SEMI
+@export var damage_type: DamageType = DamageType.HITSCAN
+
+@export_group("Damage / Fire")
+@export var damage: float = 20.0
+@export var fire_rate: float = 6.0
+@export var burst_count: int = 3
+@export var range_m: float = 200.0
+@export var spread_deg: float = 1.2
+@export var aim_spread_mult: float = 0.35
+@export var pellets: int = 1
+@export var headshot_mult: float = 2.0
+@export var pierce: int = 0 ## Hitscan only: extra enemies the shot punches through (0 = stops at first).
+
+@export_group("Recoil")
+@export var recoil_pitch: float = 0.9
+@export var recoil_yaw: float = 0.3
+@export var recoil_recovery: float = 9.0
+
+@export_group("Ammo")
+@export var mag_size: int = 18
+@export var reserve_max: int = 180
+@export var reload_time: float = 1.6
+
+@export_group("Projectile (when PROJECTILE)")
+@export var projectile_scene: PackedScene
+@export var projectile_speed: float = 60.0
+@export var splash_radius: float = 0.0
+@export var splash_damage: float = 0.0
+
+@export_group("Feel")
+@export var muzzle_flash_scene: PackedScene
+@export var impact_scene: PackedScene
+@export var tracer_scene: PackedScene
+@export var tracer_color: Color = Color(1.0, 0.85, 0.5) ## Tint + glow of the round's tracer.
+@export var fire_sound: AudioStream
+@export var reload_sound: AudioStream
+@export var empty_sound: AudioStream
+@export var sound_id: String = "" ## Looked up in SoundSynth.streams when fire_sound is null. Suffixes _reload, _empty resolved automatically.
+@export var has_pump_action: bool = false ## If true, viewmodel "Pump" node cycles after each shot
+@export var slide_kick: float = 0.025 ## Distance the "Slide" node travels backward on fire
+@export var pump_throw: float = 0.09 ## Distance the "Pump" node travels backward when cycling
+@export var viewmodel_color: Color = Color(0.6, 0.65, 0.7)
+
+@export_group("ADS Feel")
+@export var ads_position_offset: Vector3 = Vector3(-0.25, 0.08, 0.1) ## Offset added to hip WeaponHolder position when aiming
+@export var ads_fov: float = 58.0 ## Target Camera FOV when aiming this weapon
+

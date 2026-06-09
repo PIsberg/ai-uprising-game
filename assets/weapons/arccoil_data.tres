@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
+[ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "CL-3 Arc Coil"
+fire_mode = 2
+damage_type = 0
+damage = 50.0
+fire_rate = 16.0
+burst_count = 3
+range_m = 170.0
+spread_deg = 0.8
+aim_spread_mult = 0.3
+pellets = 1
+headshot_mult = 2.2
+recoil_pitch = 0.9
+recoil_yaw = 0.3
+recoil_recovery = 9.0
+mag_size = 24
+reserve_max = 210
+reload_time = 1.8
+muzzle_flash_scene = ExtResource("3_mf")
+impact_scene = ExtResource("4_imp")
+tracer_scene = ExtResource("2_tracer")
+tracer_color = Color(1, 0.7, 0.25, 1)
+sound_id = "rifle"
+slide_kick = 0.0
+viewmodel_color = Color(1, 0.75, 0.35, 1)

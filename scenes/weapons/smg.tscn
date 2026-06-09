@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://c5iov7yg22exc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/smg_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_accent"]
+shading_mode = 0
+albedo_color = Color(0.4, 0.95, 0.55, 1)
+emission_enabled = true
+emission = Color(0.35, 1, 0.5, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="BoxMesh" id="Box_receiver"]
+size = Vector3(0.06, 0.09, 0.26)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="Box_slide"]
+size = Vector3(0.055, 0.04, 0.2)
+material = ExtResource("4_md")
+
+[sub_resource type="CylinderMesh" id="Cyl_barrel"]
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.22
+radial_segments = 10
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="Box_mag"]
+size = Vector3(0.045, 0.18, 0.06)
+material = ExtResource("5_pb")
+
+[node name="SMG" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("Box_receiver")
+
+[node name="Slide" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.065, -0.02)
+mesh = SubResource("Box_slide")
+
+[node name="Barrel" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.24)
+mesh = SubResource("Cyl_barrel")
+
+[node name="Magazine" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.13, 0.02)
+mesh = SubResource("Box_mag")
+
+[node name="AccentStrip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.12, 0, 0, 0, 0.3, 0, 0, 0, 1.05, 0.033, 0, 0)
+mesh = SubResource("Box_receiver")
+surface_material_override/0 = SubResource("Mat_accent")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.36)

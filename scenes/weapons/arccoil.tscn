@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://c5iovo4c22exc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/arccoil_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="4_pb"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_coil"]
+shading_mode = 0
+albedo_color = Color(1, 0.78, 0.4, 1)
+emission_enabled = true
+emission = Color(1, 0.7, 0.3, 1)
+emission_energy_multiplier = 3.5
+
+[sub_resource type="BoxMesh" id="Box_body"]
+size = Vector3(0.07, 0.1, 0.3)
+material = ExtResource("3_gm")
+
+[sub_resource type="CylinderMesh" id="Cyl_emitter"]
+top_radius = 0.03
+bottom_radius = 0.022
+height = 0.18
+radial_segments = 12
+material = ExtResource("4_pb")
+
+[sub_resource type="TorusMesh" id="Torus_coil"]
+inner_radius = 0.028
+outer_radius = 0.045
+material = SubResource("Mat_coil")
+
+[node name="ArcCoil" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("Box_body")
+
+[node name="Emitter" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.26)
+mesh = SubResource("Cyl_emitter")
+
+[node name="Coil1" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.2)
+mesh = SubResource("Torus_coil")
+
+[node name="Coil2" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.3)
+mesh = SubResource("Torus_coil")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.36)

@@ -1,0 +1,106 @@
+[gd_scene load_steps=18 format=3 uid="uid://b0weap0rifle001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/rifle_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowamber0" path="res://assets/materials/glow_amber.tres" id="6_ga"]
+[ext_resource type="Material" uid="uid://b0mat0glowblue01" path="res://assets/materials/glow_blue.tres" id="7_gb"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_receiver"]
+size = Vector3(0.07, 0.1, 0.34)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="BoxMesh_handguard"]
+size = Vector3(0.065, 0.075, 0.3)
+material = ExtResource("5_pb")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_barrel"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.42
+radial_segments = 12
+material = ExtResource("4_md")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_muzzle"]
+top_radius = 0.028
+bottom_radius = 0.028
+height = 0.06
+radial_segments = 10
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.055, 0.16, 0.06)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_stock"]
+size = Vector3(0.05, 0.085, 0.26)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_mag"]
+size = Vector3(0.05, 0.16, 0.07)
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_optic_body"]
+size = Vector3(0.045, 0.04, 0.12)
+material = ExtResource("3_gm")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_optic_lens"]
+top_radius = 0.018
+bottom_radius = 0.018
+height = 0.015
+radial_segments = 10
+material = ExtResource("6_ga")
+
+[sub_resource type="BoxMesh" id="BoxMesh_indicator"]
+size = Vector3(0.008, 0.008, 0.04)
+material = ExtResource("7_gb")
+
+[node name="Rifle" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_receiver")
+
+[node name="Handguard" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.32)
+mesh = SubResource("BoxMesh_handguard")
+
+[node name="Barrel" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.55)
+mesh = SubResource("CylinderMesh_barrel")
+
+[node name="MuzzleBrake" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.78)
+mesh = SubResource("CylinderMesh_muzzle")
+
+[node name="Stock" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.28)
+mesh = SubResource("BoxMesh_stock")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.12, 0.05)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Magazine" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.13, -0.05)
+mesh = SubResource("BoxMesh_mag")
+
+[node name="OpticBody" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.07, -0.02)
+mesh = SubResource("BoxMesh_optic_body")
+
+[node name="OpticLens" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.07, 0.04)
+mesh = SubResource("CylinderMesh_optic_lens")
+
+[node name="Indicator" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.028, 0.02, 0.1)
+mesh = SubResource("BoxMesh_indicator")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.81)

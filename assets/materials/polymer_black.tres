@@ -1,0 +1,38 @@
+[gd_resource type="StandardMaterial3D" load_steps=5 format=3 uid="uid://b0mat0polymer01"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_rough"]
+noise_type = 2
+frequency = 0.5
+fractal_octaves = 2
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_rough"]
+width = 128
+height = 128
+seamless = true
+noise = SubResource("FastNoiseLite_rough")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_norm"]
+noise_type = 5
+frequency = 0.6
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_norm"]
+width = 128
+height = 128
+seamless = true
+as_normal_map = true
+bump_strength = 1.2
+noise = SubResource("FastNoiseLite_norm")
+
+[resource]
+albedo_color = Color(0.05, 0.06, 0.07, 1)
+metallic = 0.05
+roughness = 0.62
+roughness_texture = SubResource("NoiseTexture2D_rough")
+roughness_texture_channel = 0
+normal_enabled = true
+normal_scale = 0.8
+normal_texture = SubResource("NoiseTexture2D_norm")
+clearcoat_enabled = true
+clearcoat = 0.35
+clearcoat_roughness = 0.3
+uv1_scale = Vector3(6, 6, 6)

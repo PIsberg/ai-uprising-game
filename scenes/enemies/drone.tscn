@@ -1,0 +1,98 @@
+[gd_scene load_steps=12 format=3 uid="uid://b0enemy0drone01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_drone.gd" id="1_drone"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" uid="uid://b0proj0drone01" path="res://scenes/weapons/projectile_drone.tscn" id="3_proj"]
+[ext_resource type="Material" uid="uid://b0mat0enemybody" path="res://assets/materials/enemy_chassis.tres" id="4_chassis"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="5_md"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="6_gr"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_body"]
+radius = 0.4
+height = 0.45
+material = ExtResource("4_chassis")
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.07
+height = 0.14
+material = ExtResource("6_gr")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_col"]
+radius = 0.45
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rotor"]
+top_radius = 0.18
+bottom_radius = 0.18
+height = 0.02
+radial_segments = 8
+material = ExtResource("5_md")
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 0.38
+outer_radius = 0.45
+material = ExtResource("6_gr")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_antenna"]
+top_radius = 0.012
+bottom_radius = 0.02
+height = 0.32
+radial_segments = 6
+material = ExtResource("5_md")
+
+[node name="Drone" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+floor_max_angle = 1.57
+script = ExtResource("1_drone")
+projectile_scene = ExtResource("3_proj")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_body")
+
+[node name="RotorFL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.25, -0.3)
+mesh = SubResource("CylinderMesh_rotor")
+
+[node name="RotorFR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.25, -0.3)
+mesh = SubResource("CylinderMesh_rotor")
+
+[node name="RotorBL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.25, 0.3)
+mesh = SubResource("CylinderMesh_rotor")
+
+[node name="RotorBR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.25, 0.3)
+mesh = SubResource("CylinderMesh_rotor")
+
+[node name="SensorRing" type="MeshInstance3D" parent="."]
+mesh = SubResource("TorusMesh_ring")
+
+[node name="Antenna" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0.12)
+mesh = SubResource("CylinderMesh_antenna")
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.32)
+
+[node name="EyeMesh" type="MeshInstance3D" parent="Eye"]
+mesh = SubResource("SphereMesh_eye")
+
+[node name="EyeLight" type="OmniLight3D" parent="Eye"]
+light_color = Color(1, 0.3, 0.2, 1)
+light_energy = 0.8
+omni_range = 5.0
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -0.42)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_col")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 40.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+avoidance_enabled = true
+radius = 0.5

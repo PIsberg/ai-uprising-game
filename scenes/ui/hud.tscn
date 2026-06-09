@@ -1,0 +1,396 @@
+[gd_scene load_steps=7 format=3 uid="uid://b0ui0hud0001"]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/radar.gd" id="2_radar"]
+[ext_resource type="Script" path="res://scripts/ui/damage_indicator.gd" id="3_dmgind"]
+[ext_resource type="Script" path="res://scripts/ui/waypoint.gd" id="4_waypoint"]
+
+[sub_resource type="Theme" id="Theme_1"]
+default_font_size = 18
+
+[sub_resource type="Gradient" id="Gradient_vig"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.65, 0, 0, 0.9)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_vig"]
+gradient = SubResource("Gradient_vig")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="HUD" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = SubResource("Theme_1")
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="Waypoint" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("4_waypoint")
+
+[node name="LowHealthVignette" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = SubResource("GradientTexture2D_vig")
+expand_mode = 1
+stretch_mode = 6
+modulate = Color(1, 1, 1, 0)
+mouse_filter = 2
+
+[node name="DamageIndicator" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("3_dmgind")
+
+[node name="Radar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -210.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 210.0
+mouse_filter = 2
+script = ExtResource("2_radar")
+
+[node name="KillFeed" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -270.0
+offset_top = 224.0
+offset_right = -20.0
+offset_bottom = 460.0
+alignment = 0
+theme_override_constants/separation = 4
+mouse_filter = 2
+
+[node name="DamageOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.7, 0, 0, 0)
+mouse_filter = 2
+
+[node name="Toast" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 110.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(1, 0.88, 0.4, 1)
+theme_override_font_sizes/font_size = 30
+text = ""
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="BossBar" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 54.0
+offset_bottom = 110.0
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="BossBar"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BossName" type="Label" parent="BossBar/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.25, 1)
+theme_override_font_sizes/font_size = 22
+text = "BOSS"
+horizontal_alignment = 1
+
+[node name="BossHealth" type="ProgressBar" parent="BossBar/VBox"]
+custom_minimum_size = Vector2(520, 16)
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="CrosshairCenter" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+mouse_filter = 2
+
+[node name="Dot" type="ColorRect" parent="CrosshairCenter"]
+layout_mode = 0
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+color = Color(1, 1, 1, 0.85)
+mouse_filter = 2
+
+[node name="Top" type="ColorRect" parent="CrosshairCenter"]
+layout_mode = 0
+offset_left = -1.0
+offset_top = -12.0
+offset_right = 1.0
+offset_bottom = -5.0
+color = Color(1, 1, 1, 0.7)
+mouse_filter = 2
+
+[node name="Bottom" type="ColorRect" parent="CrosshairCenter"]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 5.0
+offset_right = 1.0
+offset_bottom = 12.0
+color = Color(1, 1, 1, 0.7)
+mouse_filter = 2
+
+[node name="Left" type="ColorRect" parent="CrosshairCenter"]
+layout_mode = 0
+offset_left = -12.0
+offset_top = -1.0
+offset_right = -5.0
+offset_bottom = 1.0
+color = Color(1, 1, 1, 0.7)
+mouse_filter = 2
+
+[node name="Right" type="ColorRect" parent="CrosshairCenter"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = -1.0
+offset_right = 12.0
+offset_bottom = 1.0
+color = Color(1, 1, 1, 0.7)
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+mouse_filter = 2
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Top" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ObjectiveLabel" type="Label" parent="Margin/Layout/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Objective"
+
+[node name="ScoreLabel" type="Label" parent="Margin/Layout/Top"]
+layout_mode = 2
+text = "Score: 0"
+horizontal_alignment = 2
+
+[node name="Spacer" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BottomLeft" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HealthRow" type="HBoxContainer" parent="Margin/Layout/BottomLeft"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HealthBar" type="ProgressBar" parent="Margin/Layout/BottomLeft/HealthRow"]
+custom_minimum_size = Vector2(260, 22)
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="Margin/Layout/BottomLeft/HealthRow"]
+layout_mode = 2
+text = "100 / 100"
+
+[node name="BottomRight" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+alignment = 2
+mouse_filter = 2
+
+[node name="WeaponLabel" type="Label" parent="Margin/Layout/BottomRight"]
+layout_mode = 2
+text = "Weapon"
+
+[node name="AmmoLabel" type="Label" parent="Margin/Layout/BottomRight"]
+layout_mode = 2
+text = "0 / 0"
+
+[node name="GrenadeLabel" type="Label" parent="Margin/Layout/BottomRight"]
+layout_mode = 2
+text = "Grenades (G): 3"
+
+[node name="PauseMenu" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -190.0
+offset_right = 210.0
+offset_bottom = 190.0
+
+[node name="VBox" type="VBoxContainer" parent="PauseMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+
+[node name="Title" type="Label" parent="PauseMenu/VBox"]
+layout_mode = 2
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="Resume" type="Button" parent="PauseMenu/VBox"]
+layout_mode = 2
+text = "Resume"
+
+[node name="Restart" type="Button" parent="PauseMenu/VBox"]
+layout_mode = 2
+text = "Restart"
+
+[node name="PauseGraphics" type="Button" parent="PauseMenu/VBox"]
+layout_mode = 2
+text = "Graphics: HIGH"
+
+[node name="PauseVolumeRow" type="HBoxContainer" parent="PauseMenu/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="VolumeLabel" type="Label" parent="PauseMenu/VBox/PauseVolumeRow"]
+layout_mode = 2
+text = "Volume"
+
+[node name="PauseVolume" type="HSlider" parent="PauseMenu/VBox/PauseVolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="Quit" type="Button" parent="PauseMenu/VBox"]
+layout_mode = 2
+text = "Quit to Menu"
+
+[node name="GameOverMenu" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+
+[node name="VBox" type="VBoxContainer" parent="GameOverMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+
+[node name="Title" type="Label" parent="GameOverMenu/VBox"]
+layout_mode = 2
+text = "TERMINATED"
+horizontal_alignment = 1
+
+[node name="Restart" type="Button" parent="GameOverMenu/VBox"]
+layout_mode = 2
+text = "Try Again"
+
+[node name="Quit" type="Button" parent="GameOverMenu/VBox"]
+layout_mode = 2
+text = "Quit to Menu"
+
+[node name="WinMenu" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+
+[node name="VBox" type="VBoxContainer" parent="WinMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+
+[node name="Title" type="Label" parent="WinMenu/VBox"]
+layout_mode = 2
+text = "EXTRACTED"
+horizontal_alignment = 1
+
+[node name="Continue" type="Button" parent="WinMenu/VBox"]
+layout_mode = 2
+text = "Continue"
+
+[node name="Restart" type="Button" parent="WinMenu/VBox"]
+layout_mode = 2
+text = "Replay Level"
+
+[node name="Quit" type="Button" parent="WinMenu/VBox"]
+layout_mode = 2
+text = "Main Menu"
+
+[connection signal="pressed" from="PauseMenu/VBox/Resume" to="." method="_on_resume_pressed"]
+[connection signal="pressed" from="PauseMenu/VBox/Restart" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="PauseMenu/VBox/PauseGraphics" to="." method="_on_pause_graphics_pressed"]
+[connection signal="value_changed" from="PauseMenu/VBox/PauseVolumeRow/PauseVolume" to="." method="_on_pause_volume_changed"]
+[connection signal="pressed" from="PauseMenu/VBox/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="GameOverMenu/VBox/Restart" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="GameOverMenu/VBox/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="WinMenu/VBox/Continue" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="WinMenu/VBox/Restart" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="WinMenu/VBox/Quit" to="." method="_on_quit_pressed"]

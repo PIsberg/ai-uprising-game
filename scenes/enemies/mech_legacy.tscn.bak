@@ -1,0 +1,114 @@
+[gd_scene load_steps=14 format=3 uid="uid://b0enemy0mech01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_mech.gd" id="1_mech"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" uid="uid://b0proj0rocket01" path="res://scenes/weapons/projectile_rocket.tscn" id="3_proj"]
+[ext_resource type="Material" uid="uid://b0mat0enemybody" path="res://assets/materials/enemy_chassis.tres" id="4_chassis"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="5_md"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="6_gr"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_torso"]
+size = Vector3(1.8, 1.6, 1.2)
+material = ExtResource("4_chassis")
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+size = Vector3(0.7, 0.5, 0.7)
+material = ExtResource("5_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg"]
+size = Vector3(0.45, 1.6, 0.45)
+material = ExtResource("5_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_arm"]
+size = Vector3(0.4, 1.0, 0.5)
+material = ExtResource("4_chassis")
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.12
+height = 0.24
+material = ExtResource("6_gr")
+
+[sub_resource type="BoxMesh" id="BoxMesh_reactor"]
+size = Vector3(0.55, 0.55, 0.12)
+material = ExtResource("6_gr")
+
+[sub_resource type="BoxMesh" id="BoxMesh_shoulder"]
+size = Vector3(0.7, 0.5, 0.85)
+material = ExtResource("4_chassis")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.9
+height = 3.6
+
+[node name="Mech" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_mech")
+projectile_scene = ExtResource("3_proj")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="LegL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.8, 0)
+mesh = SubResource("BoxMesh_leg")
+
+[node name="LegR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 0.8, 0)
+mesh = SubResource("BoxMesh_leg")
+
+[node name="Torso" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
+mesh = SubResource("BoxMesh_torso")
+
+[node name="Reactor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -0.62)
+mesh = SubResource("BoxMesh_reactor")
+
+[node name="ShoulderL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 3.05, 0)
+mesh = SubResource("BoxMesh_shoulder")
+
+[node name="ShoulderR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 3.05, 0)
+mesh = SubResource("BoxMesh_shoulder")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.45, 0)
+mesh = SubResource("BoxMesh_head")
+
+[node name="ArmL" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 2.4, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="ArmR" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 2.4, 0)
+mesh = SubResource("BoxMesh_arm")
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.45, -0.36)
+
+[node name="EyeMesh" type="MeshInstance3D" parent="Eye"]
+mesh = SubResource("SphereMesh_eye")
+
+[node name="EyeLight" type="SpotLight3D" parent="Eye"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+light_color = Color(1, 0.3, 0.15, 1)
+light_energy = 2.0
+spot_range = 15.0
+spot_angle = 30.0
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 2.4, -0.6)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 350.0
+armor = 4.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 1.2
+height = 3.6
+path_desired_distance = 1.0
+target_desired_distance = 1.0

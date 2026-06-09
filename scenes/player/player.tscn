@@ -1,0 +1,78 @@
+[gd_scene load_steps=13 format=3 uid="uid://b0player00001"]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_manager.gd" id="3_wm"]
+[ext_resource type="PackedScene" uid="uid://b0weap0pistol01" path="res://scenes/weapons/pistol.tscn" id="4_pistol"]
+[ext_resource type="PackedScene" uid="uid://b0weap0rifle001" path="res://scenes/weapons/rifle.tscn" id="5_rifle"]
+[ext_resource type="PackedScene" uid="uid://b0weap0shotgun01" path="res://scenes/weapons/shotgun.tscn" id="6_shotgun"]
+[ext_resource type="PackedScene" uid="uid://b0weap0plasma01" path="res://scenes/weapons/plasma.tscn" id="7_plasma"]
+[ext_resource type="Shader" path="res://shaders/post_process.gdshader" id="8_post"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="CameraAttributesPractical" id="CamAttr_1"]
+dof_blur_far_enabled = false
+dof_blur_near_enabled = false
+auto_exposure_enabled = true
+auto_exposure_min_sensitivity = 50.0
+auto_exposure_max_sensitivity = 400.0
+auto_exposure_scale = 0.38
+auto_exposure_speed = 0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
+shader = ExtResource("8_post")
+shader_parameter/aberration = 1.1
+shader_parameter/vignette_strength = 0.42
+shader_parameter/vignette_softness = 0.55
+shader_parameter/grain_amount = 0.035
+shader_parameter/sharpen = 0.35
+
+[node name="Player" type="CharacterBody3D" groups=["player"]]
+collision_layer = 2
+collision_mask = 1
+floor_max_angle = 0.8
+floor_snap_length = 0.3
+script = ExtResource("1_player")
+
+[node name="Collider" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="CeilingCheck" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+target_position = Vector3(0, 1.5, 0)
+collision_mask = 1
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+current = true
+fov = 78.0
+near = 0.05
+attributes = SubResource("CamAttr_1")
+
+[node name="WeaponHolder" type="Node3D" parent="Head/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.22, -0.45)
+script = ExtResource("3_wm")
+weapon_scenes = Array[PackedScene]([ExtResource("4_pistol")])
+start_index = 0
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 100.0
+
+[node name="PostFX" type="CanvasLayer" parent="."]
+layer = 0
+
+[node name="Overlay" type="ColorRect" parent="PostFX"]
+material = SubResource("ShaderMaterial_post")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

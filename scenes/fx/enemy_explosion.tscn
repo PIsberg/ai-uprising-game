@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://d1cawpy3ccl8s"]
+
+[ext_resource type="Script" path="res://scripts/fx/enemy_explosion.gd" id="1_exp"]
+
+[sub_resource type="Gradient" id="Gradient_fire"]
+offsets = PackedFloat32Array(0, 0.2, 0.65, 1)
+colors = PackedColorArray(1, 0.8, 0.3, 0.95, 0.9, 0.3, 0.1, 0.8, 0.25, 0.25, 0.25, 0.45, 0.1, 0.1, 0.1, 0)
+
+[sub_resource type="Curve" id="Curve_fire"]
+_data = [Vector2(0, 0.4), 0.0, 1.8, 0, 0, Vector2(0.4, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.2), -2.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fire"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_fire"]
+material = SubResource("StandardMaterial3D_fire")
+radius = 0.25
+height = 0.5
+radial_segments = 8
+rings = 5
+
+[sub_resource type="Gradient" id="Gradient_sparks"]
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(0.9, 0.95, 1, 1, 0.4, 0.85, 1, 1, 0.1, 0.3, 0.8, 0.7, 0, 0.1, 0.5, 0)
+
+[sub_resource type="Curve" id="Curve_sparks"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.2, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spark"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spark"]
+material = SubResource("StandardMaterial3D_spark")
+size = Vector3(0.02, 0.02, 0.12)
+
+[node name="EnemyExplosion" type="Node3D"]
+script = ExtResource("1_exp")
+
+[node name="FireParticles" type="CPUParticles3D" parent="."]
+emitting = true
+amount = 18
+one_shot = true
+explosiveness = 0.9
+lifetime = 0.55
+direction = Vector3(0, 1, 0)
+spread = 180.0
+gravity = Vector3(0, 0.5, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 4.5
+color_ramp = SubResource("Gradient_fire")
+scale_amount_curve = SubResource("Curve_fire")
+mesh = SubResource("SphereMesh_fire")
+
+[node name="SparkParticles" type="CPUParticles3D" parent="."]
+emitting = true
+amount = 26
+one_shot = true
+explosiveness = 0.95
+lifetime = 0.75
+direction = Vector3(0, 1, 0)
+spread = 120.0
+gravity = Vector3(0, -9.8, 0)
+initial_velocity_min = 4.0
+initial_velocity_max = 7.5
+color_ramp = SubResource("Gradient_sparks")
+scale_amount_curve = SubResource("Curve_sparks")
+mesh = SubResource("BoxMesh_spark")
+
+[node name="Light" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.75, 0.35, 1)
+light_energy = 6.0
+omni_range = 10.0

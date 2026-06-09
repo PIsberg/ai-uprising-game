@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://drcyalkhln07m"]
+
+[ext_resource type="Script" path="res://scripts/levels/level_builder.gd" id="1_build"]
+[ext_resource type="PackedScene" uid="uid://b0player00001" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://b0ui0hud0001" path="res://scenes/ui/hud.tscn" id="3_hud"]
+
+[node name="LevelGPT" type="Node3D"]
+script = ExtResource("1_build")
+level_id = "gpt"
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0.6, -18)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]

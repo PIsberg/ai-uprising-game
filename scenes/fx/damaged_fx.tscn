@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://d1alteqn52v8s"]
+
+[sub_resource type="Gradient" id="Gradient_smoke"]
+offsets = PackedFloat32Array(0, 0.2, 1)
+colors = PackedColorArray(0.15, 0.15, 0.15, 0, 0.12, 0.12, 0.12, 0.35, 0.08, 0.08, 0.08, 0)
+
+[sub_resource type="Curve" id="Curve_smoke"]
+_data = [Vector2(0, 0.4), 0.0, 2.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_smoke"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_smoke"]
+material = SubResource("StandardMaterial3D_smoke")
+radius = 0.12
+height = 0.24
+radial_segments = 8
+rings = 4
+
+[sub_resource type="Gradient" id="Gradient_sparks"]
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.3, 0.8, 1, 1, 0.1, 0.3, 0.9, 0.7, 0, 0.1, 0.6, 0)
+
+[sub_resource type="Curve" id="Curve_sparks"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_spark"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_spark"]
+material = SubResource("StandardMaterial3D_spark")
+size = Vector3(0.012, 0.012, 0.06)
+
+[node name="DamagedFX" type="Node3D"]
+
+[node name="SmokeParticles" type="CPUParticles3D" parent="."]
+amount = 6
+lifetime = 0.7
+direction = Vector3(0, 1, 0)
+spread = 25.0
+gravity = Vector3(0, 1.8, 0)
+initial_velocity_min = 0.4
+initial_velocity_max = 0.8
+color_ramp = SubResource("Gradient_smoke")
+scale_amount_curve = SubResource("Curve_smoke")
+mesh = SubResource("SphereMesh_smoke")
+
+[node name="SparkParticles" type="CPUParticles3D" parent="."]
+amount = 8
+lifetime = 0.35
+explosiveness = 0.4
+direction = Vector3(0, 1, 0)
+spread = 90.0
+gravity = Vector3(0, -9.8, 0)
+initial_velocity_min = 1.2
+initial_velocity_max = 2.8
+color_ramp = SubResource("Gradient_sparks")
+scale_amount_curve = SubResource("Curve_sparks")
+mesh = SubResource("BoxMesh_spark")

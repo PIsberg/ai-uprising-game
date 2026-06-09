@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://c5iowaaip2exc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/twinrail_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_accent"]
+shading_mode = 0
+albedo_color = Color(0.45, 0.65, 1, 1)
+emission_enabled = true
+emission = Color(0.4, 0.6, 1, 1)
+emission_energy_multiplier = 3.5
+
+[sub_resource type="BoxMesh" id="Box_receiver"]
+size = Vector3(0.08, 0.08, 0.36)
+material = ExtResource("3_gm")
+
+[sub_resource type="CylinderMesh" id="Cyl_rail"]
+top_radius = 0.016
+bottom_radius = 0.016
+height = 0.5
+radial_segments = 12
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="Box_accent"]
+size = Vector3(0.012, 0.012, 0.4)
+material = ExtResource("4_md")
+
+[node name="TwinRail" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("Box_receiver")
+
+[node name="BarrelL" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.026, 0.012, -0.32)
+mesh = SubResource("Cyl_rail")
+
+[node name="BarrelR" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.026, 0.012, -0.32)
+mesh = SubResource("Cyl_rail")
+
+[node name="AccentTop" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, -0.05)
+mesh = SubResource("Box_accent")
+surface_material_override/0 = SubResource("Mat_accent")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.012, -0.56)

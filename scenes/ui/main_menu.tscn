@@ -1,0 +1,191 @@
+[gd_scene load_steps=3 format=3 uid="uid://b0ui0menu0001"]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+
+[sub_resource type="Theme" id="Theme_1"]
+default_font_size = 22
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = SubResource("Theme_1")
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.05, 0.07, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "AI UPRISING"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Center/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
+text = "The machines have turned. Push them back."
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+
+[node name="MainButtons" type="VBoxContainer" parent="Center/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Continue" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 56)
+layout_mode = 2
+text = "Continue"
+
+[node name="Play" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 56)
+layout_mode = 2
+text = "Begin Operation"
+
+[node name="Settings" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 48)
+layout_mode = 2
+text = "Settings"
+
+[node name="Controls" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 48)
+layout_mode = 2
+text = "Controls"
+
+[node name="Quit" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 48)
+layout_mode = 2
+text = "Quit"
+
+[node name="DiffButtons" type="VBoxContainer" parent="Center/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Prompt" type="Label" parent="Center/VBox/DiffButtons"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
+text = "Select difficulty"
+horizontal_alignment = 1
+
+[node name="Easy" type="Button" parent="Center/VBox/DiffButtons"]
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+text = "Easy — fewer, weaker foes · more supplies"
+
+[node name="Normal" type="Button" parent="Center/VBox/DiffButtons"]
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+text = "Normal — the intended fight"
+
+[node name="Hard" type="Button" parent="Center/VBox/DiffButtons"]
+custom_minimum_size = Vector2(320, 52)
+layout_mode = 2
+text = "Hard — more, tougher foes · scarce supplies"
+
+[node name="Back" type="Button" parent="Center/VBox/DiffButtons"]
+custom_minimum_size = Vector2(320, 40)
+layout_mode = 2
+text = "Back"
+
+[node name="SettingsPanel" type="VBoxContainer" parent="Center/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Prompt" type="Label" parent="Center/VBox/SettingsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="Graphics" type="Button" parent="Center/VBox/SettingsPanel"]
+custom_minimum_size = Vector2(360, 52)
+layout_mode = 2
+text = "Graphics: HIGH"
+
+[node name="VolumeRow" type="HBoxContainer" parent="Center/VBox/SettingsPanel"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="VolumeLabel" type="Label" parent="Center/VBox/SettingsPanel/VolumeRow"]
+layout_mode = 2
+text = "Master Volume"
+
+[node name="VolumeSlider" type="HSlider" parent="Center/VBox/SettingsPanel/VolumeRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 1.0
+
+[node name="BackS" type="Button" parent="Center/VBox/SettingsPanel"]
+custom_minimum_size = Vector2(360, 40)
+layout_mode = 2
+text = "Back"
+
+[node name="ControlsPanel" type="VBoxContainer" parent="Center/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Prompt" type="Label" parent="Center/VBox/ControlsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
+text = "Controls"
+horizontal_alignment = 1
+
+[node name="List" type="Label" parent="Center/VBox/ControlsPanel"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "MOVE          WASD / Left Stick
+LOOK          Mouse / Right Stick
+SPRINT        Shift / L3
+JUMP          Space / A
+CROUCH        Ctrl / B
+FIRE          LMB / RT
+AIM           RMB / LT
+RELOAD        R / X
+GRENADE       G / Y
+SWITCH WEAPON   1-4 · Wheel / LB · RB
+PAUSE         Esc / Start"
+
+[node name="BackC" type="Button" parent="Center/VBox/ControlsPanel"]
+custom_minimum_size = Vector2(360, 40)
+layout_mode = 2
+text = "Back"
+
+[connection signal="pressed" from="Center/VBox/MainButtons/Continue" to="." method="_on_continue_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/Controls" to="." method="_on_controls_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="Center/VBox/DiffButtons/Easy" to="." method="_on_easy_pressed"]
+[connection signal="pressed" from="Center/VBox/DiffButtons/Normal" to="." method="_on_normal_pressed"]
+[connection signal="pressed" from="Center/VBox/DiffButtons/Hard" to="." method="_on_hard_pressed"]
+[connection signal="pressed" from="Center/VBox/DiffButtons/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Center/VBox/SettingsPanel/Graphics" to="." method="_on_graphics_pressed"]
+[connection signal="value_changed" from="Center/VBox/SettingsPanel/VolumeRow/VolumeSlider" to="." method="_on_volume_changed"]
+[connection signal="pressed" from="Center/VBox/SettingsPanel/BackS" to="." method="_on_settings_back_pressed"]
+[connection signal="pressed" from="Center/VBox/ControlsPanel/BackC" to="." method="_on_controls_back_pressed"]

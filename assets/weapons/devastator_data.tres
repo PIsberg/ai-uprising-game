@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
+[ext_resource type="PackedScene" uid="uid://b0proj0rocket01" path="res://scenes/weapons/projectile_rocket.tscn" id="3_proj"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "GRK-X Devastator"
+fire_mode = 0
+damage_type = 1
+damage = 160.0
+fire_rate = 1.1
+range_m = 200.0
+spread_deg = 0.6
+aim_spread_mult = 0.5
+pellets = 1
+headshot_mult = 1.0
+recoil_pitch = 3.5
+recoil_yaw = 0.6
+recoil_recovery = 5.5
+mag_size = 4
+reserve_max = 24
+reload_time = 2.7
+projectile_scene = ExtResource("3_proj")
+projectile_speed = 45.0
+splash_radius = 5.0
+splash_damage = 160.0
+muzzle_flash_scene = ExtResource("2_mf")
+sound_id = "rocket"
+slide_kick = 0.0
+viewmodel_color = Color(1, 0.35, 0.3, 1)

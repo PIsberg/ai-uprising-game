@@ -1,0 +1,378 @@
+class_name Player
+extends CharacterBody3D
+
+signal health_changed(current: float, max: float)
+signal died
+signal grenades_changed(count: int)
+signal pickup_message(text: String) ## Fired when a non-weapon pickup is collected (for the HUD toast).
+
+func notify_pickup(text: String) -> void:
+	pickup_message.emit(text)
+
+@export_group("Movement")
+@export var walk_speed: float = 5.5
+@export var sprint_speed: float = 9.0
+@export var crouch_speed: float = 2.8
+@export var acceleration: float = 18.0
+@export var air_acceleration: float = 6.0
+@export var friction: float = 14.0
+@export var jump_velocity: float = 7.5
+
+@export_group("Look")
+@export var mouse_sensitivity: float = 0.0022
+@export var pad_look_speed: float = 3.2 ## Right-stick look speed (rad/s).
+@export var pad_look_deadzone: float = 0.15
+@export var look_clamp_deg: float = 89.0
+
+@export_group("Stance")
+@export var stand_height: float = 1.8
+@export var crouch_height: float = 1.0
+@export var stance_lerp_speed: float = 12.0
+
+@export_group("Camera Feel")
+@export var bob_amplitude: float = 0.04
+@export var bob_frequency: float = 11.0
+@export var land_kick: float = 0.18
+@export var strafe_tilt_deg: float = 1.4 ## Camera roll when strafing, for weight.
+@export var max_shake_roll_deg: float = 2.6 ## Peak rotational kick at full trauma.
+
+@export_group("Dash & Slide")
+@export var dash_speed: float = 20.0
+@export var dash_duration: float = 0.16
+@export var dash_cooldown: float = 1.1
+@export var slide_speed: float = 12.5
+@export var slide_duration: float = 0.7
+@export var slide_friction: float = 6.0
+
+@export_group("Grenades")
+@export var max_grenades: int = 3
+@export var grenade_cooldown: float = 0.7
+const GRENADE_SCENE := preload("res://scenes/weapons/grenade.tscn")
+var grenades: int = 3
+var _grenade_cd: float = 0.0
+
+@onready var head: Node3D = $Head
+@onready var camera: Camera3D = $Head/Camera3D
+@onready var collider: CollisionShape3D = $Collider
+@onready var ceiling_check: RayCast3D = $CeilingCheck
+@onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
+@onready var hp: Damageable = $Damageable
+@onready var _post_overlay: ColorRect = $PostFX/Overlay
+var _speed_warp: float = 0.0
+
+var _bob_phase: float = 0.0
+var _was_on_floor: bool = true
+var _camera_base_y: float = 0.0
+var _land_offset: float = 0.0
+var _shake_amount: float = 0.0
+var _cam_roll: float = 0.0
+
+## External camera shake (e.g. a boss entrance). 0..~1.
+func shake(amount: float) -> void:
+	_shake_amount = maxf(_shake_amount, amount)
+var _is_crouching: bool = false
+var _dash_time: float = 0.0
+var _dash_cd: float = 0.0
+var _dash_dir: Vector3 = Vector3.ZERO
+var _sliding: bool = false
+var _slide_time: float = 0.0
+var _fov_base: float = 0.0
+var _fov_kick: float = 0.0
+var _look_sens_mult: float = 1.0
+var _look_y_sign: float = 1.0
+var _step_accum: float = 0.0
+const STEP_INTERVAL_WALK := 2.4
+const STEP_INTERVAL_SPRINT := 3.2
+const STEP_INTERVAL_CROUCH := 1.6
+
+func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_camera_base_y = camera.position.y
+	_apply_user_settings()
+	_fov_base = camera.fov
+	_register_dash_action()
+	grenades = max_grenades
+	hp.health_changed.connect(_on_health_changed)
+	hp.died.connect(_on_died)
+	hp.damaged.connect(_on_hp_damaged)
+
+## Sprint speed-warp: feed the post shader a 0..1 value that radial-streaks the
+## screen edges the faster you run.
+func _handle_speed_warp(delta: float) -> void:
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var sprinting := Input.is_action_pressed("sprint") and is_on_floor() and not _is_crouching
+	var target := clampf(speed / sprint_speed, 0.0, 1.0) if sprinting else 0.0
+	_speed_warp = lerpf(_speed_warp, target, clampf(6.0 * delta, 0.0, 1.0))
+	if _post_overlay and _post_overlay.material is ShaderMaterial:
+		(_post_overlay.material as ShaderMaterial).set_shader_parameter("speed_warp", _speed_warp)
+
+## Camera kick when hit, scaled by the hit's size — every enemy attack lands.
+## Pull display/input prefs from GraphicsSettings (FOV, look sensitivity, invert).
+func _apply_user_settings() -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs == null:
+		return
+	if "fov" in gs:
+		camera.fov = gs.fov
+	if "sensitivity" in gs:
+		_look_sens_mult = gs.sensitivity
+	if "invert_y" in gs:
+		_look_y_sign = -1.0 if gs.invert_y else 1.0
+
+func _on_hp_damaged(amount: float, _source: Node) -> void:
+	shake(clampf(0.22 + amount * 0.02, 0.22, 0.85))
+	GameState.register_damage_taken(amount) # feeds the end-of-level grade
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		var m := event as InputEventMouseMotion
+		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
+		head.rotate_x(-m.relative.y * mouse_sensitivity * _look_sens_mult * _look_y_sign)
+		head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+
+func _physics_process(delta: float) -> void:
+	_apply_gravity(delta)
+	_handle_gamepad_look(delta)
+	_handle_speed_warp(delta)
+	_handle_dash(delta)
+	_handle_slide(delta)
+	_handle_jump()
+	_handle_grenade(delta)
+	_handle_stance(delta)
+	_handle_movement(delta)
+	_handle_camera_feel(delta)
+	move_and_slide()
+
+## Registers the dash action (Q) at runtime so it works without editing the
+## project input map. Gamepad users dash with the right-stick click is taken;
+## keyboard-only is fine for now.
+func _register_dash_action() -> void:
+	if not InputMap.has_action("dash"):
+		InputMap.add_action("dash")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_Q
+		InputMap.action_add_event("dash", ev)
+
+## A short, snappy burst in the movement direction (or forward if idle). Works
+## on the ground or in the air; has a cooldown and a FOV/whoosh kick for punch.
+func _handle_dash(delta: float) -> void:
+	_dash_cd = maxf(0.0, _dash_cd - delta)
+	if _dash_time > 0.0:
+		_dash_time -= delta
+		velocity.x = _dash_dir.x * dash_speed
+		velocity.z = _dash_dir.z * dash_speed
+		return
+	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0 and not _sliding:
+		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var dir := transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
+		if dir.length() < 0.1:
+			dir = -transform.basis.z # dash forward when no stick/key input
+		_dash_dir = dir.normalized()
+		_dash_time = dash_duration
+		_dash_cd = dash_cooldown
+		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
+		_fov_kick = 9.0
+		shake(0.22)
+		AudioBus.play_synth_at("grenade_throw", global_position, -8.0, 1.5)
+
+## Sprint + crouch while moving fast launches a low, gliding slide that bleeds
+## speed; tapping jump cancels it into a slide-hop. Forces a crouched stance.
+func _handle_slide(delta: float) -> void:
+	if _sliding:
+		_slide_time -= delta
+		var flat := Vector2(velocity.x, velocity.z)
+		var sp := move_toward(flat.length(), 0.0, slide_friction * delta)
+		if flat.length() > 0.01:
+			var d := flat.normalized()
+			velocity.x = d.x * sp
+			velocity.z = d.y * sp
+		var hopped := Input.is_action_just_pressed("jump") and is_on_floor()
+		if _slide_time <= 0.0 or sp < crouch_speed * 1.1 or not is_on_floor() or hopped:
+			_sliding = false
+			if hopped:
+				velocity.y = jump_velocity * 1.05
+		return
+	if Input.is_action_just_pressed("crouch") and is_on_floor() and Input.is_action_pressed("sprint"):
+		if Vector2(velocity.x, velocity.z).length() > walk_speed * 0.8:
+			_sliding = true
+			_slide_time = slide_duration
+			var d := Vector2(velocity.x, velocity.z).normalized()
+			velocity.x = d.x * slide_speed
+			velocity.z = d.y * slide_speed
+			_fov_kick = 5.0
+			shake(0.14)
+			AudioBus.play_synth_at("footstep", global_position, 2.0, 0.55)
+
+## Right analog stick aims (mouse look is handled in _input). Deadzoned, with
+## a mild response curve so fine aim is easy and big flicks are still fast.
+func _handle_gamepad_look(delta: float) -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	var lx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
+	var ly := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
+	if absf(lx) < pad_look_deadzone:
+		lx = 0.0
+	if absf(ly) < pad_look_deadzone:
+		ly = 0.0
+	if lx == 0.0 and ly == 0.0:
+		return
+	lx = signf(lx) * pow(absf(lx), 1.5)
+	ly = signf(ly) * pow(absf(ly), 1.5)
+	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult)
+	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign)
+	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+	_check_landing()
+	_handle_footsteps(delta)
+
+func _handle_grenade(delta: float) -> void:
+	_grenade_cd = maxf(0.0, _grenade_cd - delta)
+	if Input.is_action_just_pressed("grenade"):
+		_throw_grenade()
+
+func _throw_grenade() -> void:
+	if grenades <= 0 or _grenade_cd > 0.0:
+		return
+	grenades -= 1
+	_grenade_cd = grenade_cooldown
+	var g := GRENADE_SCENE.instantiate()
+	get_tree().current_scene.add_child(g)
+	var dir := -camera.global_transform.basis.z
+	g.global_position = camera.global_position + dir * 0.7
+	# Lob forward + up, inheriting a little of the player's momentum.
+	var throw_vel := dir * 17.0 + Vector3.UP * 3.5 + Vector3(velocity.x, 0, velocity.z) * 0.5
+	if g.has_method("throw_grenade"):
+		g.throw_grenade(throw_vel, self)
+	AudioBus.play_synth_at("grenade_throw", global_position, -3.0, randf_range(0.95, 1.1))
+	grenades_changed.emit(grenades)
+
+func add_grenade(amount: int = 1) -> void:
+	grenades = mini(max_grenades, grenades + amount)
+	grenades_changed.emit(grenades)
+
+func _apply_gravity(delta: float) -> void:
+	if not is_on_floor():
+		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+
+func _handle_jump() -> void:
+	if is_on_floor() and Input.is_action_just_pressed("jump") and not _is_crouching:
+		velocity.y = jump_velocity
+
+func _handle_stance(delta: float) -> void:
+	var wants_crouch := Input.is_action_pressed("crouch") or _sliding
+	# Block uncrouch if something overhead
+	if not wants_crouch and _is_crouching and ceiling_check.is_colliding():
+		wants_crouch = true
+	_is_crouching = wants_crouch
+	var target_height := crouch_height if _is_crouching else stand_height
+	var shape: CapsuleShape3D = collider.shape
+	shape.height = lerpf(shape.height, target_height, stance_lerp_speed * delta)
+	collider.position.y = shape.height * 0.5
+	head.position.y = shape.height - 0.2
+
+func _current_speed() -> float:
+	if _is_crouching:
+		return crouch_speed
+	if Input.is_action_pressed("sprint") and not _is_crouching:
+		return sprint_speed
+	return walk_speed
+
+func _handle_movement(delta: float) -> void:
+	# Dash and slide fully own the horizontal velocity while active.
+	if _dash_time > 0.0 or _sliding:
+		return
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var target_speed := _current_speed()
+	var accel := acceleration if is_on_floor() else air_acceleration
+	if direction.length() > 0.01:
+		velocity.x = move_toward(velocity.x, direction.x * target_speed, accel * delta)
+		velocity.z = move_toward(velocity.z, direction.z * target_speed, accel * delta)
+	else:
+		var f := friction if is_on_floor() else air_acceleration
+		velocity.x = move_toward(velocity.x, 0.0, f * delta)
+		velocity.z = move_toward(velocity.z, 0.0, f * delta)
+
+func _handle_camera_feel(delta: float) -> void:
+	# Dash/slide FOV punch, easing back to the base FOV.
+	_fov_kick = move_toward(_fov_kick, 0.0, 28.0 * delta)
+	camera.fov = _fov_base + _fov_kick
+	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+	if is_on_floor() and horizontal_speed > 0.5:
+		_bob_phase += delta * bob_frequency * (horizontal_speed / walk_speed)
+	else:
+		_bob_phase = lerpf(_bob_phase, 0.0, 6.0 * delta)
+	var bob := sin(_bob_phase) * bob_amplitude * clampf(horizontal_speed / walk_speed, 0.0, 1.4)
+	# Subtle horizontal bob in counter-phase reads as a natural gait.
+	var bob_x := cos(_bob_phase * 0.5) * bob_amplitude * 0.6 * clampf(horizontal_speed / walk_speed, 0.0, 1.4)
+	_land_offset = lerpf(_land_offset, 0.0, 8.0 * delta)
+	# Trauma model: shake decays linearly but is applied squared, so it ramps
+	# off sharply for a punchy, non-lingering kick (Vlambeer-style).
+	_shake_amount = maxf(0.0, _shake_amount - delta * 1.6)
+	var trauma := _shake_amount * _shake_amount
+	var shake_y := (randf() * 2.0 - 1.0) * trauma * 0.08
+	camera.position.y = _camera_base_y + bob + _land_offset + shake_y
+	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08
+	# Rotational shake + strafe lean, applied to the camera (not the head) so
+	# they never interfere with mouse look pitch.
+	var local_vel := global_transform.basis.inverse() * velocity
+	var lean := clampf(-local_vel.x / sprint_speed, -1.0, 1.0) * deg_to_rad(strafe_tilt_deg)
+	_cam_roll = lerpf(_cam_roll, lean, 7.0 * delta)
+	var roll_max := deg_to_rad(max_shake_roll_deg)
+	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max
+	camera.rotation.x = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
+	camera.rotation.y = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
+
+func _check_landing() -> void:
+	if is_on_floor() and not _was_on_floor:
+		_land_offset = -land_kick
+		AudioBus.play_synth_at("footstep", global_position, 0.0, 0.85)
+	_was_on_floor = is_on_floor()
+
+func _handle_footsteps(delta: float) -> void:
+	if not is_on_floor():
+		_step_accum = 0.0
+		return
+	var hs := Vector2(velocity.x, velocity.z).length()
+	if hs < 0.6:
+		_step_accum = 0.0
+		return
+	_step_accum += hs * delta
+	var threshold := STEP_INTERVAL_WALK
+	if _is_crouching:
+		threshold = STEP_INTERVAL_CROUCH
+	elif Input.is_action_pressed("sprint"):
+		threshold = STEP_INTERVAL_SPRINT
+	if _step_accum >= threshold:
+		_step_accum = 0.0
+		var vol := -6.0 if _is_crouching else -2.0
+		# Surface-aware footstep: metal clangs higher, dirt is softer/lower.
+		var pitch := randf_range(0.92, 1.08)
+		match _floor_surface():
+			"metal":
+				pitch = randf_range(1.15, 1.3)
+			"dirt":
+				pitch = randf_range(0.78, 0.9)
+				vol -= 3.0
+		AudioBus.play_synth_at("footstep", global_position, vol, pitch)
+
+## What the player is standing on, from the active floor collision: "metal",
+## "dirt", or "concrete" (default).
+func _floor_surface() -> String:
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		if c.get_normal().y > 0.5:
+			var col := c.get_collider()
+			if col is Node:
+				if (col as Node).is_in_group("surf_metal"):
+					return "metal"
+				if (col as Node).is_in_group("surf_dirt"):
+					return "dirt"
+			return "concrete"
+	return "concrete"
+
+func _on_health_changed(cur: float, max_: float) -> void:
+	health_changed.emit(cur, max_)
+
+func _on_died(_source: Node) -> void:
+	died.emit()
+	GameState.on_player_died()

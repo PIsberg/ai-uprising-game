@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://b0pickup0weapon"]
+
+[ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="2_gm"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_glow"]
+shading_mode = 0
+albedo_color = Color(0.5, 0.8, 1, 1)
+emission_enabled = true
+emission = Color(0.5, 0.8, 1, 1)
+emission_energy_multiplier = 4.0
+
+[sub_resource type="BoxMesh" id="Box_gun"]
+size = Vector3(0.7, 0.22, 0.28)
+material = ExtResource("2_gm")
+
+[sub_resource type="TorusMesh" id="Torus_ring"]
+inner_radius = 0.55
+outer_radius = 0.62
+
+[sub_resource type="BoxShape3D" id="Shape_1"]
+size = Vector3(1.6, 2.0, 1.4)
+
+[node name="WeaponPickup" type="Area3D"]
+script = ExtResource("1_pickup")
+kind = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_1")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+mesh = SubResource("Box_gun")
+
+[node name="Glow" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0)
+mesh = SubResource("Torus_ring")
+surface_material_override/0 = SubResource("Mat_glow")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+light_color = Color(0.5, 0.8, 1, 1)
+light_energy = 2.0
+omni_range = 5.0

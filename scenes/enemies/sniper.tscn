@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://u828ntntkaqe"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_sniper.gd" id="1_sniper"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+
+[sub_resource type="CapsuleShape3D" id="Shape_sniper"]
+radius = 0.5
+height = 2.0
+
+[node name="Sniper" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_sniper")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("Shape_sniper")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 90.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

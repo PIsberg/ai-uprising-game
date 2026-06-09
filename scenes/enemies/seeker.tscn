@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0enemy0seeker1"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_seeker.gd" id="1_seeker"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+
+[sub_resource type="SphereShape3D" id="Shape_seeker"]
+radius = 0.45
+
+[node name="Seeker" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_seeker")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+shape = SubResource("Shape_seeker")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 28.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
