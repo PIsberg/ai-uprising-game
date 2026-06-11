@@ -71,6 +71,9 @@ func _ready() -> void:
 	_build_gi(def)
 	_build_accents(def)
 	_build_atmosphere(def)
+	_build_accent_strips(def)
+	_build_beacons(def)
+	_build_skyline(def)
 	_build_tasks(def)
 	_build_exit(def)
 	_build_pickups(def)
@@ -582,6 +585,140 @@ func _build_atmosphere(def: Dictionary) -> void:
 	p.mesh = mesh
 	p.position = Vector3(0, 3.5, 0)
 	add_child(p)
+
+# ---------- signature visuals: theme strips, sweeps, skyline ----------
+
+## The level's identity colour: first placed light, falling back to ambient.
+func _theme_color(def: Dictionary) -> Color:
+	var lights: Array = def.get("lights", [])
+	if lights.size() > 0:
+		return lights[0].get("color", Color(0.6, 0.8, 1.0))
+	var e: Dictionary = def.get("env", {})
+	return e.get("ambient", Color(0.6, 0.8, 1.0))
+
+## A continuous emissive strip around the perimeter at eye height in the
+## level's theme colour — every arena gets an identity line, and the breathing
+## pulse makes the walls feel powered instead of painted.
+func _build_accent_strips(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var col := _theme_color(def)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = col
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = 2.6
+	var strips := [
+		{"pos": Vector3(0, 3.15, -hz + 0.53), "size": Vector3(fs.x - 1.2, 0.09, 0.05)},
+		{"pos": Vector3(0, 3.15, hz - 0.53), "size": Vector3(fs.x - 1.2, 0.09, 0.05)},
+		{"pos": Vector3(-hx + 0.53, 3.15, 0), "size": Vector3(0.05, 0.09, fs.y - 1.2)},
+		{"pos": Vector3(hx - 0.53, 3.15, 0), "size": Vector3(0.05, 0.09, fs.y - 1.2)},
+	]
+	for s in strips:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = s["size"]
+		bm.material = m
+		mi.mesh = bm
+		mi.position = s["pos"]
+		add_child(mi)
+	var tw := create_tween().set_loops()
+	tw.tween_property(m, "emission_energy_multiplier", 1.7, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(m, "emission_energy_multiplier", 3.0, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Two crimson surveillance sweeps on opposite corners: a glowing emitter head
+## atop the wall with a slowly rotating, down-tilted spotlight. The occupation
+## is watching — and moving light keeps the darker arenas alive.
+func _build_beacons(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var alarm := Color(1.0, 0.22, 0.12)
+	var i := 0
+	for corner in [Vector3(-hx + 1.4, WALL_HEIGHT + 0.3, -hz + 1.4),
+			Vector3(hx - 1.4, WALL_HEIGHT + 0.3, hz - 1.4)]:
+		var pivot := Node3D.new()
+		pivot.position = corner
+		pivot.rotation.y = randf() * TAU
+		add_child(pivot)
+		var head := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.14
+		cm.bottom_radius = 0.2
+		cm.height = 0.34
+		cm.radial_segments = 10
+		var hm := StandardMaterial3D.new()
+		hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		hm.albedo_color = alarm
+		hm.emission_enabled = true
+		hm.emission = alarm
+		hm.emission_energy_multiplier = 3.5
+		cm.material = hm
+		head.mesh = cm
+		pivot.add_child(head)
+		var spot := SpotLight3D.new()
+		spot.light_color = alarm
+		spot.light_energy = 4.5
+		spot.spot_range = maxf(fs.x, fs.y) * 0.9
+		spot.spot_angle = 13.0
+		spot.shadow_enabled = false
+		spot.rotation_degrees = Vector3(-34, 0, 0) # tilt the sweep down into the arena
+		pivot.add_child(spot)
+		var tw := pivot.create_tween().set_loops()
+		tw.tween_property(pivot, "rotation:y", TAU, 13.0 + i * 6.0).as_relative()
+		i += 1
+
+## Open-sky levels get a distant occupied-city ring: dark tower silhouettes
+## with sparse lit window slits beyond the walls, over a ground apron so they
+## don't float on the sky. Visual only — far outside the play space.
+func _build_skyline(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var base := maxf(fs.x, fs.y) * 0.5
+	var apron := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(base * 2.0 + 240.0, base * 2.0 + 240.0)
+	apron.mesh = pm
+	apron.material_override = _color_material(Color(0.05, 0.05, 0.06), 0.95)
+	apron.position = Vector3(0, -0.08, 0)
+	add_child(apron)
+	var body_mat := _color_material(Color(0.07, 0.075, 0.09), 0.9)
+	var win_col := _theme_color(def)
+	var win_mat := StandardMaterial3D.new()
+	win_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	win_mat.albedo_color = win_col
+	win_mat.emission_enabled = true
+	win_mat.emission = win_col
+	win_mat.emission_energy_multiplier = 1.8
+	var steps := 22
+	for s in steps:
+		var ang := TAU * s / steps + randf_range(-0.06, 0.06)
+		var dist := base + randf_range(26.0, 60.0)
+		var w := randf_range(6.0, 14.0)
+		var h := randf_range(8.0, 30.0)
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(w, h, w)
+		bm.material = body_mat
+		mi.mesh = bm
+		mi.position = Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
+		mi.rotation.y = randf_range(0.0, PI)
+		add_child(mi)
+		# Lit window slits: thin emissive columns punched through the tower so
+		# a glowing seam shows on both faces — reads as windows from any angle.
+		for _j in 2:
+			var strip := MeshInstance3D.new()
+			var sm := BoxMesh.new()
+			sm.size = Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14)
+			sm.material = win_mat
+			strip.mesh = sm
+			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
+			mi.add_child(strip)
 
 func _build_accents(def: Dictionary) -> void:
 	for a in def.get("accents", []):
