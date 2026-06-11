@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0fx0muzzle01"]
+[gd_scene load_steps=7 format=3 uid="uid://b0fx0muzzle01"]
 
 [ext_resource type="Script" path="res://scripts/fx/muzzle_flash.gd" id="1_mf"]
 
@@ -14,11 +14,33 @@ radius = 0.08
 height = 0.16
 material = SubResource("StandardMaterial3D_1")
 
+[sub_resource type="BoxMesh" id="BoxMesh_spike_f"]
+size = Vector3(0.025, 0.025, 0.45)
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="BoxMesh" id="BoxMesh_spike_x"]
+size = Vector3(0.4, 0.016, 0.016)
+material = SubResource("StandardMaterial3D_1")
+
+[sub_resource type="BoxMesh" id="BoxMesh_spike_y"]
+size = Vector3(0.016, 0.4, 0.016)
+material = SubResource("StandardMaterial3D_1")
+
 [node name="MuzzleFlash" type="Node3D"]
 script = ExtResource("1_mf")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("SphereMesh_1")
+
+[node name="SpikeForward" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.18)
+mesh = SubResource("BoxMesh_spike_f")
+
+[node name="SpikeX" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_spike_x")
+
+[node name="SpikeY" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_spike_y")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 light_color = Color(1, 0.78, 0.4, 1)

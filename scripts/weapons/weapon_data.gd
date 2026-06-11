@@ -1,7 +1,7 @@
 class_name WeaponData
 extends Resource
 
-enum FireMode { SEMI, AUTO, BURST }
+enum FireMode { SEMI, AUTO, BURST, BEAM } ## BEAM: continuous ray while held — damage ticks at fire_rate, 1 ammo per tick.
 enum DamageType { HITSCAN, PROJECTILE }
 
 @export var display_name: String = "Weapon"

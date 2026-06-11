@@ -1,0 +1,110 @@
+[gd_scene load_steps=15 format=3 uid="uid://b0weap0tesla001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/tesla_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowblue01" path="res://assets/materials/glow_blue.tres" id="6_gb"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_receiver"]
+size = Vector3(0.08, 0.11, 0.36)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="BoxMesh_stock"]
+size = Vector3(0.05, 0.08, 0.18)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.055, 0.16, 0.06)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_battery"]
+size = Vector3(0.06, 0.07, 0.18)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_cell"]
+size = Vector3(0.064, 0.02, 0.12)
+material = ExtResource("6_gb")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rod"]
+top_radius = 0.014
+bottom_radius = 0.014
+height = 0.4
+radial_segments = 10
+material = ExtResource("4_md")
+
+[sub_resource type="TorusMesh" id="TorusMesh_coil"]
+inner_radius = 0.026
+outer_radius = 0.052
+rings = 20
+ring_segments = 10
+material = ExtResource("6_gb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_prong"]
+size = Vector3(0.018, 0.018, 0.24)
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_prongtip"]
+size = Vector3(0.024, 0.024, 0.03)
+material = ExtResource("6_gb")
+
+[node name="Tesla" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_receiver")
+
+[node name="Stock" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.005, 0.25)
+mesh = SubResource("BoxMesh_stock")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.12, 0.05)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Battery" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.085, -0.06)
+mesh = SubResource("BoxMesh_battery")
+
+[node name="BatteryCell" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.09, -0.06)
+mesh = SubResource("BoxMesh_cell")
+
+[node name="Rod" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.38)
+mesh = SubResource("CylinderMesh_rod")
+
+[node name="Coil1" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.28)
+mesh = SubResource("TorusMesh_coil")
+
+[node name="Coil2" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.4)
+mesh = SubResource("TorusMesh_coil")
+
+[node name="Coil3" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.01, -0.52)
+mesh = SubResource("TorusMesh_coil")
+
+[node name="ProngL" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.01, -0.68)
+mesh = SubResource("BoxMesh_prong")
+
+[node name="ProngR" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04, 0.01, -0.68)
+mesh = SubResource("BoxMesh_prong")
+
+[node name="ProngTipL" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04, 0.01, -0.81)
+mesh = SubResource("BoxMesh_prongtip")
+
+[node name="ProngTipR" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04, 0.01, -0.81)
+mesh = SubResource("BoxMesh_prongtip")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -0.82)
