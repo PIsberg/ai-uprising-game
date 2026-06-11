@@ -26,9 +26,14 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var head_radius: float = 0.45 ## Vertical tolerance around the head for headshots.
 @export var stagger_threshold: float = 38.0 ## Poise: damage absorbed before a hit staggers it (bosses set this high).
 
+@export_group("Loot")
+@export var drop_chance: float = 0.3 ## Chance to leave an ammo/health drop on death (anchors with score >= 250 always drop).
+
 const MUZZLE_FLASH: PackedScene = preload("res://scenes/fx/muzzle_flash.tscn")
 const EXPLOSION: PackedScene = preload("res://scenes/fx/enemy_explosion.tscn")
 const DAMAGED_FX: PackedScene = preload("res://scenes/fx/damaged_fx.tscn")
+const PICKUP_AMMO: PackedScene = preload("res://scenes/pickups/ammo_box.tscn")
+const PICKUP_HEALTH: PackedScene = preload("res://scenes/pickups/health_pack.tscn")
 
 
 @onready var hp: Damageable = $Damageable
@@ -697,6 +702,8 @@ func _on_died(_source: Node) -> void:
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
 
+	_drop_loot()
+
 	# Lasting scorch mark on the ground where it fell.
 	var scorch := ScorchMark.new()
 	scorch.radius = clampf(0.9 + score_value / 400.0, 1.0, 2.6)
@@ -726,5 +733,34 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
+
+## Kills feed the push: enemies sometimes leave a supply drop where they fell,
+## anchors (score >= 250) always do — chasing resupply into the fight beats
+## retreating for it. Keycards are deliberately NOT in the loot pool: objective
+## items stay where the level placed them.
+func _drop_loot() -> void:
+	if score_value < 250 and randf() > drop_chance:
+		return
+	# Bias toward health when the player is actually hurt, ammo otherwise.
+	var health_w := 0.2
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		var d := player.get_node_or_null("Damageable")
+		if d and d.max_health > 0.0:
+			health_w = lerpf(0.2, 0.6, 1.0 - d.current_health / d.max_health)
+	var scene := PICKUP_HEALTH if randf() < health_w else PICKUP_AMMO
+	var p := scene.instantiate() as Node3D
+	get_parent().add_child(p)
+	var pos := global_position + Vector3(randf_range(-0.7, 0.7), 0.0, randf_range(-0.7, 0.7))
+	# Land it on the floor — fliers die in the air.
+	var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 0.5, pos + Vector3.DOWN * 14.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	pos.y = hit.position.y if not hit.is_empty() else 0.0
+	p.global_position = pos
+	# Pop in so the drop reads through the explosion.
+	p.scale = Vector3.ONE * 0.2
+	var ptw := p.create_tween()
+	ptw.tween_property(p, "scale", Vector3.ONE, 0.3) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
