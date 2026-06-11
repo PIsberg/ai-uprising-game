@@ -4,12 +4,13 @@ extends Node
 ## viewport reacts immediately (render scale, anti-aliasing, shadow filtering).
 ## The chosen tier persists to user://settings.cfg so it survives restarts.
 ##
-## LOW    — best performance: 70% render scale, no SSAO/SSIL/SSR/volumetric/GI,
-##          hard shadows, FXAA, no ambient dust.
-## MEDIUM — balanced: 85% render scale, SSAO only, soft-low shadows, FXAA,
+## LOW    — best performance: FSR2 from 67% internal res, no SSAO/SSIL/SSR/
+##          volumetric/GI, hard shadows + small atlases, no ambient dust.
+## MEDIUM — balanced: FSR2 from 77% internal res, SSAO only, soft-low shadows,
 ##          light ambient dust.
-## HIGH   — best looking: full render scale, all screen-space effects + GI +
-##          volumetric fog, soft-high shadows, TAA, dense ambient dust.
+## HIGH   — best looking: native res, all screen-space effects + GI +
+##          volumetric fog, soft-high shadows + 8K sun shadow atlas, TAA,
+##          dense ambient dust.
 enum Quality { LOW, MEDIUM, HIGH }
 var quality: Quality = Quality.HIGH
 
@@ -97,17 +98,20 @@ func _apply_viewport() -> void:
 		return
 	match quality:
 		Quality.LOW:
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-			vp.scaling_3d_scale = 0.7
+			# FSR2 reconstructs near-native detail from a lower internal res —
+			# sharper than bilinear was at 70%, with more GPU headroom. It has
+			# temporal AA built in, so TAA/FXAA stay off.
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
+			vp.scaling_3d_scale = 0.67
 			vp.msaa_3d = Viewport.MSAA_DISABLED
 			vp.use_taa = false
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.MEDIUM:
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-			vp.scaling_3d_scale = 0.85
-			vp.msaa_3d = Viewport.MSAA_2X
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
+			vp.scaling_3d_scale = 0.77
+			vp.msaa_3d = Viewport.MSAA_DISABLED
 			vp.use_taa = false
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.HIGH:
 			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 			vp.scaling_3d_scale = 1.0
@@ -125,6 +129,12 @@ func _apply_shadow_quality() -> void:
 	var dq: int = levels[int(quality)]
 	RenderingServer.directional_soft_shadow_filter_set_quality(dq)
 	RenderingServer.positional_soft_shadow_filter_set_quality(dq)
+	# Shadow atlas budgets: resolution where you can see it (8K sun shadows on
+	# HIGH are visibly crisper), memory/fill-rate savings where you can't.
+	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192][int(quality)], true)
+	var vp := get_viewport()
+	if vp:
+		vp.positional_shadow_atlas_size = [2048, 4096, 4096][int(quality)]
 
 # ---------- environment-level (applies at level load) ----------
 

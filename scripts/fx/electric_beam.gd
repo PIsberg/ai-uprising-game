@@ -47,6 +47,8 @@ func _ready() -> void:
 	_core = MeshInstance3D.new()
 	_core.mesh = _core_mesh
 	_core.visible = false
+	# Glow geometry must never render into shadow maps — it's light, not matter.
+	_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_core)
 	_arc_mesh = BoxMesh.new()
 	_arc_mesh.size = Vector3(0.012, 0.012, 1.0)
@@ -55,6 +57,7 @@ func _ready() -> void:
 		var seg := MeshInstance3D.new()
 		seg.mesh = _arc_mesh
 		seg.visible = false
+		seg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(seg)
 		_arcs.append(seg)
 	_impact_light = OmniLight3D.new()
@@ -87,6 +90,7 @@ func _ready() -> void:
 	smat.emission_energy_multiplier = 5.0
 	sm.material = smat
 	_sparks.mesh = sm
+	_sparks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_sparks)
 
 func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:

@@ -103,6 +103,7 @@ func _build_heat_glow() -> void:
 	_heat_mat.emission = Color(1.0, 0.4, 0.08)
 	_heat_mat.emission_energy_multiplier = 0.0
 	_heat_glow.material_override = _heat_mat
+	_heat_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	muzzle.add_child(_heat_glow)
 	_heat_light = OmniLight3D.new()
 	_heat_light.light_color = Color(1.0, 0.45, 0.12)
@@ -288,6 +289,7 @@ func _enemy_hit_pop(pos: Vector3, is_head: bool, dmg: float = 10.0) -> void:
 	mat.emission = col
 	mat.emission_energy_multiplier = 10.0
 	orb.material_override = mat
+	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	scene.add_child(orb)
 	orb.global_position = pos
 	var light := OmniLight3D.new()
@@ -470,6 +472,7 @@ func _energy_muzzle() -> void:
 	mat.emission = col
 	mat.emission_energy_multiplier = 9.0
 	orb.material_override = mat
+	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	muzzle.add_child(orb)
 	var light := OmniLight3D.new()
 	light.light_color = col

@@ -204,17 +204,24 @@ func _build_environment(def: Dictionary) -> void:
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
+	# Shadowed-light budget per tier: every shadowed omni re-renders the scene
+	# up to 6 times, so LOW casts none, MEDIUM only the first two, HIGH all.
+	var shadow_budget := 99
+	if gs and gs.has_method("tier"):
+		shadow_budget = [0, 2, 99][gs.tier()]
+	var li := 0
 	for l in def.get("lights", []):
 		var omni := OmniLight3D.new()
 		omni.position = l["pos"]
 		omni.light_color = l.get("color", Color(1, 1, 1))
 		omni.light_energy = l.get("energy", 2.0)
 		omni.omni_range = l.get("range", 16.0)
-		omni.shadow_enabled = true
+		omni.shadow_enabled = li < shadow_budget
 		omni.shadow_bias = 0.03
 		omni.shadow_blur = 1.5
 		omni.light_specular = 0.6
 		add_child(omni)
+		li += 1
 
 	# Atmospheric ambient bed: wind outdoors, industrial room tone indoors.
 	var amb := "ambience_wind" if def.get("open_sky", false) else "ambience_drone"
@@ -361,6 +368,9 @@ func _add_detail_mesh(mesh: Mesh, pos: Vector3, yaw: float) -> void:
 	mi.mesh = mesh
 	mi.position = pos
 	mi.rotation.y = yaw
+	# Wall-hugging trim: its shadows are invisible but still cost a draw into
+	# every shadowed light's map.
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 
 # ---------- global illumination ----------
@@ -583,6 +593,7 @@ func _build_atmosphere(def: Dictionary) -> void:
 	mat.emission_energy_multiplier = 1.6
 	mesh.material = mat
 	p.mesh = mesh
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.position = Vector3(0, 3.5, 0)
 	add_child(p)
 
@@ -623,6 +634,7 @@ func _build_accent_strips(def: Dictionary) -> void:
 		bm.material = m
 		mi.mesh = bm
 		mi.position = s["pos"]
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
 	var tw := create_tween().set_loops()
 	tw.tween_property(m, "emission_energy_multiplier", 1.7, 2.4) \
@@ -708,6 +720,9 @@ func _build_skyline(def: Dictionary) -> void:
 		mi.mesh = bm
 		mi.position = Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
 		mi.rotation.y = randf_range(0.0, PI)
+		# Pure backdrop: 22 towers drawn into the sun's shadow cascades would be
+		# the most expensive shadows in the game for silhouettes nobody reads.
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
 		# Lit window slits: thin emissive columns punched through the tower so
 		# a glowing seam shows on both faces — reads as windows from any angle.
@@ -718,6 +733,7 @@ func _build_skyline(def: Dictionary) -> void:
 			sm.material = win_mat
 			strip.mesh = sm
 			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
+			strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mi.add_child(strip)
 
 func _build_accents(def: Dictionary) -> void:
@@ -734,6 +750,7 @@ func _build_accents(def: Dictionary) -> void:
 		m.emission_energy_multiplier = 4.0
 		mi.material_override = m
 		mi.position = a["pos"]
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
 
 # ---------- objective / pickups / enemies ----------

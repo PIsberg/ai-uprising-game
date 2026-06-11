@@ -8,6 +8,10 @@ func _ready() -> void:
 	# No two flashes alike: random roll around the bore + per-shot size jitter.
 	rotation.z = randf() * TAU
 	_size = randf_range(0.8, 1.35)
+	for c in get_children():
+		if c is MeshInstance3D:
+			# A flash is light — it must not draw into shadow maps.
+			(c as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func _process(delta: float) -> void:
 	_age += delta
