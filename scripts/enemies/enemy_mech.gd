@@ -12,11 +12,8 @@ extends EnemyBase
 
 var _charging: bool = false
 
-# AnimationTree: locomotion blendspace (idle<->walk) + attack OneShot layered on
-# top, so the mech fires its launcher arm while its legs keep striding.
-@onready var _anim_tree: AnimationTree = $AnimationTree
-var _glow_time: float = 0.0
-var _glow_mat: StandardMaterial3D
+# Visuals/animation come from the imported model on $Model (RobotModel blends
+# idle<->walk and fires the Shoot clip off the recoil spike).
 var _slam_windup: float = 0.0 ## >0 while telegraphing a ground-slam before it lands.
 
 
@@ -35,10 +32,6 @@ func _ready() -> void:
 	hp.armor = 4.0
 	flinch_knockback = 1.2 # Heavy chassis barely budges when shot.
 
-	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
-	get_node("Rig/Hips/Spine/Reactor").material_override = _glow_mat
-	get_node("Rig/Hips/Spine/Eye/EyeMesh").material_override = _glow_mat
-
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
@@ -48,15 +41,6 @@ func _process(delta: float) -> void:
 		_slam_windup -= delta
 		if _slam_windup <= 0.0:
 			_stomp_shockwave()
-	# Reactor glow pulses slowly, flaring on weapon recoil + during a slam windup.
-	_glow_time += delta
-	if _glow_mat:
-		var wind := 8.0 if _slam_windup > 0.0 else 0.0
-		_glow_mat.emission_energy_multiplier = 5.0 + sin(_glow_time * (2.5 + damage_heat * 6.0)) * 1.5 + recoil * 8.0 + damage_heat * 8.0 + (5.0 if is_enraged() else 0.0) + wind
-	# Slow, weighty stride blended by ground speed.
-	var speed := Vector2(velocity.x, velocity.z).length()
-	_anim_tree.set("parameters/Locomotion/blend_position",
-		clampf(speed / move_speed, 0.0, 1.0))
 
 
 func _state_attack(delta: float) -> void:
@@ -161,7 +145,6 @@ func _fire_rocket() -> void:
 	if target == null or muzzle == null or projectile_scene == null:
 		return
 	recoil = 1.0
-	_anim_tree.set("parameters/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_muzzle_flash()
 	var proj := projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)

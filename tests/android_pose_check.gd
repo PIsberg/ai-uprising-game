@@ -1,10 +1,11 @@
 extends Node3D
-## Headless pose regression: the android's hands and rifle must sit in FRONT
-## of the body (-Z, the facing direction), not behind it. Checks both the rest
-## pose (what the briefing cutscene shows) and the animated idle pose.
+## Headless pose regression for the posable helper-robot rig the intro cutscene
+## uses (the combat android now uses an imported model): hands and rifle must
+## sit in FRONT of the body (-Z, the facing direction), not behind it. Checks
+## both the rest pose and the animated idle pose.
 
 func _ready() -> void:
-	var bot: Node3D = load("res://scenes/enemies/android.tscn").instantiate()
+	var bot: Node3D = load("res://scenes/cutscene/helper_robot.tscn").instantiate()
 	add_child(bot)
 	bot.set_physics_process(false)
 	# Rest pose first, like level_briefing.gd shows it.

@@ -23,8 +23,17 @@ var _trigger_held_last: bool = false
 var _viewmodel_home: Vector3
 var _slide_home: Vector3
 var _pump_home: Vector3
+var _mag_home: Vector3
 var _slide_node: Node3D
 var _pump_node: Node3D
+var _mag_node: Node3D
+
+# Continuous-beam (FireMode.BEAM) state: the visual updates every frame while
+# the trigger is held; damage/ammo tick at data.fire_rate.
+var _beam: ElectricBeam
+var _beam_wanted: bool = false
+var _beam_tick: float = 0.0
+var _beam_pop: int = 0
 
 # Barrel heat: rises with every shot, bleeds off when you stop. The muzzle tip
 # glows from a dull ember to a fierce orange as you mag-dump.
@@ -42,15 +51,37 @@ func _ready() -> void:
 		_viewmodel_home = viewmodel.position
 		_slide_node = viewmodel.get_node_or_null("Slide") as Node3D
 		_pump_node = viewmodel.get_node_or_null("Pump") as Node3D
+		_mag_node = viewmodel.get_node_or_null("Magazine") as Node3D
 		if _slide_node:
 			_slide_home = _slide_node.position
 		if _pump_node:
 			_pump_home = _pump_node.position
+		if _mag_node:
+			_mag_home = _mag_node.position
 	if data:
 		mag = data.mag_size
 		reserve = data.reserve_max
 		ammo_changed.emit(mag, reserve)
+	_bevel_viewmodel()
 	_build_heat_glow()
+
+## Swap every plain BoxMesh in the viewmodel for a BeveledBoxMesh of the same
+## size/material. Chamfered edges catch specular highlights, which is most of
+## what separates "machined" from "programmer art" — and doing it here upgrades
+## every weapon scene without touching them.
+func _bevel_viewmodel() -> void:
+	if viewmodel == null:
+		return
+	for n in viewmodel.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		var box := mi.mesh as BoxMesh
+		if box == null:
+			continue
+		var bev := BeveledBoxMesh.new()
+		bev.size = box.size
+		bev.bevel = minf(0.008, box.size[box.size.min_axis_index()] * 0.18)
+		bev.material = box.material
+		mi.mesh = bev
 
 ## A small emissive element pinned at the muzzle tip; alpha/energy ride _heat so
 ## the barrel visibly glows hotter the longer you hold the trigger.
@@ -81,6 +112,7 @@ func _build_heat_glow() -> void:
 
 func _process(delta: float) -> void:
 	_update_heat(delta)
+	_update_beam(delta)
 	if _cooldown > 0.0:
 		_cooldown -= delta
 	if _reloading:
@@ -97,6 +129,17 @@ func _process(delta: float) -> void:
 func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node) -> void:
 	var just_pressed := trigger_down and not _trigger_held_last
 	_trigger_held_last = trigger_down
+	if data and data.fire_mode == WeaponData.FireMode.BEAM:
+		# Beam weapons don't use the shot/cooldown machinery: try_fire just
+		# records intent + context; _update_beam() does the work each frame.
+		_beam_wanted = trigger_down and not _reloading and mag > 0
+		if _beam_wanted:
+			_active_camera = camera
+			_active_shooter = shooter
+			_active_aiming = aiming
+		elif just_pressed and mag <= 0 and not _reloading:
+			_play_empty()
+		return
 	if _reloading or _cooldown > 0.0 or data == null:
 		return
 	if mag <= 0:
@@ -122,6 +165,11 @@ func _fire_once(camera: Camera3D, shooter: Node, aiming: bool) -> void:
 	mag -= 1
 	_cooldown = 1.0 / maxf(0.1, data.fire_rate)
 	ammo_changed.emit(mag, reserve)
+	# Low-mag warning: a dry tick under the report that rises in pitch as the
+	# mag runs down — you hear the reload coming without checking the HUD.
+	var low := ceili(data.mag_size * 0.25)
+	if mag > 0 and mag <= low:
+		AudioBus.play_synth_ui("empty_click", -14.0, 1.3 + 0.9 * (1.0 - float(mag) / float(low)))
 	_active_camera = camera
 	_active_shooter = shooter
 	_active_aiming = aiming
@@ -320,6 +368,62 @@ func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") 
 	if i.has_method("set_surface"):
 		i.set_surface(surface)
 
+## Continuous beam: raycast + redraw the lightning every frame while firing;
+## damage and ammo tick at data.fire_rate (1 cell per tick).
+func _update_beam(delta: float) -> void:
+	if data == null or data.fire_mode != WeaponData.FireMode.BEAM:
+		return
+	if not _beam_wanted or _reloading or mag <= 0 or _active_camera == null or not visible:
+		if _beam:
+			_beam.deactivate()
+		_beam_tick = 0.0 # first tick lands the instant the trigger is pressed
+		return
+	_ensure_beam()
+	# Aim ray from the camera (where the crosshair is), draw from the muzzle.
+	var origin := _active_camera.global_position
+	var dir := -_active_camera.global_transform.basis.z
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(origin, origin + dir * data.range_m)
+	q.collision_mask = 0b0000101 # world + enemy
+	if _active_shooter and _active_shooter is CollisionObject3D:
+		q.exclude = [(_active_shooter as CollisionObject3D).get_rid()]
+	var hit := space.intersect_ray(q)
+	var end_point := origin + dir * data.range_m
+	if not hit.is_empty():
+		end_point = hit.position
+	var from := muzzle.global_position if muzzle else global_position
+	_beam.update_beam(from, end_point, not hit.is_empty())
+	# Damage / ammo / feedback ticks.
+	_beam_tick -= delta
+	if _beam_tick > 0.0:
+		return
+	_beam_tick += 1.0 / maxf(0.1, data.fire_rate)
+	_beam_pop += 1
+	mag -= 1
+	ammo_changed.emit(mag, reserve)
+	GameState.register_shot()
+	_heat = minf(1.0, _heat + 0.06)
+	AudioBus.play_synth_at("drone_shot", from, -12.0, randf_range(1.5, 2.1))
+	if not hit.is_empty():
+		var col := hit.collider as Node
+		var dmg_node: Node = _find_damageable(col) if col else null
+		if dmg_node:
+			dmg_node.apply_damage(data.damage, _active_shooter)
+			# Hit pop on every 4th tick — constant feedback without the FX spam.
+			if _beam_pop % 4 == 0:
+				_enemy_hit_pop(hit.position, false, data.damage * 2.0)
+		elif _beam_pop % 6 == 0:
+			_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
+	fired.emit(self)
+
+func _ensure_beam() -> void:
+	if _beam:
+		return
+	_beam = ElectricBeam.new()
+	add_child(_beam)
+	if data:
+		_beam.set_color(data.tracer_color)
+
 ## Classify a hit surface from collider groups (enemies/destructibles read metal).
 func _surface_of(col: Node, is_enemy: bool) -> String:
 	if is_enemy or col.is_in_group("surf_metal"):
@@ -465,7 +569,33 @@ func start_reload() -> void:
 		var s := _resolve_sound(data.reload_sound, "reload")
 		if s:
 			AudioBus.play_at(s, muzzle.global_position)
+	_play_reload_anim()
 	reload_started.emit(self)
+
+## Visual reload: the gun tilts down toward the chest, the magazine drops out,
+## a fresh one seats with a snap, and the gun levels back out — the whole
+## timeline spans exactly data.reload_time so it never outlives the timer.
+func _play_reload_anim() -> void:
+	if viewmodel == null:
+		return
+	var t: float = maxf(0.6, data.reload_time)
+	var tw := create_tween()
+	tw.tween_property(viewmodel, "rotation:x", -0.45, t * 0.18) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if _mag_node:
+		tw.tween_property(_mag_node, "position", _mag_home + Vector3(0, -0.24, 0.03), t * 0.22) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_interval(t * 0.18)
+		tw.tween_callback(_play_mag_seat_sound)
+		tw.tween_property(_mag_node, "position", _mag_home, t * 0.2) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	else:
+		tw.tween_interval(t * 0.6)
+	tw.tween_property(viewmodel, "rotation:x", 0.0, t * 0.22) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func _play_mag_seat_sound() -> void:
+	AudioBus.play_synth_at("empty_click", global_position, -4.0, 0.7)
 
 func _play_fire_anim() -> void:
 	if viewmodel == null or data == null:
@@ -514,3 +644,6 @@ func on_unequip() -> void:
 	visible = false
 	_burst_remaining = 0
 	_trigger_held_last = false
+	_beam_wanted = false
+	if _beam:
+		_beam.deactivate()

@@ -18,15 +18,11 @@ var _diving: bool = false
 var _dive_timer: float = 2.0
 var _dive_time: float = 0.0
 var _hum_player: AudioStreamPlayer3D
-var _glow_mat: StandardMaterial3D
 var _dying: bool = false        ## True while plummeting after death.
 var _fall_time: float = 0.0
 
 
-@onready var _rotors: Array[Node3D] = [$RotorFL, $RotorFR, $RotorBL, $RotorBR]
-@onready var _body: Node3D = $Body
 @onready var _eye_light: OmniLight3D = $Eye/EyeLight
-var _rotor_spin: float = 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -41,10 +37,6 @@ func _ready() -> void:
 	hp.current_health = max_health
 	_hover_phase = randf() * TAU
 	_setup_hum()
-	
-	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
-	$SensorRing.material_override = _glow_mat
-	$Eye/EyeMesh.material_override = _glow_mat
 	_make_exhaust()
 
 ## A faint world-space thruster trail that streaks behind the drone as it swoops.
@@ -77,21 +69,12 @@ func _make_exhaust() -> void:
 	p.position = Vector3(0, -0.15, 0)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if state == State.DEAD:
 		return
-	# Rotors blur; eye throbs; body banks gently with the hover bob.
-	_rotor_spin += delta * 45.0
-	for r in _rotors:
-		r.rotation.y = _rotor_spin
 	if _eye_light:
 		# Steady throb, plus a bright spike from firing recoil.
 		_eye_light.light_energy = 0.8 + sin(_hover_phase * 3.0) * 0.4 + recoil * 1.5
-	if _body:
-		_body.rotation.z = sin(_hover_phase) * 0.08
-		_body.position.z = recoil * 0.1 # kick backward when it fires
-	if _glow_mat:
-		_glow_mat.emission_energy_multiplier = 4.0 + sin(_hover_phase * 3.0) * 1.5 + recoil * 6.0
 
 
 func _setup_hum() -> void:

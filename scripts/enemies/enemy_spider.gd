@@ -1,12 +1,11 @@
 class_name EnemySpider
 extends EnemyBase
 ## Medium, fast, ground-hugging spider drone. Scuttles up to the player and bites
-## in melee with a short lunge. Legs are generated + animated procedurally.
+## in melee with a short lunge. Visuals are the imported "Trilobite" crawler
+## (RobotModel on $Model drives the Run/Attack clips).
 
 @export var bite_damage: float = 20.0
 @export var lunge_speed: float = 13.5
-@export var leg_count: int = 8
-@export var leg_attach_y: float = 0.42
 
 @export_group("Leap")
 @export var leap_windup: float = 0.45 ## Telegraph time before it springs (your window to shoot).
@@ -16,12 +15,6 @@ extends EnemyBase
 @export var leap_h_speed: float = 13.0
 @export var leap_up: float = 7.5
 
-const LEG_MAT := preload("res://assets/materials/metal_dark.tres")
-
-var _legs: Array[Node3D] = []
-var _leg_rest: Array[Vector3] = []
-var _gait: float = 0.0
-var _glow_mat: StandardMaterial3D
 var _leaping: bool = false
 var _leap_time: float = 0.0
 var _windup: float = 0.0
@@ -43,37 +36,6 @@ func _ready() -> void:
 	score_value = 120
 	hp.max_health = max_health
 	hp.current_health = max_health
-	_build_legs()
-	
-	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
-	$EyeL.material_override = _glow_mat
-	$EyeR.material_override = _glow_mat
-	$EyeC.material_override = _glow_mat
-
-
-func _build_legs() -> void:
-	var per_side := leg_count / 2
-	for i in leg_count:
-		var side := 1.0 if i < per_side else -1.0
-		var idx := i % per_side
-		var yaw := deg_to_rad((55.0 + idx * 30.0) * side)
-		var pivot := Node3D.new()
-		pivot.name = "Leg%d" % i
-		pivot.position = Vector3(0, leg_attach_y, 0)
-		pivot.rotation = Vector3(0, yaw, 0)
-		add_child(pivot)
-		var cap := MeshInstance3D.new()
-		var m := CapsuleMesh.new()
-		m.radius = 0.035
-		m.height = 0.72
-		m.material = LEG_MAT
-		cap.mesh = m
-		# Tilt the leg down-and-outward (local -Z is outward) to a foot.
-		cap.rotation = Vector3(deg_to_rad(-135.0), 0, 0)
-		cap.position = Vector3(0, -0.26, -0.26)
-		pivot.add_child(cap)
-		_legs.append(pivot)
-		_leg_rest.append(pivot.rotation)
 
 # Leap-pounce: scuttles up, crouches into a brief telegraphed windup, then springs
 # in a ballistic arc at the player. The whole pounce is the threat — and the shot
@@ -136,21 +98,11 @@ func _bite_if_close() -> void:
 func _process(delta: float) -> void:
 	if state == State.DEAD:
 		return
-	# Scuttle: alternating legs (rough tripod gait) bob faster as it moves.
-	var speed := Vector2(velocity.x, velocity.z).length()
-	_gait += delta * (7.0 + speed * 2.2)
-	# Tuck legs in mid-leap; otherwise normal gait.
-	var amp := clampf(speed / move_speed, 0.0, 1.0) * 0.45 + 0.04
-	for i in _legs.size():
-		var ph := _gait + (0.0 if i % 2 == 0 else PI)
-		var tuck := 0.5 if _leaping else 0.0
-		_legs[i].rotation = _leg_rest[i] + Vector3(sin(ph) * amp + tuck, 0, 0)
-	if _glow_mat:
-		# Eyes flare bright during the windup — the tell to time your shot.
-		if _windup > 0.0:
-			_glow_mat.emission_energy_multiplier = 14.0
-		else:
-			_glow_mat.emission_energy_multiplier = 4.0 + sin(_gait * 3.0) * 1.5
+	# Eye light flares bright during the windup — the tell to time your shot.
+	var lamp := get_node_or_null("EyeLight") as OmniLight3D
+	if lamp:
+		var goal := 5.0 if _windup > 0.0 else 1.4
+		lamp.light_energy = move_toward(lamp.light_energy, goal, delta * 30.0)
 
 
 func _perform_attack() -> void:

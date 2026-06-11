@@ -3,7 +3,7 @@ extends EnemyBase
 ## A hovering gunship boss. It floats above the arena, tracks the player, and
 ## rakes them with escalating projectile volleys; wounded, it fires faster and
 ## starts vomiting kamikaze Seekers. Three phases keyed to health. Uses the HUD
-## boss bar. Built entirely in code (no rig scene).
+## boss bar. Visuals are a giant imported EyeDrone ($Model in the scene).
 
 @export var fly_height: float = 6.5
 @export var proj_speed: float = 40.0
@@ -16,14 +16,11 @@ const MUZZLES := [
 	Vector3(0.7, -0.2, 1.1), Vector3(-0.7, -0.2, 1.1),
 ]
 
-var _ring: MeshInstance3D
-var _eye_mat: StandardMaterial3D
-var _eye_light: OmniLight3D
 var _summon_cd: float = 0.0
-var _spin: float = 0.0
+
+@onready var _eye_light: OmniLight3D = $EyeLight
 
 func _ready() -> void:
-	_build_model()
 	super._ready()
 	max_health = 1500.0
 	stagger_threshold = 100000.0
@@ -41,83 +38,6 @@ func _ready() -> void:
 	hp.armor = 4.0
 	flinch_knockback = 0.0
 	_do_entrance.call_deferred()
-
-func _build_model() -> void:
-	var model := Node3D.new()
-	model.name = "Model"
-	add_child(model)
-	var dark := StandardMaterial3D.new()
-	dark.albedo_color = Color(0.09, 0.1, 0.13)
-	dark.metallic = 0.7
-	dark.roughness = 0.4
-	# Main disc hull.
-	var hull := MeshInstance3D.new()
-	var hm := CylinderMesh.new()
-	hm.top_radius = 1.0
-	hm.bottom_radius = 1.7
-	hm.height = 0.9
-	hm.radial_segments = 10
-	hull.mesh = hm
-	hull.material_override = dark
-	hull.position = Vector3(0, fly_height, 0)
-	model.add_child(hull)
-	# Upper dome.
-	var dome := MeshInstance3D.new()
-	var dsm := SphereMesh.new()
-	dsm.radius = 0.9
-	dsm.height = 1.1
-	dome.mesh = dsm
-	dome.material_override = dark
-	dome.position = Vector3(0, fly_height + 0.5, 0)
-	model.add_child(dome)
-	# Rotating menace ring.
-	_ring = MeshInstance3D.new()
-	var tm := TorusMesh.new()
-	tm.inner_radius = 1.8
-	tm.outer_radius = 2.1
-	_ring.mesh = tm
-	var rmat := StandardMaterial3D.new()
-	rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	rmat.emission_enabled = true
-	rmat.albedo_color = Color(1.0, 0.3, 0.18)
-	rmat.emission = Color(1.0, 0.32, 0.18)
-	rmat.emission_energy_multiplier = 2.5
-	_ring.material_override = rmat
-	_ring.position = Vector3(0, fly_height - 0.1, 0)
-	model.add_child(_ring)
-	# Big central eye.
-	var eyem := MeshInstance3D.new()
-	var esm := SphereMesh.new()
-	esm.radius = 0.5
-	esm.height = 1.0
-	eyem.mesh = esm
-	_eye_mat = StandardMaterial3D.new()
-	_eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_eye_mat.emission_enabled = true
-	_eye_mat.albedo_color = Color(1.0, 0.25, 0.12)
-	_eye_mat.emission = Color(1.0, 0.3, 0.15)
-	_eye_mat.emission_energy_multiplier = 5.0
-	eyem.material_override = _eye_mat
-	eyem.position = Vector3(0, fly_height, 0.7)
-	model.add_child(eyem)
-
-	var eye_node := Node3D.new()
-	eye_node.name = "Eye"
-	eye_node.position = Vector3(0, fly_height, 0.9)
-	add_child(eye_node)
-	eye = eye_node
-	var mz := Node3D.new()
-	mz.name = "Muzzle"
-	mz.position = Vector3(0, fly_height - 0.1, 1.0)
-	add_child(mz)
-	muzzle = mz
-
-	_eye_light = OmniLight3D.new()
-	_eye_light.light_color = Color(1.0, 0.3, 0.15)
-	_eye_light.light_energy = 4.0
-	_eye_light.omni_range = 9.0
-	_eye_light.position = Vector3(0, fly_height, 0.6)
-	add_child(_eye_light)
 
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
@@ -153,12 +73,9 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 func _process(delta: float) -> void:
 	if state == State.DEAD:
 		return
-	_spin += delta
-	if _ring:
-		_ring.rotation.y = _spin * 1.2
-	if _eye_mat:
-		var ph := _phase()
-		_eye_mat.emission_energy_multiplier = 4.0 + ph * 1.5 + recoil * 6.0
+	# The eye lamp burns hotter each phase and spikes with every volley.
+	if _eye_light:
+		_eye_light.light_energy = 3.0 + float(_phase()) * 1.5 + recoil * 6.0
 	if _summon_cd > 0.0:
 		_summon_cd -= delta
 

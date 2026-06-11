@@ -8,12 +8,11 @@ extends EnemyBase
 @export var block_factor: float = 0.1 ## Fraction of frontal damage that gets through.
 @export var front_cone_dot: float = 0.4 ## How wide the shielded front arc is.
 
-var _eye_mat: StandardMaterial3D
 var _shield_mat: StandardMaterial3D
 var _block_cd: float = 0.0
 
 func _ready() -> void:
-	_build_model()
+	_build_shield()
 	super._ready()
 	max_health = 280.0
 	move_speed = 2.9
@@ -30,59 +29,17 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.armor = 3.0
 
-func _build_model() -> void:
-	var model := Node3D.new()
-	model.name = "Model"
-	add_child(model)
-	var dark := StandardMaterial3D.new()
-	dark.albedo_color = Color(0.13, 0.14, 0.16)
-	dark.metallic = 0.6
-	dark.roughness = 0.5
-	# Bulky torso.
-	var torso := MeshInstance3D.new()
-	var tm := BeveledBoxMesh.new()
-	tm.size = Vector3(1.05, 1.15, 0.7)
-	tm.bevel = 0.05
-	torso.mesh = tm
-	torso.material_override = dark
-	torso.position = Vector3(0, 1.2, 0)
-	model.add_child(torso)
-	# Squat legs.
-	for sx in [-0.34, 0.34]:
-		var leg := MeshInstance3D.new()
-		var lm := BeveledBoxMesh.new()
-		lm.size = Vector3(0.36, 1.0, 0.42)
-		lm.bevel = 0.035
-		leg.mesh = lm
-		leg.material_override = dark
-		leg.position = Vector3(sx, 0.5, 0)
-		model.add_child(leg)
-	# Head + eye.
-	var head := MeshInstance3D.new()
-	var hm := BeveledBoxMesh.new()
-	hm.size = Vector3(0.46, 0.42, 0.46)
-	hm.bevel = 0.03
-	head.mesh = hm
-	head.material_override = dark
-	head.position = Vector3(0, 1.95, 0)
-	model.add_child(head)
-	var eyem := MeshInstance3D.new()
-	var em := BoxMesh.new()
-	em.size = Vector3(0.34, 0.08, 0.05)
-	eyem.mesh = em
-	_eye_mat = StandardMaterial3D.new()
-	_eye_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_eye_mat.emission_enabled = true
-	_eye_mat.albedo_color = Color(1.0, 0.25, 0.12)
-	_eye_mat.emission = Color(1.0, 0.3, 0.15)
-	_eye_mat.emission_energy_multiplier = 5.0
-	eyem.material_override = _eye_mat
-	eyem.position = Vector3(0, 1.95, -0.26)
-	model.add_child(eyem)
+## The chassis itself is the imported "Mike" heavy mech ($Model in the scene);
+## only the gameplay-critical frontal shield slab + glowing rim are code-built,
+## bolted to the body so the protected arc reads at a glance.
+func _build_shield() -> void:
+	var rig := Node3D.new()
+	rig.name = "ShieldRig"
+	add_child(rig)
 	# The big frontal shield slab (faces local -Z, the enemy's front).
 	var shield := MeshInstance3D.new()
 	var shm := BeveledBoxMesh.new()
-	shm.size = Vector3(1.5, 1.7, 0.16)
+	shm.size = Vector3(1.6, 1.8, 0.16)
 	shm.bevel = 0.04
 	shield.mesh = shm
 	var smat := StandardMaterial3D.new()
@@ -90,12 +47,12 @@ func _build_model() -> void:
 	smat.metallic = 0.8
 	smat.roughness = 0.3
 	shield.material_override = smat
-	shield.position = Vector3(0, 1.2, -0.62)
-	model.add_child(shield)
+	shield.position = Vector3(0, 1.3, -0.8)
+	rig.add_child(shield)
 	# Glowing shield rim so the protected face reads at a glance.
 	var rim := MeshInstance3D.new()
 	var rm := BoxMesh.new()
-	rm.size = Vector3(1.62, 1.82, 0.06)
+	rm.size = Vector3(1.72, 1.92, 0.06)
 	rim.mesh = rm
 	_shield_mat = StandardMaterial3D.new()
 	_shield_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -105,14 +62,8 @@ func _build_model() -> void:
 	_shield_mat.emission = Color(0.35, 0.75, 1.0)
 	_shield_mat.emission_energy_multiplier = 2.5
 	rim.material_override = _shield_mat
-	rim.position = Vector3(0, 1.2, -0.68)
-	model.add_child(rim)
-
-	var eye_node := Node3D.new()
-	eye_node.name = "Eye"
-	eye_node.position = Vector3(0, 1.95, -0.3)
-	add_child(eye_node)
-	eye = eye_node
+	rim.position = Vector3(0, 1.3, -0.86)
+	rig.add_child(rim)
 
 ## Frontal shield: damage hitting the front arc is mostly absorbed. Flank it.
 func modify_incoming_damage(amount: float, source: Node) -> float:

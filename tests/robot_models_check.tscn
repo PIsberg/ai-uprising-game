@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://b0test0robotmdl1"]
+
+[ext_resource type="Script" path="res://tests/robot_models_check.gd" id="1_rmc"]
+
+[node name="Root" type="Node3D"]
+script = ExtResource("1_rmc")

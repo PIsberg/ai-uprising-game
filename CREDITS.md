@@ -19,4 +19,15 @@ released under **CC0 1.0** (public domain) — no attribution required, credited
 "Industrial Sunset (Pure Sky)" from **Poly Haven** (https://polyhaven.com/a/industrial_sunset_puresky),
 released under **CC0 1.0** — no attribution required, credited here as courtesy.
 
+### Enemy robot models (`assets/models/robots/`)
+- **"Animated Mech Pack"** (George, Leela, Mike, Stan — used for the colossus,
+  android, brute, and mech) by **Quaternius** (https://quaternius.com),
+  via https://opengameart.org/content/animated-mech-pack.
+- **"Sci-Fi Essentials Kit"** (Enemy_EyeDrone, Enemy_QuadShell, Enemy_Trilobite —
+  used for the drone/seeker/overseer, sniper, and spider) by **Quaternius**
+  (https://quaternius.com), via https://opengameart.org/content/sci-fi-essentials-kit.
+
+Both packs are released under **CC0 1.0** (public domain) — no attribution
+required, credited here as courtesy.
+
 All other models, materials, audio, and code in this project are original.

@@ -15,6 +15,7 @@ signal finished
 const POST_SHADER := preload("res://shaders/post_process.gdshader")
 
 var camera: Camera3D
+var _cam_attr: CameraAttributesPractical
 var _subtitle: Label
 var _title: Label
 var _fade: ColorRect
@@ -94,7 +95,8 @@ func _build_camera() -> void:
 	camera = Camera3D.new()
 	camera.current = true
 	camera.fov = 38.0 # longer lens = compressed, cinematic
-	# Depth-of-field so the subject pops against a soft background.
+	# Depth-of-field so the subject pops against a soft background. Distances are
+	# placeholders — _autofocus() re-aims them at the shot's subject every frame.
 	var attr := CameraAttributesPractical.new()
 	attr.dof_blur_far_enabled = true
 	attr.dof_blur_far_distance = 14.0
@@ -104,6 +106,7 @@ func _build_camera() -> void:
 	attr.dof_blur_near_transition = 1.0
 	attr.dof_blur_amount = 0.12
 	camera.attributes = attr
+	_cam_attr = attr
 	add_child(camera)
 
 func _build_overlay() -> void:
@@ -286,6 +289,19 @@ func _apply_camera(raw: float) -> void:
 	var look := fl.lerp(tl, e)
 	if camera.global_position.distance_to(look) > 0.05:
 		camera.look_at(look, Vector3.UP)
+	_autofocus(_active.get("focus", look))
+
+## Keep the shot's subject sharp: place the DOF focus plane at the look target
+## (or an explicit per-shot `focus` point) instead of fixed lens distances —
+## otherwise wide shots put the subject itself inside the far-blur zone.
+func _autofocus(focus: Vector3) -> void:
+	if _cam_attr == null:
+		return
+	var dist := maxf(camera.global_position.distance_to(focus), 0.5)
+	_cam_attr.dof_blur_far_distance = dist + 3.0
+	_cam_attr.dof_blur_far_transition = maxf(4.0, dist * 0.5)
+	_cam_attr.dof_blur_near_distance = clampf(dist * 0.25, 0.2, 1.5)
+	_cam_attr.dof_blur_near_transition = _cam_attr.dof_blur_near_distance
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _running or _skipped:

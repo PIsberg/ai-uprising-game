@@ -19,14 +19,8 @@ var _dodge_cd: float = 2.0  ## Time until the next evasive sidestep.
 var _dodge_dir: float = 1.0
 var _dodge_time: float = 0.0 ## >0 while mid-juke.
 
-# Skeletal animation via AnimationTree: a locomotion blendspace (idle<->walk by
-# speed) with the attack as a OneShot layered on top, so the android fires its
-# upper body WHILE the legs keep walking (the attack clip only keys arms+spine).
-@onready var _anim_tree: AnimationTree = $AnimationTree
-@onready var _neck: Node3D = $Rig/Hips/Spine/Neck
-var _glow_time: float = 0.0
-var _glow_mat: StandardMaterial3D
-
+# Visuals/animation come from the imported model on $Model (RobotModel drives
+# idle/run blending and fires the Shoot clip off the recoil spike).
 
 func _ready() -> void:
 	super._ready()
@@ -40,26 +34,6 @@ func _ready() -> void:
 	score_value = 150
 	hp.max_health = max_health
 	hp.current_health = max_health
-	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
-	get_node("Rig/Hips/Spine/ChestCore").material_override = _glow_mat
-	get_node("Rig/Hips/Spine/Neck/EyeL").material_override = _glow_mat
-	get_node("Rig/Hips/Spine/Neck/EyeR").material_override = _glow_mat
-
-
-func _process(delta: float) -> void:
-	if state == State.DEAD:
-		return
-	# Eye/core glow pulses gently, flaring on weapon recoil.
-	_glow_time += delta
-	if _glow_mat:
-		var enrage := 4.0 if is_enraged() else 0.0
-		_glow_mat.emission_energy_multiplier = 4.0 + sin(_glow_time * (3.0 + damage_heat * 6.0)) * 1.0 + recoil * 6.0 + damage_heat * 7.0 + enrage
-	# Head tracks the player (no clip keys the neck, so this layers cleanly).
-	track_node_to_target(_neck, delta, 60.0, 30.0, 8.0)
-	# Blend idle<->walk by ground speed; the AnimationTree handles the rest.
-	var speed := Vector2(velocity.x, velocity.z).length()
-	_anim_tree.set("parameters/Locomotion/blend_position",
-		clampf(speed / move_speed, 0.0, 1.0))
 
 
 func _physics_process(delta: float) -> void:
@@ -133,8 +107,6 @@ func _fire_one_shot() -> void:
 	if target == null or muzzle == null:
 		return
 	recoil = 1.0
-	# Fire the upper-body attack OneShot; legs keep walking.
-	_anim_tree.set("parameters/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	if muzzle_flash_scene:
 		var m := muzzle_flash_scene.instantiate()
 		muzzle.add_child(m)

@@ -5,8 +5,9 @@ extends EnemyBase
 ## once wounded, and ground-slams a shockwave when enraged or when you get close.
 ## Uses the HUD boss bar (GameState.announce_boss) and a cinematic entrance.
 ##
-## Built entirely from primitives (no imported model), so animation is whole-body
-## procedural: a heavy stomp bob, a pulsing reactor weak-point, and blazing eyes.
+## Visuals are the imported "George" heavy mech (RobotModel on $Model drives the
+## walk/shoot clips); the pulsing Reactor weak-point sphere and the eye spotlight
+## are scene markers layered on top.
 
 @export var boss_name: String = "GOLIATH-IX"   ## Shown on the HUD boss bar.
 @export var rocket_scene: PackedScene
@@ -32,13 +33,12 @@ extends EnemyBase
 @export var slam_trigger_range: float = 10.0
 @export var slam_cooldown: float = 5.5
 
-@onready var _muzzle_l: Node3D = $Rig/Hips/Spine/ShoulderL/MuzzleL
-@onready var _muzzle_r: Node3D = $Rig/Hips/Spine/ShoulderR/MuzzleR
-@onready var _muzzle_core: Node3D = $Rig/Hips/Spine/MuzzleCore
-@onready var _reactor: MeshInstance3D = $Rig/Hips/Spine/Reactor
-@onready var _eye_light: SpotLight3D = $Rig/Hips/Spine/Head/Eye/EyeLight
-@onready var _anim: AnimationPlayer = $AnimationPlayer
-@onready var _head: Node3D = $Rig/Hips/Spine/Head
+@onready var _muzzle_l: Node3D = $MuzzleL
+@onready var _muzzle_r: Node3D = $MuzzleR
+@onready var _muzzle_core: Node3D = $MuzzleCore
+@onready var _reactor: MeshInstance3D = $Reactor
+@onready var _eye_light: SpotLight3D = $Head/Eye/EyeLight
+@onready var _head: Node3D = $Head
 
 var _walk_phase: float = 0.0
 var _entrance: float = 0.0
@@ -77,11 +77,10 @@ func _ready() -> void:
 	hp.armor = 8.0
 	flinch_knockback = 0.0     # immovable
 	if eye == null:
-		eye = get_node_or_null("Rig/Hips/Spine/Head/Eye")
+		eye = get_node_or_null("Head/Eye")
 	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
 	if _reactor:
 		_reactor.material_override = _glow_mat
-	_anim.play("idle")
 	# Cinematic entrance: power up, invulnerable, alarms + quake.
 	_entrance = 2.0
 	hp.invulnerable = true
@@ -114,15 +113,7 @@ func _process(delta: float) -> void:
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var rate := 2.0 + speed * 1.2
 	_walk_phase += delta * rate
-	# Articulated stride: blend idle<->walk, rate scales with ground speed.
-	if speed > 0.2:
-		if _anim.current_animation != "walk":
-			_anim.play("walk", 0.4)
-		_anim.speed_scale = clampf(0.7 + speed / move_speed * 0.8, 0.7, 1.7)
-	else:
-		if _anim.current_animation != "idle":
-			_anim.play("idle", 0.4)
-		_anim.speed_scale = 1.0
+	# The stride itself is driven by RobotModel on $Model (idle<->walk clips).
 	# The head/eye slowly tracks the player — it watches you across the arena.
 	track_node_to_target(_head, delta, 50.0, 22.0, 2.5)
 	# Reactor weak-point throbs; brighter as it loses health (overloading).

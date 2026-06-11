@@ -12,7 +12,6 @@ var _charging: bool = false
 var _charge_t: float = 0.0
 var _beam: MeshInstance3D
 var _beam_mat: StandardMaterial3D
-var _scope_mat: StandardMaterial3D
 
 func _ready() -> void:
 	max_health = 90.0
@@ -24,88 +23,16 @@ func _ready() -> void:
 	preferred_range = 34.0
 	attack_cooldown = 3.6
 	score_value = 220
-	_build_model()
 	super._ready()
-
-func _build_model() -> void:
-	var model := Node3D.new()
-	model.name = "Model"
-	add_child(model)
-
-	var steel := StandardMaterial3D.new()
-	steel.albedo_color = Color(0.16, 0.17, 0.2)
-	steel.metallic = 0.7
-	steel.roughness = 0.4
-
-	# Tripod legs.
-	for a in [0.0, TAU / 3.0, 2.0 * TAU / 3.0]:
-		var leg := MeshInstance3D.new()
-		var lm := BeveledBoxMesh.new()
-		lm.size = Vector3(0.11, 1.1, 0.11)
-		lm.bevel = 0.012
-		leg.mesh = lm
-		leg.material_override = steel
-		leg.position = Vector3(sin(a) * 0.5, 0.55, cos(a) * 0.5)
-		leg.rotation = Vector3(deg_to_rad(12) * cos(a), a, deg_to_rad(12) * sin(a))
-		model.add_child(leg)
-
-	# Body / housing.
-	var body := MeshInstance3D.new()
-	var bm := BeveledBoxMesh.new()
-	bm.size = Vector3(0.62, 0.45, 0.85)
-	bm.bevel = 0.035
-	body.mesh = bm
-	body.material_override = steel
-	body.position = Vector3(0, 1.25, 0)
-	model.add_child(body)
-
-	# Barrel.
-	var barrel := MeshInstance3D.new()
-	var barm := CylinderMesh.new()
-	barm.top_radius = 0.07
-	barm.bottom_radius = 0.07
-	barm.height = 1.2
-	barrel.mesh = barm
-	barrel.material_override = steel
-	barrel.rotation = Vector3(deg_to_rad(90), 0, 0)
-	barrel.position = Vector3(0, 1.3, -0.7)
-	model.add_child(barrel)
-
-	# Glowing scope/eye (a bright weakpoint that reads at a distance).
-	var scope := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.16
-	sm.height = 0.32
-	scope.mesh = sm
-	_scope_mat = StandardMaterial3D.new()
-	_scope_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_scope_mat.albedo_color = Color(1.0, 0.2, 0.15)
-	_scope_mat.emission_enabled = true
-	_scope_mat.emission = Color(1.0, 0.25, 0.18)
-	_scope_mat.emission_energy_multiplier = 4.0
-	scope.material_override = _scope_mat
-	scope.position = Vector3(0, 1.45, 0.1)
-	model.add_child(scope)
-
-	var eye_node := Node3D.new()
-	eye_node.name = "Eye"
-	eye_node.position = Vector3(0, 1.45, -0.2)
-	add_child(eye_node)
-	eye = eye_node
-
-	var muzzle_node := Node3D.new()
-	muzzle_node.name = "Muzzle"
-	muzzle_node.position = Vector3(0, 1.3, -1.3)
-	add_child(muzzle_node)
-	muzzle = muzzle_node
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_tick_charge(delta)
-	# Pulse the scope; glow brighter as the shot charges.
-	if _scope_mat:
-		var e := 4.0 + (6.0 * (_charge_t / charge_time) if _charging else sin(_state_timer * 3.0))
-		_scope_mat.emission_energy_multiplier = e
+	# The eye lamp glows brighter as the shot charges (the visible weakpoint tell).
+	var lamp := get_node_or_null("Eye/EyeLight") as OmniLight3D
+	if lamp:
+		var goal := 1.5 + (5.0 * (_charge_t / charge_time) if _charging else 0.5 * sin(_state_timer * 3.0))
+		lamp.light_energy = move_toward(lamp.light_energy, goal, delta * 25.0)
 
 ## A stagger interrupts the charge — the shot fizzles and the beam drops.
 func _on_staggered() -> void:
@@ -119,6 +46,10 @@ func _perform_attack() -> void:
 	_charging = true
 	_charge_t = 0.0
 	_ensure_beam()
+	# Crouch into the QuadShell's charge-up clip while the shot builds.
+	var model := get_node_or_null("Model")
+	if model and model.has_method("play_named"):
+		model.play_named("Charge")
 	if has_node("/root/AudioBus"):
 		var ab: Node = get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):

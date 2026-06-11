@@ -125,9 +125,11 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_color = e.get("ambient", Color(0.6, 0.65, 0.75))
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
-	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.85
+	# Darker baseline than the defs ask for: hostile-occupation mood, and it
+	# lets the robots' red menace glow carry the scene lighting.
+	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.62
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 0.92
+	env.tonemap_exposure = 0.88
 	env.tonemap_white = 6.0
 	env.ssao_enabled = true
 	env.ssao_radius = 1.6
@@ -140,14 +142,14 @@ func _build_environment(def: Dictionary) -> void:
 	env.ssr_max_steps = 48
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-	env.glow_intensity = 0.5
+	env.glow_intensity = 0.62
 	env.glow_strength = 0.9
-	env.glow_bloom = 0.03
-	env.glow_hdr_threshold = 1.5 # only HDR highlights/emissives bloom; sky stays crisp
+	env.glow_bloom = 0.05
+	env.glow_hdr_threshold = 1.25 # low enough that enemy emissives halo in the dark
 	env.glow_hdr_scale = 1.0
 	# Soft filmic halo around emissives — narrow kernel keeps the scene crisp.
 	env.set("glow_levels/3", 1.0)
-	env.set("glow_levels/4", 0.4)
+	env.set("glow_levels/4", 0.55)
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
@@ -169,8 +171,8 @@ func _build_environment(def: Dictionary) -> void:
 
 	# Filmic grade: gentle teal shadows / warm highlights, lifted contrast.
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.95
-	env.adjustment_contrast = 1.08
+	env.adjustment_brightness = 0.9
+	env.adjustment_contrast = 1.12
 	env.adjustment_saturation = 1.06
 	
 	# Scalability: the chosen quality tier strips back the most expensive
@@ -186,7 +188,7 @@ func _build_environment(def: Dictionary) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = e.get("sun_rot", Vector3(-50, -40, 0))
 	sun.light_color = e.get("sun_color", Color(1, 0.95, 0.9))
-	sun.light_energy = e.get("sun_energy", 1.0)
+	sun.light_energy = e.get("sun_energy", 1.0) * 0.8 # dimmer key, same per-level character
 	sun.light_angular_distance = 1.2 # sun disc size -> soft penumbra shadows
 	sun.shadow_enabled = true
 	sun.shadow_blur = 1.4
