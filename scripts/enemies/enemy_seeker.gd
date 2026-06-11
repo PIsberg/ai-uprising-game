@@ -13,9 +13,11 @@ extends EnemyBase
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 
 var _detonated: bool = false
-var _eye_light: OmniLight3D
-var _core_mat: StandardMaterial3D
 var _pulse: float = 0.0
+
+## Visuals are a small red-tinted EyeDrone ($Model in the scene). The blinking
+## eye lamp is the blast telegraph.
+@onready var _eye_light: OmniLight3D = $EyeLight
 
 func _ready() -> void:
 	max_health = 28.0
@@ -28,64 +30,7 @@ func _ready() -> void:
 	attack_cooldown = 1.0
 	score_value = 90
 	stagger_threshold = 99999.0 # too fast/fragile to bother staggering
-	_build_model()
 	super._ready()
-
-func _build_model() -> void:
-	var model := Node3D.new()
-	model.name = "Model"
-	add_child(model)
-	# Dark armoured core.
-	var core := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.32
-	sm.height = 0.64
-	core.mesh = sm
-	var cmat := StandardMaterial3D.new()
-	cmat.albedo_color = Color(0.1, 0.1, 0.12)
-	cmat.metallic = 0.7
-	cmat.roughness = 0.4
-	core.material_override = cmat
-	core.position = Vector3(0, 1.0, 0)
-	model.add_child(core)
-	# Warning spikes.
-	for a in [0.0, TAU / 3.0, 2.0 * TAU / 3.0]:
-		var spike := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.06, 0.06, 0.4)
-		spike.mesh = bm
-		spike.material_override = cmat
-		spike.position = Vector3(sin(a) * 0.3, 1.0, cos(a) * 0.3)
-		spike.rotation = Vector3(0, a, 0) # box's local -Z points radially outward
-		model.add_child(spike)
-	# Blinking red eye.
-	var eyem := MeshInstance3D.new()
-	var esm := SphereMesh.new()
-	esm.radius = 0.13
-	esm.height = 0.26
-	eyem.mesh = esm
-	_core_mat = StandardMaterial3D.new()
-	_core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_core_mat.emission_enabled = true
-	_core_mat.albedo_color = Color(1.0, 0.2, 0.12)
-	_core_mat.emission = Color(1.0, 0.25, 0.15)
-	_core_mat.emission_energy_multiplier = 4.0
-	eyem.material_override = _core_mat
-	eyem.position = Vector3(0, 1.0, 0.28)
-	model.add_child(eyem)
-
-	var eye_node := Node3D.new()
-	eye_node.name = "Eye"
-	eye_node.position = Vector3(0, 1.0, 0.3)
-	add_child(eye_node)
-	eye = eye_node
-
-	_eye_light = OmniLight3D.new()
-	_eye_light.light_color = Color(1.0, 0.25, 0.15)
-	_eye_light.light_energy = 2.0
-	_eye_light.omni_range = 4.0
-	_eye_light.position = Vector3(0, 1.0, 0)
-	add_child(_eye_light)
 
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies
@@ -116,14 +61,12 @@ func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
 	super._physics_process(delta)
-	# Blink faster as it closes in.
-	if target and _core_mat:
+	# Blink faster as it closes in — the telegraph to pop it or dodge.
+	if target and _eye_light:
 		var dist := global_position.distance_to(target.global_position)
 		_pulse += delta * clampf(14.0 - dist, 3.0, 22.0)
 		var b := 0.6 + 0.4 * sin(_pulse)
-		_core_mat.emission_energy_multiplier = (3.0 + 8.0 * (1.0 - clampf(dist / 8.0, 0.0, 1.0))) * b
-		if _eye_light:
-			_eye_light.light_energy = 2.0 + 3.0 * b
+		_eye_light.light_energy = (2.0 + 4.0 * (1.0 - clampf(dist / 8.0, 0.0, 1.0))) * b
 	_check_detonate()
 
 func _check_detonate() -> void:

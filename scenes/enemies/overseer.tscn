@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0enemy0overse1"]
+[gd_scene load_steps=5 format=3 uid="uid://b0enemy0overse1"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_overseer.gd" id="1_ov"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://cru0ti7g5r10d" path="res://assets/models/robots/Enemy_EyeDrone.gltf" id="4_model"]
 
 [sub_resource type="CylinderShape3D" id="Shape_ov"]
 radius = 1.6
@@ -15,6 +17,27 @@ script = ExtResource("1_ov")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, 0)
 shape = SubResource("Shape_ov")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+anim_walk = ""
+anim_attack = "Attack"
+anim_stagger = ""
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-4.2, 0, 0, 0, 4.2, 0, 0, 0, -4.2, 0, 6.5, 0)
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.6)
+
+[node name="EyeLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.4)
+light_color = Color(1, 0.3, 0.15, 1)
+light_energy = 4.0
+omni_range = 9.0
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.2, -1.7)
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2_dmg")

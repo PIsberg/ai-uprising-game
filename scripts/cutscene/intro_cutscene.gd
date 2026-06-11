@@ -159,7 +159,9 @@ func _build_lights_and_sky() -> void:
 # ---------- robot factory ----------
 
 func _make_robot(pos: Vector3, scl: float, role: String) -> Node3D:
-	var bot: Node3D = load("res://scenes/enemies/android.tscn").instantiate()
+	# The posable procedural helper-robot rig (the combat android now uses an
+	# imported model with no joint nodes, so the cutscene keeps its own scene).
+	var bot: Node3D = load("res://scenes/cutscene/helper_robot.tscn").instantiate()
 	add_child(bot)
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera (+Z)

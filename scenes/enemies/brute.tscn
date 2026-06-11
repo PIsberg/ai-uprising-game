@@ -1,7 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0enemy0brute01"]
+[gd_scene load_steps=7 format=3 uid="uid://b0enemy0brute01"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_brute.gd" id="1_brute"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://jgd7p7dhdjb1" path="res://assets/models/robots/Mike.fbx" id="4_model"]
+[ext_resource type="Texture2D" uid="uid://d4iyhlvimfmjn" path="res://assets/models/robots/Mike_Texture.png" id="5_tex"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_brute"]
 radius = 0.6
@@ -16,8 +19,25 @@ script = ExtResource("1_brute")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 shape = SubResource("Shape_brute")
 
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+texture = ExtResource("5_tex")
+anim_walk = "Walk"
+anim_attack = "Punch"
+anim_stagger = "HitRecieve_1"
+walk_speed_scale = 1.2
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-0.49, 0, 0, 0, 0.49, 0, 0, 0, -0.49, 0, 0, 0)
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, -0.5)
+
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2_dmg")
 max_health = 280.0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.8
+height = 2.4
+avoidance_enabled = true
