@@ -142,6 +142,8 @@ func _physics_process(delta: float) -> void:
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
 	move_and_slide()
+	_check_landing()
+	_handle_footsteps(delta)
 
 ## Registers the dash action (Q) at runtime so it works without editing the
 ## project input map. Gamepad users dash with the right-stick click is taken;
@@ -155,12 +157,16 @@ func _register_dash_action() -> void:
 
 ## A short, snappy burst in the movement direction (or forward if idle). Works
 ## on the ground or in the air; has a cooldown and a FOV/whoosh kick for punch.
+## The dash window grants i-frames, so it doubles as a dodge — read the rocket,
+## dash through it.
 func _handle_dash(delta: float) -> void:
 	_dash_cd = maxf(0.0, _dash_cd - delta)
 	if _dash_time > 0.0:
 		_dash_time -= delta
 		velocity.x = _dash_dir.x * dash_speed
 		velocity.z = _dash_dir.z * dash_speed
+		if _dash_time <= 0.0:
+			hp.invulnerable = false
 		return
 	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0 and not _sliding:
 		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -170,6 +176,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		hp.invulnerable = true
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
@@ -221,8 +228,6 @@ func _handle_gamepad_look(delta: float) -> void:
 	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult)
 	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign)
 	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
-	_check_landing()
-	_handle_footsteps(delta)
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
