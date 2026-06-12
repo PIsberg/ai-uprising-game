@@ -12,6 +12,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var sight_range: float = 30.0
 @export var sight_angle_deg: float = 110.0
 @export var hearing_range: float = 14.0
+@export var close_sense_range: float = 5.0 ## Within this, sensors ignore the sight cone (LOS ray still applies).
 @export var attack_range: float = 14.0
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
@@ -66,6 +67,7 @@ var _overload_t: float = 0.0
 var _scan_timer: float = 0.0
 var _scan_dir: float = 1.0
 var _has_last_known: bool = false
+var _stuck_time: float = 0.0 ## Seconds spent commanded to move but barely moving (wall-pinned).
 
 # Hit-flash: a per-instance overlay so we never mutate the shared .tres materials.
 var _mesh_instances: Array[MeshInstance3D] = []
@@ -142,6 +144,12 @@ func _perceive() -> void:
 	if target and _can_see(target):
 		_last_known_target_pos = target.global_position
 		_has_last_known = true
+	elif target and _heard(target):
+		# Sensors keep a rough fix on a close target even without eyes-on, so a
+		# chaser that lost the cone (wall-hugging, flanking) re-engages instead
+		# of wandering off its stale last-known point.
+		_last_known_target_pos = target.global_position
+		_has_last_known = true
 
 func _find_player() -> Node3D:
 	var players := get_tree().get_nodes_in_group("player")
@@ -161,10 +169,14 @@ func _can_see(t: Node3D) -> bool:
 	var dist := to.length()
 	if dist > sight_range:
 		return false
-	var forward := -eye.global_transform.basis.z
-	var angle := rad_to_deg(forward.angle_to(to.normalized()))
-	if angle > sight_angle_deg * 0.5:
-		return false
+	# Point-blank, the cone doesn't apply: a robot doesn't ignore a target at
+	# its shoulder just because its nav heading faces a wall. LOS still must
+	# be clear (the raycast below), so this never sees through geometry.
+	if dist > close_sense_range:
+		var forward := -eye.global_transform.basis.z
+		var angle := rad_to_deg(forward.angle_to(to.normalized()))
+		if angle > sight_angle_deg * 0.5:
+			return false
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(eye.global_position, t.global_position + Vector3.UP * 0.8)
 	q.collision_mask = 0b0000011 # world + player
@@ -387,6 +399,22 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 	velocity.x = move_toward(velocity.x, dir.x * spd, 20.0 * delta)
 	velocity.z = move_toward(velocity.z, dir.z * spd, 20.0 * delta)
 	_face_dir(dir, delta)
+	# Stuck recovery: commanded to move but the body isn't actually going
+	# anywhere (pinned on a wall/prop, path point unreachable). After ~0.9s,
+	# break out: pick a fresh flank lane, sidestep hard, and force a replan —
+	# instead of grinding the wall forever.
+	var actual := get_real_velocity()
+	if Vector2(actual.x, actual.z).length() < spd * 0.2:
+		_stuck_time += delta
+	else:
+		_stuck_time = maxf(0.0, _stuck_time - delta * 2.0)
+	if _stuck_time > 0.9:
+		_stuck_time = 0.0
+		_approach_angle = randf() * TAU
+		var side := Vector3(-dir.z, 0.0, dir.x) * (1.0 if randf() < 0.5 else -1.0)
+		velocity += side * spd * 1.3
+		if target:
+			nav_agent.target_position = target.global_position
 
 ## Effective pursuit speed — wounded enemies frenzy and rush faster (up to +45%).
 ## A near-death robot fighting harder: faster, hungrier, glowing with overload.
