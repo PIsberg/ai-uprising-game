@@ -1,7 +1,7 @@
 extends CutscenePlayer
 ## A per-level briefing, built from LevelDefs: sets the mood with the level's own
-## palette, parades the hostiles you'll face (flagging ones you haven't seen
-## before as NEW), and states the objective — then drops into the level.
+## palette, parades only the NEW hostiles this level introduces (familiar ones
+## are skipped), and states the objective — then drops into the level.
 
 const ENEMY_SCENES := {
 	"drone": "res://scenes/enemies/drone.tscn",
@@ -119,17 +119,16 @@ func _build_lights(accent: Color, sun_col: Color) -> void:
 	rim.omni_range = 12.0
 	add_child(rim)
 
-## Pick the level's enemy types (unseen first), line them up, and spawn each as a
-## frozen, lit prop.
+## Line up ONLY the level's NEW (unseen) enemy types as frozen, lit props —
+## familiar robots don't pad the parade. A level with nothing new gets a pure
+## mood-and-objective briefing over the empty stage.
 func _select_and_spawn_hostiles() -> void:
 	var types: Array = []
 	for e in _def.get("enemies", []):
 		var t: String = e.get("type", "")
-		if t != "" and not types.has(t) and ENEMY_INFO.has(t):
+		if t != "" and not types.has(t) and ENEMY_INFO.has(t) \
+				and not GameState.has_seen_enemy(t):
 			types.append(t)
-	# Unseen ("new") hostiles first so they lead the parade.
-	types.sort_custom(func(a, b):
-		return (not GameState.has_seen_enemy(a)) and GameState.has_seen_enemy(b))
 	if types.size() > 4:
 		types = types.slice(0, 4)
 	var n := types.size()
