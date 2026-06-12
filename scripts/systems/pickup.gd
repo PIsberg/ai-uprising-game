@@ -1,7 +1,7 @@
 class_name Pickup
 extends Area3D
 
-enum Kind { HEALTH, AMMO, WEAPON }
+enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK }
 
 @export var kind: Kind = Kind.HEALTH
 @export var amount: int = 25
@@ -24,6 +24,56 @@ func _ready() -> void:
 		_mesh_home_y = _mesh.position.y
 	if _light:
 		_light_base = _light.light_energy
+	if kind == Kind.WEAPON and weapon_scene:
+		_show_weapon_model()
+	_add_blob_shadow()
+
+## A soft dark disc under the pickup. Floating items otherwise read as pasted
+## onto the floor — this grounds them for almost nothing.
+func _add_blob_shadow() -> void:
+	var disc := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.32
+	cm.bottom_radius = 0.32
+	cm.height = 0.01
+	cm.radial_segments = 14
+	cm.rings = 1
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0, 0, 0, 0.4)
+	cm.material = mat
+	disc.mesh = cm
+	disc.position = Vector3(0, 0.025, 0)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(disc)
+
+## Weapon pickups display the ACTUAL gun hovering inside the glow ring instead
+## of the placeholder box: the real weapon scene is instanced (its _ready swaps
+## in the imported model), turned side-on so its profile fills the ring, and
+## auto-fitted from the same length table the viewmodel uses.
+func _show_weapon_model() -> void:
+	if _mesh == null or not _mesh is MeshInstance3D:
+		return
+	(_mesh as MeshInstance3D).mesh = null # drop the placeholder; the ring is a child and stays
+	var inst := weapon_scene.instantiate() as Node3D
+	# Display only: no heat/cooldown ticking, and tween-driven anims stay off.
+	inst.process_mode = Node.PROCESS_MODE_DISABLED
+	_mesh.add_child(inst)
+	var vm := inst.get_node_or_null("Viewmodel") as Node3D
+	if vm:
+		vm.position = Vector3.ZERO # undo the first-person framing offset
+	# Side-on inside the ring; fitted so long rifles don't poke through it.
+	var key := weapon_scene.resource_path.get_file().get_basename()
+	var cfg: Dictionary = Weapon.REAL_MODELS.get(key, {})
+	var glen: float = cfg.get("len", 0.6)
+	var s := minf(1.0, 0.7 / glen)
+	inst.rotation.y = PI * 0.5
+	inst.scale = Vector3.ONE * s
+	# The fitted model spans z in [0.18 - len, 0.18] (rear parked at 0.18), so
+	# shift the gun so its midpoint sits at the ring centre.
+	var center := Vector3(0, 0.0, 0.18 - glen * 0.5)
+	inst.position = -(Basis(Vector3.UP, inst.rotation.y) * center) * s
 
 func _process(delta: float) -> void:
 	rotate_y(delta * 1.2)
@@ -67,5 +117,11 @@ func _on_body_entered(body: Node) -> void:
 				wm.add_weapon(weapon_scene, true) # equip the shiny new gun
 				GameState.unlock_weapon(weapon_scene.resource_path)
 			AudioBus.play_synth_at("pickup_health", global_position, 0.0, 0.7)
+		Kind.OVERCLOCK:
+			GameState.activate_overclock()
+			if body.has_method("notify_pickup"):
+				body.notify_pickup("⚡ OVERCLOCK — ×%d DAMAGE" % int(GameState.OVERCLOCK_MULT))
+			# Triumphant sting: this is a run-the-table moment.
+			AudioBus.play_synth_ui("victory", -8.0, 1.4)
 	_taken = true
 	queue_free()

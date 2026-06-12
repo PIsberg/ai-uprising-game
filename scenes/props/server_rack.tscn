@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://dsrvrack8m3qx"]
+
+[ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_cabinet"]
+albedo_color = Color(0.1, 0.11, 0.13, 1)
+metallic = 0.7
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_face"]
+albedo_color = Color(0.05, 0.06, 0.07, 1)
+metallic = 0.4
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_led_green"]
+albedo_color = Color(0.3, 1.0, 0.5, 1)
+emission_enabled = true
+emission = Color(0.3, 1.0, 0.5, 1)
+emission_energy_multiplier = 3.0
+shading_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="Mat_led_amber"]
+albedo_color = Color(1.0, 0.7, 0.2, 1)
+emission_enabled = true
+emission = Color(1.0, 0.7, 0.2, 1)
+emission_energy_multiplier = 3.0
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="Mesh_cabinet"]
+size = Vector3(0.9, 2.1, 0.8)
+material = SubResource("Mat_cabinet")
+
+[sub_resource type="BoxMesh" id="Mesh_face"]
+size = Vector3(0.8, 1.9, 0.04)
+material = SubResource("Mat_face")
+
+[sub_resource type="BoxMesh" id="Mesh_led_g"]
+size = Vector3(0.5, 0.05, 0.02)
+material = SubResource("Mat_led_green")
+
+[sub_resource type="BoxMesh" id="Mesh_led_a"]
+size = Vector3(0.5, 0.05, 0.02)
+material = SubResource("Mat_led_amber")
+
+[sub_resource type="BoxShape3D" id="Shape_rack"]
+size = Vector3(0.9, 2.1, 0.8)
+
+[node name="ServerRack" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_dest")
+debris_color = Color(0.12, 0.14, 0.18, 1)
+debris_count = 16
+
+[node name="Cabinet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+mesh = SubResource("Mesh_cabinet")
+
+[node name="Face" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0.41)
+mesh = SubResource("Mesh_face")
+
+[node name="Led1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.7, 0.44)
+mesh = SubResource("Mesh_led_g")
+script = ExtResource("3_blink")
+
+[node name="Led2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 1.35, 0.44)
+mesh = SubResource("Mesh_led_a")
+script = ExtResource("3_blink")
+min_on = 0.4
+max_on = 2.2
+
+[node name="Led3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.85, 0.44)
+mesh = SubResource("Mesh_led_g")
+script = ExtResource("3_blink")
+min_on = 0.1
+max_on = 0.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+shape = SubResource("Shape_rack")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 30.0

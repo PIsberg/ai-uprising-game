@@ -12,10 +12,12 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var sight_range: float = 30.0
 @export var sight_angle_deg: float = 110.0
 @export var hearing_range: float = 14.0
+@export var close_sense_range: float = 5.0 ## Within this, sensors ignore the sight cone (LOS ray still applies).
 @export var attack_range: float = 14.0
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
 @export var score_value: int = 100
+var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
 
 @export_group("References")
 @export var eye: Node3D
@@ -65,6 +67,7 @@ var _overload_t: float = 0.0
 var _scan_timer: float = 0.0
 var _scan_dir: float = 1.0
 var _has_last_known: bool = false
+var _stuck_time: float = 0.0 ## Seconds spent commanded to move but barely moving (wall-pinned).
 
 # Hit-flash: a per-instance overlay so we never mutate the shared .tres materials.
 var _mesh_instances: Array[MeshInstance3D] = []
@@ -76,6 +79,11 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_damaged)
+	# Mark this type as encountered when it spawns in an actual level (fixes
+	# hand-authored level_01, whose roster has no def for the briefing to
+	# mark). Gated on a live player so cutscene/briefing actors don't count.
+	if get_tree().get_first_node_in_group("player") != null:
+		GameState.mark_enemy_seen(_kill_label().to_lower())
 	if eye == null:
 		eye = get_node_or_null("Eye")
 	if muzzle == null:
@@ -93,7 +101,8 @@ func _ready() -> void:
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_flash_mat.albedo_color = Color(1, 1, 1, 0)
+	# Red damage blink (robots are neutral-toned until hit).
+	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
 	set_state(State.IDLE)
 
 func _collect_meshes(n: Node) -> void:
@@ -140,6 +149,12 @@ func _perceive() -> void:
 	if target and _can_see(target):
 		_last_known_target_pos = target.global_position
 		_has_last_known = true
+	elif target and _heard(target):
+		# Sensors keep a rough fix on a close target even without eyes-on, so a
+		# chaser that lost the cone (wall-hugging, flanking) re-engages instead
+		# of wandering off its stale last-known point.
+		_last_known_target_pos = target.global_position
+		_has_last_known = true
 
 func _find_player() -> Node3D:
 	var players := get_tree().get_nodes_in_group("player")
@@ -159,10 +174,14 @@ func _can_see(t: Node3D) -> bool:
 	var dist := to.length()
 	if dist > sight_range:
 		return false
-	var forward := -eye.global_transform.basis.z
-	var angle := rad_to_deg(forward.angle_to(to.normalized()))
-	if angle > sight_angle_deg * 0.5:
-		return false
+	# Point-blank, the cone doesn't apply: a robot doesn't ignore a target at
+	# its shoulder just because its nav heading faces a wall. LOS still must
+	# be clear (the raycast below), so this never sees through geometry.
+	if dist > close_sense_range:
+		var forward := -eye.global_transform.basis.z
+		var angle := rad_to_deg(forward.angle_to(to.normalized()))
+		if angle > sight_angle_deg * 0.5:
+			return false
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(eye.global_position, t.global_position + Vector3.UP * 0.8)
 	q.collision_mask = 0b0000011 # world + player
@@ -188,6 +207,16 @@ func set_state(new_state: State) -> void:
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 
+## Speak a TTS robot voice line of the given category (see AudioBus voice
+## clips). Chance-gated here, globally cooldown-gated in AudioBus.
+func _speak(category: String, chance: float = 1.0) -> void:
+	if not has_node("/root/AudioBus"):
+		return
+	var ab: Node = get_node("/root/AudioBus")
+	if ab.has_method("play_voice_at"):
+		var src: Node3D = eye if eye != null else self
+		ab.play_voice_at(category, src.global_position, chance)
+
 ## Brief reaction the instant this enemy first registers the player: a short
 ## comms blip and a bright flare at the eye.
 func _alert() -> void:
@@ -196,6 +225,8 @@ func _alert() -> void:
 		var ab: Node = get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
 			ab.play_synth_at("broadcast_blip", src.global_position, -1.0, 1.35)
+	# Call the contact out loud — mostly a spotting line, sometimes a taunt.
+	_speak("taunt" if randf() < 0.25 else "spot", 0.9)
 	var orb := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = 0.16
@@ -343,6 +374,8 @@ func _state_attack(delta: float) -> void:
 	if _attack_timer <= 0.0:
 		_perform_attack()
 		_attack_timer = attack_cooldown
+		# Occasional combat bark mid-fight (cooldown-gated globally).
+		_speak("taunt" if randf() < 0.35 else "atk", 0.08)
 
 func _state_stagger(_delta: float) -> void:
 	_decelerate()
@@ -371,6 +404,22 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 	velocity.x = move_toward(velocity.x, dir.x * spd, 20.0 * delta)
 	velocity.z = move_toward(velocity.z, dir.z * spd, 20.0 * delta)
 	_face_dir(dir, delta)
+	# Stuck recovery: commanded to move but the body isn't actually going
+	# anywhere (pinned on a wall/prop, path point unreachable). After ~0.9s,
+	# break out: pick a fresh flank lane, sidestep hard, and force a replan —
+	# instead of grinding the wall forever.
+	var actual := get_real_velocity()
+	if Vector2(actual.x, actual.z).length() < spd * 0.2:
+		_stuck_time += delta
+	else:
+		_stuck_time = maxf(0.0, _stuck_time - delta * 2.0)
+	if _stuck_time > 0.9:
+		_stuck_time = 0.0
+		_approach_angle = randf() * TAU
+		var side := Vector3(-dir.z, 0.0, dir.x) * (1.0 if randf() < 0.5 else -1.0)
+		velocity += side * spd * 1.3
+		if target:
+			nav_agent.target_position = target.global_position
 
 ## Effective pursuit speed — wounded enemies frenzy and rush faster (up to +45%).
 ## A near-death robot fighting harder: faster, hungrier, glowing with overload.
@@ -462,7 +511,8 @@ func _kill_label() -> String:
 	var s: Script = get_script()
 	var n: String = String(s.get_global_name()) if s else ""
 	n = n.replace("Enemy", "")
-	return n.to_upper() if n != "" else "HOSTILE"
+	var label := n.to_upper() if n != "" else "HOSTILE"
+	return ("%s %s" % [elite.to_upper(), label]) if elite != "" else label
 
 ## Difficulty-driven inaccuracy cone in degrees (0 = perfectly accurate).
 ## Lower difficulty widens it so robots aim worse; HARD is dead-on.
@@ -520,7 +570,12 @@ func _on_damaged(_amount: float, source: Node) -> void:
 	if state == State.DEAD:
 		return
 	_play_hit_flash()
+	# Matching red flare on the model's emission channel + core light.
+	var rm := _visual_root as RobotModel
+	if rm:
+		rm.damage_blink()
 	_flinch = 1.0
+	_speak("hurt", 0.07)
 	var src_pos := global_position
 	if source and source is Node3D:
 		src_pos = (source as Node3D).global_position
@@ -680,6 +735,8 @@ func _make_damage_sparks() -> CPUParticles3D:
 
 func _on_died(_source: Node) -> void:
 	set_state(State.DEAD)
+	# Dying gasp — bypasses the global voice cooldown so kills get their payoff.
+	_speak("die", 0.45)
 	GameState.add_kill(score_value, _kill_label())
 	# Satisfying slow-mo crunch on heftier player kills (bosses do their own,
 	# bigger one; regular drones/androids stay snappy so swarms don't stutter).
@@ -701,6 +758,7 @@ func _on_died(_source: Node) -> void:
 	var exp_fx := EXPLOSION.instantiate()
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
+	_spawn_part_debris()
 
 	_drop_loot()
 
@@ -733,6 +791,54 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
+
+## Physical wreckage: a handful of armor-plate chunks blasted off the chassis,
+## tumbling with real physics and bouncing off the floor before burning out.
+## One chunk stays ember-hot so the debris reads in the dark. Bigger robots
+## shed more, capped so swarm deaths can't flood the physics server.
+func _spawn_part_debris() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var count := clampi(3 + score_value / 120, 3, 8)
+	for i in count:
+		var chunk := RigidBody3D.new()
+		chunk.collision_layer = 0
+		chunk.collision_mask = 1 # bounce off the world, ghost through actors
+		chunk.mass = 0.4
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		var s := randf_range(0.08, 0.2)
+		bm.size = Vector3(s, s * randf_range(0.3, 0.7), s * randf_range(0.8, 1.6))
+		var mat := StandardMaterial3D.new()
+		if i == 0:
+			# The hot piece: a glowing ember chunk straight from the core.
+			mat.albedo_color = Color(1.0, 0.4, 0.15)
+			mat.emission_enabled = true
+			mat.emission = Color(1.0, 0.45, 0.15)
+			mat.emission_energy_multiplier = 3.0
+		else:
+			mat.albedo_color = Color(0.18, 0.19, 0.22) * randf_range(0.8, 1.3)
+			mat.metallic = 0.7
+			mat.roughness = 0.45
+		bm.material = mat
+		mi.mesh = bm
+		chunk.add_child(mi)
+		var cs := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = bm.size
+		cs.shape = shape
+		chunk.add_child(cs)
+		parent.add_child(chunk)
+		chunk.global_position = global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.6, 1.3), randf_range(-0.3, 0.3))
+		chunk.linear_velocity = Vector3(randf_range(-4.0, 4.0), randf_range(3.0, 7.0), randf_range(-4.0, 4.0))
+		chunk.angular_velocity = Vector3(randf_range(-12, 12), randf_range(-12, 12), randf_range(-12, 12))
+		# Burn out: shrink the visual (never the physics body) after the
+		# bounce settles, then free the whole chunk.
+		var tw := chunk.create_tween()
+		tw.tween_interval(randf_range(1.6, 2.4))
+		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+		tw.tween_callback(chunk.queue_free)
 
 ## Kills feed the push: enemies sometimes leave a supply drop where they fell,
 ## anchors (score >= 250) always do — chasing resupply into the fight beats

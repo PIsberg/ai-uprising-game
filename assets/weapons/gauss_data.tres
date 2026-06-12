@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "ARC-9 Gauss Lance"
+alt_mode = 1
 fire_mode = 0
 damage_type = 0
 damage = 95.0

@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "GEM-2 Twin Rail"
+alt_mode = 2
 fire_mode = 0
 damage_type = 0
 damage = 60.0

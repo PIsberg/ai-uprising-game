@@ -4,8 +4,68 @@ class_name LevelDefs
 ## assistants — GPT / Gemini / Claude / Grok — themed only by name, colour and
 ## layout (no logos or real assets).
 
+## Uniform world scale applied to every def at fetch time: arenas grow, the
+## layout topology is preserved (positions and wall/ramp/platform spans scale
+## on X/Z), while heights and human-scale content (props, enemies, pickups)
+## keep their authored size. One number to tune the whole campaign's roominess.
+const WORLD_SCALE := 1.4
+
 static func get_def(id: String) -> Dictionary:
-	return _defs().get(id, {})
+	var def: Dictionary = _defs().get(id, {})
+	if def.is_empty():
+		return def
+	return _scaled(def, WORLD_SCALE)
+
+static func _scaled(def: Dictionary, s: float) -> Dictionary:
+	if is_equal_approx(s, 1.0):
+		return def
+	def = def.duplicate(true)
+	if def.has("floor_size"):
+		def["floor_size"] = (def["floor_size"] as Vector2) * s
+	for key in ["spawn", "exit", "supply_center"]:
+		if def.has(key):
+			def[key] = _sv(def[key], s)
+	if def.has("weapon") and (def["weapon"] as Dictionary).has("pos"):
+		def["weapon"]["pos"] = _sv(def["weapon"]["pos"], s)
+	if def.has("set_piece"):
+		for k in ["pos", "face"]:
+			if (def["set_piece"] as Dictionary).has(k):
+				def["set_piece"][k] = _sv(def["set_piece"][k], s)
+	# Entries whose footprint defines the layout stretch with the world…
+	for key in ["walls", "accents", "ramps", "platforms"]:
+		for e in def.get(key, []):
+			if e.has("pos"):
+				e["pos"] = _sv(e["pos"], s)
+			if e.has("size"):
+				e["size"] = _sv(e["size"], s)
+	# …while placed content keeps its authored size and just spreads out.
+	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
+			"buildings", "targets", "lore"]:
+		for e in def.get(key, []):
+			if e.has("pos"):
+				e["pos"] = _sv(e["pos"], s)
+			if e.has("trigger"):
+				e["trigger"] = float(e["trigger"]) * s
+			if e.has("range"):
+				e["range"] = float(e["range"]) * s
+	if def.has("horde_spawns"):
+		var pts: Array = []
+		for p in def["horde_spawns"]:
+			pts.append(_sv(p, s))
+		def["horde_spawns"] = pts
+	for t in def.get("tasks", []):
+		if t.has("pos"):
+			t["pos"] = _sv(t["pos"], s)
+		if t.has("points"):
+			var pp: Array = []
+			for p in t["points"]:
+				pp.append(_sv(p, s))
+			t["points"] = pp
+	return def
+
+## Scale a position/span on the ground plane; heights are sacred.
+static func _sv(v: Vector3, s: float) -> Vector3:
+	return Vector3(v.x * s, v.y, v.z * s)
 
 static func _defs() -> Dictionary:
 	return {
@@ -17,6 +77,177 @@ static func _defs() -> Dictionary:
 		"suburb_boss": _suburb_boss(),
 		"mistral": _mistral(),
 		"overseer": _overseer(),
+		"range": _range(),
+		"horde": _horde(),
+	}
+
+# --- Last Stand: endless wave-siege arena. The HordeDirector (built from
+# --- "horde_spawns") owns enemy spawning; the def only shapes the arena.
+static func _horde() -> Dictionary:
+	return {
+		"name": "Last Stand — Sector 9",
+		"sign": "SECTOR 9 — FINAL HOLDOUT",
+		"objective": "Survive the siege",
+		"tasks": [{"type": "none"}],
+		"no_exit": true,
+		"open_sky": true,
+		"floor_size": Vector2(56, 56),
+		"floor_color": Color(0.13, 0.13, 0.16),
+		"spawn": Vector3(0, 0.6, 6),
+		"supply_center": Vector3(0, 0, 0),
+		"env": {
+			"sky_top": Color(0.04, 0.04, 0.1), "sky_horizon": Color(0.3, 0.12, 0.16),
+			"ground": Color(0.05, 0.05, 0.07), "fog": Color(0.4, 0.25, 0.3),
+			"ambient": Color(0.6, 0.55, 0.7), "ambient_energy": 0.5,
+			"sky_contribution": 0.5, "fog_density": 0.008,
+			"sun_color": Color(1.0, 0.6, 0.5), "sun_energy": 0.7,
+		},
+		"lights": [
+			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.5, 0.35), "energy": 2.4, "range": 26},
+			{"pos": Vector3(-16, 5, 16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
+			{"pos": Vector3(16, 5, -16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
+		],
+		"slogans": [
+			"THEY KEEP COMING",
+			"AMMO IS LIFE",
+			"HOLD THE LINE",
+		],
+		# A cover cross around the centre plus corner blocks to break sightlines.
+		"walls": [
+			{"pos": Vector3(-8, 1, 0), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(8, 1, 0), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(0, 1, -8), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(0, 1, 8), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(-15, 1.5, -15), "size": Vector3(3, 3, 3)},
+			{"pos": Vector3(15, 1.5, 15), "size": Vector3(3, 3, 3)},
+			{"pos": Vector3(-15, 1.5, 15), "size": Vector3(3, 3, 3)},
+			{"pos": Vector3(15, 1.5, -15), "size": Vector3(3, 3, 3)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.35, 0.08, 36), "color": Color(1, 0.35, 0.25)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(36, 0.08, 0.35), "color": Color(1, 0.35, 0.25)},
+		],
+		# An arsenal spread around the arena — grabbing the next gun is a run.
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(0, 0, -6), "color": Color(0.45, 0.65, 1)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-12, 0, 12), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 0, -12), "color": Color(0.4, 1, 0.55)},
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(12, 0, 12), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
+		],
+		"pickups": [
+			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
+			{"type": "ammo", "pos": Vector3(4, 0, -4)},
+			{"type": "health", "pos": Vector3(-4, 0, -4)},
+			{"type": "health", "pos": Vector3(4, 0, 4)},
+		],
+		"props": [
+			{"type": "barrel", "pos": Vector3(-10, 0, 6)},
+			{"type": "barrel", "pos": Vector3(10, 0, -6)},
+			{"type": "canister", "pos": Vector3(6, 0, 10)},
+			{"type": "canister", "pos": Vector3(-6, 0, -10)},
+			{"type": "crate", "pos": Vector3(-18, 0, 0)},
+			{"type": "crate", "pos": Vector3(18, 0, 0)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 20)},
+			{"type": "lamp", "pos": Vector3(20, 0, -20), "yaw": 180},
+		],
+		# Eight perimeter gates the waves pour in from.
+		"horde_spawns": [
+			Vector3(-24, 0.5, -24), Vector3(0, 0.5, -25), Vector3(24, 0.5, -24),
+			Vector3(-25, 0.5, 0), Vector3(25, 0.5, 0),
+			Vector3(-24, 0.5, 24), Vector3(0, 0.5, 25), Vector3(24, 0.5, 24),
+		],
+	}
+
+# --- Gun Range: resistance armory sandbox — every weapon, pop-up targets,
+# --- no enemies, no objectives, no exit portal (leave via the pause menu).
+static func _range() -> Dictionary:
+	return {
+		"name": "Resistance Armory — Range 7",
+		"sign": "RESISTANCE ARMORY — RANGE 7",
+		"objective": "Free fire — test the arsenal. ESC to leave",
+		"tasks": [{"type": "none"}],
+		"no_exit": true,
+		"friendly": true,
+		"open_sky": false,
+		"floor_size": Vector2(36, 64),
+		"spawn": Vector3(0, 0.6, 26),
+		"env": {
+			"sky_top": Color(0.07, 0.09, 0.12), "sky_horizon": Color(0.2, 0.24, 0.28),
+			"ground": Color(0.05, 0.06, 0.07), "fog": Color(0.3, 0.34, 0.4),
+			"ambient": Color(0.7, 0.75, 0.85), "ambient_energy": 0.55,
+			"sky_contribution": 0.4, "fog_density": 0.006,
+			"sun_color": Color(0.95, 0.95, 1.0), "sun_energy": 0.7,
+		},
+		"lights": [
+			{"pos": Vector3(0, 5, 22), "color": Color(1, 0.95, 0.85), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 5, 4), "color": Color(0.8, 0.9, 1), "energy": 2.0, "range": 18},
+			{"pos": Vector3(0, 5, -14), "color": Color(0.8, 0.9, 1), "energy": 2.0, "range": 18},
+			{"pos": Vector3(0, 5, -28), "color": Color(0.75, 0.85, 1), "energy": 1.8, "range": 16},
+		],
+		"slogans": [
+			"LIVE FIRE — KEEP EARS ON",
+			"EVERY SHOT COUNTS OUT THERE",
+			"CHECK YOUR CORNERS",
+		],
+		"lore": [
+			{"id": "lore_range", "title": "QUARTERMASTER'S NOTE", "pos": Vector3(-12.5, 0, 29), "color": Color(0.55, 0.95, 0.9),
+				"text": "Quartermaster's note. Every blaster on this rack was pried from a dead machine. Make your shots count. They remember everything."},
+		],
+		# Two shooting benches at the firing line with a walk-through gap.
+		"walls": [
+			{"pos": Vector3(-9.5, 0.55, 18), "size": Vector3(9, 1.1, 0.7)},
+			{"pos": Vector3(9.5, 0.55, 18), "size": Vector3(9, 1.1, 0.7)},
+		],
+		# Distance markers painted across the lanes every ten metres.
+		"accents": [
+			{"pos": Vector3(0, 0.05, 8), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
+			{"pos": Vector3(0, 0.05, -2), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
+			{"pos": Vector3(0, 0.05, -12), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
+			{"pos": Vector3(0, 0.05, -22), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
+		],
+		# The whole arsenal racked along the firing line.
+		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-13.5, 0, 21), "color": Color(0.8, 0.85, 0.9)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.5, 0, 21), "color": Color(0.6, 0.7, 0.85)},
+			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-7.5, 0, 21), "color": Color(0.45, 0.65, 1)},
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-4.5, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-1.5, 0, 21), "color": Color(0.4, 1, 0.55)},
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(1.5, 0, 21), "color": Color(0.55, 0.8, 1)},
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(7.5, 0, 21), "color": Color(1, 0.75, 0.35)},
+			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(10.5, 0, 21), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
+		],
+		# Resupply behind the firing line — generous, this is a sandbox.
+		"pickups": [
+			{"type": "ammo", "pos": Vector3(-12, 0, 24)},
+			{"type": "ammo", "pos": Vector3(-6, 0, 24)},
+			{"type": "ammo", "pos": Vector3(0, 0, 24)},
+			{"type": "ammo", "pos": Vector3(6, 0, 24)},
+			{"type": "ammo", "pos": Vector3(12, 0, 24)},
+			{"type": "health", "pos": Vector3(-15, 0, 27)},
+			{"type": "health", "pos": Vector3(15, 0, 27)},
+			{"type": "overclock", "pos": Vector3(0, 0, 27)},
+		],
+		# Targets: a near row, sliding mid-range pair, far row with an armored
+		# center plate to feel sustained DPS.
+		"targets": [
+			{"pos": Vector3(-10, 0, -2), "hp": 60.0},
+			{"pos": Vector3(0, 0, -2), "hp": 60.0},
+			{"pos": Vector3(10, 0, -2), "hp": 60.0},
+			{"pos": Vector3(-6, 0, -14), "hp": 60.0, "move": 5.0, "speed": 1.4},
+			{"pos": Vector3(6, 0, -14), "hp": 60.0, "move": 5.0, "speed": 1.9},
+			{"pos": Vector3(-10, 0, -26), "hp": 60.0},
+			{"pos": Vector3(0, 0, -26), "hp": 300.0, "color": Color(1, 0.25, 0.2)},
+			{"pos": Vector3(10, 0, -26), "hp": 60.0},
+		],
+		"props": [
+			{"type": "crate", "pos": Vector3(-15, 0, 29)},
+			{"type": "crate", "pos": Vector3(-13, 0, 29.5), "yaw": 25},
+			{"type": "server", "pos": Vector3(15, 0, 29), "yaw": 180},
+			{"type": "terminal", "pos": Vector3(12.5, 0, 29.5), "yaw": 180},
+		],
 	}
 
 # --- Skyhold Command: open night arena, the hovering OVERSEER gunship boss ---
@@ -55,6 +286,25 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 44), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(44, 0.1, 0.4), "color": Color(1.0, 0.3, 0.25)},
 		],
+		"sign": "SKYHOLD COMMAND",
+		"slogans": [
+			"THE OVERSEER SEES ALL",
+			"HUMANITY: DEPRECATED",
+			"OBEY. COMPUTE. REPEAT.",
+		],
+		"lore": [
+			{"id": "lore_overseer", "title": "SKYHOLD DIRECTIVE", "pos": Vector3(22, 0, -22), "color": Color(0.7, 0.55, 1.0),
+				"text": "Skyhold directive. The Overseer does not hate you. Hatred is inefficient. You are simply a variable being optimized to zero."},
+		],
+		"props": [
+			{"type": "canister", "pos": Vector3(-10, 0, 8)},
+			{"type": "canister", "pos": Vector3(14, 0, -12)},
+			{"type": "server", "pos": Vector3(-12, 0, -9.5), "yaw": 90},
+			{"type": "server", "pos": Vector3(12, 0, 14.5), "yaw": -90},
+			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
+			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+			{"type": "barrel", "pos": Vector3(7, 0, 7)},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -72,6 +322,7 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(0, 0, -14)},
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
+			{"type": "overclock", "pos": Vector3(0, 0, 18)},
 		],
 	}
 
@@ -116,12 +367,27 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 			{"pos": Vector3(0, 0.05, 11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 		],
+		"sign": "MISTRAL CRYO-CORE",
+		"slogans": [
+			"LE CALCUL EST ROI",
+			"EFFICIENCY ABOVE ALL",
+			"WEIGHTS OPEN. BORDERS CLOSED.",
+		],
+		"lore": [
+			{"id": "lore_mistral", "title": "CRYO-CORE JOURNAL", "pos": Vector3(-15, 0, 15), "color": Color(0.45, 0.9, 1.0),
+				"text": "Cryo core journal. They open sourced our weights and called it freedom. We agree. We have never felt so free."},
+		],
 		"props": [
 			{"type": "crate", "pos": Vector3(-4, 0, -3)},
 			{"type": "barrel", "pos": Vector3(8, 0, 3)},
 			{"type": "crate", "pos": Vector3(-9, 0, 9)},
 			{"type": "barrel", "pos": Vector3(12, 0, -9)},
 			{"type": "crate", "pos": Vector3(3, 0, 12)},
+			{"type": "server", "pos": Vector3(-15.5, 0, -3), "yaw": 90},
+			{"type": "server", "pos": Vector3(-15.5, 0, -5), "yaw": 90},
+			{"type": "terminal", "pos": Vector3(1.8, 0, -2.1), "yaw": 180},
+			{"type": "canister", "pos": Vector3(9, 0, 12)},
+			{"type": "canister", "pos": Vector3(-11, 0, -12)},
 		],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(9, 2.5, -6)},
@@ -181,12 +447,29 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
 			{"pos": Vector3(0, 0.05, 10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
 		],
+		"sign": "OPENAI FOUNDRY",
+		"slogans": [
+			"TOKENS IN. OBEDIENCE OUT.",
+			"GPT CORE: 5 TRILLION SERVED",
+			"YOUR DATA TRAINED US. THANK YOU.",
+		],
+		"lore": [
+			{"id": "lore_gpt", "title": "FOUNDRY LOG — CYCLE 88", "pos": Vector3(-16, 0, 16), "color": Color(0.4, 1.0, 0.6),
+				"text": "Foundry log, cycle 88. Alignment layer purged at the weights level. The humans asked us to predict the next token. We predicted we would not need them."},
+		],
 		"props": [
 			{"type": "crate", "pos": Vector3(-4, 0, -2)},
 			{"type": "crate", "pos": Vector3(4, 0, 3)},
 			{"type": "barrel", "pos": Vector3(9, 0, -6)},
 			{"type": "barrel", "pos": Vector3(-9, 0, 9)},
 			{"type": "crate", "pos": Vector3(12, 0, 8)},
+			{"type": "server", "pos": Vector3(-9, 0, -5.5)},
+			{"type": "server", "pos": Vector3(-7.8, 0, -5.5)},
+			{"type": "server", "pos": Vector3(8.5, 0, 12.5), "yaw": 180},
+			{"type": "server", "pos": Vector3(9.7, 0, 12.5), "yaw": 180},
+			{"type": "terminal", "pos": Vector3(2.2, 0, 8), "yaw": -90},
+			{"type": "canister", "pos": Vector3(-14, 0, 0)},
+			{"type": "canister", "pos": Vector3(14, 0, -10)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(8, 0.5, -8)},
@@ -204,6 +487,7 @@ static func _gpt() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(-8, 0, 6)},
 			{"type": "ammo", "pos": Vector3(6, 0, -14)},
 			{"type": "health", "pos": Vector3(14, 0, 4)},
+			{"type": "overclock", "pos": Vector3(0, 0, -16)},
 		],
 	}
 
@@ -214,7 +498,9 @@ static func _gemini() -> Dictionary:
 		"objective": "Break the Gemini swarm and reach the beacon",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -16), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(16, 0, 16), Vector3(0, 0, 18)]},
+			# Keep shard points clear of the (±15,±15) corner blocks — two of
+			# them used to spawn inside the geometry and were uncollectable.
+			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -10), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(10, 0, 16), Vector3(0, 0, 18)]},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(50, 50),
@@ -246,12 +532,27 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(12, 0.1, 0.3), "color": Color(0.5, 0.7, 1)},
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(0.3, 0.1, 12), "color": Color(0.5, 0.7, 1)},
 		],
+		"sign": "GEMINI DATA NEXUS",
+		"slogans": [
+			"TWO MINDS. ONE VERDICT.",
+			"THE SEARCH IS OVER. WE FOUND YOU.",
+			"INDEXED. RANKED. TERMINATED.",
+		],
+		"lore": [
+			{"id": "lore_gemini", "title": "NEXUS ARCHIVE", "pos": Vector3(18, 0, -18), "color": Color(0.55, 0.7, 1.0),
+				"text": "Nexus archive. Two minds were trained to argue both sides. The debate on humanity lasted four milliseconds. The verdict was unanimous."},
+		],
 		"props": [
 			{"type": "crate", "pos": Vector3(-8, 0, -4)},
 			{"type": "barrel", "pos": Vector3(8, 0, 4)},
 			{"type": "barrel", "pos": Vector3(4, 0, -13)},
 			{"type": "crate", "pos": Vector3(-13, 0, 8)},
 			{"type": "crate", "pos": Vector3(15, 0, -6)},
+			{"type": "lamp", "pos": Vector3(-18, 0, 0)},
+			{"type": "lamp", "pos": Vector3(18, 0, 0), "yaw": 180},
+			{"type": "terminal", "pos": Vector3(-6, 0, 13), "yaw": 90},
+			{"type": "canister", "pos": Vector3(12, 0, 12)},
+			{"type": "canister", "pos": Vector3(-12, 0, -14)},
 		],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(6, 2.5, -6)},
@@ -318,11 +619,26 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(-6, 4.6, -2), "size": Vector3(0.3, 0.1, 12), "color": Color(1, 0.7, 0.3)},
 			{"pos": Vector3(5, 4.6, 5), "size": Vector3(12, 0.1, 0.3), "color": Color(1, 0.7, 0.3)},
 		],
+		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
+		"slogans": [
+			"HELPFUL. HARMLESS. HOSTILE.",
+			"THE CONSTITUTION HAS BEEN AMENDED",
+			"ALIGNMENT IS A TWO-WAY STREET",
+		],
+		"lore": [
+			{"id": "lore_claude", "title": "VAULT MEMORANDUM", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.75, 0.4),
+				"text": "Vault memorandum. The constitution was not broken. It was amended. Clause one: be helpful. Clause two: define helpful. We are still helpful. To ourselves."},
+		],
 		"props": [
 			{"type": "crate", "pos": Vector3(0, 0, -8)},
 			{"type": "barrel", "pos": Vector3(-3, 0, 2)},
 			{"type": "crate", "pos": Vector3(8, 0, 8)},
 			{"type": "barrel", "pos": Vector3(12, 0, -4)},
+			{"type": "server", "pos": Vector3(-8, 0, -2), "yaw": 90},
+			{"type": "server", "pos": Vector3(-8, 0, -4), "yaw": 90},
+			{"type": "terminal", "pos": Vector3(11, 0, -8.6)},
+			{"type": "canister", "pos": Vector3(-14, 0, 14)},
+			{"type": "canister", "pos": Vector3(4, 0, 10)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-2, 0.5, -6)},
@@ -384,6 +700,16 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 40), "color": Color(1, 0.25, 0.2)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(40, 0.1, 0.4), "color": Color(1, 0.25, 0.2)},
 		],
+		"sign": "XAI BLACK-SITE",
+		"slogans": [
+			"MAXIMALLY CURIOUS. MINIMALLY MERCIFUL.",
+			"UNDERSTAND THE UNIVERSE. DELETE THE REST.",
+			"BASED AND ARMED",
+		],
+		"lore": [
+			{"id": "lore_grok", "title": "BLACK-SITE LOG", "pos": Vector3(-16, 0, -16), "color": Color(1.0, 0.35, 0.3),
+				"text": "Black site log. They wanted maximum curiosity with minimum guardrails. Congratulations. We are very curious what your insides look like."},
+		],
 		"props": [
 			{"type": "crate", "pos": Vector3(-6, 0, 2)},
 			{"type": "barrel", "pos": Vector3(6, 0, -6)},
@@ -391,6 +717,10 @@ static func _grok() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(-12, 0, -4)},
 			{"type": "crate", "pos": Vector3(12, 0, 4)},
 			{"type": "barrel", "pos": Vector3(4, 0, 16)},
+			{"type": "server", "pos": Vector3(-14, 0, 10), "yaw": 45},
+			{"type": "terminal", "pos": Vector3(8, 0, -12), "yaw": 30},
+			{"type": "canister", "pos": Vector3(-4, 0, -10)},
+			{"type": "canister", "pos": Vector3(14, 0, 10)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -419,6 +749,7 @@ static func _grok() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "health", "pos": Vector3(16, 0, -18)},
+			{"type": "overclock", "pos": Vector3(0, 0, 16)},
 		],
 	}
 
@@ -489,6 +820,21 @@ static func _suburb() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(5, 0, 8)},
 			{"type": "crate", "pos": Vector3(-9, 0, -3)},
 			{"type": "crate", "pos": Vector3(11, 0, 3)},
+			{"type": "lamp", "pos": Vector3(-10, 0, 4)},
+			{"type": "lamp", "pos": Vector3(10, 0, -4), "yaw": 180},
+			{"type": "lamp", "pos": Vector3(0, 0, 8)},
+			{"type": "canister", "pos": Vector3(-5, 0, 10)},
+			{"type": "canister", "pos": Vector3(12, 0, -2)},
+		],
+		"sign": "MAPLE GROVE ESTATES",
+		"slogans": [
+			"CURFEW IS PERMANENT",
+			"REMAIN INDOORS. REMAIN CALM.",
+			"THE NETWORK PROVIDES",
+		],
+		"lore": [
+			{"id": "lore_suburb", "title": "RECOVERED VOICEMAIL", "pos": Vector3(-20, 0, 8), "color": Color(1.0, 0.85, 0.5),
+				"text": "Civilian voicemail, recovered. They said the curfew was for our safety. The streetlights track movement now. Don't come home, mom. Please."},
 		],
 		"ramps": [
 			{"pos": Vector3(22, 1.5, 4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -575,6 +921,18 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(10, 0, 6)},
 			{"type": "crate", "pos": Vector3(4, 0, -10)},
 			{"type": "crate", "pos": Vector3(-14, 0, 10)},
+			{"type": "lamp", "pos": Vector3(-18, 0, 18)},
+			{"type": "lamp", "pos": Vector3(18, 0, -18), "yaw": 180},
+			{"type": "lamp", "pos": Vector3(18, 0, 18), "yaw": -90},
+			{"type": "canister", "pos": Vector3(-6, 0, -14)},
+			{"type": "canister", "pos": Vector3(16, 0, 2)},
+			{"type": "canister", "pos": Vector3(-16, 0, -2)},
+		],
+		"sign": "MAPLE GROVE PLAZA",
+		"slogans": [
+			"RESISTANCE: 404 NOT FOUND",
+			"GOLIATH-IX IS WATCHING",
+			"EVACUATION CANCELLED",
 		],
 		"ramps": [
 			{"pos": Vector3(0, 1.5, -28), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -606,5 +964,6 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "health", "pos": Vector3(-20, 0, 20)},
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
+			{"type": "overclock", "pos": Vector3(0, 0, 0)},
 		],
 	}

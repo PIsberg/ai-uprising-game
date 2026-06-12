@@ -1,81 +1,59 @@
 extends CutscenePlayer
 ## Campaign opener with a turn: domestic helper robots go about their chores with
-## calm GREEN eyes and no weapons — then a single signal propagates, the lights
-## die, their eyes burn RED and they draw weapons. Hard cut to the title.
-
-const GUN_PATH := "Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR/HandR/Gun"
-const HAND_R := "Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR/HandR"
-const EYE_L := "Rig/Hips/Spine/Neck/EyeL"
-const EYE_R := "Rig/Hips/Spine/Neck/EyeR"
-const CHEST := "Rig/Hips/Spine/ChestCore"
-
-const POSE_CALM := {
-	"Rig/Hips/Spine": Vector3(-2, 0, 0), "Rig/Hips/Spine/Neck": Vector3(4, 0, 0),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL": Vector3(7, 0, 12),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL/LowerArmL": Vector3(16, 0, 0),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR": Vector3(7, 0, -12),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR": Vector3(16, 0, 0),
-}
-const POSE_SWEEP := {
-	"Rig/Hips/Spine": Vector3(8, 0, 0), "Rig/Hips/Spine/Neck": Vector3(14, 0, 0),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL": Vector3(7, 0, 12),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL/LowerArmL": Vector3(16, 0, 0),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR": Vector3(48, 0, -6),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR": Vector3(22, 0, 0),
-}
-const POSE_CARRY := {
-	"Rig/Hips/Spine": Vector3(-3, 0, 0), "Rig/Hips/Spine/Neck": Vector3(6, 0, 0),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL": Vector3(-46, 0, 16),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL/LowerArmL": Vector3(-34, 0, 0),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR": Vector3(-46, 0, -16),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR": Vector3(-34, 0, 0),
-}
-const POSE_WAVE := {
-	"Rig/Hips/Spine": Vector3(-2, 0, 0), "Rig/Hips/Spine/Neck": Vector3(2, 0, 0),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL": Vector3(7, 0, 12),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL/LowerArmL": Vector3(16, 0, 0),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR": Vector3(-118, 0, -8),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR": Vector3(-26, 0, 0),
-}
-const POSE_ARMED := {
-	"Rig/Hips/Spine": Vector3(-6, 0, 0), "Rig/Hips/Spine/Neck": Vector3(2, 0, 0),
-	# Positive X raises the arms FORWARD (the robot faces -Z, toward the camera),
-	# so the weapons aim at the viewer rather than back into the scene.
-	"Rig/Hips/Spine/ClavicleL/UpperArmL": Vector3(72, 0, 16),
-	"Rig/Hips/Spine/ClavicleL/UpperArmL/LowerArmL": Vector3(10, 0, 0),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR": Vector3(82, 0, -8),
-	"Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR": Vector3(8, 0, 0),
-}
+## calm GREEN auras and no aggression — then a single signal propagates, the
+## lights die, they burn RED and snap into combat stances. Hard cut to the title.
+##
+## The cast is the ACTUAL in-game enemy roster (Quaternius models): the same
+## android/mech/spider/drone the player fights ten seconds later, so the turn
+## lands as "those exact machines". Their imported animation clips do the
+## acting — Idle for the calm, their combat clips after the turn.
 
 const EYE_GREEN := Color(0.25, 1.0, 0.4)
 const EYE_RED := Color(1.0, 0.18, 0.12)
 
+## Cast: enemy scene, the combat clip it snaps to at the turn, and the blaster
+## it picks up from the rack beside it ("" = built-in armament).
+const CAST := {
+	"android": {"scene": "res://scenes/enemies/android.tscn", "attack": "Shoot",
+		"gun": "res://assets/models/weapons/blaster-d.glb", "lamp_y": 0.86, "lamps": 2},
+	"mech": {"scene": "res://scenes/enemies/mech.tscn", "attack": "Punch",
+		"gun": "res://assets/models/weapons/blaster-p.glb", "lamp_y": 0.78, "lamps": 2},
+	"spider": {"scene": "res://scenes/enemies/spider.tscn", "attack": "Attack",
+		"gun": "res://assets/models/weapons/blaster-h.glb", "lamp_y": 0.6, "lamps": 2},
+	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": "", "gun": "",
+		"lamp_y": 0.52, "lamps": 1}, # one central lamp: it IS a flying eye
+}
+
 var _hero: Node3D
 var _eye_light: OmniLight3D
-var _robots: Array = [] # each: {node, mats:[StandardMaterial3D], prop:Node3D, tweens:Array}
+var _robots: Array = [] # each: {node, model, mats:[StandardMaterial3D], attack, tweens:Array}
 
 var _calm_sun: DirectionalLight3D
 var _green_fill: OmniLight3D
 var _menace: OmniLight3D
 var _sky_mat: StandardMaterial3D
+var _turned: bool = false
 
 func _build_set() -> void:
 	_build_ground()
 	_build_plaza()
+	_build_chore_props()
 	_build_lights_and_sky()
-	# Hero, central and a bit larger, calmly idle.
-	_hero = _make_robot(Vector3(0, 0, -2.5), 1.5, "idle")
+	# Hero, central and a bit larger, calmly idle — the player's first android.
+	_hero = _make_robot("android", Vector3(0, 0, -2.5), 1.35)
 	_eye_light = OmniLight3D.new()
 	_eye_light.light_color = EYE_GREEN
 	_eye_light.light_energy = 1.6
 	_eye_light.omni_range = 6.0
 	_eye_light.position = Vector3(0, 2.7, -1.4)
 	add_child(_eye_light)
-	# The helper staff, each busy with a chore.
-	_make_robot(Vector3(-3.0, 0, -3.6), 1.0, "sweep")
-	_make_robot(Vector3(3.0, 0, -3.6), 1.0, "carry")
-	_make_robot(Vector3(-2.2, 0, -0.8), 1.0, "wave")
-	_make_robot(Vector3(2.4, 0, -1.0), 1.0, "idle")
+	# The helper staff, each by its workstation.
+	_make_robot("mech", Vector3(-3.4, 0, -4.6), 0.9)
+	_make_robot("android", Vector3(3.0, 0, -3.6), 1.0)
+	_make_robot("spider", Vector3(-2.2, 0, -0.8), 1.0)
+	# The drone patrols the AIR — high and behind the line, never blocking
+	# the ground cast's framing.
+	_make_robot("drone", Vector3(2.4, 3.3, -4.6), 1.0)
 
 func _build_ground() -> void:
 	var mi := MeshInstance3D.new()
@@ -119,6 +97,52 @@ func _build_plaza() -> void:
 			panel.position = Vector3(col, 3.5, z + face)
 			add_child(panel)
 
+## Domestic set dressing beside each worker: supply crates being moved, a
+## cleaning cart, a service trolley — the chores live in the props now that the
+## cast uses imported rigs that can't be hand-posed.
+func _build_chore_props() -> void:
+	var crate_mat := _flat(Color(0.6, 0.5, 0.35), 0.8)
+	for c in [[Vector3(-4.4, 0.3, -4.4), 0.6], [Vector3(-4.0, 0.9, -4.5), 0.55], [Vector3(-4.9, 0.3, -3.9), 0.62]]:
+		var crate := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3.ONE * c[1]
+		bm.material = crate_mat
+		crate.mesh = bm
+		crate.position = c[0]
+		add_child(crate)
+	# Cleaning cart + leaning mop by the spider (low maintenance unit).
+	var cart := MeshInstance3D.new()
+	var cm := BoxMesh.new()
+	cm.size = Vector3(0.8, 0.7, 0.5)
+	cm.material = _flat(Color(0.75, 0.78, 0.8), 0.6)
+	cart.mesh = cm
+	cart.position = Vector3(-3.1, 0.35, -0.7)
+	add_child(cart)
+	var mop := MeshInstance3D.new()
+	var mm := CylinderMesh.new()
+	mm.top_radius = 0.025
+	mm.bottom_radius = 0.025
+	mm.height = 1.3
+	mm.material = _flat(Color(0.4, 0.28, 0.15), 0.8)
+	mop.mesh = mm
+	mop.position = Vector3(-2.7, 0.75, -0.55)
+	mop.rotation_degrees = Vector3(0, 0, 18)
+	add_child(mop)
+	# Service trolley near the right-hand android.
+	var trolley := MeshInstance3D.new()
+	var tm := BoxMesh.new()
+	tm.size = Vector3(0.9, 0.1, 0.5)
+	tm.material = _flat(Color(0.55, 0.58, 0.62), 0.4)
+	trolley.mesh = tm
+	trolley.position = Vector3(3.9, 0.8, -3.4)
+	add_child(trolley)
+
+func _flat(c: Color, rough: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = c
+	m.roughness = rough
+	return m
+
 func _build_lights_and_sky() -> void:
 	# Calm, cool daylight key (gets killed when it all turns).
 	_calm_sun = DirectionalLight3D.new()
@@ -158,97 +182,137 @@ func _build_lights_and_sky() -> void:
 
 # ---------- robot factory ----------
 
-func _make_robot(pos: Vector3, scl: float, role: String) -> Node3D:
-	# The posable procedural helper-robot rig (the combat android now uses an
-	# imported model with no joint nodes, so the cutscene keeps its own scene).
-	var bot: Node3D = load("res://scenes/cutscene/helper_robot.tscn").instantiate()
+## Spawn an in-game enemy as a cutscene actor: AI/physics off, but the model's
+## own AnimationPlayer keeps the Idle loop alive (RobotModel drives it). The
+## models stay their natural colors — friendliness lives in small green STATUS
+## LAMPS mounted on each robot (the lamps, not the bodies, turn red).
+func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
+	var info: Dictionary = CAST[type]
+	var bot: Node3D = load(info["scene"]).instantiate()
 	add_child(bot)
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera (+Z)
 	bot.scale = Vector3.ONE * scl
 	if bot.has_method("set_physics_process"):
-		bot.set_physics_process(false)
-	var at := bot.get_node_or_null("AnimationTree")
-	if at:
-		at.active = false
-	var ap := bot.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap:
-		ap.stop()
-	# Green eyes + green chest core (per-instance materials so shared resources are
-	# untouched). All of these tween to red at the turn.
-	var mats: Array = []
-	for ep in [EYE_L, EYE_R, CHEST]:
-		var part := bot.get_node_or_null(ep) as MeshInstance3D
-		if part:
-			var m := StandardMaterial3D.new()
-			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			m.albedo_color = EYE_GREEN
-			m.emission_enabled = true
-			m.emission = EYE_GREEN
-			m.emission_energy_multiplier = 3.5 if ep == CHEST else 4.0
-			part.material_override = m
-			mats.append(m)
-	# Unarmed: hide the rig's gun for now.
-	var gun := bot.get_node_or_null(GUN_PATH) as Node3D
-	if gun:
-		gun.visible = false
-	var entry := {"node": bot, "mats": mats, "prop": null, "tweens": []}
-	_setup_chore(entry, role)
+		bot.set_physics_process(false) # no AI — the model node keeps animating
+	var entry := {"node": bot, "model": bot.get_node_or_null("Model"),
+		"mats": [], "lamp_light": null, "eye_lights": [], "weapon": null,
+		"attack": info["attack"], "tweens": []}
+	# The combat scenes ship with RED eye/sensor lights (spider omni, mech
+	# spotlight, drone eye) — hostile dots that clash with the calm phase.
+	# Re-enlist them: green while serving, burned red with everything else.
+	for l in bot.find_children("*", "Light3D", true, false):
+		var lt := l as Light3D
+		lt.light_color = EYE_GREEN
+		lt.light_energy = minf(lt.light_energy, 1.2) # gentle in servitude
+		entry["eye_lights"].append(lt)
+	_add_lamps(bot, entry, info)
+	if info["gun"] != "":
+		_add_rack_gun(bot, entry, info["gun"])
+	# Fliers bob gently; grounded units idle via their animation clip.
+	if type == "drone":
+		var bob := bot.create_tween().set_loops()
+		bob.tween_property(bot, "position:y", pos.y + 0.25, 1.4).set_trans(Tween.TRANS_SINE)
+		bob.tween_property(bot, "position:y", pos.y, 1.4).set_trans(Tween.TRANS_SINE)
+		entry["tweens"].append(bob)
 	_robots.append(entry)
 	return bot
 
-func _setup_chore(entry: Dictionary, role: String) -> void:
+## Merged AABB of a model's meshes in the BOT's local space — every chassis is
+## a different shape, so lamp placement must be measured, not guessed.
+func _local_aabb(bot: Node3D) -> AABB:
+	var inv := bot.global_transform.affine_inverse()
+	var merged := AABB(Vector3(-0.3, 0, -0.3), Vector3(0.6, 1.6, 0.6))
+	var first := true
+	for mi in bot.find_children("*", "MeshInstance3D", true, false):
+		var mesh_inst := mi as MeshInstance3D
+		if mesh_inst.mesh:
+			var ab: AABB = (inv * mesh_inst.global_transform) * mesh_inst.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	return merged
+
+## Status lamps fitted to the chassis: measured height/front-face/width per
+## model (so they sit ON the body, not floating beside it), plus a soft body
+## light. Stored in the entry so the turn can burn them red.
+func _add_lamps(bot: Node3D, entry: Dictionary, info: Dictionary) -> void:
+	var ab := _local_aabb(bot)
+	var lamp_y: float = ab.position.y + ab.size.y * float(info.get("lamp_y", 0.8))
+	# Local front is -Z (the bot is yawed PI to face the camera); sit the lamps
+	# just proud of the front face.
+	var front_z: float = ab.position.z - 0.03
+	var sep: float = clampf(ab.size.x * 0.16, 0.06, 0.16)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = EYE_GREEN
+	mat.emission_enabled = true
+	mat.emission = EYE_GREEN
+	mat.emission_energy_multiplier = 4.0
+	entry["mats"].append(mat)
+	var xs: Array = [-sep, sep] if int(info.get("lamps", 2)) == 2 else [0.0]
+	for x in xs:
+		var lamp := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.05
+		sm.height = 0.1
+		sm.radial_segments = 8
+		sm.rings = 4
+		sm.material = mat
+		lamp.mesh = sm
+		lamp.position = Vector3(x, lamp_y, front_z)
+		lamp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		bot.add_child(lamp)
+	var light := OmniLight3D.new()
+	light.light_color = EYE_GREEN
+	light.light_energy = 0.9
+	light.omni_range = 2.6
+	light.position = Vector3(0, lamp_y * 0.85, front_z - 0.15)
+	bot.add_child(light)
+	entry["lamp_light"] = light
+
+## A blaster resting on a small rack stand beside the robot — unarmed for now;
+## the turn snaps it into the robot's grip.
+func _add_rack_gun(bot: Node3D, entry: Dictionary, gun_path: String) -> void:
+	var stand := MeshInstance3D.new()
+	var sb := BoxMesh.new()
+	sb.size = Vector3(0.5, 0.62, 0.3)
+	sb.material = _flat(Color(0.35, 0.37, 0.42), 0.5)
+	stand.mesh = sb
+	var side := 1.0 if bot.global_position.x >= 0.0 else -1.0
+	stand.position = bot.global_position + Vector3(0.9 * side, 0.31, 0.2)
+	add_child(stand)
+	var gun := (load(gun_path) as PackedScene).instantiate() as Node3D
+	add_child(gun)
+	# Lying flat on the rack, grip up — clearly "stored", not held. Oversized
+	# slightly: these are background props that must read from metres away.
+	gun.scale = Vector3.ONE * 1.3
+	gun.global_position = stand.position + Vector3(0, 0.4, 0)
+	gun.rotation_degrees = Vector3(0, randf_range(-25, 25), 90)
+	entry["weapon"] = gun
+
+## The turn's pickup: a beat after the lamps flip, the rack gun FLIES into the
+## robot's grip and aims at the camera — slow enough to track, with an
+## overshoot snap so the catch reads.
+func _arm(entry: Dictionary) -> void:
+	var gun: Node3D = entry["weapon"]
 	var bot: Node3D = entry["node"]
-	match role:
-		"sweep":
-			_apply_pose(bot, POSE_SWEEP)
-			entry["prop"] = _attach_prop(bot, "Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR/HandR",
-				Vector3(0.05, 1.4, 0.05), Vector3(0, -0.7, 0.1), Color(0.4, 0.28, 0.15))
-		"carry":
-			_apply_pose(bot, POSE_CARRY)
-			entry["prop"] = _attach_prop(bot, "Rig/Hips/Spine", Vector3(0.5, 0.4, 0.4),
-				Vector3(0, 0.4, 0.5), Color(0.6, 0.5, 0.35))
-		"wave":
-			_apply_pose(bot, POSE_WAVE)
-			var fa := bot.get_node_or_null("Rig/Hips/Spine/ClavicleR/UpperArmR/LowerArmR") as Node3D
-			if fa:
-				var tw := fa.create_tween().set_loops()
-				tw.tween_property(fa, "rotation:z", deg_to_rad(22), 0.45)
-				tw.tween_property(fa, "rotation:z", deg_to_rad(-22), 0.45)
-				entry["tweens"].append(tw)
-		_:
-			_apply_pose(bot, POSE_CALM)
-	# A gentle idle bob so the calm scene feels alive.
-	var rig := bot.get_node_or_null("Rig") as Node3D
-	if rig:
-		var base_y: float = rig.position.y
-		var bob := rig.create_tween().set_loops()
-		bob.tween_property(rig, "position:y", base_y + 0.04, 1.1).set_trans(Tween.TRANS_SINE)
-		bob.tween_property(rig, "position:y", base_y, 1.1).set_trans(Tween.TRANS_SINE)
-		entry["tweens"].append(bob)
-
-func _attach_prop(bot: Node3D, parent_path: String, sz: Vector3, off: Vector3, col: Color) -> Node3D:
-	var parent := bot.get_node_or_null(parent_path) as Node3D
-	if parent == null:
-		return null
-	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = sz
-	mi.mesh = bm
-	var m := StandardMaterial3D.new()
-	m.albedo_color = col
-	m.roughness = 0.8
-	mi.material_override = m
-	mi.position = off
-	parent.add_child(mi)
-	return mi
-
-func _apply_pose(bot: Node3D, pose: Dictionary) -> void:
-	for path in pose:
-		var n := bot.get_node_or_null(path) as Node3D
-		if n:
-			var d: Vector3 = pose[path]
-			n.rotation = Vector3(deg_to_rad(d.x), deg_to_rad(d.y), deg_to_rad(d.z))
+	if gun == null or not is_instance_valid(gun):
+		return
+	var xf := gun.global_transform
+	gun.get_parent().remove_child(gun)
+	bot.add_child(gun)
+	gun.global_transform = xf # same world pose, new parent
+	# Counter the parent's scale so the gun keeps its world size in the grip.
+	gun.scale = Vector3.ONE * (1.3 / maxf(bot.scale.x, 0.01))
+	var ab := _local_aabb(bot)
+	var hold := Vector3(0.28, ab.position.y + ab.size.y * 0.72, ab.position.z - 0.3)
+	var tw := gun.create_tween()
+	tw.tween_interval(0.25) # let the red lamps land first, then the grab
+	tw.set_parallel(true)
+	tw.tween_property(gun, "position", hold, 0.55) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(gun, "rotation", Vector3.ZERO, 0.55) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 # ---------- choreography ----------
 
@@ -262,8 +326,9 @@ func _flicker() -> void:
 	if has_node("/root/AudioBus"):
 		AudioBus.play_synth_at("broadcast_blip", _hero.global_position, 0.0, 0.5)
 
-## THE TURN: lights die, eyes go red, weapons come up.
+## THE TURN: lights die, auras burn red, the cast snaps into combat clips.
 func _the_turn() -> void:
+	_turned = true
 	screen_flash(1.0)
 	shake_camera(0.8)
 	if has_node("/root/AudioBus"):
@@ -278,74 +343,55 @@ func _the_turn() -> void:
 	tw.tween_property(_sky_mat, "emission", Color(0.7, 0.16, 0.06), 0.7)
 	tw.tween_property(_sky_mat, "albedo_color", Color(0.6, 0.14, 0.06), 0.7)
 	tw.tween_property(_eye_light, "light_color", EYE_RED, 0.4)
-	# Each robot: stop chores, eyes green->red, draw weapon, snap to a battle stance.
+	# Each robot: drop the chore, status lamps green->red, GRAB the rack gun,
+	# snap to its combat clip and keep re-striking it through the title card.
 	for entry in _robots:
 		var bot: Node3D = entry["node"]
 		for t in entry["tweens"]:
 			if t and t.is_valid():
 				t.kill()
-		if entry["prop"] and is_instance_valid(entry["prop"]):
-			entry["prop"].queue_free()
-		_apply_pose(bot, POSE_ARMED)
-		_attach_weapon(bot)
 		for m in entry["mats"]:
 			var mat: StandardMaterial3D = m
 			var et := create_tween()
 			et.set_parallel(true)
-			et.tween_property(mat, "emission", EYE_RED, 0.5)
-			et.tween_property(mat, "albedo_color", EYE_RED, 0.5)
+			et.tween_property(mat, "emission", EYE_RED, 0.45)
+			et.tween_property(mat, "albedo_color", EYE_RED, 0.45)
+			et.tween_property(mat, "emission_energy_multiplier", 5.5, 0.45)
+		var lamp_light: OmniLight3D = entry["lamp_light"]
+		if lamp_light:
+			var lt := create_tween()
+			lt.set_parallel(true)
+			lt.tween_property(lamp_light, "light_color", EYE_RED, 0.45)
+			lt.tween_property(lamp_light, "light_energy", 1.8, 0.45)
+		# The combat eye/sensor lights flare back to their hostile red.
+		for el in entry["eye_lights"]:
+			if is_instance_valid(el):
+				var et2 := create_tween()
+				et2.set_parallel(true)
+				et2.tween_property(el, "light_color", EYE_RED, 0.45)
+				et2.tween_property(el, "light_energy", 2.2, 0.45)
+		_arm(entry)
+		_strike(entry)
+		# A menacing step toward the camera, staggered so the line surges.
+		var step := bot.create_tween()
+		step.tween_interval(randf_range(0.1, 0.5))
+		step.tween_property(bot, "position:z",
+			bot.position.z + randf_range(0.35, 0.7), 1.6) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
-## A clearly-readable rifle in the right hand: a pale metal body that stands out
-## against the red robots, with a glowing muzzle. Extends forward along the arm.
-func _attach_weapon(bot: Node3D) -> void:
-	var hand := bot.get_node_or_null(HAND_R) as Node3D
-	if hand == null:
+## Fire the combat clip, and again every couple of seconds while the scene runs.
+func _strike(entry: Dictionary) -> void:
+	if not _turned or not is_instance_valid(entry["node"]) or not is_inside_tree():
 		return
-	var gun := Node3D.new()
-	hand.add_child(gun)
-	gun.position = Vector3(0.05, -0.15, 0.06)
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.42, 0.44, 0.5)
-	metal.metallic = 0.8
-	metal.roughness = 0.35
-	# Barrel/body running forward (down the arm = -Y).
-	var body := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.14, 0.85, 0.16)
-	body.mesh = bm
-	body.material_override = metal
-	body.position = Vector3(0, -0.4, 0)
-	gun.add_child(body)
-	# Stock/grip block near the hand.
-	var grip := MeshInstance3D.new()
-	var gm := BoxMesh.new()
-	gm.size = Vector3(0.16, 0.22, 0.34)
-	grip.mesh = gm
-	grip.material_override = metal
-	grip.position = Vector3(0, -0.12, -0.12)
-	gun.add_child(grip)
-	# A magazine for read.
-	var mag := MeshInstance3D.new()
-	var mgm := BoxMesh.new()
-	mgm.size = Vector3(0.1, 0.28, 0.12)
-	mag.mesh = mgm
-	mag.material_override = metal
-	mag.position = Vector3(0, -0.3, -0.16)
-	gun.add_child(mag)
-	# Glowing muzzle so the weapon reads even in silhouette.
-	var tip := MeshInstance3D.new()
-	var tm := BoxMesh.new()
-	tm.size = Vector3(0.1, 0.16, 0.12)
-	tip.mesh = tm
-	var tmat := StandardMaterial3D.new()
-	tmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	tmat.emission_enabled = true
-	tmat.albedo_color = Color(1.0, 0.85, 0.4)
-	tmat.emission = Color(1.0, 0.7, 0.3)
-	tmat.emission_energy_multiplier = 5.0
-	tip.mesh.material = tmat
-	tip.position = Vector3(0, -0.85, 0)
-	gun.add_child(tip)
+	var model: Node = entry["model"]
+	var clip: String = entry["attack"]
+	if model and clip != "" and model.has_method("play_named"):
+		model.play_named(clip, 0.15)
+	# Scene-tree timers outlive a freed cutscene; re-validate before striking.
+	var t := get_tree().create_timer(randf_range(1.6, 2.4))
+	t.timeout.connect(func():
+		if is_instance_valid(self) and is_inside_tree():
+			_strike(entry))
 
 func _shots() -> Array:
 	return [

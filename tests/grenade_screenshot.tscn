@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cgrenadeshot1"]
+
+[ext_resource type="Script" path="res://tests/grenade_screenshot.gd" id="1_s"]
+
+[node name="GrenadeScreenshot" type="Node3D"]
+script = ExtResource("1_s")

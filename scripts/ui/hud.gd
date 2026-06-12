@@ -62,6 +62,9 @@ func _ready() -> void:
 	toast.modulate.a = 0.0
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
+	_build_ammo_block()
+	_build_overclock_label()
+	GameState.overclock_changed.connect(_on_overclock_changed)
 	var player := get_tree().get_first_node_in_group("player") as Player
 	_player_ref = player
 	if _dmg_indicator and _dmg_indicator.has_method("setup"):
@@ -338,6 +341,31 @@ func _refresh_pause_graphics() -> void:
 	if pause_graphics:
 		pause_graphics.text = "Graphics: %s" % GraphicsSettings.quality_label()
 
+# ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
+
+var _overclock_lbl: Label
+
+func _build_overclock_label() -> void:
+	_overclock_lbl = Label.new()
+	_overclock_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	_overclock_lbl.position += Vector2(-110, 70) # just under the crosshair
+	_overclock_lbl.custom_minimum_size = Vector2(220, 0)
+	_overclock_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overclock_lbl.add_theme_font_size_override("font_size", 22)
+	_overclock_lbl.add_theme_color_override("font_color", Color(0.85, 0.45, 1.0))
+	_overclock_lbl.visible = false
+	add_child(_overclock_lbl)
+
+func _on_overclock_changed(left: float) -> void:
+	if _overclock_lbl == null:
+		return
+	_overclock_lbl.visible = left > 0.0
+	if left <= 0.0:
+		return
+	_overclock_lbl.text = "⚡ OVERCLOCK ×%d — %d" % [int(GameState.OVERCLOCK_MULT), ceili(left)]
+	# Urgency blink over the final seconds.
+	_overclock_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
+
 func set_objective(text: String) -> void:
 	_objective_base = text
 	_render_objective()
@@ -366,16 +394,99 @@ func _on_health_changed(cur: float, max_: float) -> void:
 	health_label.text = "%d / %d" % [int(cur), int(max_)]
 	_hp_ratio = cur / maxf(1.0, max_)
 
+# ---------- ammo block: big numerals + segmented mag bar + grenade pips ----------
+
+const AMMO_SEGS := 12
+var _ammo_big: Label
+var _ammo_small: Label
+var _segs: Array[ColorRect] = []
+var _pips: Array[ColorRect] = []
+
+## Replaces the plain "14 / 84" text with a glanceable block: the weapon name
+## small on top, the magazine count BIG (tinted by the weapon, amber when low,
+## pulsing red when dry), the reserve beside it, a segmented bar that empties
+## with the mag, and diamond pips for grenades.
+func _build_ammo_block() -> void:
+	ammo_label.visible = false
+	grenade_label.visible = false
+	var br := ammo_label.get_parent()
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	br.add_child(box)
+	# The weapon name rides on top of the block, small and dim.
+	br.remove_child(weapon_label)
+	box.add_child(weapon_label)
+	weapon_label.add_theme_font_size_override("font_size", 14)
+	weapon_label.modulate = Color(1, 1, 1, 0.7)
+	weapon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var nums := HBoxContainer.new()
+	nums.alignment = BoxContainer.ALIGNMENT_END
+	nums.add_theme_constant_override("separation", 6)
+	box.add_child(nums)
+	_ammo_big = Label.new()
+	_ammo_big.add_theme_font_size_override("font_size", 34)
+	nums.add_child(_ammo_big)
+	_ammo_small = Label.new()
+	_ammo_small.add_theme_font_size_override("font_size", 16)
+	_ammo_small.modulate = Color(1, 1, 1, 0.55)
+	_ammo_small.size_flags_vertical = Control.SIZE_SHRINK_END
+	nums.add_child(_ammo_small)
+	var segs := HBoxContainer.new()
+	segs.alignment = BoxContainer.ALIGNMENT_END
+	segs.add_theme_constant_override("separation", 2)
+	box.add_child(segs)
+	for i in AMMO_SEGS:
+		var seg := ColorRect.new()
+		seg.custom_minimum_size = Vector2(13, 7)
+		seg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		segs.add_child(seg)
+		_segs.append(seg)
+	var pips := HBoxContainer.new()
+	pips.alignment = BoxContainer.ALIGNMENT_END
+	pips.add_theme_constant_override("separation", 5)
+	box.add_child(pips)
+	var glabel := Label.new()
+	glabel.text = "G "
+	glabel.add_theme_font_size_override("font_size", 12)
+	glabel.modulate = Color(1, 1, 1, 0.5)
+	pips.add_child(glabel)
+	for i in 3:
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(9, 9)
+		pip.pivot_offset = Vector2(4.5, 4.5)
+		pip.rotation_degrees = 45.0 # diamond
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pips.add_child(pip)
+		_pips.append(pip)
+	_refresh_ammo_visual(0)
+
+func _refresh_ammo_visual(reserve: int) -> void:
+	if _ammo_big == null:
+		return
+	var ratio := float(_mag) / float(maxi(1, _mag_size))
+	var col := _reticle_base
+	if _mag <= 0:
+		col = Color(1.0, 0.25, 0.2)
+	elif ratio <= 0.3:
+		col = Color(1.0, 0.7, 0.25)
+	_ammo_big.text = str(_mag)
+	_ammo_big.modulate = col
+	_ammo_small.text = "/ %d" % reserve
+	var lit := ceili(ratio * AMMO_SEGS)
+	for i in AMMO_SEGS:
+		_segs[i].color = col if i < lit else Color(1, 1, 1, 0.13)
+
 func _on_ammo_changed(mag: int, reserve: int) -> void:
-	ammo_label.text = "%d / %d" % [mag, reserve]
 	_mag = mag
+	_refresh_ammo_visual(reserve)
 
 func _on_weapon_changed(w: Weapon) -> void:
 	if w and w.data:
 		weapon_label.text = w.data.display_name
-		_mag_size = maxi(1, w.data.mag_size)
+		_mag_size = maxi(1, w.eff_mag_size()) # upgrades grow the bar's full scale
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)
+		_refresh_ammo_visual(w.reserve)
 
 ## Distinct light tint per weapon so each reticle reads differently.
 func _reticle_hue(name: String) -> Color:
@@ -410,7 +521,9 @@ func _on_boss_died(_src: Node) -> void:
 	_show_toast(boss_name_label.text + " DESTROYED")
 
 func _on_grenades_changed(count: int) -> void:
-	grenade_label.text = "Grenades (G): %d" % count
+	grenade_label.text = "Grenades (G): %d" % count # hidden node; kept in sync anyway
+	for i in _pips.size():
+		_pips[i].color = Color(1.0, 0.72, 0.2) if i < count else Color(1, 1, 1, 0.14)
 
 func _on_player_damaged(_amount: float, src: Node) -> void:
 	_damage_alpha = 0.55

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cperfprobe001"]
+
+[ext_resource type="Script" path="res://tests/perf_probe.gd" id="1_s"]
+
+[node name="PerfProbe" type="Node"]
+script = ExtResource("1_s")

@@ -3,10 +3,15 @@ extends Resource
 
 enum FireMode { SEMI, AUTO, BURST, BEAM } ## BEAM: continuous ray while held — damage ticks at fire_rate, 1 ammo per tick.
 enum DamageType { HITSCAN, PROJECTILE }
+## Secondary fire (V / mouse thumb). CHARGE: hold to charge a boosted accurate
+## shot (3 ammo). VOLLEY: instant tight 3-round burst (3 ammo). SLUG: collapse
+## all pellets into one accurate heavy slug (shotguns).
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 
 @export var display_name: String = "Weapon"
 @export var fire_mode: FireMode = FireMode.SEMI
 @export var damage_type: DamageType = DamageType.HITSCAN
+@export var alt_mode: AltMode = AltMode.NONE
 
 @export_group("Damage / Fire")
 @export var damage: float = 20.0

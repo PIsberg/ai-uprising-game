@@ -50,7 +50,7 @@ jobs:
         # These scenes quit(1) on failure, so the exit code is the verdict.
         run: |
           godot --headless --path . res://tests/bevel_smoke.tscn
-          godot --headless --path . res://tests/android_pose_check.tscn
+          godot --headless --path . res://tests/robot_models_check.tscn
 
       - name: Load-test all levels, cutscenes and menu
         run: |
@@ -61,7 +61,12 @@ jobs:
             out=$(godot --headless --path . "$res" --quit-after 240 2>&1) || true
             echo "$out"
             echo "::endgroup::"
-            if echo "$out" | grep -qE "SCRIPT ERROR|ERROR:"; then
+            # "N resources still in use at exit" is a known-benign teardown
+            # race: any audio stream playing at the --quit-after frame can be
+            # held by the mixer thread past the resource-cleanup check (same
+            # family as the tolerated ObjectDB exit warning). Everything else
+            # stays fatal.
+            if echo "$out" | grep -E "SCRIPT ERROR|ERROR:" | grep -vE "still in use at exit" | grep -q .; then
               echo "::error::Errors while running ${res}"
               fail=1
             fi

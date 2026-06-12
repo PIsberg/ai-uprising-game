@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cwpnlineup01"]
+
+[ext_resource type="Script" path="res://tests/weapon_lineup.gd" id="1_s"]
+
+[node name="WeaponLineup" type="Node3D"]
+script = ExtResource("1_s")

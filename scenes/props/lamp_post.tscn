@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://clamppost5kd"]
+
+[ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_pole"]
+albedo_color = Color(0.2, 0.21, 0.24, 1)
+metallic = 0.8
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_lamp"]
+albedo_color = Color(1.0, 0.85, 0.55, 1)
+emission_enabled = true
+emission = Color(1.0, 0.82, 0.5, 1)
+emission_energy_multiplier = 3.2
+shading_mode = 0
+
+[sub_resource type="CylinderMesh" id="Mesh_pole"]
+top_radius = 0.06
+bottom_radius = 0.09
+height = 3.6
+radial_segments = 8
+material = SubResource("Mat_pole")
+
+[sub_resource type="BoxMesh" id="Mesh_arm"]
+size = Vector3(0.08, 0.08, 0.9)
+material = SubResource("Mat_pole")
+
+[sub_resource type="BoxMesh" id="Mesh_head"]
+size = Vector3(0.22, 0.1, 0.5)
+material = SubResource("Mat_lamp")
+
+[sub_resource type="CylinderShape3D" id="Shape_pole"]
+radius = 0.12
+height = 3.6
+
+[node name="LampPost" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_dest")
+debris_color = Color(0.2, 0.21, 0.24, 1)
+debris_count = 8
+
+[node name="Pole" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+mesh = SubResource("Mesh_pole")
+
+[node name="Arm" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.55, 0.42)
+mesh = SubResource("Mesh_arm")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0.82)
+mesh = SubResource("Mesh_head")
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.35, 0.82)
+light_color = Color(1, 0.85, 0.6, 1)
+light_energy = 2.4
+omni_range = 9.0
+shadow_enabled = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+shape = SubResource("Shape_pole")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 20.0

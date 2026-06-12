@@ -93,6 +93,15 @@ func _on_play_pressed() -> void:
 func _on_continue_pressed() -> void:
 	GameState.continue_campaign()
 
+## Sandbox firing range: straight in, no cutscene/briefing, doesn't touch the
+## campaign checkpoint (load_level only saves for CAMPAIGN levels).
+func _on_range_pressed() -> void:
+	GameState.load_level("res://scenes/levels/level_range.tscn")
+
+## Endless wave-siege mode; like the range, runs outside the campaign flow.
+func _on_horde_pressed() -> void:
+	GameState.load_level("res://scenes/levels/level_horde.tscn")
+
 func _on_settings_pressed() -> void:
 	_show_panel(_settings)
 

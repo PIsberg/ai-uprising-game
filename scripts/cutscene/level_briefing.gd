@@ -174,18 +174,18 @@ func _shots() -> Array:
 		"title": String(_def.get("name", "INCOMING")),
 		"text": TAGLINES.get(id, "Hostile machines detected. Move in."),
 	})
-	# 2) Parade the hostiles.
+	# 2) Close-ups ONLY for hostiles the player hasn't met yet — familiar
+	# robots stay in the wide lineup instead of padding every briefing.
 	for s in _shown:
-		var label: String = "%s — %s" % [s["name"], s["desc"]]
-		if s["new"]:
-			label = "NEW HOSTILE   " + label
+		if not s["new"]:
+			continue
 		shots.append({
 			"dur": 3.2,
 			"from_pos": Vector3(s["x"] + 1.6, s["y"] + 0.4, LINE_Z + 4.2),
 			"from_look": Vector3(s["x"], s["y"], LINE_Z),
 			"to_pos": Vector3(s["x"] + 0.7, s["y"] + 0.2, LINE_Z + 2.8),
 			"to_look": Vector3(s["x"], s["y"], LINE_Z),
-			"text": label,
+			"text": "NEW HOSTILE   %s — %s" % [s["name"], s["desc"]],
 		})
 	# 3) Objective.
 	shots.append({
@@ -203,4 +203,11 @@ func _on_finished() -> void:
 		var t: String = e.get("type", "")
 		if t != "":
 			GameState.mark_enemy_seen(t)
-	GameState.load_level(GameState.current_level_path, false)
+	# Stop at the armory on the way in — but only when the player can actually
+	# afford something; otherwise it's a pointless interstitial.
+	if GameState.can_buy_any_upgrade():
+		var shop := Armory.new()
+		add_child(shop)
+		shop.deployed.connect(func(): GameState.load_level(GameState.current_level_path, false))
+	else:
+		GameState.load_level(GameState.current_level_path, false)

@@ -120,8 +120,38 @@ func _apply_user_settings() -> void:
 		_look_y_sign = -1.0 if gs.invert_y else 1.0
 
 func _on_hp_damaged(amount: float, _source: Node) -> void:
-	shake(clampf(0.22 + amount * 0.02, 0.22, 0.85))
+	# Every hit lands as a camera kick, scaled with the bite taken.
+	shake(clampf(0.3 + amount * 0.025, 0.3, 0.95))
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
+
+# ---------- low-health state: red pulse on screen + heavy breathing ----------
+
+const LOW_HEALTH_FRAC := 0.35 ## Effects ramp in below this health fraction.
+
+var _low_health: float = 0.0   # smoothed 0..1 severity driven into the shader
+var _breath: AudioStreamPlayer
+
+func _handle_low_health(delta: float) -> void:
+	var frac := 1.0
+	if hp and hp.max_health > 0.0:
+		frac = hp.current_health / hp.max_health
+	var severity := clampf(1.0 - frac / LOW_HEALTH_FRAC, 0.0, 1.0)
+	_low_health = move_toward(_low_health, severity, delta * 2.5)
+	if _post_overlay and _post_overlay.material is ShaderMaterial:
+		(_post_overlay.material as ShaderMaterial).set_shader_parameter("low_health", _low_health)
+	# Heavy breathing swells (and quickens slightly) the closer to death you are.
+	if severity > 0.02 and hp.current_health > 0.0:
+		if _breath == null:
+			_breath = AudioStreamPlayer.new()
+			_breath.bus = "SFX"
+			_breath.stream = AudioBus.synth("breathing")
+			add_child(_breath)
+		if not _breath.playing:
+			_breath.play()
+		_breath.volume_db = lerpf(-22.0, -6.0, severity)
+		_breath.pitch_scale = 1.0 + 0.12 * severity
+	elif _breath and _breath.playing:
+		_breath.stop()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -134,6 +164,7 @@ func _physics_process(delta: float) -> void:
 	_apply_gravity(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
+	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_slide(delta)
 	_handle_jump()
@@ -142,6 +173,8 @@ func _physics_process(delta: float) -> void:
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
 	move_and_slide()
+	_check_landing()
+	_handle_footsteps(delta)
 
 ## Registers the dash action (Q) at runtime so it works without editing the
 ## project input map. Gamepad users dash with the right-stick click is taken;
@@ -155,12 +188,16 @@ func _register_dash_action() -> void:
 
 ## A short, snappy burst in the movement direction (or forward if idle). Works
 ## on the ground or in the air; has a cooldown and a FOV/whoosh kick for punch.
+## The dash window grants i-frames, so it doubles as a dodge — read the rocket,
+## dash through it.
 func _handle_dash(delta: float) -> void:
 	_dash_cd = maxf(0.0, _dash_cd - delta)
 	if _dash_time > 0.0:
 		_dash_time -= delta
 		velocity.x = _dash_dir.x * dash_speed
 		velocity.z = _dash_dir.z * dash_speed
+		if _dash_time <= 0.0:
+			hp.invulnerable = false
 		return
 	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0 and not _sliding:
 		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -170,6 +207,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		hp.invulnerable = true
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
@@ -221,8 +259,6 @@ func _handle_gamepad_look(delta: float) -> void:
 	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult)
 	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign)
 	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
-	_check_landing()
-	_handle_footsteps(delta)
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
@@ -325,7 +361,7 @@ func _handle_camera_feel(delta: float) -> void:
 func _check_landing() -> void:
 	if is_on_floor() and not _was_on_floor:
 		_land_offset = -land_kick
-		AudioBus.play_synth_at("footstep", global_position, 0.0, 0.85)
+		AudioBus.play_synth_at("footstep", global_position, -7.0, 0.85)
 	_was_on_floor = is_on_floor()
 
 func _handle_footsteps(delta: float) -> void:
@@ -344,7 +380,7 @@ func _handle_footsteps(delta: float) -> void:
 		threshold = STEP_INTERVAL_SPRINT
 	if _step_accum >= threshold:
 		_step_accum = 0.0
-		var vol := -6.0 if _is_crouching else -2.0
+		var vol := -14.0 if _is_crouching else -9.0 # quiet — felt, not heard over the fight
 		# Surface-aware footstep: metal clangs higher, dirt is softer/lower.
 		var pitch := randf_range(0.92, 1.08)
 		match _floor_surface():

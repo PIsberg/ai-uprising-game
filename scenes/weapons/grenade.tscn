@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://c5iovu4epbqcc"]
+[gd_scene load_steps=10 format=3 uid="uid://c5iovu4epbqcc"]
 
 [ext_resource type="Script" path="res://scripts/weapons/grenade.gd" id="1_g"]
 
@@ -6,41 +6,50 @@
 friction = 0.6
 bounce = 0.4
 
-[sub_resource type="StandardMaterial3D" id="Mat_body"]
-albedo_color = Color(0.18, 0.2, 0.16, 1)
-metallic = 0.82
-roughness = 0.52
+[sub_resource type="StandardMaterial3D" id="Mat_shell"]
+albedo_color = Color(0.14, 0.15, 0.18, 1)
+metallic = 0.85
+roughness = 0.35
 
-[sub_resource type="SphereMesh" id="SphereMesh_body"]
-material = SubResource("Mat_body")
-radius = 0.095
-height = 0.17
-radial_segments = 16
-rings = 10
-
-[sub_resource type="StandardMaterial3D" id="Mat_metal"]
-albedo_color = Color(0.5, 0.52, 0.55, 1)
+[sub_resource type="StandardMaterial3D" id="Mat_fin"]
+albedo_color = Color(0.45, 0.48, 0.52, 1)
 metallic = 0.95
-roughness = 0.3
+roughness = 0.25
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_neck"]
-material = SubResource("Mat_metal")
-top_radius = 0.016
-bottom_radius = 0.02
-height = 0.05
+[sub_resource type="StandardMaterial3D" id="Mat_core"]
+shading_mode = 0
+albedo_color = Color(1, 0.55, 0.15, 1)
+emission_enabled = true
+emission = Color(1, 0.5, 0.1, 1)
+emission_energy_multiplier = 2.5
+
+[sub_resource type="CylinderMesh" id="Mesh_cone_top"]
+material = SubResource("Mat_shell")
+top_radius = 0.03
+bottom_radius = 0.085
+height = 0.085
 radial_segments = 8
-rings = 2
+rings = 1
 
-[sub_resource type="BoxMesh" id="BoxMesh_spoon"]
-material = SubResource("Mat_metal")
-size = Vector3(0.01, 0.13, 0.014)
+[sub_resource type="CylinderMesh" id="Mesh_core"]
+material = SubResource("Mat_core")
+top_radius = 0.075
+bottom_radius = 0.075
+height = 0.035
+radial_segments = 12
+rings = 1
 
-[sub_resource type="TorusMesh" id="TorusMesh_pin"]
-material = SubResource("Mat_metal")
-inner_radius = 0.016
-outer_radius = 0.022
-ring_segments = 3
+[sub_resource type="BoxMesh" id="Mesh_fin"]
+material = SubResource("Mat_fin")
+size = Vector3(0.012, 0.16, 0.03)
+
+[sub_resource type="CylinderMesh" id="Mesh_cap"]
+material = SubResource("Mat_fin")
+top_radius = 0.022
+bottom_radius = 0.03
+height = 0.02
 radial_segments = 8
+rings = 1
 
 [sub_resource type="SphereShape3D" id="Shape_1"]
 radius = 0.12
@@ -53,26 +62,37 @@ physics_material_override = SubResource("PhysMat_1")
 continuous_cd = true
 script = ExtResource("1_g")
 
-[node name="Body" type="MeshInstance3D" parent="."]
-mesh = SubResource("SphereMesh_body")
+[node name="ConeTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+mesh = SubResource("Mesh_cone_top")
 
-[node name="FuseNeck" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.095, 0)
-mesh = SubResource("CylinderMesh_neck")
+[node name="ConeBottom" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, -1, 0, -0.06, 0)
+mesh = SubResource("Mesh_cone_top")
 
-[node name="Spoon" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.994, -0.11, 0, 0.11, 0.994, 0, 0, 0, 1, 0.02, 0.05, 0)
-mesh = SubResource("BoxMesh_spoon")
+[node name="Core" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_core")
 
-[node name="PinRing" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, -0.025, 0.095, 0)
-mesh = SubResource("TorusMesh_pin")
+[node name="Fin1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.082, 0, 0)
+mesh = SubResource("Mesh_fin")
+
+[node name="Fin2" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.5, 0, -0.866, 0, 1, 0, 0.866, 0, -0.5, -0.041, 0, -0.071)
+mesh = SubResource("Mesh_fin")
+
+[node name="Fin3" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, -0.041, 0, 0.071)
+mesh = SubResource("Mesh_fin")
+
+[node name="CapTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11, 0)
+mesh = SubResource("Mesh_cap")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_1")
 
 [node name="Light" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
-light_color = Color(1, 0.15, 0.1, 1)
-light_energy = 1.4
-omni_range = 1.6
+light_color = Color(1, 0.5, 0.15, 1)
+light_energy = 1.2
+omni_range = 2.2
