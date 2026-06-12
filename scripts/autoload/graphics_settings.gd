@@ -74,7 +74,22 @@ func tier() -> int:
 func set_quality(q: int) -> void:
 	quality = clampi(q, 0, Quality.size() - 1) as Quality
 	_apply_viewport()
+	_apply_to_live_environment()
 	_save_settings()
+
+## Re-tier the environment of the level that's running RIGHT NOW, so picking a
+## quality mid-game visibly strips/restores SSAO/SSR/volumetrics immediately
+## instead of waiting for the next level load. The builder tags its
+## WorldEnvironment with an "open_sky" meta; hand-authored scenes default to
+## indoor rules.
+func _apply_to_live_environment() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	for we in scene.find_children("*", "WorldEnvironment", true, false):
+		var env := (we as WorldEnvironment).environment
+		if env:
+			apply_to_environment(env, bool(we.get_meta("open_sky", false)))
 
 ## Rotate LOW -> MEDIUM -> HIGH -> LOW (drives the single Graphics button).
 func cycle() -> void:
@@ -151,18 +166,27 @@ func apply_to_environment(env: Environment, open_sky: bool) -> void:
 			env.ssil_enabled = true
 			env.ssr_enabled = true
 			env.volumetric_fog_enabled = not open_sky
+			_restore_glow(env)
 		Quality.MEDIUM:
 			env.ssao_enabled = true
 			env.ssil_enabled = false
 			env.ssr_enabled = false
 			env.volumetric_fog_enabled = false
+			_restore_glow(env)
 		Quality.LOW:
 			env.ssao_enabled = false
 			env.ssil_enabled = false
 			env.ssr_enabled = false
 			env.volumetric_fog_enabled = false
-			# Trim the glow kernel to the cheapest few levels on low-end machines.
+			# Trim the glow kernel to the cheapest few levels on low-end
+			# machines — remembering the authored value for live re-tiering.
+			if not env.has_meta("glow_base"):
+				env.set_meta("glow_base", env.glow_intensity)
 			env.glow_intensity = 0.3
+
+func _restore_glow(env: Environment) -> void:
+	if env.has_meta("glow_base"):
+		env.glow_intensity = env.get_meta("glow_base")
 
 func _load_settings() -> void:
 	var cf := ConfigFile.new()
