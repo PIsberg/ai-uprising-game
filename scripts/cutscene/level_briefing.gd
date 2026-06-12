@@ -138,17 +138,35 @@ func _select_and_spawn_hostiles() -> void:
 		var info: Dictionary = ENEMY_INFO[t]
 		var x := (float(i) - (n - 1) * 0.5) * LINE_SPACING
 		var y: float = info["y"]
-		_spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
+		var bot := _spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
 		_shown.append({
-			"type": t, "x": x, "y": maxf(y, 0.0) + 1.2,
+			"type": t, "x": x, "y": _frame_height(bot, y),
 			"new": not GameState.has_seen_enemy(t),
 			"name": info["name"], "desc": info["desc"],
 		})
 
-func _spawn_hostile(type: String, pos: Vector3, scl: float) -> void:
+## Where the close-up camera should aim: upper chest of the ACTUAL model, so
+## fliers hovering above their spawn point (and oddly proportioned chassis)
+## are framed instead of the air beneath them.
+func _frame_height(bot: Node3D, spawn_y: float) -> float:
+	if bot == null:
+		return maxf(spawn_y, 0.0) + 1.2
+	var inv := bot.global_transform.affine_inverse()
+	var merged := AABB(Vector3(-0.3, 0, -0.3), Vector3(0.6, 1.8, 0.6))
+	var first := true
+	for mi in bot.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh:
+			var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	# 65% up the chassis reads as "face/chest" across the whole roster.
+	return bot.global_position.y + (merged.position.y + merged.size.y * 0.65) * bot.scale.y
+
+func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	var path: String = ENEMY_SCENES.get(type, "")
 	if path == "":
-		return
+		return null
 	var bot: Node3D = load(path).instantiate()
 	add_child(bot)
 	bot.global_position = pos
@@ -162,6 +180,7 @@ func _spawn_hostile(type: String, pos: Vector3, scl: float) -> void:
 	var ap := bot.get_node_or_null("AnimationPlayer") as AnimationPlayer
 	if ap:
 		ap.stop()
+	return bot
 
 func _shots() -> Array:
 	var id := GameState.level_id_from_path(GameState.current_level_path)
