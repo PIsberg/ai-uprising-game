@@ -80,6 +80,7 @@ func _ready() -> void:
 	_build_atmosphere(def)
 	_build_accent_strips(def)
 	_build_signage(def)
+	_build_floor_seams(def)
 	_build_puddles(def)
 	_build_pipes(def)
 	_build_rubble(def)
@@ -240,6 +241,10 @@ func _build_environment(def: Dictionary) -> void:
 		omni.shadow_blur = 1.5
 		omni.light_specular = 0.6
 		add_child(omni)
+		# Interiors: a visible fixture on the ceiling above each light, so the
+		# illumination has a SOURCE instead of hanging disembodied in the air.
+		if not def.get("open_sky", false):
+			_add_light_fixture(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
 		# infrastructure failing, and motion in otherwise static lighting.
 		if li == def.get("lights", []).size() - 1:
@@ -271,6 +276,31 @@ func _build_environment(def: Dictionary) -> void:
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
 	AudioBus.play_music(music_id)
+
+## A recessed ceiling luminaire: dark housing + emissive diffuser panel in the
+## light's own color, mounted on the ceiling directly above the omni position.
+func _add_light_fixture(light_pos: Vector3, color: Color) -> void:
+	var housing := MeshInstance3D.new()
+	var hb := BoxMesh.new()
+	hb.size = Vector3(1.2, 0.12, 1.2)
+	hb.material = _color_material(Color(0.1, 0.1, 0.12), 0.5)
+	housing.mesh = hb
+	housing.position = Vector3(light_pos.x, WALL_HEIGHT - 0.06, light_pos.z)
+	add_child(housing)
+	var panel := MeshInstance3D.new()
+	var pb := BoxMesh.new()
+	pb.size = Vector3(1.0, 0.04, 1.0)
+	var pm := StandardMaterial3D.new()
+	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pm.albedo_color = color
+	pm.emission_enabled = true
+	pm.emission = color
+	pm.emission_energy_multiplier = 2.4
+	pb.material = pm
+	panel.mesh = pb
+	panel.position = Vector3(light_pos.x, WALL_HEIGHT - 0.13, light_pos.z)
+	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(panel)
 
 ## Faulty-wiring flicker: mostly steady, with brief random dips and the odd
 ## near-blackout. A pre-baked randomized loop is cheap and reads as organic.
@@ -779,6 +809,34 @@ func _build_signage(def: Dictionary) -> void:
 		add_child(lbl)
 
 # ---------- grime + infrastructure detail ----------
+
+## Panel seams ruled across interior floors: thin recess-dark strips every few
+## metres in both axes. Breaks the monotony of a large single-material slab and
+## makes the floor read as constructed deck plating. A handful of long boxes.
+func _build_floor_seams(def: Dictionary) -> void:
+	if def.get("open_sky", false):
+		return # outdoor asphalt/dirt isn't panelled
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var mat := _color_material(Color(0.07, 0.075, 0.09), 0.9)
+	var spacing := 6.5
+	var x := -fs.x * 0.5 + spacing
+	while x < fs.x * 0.5 - 1.0:
+		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.1, 0.016, fs.y - 1.4), mat)
+		x += spacing
+	var z := -fs.y * 0.5 + spacing
+	while z < fs.y * 0.5 - 1.0:
+		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.1), mat)
+		z += spacing
+
+func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	bm.material = mat
+	mi.mesh = bm
+	mi.position = pos
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
 
 ## Dark mirror-finish puddles on the floor — cheap, and they pay off the SSR
 ## pass with real reflections of the emissive strips and robot glow.

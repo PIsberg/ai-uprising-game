@@ -430,6 +430,8 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 		var snd := "impact_metal" if surf == "metal" else "impact_concrete"
 		var pitch := randf_range(0.7, 0.85) if surf == "dirt" else randf_range(0.9, 1.1)
 		AudioBus.play_synth_at(snd, hpos, -8.0, pitch)
+		if dmg_node == null:
+			_spawn_bullet_hole(hpos, hit.normal)
 		if dmg_node:
 			var final_damage := eff_damage()
 			var is_head := false
@@ -547,6 +549,34 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 	get_tree().current_scene.add_child(t)
 	if t.has_method("setup"):
 		t.setup(from, to, data.tracer_color)
+
+# Persistent bullet scars on world geometry. Capped: the oldest hole is
+# recycled once the budget is full, so mag-dumping never piles up decals.
+const MAX_BULLET_HOLES := 36
+
+func _spawn_bullet_hole(pos: Vector3, normal: Vector3) -> void:
+	var tree := get_tree()
+	var holes := tree.get_nodes_in_group("bullet_hole")
+	if holes.size() >= MAX_BULLET_HOLES:
+		holes[0].queue_free()
+	var d := Decal.new()
+	d.add_to_group("bullet_hole")
+	d.texture_albedo = ScorchMark._scorch_texture() # radial burn doubles as a scar
+	var s := randf_range(0.14, 0.24)
+	d.size = Vector3(s, 0.35, s)
+	d.cull_mask = 1
+	tree.current_scene.add_child(d)
+	# Project along the surface normal (Decal boxes project down local -Y).
+	var up := normal.normalized()
+	var x := up.cross(Vector3.FORWARD)
+	if x.length_squared() < 0.01:
+		x = up.cross(Vector3.RIGHT)
+	x = x.normalized()
+	d.global_transform = Transform3D(Basis(x, up, x.cross(up)).rotated(up, randf() * TAU), pos + up * 0.02)
+	var tw := d.create_tween()
+	tw.tween_interval(8.0)
+	tw.tween_property(d, "modulate:a", 0.0, 2.0)
+	tw.tween_callback(d.queue_free)
 
 func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") -> void:
 	if data.impact_scene == null:

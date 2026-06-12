@@ -753,6 +753,7 @@ func _on_died(_source: Node) -> void:
 	var exp_fx := EXPLOSION.instantiate()
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
+	_spawn_part_debris()
 
 	_drop_loot()
 
@@ -785,6 +786,54 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
+
+## Physical wreckage: a handful of armor-plate chunks blasted off the chassis,
+## tumbling with real physics and bouncing off the floor before burning out.
+## One chunk stays ember-hot so the debris reads in the dark. Bigger robots
+## shed more, capped so swarm deaths can't flood the physics server.
+func _spawn_part_debris() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var count := clampi(3 + score_value / 120, 3, 8)
+	for i in count:
+		var chunk := RigidBody3D.new()
+		chunk.collision_layer = 0
+		chunk.collision_mask = 1 # bounce off the world, ghost through actors
+		chunk.mass = 0.4
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		var s := randf_range(0.08, 0.2)
+		bm.size = Vector3(s, s * randf_range(0.3, 0.7), s * randf_range(0.8, 1.6))
+		var mat := StandardMaterial3D.new()
+		if i == 0:
+			# The hot piece: a glowing ember chunk straight from the core.
+			mat.albedo_color = Color(1.0, 0.4, 0.15)
+			mat.emission_enabled = true
+			mat.emission = Color(1.0, 0.45, 0.15)
+			mat.emission_energy_multiplier = 3.0
+		else:
+			mat.albedo_color = Color(0.18, 0.19, 0.22) * randf_range(0.8, 1.3)
+			mat.metallic = 0.7
+			mat.roughness = 0.45
+		bm.material = mat
+		mi.mesh = bm
+		chunk.add_child(mi)
+		var cs := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = bm.size
+		cs.shape = shape
+		chunk.add_child(cs)
+		parent.add_child(chunk)
+		chunk.global_position = global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.6, 1.3), randf_range(-0.3, 0.3))
+		chunk.linear_velocity = Vector3(randf_range(-4.0, 4.0), randf_range(3.0, 7.0), randf_range(-4.0, 4.0))
+		chunk.angular_velocity = Vector3(randf_range(-12, 12), randf_range(-12, 12), randf_range(-12, 12))
+		# Burn out: shrink the visual (never the physics body) after the
+		# bounce settles, then free the whole chunk.
+		var tw := chunk.create_tween()
+		tw.tween_interval(randf_range(1.6, 2.4))
+		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+		tw.tween_callback(chunk.queue_free)
 
 ## Kills feed the push: enemies sometimes leave a supply drop where they fell,
 ## anchors (score >= 250) always do — chasing resupply into the fight beats
