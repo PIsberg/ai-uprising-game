@@ -1,9 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0ui0menu0001"]
+[gd_scene load_steps=6 format=3 uid="uid://b0ui0menu0001"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 [ext_resource type="Texture2D" path="res://assets/textures/ui/menu_background.png" id="2_bg"]
+[ext_resource type="FontFile" path="res://assets/fonts/Orbitron.ttf" id="3_font"]
+
+[sub_resource type="FontVariation" id="FontVar_title"]
+base_font = ExtResource("3_font")
+variation_opentype = {
+2003265652: 800.0
+}
+spacing_glyph = 4
 
 [sub_resource type="Theme" id="Theme_1"]
+default_font = ExtResource("3_font")
 default_font_size = 22
 
 [node name="MainMenu" type="Control"]
@@ -49,6 +58,10 @@ theme_override_constants/separation = 24
 
 [node name="Title" type="Label" parent="Center/VBox"]
 layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_fonts/font = SubResource("FontVar_title")
 theme_override_font_sizes/font_size = 64
 text = "AI UPRISING"
 horizontal_alignment = 1
@@ -56,6 +69,9 @@ horizontal_alignment = 1
 [node name="Subtitle" type="Label" parent="Center/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
 text = "The machines have turned. Push them back."
 horizontal_alignment = 1
 

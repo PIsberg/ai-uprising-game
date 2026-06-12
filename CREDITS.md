@@ -35,4 +35,9 @@ required, credited here as courtesy.
 https://opengameart.org/content/blaster-kit, released under **CC0 1.0**
 (public domain) — no attribution required, credited here as courtesy.
 
+### UI font (`assets/fonts/Orbitron.ttf`)
+**Orbitron** by **Matt McInerney**, from Google Fonts
+(https://fonts.google.com/specimen/Orbitron), licensed under the
+**SIL Open Font License 1.1** (see `assets/fonts/Orbitron_OFL.txt`).
+
 All other models, materials, audio, and code in this project are original.
