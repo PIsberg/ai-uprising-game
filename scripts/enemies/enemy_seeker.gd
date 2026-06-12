@@ -14,6 +14,7 @@ const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 
 var _detonated: bool = false
 var _pulse: float = 0.0
+var _band_mat: StandardMaterial3D
 
 ## Visuals are a small red-tinted EyeDrone ($Model in the scene). The blinking
 ## eye lamp is the blast telegraph.
@@ -31,6 +32,60 @@ func _ready() -> void:
 	score_value = 90
 	stagger_threshold = 99999.0 # too fast/fragile to bother staggering
 	super._ready()
+	_build_warhead_dressing()
+
+## The seeker shares the EyeDrone model with the recon drone — dress it as the
+## flying bomb it is so the two flyers read apart at a glance: four dark tail
+## fins (missile silhouette) and an amber warning band that pulses with the
+## blast telegraph.
+func _build_warhead_dressing() -> void:
+	# Centre the dressing on the hull, measured from the actual meshes (the
+	# model is offset and scaled in the scene, so don't guess).
+	var center := Vector3(0, 1.0, 0)
+	var mdl := get_node_or_null("Model")
+	if mdl:
+		var inv := global_transform.affine_inverse()
+		var first := true
+		var merged := AABB()
+		for mi in mdl.find_children("*", "MeshInstance3D", true, false):
+			var m := mi as MeshInstance3D
+			if m.mesh:
+				var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+				merged = ab if first else merged.merge(ab)
+				first = false
+		if not first:
+			center = merged.get_center()
+	var hub := Node3D.new()
+	hub.position = center
+	add_child(hub)
+	var fin_mat := StandardMaterial3D.new()
+	fin_mat.albedo_color = Color(0.15, 0.15, 0.18)
+	fin_mat.metallic = 0.7
+	fin_mat.roughness = 0.4
+	for i in 4:
+		var fin := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.04, 0.36, 0.26)
+		bm.material = fin_mat
+		fin.mesh = bm
+		var a := TAU * float(i) / 4.0 + TAU / 8.0 # X pattern, clear of the eye
+		fin.position = Vector3(sin(a) * 0.36, 0.0, cos(a) * 0.36)
+		fin.rotation.y = a
+		hub.add_child(fin)
+	var band := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.42
+	cm.bottom_radius = 0.42
+	cm.height = 0.07
+	_band_mat = StandardMaterial3D.new()
+	_band_mat.albedo_color = Color(1.0, 0.6, 0.1)
+	_band_mat.emission_enabled = true
+	_band_mat.emission = Color(1.0, 0.55, 0.1)
+	_band_mat.emission_energy_multiplier = 2.0
+	cm.material = _band_mat
+	band.mesh = cm
+	band.position.y = -0.16 # under the visor, not across it
+	hub.add_child(band)
 
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies
@@ -67,6 +122,8 @@ func _physics_process(delta: float) -> void:
 		_pulse += delta * clampf(14.0 - dist, 3.0, 22.0)
 		var b := 0.6 + 0.4 * sin(_pulse)
 		_eye_light.light_energy = (2.0 + 4.0 * (1.0 - clampf(dist / 8.0, 0.0, 1.0))) * b
+		if _band_mat:
+			_band_mat.emission_energy_multiplier = 1.0 + 4.5 * b
 	_check_detonate()
 
 func _check_detonate() -> void:
