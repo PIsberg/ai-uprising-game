@@ -136,8 +136,9 @@ func _build_environment(def: Dictionary) -> void:
 		psm.ground_horizon_color = e.get("sky_horizon", Color(0.3, 0.3, 0.34))
 		psm.ground_bottom_color = e.get("ground", Color(0.05, 0.05, 0.07))
 		psm.sky_curve = 0.16
-		psm.sky_energy_multiplier = e.get("sky_energy", 1.0)
-		psm.ground_energy_multiplier = 0.6
+		# Dimmer dome: a bright sky over a dark ground reads wrong.
+		psm.sky_energy_multiplier = e.get("sky_energy", 1.0) * 0.7
+		psm.ground_energy_multiplier = 0.45
 		psm.sun_angle_max = 12.0   # crisp sun disc
 		psm.sun_curve = 0.06       # tight falloff -> a glowing sun, not a smear
 		psm.use_debanding = true
@@ -147,11 +148,12 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_color = e.get("ambient", Color(0.6, 0.65, 0.75))
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
-	# Darker baseline than the defs ask for: hostile-occupation mood, and it
-	# lets the robots' red menace glow carry the scene lighting.
-	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.62
+	# MUCH darker baseline than the defs ask for: the world lives in shadow and
+	# every light source — fixtures, muzzle flashes, bolts, explosions, pickup
+	# glows — gets to carve its own pool out of the dark.
+	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 0.88
+	env.tonemap_exposure = 0.8
 	env.tonemap_white = 6.0
 	env.ssao_enabled = true
 	env.ssao_radius = 1.6
@@ -193,7 +195,7 @@ func _build_environment(def: Dictionary) -> void:
 
 	# Filmic grade: gentle teal shadows / warm highlights, lifted contrast.
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.9
+	env.adjustment_brightness = 0.84
 	env.adjustment_contrast = 1.12
 	env.adjustment_saturation = 1.06
 	
@@ -213,7 +215,7 @@ func _build_environment(def: Dictionary) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = e.get("sun_rot", Vector3(-50, -40, 0))
 	sun.light_color = e.get("sun_color", Color(1, 0.95, 0.9))
-	sun.light_energy = e.get("sun_energy", 1.0) * 0.8 # dimmer key, same per-level character
+	sun.light_energy = e.get("sun_energy", 1.0) * 0.5 # weak key: the placed lamps carry the scene
 	sun.light_angular_distance = 1.2 # sun disc size -> soft penumbra shadows
 	sun.shadow_enabled = true
 	sun.shadow_blur = 1.4
@@ -236,7 +238,9 @@ func _build_environment(def: Dictionary) -> void:
 		var omni := OmniLight3D.new()
 		omni.position = l["pos"]
 		omni.light_color = l.get("color", Color(1, 1, 1))
-		omni.light_energy = l.get("energy", 2.0)
+		# Slightly hotter than authored: with the ambient cut, these are the
+		# scene's primary illumination and their pools must read.
+		omni.light_energy = l.get("energy", 2.0) * 1.2
 		omni.omni_range = l.get("range", 16.0)
 		omni.shadow_enabled = li < shadow_budget
 		omni.shadow_bias = 0.03
