@@ -498,7 +498,9 @@ static func _gemini() -> Dictionary:
 		"objective": "Break the Gemini swarm and reach the beacon",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -16), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(16, 0, 16), Vector3(0, 0, 18)]},
+			# Keep shard points clear of the (±15,±15) corner blocks — two of
+			# them used to spawn inside the geometry and were uncollectable.
+			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -10), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(10, 0, 16), Vector3(0, 0, 18)]},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(50, 50),

@@ -361,7 +361,7 @@ func _handle_camera_feel(delta: float) -> void:
 func _check_landing() -> void:
 	if is_on_floor() and not _was_on_floor:
 		_land_offset = -land_kick
-		AudioBus.play_synth_at("footstep", global_position, 0.0, 0.85)
+		AudioBus.play_synth_at("footstep", global_position, -7.0, 0.85)
 	_was_on_floor = is_on_floor()
 
 func _handle_footsteps(delta: float) -> void:
@@ -380,7 +380,7 @@ func _handle_footsteps(delta: float) -> void:
 		threshold = STEP_INTERVAL_SPRINT
 	if _step_accum >= threshold:
 		_step_accum = 0.0
-		var vol := -6.0 if _is_crouching else -2.0
+		var vol := -14.0 if _is_crouching else -9.0 # quiet — felt, not heard over the fight
 		# Surface-aware footstep: metal clangs higher, dirt is softer/lower.
 		var pitch := randf_range(0.92, 1.08)
 		match _floor_surface():

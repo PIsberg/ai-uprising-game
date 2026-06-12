@@ -117,6 +117,14 @@ func buy_upgrade(k: String) -> bool:
 	save_progress()
 	return true
 
+## True if at least one track is purchasable right now — the briefing only
+## bothers showing the armory when there's an actual decision to make.
+func can_buy_any_upgrade() -> bool:
+	for k in UPGRADE_DEFS:
+		if upgrade_level(k) < UPGRADE_MAX and score >= upgrade_cost(k):
+			return true
+	return false
+
 ## Multiplier for damage/mag tracks (>= 1.0).
 func upgrade_mult(k: String) -> float:
 	return 1.0 + float(UPGRADE_DEFS[k]["per"]) * upgrade_level(k)
