@@ -30,6 +30,10 @@ const PROP_SCENES := {
 	"terminal": preload("res://scenes/props/terminal.tscn"),
 	"canister": preload("res://scenes/props/gas_canister.tscn"),
 	"lamp": preload("res://scenes/props/lamp_post.tscn"),
+	"locker": preload("res://scenes/props/locker.tscn"),
+	"shelves": preload("res://scenes/props/shelves.tscn"),
+	"desk": preload("res://scenes/props/desk.tscn"),
+	"dish": preload("res://scenes/props/satellite_dish.tscn"),
 }
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")

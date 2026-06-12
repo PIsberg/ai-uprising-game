@@ -1,25 +1,8 @@
-[gd_scene format=3 uid="uid://fckhs1jgnao3"]
+[gd_scene load_steps=5 format=3 uid="uid://fckhs1jgnao3"]
 
 [ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
-
-[sub_resource type="StandardMaterial3D" id="Mat_crate"]
-albedo_color = Color(0.32, 0.34, 0.4, 1)
-metallic = 0.45
-roughness = 0.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_trim"]
-albedo_color = Color(0.55, 0.58, 0.66, 1)
-metallic = 0.7
-roughness = 0.4
-
-[sub_resource type="BoxMesh" id="Mesh_crate"]
-size = Vector3(1.2, 1.2, 1.2)
-material = SubResource("Mat_crate")
-
-[sub_resource type="BoxMesh" id="Mesh_frame"]
-size = Vector3(1.28, 0.12, 1.28)
-material = SubResource("Mat_trim")
+[ext_resource type="PackedScene" path="res://assets/models/props/Prop_Crate.gltf" id="3_model"]
 
 [sub_resource type="BoxShape3D" id="Shape_crate"]
 size = Vector3(1.2, 1.2, 1.2)
@@ -32,17 +15,8 @@ explode = false
 debris_color = Color(0.4, 0.42, 0.5, 1)
 debris_count = 12
 
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
-mesh = SubResource("Mesh_crate")
-
-[node name="TrimTop" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.14, 0)
-mesh = SubResource("Mesh_frame")
-
-[node name="TrimBottom" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
-mesh = SubResource("Mesh_frame")
+[node name="Model" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
