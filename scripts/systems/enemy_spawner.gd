@@ -32,6 +32,9 @@ func _spawn() -> void:
 	_spawned = true
 	var e := enemy_scene.instantiate() as Node3D
 	_apply_difficulty(e)
+	# A small difficulty-scaled share of spawns come up elite (pre-add, so the
+	# boosted exports land before the enemy's _ready wiring).
+	Elite.maybe_apply(e)
 	# current_scene is at the world origin, so local == global here. Setting the
 	# position before a *deferred* add_child avoids the "parent is busy setting
 	# up children" failure when spawning during the level's own _ready().

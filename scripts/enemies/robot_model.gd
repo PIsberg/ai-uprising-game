@@ -14,7 +14,7 @@ extends Node3D
 
 @export var texture: Texture2D ## Albedo for FBX imports that lose their texture.
 @export var tint: Color = Color.WHITE ## Multiplies the model's albedo (variant recolor).
-@export var menace_glow: float = 1.0 ## Scales the hostile red ember sheen + pulsing core light (0 disables).
+@export var menace_glow: float = 1.0 ## Scales the red damage-blink flare (0 disables).
 @export var menace_color: Color = Color(1.0, 0.16, 0.1)
 @export var anim_idle: String = "Idle"
 @export var anim_walk: String = "Walk" ## Empty for hovering enemies with no gait.
@@ -27,7 +27,7 @@ var _parent: EnemyBase
 var _prev_recoil: float = 0.0
 var _menace_light: OmniLight3D
 var _glow_mats: Array[BaseMaterial3D] = []
-var _pulse_t: float = randf() * TAU # desync the pulse across the pack
+var _blink_tween: Tween
 
 func _ready() -> void:
 	_parent = get_parent() as EnemyBase
@@ -69,20 +69,21 @@ func _apply_materials() -> void:
 					_add_menace_emission(dup, dup.albedo_texture)
 					mi.set_surface_override_material(s, dup)
 
-## The textures stay as-is; hostility comes from a red ember sheen on top —
-## the albedo doubles as the emission mask, so panel highlights smolder while
+## Robots read as neutral machines until hit: the red emission channel is
+## prepared on every material here but stays dark — `damage_blink()` flares it.
+## The albedo doubles as the emission mask, so panel highlights flare while
 ## recesses stay dark instead of the whole body glowing like a toy.
 func _add_menace_emission(mat: BaseMaterial3D, mask: Texture2D) -> void:
 	if menace_glow <= 0.0:
 		return
 	mat.emission_enabled = true
 	mat.emission = menace_color
-	mat.emission_texture = mask # null is fine: a flat, fainter ember tint
-	mat.emission_energy_multiplier = (0.35 if mask else 0.2) * menace_glow
+	mat.emission_texture = mask # null is fine: a flat, fainter flare tint
+	mat.emission_energy_multiplier = 0.0
 	_glow_mats.append(mat)
 
-## A pulsing red core light so the pack throws hostile light on the level —
-## sized off the model's silhouette so it sits mid-torso on any chassis.
+## A core light for the damage flare — dark until hit, sized off the model's
+## silhouette so it sits mid-torso on any chassis.
 func _build_menace_glow() -> void:
 	if menace_glow <= 0.0:
 		return
@@ -93,11 +94,28 @@ func _build_menace_glow() -> void:
 			top = maxf(top, aabb.end.y - global_position.y)
 	_menace_light = OmniLight3D.new()
 	_menace_light.light_color = menace_color
-	_menace_light.light_energy = 1.4 * menace_glow
+	_menace_light.light_energy = 0.0
 	_menace_light.omni_range = 6.0
 	_menace_light.shadow_enabled = false
 	_menace_light.position = Vector3(0, clampf(top * 0.55, 0.8, 3.2), 0)
 	add_child(_menace_light)
+
+## Red damage blink: the ember sheen and core light flare up on a hit and die
+## back down — pain you can read at a glance, without a constant red tint.
+func damage_blink() -> void:
+	if menace_glow <= 0.0:
+		return
+	if _blink_tween and _blink_tween.is_valid():
+		_blink_tween.kill()
+	for m in _glow_mats:
+		m.emission_energy_multiplier = 2.4 * menace_glow
+	if _menace_light:
+		_menace_light.light_energy = 3.0 * menace_glow
+	_blink_tween = create_tween().set_parallel(true)
+	for m in _glow_mats:
+		_blink_tween.tween_property(m, "emission_energy_multiplier", 0.0, 0.28)
+	if _menace_light:
+		_blink_tween.tween_property(_menace_light, "light_energy", 0.0, 0.28)
 
 ## Power-down on death: the core light dies and the ember sheen drains so the
 ## topple reads as a dark wreck, not a still-live machine.
@@ -123,11 +141,6 @@ func _physics_process(delta: float) -> void:
 		_extinguish()
 		set_physics_process(false)
 		return
-	# Core-light pulse: a slow, uneven throb that reads as a live reactor.
-	if _menace_light:
-		_pulse_t += delta
-		_menace_light.light_energy = (1.4 * menace_glow) \
-			* (0.82 + 0.22 * sin(_pulse_t * 2.7) * sin(_pulse_t * 1.3 + 0.7))
 	# Weapon discharge -> attack one-shot (recoil spikes to 1 on every shot).
 	if anim_attack != "" and _parent.recoil > 0.9 and _prev_recoil <= 0.9 \
 			and _anim.has_animation(anim_attack):

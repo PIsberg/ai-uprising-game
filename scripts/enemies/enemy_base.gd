@@ -16,6 +16,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
 @export var score_value: int = 100
+var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
 
 @export_group("References")
 @export var eye: Node3D
@@ -93,7 +94,8 @@ func _ready() -> void:
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_flash_mat.albedo_color = Color(1, 1, 1, 0)
+	# Red damage blink (robots are neutral-toned until hit).
+	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
 	set_state(State.IDLE)
 
 func _collect_meshes(n: Node) -> void:
@@ -188,6 +190,16 @@ func set_state(new_state: State) -> void:
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 
+## Speak a TTS robot voice line of the given category (see AudioBus voice
+## clips). Chance-gated here, globally cooldown-gated in AudioBus.
+func _speak(category: String, chance: float = 1.0) -> void:
+	if not has_node("/root/AudioBus"):
+		return
+	var ab: Node = get_node("/root/AudioBus")
+	if ab.has_method("play_voice_at"):
+		var src: Node3D = eye if eye != null else self
+		ab.play_voice_at(category, src.global_position, chance)
+
 ## Brief reaction the instant this enemy first registers the player: a short
 ## comms blip and a bright flare at the eye.
 func _alert() -> void:
@@ -196,6 +208,8 @@ func _alert() -> void:
 		var ab: Node = get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
 			ab.play_synth_at("broadcast_blip", src.global_position, -1.0, 1.35)
+	# Call the contact out loud — mostly a spotting line, sometimes a taunt.
+	_speak("taunt" if randf() < 0.25 else "spot", 0.9)
 	var orb := MeshInstance3D.new()
 	var sm := SphereMesh.new()
 	sm.radius = 0.16
@@ -343,6 +357,8 @@ func _state_attack(delta: float) -> void:
 	if _attack_timer <= 0.0:
 		_perform_attack()
 		_attack_timer = attack_cooldown
+		# Occasional combat bark mid-fight (cooldown-gated globally).
+		_speak("taunt" if randf() < 0.35 else "atk", 0.08)
 
 func _state_stagger(_delta: float) -> void:
 	_decelerate()
@@ -462,7 +478,8 @@ func _kill_label() -> String:
 	var s: Script = get_script()
 	var n: String = String(s.get_global_name()) if s else ""
 	n = n.replace("Enemy", "")
-	return n.to_upper() if n != "" else "HOSTILE"
+	var label := n.to_upper() if n != "" else "HOSTILE"
+	return ("%s %s" % [elite.to_upper(), label]) if elite != "" else label
 
 ## Difficulty-driven inaccuracy cone in degrees (0 = perfectly accurate).
 ## Lower difficulty widens it so robots aim worse; HARD is dead-on.
@@ -520,7 +537,12 @@ func _on_damaged(_amount: float, source: Node) -> void:
 	if state == State.DEAD:
 		return
 	_play_hit_flash()
+	# Matching red flare on the model's emission channel + core light.
+	var rm := _visual_root as RobotModel
+	if rm:
+		rm.damage_blink()
 	_flinch = 1.0
+	_speak("hurt", 0.07)
 	var src_pos := global_position
 	if source and source is Node3D:
 		src_pos = (source as Node3D).global_position
@@ -680,6 +702,8 @@ func _make_damage_sparks() -> CPUParticles3D:
 
 func _on_died(_source: Node) -> void:
 	set_state(State.DEAD)
+	# Dying gasp — bypasses the global voice cooldown so kills get their payoff.
+	_speak("die", 0.45)
 	GameState.add_kill(score_value, _kill_label())
 	# Satisfying slow-mo crunch on heftier player kills (bosses do their own,
 	# bigger one; regular drones/androids stay snappy so swarms don't stutter).
