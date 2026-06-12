@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://b0pickup0ovrclk"]
+[gd_scene format=3 uid="uid://d0eaw86627g1e"]
 
 [ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
 
