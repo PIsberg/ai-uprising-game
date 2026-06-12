@@ -84,6 +84,7 @@ func _ready() -> void:
 	_build_rubble(def)
 	_build_beacons(def)
 	_build_skyline(def)
+	_build_sky_traffic(def)
 	_build_tasks(def)
 	_build_exit(def)
 	_build_pickups(def)
@@ -954,6 +955,20 @@ func _build_skyline(def: Dictionary) -> void:
 			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
 			strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mi.add_child(strip)
+
+## Open-sky levels get living air space: occupation craft circling beyond the
+## skyline and the odd meteor fall. Skipped on LOW alongside the other dressing.
+func _build_sky_traffic(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var traffic := SkyTraffic.new()
+	traffic.arena_radius = Vector2(fs.x, fs.y).length() * 0.5
+	traffic.accent = _theme_color(def)
+	add_child(traffic)
 
 func _build_accents(def: Dictionary) -> void:
 	for a in def.get("accents", []):
