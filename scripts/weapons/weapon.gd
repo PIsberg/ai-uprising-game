@@ -276,6 +276,10 @@ func _fire_once(camera: Camera3D, shooter: Node, aiming: bool) -> void:
 	_active_shooter = shooter
 	_active_aiming = aiming
 	_do_shot()
+	# Per-shot camera punch — small, but it sells the report; heavier-recoil
+	# guns thump the view harder. (Charged alt-fire adds its own on top.)
+	if shooter and shooter.has_method("shake"):
+		shooter.shake(clampf(0.04 + data.recoil_pitch * 0.045, 0.05, 0.22))
 
 var _active_camera: Camera3D
 var _active_shooter: Node
