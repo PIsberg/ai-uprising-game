@@ -133,6 +133,13 @@ jobs:
           mkdir -p build/windows
           godot --headless --path . --export-release "Windows Desktop" build/windows/ai-uprising.exe
 
+      - name: Bundle attribution
+        # CREDITS.md ships beside the binary: the boss model is CC-BY-4.0 and
+        # the Orbitron font's OFL wants its license text distributed.
+        run: |
+          cp CREDITS.md build/linux/
+          cp CREDITS.md build/windows/
+
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
@@ -144,3 +151,47 @@ jobs:
         with:
           name: ai-uprising-windows-x86_64
           path: build/windows/
+
+  # Push tagged builds to itch.io with butler. Two pieces of repo config
+  # enable this job (it is skipped until both exist):
+  #   - repository VARIABLE  ITCH_PROJECT   e.g. "youruser/ai-uprising"
+  #   - repository SECRET    BUTLER_API_KEY (itch.io -> Settings -> API keys)
+  # The "linux"/"windows" channel names map to itch.io platform tags.
+  # Steam: once a Steamworks app exists (paid registration + appid/depots),
+  # add a sibling job here that pushes the same build/ dirs via steamcmd.
+  publish-itch:
+    name: Publish to itch.io
+    needs: export
+    if: startsWith(github.ref, 'refs/tags/v') && vars.ITCH_PROJECT != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
+        with:
+          name: ai-uprising-linux-x86_64
+          path: build/linux
+
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: ai-uprising-windows-x86_64
+          path: build/windows
+
+      - name: Install butler
+        run: |
+          curl -fsSL -o butler.zip \
+            "https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default"
+          mkdir -p ~/butler
+          unzip -q butler.zip -d ~/butler
+          chmod +x ~/butler/butler
+          echo "$HOME/butler" >> "$GITHUB_PATH"
+
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          # Artifact transport drops the exec bit; restore it for Linux.
+          chmod +x build/linux/ai-uprising.x86_64
+          ver="${GITHUB_REF_NAME#v}"
+          butler push build/linux   "${{ vars.ITCH_PROJECT }}:linux"   --userversion "$ver"
+          butler push build/windows "${{ vars.ITCH_PROJECT }}:windows" --userversion "$ver"
