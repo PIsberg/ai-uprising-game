@@ -580,7 +580,12 @@ func _build_buildings(def: Dictionary) -> void:
 		var pos: Vector3 = b["pos"]
 		var color: Color = b.get("color", Color(0.7, 0.68, 0.62))
 		# House body — solid + collidable so it blocks shots and movement.
-		_add_box(pos, size, _color_material(color))
+		# Tint the textured wall panel instead of using a flat colour: untextured
+		# pastel slabs under an open sky read as translucent glass.
+		var wall := MAT_WALL.duplicate() as StandardMaterial3D
+		wall.albedo_color = color * Color(0.8, 0.8, 0.8) # texture is bright; keep the hue readable
+		_add_box(pos, size, wall)
+		_add_house_face(pos, size)
 		# Peaked roof (visual only) sitting on top of the body.
 		if b.get("roof", true):
 			var roof_h: float = b.get("roof_height", maxf(1.2, size.x * 0.35))
@@ -591,6 +596,42 @@ func _build_buildings(def: Dictionary) -> void:
 			roof.material_override = _color_material(b.get("roof_color", Color(0.35, 0.18, 0.14)))
 			roof.position = pos + Vector3(0, size.y * 0.5 + roof_h * 0.5, 0)
 			add_child(roof)
+
+## Door + window trim on the street-facing wall (the side toward the level
+## origin) so houses read as solid, lived-in buildings instead of blank boxes.
+func _add_house_face(pos: Vector3, size: Vector3) -> void:
+	var fd := Vector3(0, 0, -signf(pos.z)) if absf(pos.z) >= absf(pos.x) \
+			else Vector3(-signf(pos.x), 0, 0)
+	if fd.length_squared() < 0.5: # house at the origin — arbitrary front
+		fd = Vector3(0, 0, 1)
+	var across := Vector3(1, 0, 0) if fd.z != 0.0 else Vector3(0, 0, 1)
+	var half := (size.z if fd.z != 0.0 else size.x) * 0.5
+	var wall_c := pos + fd * (half + 0.05) # just proud of the wall face
+	var floor_y := pos.y - size.y * 0.5
+	var door_mat := _color_material(Color(0.2, 0.14, 0.1), 0.7)
+	var glass_mat := _color_material(Color(0.07, 0.09, 0.12), 0.15)
+	glass_mat.metallic = 0.6
+	var door_c := Vector3(wall_c.x, floor_y + 1.05, wall_c.z)
+	_add_trim(door_c, _face_box(fd, 1.0, 2.1), door_mat)
+	var win_off: float = (size.x if fd.z != 0.0 else size.z) * 0.28
+	var win_y := floor_y + size.y * 0.55
+	for s: float in [-1.0, 1.0]:
+		var win_c := wall_c + across * (win_off * s)
+		win_c.y = win_y
+		_add_trim(win_c, _face_box(fd, 1.2, 1.0), glass_mat)
+
+## A wall-mounted box: `w`×`h` across the face, thin along the facing axis.
+func _face_box(fd: Vector3, w: float, h: float) -> Vector3:
+	return Vector3(w, h, 0.1) if fd.z != 0.0 else Vector3(0.1, h, w)
+
+func _add_trim(center: Vector3, sz: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = sz
+	bm.material = mat
+	mi.mesh = bm
+	mi.position = center
+	add_child(mi)
 
 # ---------- verticality: ramps & rooftop platforms ----------
 # These are player-reachable surfaces. They're added under the builder root (NOT

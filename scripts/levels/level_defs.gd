@@ -877,7 +877,7 @@ static func _suburb_boss() -> Dictionary:
 		"floor_color": Color(0.16, 0.15, 0.17),
 		"spawn": Vector3(-36, 0.6, -36),
 		"exit": Vector3(36, 1.5, 36),
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -31), "color": Color(0.45, 0.85, 1)},
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -23), "color": Color(0.45, 0.85, 1)}, # in front of the corner house — (-31,-31) was inside it
 		"env": {
 			"physical_sky": true, "turbidity": 10.0,
 			"sky_top": Color(0.12, 0.1, 0.22), "sky_horizon": Color(0.7, 0.3, 0.2),
