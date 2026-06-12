@@ -196,8 +196,16 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false) # no AI — the model node keeps animating
 	var entry := {"node": bot, "model": bot.get_node_or_null("Model"),
-		"mats": [], "lamp_light": null, "weapon": null,
+		"mats": [], "lamp_light": null, "eye_lights": [], "weapon": null,
 		"attack": info["attack"], "tweens": []}
+	# The combat scenes ship with RED eye/sensor lights (spider omni, mech
+	# spotlight, drone eye) — hostile dots that clash with the calm phase.
+	# Re-enlist them: green while serving, burned red with everything else.
+	for l in bot.find_children("*", "Light3D", true, false):
+		var lt := l as Light3D
+		lt.light_color = EYE_GREEN
+		lt.light_energy = minf(lt.light_energy, 1.2) # gentle in servitude
+		entry["eye_lights"].append(lt)
 	_add_lamps(bot, entry, info)
 	if info["gun"] != "":
 		_add_rack_gun(bot, entry, info["gun"])
@@ -355,6 +363,13 @@ func _the_turn() -> void:
 			lt.set_parallel(true)
 			lt.tween_property(lamp_light, "light_color", EYE_RED, 0.45)
 			lt.tween_property(lamp_light, "light_energy", 1.8, 0.45)
+		# The combat eye/sensor lights flare back to their hostile red.
+		for el in entry["eye_lights"]:
+			if is_instance_valid(el):
+				var et2 := create_tween()
+				et2.set_parallel(true)
+				et2.tween_property(el, "light_color", EYE_RED, 0.45)
+				et2.tween_property(el, "light_energy", 2.2, 0.45)
 		_arm(entry)
 		_strike(entry)
 		# A menacing step toward the camera, staggered so the line surges.
