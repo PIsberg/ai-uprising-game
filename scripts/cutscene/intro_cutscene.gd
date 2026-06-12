@@ -19,7 +19,7 @@ const CAST := {
 	"mech": {"scene": "res://scenes/enemies/mech.tscn", "attack": "Punch",
 		"gun": "res://assets/models/weapons/blaster-p.glb", "lamp_y": 0.78, "lamps": 2},
 	"spider": {"scene": "res://scenes/enemies/spider.tscn", "attack": "Attack",
-		"gun": "res://assets/models/weapons/blaster-h.glb", "lamp_y": 0.6, "lamps": 2},
+		"gun": "", "lamp_y": 0.6, "lamps": 2}, # no arms — it lunges, never holds a gun
 	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": "", "gun": "",
 		"lamp_y": 0.52, "lamps": 1}, # one central lamp: it IS a flying eye
 }
@@ -196,7 +196,7 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false) # no AI — the model node keeps animating
 	var entry := {"node": bot, "model": bot.get_node_or_null("Model"),
-		"mats": [], "lamp_light": null, "eye_lights": [], "weapon": null,
+		"lamp_light": null, "eye_lights": [], "weapon": null,
 		"attack": info["attack"], "tweens": []}
 	# The combat scenes ship with RED eye/sensor lights (spider omni, mech
 	# spotlight, drone eye) — hostile dots that clash with the calm phase.
@@ -232,36 +232,15 @@ func _local_aabb(bot: Node3D) -> AABB:
 			first = false
 	return merged
 
-## Status lamps fitted to the chassis: measured height/front-face/width per
-## model (so they sit ON the body, not floating beside it), plus a soft body
-## light. Stored in the entry so the turn can burn them red.
+## Status glow fitted to the chassis: a soft body light at a measured height
+## (no lamp sphere meshes — at cinematic camera angles those read as floating
+## dots, and the models' own eye lights already mark the "face").
 func _add_lamps(bot: Node3D, entry: Dictionary, info: Dictionary) -> void:
 	var ab := _local_aabb(bot)
 	var lamp_y: float = ab.position.y + ab.size.y * float(info.get("lamp_y", 0.8))
-	# Local front is -Z (the bot is yawed PI to face the camera); sit the lamps
+	# Local front is -Z (the bot is yawed PI to face the camera); sit the glow
 	# just proud of the front face.
 	var front_z: float = ab.position.z - 0.03
-	var sep: float = clampf(ab.size.x * 0.16, 0.06, 0.16)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = EYE_GREEN
-	mat.emission_enabled = true
-	mat.emission = EYE_GREEN
-	mat.emission_energy_multiplier = 4.0
-	entry["mats"].append(mat)
-	var xs: Array = [-sep, sep] if int(info.get("lamps", 2)) == 2 else [0.0]
-	for x in xs:
-		var lamp := MeshInstance3D.new()
-		var sm := SphereMesh.new()
-		sm.radius = 0.05
-		sm.height = 0.1
-		sm.radial_segments = 8
-		sm.rings = 4
-		sm.material = mat
-		lamp.mesh = sm
-		lamp.position = Vector3(x, lamp_y, front_z)
-		lamp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		bot.add_child(lamp)
 	var light := OmniLight3D.new()
 	light.light_color = EYE_GREEN
 	light.light_energy = 0.9
@@ -350,13 +329,6 @@ func _the_turn() -> void:
 		for t in entry["tweens"]:
 			if t and t.is_valid():
 				t.kill()
-		for m in entry["mats"]:
-			var mat: StandardMaterial3D = m
-			var et := create_tween()
-			et.set_parallel(true)
-			et.tween_property(mat, "emission", EYE_RED, 0.45)
-			et.tween_property(mat, "albedo_color", EYE_RED, 0.45)
-			et.tween_property(mat, "emission_energy_multiplier", 5.5, 0.45)
 		var lamp_light: OmniLight3D = entry["lamp_light"]
 		if lamp_light:
 			var lt := create_tween()

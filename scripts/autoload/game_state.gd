@@ -340,6 +340,9 @@ func save_progress() -> void:
 	cf.set_value("run", "unlocked_weapons", unlocked_weapons)
 	cf.set_value("run", "equipped_weapon", equipped_weapon)
 	cf.set_value("run", "upgrades", upgrades)
+	# Persist which robots the briefings have introduced — otherwise a resumed
+	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
+	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -357,6 +360,9 @@ func load_progress() -> bool:
 	var up: Dictionary = cf.get_value("run", "upgrades", {})
 	for k in upgrades:
 		upgrades[k] = int(up.get(k, 0))
+	seen_enemy_types.clear()
+	for t in cf.get_value("run", "seen_enemies", []):
+		seen_enemy_types[str(t)] = true
 	return true
 
 func clear_save() -> void:
