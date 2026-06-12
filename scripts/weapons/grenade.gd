@@ -1,7 +1,9 @@
 class_name Grenade
 extends RigidBody3D
-## Thrown frag grenade: arcs under gravity, bounces off world geometry, and
-## detonates on a fuse timer dealing splash damage to nearby enemies.
+## Thrown plasma charge: arcs under gravity, bounces off world geometry, and
+## detonates on a fuse timer dealing splash damage to nearby enemies. The
+## energy core throbs faster and hotter as the fuse runs down — anyone nearby
+## can read exactly how angry it is.
 
 @export var fuse: float = 1.5
 const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
@@ -13,22 +15,38 @@ const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
 var _shooter: Node
 var _t: float = 0.0
 var _dead: bool = false
+var _pulse_phase: float = 0.0
+var _core_mat: StandardMaterial3D
+
+func _ready() -> void:
+	# Per-instance core material so simultaneous grenades pulse independently.
+	var core := get_node_or_null("Core") as MeshInstance3D
+	if core and core.mesh and core.mesh.material is StandardMaterial3D:
+		_core_mat = core.mesh.material.duplicate()
+		core.set_surface_override_material(0, _core_mat)
 
 func throw_grenade(initial_velocity: Vector3, shooter: Node) -> void:
 	_shooter = shooter
 	linear_velocity = initial_velocity
-	angular_velocity = Vector3(randf_range(-7, 7), randf_range(-7, 7), randf_range(-7, 7))
+	# Spin around the fin axis so it flies like thrown tech, not a tumbling rock.
+	angular_velocity = Vector3(randf_range(-2, 2), randf_range(8, 14), randf_range(-2, 2))
 
 func _physics_process(delta: float) -> void:
 	if _dead:
 		return
 	_t += delta
-	
-	# Blink warning LED
+
+	# Arming heartbeat: the core and light throb, accelerating from a calm
+	# 4Hz toward a frantic ~14Hz as detonation closes in.
+	var urgency := clampf(_t / maxf(fuse, 0.01), 0.0, 1.0)
+	_pulse_phase += delta * TAU * lerpf(4.0, 14.0, urgency)
+	var beat := 0.5 + 0.5 * sin(_pulse_phase)
+	if _core_mat:
+		_core_mat.emission_energy_multiplier = lerpf(1.2, 3.0, beat) + urgency * 2.0
 	var light := get_node_or_null("Light") as OmniLight3D
 	if light:
-		light.visible = (int(_t / 0.12) % 2) == 0
-		
+		light.light_energy = lerpf(0.6, 1.8, beat) + urgency * 1.2
+
 	if _t >= fuse:
 		_explode()
 
