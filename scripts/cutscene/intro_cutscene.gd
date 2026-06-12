@@ -11,12 +11,16 @@ extends CutscenePlayer
 const EYE_GREEN := Color(0.25, 1.0, 0.4)
 const EYE_RED := Color(1.0, 0.18, 0.12)
 
-## Cast: enemy scene + the combat clip it snaps to at the turn.
+## Cast: enemy scene, the combat clip it snaps to at the turn, and the blaster
+## it picks up from the rack beside it ("" = built-in armament).
 const CAST := {
-	"android": {"scene": "res://scenes/enemies/android.tscn", "attack": "Shoot"},
-	"mech": {"scene": "res://scenes/enemies/mech.tscn", "attack": "Punch"},
-	"spider": {"scene": "res://scenes/enemies/spider.tscn", "attack": "Attack"},
-	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": ""},
+	"android": {"scene": "res://scenes/enemies/android.tscn", "attack": "Shoot",
+		"gun": "res://assets/models/weapons/blaster-d.glb"},
+	"mech": {"scene": "res://scenes/enemies/mech.tscn", "attack": "Punch",
+		"gun": "res://assets/models/weapons/blaster-p.glb"},
+	"spider": {"scene": "res://scenes/enemies/spider.tscn", "attack": "Attack",
+		"gun": "res://assets/models/weapons/blaster-h.glb"},
+	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": "", "gun": ""},
 }
 
 var _hero: Node3D
@@ -177,8 +181,8 @@ func _build_lights_and_sky() -> void:
 
 ## Spawn an in-game enemy as a cutscene actor: AI/physics off, but the model's
 ## own AnimationPlayer keeps the Idle loop alive (RobotModel drives it). The
-## per-surface material duplicates RobotModel makes at _ready get a friendly
-## green emission for the calm phase — the same channel the turn burns red.
+## models stay their natural colors — friendliness lives in small green STATUS
+## LAMPS mounted on each robot (the lamps, not the bodies, turn red).
 func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	var info: Dictionary = CAST[type]
 	var bot: Node3D = load(info["scene"]).instantiate()
@@ -189,22 +193,11 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false) # no AI — the model node keeps animating
 	var entry := {"node": bot, "model": bot.get_node_or_null("Model"),
-		"mats": [], "attack": info["attack"], "tweens": []}
-	# Friendly aura on every prepared emission surface (green, gentle).
-	for mi in bot.find_children("*", "MeshInstance3D", true, false):
-		var mesh_inst := mi as MeshInstance3D
-		if mesh_inst.mesh == null:
-			continue
-		for s in mesh_inst.mesh.get_surface_count():
-			var m := mesh_inst.get_surface_override_material(s)
-			if m == null:
-				m = mesh_inst.material_override
-			if m is StandardMaterial3D and (m as StandardMaterial3D).emission_enabled:
-				var sm := m as StandardMaterial3D
-				sm.emission = EYE_GREEN
-				# Gentle: the cutscene rig's heavy bloom amplifies everything.
-				sm.emission_energy_multiplier = 0.35
-				entry["mats"].append(sm)
+		"mats": [], "lamp_light": null, "weapon": null,
+		"attack": info["attack"], "tweens": []}
+	_add_lamps(bot, entry)
+	if info["gun"] != "":
+		_add_rack_gun(bot, entry, info["gun"])
 	# Fliers bob gently; grounded units idle via their animation clip.
 	if type == "drone":
 		var bob := bot.create_tween().set_loops()
@@ -213,6 +206,86 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 		entry["tweens"].append(bob)
 	_robots.append(entry)
 	return bot
+
+## Merged local-space AABB of a model's meshes — sizes the lamp placement.
+func _model_height(bot: Node3D) -> float:
+	var top := 1.6
+	for mi in bot.find_children("*", "MeshInstance3D", true, false):
+		var mesh_inst := mi as MeshInstance3D
+		if mesh_inst.mesh:
+			var ab: AABB = mesh_inst.global_transform * mesh_inst.mesh.get_aabb()
+			top = maxf(top, ab.end.y - bot.global_position.y)
+	return top
+
+## Two small status lamps at "eye" height plus a soft body light — the friendly
+## green signature. Stored in the entry so the turn can burn them red.
+func _add_lamps(bot: Node3D, entry: Dictionary) -> void:
+	var h := _model_height(bot) / maxf(bot.scale.y, 0.01) # local-space height
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = EYE_GREEN
+	mat.emission_enabled = true
+	mat.emission = EYE_GREEN
+	mat.emission_energy_multiplier = 4.0
+	entry["mats"].append(mat)
+	for x in [-0.11, 0.11]:
+		var lamp := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.05
+		sm.height = 0.1
+		sm.radial_segments = 8
+		sm.rings = 4
+		sm.material = mat
+		lamp.mesh = sm
+		# Bot faces world +Z (rotation.y = PI), so its local front is -Z.
+		lamp.position = Vector3(x, h * 0.86, -0.28)
+		lamp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		bot.add_child(lamp)
+	var light := OmniLight3D.new()
+	light.light_color = EYE_GREEN
+	light.light_energy = 0.9
+	light.omni_range = 2.6
+	light.position = Vector3(0, h * 0.7, -0.4)
+	bot.add_child(light)
+	entry["lamp_light"] = light
+
+## A blaster resting on a small rack stand beside the robot — unarmed for now;
+## the turn snaps it into the robot's grip.
+func _add_rack_gun(bot: Node3D, entry: Dictionary, gun_path: String) -> void:
+	var stand := MeshInstance3D.new()
+	var sb := BoxMesh.new()
+	sb.size = Vector3(0.5, 0.62, 0.3)
+	sb.material = _flat(Color(0.35, 0.37, 0.42), 0.5)
+	stand.mesh = sb
+	var side := 1.0 if bot.global_position.x >= 0.0 else -1.0
+	stand.position = bot.global_position + Vector3(0.9 * side, 0.31, 0.2)
+	add_child(stand)
+	var gun := (load(gun_path) as PackedScene).instantiate() as Node3D
+	add_child(gun)
+	# Lying flat on the rack, grip up — clearly "stored", not held.
+	gun.global_position = stand.position + Vector3(0, 0.36, 0)
+	gun.rotation_degrees = Vector3(0, randf_range(-25, 25), 90)
+	entry["weapon"] = gun
+
+## The turn's pickup: the rack gun flies into the robot's grip and aims at the
+## camera with the rest of the battle stance.
+func _arm(entry: Dictionary) -> void:
+	var gun: Node3D = entry["weapon"]
+	var bot: Node3D = entry["node"]
+	if gun == null or not is_instance_valid(gun):
+		return
+	var xf := gun.global_transform
+	gun.get_parent().remove_child(gun)
+	bot.add_child(gun)
+	gun.global_transform = xf # same world pose, new parent
+	var h := _model_height(bot) / maxf(bot.scale.y, 0.01)
+	var tw := gun.create_tween()
+	tw.set_parallel(true)
+	# Into the grip: chest-right, muzzle (-Z local) toward the camera.
+	tw.tween_property(gun, "position", Vector3(0.3, h * 0.52, -0.34), 0.4) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(gun, "rotation", Vector3.ZERO, 0.4) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 # ---------- choreography ----------
 
@@ -243,8 +316,8 @@ func _the_turn() -> void:
 	tw.tween_property(_sky_mat, "emission", Color(0.7, 0.16, 0.06), 0.7)
 	tw.tween_property(_sky_mat, "albedo_color", Color(0.6, 0.14, 0.06), 0.7)
 	tw.tween_property(_eye_light, "light_color", EYE_RED, 0.4)
-	# Each robot: drop the chore, aura green->red, snap to its combat clip and
-	# keep re-striking it so the aggression holds through the title card.
+	# Each robot: drop the chore, status lamps green->red, GRAB the rack gun,
+	# snap to its combat clip and keep re-striking it through the title card.
 	for entry in _robots:
 		var bot: Node3D = entry["node"]
 		for t in entry["tweens"]:
@@ -254,8 +327,16 @@ func _the_turn() -> void:
 			var mat: StandardMaterial3D = m
 			var et := create_tween()
 			et.set_parallel(true)
-			et.tween_property(mat, "emission", EYE_RED, 0.5)
-			et.tween_property(mat, "emission_energy_multiplier", 1.3, 0.5)
+			et.tween_property(mat, "emission", EYE_RED, 0.45)
+			et.tween_property(mat, "albedo_color", EYE_RED, 0.45)
+			et.tween_property(mat, "emission_energy_multiplier", 5.5, 0.45)
+		var lamp_light: OmniLight3D = entry["lamp_light"]
+		if lamp_light:
+			var lt := create_tween()
+			lt.set_parallel(true)
+			lt.tween_property(lamp_light, "light_color", EYE_RED, 0.45)
+			lt.tween_property(lamp_light, "light_energy", 1.8, 0.45)
+		_arm(entry)
 		_strike(entry)
 		# A menacing step toward the camera, staggered so the line surges.
 		var step := bot.create_tween()

@@ -79,6 +79,11 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_damaged)
+	# Mark this type as encountered when it spawns in an actual level (fixes
+	# hand-authored level_01, whose roster has no def for the briefing to
+	# mark). Gated on a live player so cutscene/briefing actors don't count.
+	if get_tree().get_first_node_in_group("player") != null:
+		GameState.mark_enemy_seen(_kill_label().to_lower())
 	if eye == null:
 		eye = get_node_or_null("Eye")
 	if muzzle == null:
