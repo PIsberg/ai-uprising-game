@@ -81,6 +81,8 @@ func _ready() -> void:
 	_build_accent_strips(def)
 	_build_signage(def)
 	_build_floor_seams(def)
+	_build_grime(def)
+	_build_cover_trim(def)
 	_build_puddles(def)
 	_build_pipes(def)
 	_build_rubble(def)
@@ -241,10 +243,12 @@ func _build_environment(def: Dictionary) -> void:
 		omni.shadow_blur = 1.5
 		omni.light_specular = 0.6
 		add_child(omni)
-		# Interiors: a visible fixture on the ceiling above each light, so the
-		# illumination has a SOURCE instead of hanging disembodied in the air.
+		# Every light gets a visible SOURCE instead of hanging disembodied:
+		# ceiling luminaires indoors, slim floodlight pylons outdoors.
 		if not def.get("open_sky", false):
 			_add_light_fixture(l["pos"], l.get("color", Color(1, 1, 1)))
+		else:
+			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
 		# infrastructure failing, and motion in otherwise static lighting.
 		if li == def.get("lights", []).size() - 1:
@@ -301,6 +305,46 @@ func _add_light_fixture(light_pos: Vector3, color: Color) -> void:
 	panel.position = Vector3(light_pos.x, WALL_HEIGHT - 0.13, light_pos.z)
 	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(panel)
+
+## A slim floodlight mast under an outdoor light: tapered pole from the ground
+## up to the omni, topped with an emissive head in the light's color.
+func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
+	var pole := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.06
+	cm.bottom_radius = 0.12
+	cm.height = light_pos.y
+	cm.radial_segments = 8
+	cm.material = _color_material(Color(0.12, 0.13, 0.16), 0.5)
+	pole.mesh = cm
+	pole.position = Vector3(light_pos.x, light_pos.y * 0.5, light_pos.z)
+	add_child(pole)
+	# Solid: built before the navmesh bake, so robots path around the mast.
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 0.14
+	shape.height = light_pos.y
+	cs.shape = shape
+	body.add_child(cs)
+	body.position = pole.position
+	add_child(body)
+	var head := MeshInstance3D.new()
+	var hb := BoxMesh.new()
+	hb.size = Vector3(0.55, 0.22, 0.55)
+	var hm := StandardMaterial3D.new()
+	hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hm.albedo_color = color
+	hm.emission_enabled = true
+	hm.emission = color
+	hm.emission_energy_multiplier = 2.6
+	hb.material = hm
+	head.mesh = hb
+	head.position = Vector3(light_pos.x, light_pos.y + 0.05, light_pos.z)
+	head.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(head)
 
 ## Faulty-wiring flicker: mostly steady, with brief random dips and the odd
 ## near-blackout. A pre-baked randomized loop is cheap and reads as organic.
@@ -809,6 +853,62 @@ func _build_signage(def: Dictionary) -> void:
 		add_child(lbl)
 
 # ---------- grime + infrastructure detail ----------
+
+## Weathering streaks on the perimeter walls: a handful of stretched dark
+## decals (the shared procedural scorch texture) at varying heights/widths.
+## Walls stop reading as freshly-printed geometry.
+func _build_grime(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var count := int(8 * density)
+	for i in count:
+		var wp := _wall_point(fs, i % 4, randf_range(-0.9, 0.9), randf_range(1.2, 4.2), 0.4)
+		var d := Decal.new()
+		d.texture_albedo = ScorchMark._scorch_texture()
+		d.size = Vector3(randf_range(1.2, 2.8), 1.0, randf_range(2.2, 4.5))
+		d.modulate = Color(1, 1, 1, randf_range(0.25, 0.5))
+		add_child(d)
+		d.position = wp["pos"]
+		# Project into the wall: decals beam down local -Y, so pitch the box
+		# to face the wall, then roll randomly for variety.
+		d.rotation.y = wp["yaw"]
+		d.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+		d.rotate_object_local(Vector3.UP, randf() * TAU)
+
+## Cover blocks get a faint edge-lit trim along their top face in the theme
+## color — cover reads at a glance even in the darkest arenas.
+func _build_cover_trim(def: Dictionary) -> void:
+	var col := _theme_color(def)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = col
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = 0.9 # subtle — outline, not signage
+	for w in def.get("walls", []):
+		var pos: Vector3 = w["pos"]
+		var size: Vector3 = w["size"]
+		if size.y > 5.0:
+			continue # interior dividers reach the ceiling; trim only the cover
+		var top := pos.y + size.y * 0.5 + 0.015
+		for edge in [
+				[Vector3(pos.x, top, pos.z - size.z * 0.5), Vector3(size.x, 0.03, 0.05)],
+				[Vector3(pos.x, top, pos.z + size.z * 0.5), Vector3(size.x, 0.03, 0.05)],
+				[Vector3(pos.x - size.x * 0.5, top, pos.z), Vector3(0.05, 0.03, size.z)],
+				[Vector3(pos.x + size.x * 0.5, top, pos.z), Vector3(0.05, 0.03, size.z)]]:
+			var mi := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = edge[1]
+			bm.material = m
+			mi.mesh = bm
+			mi.position = edge[0]
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(mi)
 
 ## Panel seams ruled across interior floors: thin recess-dark strips every few
 ## metres in both axes. Breaks the monotony of a large single-material slab and
