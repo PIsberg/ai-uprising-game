@@ -28,25 +28,25 @@ albedo_color = Color(0.4, 1, 0.6, 0.6)
 transparency = 1
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor"]
-size = Vector3(50, 0.4, 50)
+size = Vector3(70, 0.4, 70)
 material = ExtResource("9_floor")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(50, 0.4, 50)
+size = Vector3(70, 0.4, 70)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall_long"]
-size = Vector3(50, 5, 0.5)
+size = Vector3(70, 5, 0.5)
 material = ExtResource("10_wall")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wall_long"]
-size = Vector3(50, 5, 0.5)
+size = Vector3(70, 5, 0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_wall_short"]
-size = Vector3(0.5, 5, 50)
+size = Vector3(0.5, 5, 70)
 material = ExtResource("10_wall")
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wall_short"]
-size = Vector3(0.5, 5, 50)
+size = Vector3(0.5, 5, 70)
 
 [sub_resource type="BoxMesh" id="BoxMesh_crate"]
 size = Vector3(1.5, 1.5, 1.5)
@@ -56,7 +56,7 @@ material = ExtResource("12_crate")
 size = Vector3(1.5, 1.5, 1.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ceiling"]
-size = Vector3(50, 0.4, 50)
+size = Vector3(70, 0.4, 70)
 material = ExtResource("11_ceil")
 
 [sub_resource type="BoxMesh" id="BoxMesh_exit"]
@@ -91,7 +91,7 @@ directional_shadow_max_distance = 80.0
 
 [node name="VoxelGI" type="VoxelGI" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
-size = Vector3(52, 8, 52)
+size = Vector3(72, 8, 72)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
 navigation_mesh = SubResource("NavigationMesh_1")
@@ -116,7 +116,7 @@ mesh = SubResource("BoxMesh_ceiling")
 shape = SubResource("BoxShape3D_floor")
 
 [node name="WallN" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -35)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallN"]
@@ -126,7 +126,7 @@ mesh = SubResource("BoxMesh_wall_long")
 shape = SubResource("BoxShape3D_wall_long")
 
 [node name="WallS" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 35)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallS"]
@@ -136,7 +136,7 @@ mesh = SubResource("BoxMesh_wall_long")
 shape = SubResource("BoxShape3D_wall_long")
 
 [node name="WallE" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 2.7, 0)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallE"]
@@ -146,7 +146,7 @@ mesh = SubResource("BoxMesh_wall_short")
 shape = SubResource("BoxShape3D_wall_short")
 
 [node name="WallW" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2.7, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 2.7, 0)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/WallW"]
@@ -156,7 +156,7 @@ mesh = SubResource("BoxMesh_wall_short")
 shape = SubResource("BoxShape3D_wall_short")
 
 [node name="Crate1" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.95, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.2, 0.95, -5.6)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate1"]
@@ -166,7 +166,7 @@ mesh = SubResource("BoxMesh_crate")
 shape = SubResource("BoxShape3D_crate")
 
 [node name="Crate2" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.95, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.4, 0.95, 7)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate2"]
@@ -176,7 +176,7 @@ mesh = SubResource("BoxMesh_crate")
 shape = SubResource("BoxShape3D_crate")
 
 [node name="Crate3" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.95, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.95, -14)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate3"]
@@ -186,7 +186,7 @@ mesh = SubResource("BoxMesh_crate")
 shape = SubResource("BoxShape3D_crate")
 
 [node name="Crate4" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.95, 12)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.95, 16.8)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate4"]
@@ -196,7 +196,7 @@ mesh = SubResource("BoxMesh_crate")
 shape = SubResource("BoxShape3D_crate")
 
 [node name="Crate5" type="StaticBody3D" parent="NavigationRegion3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 14)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 19.6)
 collision_layer = 1
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Crate5"]
@@ -206,41 +206,41 @@ mesh = SubResource("BoxMesh_crate")
 shape = SubResource("BoxShape3D_crate")
 
 [node name="Spawn_Drone1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 2.5, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.6, 2.5, 5.6)
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("3_drone")
 spawn_on_ready = true
 
 [node name="Spawn_Drone2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2.5, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.8, 2.5, 8.4)
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("3_drone")
 spawn_on_ready = false
-trigger_radius = 18.0
+trigger_radius = 25.0
 
 [node name="Spawn_Android1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.6, 0, -2.8)
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("4_android")
 spawn_on_ready = true
 spawn_delay = 0.5
 
 [node name="Spawn_Android2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -12)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -16.8)
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("4_android")
 spawn_on_ready = false
-trigger_radius = 16.0
+trigger_radius = 22.5
 
 [node name="Spawn_Mech1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, 14)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.4, 0, 19.6)
 script = ExtResource("6_spawner")
 enemy_scene = ExtResource("5_mech")
 spawn_on_ready = false
-trigger_radius = 20.0
+trigger_radius = 28.0
 
 [node name="ExitObjective" type="Area3D" parent="." groups=["objective"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1.5, 22)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.8, 1.5, 30.8)
 collision_layer = 64
 collision_mask = 2
 script = ExtResource("7_obj")
@@ -259,20 +259,20 @@ light_energy = 4.0
 omni_range = 12.0
 
 [node name="AmbientLightA" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4.5, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 4.5, -14)
 light_color = Color(1, 0.85, 0.7, 1)
 light_energy = 1.4
 shadow_enabled = true
 shadow_bias = 0.03
-omni_range = 18.0
+omni_range = 24.0
 
 [node name="AmbientLightB" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 4.5, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 4.5, 14)
 light_color = Color(0.7, 0.85, 1, 1)
 light_energy = 1.1
 shadow_enabled = true
 shadow_bias = 0.03
-omni_range = 18.0
+omni_range = 24.0
 
 [node name="AmbientLightC" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
@@ -280,25 +280,25 @@ light_color = Color(1, 0.9, 0.75, 1)
 light_energy = 0.85
 shadow_enabled = true
 shadow_bias = 0.03
-omni_range = 15.0
+omni_range = 20.0
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0.1, -18)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.2, 0.1, -25.2)
 
 [node name="Health1" parent="." instance=ExtResource("13_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.6, 0, 2.8)
 
 [node name="Health2" parent="." instance=ExtResource("13_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 16)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.8, 0, 22.4)
 
 [node name="Ammo1" parent="." instance=ExtResource("14_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -12)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.4, 0, -16.8)
 
 [node name="Ammo2" parent="." instance=ExtResource("14_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.2, 0, -2.8)
 
 [node name="WeaponPickup_Rifle" parent="." instance=ExtResource("16_wpk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, -14)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.8, 0, -19.6)
 weapon_scene = ExtResource("17_rifle")
 
 [node name="HUD" parent="." instance=ExtResource("8_hud")]

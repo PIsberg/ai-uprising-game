@@ -4,8 +4,68 @@ class_name LevelDefs
 ## assistants — GPT / Gemini / Claude / Grok — themed only by name, colour and
 ## layout (no logos or real assets).
 
+## Uniform world scale applied to every def at fetch time: arenas grow, the
+## layout topology is preserved (positions and wall/ramp/platform spans scale
+## on X/Z), while heights and human-scale content (props, enemies, pickups)
+## keep their authored size. One number to tune the whole campaign's roominess.
+const WORLD_SCALE := 1.4
+
 static func get_def(id: String) -> Dictionary:
-	return _defs().get(id, {})
+	var def: Dictionary = _defs().get(id, {})
+	if def.is_empty():
+		return def
+	return _scaled(def, WORLD_SCALE)
+
+static func _scaled(def: Dictionary, s: float) -> Dictionary:
+	if is_equal_approx(s, 1.0):
+		return def
+	def = def.duplicate(true)
+	if def.has("floor_size"):
+		def["floor_size"] = (def["floor_size"] as Vector2) * s
+	for key in ["spawn", "exit", "supply_center"]:
+		if def.has(key):
+			def[key] = _sv(def[key], s)
+	if def.has("weapon") and (def["weapon"] as Dictionary).has("pos"):
+		def["weapon"]["pos"] = _sv(def["weapon"]["pos"], s)
+	if def.has("set_piece"):
+		for k in ["pos", "face"]:
+			if (def["set_piece"] as Dictionary).has(k):
+				def["set_piece"][k] = _sv(def["set_piece"][k], s)
+	# Entries whose footprint defines the layout stretch with the world…
+	for key in ["walls", "accents", "ramps", "platforms"]:
+		for e in def.get(key, []):
+			if e.has("pos"):
+				e["pos"] = _sv(e["pos"], s)
+			if e.has("size"):
+				e["size"] = _sv(e["size"], s)
+	# …while placed content keeps its authored size and just spreads out.
+	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
+			"buildings", "targets", "lore"]:
+		for e in def.get(key, []):
+			if e.has("pos"):
+				e["pos"] = _sv(e["pos"], s)
+			if e.has("trigger"):
+				e["trigger"] = float(e["trigger"]) * s
+			if e.has("range"):
+				e["range"] = float(e["range"]) * s
+	if def.has("horde_spawns"):
+		var pts: Array = []
+		for p in def["horde_spawns"]:
+			pts.append(_sv(p, s))
+		def["horde_spawns"] = pts
+	for t in def.get("tasks", []):
+		if t.has("pos"):
+			t["pos"] = _sv(t["pos"], s)
+		if t.has("points"):
+			var pp: Array = []
+			for p in t["points"]:
+				pp.append(_sv(p, s))
+			t["points"] = pp
+	return def
+
+## Scale a position/span on the ground plane; heights are sacred.
+static func _sv(v: Vector3, s: float) -> Vector3:
+	return Vector3(v.x * s, v.y, v.z * s)
 
 static func _defs() -> Dictionary:
 	return {

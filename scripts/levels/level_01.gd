@@ -40,7 +40,7 @@ func _setup_objectives() -> void:
 	# A keycard along the route so the player learns the find-and-unlock loop.
 	var key := Keycard.new()
 	key.task_id = "key"
-	key.position = Vector3(10, 0, 8)
+	key.position = Vector3(14, 0, 11.2)
 	add_child(key)
 
 func _bake_gi() -> void:
