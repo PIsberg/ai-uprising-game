@@ -21,11 +21,6 @@ const ENEMY_SCENES := {
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
 }
-const PICKUP_SCENES := {
-	"health": preload("res://scenes/pickups/health_pack.tscn"),
-	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
-	"overclock": preload("res://scenes/pickups/overclock.tscn"),
-}
 const PROP_SCENES := {
 	"car": preload("res://scenes/props/car.tscn"),
 	"fence": preload("res://scenes/props/fence.tscn"),
@@ -92,7 +87,6 @@ func _ready() -> void:
 	_build_stars(def)
 	_build_tasks(def)
 	_build_exit(def)
-	_build_pickups(def)
 	_build_weapon_pickup(def)
 	_build_targets(def)
 	_build_lore(def)
@@ -1281,15 +1275,9 @@ func _build_exit(def: Dictionary) -> void:
 	portal.position = def.get("exit", Vector3(0, 1.5, 0))
 	add_child(portal)
 
-func _build_pickups(def: Dictionary) -> void:
-	for p in def.get("pickups", []):
-		var scene: PackedScene = PICKUP_SCENES.get(p["type"])
-		if scene == null:
-			continue
-		var pk := scene.instantiate() as Node3D
-		pk.position = p["pos"]
-		add_child(pk)
-
+# Supply pickups (health/ammo/overclock) are NOT placed by the builder:
+# they drop from kills instead (EnemyBase._drop_loot). Any "pickups" entries
+# in level defs are ignored. Weapons and objective items still get placed.
 func _build_weapon_pickup(def: Dictionary) -> void:
 	_spawn_weapon_pickup(def.get("weapon", {}))
 	# Optional additional weapons to find in the level.

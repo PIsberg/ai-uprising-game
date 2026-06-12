@@ -29,13 +29,14 @@ var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by
 @export var stagger_threshold: float = 38.0 ## Poise: damage absorbed before a hit staggers it (bosses set this high).
 
 @export_group("Loot")
-@export var drop_chance: float = 0.3 ## Chance to leave an ammo/health drop on death (anchors with score >= 250 always drop).
+@export var drop_chance: float = 0.45 ## Chance to leave a supply drop on death (anchors with score >= 250 always drop). Kills are the ONLY supply source in campaign levels; difficulty scales this via pickup_mult.
 
 const MUZZLE_FLASH: PackedScene = preload("res://scenes/fx/muzzle_flash.tscn")
 const EXPLOSION: PackedScene = preload("res://scenes/fx/enemy_explosion.tscn")
 const DAMAGED_FX: PackedScene = preload("res://scenes/fx/damaged_fx.tscn")
 const PICKUP_AMMO: PackedScene = preload("res://scenes/pickups/ammo_box.tscn")
 const PICKUP_HEALTH: PackedScene = preload("res://scenes/pickups/health_pack.tscn")
+const PICKUP_OVERCLOCK: PackedScene = preload("res://scenes/pickups/overclock.tscn")
 
 
 @onready var hp: Damageable = $Damageable
@@ -840,21 +841,27 @@ func _spawn_part_debris() -> void:
 		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(chunk.queue_free)
 
-## Kills feed the push: enemies sometimes leave a supply drop where they fell,
-## anchors (score >= 250) always do — chasing resupply into the fight beats
-## retreating for it. Keycards are deliberately NOT in the loot pool: objective
-## items stay where the level placed them.
+## Kills feed the push: supplies ONLY come from enemies — they sometimes leave
+## a drop where they fell, anchors (score >= 250) always do — chasing resupply
+## into the fight beats retreating for it. Difficulty's pickup_mult scales the
+## odds (easy drops more, hard less). Overclock rides the pool as a rare prize,
+## mostly off anchors. Weapons and keycards are deliberately NOT in the loot
+## pool: those stay where the level placed them.
 func _drop_loot() -> void:
-	if score_value < 250 and randf() > drop_chance:
+	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0)
+	if score_value < 250 and randf() > drop_chance * mult:
 		return
-	# Bias toward health when the player is actually hurt, ammo otherwise.
+	# Rare prize first, then bias toward health when the player is actually
+	# hurt, ammo otherwise.
+	var overclock_w := 0.18 if score_value >= 250 else 0.04
 	var health_w := 0.2
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
 		var d := player.get_node_or_null("Damageable")
 		if d and d.max_health > 0.0:
 			health_w = lerpf(0.2, 0.6, 1.0 - d.current_health / d.max_health)
-	var scene := PICKUP_HEALTH if randf() < health_w else PICKUP_AMMO
+	var scene := PICKUP_OVERCLOCK if randf() < overclock_w \
+			else (PICKUP_HEALTH if randf() < health_w else PICKUP_AMMO)
 	var p := scene.instantiate() as Node3D
 	get_parent().add_child(p)
 	var pos := global_position + Vector3(randf_range(-0.7, 0.7), 0.0, randf_range(-0.7, 0.7))

@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://b0level0010001"]
+[gd_scene load_steps=17 format=3 uid="uid://b0level0010001"]
 
 [ext_resource type="Environment" path="res://assets/environments/default_env.tres" id="1_env"]
 [ext_resource type="Script" path="res://scripts/levels/level_01.gd" id="0_level"]
@@ -13,8 +13,6 @@
 [ext_resource type="Material" uid="uid://b0mat0wallpanel0" path="res://assets/materials/wall_panel.tres" id="10_wall"]
 [ext_resource type="Material" uid="uid://b0mat0ceilmetal0" path="res://assets/materials/ceiling_metal.tres" id="11_ceil"]
 [ext_resource type="Material" uid="uid://b0mat0crate0001" path="res://assets/materials/crate_metal.tres" id="12_crate"]
-[ext_resource type="PackedScene" uid="uid://b0pickup0health" path="res://scenes/pickups/health_pack.tscn" id="13_health"]
-[ext_resource type="PackedScene" uid="uid://b0pickup0ammo00" path="res://scenes/pickups/ammo_box.tscn" id="14_ammo"]
 [ext_resource type="PackedScene" uid="uid://b0ui0broadcast" path="res://scenes/ui/broadcast_intro.tscn" id="15_intro"]
 [ext_resource type="PackedScene" uid="uid://b0pickup0weapon" path="res://scenes/pickups/weapon_pickup.tscn" id="16_wpk"]
 [ext_resource type="PackedScene" uid="uid://b0weap0rifle001" path="res://scenes/weapons/rifle.tscn" id="17_rifle"]
@@ -284,18 +282,6 @@ omni_range = 20.0
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.2, 0.1, -25.2)
-
-[node name="Health1" parent="." instance=ExtResource("13_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.6, 0, 2.8)
-
-[node name="Health2" parent="." instance=ExtResource("13_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.8, 0, 22.4)
-
-[node name="Ammo1" parent="." instance=ExtResource("14_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.4, 0, -16.8)
-
-[node name="Ammo2" parent="." instance=ExtResource("14_ammo")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.2, 0, -2.8)
 
 [node name="WeaponPickup_Rifle" parent="." instance=ExtResource("16_wpk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.8, 0, -19.6)
