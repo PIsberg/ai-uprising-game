@@ -30,6 +30,10 @@ const PROP_SCENES := {
 	"fence": preload("res://scenes/props/fence.tscn"),
 	"crate": preload("res://scenes/props/crate.tscn"),
 	"barrel": preload("res://scenes/props/barrel.tscn"),
+	"server": preload("res://scenes/props/server_rack.tscn"),
+	"terminal": preload("res://scenes/props/terminal.tscn"),
+	"canister": preload("res://scenes/props/gas_canister.tscn"),
+	"lamp": preload("res://scenes/props/lamp_post.tscn"),
 }
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
@@ -51,6 +55,8 @@ const LEVEL_MUSIC := {
 	"suburb": "music_suburb",
 	"suburb_boss": "music_grok",
 	"grok": "music_grok",
+	"range": "music_gemini",
+	"horde": "music_grok",
 }
 
 var _nav_region: NavigationRegion3D
@@ -72,13 +78,20 @@ func _ready() -> void:
 	_build_accents(def)
 	_build_atmosphere(def)
 	_build_accent_strips(def)
+	_build_signage(def)
+	_build_puddles(def)
+	_build_pipes(def)
+	_build_rubble(def)
 	_build_beacons(def)
 	_build_skyline(def)
 	_build_tasks(def)
 	_build_exit(def)
 	_build_pickups(def)
 	_build_weapon_pickup(def)
+	_build_targets(def)
+	_build_lore(def)
 	_spawn_enemies(def)
+	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
 	_apply_objective_text(def)
@@ -186,6 +199,9 @@ func _build_environment(def: Dictionary) -> void:
 
 	_env = env
 	we.environment = env
+	# Live re-tiering (GraphicsSettings._apply_to_live_environment) needs to
+	# know the volumetric-fog rule for this level.
+	we.set_meta("open_sky", def.get("open_sky", false))
 	add_child(we)
 
 	var sun := DirectionalLight3D.new()
@@ -221,7 +237,30 @@ func _build_environment(def: Dictionary) -> void:
 		omni.shadow_blur = 1.5
 		omni.light_specular = 0.6
 		add_child(omni)
+		# The last placed light gets a faulty-wiring flicker: occupied
+		# infrastructure failing, and motion in otherwise static lighting.
+		if li == def.get("lights", []).size() - 1:
+			_flicker_light(omni)
 		li += 1
+
+	# One parallax-boxed reflection probe fitted to the room (interiors only):
+	# real local reflections on the floor panels, puddles and robot chrome,
+	# where SSR can't see (off-screen / occluded). Captured once, so the only
+	# recurring cost is sampling. MEDIUM tier and up.
+	if not def.get("open_sky", false):
+		var tier := 2
+		if gs and gs.has_method("tier"):
+			tier = gs.tier()
+		if tier >= 1:
+			var probe := ReflectionProbe.new()
+			var fs2: Vector2 = def.get("floor_size", Vector2(40, 40))
+			probe.update_mode = ReflectionProbe.UPDATE_ONCE
+			probe.size = Vector3(fs2.x, WALL_HEIGHT + 2.0, fs2.y)
+			probe.position = Vector3(0, (WALL_HEIGHT + 2.0) * 0.5 - 0.5, 0)
+			probe.box_projection = true
+			probe.intensity = 0.8
+			probe.max_distance = maxf(fs2.x, fs2.y) * 1.2
+			add_child(probe)
 
 	# Atmospheric ambient bed: wind outdoors, industrial room tone indoors.
 	var amb := "ambience_wind" if def.get("open_sky", false) else "ambience_drone"
@@ -229,6 +268,17 @@ func _build_environment(def: Dictionary) -> void:
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
 	AudioBus.play_music(music_id)
+
+## Faulty-wiring flicker: mostly steady, with brief random dips and the odd
+## near-blackout. A pre-baked randomized loop is cheap and reads as organic.
+func _flicker_light(light: OmniLight3D) -> void:
+	var base := light.light_energy
+	var tw := light.create_tween().set_loops()
+	for i in 6:
+		var dip := base * randf_range(0.55, 0.85) if randf() < 0.8 else base * 0.15
+		tw.tween_property(light, "light_energy", dip, randf_range(0.04, 0.1))
+		tw.tween_property(light, "light_energy", base, randf_range(0.06, 0.14))
+		tw.tween_interval(randf_range(0.8, 3.2))
 
 # ---------- geometry ----------
 
@@ -642,10 +692,179 @@ func _build_accent_strips(def: Dictionary) -> void:
 	tw.tween_property(m, "emission_energy_multiplier", 3.0, 2.4) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
+# ---------- occupation signage: who runs this facility ----------
+
+## The four inner wall faces as (position-on-wall, yaw-facing-inward) helpers.
+## `t` in -1..1 slides along the wall; `y` is height; `inset` off the surface.
+func _wall_point(fs: Vector2, wall: int, t: float, y: float, inset: float) -> Dictionary:
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	match wall:
+		0: return {"pos": Vector3(t * (hx - 4.0), y, -hz + inset), "yaw": 0.0}            # back, faces +Z
+		1: return {"pos": Vector3(t * (hx - 4.0), y, hz - inset), "yaw": PI}              # front, faces -Z
+		2: return {"pos": Vector3(-hx + inset, y, t * (hz - 4.0)), "yaw": PI * 0.5}       # left, faces +X
+		_: return {"pos": Vector3(hx - inset, y, t * (hz - 4.0)), "yaw": -PI * 0.5}       # right, faces -X
+
+## Corporate occupation signage: a big facility-name billboard over the back
+## wall plus glowing propaganda slogans (def "slogans") around the perimeter.
+## This is where each level says out loud WHICH rogue AI runs the place.
+func _build_signage(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var col := _theme_color(def)
+	# -- main billboard: facility name on a dark panel with a glowing frame --
+	var bb := _wall_point(fs, 0, 0.0, WALL_HEIGHT - 1.3, 0.45)
+	var board := Node3D.new()
+	board.position = bb["pos"]
+	board.rotation.y = bb["yaw"]
+	add_child(board)
+	var panel := MeshInstance3D.new()
+	var pm := BoxMesh.new()
+	var bw: float = clampf(fs.x * 0.45, 10.0, 20.0)
+	pm.size = Vector3(bw, 1.7, 0.12)
+	pm.material = _color_material(Color(0.05, 0.05, 0.07), 0.4)
+	panel.mesh = pm
+	board.add_child(panel)
+	var frame_mat := StandardMaterial3D.new()
+	frame_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	frame_mat.albedo_color = col
+	frame_mat.emission_enabled = true
+	frame_mat.emission = col
+	frame_mat.emission_energy_multiplier = 2.2
+	for fy in [-0.92, 0.92]:
+		var bar := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(bw + 0.3, 0.08, 0.14)
+		bm.material = frame_mat
+		bar.mesh = bm
+		bar.position = Vector3(0, fy, 0)
+		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		board.add_child(bar)
+	var title := Label3D.new()
+	title.text = str(def.get("sign", def.get("name", "OCCUPIED ZONE"))).to_upper()
+	title.font_size = 96
+	title.pixel_size = 0.012
+	title.modulate = Color(col.r * 0.5 + 0.5, col.g * 0.5 + 0.5, col.b * 0.5 + 0.5)
+	title.outline_size = 14
+	title.outline_modulate = Color(0, 0, 0, 0.85)
+	title.position = Vector3(0, 0, 0.09)
+	board.add_child(title)
+	# -- propaganda slogans scattered on the other walls --
+	var slogans: Array = def.get("slogans", [])
+	var spots := [[1, -0.45], [2, 0.3], [3, -0.3], [1, 0.5], [2, -0.55], [3, 0.6]]
+	for i in mini(slogans.size(), spots.size()):
+		var sp: Array = spots[i]
+		var wp := _wall_point(fs, sp[0], sp[1], 4.35, 0.52)
+		var lbl := Label3D.new()
+		lbl.text = str(slogans[i])
+		lbl.font_size = 52
+		lbl.pixel_size = 0.01
+		lbl.modulate = col.lerp(Color.WHITE, 0.35)
+		lbl.outline_size = 10
+		lbl.outline_modulate = Color(0, 0, 0, 0.8)
+		lbl.position = wp["pos"]
+		lbl.rotation.y = wp["yaw"]
+		add_child(lbl)
+
+# ---------- grime + infrastructure detail ----------
+
+## Dark mirror-finish puddles on the floor — cheap, and they pay off the SSR
+## pass with real reflections of the emissive strips and robot glow.
+func _build_puddles(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var count := int(maxf(fs.x, fs.y) / 7.0)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.02, 0.025, 0.035, 0.92)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.metallic = 0.85
+	mat.roughness = 0.04
+	mat.cull_mode = BaseMaterial3D.CULL_BACK
+	for i in count:
+		var p := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(randf_range(1.6, 3.6), randf_range(1.2, 2.8))
+		pm.material = mat
+		p.mesh = pm
+		p.position = Vector3(randf_range(-fs.x * 0.42, fs.x * 0.42), 0.012, randf_range(-fs.y * 0.42, fs.y * 0.42))
+		p.rotation.y = randf() * TAU
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(p)
+
+## Interior ceiling infrastructure: parallel dark conduit pipes running the
+## length of the room with sparse glowing junction collars. Visual only.
+func _build_pipes(def: Dictionary) -> void:
+	if def.get("open_sky", false):
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var col := _theme_color(def)
+	var pipe_mat := MAT_TRIM
+	var collar_mat := StandardMaterial3D.new()
+	collar_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	collar_mat.albedo_color = col
+	collar_mat.emission_enabled = true
+	collar_mat.emission = col
+	collar_mat.emission_energy_multiplier = 1.8
+	for i in 3:
+		var x := fs.x * (-0.32 + 0.32 * i)
+		var pipe := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.09 + 0.04 * (i % 2)
+		cm.bottom_radius = cm.top_radius
+		cm.height = fs.y - 2.0
+		cm.radial_segments = 8
+		pipe.mesh = cm
+		pipe.material_override = pipe_mat
+		pipe.rotation.x = PI * 0.5 # lay it along Z
+		pipe.position = Vector3(x, WALL_HEIGHT - 0.35 - 0.18 * i, 0)
+		add_child(pipe)
+		for j in 3:
+			var collar := MeshInstance3D.new()
+			var km := CylinderMesh.new()
+			km.top_radius = cm.top_radius + 0.04
+			km.bottom_radius = km.top_radius
+			km.height = 0.12
+			km.radial_segments = 8
+			km.material = collar_mat
+			collar.mesh = km
+			collar.rotation.x = PI * 0.5
+			collar.position = pipe.position + Vector3(0, 0, fs.y * (-0.3 + 0.3 * j))
+			collar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(collar)
+
+## Battle-damage rubble piles hugging the wall bases: clustered gray chunks at
+## random sizes/tilts. Pure dressing — no collision, navmesh ignores them.
+func _build_rubble(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var mat := _color_material(Color(0.32, 0.31, 0.3), 0.9)
+	var clusters := int(6 * density)
+	for i in clusters:
+		var wp := _wall_point(fs, i % 4, randf_range(-0.85, 0.85), 0.0, randf_range(1.0, 2.2))
+		var base: Vector3 = wp["pos"]
+		for j in 3 + randi() % 4:
+			var chunk := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			var s := randf_range(0.16, 0.55)
+			bm.size = Vector3(s, s * randf_range(0.4, 0.8), s * randf_range(0.6, 1.2))
+			bm.material = mat
+			chunk.mesh = bm
+			chunk.position = base + Vector3(randf_range(-0.8, 0.8), bm.size.y * 0.3, randf_range(-0.8, 0.8))
+			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
+			add_child(chunk)
+
 ## Two crimson surveillance sweeps on opposite corners: a glowing emitter head
 ## atop the wall with a slowly rotating, down-tilted spotlight. The occupation
 ## is watching — and moving light keeps the darker arenas alive.
 func _build_beacons(def: Dictionary) -> void:
+	if def.get("friendly", false):
+		return # resistance-held space: no hostile surveillance sweeps
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var hx := fs.x * 0.5
 	var hz := fs.y * 0.5
@@ -766,6 +985,8 @@ func _build_tasks(def: Dictionary) -> void:
 		tasks = [{"type": "kill_all"}]
 	for t in tasks:
 		match t.get("type", ""):
+			"none":
+				pass # sandbox level (e.g. the gun range): no checklist at all
 			"kill_all":
 				GameState.register_task("kill_all", "Eliminate all hostiles")
 			"key":
@@ -817,6 +1038,8 @@ func _build_tasks(def: Dictionary) -> void:
 				add_child(timer)
 
 func _build_exit(def: Dictionary) -> void:
+	if def.get("no_exit", false):
+		return # sandbox: leave via the pause menu instead
 	# A locked-until-cleared portal that builds its own animated visuals.
 	var portal := Portal.new()
 	portal.objective_text = def.get("objective", "Reach the extraction beacon")
@@ -861,6 +1084,42 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 		m.emission_energy_multiplier = 4.0
 		glow.material_override = m
 	add_child(pk)
+
+## Pop-up range targets (def "targets"): static, sliding, or armored.
+func _build_targets(def: Dictionary) -> void:
+	for t in def.get("targets", []):
+		var dummy := TargetDummy.new()
+		dummy.position = t["pos"]
+		dummy.max_health = t.get("hp", 60.0)
+		dummy.move_range = t.get("move", 0.0)
+		dummy.move_speed = t.get("speed", 1.2)
+		if t.has("color"):
+			dummy.accent = t["color"]
+		add_child(dummy)
+
+## Recovered data logs (def "lore"): walk-up terminals that voice a faction
+## log through the Broadcast bus while the text types across the screen.
+func _build_lore(def: Dictionary) -> void:
+	for l in def.get("lore", []):
+		var t := LoreTerminal.new()
+		t.log_id = l.get("id", "")
+		t.title = l.get("title", "RECOVERED LOG")
+		t.text = l.get("text", "")
+		if l.has("color"):
+			t.accent = l["color"]
+		t.position = l["pos"]
+		add_child(t)
+
+## Endless-siege mode: defs with "horde_spawns" get a wave director instead of
+## (or alongside) placed enemies.
+func _build_horde(def: Dictionary) -> void:
+	var pts: Array = def.get("horde_spawns", [])
+	if pts.is_empty():
+		return
+	var hd := HordeDirector.new()
+	hd.spawn_points = pts
+	hd.supply_center = def.get("supply_center", Vector3.ZERO)
+	add_child(hd)
 
 func _spawn_enemies(def: Dictionary) -> void:
 	for en in def.get("enemies", []):
