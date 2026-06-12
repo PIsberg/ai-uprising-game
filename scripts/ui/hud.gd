@@ -62,6 +62,8 @@ func _ready() -> void:
 	toast.modulate.a = 0.0
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
+	_build_overclock_label()
+	GameState.overclock_changed.connect(_on_overclock_changed)
 	var player := get_tree().get_first_node_in_group("player") as Player
 	_player_ref = player
 	if _dmg_indicator and _dmg_indicator.has_method("setup"):
@@ -337,6 +339,31 @@ func _exit_pause() -> void:
 func _refresh_pause_graphics() -> void:
 	if pause_graphics:
 		pause_graphics.text = "Graphics: %s" % GraphicsSettings.quality_label()
+
+# ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
+
+var _overclock_lbl: Label
+
+func _build_overclock_label() -> void:
+	_overclock_lbl = Label.new()
+	_overclock_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	_overclock_lbl.position += Vector2(-110, 70) # just under the crosshair
+	_overclock_lbl.custom_minimum_size = Vector2(220, 0)
+	_overclock_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overclock_lbl.add_theme_font_size_override("font_size", 22)
+	_overclock_lbl.add_theme_color_override("font_color", Color(0.85, 0.45, 1.0))
+	_overclock_lbl.visible = false
+	add_child(_overclock_lbl)
+
+func _on_overclock_changed(left: float) -> void:
+	if _overclock_lbl == null:
+		return
+	_overclock_lbl.visible = left > 0.0
+	if left <= 0.0:
+		return
+	_overclock_lbl.text = "⚡ OVERCLOCK ×%d — %d" % [int(GameState.OVERCLOCK_MULT), ceili(left)]
+	# Urgency blink over the final seconds.
+	_overclock_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
 
 func set_objective(text: String) -> void:
 	_objective_base = text

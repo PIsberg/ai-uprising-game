@@ -1,7 +1,7 @@
 class_name Pickup
 extends Area3D
 
-enum Kind { HEALTH, AMMO, WEAPON }
+enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK }
 
 @export var kind: Kind = Kind.HEALTH
 @export var amount: int = 25
@@ -96,5 +96,11 @@ func _on_body_entered(body: Node) -> void:
 				wm.add_weapon(weapon_scene, true) # equip the shiny new gun
 				GameState.unlock_weapon(weapon_scene.resource_path)
 			AudioBus.play_synth_at("pickup_health", global_position, 0.0, 0.7)
+		Kind.OVERCLOCK:
+			GameState.activate_overclock()
+			if body.has_method("notify_pickup"):
+				body.notify_pickup("⚡ OVERCLOCK — ×%d DAMAGE" % int(GameState.OVERCLOCK_MULT))
+			# Triumphant sting: this is a run-the-table moment.
+			AudioBus.play_synth_ui("victory", -8.0, 1.4)
 	_taken = true
 	queue_free()

@@ -228,6 +228,7 @@ static func _range() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(12, 0, 24)},
 			{"type": "health", "pos": Vector3(-15, 0, 27)},
 			{"type": "health", "pos": Vector3(15, 0, 27)},
+			{"type": "overclock", "pos": Vector3(0, 0, 27)},
 		],
 		# Targets: a near row, sliding mid-range pair, far row with an armored
 		# center plate to feel sustained DPS.
@@ -321,6 +322,7 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(0, 0, -14)},
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
+			{"type": "overclock", "pos": Vector3(0, 0, 18)},
 		],
 	}
 
@@ -485,6 +487,7 @@ static func _gpt() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(-8, 0, 6)},
 			{"type": "ammo", "pos": Vector3(6, 0, -14)},
 			{"type": "health", "pos": Vector3(14, 0, 4)},
+			{"type": "overclock", "pos": Vector3(0, 0, -16)},
 		],
 	}
 
@@ -744,6 +747,7 @@ static func _grok() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "health", "pos": Vector3(16, 0, -18)},
+			{"type": "overclock", "pos": Vector3(0, 0, 16)},
 		],
 	}
 
@@ -958,5 +962,6 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "health", "pos": Vector3(-20, 0, 20)},
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
+			{"type": "overclock", "pos": Vector3(0, 0, 0)},
 		],
 	}

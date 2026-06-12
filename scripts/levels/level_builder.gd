@@ -24,6 +24,7 @@ const ENEMY_SCENES := {
 const PICKUP_SCENES := {
 	"health": preload("res://scenes/pickups/health_pack.tscn"),
 	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
+	"overclock": preload("res://scenes/pickups/overclock.tscn"),
 }
 const PROP_SCENES := {
 	"car": preload("res://scenes/props/car.tscn"),

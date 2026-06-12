@@ -173,6 +173,28 @@ func _process(delta: float) -> void:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			_reset_combo()
+	if overclock_left > 0.0:
+		overclock_left = maxf(0.0, overclock_left - delta)
+		overclock_changed.emit(overclock_left)
+		if overclock_left <= 0.0:
+			AudioBus.play_synth_ui("empty_click", -8.0, 0.6) # power-down tick
+
+# ---------- OVERCLOCK powerup (quad-damage analog) ----------
+## While active, every player weapon hits at OVERCLOCK_MULT (Weapon.eff_damage
+## reads damage_mult()). Picking another one refreshes the full duration.
+
+signal overclock_changed(seconds_left: float)
+
+const OVERCLOCK_MULT := 4.0
+const OVERCLOCK_DURATION := 10.0
+var overclock_left: float = 0.0
+
+func activate_overclock() -> void:
+	overclock_left = OVERCLOCK_DURATION
+	overclock_changed.emit(overclock_left)
+
+func damage_mult() -> float:
+	return OVERCLOCK_MULT if overclock_left > 0.0 else 1.0
 
 # ---------- per-level performance stats (drive the end grade) ----------
 var stat_shots: int = 0

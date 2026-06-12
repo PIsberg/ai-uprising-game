@@ -32,9 +32,10 @@ func _ready() -> void:
 	fmat.roughness = 0.6
 	floor_mi.material_override = fmat
 	add_child(floor_mi)
-	for it in [["res://scenes/pickups/health_pack.tscn", -1.4],
-			["res://scenes/pickups/ammo_box.tscn", 0.0],
-			["res://scenes/pickups/weapon_pickup.tscn", 1.4]]:
+	for it in [["res://scenes/pickups/health_pack.tscn", -2.1],
+			["res://scenes/pickups/ammo_box.tscn", -0.7],
+			["res://scenes/pickups/overclock.tscn", 0.7],
+			["res://scenes/pickups/weapon_pickup.tscn", 2.1]]:
 		var inst := (load(it[0]) as PackedScene).instantiate() as Node3D
 		inst.position = Vector3(it[1], 0, 0)
 		add_child(inst)

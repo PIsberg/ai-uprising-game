@@ -15,7 +15,7 @@ signal ammo_changed(mag: int, reserve: int)
 # every read goes through these. GameState owns the multipliers.
 
 func eff_damage() -> float:
-	return data.damage * GameState.upgrade_mult("damage") * _alt_boost
+	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * _alt_boost
 
 func eff_mag_size() -> int:
 	return int(round(data.mag_size * GameState.upgrade_mult("mag")))

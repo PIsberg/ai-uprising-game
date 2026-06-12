@@ -35,6 +35,7 @@ var _scenes: Dictionary = {} # path -> PackedScene, loaded lazily once
 
 const PICKUP_HEALTH := preload("res://scenes/pickups/health_pack.tscn")
 const PICKUP_AMMO := preload("res://scenes/pickups/ammo_box.tscn")
+const PICKUP_OVERCLOCK := preload("res://scenes/pickups/overclock.tscn")
 
 func _ready() -> void:
 	best = _load_best()
@@ -139,9 +140,12 @@ func _on_enemy_down() -> void:
 		_drop_supplies()
 		AudioBus.play_synth_ui("victory_sting", -10.0, 1.2)
 
-## Between waves: a few supplies pop in near the arena centre.
+## Between waves: a few supplies pop in near the arena centre. Every 5th
+## cleared wave also drops an OVERCLOCK to spend on the milestone wave ahead.
 func _drop_supplies() -> void:
 	var drops := [PICKUP_AMMO, PICKUP_AMMO, PICKUP_HEALTH]
+	if (wave + 1) % 5 == 0:
+		drops.append(PICKUP_OVERCLOCK)
 	for i in drops.size():
 		var p := (drops[i] as PackedScene).instantiate() as Node3D
 		get_parent().add_child(p)
