@@ -8,10 +8,13 @@ extends Node
 ##          volumetric/GI, hard shadows + small atlases, no ambient dust.
 ## MEDIUM — balanced: FSR2 from 77% internal res, SSAO only, soft-low shadows,
 ##          light ambient dust.
-## HIGH   — best looking: native res, all screen-space effects + GI +
+## HIGH   — great looking: native res, all screen-space effects + GI +
 ##          volumetric fog, soft-high shadows + 8K sun shadow atlas, TAA,
 ##          dense ambient dust.
-enum Quality { LOW, MEDIUM, HIGH }
+## ULTRA  — no compromises: HIGH plus MSAA 2x layered under TAA, ultra-soft
+##          shadow filtering, an 8K positional shadow atlas, longer SSR
+##          marches and ~40% denser ambient detail (dust/stars/puddles/grime).
+enum Quality { LOW, MEDIUM, HIGH, ULTRA }
 var quality: Quality = Quality.HIGH
 
 # Display / input preferences (also persisted to settings.cfg). The player reads
@@ -24,7 +27,7 @@ var max_fps: int = 0 ## 0 = uncapped.
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
 const SETTINGS_PATH := "user://settings.cfg"
-const LABELS := ["LOW", "MEDIUM", "HIGH"]
+const LABELS := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
 
 func _ready() -> void:
 	_load_settings()
@@ -59,8 +62,9 @@ func cycle_fps() -> void:
 func fps_label() -> String:
 	return "Uncapped" if max_fps == 0 else "%d FPS" % max_fps
 
+## "At least HIGH" — ULTRA inherits everything gated on this.
 func is_high() -> bool:
-	return quality == Quality.HIGH
+	return quality >= Quality.HIGH
 
 func is_medium() -> bool:
 	return quality == Quality.MEDIUM
@@ -103,6 +107,7 @@ func detail_scale() -> float:
 	match quality:
 		Quality.LOW: return 0.0
 		Quality.MEDIUM: return 0.5
+		Quality.ULTRA: return 1.4
 		_: return 1.0
 
 # ---------- viewport-level (applies immediately) ----------
@@ -133,6 +138,14 @@ func _apply_viewport() -> void:
 			vp.msaa_3d = Viewport.MSAA_DISABLED
 			vp.use_taa = true
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		Quality.ULTRA:
+			# MSAA under TAA: geometry edges resolved by hardware, shading
+			# stability by the temporal pass — the cleanest image we can make.
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+			vp.scaling_3d_scale = 1.0
+			vp.msaa_3d = Viewport.MSAA_2X
+			vp.use_taa = true
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	_apply_shadow_quality()
 
 func _apply_shadow_quality() -> void:
@@ -140,16 +153,17 @@ func _apply_shadow_quality() -> void:
 		RenderingServer.SHADOW_QUALITY_HARD,
 		RenderingServer.SHADOW_QUALITY_SOFT_LOW,
 		RenderingServer.SHADOW_QUALITY_SOFT_HIGH,
+		RenderingServer.SHADOW_QUALITY_SOFT_ULTRA,
 	]
 	var dq: int = levels[int(quality)]
 	RenderingServer.directional_soft_shadow_filter_set_quality(dq)
 	RenderingServer.positional_soft_shadow_filter_set_quality(dq)
 	# Shadow atlas budgets: resolution where you can see it (8K sun shadows on
 	# HIGH are visibly crisper), memory/fill-rate savings where you can't.
-	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192][int(quality)], true)
+	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192, 8192][int(quality)], true)
 	var vp := get_viewport()
 	if vp:
-		vp.positional_shadow_atlas_size = [2048, 4096, 4096][int(quality)]
+		vp.positional_shadow_atlas_size = [2048, 4096, 4096, 8192][int(quality)]
 
 # ---------- environment-level (applies at level load) ----------
 
@@ -161,6 +175,13 @@ func apply_to_environment(env: Environment, open_sky: bool) -> void:
 	if env == null:
 		return
 	match quality:
+		Quality.ULTRA:
+			env.ssao_enabled = true
+			env.ssil_enabled = true
+			env.ssr_enabled = true
+			env.ssr_max_steps = 64 # longer marches: reflections persist further
+			env.volumetric_fog_enabled = not open_sky
+			_restore_glow(env)
 		Quality.HIGH:
 			env.ssao_enabled = true
 			env.ssil_enabled = true

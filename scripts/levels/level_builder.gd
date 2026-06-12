@@ -232,7 +232,7 @@ func _build_environment(def: Dictionary) -> void:
 	# up to 6 times, so LOW casts none, MEDIUM only the first two, HIGH all.
 	var shadow_budget := 99
 	if gs and gs.has_method("tier"):
-		shadow_budget = [0, 2, 99][gs.tier()]
+		shadow_budget = [0, 2, 99, 99][gs.tier()]
 	var li := 0
 	for l in def.get("lights", []):
 		var omni := OmniLight3D.new()

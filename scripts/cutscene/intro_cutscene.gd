@@ -15,12 +15,13 @@ const EYE_RED := Color(1.0, 0.18, 0.12)
 ## it picks up from the rack beside it ("" = built-in armament).
 const CAST := {
 	"android": {"scene": "res://scenes/enemies/android.tscn", "attack": "Shoot",
-		"gun": "res://assets/models/weapons/blaster-d.glb"},
+		"gun": "res://assets/models/weapons/blaster-d.glb", "lamp_y": 0.86, "lamps": 2},
 	"mech": {"scene": "res://scenes/enemies/mech.tscn", "attack": "Punch",
-		"gun": "res://assets/models/weapons/blaster-p.glb"},
+		"gun": "res://assets/models/weapons/blaster-p.glb", "lamp_y": 0.78, "lamps": 2},
 	"spider": {"scene": "res://scenes/enemies/spider.tscn", "attack": "Attack",
-		"gun": "res://assets/models/weapons/blaster-h.glb"},
-	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": "", "gun": ""},
+		"gun": "res://assets/models/weapons/blaster-h.glb", "lamp_y": 0.6, "lamps": 2},
+	"drone": {"scene": "res://scenes/enemies/drone.tscn", "attack": "", "gun": "",
+		"lamp_y": 0.52, "lamps": 1}, # one central lamp: it IS a flying eye
 }
 
 var _hero: Node3D
@@ -50,7 +51,9 @@ func _build_set() -> void:
 	_make_robot("mech", Vector3(-3.4, 0, -4.6), 0.9)
 	_make_robot("android", Vector3(3.0, 0, -3.6), 1.0)
 	_make_robot("spider", Vector3(-2.2, 0, -0.8), 1.0)
-	_make_robot("drone", Vector3(2.6, 1.7, -1.2), 1.0)
+	# The drone patrols the AIR — high and behind the line, never blocking
+	# the ground cast's framing.
+	_make_robot("drone", Vector3(2.4, 3.3, -4.6), 1.0)
 
 func _build_ground() -> void:
 	var mi := MeshInstance3D.new()
@@ -195,7 +198,7 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	var entry := {"node": bot, "model": bot.get_node_or_null("Model"),
 		"mats": [], "lamp_light": null, "weapon": null,
 		"attack": info["attack"], "tweens": []}
-	_add_lamps(bot, entry)
+	_add_lamps(bot, entry, info)
 	if info["gun"] != "":
 		_add_rack_gun(bot, entry, info["gun"])
 	# Fliers bob gently; grounded units idle via their animation clip.
@@ -207,20 +210,30 @@ func _make_robot(type: String, pos: Vector3, scl: float) -> Node3D:
 	_robots.append(entry)
 	return bot
 
-## Merged local-space AABB of a model's meshes — sizes the lamp placement.
-func _model_height(bot: Node3D) -> float:
-	var top := 1.6
+## Merged AABB of a model's meshes in the BOT's local space — every chassis is
+## a different shape, so lamp placement must be measured, not guessed.
+func _local_aabb(bot: Node3D) -> AABB:
+	var inv := bot.global_transform.affine_inverse()
+	var merged := AABB(Vector3(-0.3, 0, -0.3), Vector3(0.6, 1.6, 0.6))
+	var first := true
 	for mi in bot.find_children("*", "MeshInstance3D", true, false):
 		var mesh_inst := mi as MeshInstance3D
 		if mesh_inst.mesh:
-			var ab: AABB = mesh_inst.global_transform * mesh_inst.mesh.get_aabb()
-			top = maxf(top, ab.end.y - bot.global_position.y)
-	return top
+			var ab: AABB = (inv * mesh_inst.global_transform) * mesh_inst.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	return merged
 
-## Two small status lamps at "eye" height plus a soft body light — the friendly
-## green signature. Stored in the entry so the turn can burn them red.
-func _add_lamps(bot: Node3D, entry: Dictionary) -> void:
-	var h := _model_height(bot) / maxf(bot.scale.y, 0.01) # local-space height
+## Status lamps fitted to the chassis: measured height/front-face/width per
+## model (so they sit ON the body, not floating beside it), plus a soft body
+## light. Stored in the entry so the turn can burn them red.
+func _add_lamps(bot: Node3D, entry: Dictionary, info: Dictionary) -> void:
+	var ab := _local_aabb(bot)
+	var lamp_y: float = ab.position.y + ab.size.y * float(info.get("lamp_y", 0.8))
+	# Local front is -Z (the bot is yawed PI to face the camera); sit the lamps
+	# just proud of the front face.
+	var front_z: float = ab.position.z - 0.03
+	var sep: float = clampf(ab.size.x * 0.16, 0.06, 0.16)
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = EYE_GREEN
@@ -228,7 +241,8 @@ func _add_lamps(bot: Node3D, entry: Dictionary) -> void:
 	mat.emission = EYE_GREEN
 	mat.emission_energy_multiplier = 4.0
 	entry["mats"].append(mat)
-	for x in [-0.11, 0.11]:
+	var xs: Array = [-sep, sep] if int(info.get("lamps", 2)) == 2 else [0.0]
+	for x in xs:
 		var lamp := MeshInstance3D.new()
 		var sm := SphereMesh.new()
 		sm.radius = 0.05
@@ -237,15 +251,14 @@ func _add_lamps(bot: Node3D, entry: Dictionary) -> void:
 		sm.rings = 4
 		sm.material = mat
 		lamp.mesh = sm
-		# Bot faces world +Z (rotation.y = PI), so its local front is -Z.
-		lamp.position = Vector3(x, h * 0.86, -0.28)
+		lamp.position = Vector3(x, lamp_y, front_z)
 		lamp.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		bot.add_child(lamp)
 	var light := OmniLight3D.new()
 	light.light_color = EYE_GREEN
 	light.light_energy = 0.9
 	light.omni_range = 2.6
-	light.position = Vector3(0, h * 0.7, -0.4)
+	light.position = Vector3(0, lamp_y * 0.85, front_z - 0.15)
 	bot.add_child(light)
 	entry["lamp_light"] = light
 
@@ -262,13 +275,16 @@ func _add_rack_gun(bot: Node3D, entry: Dictionary, gun_path: String) -> void:
 	add_child(stand)
 	var gun := (load(gun_path) as PackedScene).instantiate() as Node3D
 	add_child(gun)
-	# Lying flat on the rack, grip up — clearly "stored", not held.
-	gun.global_position = stand.position + Vector3(0, 0.36, 0)
+	# Lying flat on the rack, grip up — clearly "stored", not held. Oversized
+	# slightly: these are background props that must read from metres away.
+	gun.scale = Vector3.ONE * 1.3
+	gun.global_position = stand.position + Vector3(0, 0.4, 0)
 	gun.rotation_degrees = Vector3(0, randf_range(-25, 25), 90)
 	entry["weapon"] = gun
 
-## The turn's pickup: the rack gun flies into the robot's grip and aims at the
-## camera with the rest of the battle stance.
+## The turn's pickup: a beat after the lamps flip, the rack gun FLIES into the
+## robot's grip and aims at the camera — slow enough to track, with an
+## overshoot snap so the catch reads.
 func _arm(entry: Dictionary) -> void:
 	var gun: Node3D = entry["weapon"]
 	var bot: Node3D = entry["node"]
@@ -278,13 +294,16 @@ func _arm(entry: Dictionary) -> void:
 	gun.get_parent().remove_child(gun)
 	bot.add_child(gun)
 	gun.global_transform = xf # same world pose, new parent
-	var h := _model_height(bot) / maxf(bot.scale.y, 0.01)
+	# Counter the parent's scale so the gun keeps its world size in the grip.
+	gun.scale = Vector3.ONE * (1.3 / maxf(bot.scale.x, 0.01))
+	var ab := _local_aabb(bot)
+	var hold := Vector3(0.28, ab.position.y + ab.size.y * 0.72, ab.position.z - 0.3)
 	var tw := gun.create_tween()
+	tw.tween_interval(0.25) # let the red lamps land first, then the grab
 	tw.set_parallel(true)
-	# Into the grip: chest-right, muzzle (-Z local) toward the camera.
-	tw.tween_property(gun, "position", Vector3(0.3, h * 0.52, -0.34), 0.4) \
+	tw.tween_property(gun, "position", hold, 0.55) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(gun, "rotation", Vector3.ZERO, 0.4) \
+	tw.tween_property(gun, "rotation", Vector3.ZERO, 0.55) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 # ---------- choreography ----------
