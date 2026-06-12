@@ -56,6 +56,24 @@ func _ready() -> void:
 	_index_voice_clips()
 	_load_volume()
 
+## Quit teardown: stop every player so no AudioStreamPlayback objects are
+## still owned by the mixer when the engine checks for leaked resources at
+## exit (a robot mid-bark at quit otherwise trips "resources still in use",
+## which CI treats as a failure).
+func _exit_tree() -> void:
+	for p in _pool:
+		p.stop()
+		p.stream = null
+	for p in _voice_pool:
+		p.stop()
+		p.stream = null
+	for p in [_music, _ui, _ambience, _lore_player]:
+		if p:
+			p.stop()
+			p.stream = null
+	_voice_clips.clear()
+	_sample_cache.clear()
+
 ## Creates the Music and SFX buses (each routed to Master) if they don't exist,
 ## so a global Master slider still scales everything while Music/SFX get their
 ## own independent sliders.
