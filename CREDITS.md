@@ -24,8 +24,9 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
   android, brute, and mech) by **Quaternius** (https://quaternius.com),
   via https://opengameart.org/content/animated-mech-pack.
 - **"Sci-Fi Essentials Kit"** (Enemy_EyeDrone, Enemy_QuadShell, Enemy_Trilobite —
-  used for the drone/seeker/overseer, sniper, and spider; Prop_HealthPack and
-  Prop_Syringe in `assets/models/pickups/` — the health and overclock pickups)
+  used for the drone/seeker/overseer, sniper, and spider; Prop_HealthPack,
+  Prop_Syringe and Prop_KeyCard in `assets/models/pickups/` — the health and
+  overclock pickups and the objective keycard)
   by **Quaternius** (https://quaternius.com), via
   https://opengameart.org/content/sci-fi-essentials-kit.
 
