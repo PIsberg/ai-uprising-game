@@ -44,6 +44,16 @@ func _ready() -> void:
 	_ambience.bus = "SFX"
 	add_child(_ambience)
 	_setup_broadcast_bus()
+	_setup_robot_voice_bus()
+	for i in VOICE_POOL_SIZE:
+		var vp := AudioStreamPlayer3D.new()
+		vp.max_distance = 60.0
+		vp.unit_size = 5.0
+		vp.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+		vp.bus = "RobotVoice"
+		add_child(vp)
+		_voice_pool.append(vp)
+	_index_voice_clips()
 	_load_volume()
 
 ## Creates the Music and SFX buses (each routed to Master) if they don't exist,
@@ -144,6 +154,107 @@ func _setup_broadcast_bus() -> void:
 	dist.pre_gain = 4.0
 	dist.post_gain = -4.0
 	AudioServer.add_bus_effect(idx, dist)
+
+# ---------- robot voice lines ----------
+# Pre-generated TTS clips (tools/gen_voices.ps1 -> assets/audio/voice/) played
+# positionally through the "RobotVoice" bus, whose pitch-drop + ring of
+# distortion turns the plain TTS into machine speech. A global cooldown keeps a
+# squad of robots from talking over each other into mush.
+
+const VOICE_POOL_SIZE := 4
+const VOICE_DIR := "res://assets/audio/voice/"
+## Category -> clip count. Keys match the wav prefixes from gen_voices.ps1.
+const VOICE_CATEGORIES := {"spot": 5, "atk": 5, "hurt": 4, "die": 4, "taunt": 8}
+
+var _voice_pool: Array[AudioStreamPlayer3D] = []
+var _voice_next: int = 0
+var _voice_clips: Dictionary = {} # category -> Array[AudioStream]
+var _voice_cooldown_until: float = 0.0
+var _voice_last_clip: Dictionary = {} # category -> last index, avoids repeats
+
+func _setup_robot_voice_bus() -> void:
+	if AudioServer.get_bus_index("RobotVoice") != -1:
+		return
+	var idx := AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, "RobotVoice")
+	AudioServer.set_bus_send(idx, "SFX") # scaled by the SFX volume slider
+	# Drop the TTS a few semitones: bigger, more machine.
+	var ps := AudioEffectPitchShift.new()
+	ps.pitch_scale = 0.82
+	ps.oversampling = 4
+	AudioServer.add_bus_effect(idx, ps)
+	# Light overdrive adds a synthetic buzz to the vowels.
+	var dist := AudioEffectDistortion.new()
+	dist.mode = AudioEffectDistortion.MODE_OVERDRIVE
+	dist.drive = 0.22
+	dist.pre_gain = 2.0
+	dist.post_gain = -2.0
+	AudioServer.add_bus_effect(idx, dist)
+	# Small-speaker band-pass: it's coming out of a robot chassis, not a studio.
+	var hp := AudioEffectHighPassFilter.new()
+	hp.cutoff_hz = 320.0
+	AudioServer.add_bus_effect(idx, hp)
+	var lp := AudioEffectLowPassFilter.new()
+	lp.cutoff_hz = 5200.0
+	AudioServer.add_bus_effect(idx, lp)
+
+func _index_voice_clips() -> void:
+	for cat: String in VOICE_CATEGORIES:
+		var clips: Array = []
+		for i: int in VOICE_CATEGORIES[cat]:
+			var path := "%s%s_%d.wav" % [VOICE_DIR, cat, i]
+			if ResourceLoader.exists(path):
+				clips.append(load(path))
+		_voice_clips[cat] = clips
+
+## Speak a random clip from `category` at a world position. Returns true if a
+## line actually played. `chance` rolls the dice first so callers can say
+## "sometimes"; the global cooldown then keeps overlapping squads coherent.
+## Death lines bypass the cooldown — a kill should always get its payoff.
+func play_voice_at(category: String, position: Vector3, chance: float = 1.0, volume_db: float = 2.0) -> bool:
+	if randf() > chance:
+		return false
+	var clips: Array = _voice_clips.get(category, [])
+	if clips.is_empty():
+		return false
+	var now := Time.get_ticks_msec() / 1000.0
+	if category != "die" and now < _voice_cooldown_until:
+		return false
+	_voice_cooldown_until = now + randf_range(1.6, 2.8)
+	var idx := randi() % clips.size()
+	if clips.size() > 1 and idx == int(_voice_last_clip.get(category, -1)):
+		idx = (idx + 1) % clips.size()
+	_voice_last_clip[category] = idx
+	var p := _voice_pool[_voice_next]
+	_voice_next = (_voice_next + 1) % VOICE_POOL_SIZE
+	p.stream = clips[idx]
+	p.global_position = position
+	p.volume_db = volume_db
+	# Per-robot pitch wobble on top of the bus shift so units don't sound cloned.
+	p.pitch_scale = randf_range(0.92, 1.12)
+	p.play()
+	return true
+
+# ---------- lore log playback ----------
+# Faction data-log VO (tools/gen_lore.ps1 -> assets/audio/lore/). Routed
+# through the band-passed "Broadcast" bus so logs sound like recovered
+# recordings on damaged equipment.
+
+const LORE_DIR := "res://assets/audio/lore/"
+var _lore_player: AudioStreamPlayer
+
+func play_lore(id: String) -> void:
+	var path := LORE_DIR + id + ".wav"
+	if not ResourceLoader.exists(path):
+		return
+	if _lore_player == null:
+		_lore_player = AudioStreamPlayer.new()
+		_lore_player.bus = "Broadcast"
+		_lore_player.volume_db = 4.0
+		add_child(_lore_player)
+	_lore_player.stream = load(path)
+	_lore_player.play()
 
 var _current_music_id: String = ""
 
