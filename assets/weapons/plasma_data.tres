@@ -7,6 +7,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "PL-1 Plasma Launcher"
+alt_mode = 1
 fire_mode = 0
 damage_type = 1
 damage = 35.0

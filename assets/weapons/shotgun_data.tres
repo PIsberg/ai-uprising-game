@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "SG-12 Breacher"
+alt_mode = 3
 fire_mode = 0
 damage_type = 0
 damage = 11.0

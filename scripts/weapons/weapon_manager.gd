@@ -33,6 +33,7 @@ var _bob_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
+	_register_alt_fire_action()
 	# Auto-resolve refs assuming this node sits under Player/Head/Camera3D/WeaponHolder
 	if camera == null:
 		var p := get_parent()
@@ -112,6 +113,19 @@ func add_weapon(scene: PackedScene, equip: bool = true) -> bool:
 		_equip(weapons.size() - 1)
 	return true
 
+## Registers the alt-fire action (V + mouse thumb button) at runtime, same
+## pattern as the player's dash — no project input-map edit needed.
+func _register_alt_fire_action() -> void:
+	if InputMap.has_action("alt_fire"):
+		return
+	InputMap.add_action("alt_fire")
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_V
+	InputMap.action_add_event("alt_fire", key)
+	var mb := InputEventMouseButton.new()
+	mb.button_index = MOUSE_BUTTON_XBUTTON1
+	InputMap.action_add_event("alt_fire", mb)
+
 func _process(delta: float) -> void:
 	# Number-key weapon selection (1-9) is handled in _input(). Wheel cycling:
 	if Input.is_action_just_pressed("weapon_next"):
@@ -126,6 +140,7 @@ func _process(delta: float) -> void:
 		var trigger := Input.is_action_pressed("fire")
 		var aiming := Input.is_action_pressed("aim")
 		current.try_fire(trigger, aiming, camera, shooter)
+		current.try_alt_fire(Input.is_action_pressed("alt_fire"), delta, camera, shooter)
 
 	# Recoil recovery
 	if recoil_target:

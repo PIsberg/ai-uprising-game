@@ -30,4 +30,9 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
 Both packs are released under **CC0 1.0** (public domain) — no attribution
 required, credited here as courtesy.
 
+### Weapon models (`assets/models/weapons/`)
+**"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via
+https://opengameart.org/content/blaster-kit, released under **CC0 1.0**
+(public domain) — no attribution required, credited here as courtesy.
+
 All other models, materials, audio, and code in this project are original.

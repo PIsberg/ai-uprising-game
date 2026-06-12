@@ -24,6 +24,35 @@ func _ready() -> void:
 		_mesh_home_y = _mesh.position.y
 	if _light:
 		_light_base = _light.light_energy
+	if kind == Kind.WEAPON and weapon_scene:
+		_show_weapon_model()
+
+## Weapon pickups display the ACTUAL gun hovering inside the glow ring instead
+## of the placeholder box: the real weapon scene is instanced (its _ready swaps
+## in the imported model), turned side-on so its profile fills the ring, and
+## auto-fitted from the same length table the viewmodel uses.
+func _show_weapon_model() -> void:
+	if _mesh == null or not _mesh is MeshInstance3D:
+		return
+	(_mesh as MeshInstance3D).mesh = null # drop the placeholder; the ring is a child and stays
+	var inst := weapon_scene.instantiate() as Node3D
+	# Display only: no heat/cooldown ticking, and tween-driven anims stay off.
+	inst.process_mode = Node.PROCESS_MODE_DISABLED
+	_mesh.add_child(inst)
+	var vm := inst.get_node_or_null("Viewmodel") as Node3D
+	if vm:
+		vm.position = Vector3.ZERO # undo the first-person framing offset
+	# Side-on inside the ring; fitted so long rifles don't poke through it.
+	var key := weapon_scene.resource_path.get_file().get_basename()
+	var cfg: Dictionary = Weapon.REAL_MODELS.get(key, {})
+	var glen: float = cfg.get("len", 0.6)
+	var s := minf(1.0, 0.7 / glen)
+	inst.rotation.y = PI * 0.5
+	inst.scale = Vector3.ONE * s
+	# The fitted model spans z in [0.18 - len, 0.18] (rear parked at 0.18), so
+	# shift the gun so its midpoint sits at the ring centre.
+	var center := Vector3(0, 0.0, 0.18 - glen * 0.5)
+	inst.position = -(Basis(Vector3.UP, inst.rotation.y) * center) * s
 
 func _process(delta: float) -> void:
 	rotate_y(delta * 1.2)

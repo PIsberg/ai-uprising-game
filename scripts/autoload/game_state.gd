@@ -86,6 +86,45 @@ func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
 		unlocked_weapons.append(scene_path)
 
+# ---------- armory upgrades (bought with score between levels) ----------
+## Three permanent per-run tracks; every weapon reads the multipliers live
+## (Weapon.eff_damage / eff_mag_size / eff_reload_time). Score is the currency,
+## so fighting well IS the progression. Reset only on a fresh campaign.
+
+const UPGRADE_DEFS := {
+	"damage": {"label": "WEAPON DAMAGE", "per": 0.08, "cost": 1500},
+	"mag":    {"label": "MAGAZINE SIZE", "per": 0.15, "cost": 1200},
+	"reload": {"label": "RELOAD SPEED",  "per": 0.06, "cost": 1000},
+}
+const UPGRADE_MAX := 5
+var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0}
+
+func upgrade_level(k: String) -> int:
+	return int(upgrades.get(k, 0))
+
+## Next-rank price scales linearly with the rank being bought.
+func upgrade_cost(k: String) -> int:
+	return int(UPGRADE_DEFS[k]["cost"]) * (upgrade_level(k) + 1)
+
+func buy_upgrade(k: String) -> bool:
+	if not UPGRADE_DEFS.has(k) or upgrade_level(k) >= UPGRADE_MAX:
+		return false
+	var cost := upgrade_cost(k)
+	if score < cost:
+		return false
+	score -= cost
+	upgrades[k] = upgrade_level(k) + 1
+	save_progress()
+	return true
+
+## Multiplier for damage/mag tracks (>= 1.0).
+func upgrade_mult(k: String) -> float:
+	return 1.0 + float(UPGRADE_DEFS[k]["per"]) * upgrade_level(k)
+
+## Reload is a time REDUCTION; floored so it can't break the reload anim.
+func upgrade_reload_mult() -> float:
+	return maxf(0.55, 1.0 - float(UPGRADE_DEFS["reload"]["per"]) * upgrade_level("reload"))
+
 func set_state(new_state: State) -> void:
 	current_state = new_state
 	match new_state:
@@ -200,6 +239,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	reset_run()
 	unlocked_weapons.clear() # fresh run starts with only the base arsenal
 	equipped_weapon = ""     # ...armed with the default (pistol)
+	upgrades = {"damage": 0, "mag": 0, "reload": 0} # armory resets with the run
 	intro_played = false
 	level_index = 0
 	go_to_level(CAMPAIGN[0], false)
@@ -269,6 +309,7 @@ func save_progress() -> void:
 	cf.set_value("run", "kills", kills)
 	cf.set_value("run", "unlocked_weapons", unlocked_weapons)
 	cf.set_value("run", "equipped_weapon", equipped_weapon)
+	cf.set_value("run", "upgrades", upgrades)
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -283,6 +324,9 @@ func load_progress() -> bool:
 	for w in cf.get_value("run", "unlocked_weapons", []):
 		unlocked_weapons.append(str(w))
 	equipped_weapon = str(cf.get_value("run", "equipped_weapon", ""))
+	var up: Dictionary = cf.get_value("run", "upgrades", {})
+	for k in upgrades:
+		upgrades[k] = int(up.get(k, 0))
 	return true
 
 func clear_save() -> void:

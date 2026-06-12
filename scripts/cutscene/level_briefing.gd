@@ -203,4 +203,11 @@ func _on_finished() -> void:
 		var t: String = e.get("type", "")
 		if t != "":
 			GameState.mark_enemy_seen(t)
-	GameState.load_level(GameState.current_level_path, false)
+	# Stop at the armory on the way in — spend the run's score on upgrades,
+	# then deploy. (Skipped when there's nothing to spend toward.)
+	if GameState.score > 0 or GameState.upgrade_level("damage") + GameState.upgrade_level("mag") + GameState.upgrade_level("reload") > 0:
+		var shop := Armory.new()
+		add_child(shop)
+		shop.deployed.connect(func(): GameState.load_level(GameState.current_level_path, false))
+	else:
+		GameState.load_level(GameState.current_level_path, false)

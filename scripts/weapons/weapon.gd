@@ -10,6 +10,19 @@ signal ammo_changed(mag: int, reserve: int)
 @export var viewmodel: Node3D
 @export var muzzle: Node3D
 
+# ---------- effective stats (base data × armory upgrades) ----------
+# WeaponData resources are shared, so upgrades are never written into them —
+# every read goes through these. GameState owns the multipliers.
+
+func eff_damage() -> float:
+	return data.damage * GameState.upgrade_mult("damage") * _alt_boost
+
+func eff_mag_size() -> int:
+	return int(round(data.mag_size * GameState.upgrade_mult("mag")))
+
+func eff_reload_time() -> float:
+	return data.reload_time * GameState.upgrade_reload_mult()
+
 var mag: int = 0
 var reserve: int = 0
 var _cooldown: float = 0.0
@@ -59,11 +72,99 @@ func _ready() -> void:
 		if _mag_node:
 			_mag_home = _mag_node.position
 	if data:
-		mag = data.mag_size
+		mag = eff_mag_size()
 		reserve = data.reserve_max
 		ammo_changed.emit(mag, reserve)
-	_bevel_viewmodel()
+	if not _apply_real_model():
+		_bevel_viewmodel()
 	_build_heat_glow()
+
+## Imported gun models (Kenney "Blaster Kit", CC0) keyed by weapon scene name.
+## `len` is the wanted barrel-to-stock length in metres (the GLB is uniformly
+## scaled to it), `tint` multiplies the kit's white-plastic albedo so each gun
+## reads as gunmetal with the weapon's energy-color identity.
+const REAL_MODELS := {
+	"pistol":     {"glb": "res://assets/models/weapons/blaster-b.glb", "len": 0.42, "tint": Color(0.5, 0.52, 0.56)},
+	"smg":        {"glb": "res://assets/models/weapons/blaster-c.glb", "len": 0.5, "tint": Color(0.48, 0.5, 0.54)},
+	"rifle":      {"glb": "res://assets/models/weapons/blaster-d.glb", "len": 0.78, "tint": Color(0.46, 0.48, 0.52)},
+	"shotgun":    {"glb": "res://assets/models/weapons/blaster-a.glb", "len": 0.72, "tint": Color(0.52, 0.48, 0.44)},
+	"plasma":     {"glb": "res://assets/models/weapons/blaster-l.glb", "len": 0.58, "tint": Color(0.44, 0.56, 0.46)},
+	"gauss":      {"glb": "res://assets/models/weapons/blaster-e.glb", "len": 0.95, "tint": Color(0.44, 0.5, 0.6)},
+	"tesla":      {"glb": "res://assets/models/weapons/blaster-o.glb", "len": 0.52, "tint": Color(0.42, 0.54, 0.58)},
+	"arccoil":    {"glb": "res://assets/models/weapons/blaster-q.glb", "len": 0.68, "tint": Color(0.58, 0.5, 0.4)},
+	"twinrail":   {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.95, "tint": Color(0.46, 0.52, 0.62)},
+	"devastator": {"glb": "res://assets/models/weapons/blaster-p.glb", "len": 0.8, "tint": Color(0.56, 0.44, 0.42)},
+}
+
+## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
+## scaled to the configured length, grip parked at the viewmodel origin, the
+## Muzzle node moved to the new barrel tip. The primitive parts are hidden (not
+## freed) so the Slide/Pump/Magazine animation lookups stay valid. Returns
+## false when this weapon has no model mapped (grenade etc. keep primitives).
+func _apply_real_model() -> bool:
+	if viewmodel == null:
+		return false
+	var key := scene_file_path.get_file().get_basename()
+	var cfg: Dictionary = REAL_MODELS.get(key, {})
+	if cfg.is_empty():
+		return false
+	var ps: PackedScene = load(cfg["glb"])
+	if ps == null:
+		return false
+	var model := ps.instantiate() as Node3D
+	# Hide the primitive placeholder parts; Muzzle (plain Node3D) is unaffected.
+	for n in viewmodel.find_children("*", "MeshInstance3D", true, false):
+		(n as MeshInstance3D).visible = false
+	viewmodel.add_child(model)
+	# Measure the model in its own space, then fit: uniform scale to `len`,
+	# rear of the gun parked just behind the grip (origin), vertically centred
+	# on the barrel line the old viewmodels used.
+	var aabb := _merged_aabb(model)
+	if aabb.size.z <= 0.001:
+		return true
+	var s: float = cfg["len"] / aabb.size.z
+	model.scale = Vector3.ONE * s
+	model.position = Vector3(
+		-(aabb.position.x + aabb.size.x * 0.5) * s,
+		0.02 - (aabb.position.y + aabb.size.y * 0.8) * s,
+		0.18 - aabb.end.z * s)
+	# Barrel tip = front face of the fitted model, slightly proud of it.
+	if muzzle:
+		muzzle.position.z = 0.18 - cfg["len"] - 0.03
+	# Gunmetal/energy tint over the kit's flat plastic albedo.
+	var tint: Color = cfg["tint"]
+	for n in model.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var m := mi.mesh.surface_get_material(i)
+			if m is BaseMaterial3D:
+				var dup := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
+				dup.albedo_color = dup.albedo_color * tint
+				dup.metallic = 0.55
+				dup.roughness = 0.45
+				mi.set_surface_override_material(i, dup)
+	return true
+
+func _merged_aabb(root: Node3D) -> AABB:
+	var merged := AABB()
+	var first := true
+	var stack: Array = [root]
+	while stack.size() > 0:
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+			var mi := n as MeshInstance3D
+			var xf := mi.transform
+			var p := mi.get_parent()
+			while p != null and p != root and p is Node3D:
+				xf = (p as Node3D).transform * xf
+				p = p.get_parent()
+			var ab: AABB = xf * mi.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	return merged
 
 ## Swap every plain BoxMesh in the viewmodel for a BeveledBoxMesh of the same
 ## size/material. Chamfered edges catch specular highlights, which is most of
@@ -168,7 +269,7 @@ func _fire_once(camera: Camera3D, shooter: Node, aiming: bool) -> void:
 	ammo_changed.emit(mag, reserve)
 	# Low-mag warning: a dry tick under the report that rises in pitch as the
 	# mag runs down — you hear the reload coming without checking the HUD.
-	var low := ceili(data.mag_size * 0.25)
+	var low := ceili(eff_mag_size() * 0.25)
 	if mag > 0 and mag <= low:
 		AudioBus.play_synth_ui("empty_click", -14.0, 1.3 + 0.9 * (1.0 - float(mag) / float(low)))
 	_active_camera = camera
@@ -180,6 +281,92 @@ var _active_camera: Camera3D
 var _active_shooter: Node
 var _active_aiming: bool = false
 
+# ---------- alt-fire (V / mouse thumb; mode per WeaponData.alt_mode) ----------
+
+const ALT_COST := 3            # ammo per CHARGE/VOLLEY use
+const ALT_CHARGE_TIME := 0.9   # seconds to a full charge
+
+var _alt_boost := 1.0          # damage multiplier folded into eff_damage()
+var _alt_tight := false        # zero-spread flag read by _do_shot
+var _alt_slug := false         # collapse pellets read by _do_shot
+var _alt_charge := 0.0
+var _alt_held := false
+var _alt_prev := false
+var _alt_step := 0             # rising charge-tick audio stage
+
+## Driven every frame by WeaponManager with the alt-fire button state.
+func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) -> void:
+	var just := pressed and not _alt_prev
+	_alt_prev = pressed
+	if data == null or data.alt_mode == WeaponData.AltMode.NONE or _reloading:
+		_cancel_charge()
+		return
+	match data.alt_mode:
+		WeaponData.AltMode.CHARGE:
+			_alt_charge_logic(pressed, delta, camera, shooter)
+		WeaponData.AltMode.VOLLEY:
+			if just and _cooldown <= 0.0 and mag >= ALT_COST:
+				_fire_volley(camera, shooter)
+			elif just and mag < ALT_COST:
+				_play_empty()
+		WeaponData.AltMode.SLUG:
+			if just and _cooldown <= 0.0 and mag > 0:
+				_alt_slug = true
+				_alt_tight = true
+				# One pellet carries most of the spread-pattern's payload.
+				_alt_boost = maxf(1.0, data.pellets * 0.8)
+				_fire_once(camera, shooter, true)
+				_alt_boost = 1.0
+				_alt_tight = false
+				_alt_slug = false
+				_cooldown *= 1.6 # heavier shot, slower follow-up
+
+## Hold to charge (barrel heat ramps as feedback), release to loose a single
+## perfectly-accurate shot at up to ~3.4× damage for 3 ammo.
+func _alt_charge_logic(pressed: bool, delta: float, camera: Camera3D, shooter: Node) -> void:
+	if pressed and _cooldown <= 0.0 and mag >= ALT_COST:
+		_alt_held = true
+		_alt_charge = minf(1.0, _alt_charge + delta / ALT_CHARGE_TIME)
+		_heat = maxf(_heat, _alt_charge) # the muzzle visibly builds up
+		var step := int(_alt_charge * 4.0)
+		if step != _alt_step:
+			_alt_step = step
+			AudioBus.play_synth_ui("empty_click", -12.0, 0.9 + 0.25 * step)
+		return
+	if _alt_held: # released (or interrupted)
+		_alt_held = false
+		_alt_step = 0
+		if _alt_charge >= 0.25 and mag >= ALT_COST:
+			_alt_boost = 1.0 + 2.4 * _alt_charge
+			_alt_tight = true
+			mag -= ALT_COST - 1 # _fire_once spends the last round
+			_fire_once(camera, shooter, true)
+			_alt_boost = 1.0
+			_alt_tight = false
+			_cooldown = maxf(_cooldown, 0.55)
+			if shooter and shooter.has_method("shake"):
+				shooter.shake(0.3 + 0.3 * _alt_charge)
+		_alt_charge = 0.0
+
+func _cancel_charge() -> void:
+	_alt_held = false
+	_alt_charge = 0.0
+	_alt_step = 0
+
+## Instant 3-round laser-tight burst, spaced just enough to read as a volley.
+func _fire_volley(camera: Camera3D, shooter: Node) -> void:
+	_alt_tight = true
+	for i in ALT_COST:
+		if mag <= 0 or data == null:
+			break
+		_fire_once(camera, shooter, true)
+		if i < ALT_COST - 1:
+			await get_tree().create_timer(0.07).timeout
+			if not is_instance_valid(self) or not is_inside_tree():
+				return
+	_alt_tight = false
+	_cooldown = (1.0 / maxf(0.1, data.fire_rate)) * 2.2 # breather after the volley
+
 func _do_shot() -> void:
 	if _active_camera == null or data == null:
 		return
@@ -187,9 +374,11 @@ func _do_shot() -> void:
 	var spread := deg_to_rad(data.spread_deg)
 	if _active_aiming:
 		spread *= data.aim_spread_mult
+	if _alt_tight:
+		spread = 0.0 # alt-fire shots are laser-accurate
 	var origin := _active_camera.global_position
 	var base_dir := -_active_camera.global_transform.basis.z
-	for _i in data.pellets:
+	for _i in (1 if _alt_slug else data.pellets):
 		var dir := _scattered(base_dir, spread)
 		match data.damage_type:
 			WeaponData.DamageType.HITSCAN:
@@ -242,7 +431,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 		var pitch := randf_range(0.7, 0.85) if surf == "dirt" else randf_range(0.9, 1.1)
 		AudioBus.play_synth_at(snd, hpos, -8.0, pitch)
 		if dmg_node:
-			var final_damage := data.damage
+			var final_damage := eff_damage()
 			var is_head := false
 			if col.has_method("is_headshot"):
 				is_head = col.is_headshot(hpos.y)
@@ -340,7 +529,7 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = origin + dir * 0.5
 	if proj.has_method("launch"):
-		proj.launch(dir * data.projectile_speed, _active_shooter, data.damage, data.splash_radius, data.splash_damage)
+		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
 
 func _find_damageable(node: Node) -> Node:
 	var n := node
@@ -410,10 +599,10 @@ func _update_beam(delta: float) -> void:
 		var col := hit.collider as Node
 		var dmg_node: Node = _find_damageable(col) if col else null
 		if dmg_node:
-			dmg_node.apply_damage(data.damage, _active_shooter)
+			dmg_node.apply_damage(eff_damage(), _active_shooter)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.
 			if _beam_pop % 4 == 0:
-				_enemy_hit_pop(hit.position, false, data.damage * 2.0)
+				_enemy_hit_pop(hit.position, false, eff_damage() * 2.0)
 		elif _beam_pop % 6 == 0:
 			_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
 	fired.emit(self)
@@ -564,10 +753,10 @@ func _play_empty() -> void:
 		AudioBus.play_at(s, muzzle.global_position, -6.0)
 
 func start_reload() -> void:
-	if _reloading or mag == data.mag_size or reserve <= 0:
+	if _reloading or mag == eff_mag_size() or reserve <= 0:
 		return
 	_reloading = true
-	_reload_timer = data.reload_time
+	_reload_timer = eff_reload_time()
 	if muzzle:
 		var s := _resolve_sound(data.reload_sound, "reload")
 		if s:
@@ -581,7 +770,7 @@ func start_reload() -> void:
 func _play_reload_anim() -> void:
 	if viewmodel == null:
 		return
-	var t: float = maxf(0.6, data.reload_time)
+	var t: float = maxf(0.6, eff_reload_time())
 	var tw := create_tween()
 	tw.tween_property(viewmodel, "rotation:x", -0.45, t * 0.18) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -627,7 +816,7 @@ func _play_pump_sound() -> void:
 	AudioBus.play_synth_at("pump_action", muzzle.global_position, -3.0)
 
 func _finish_reload() -> void:
-	var needed := data.mag_size - mag
+	var needed := eff_mag_size() - mag
 	var take := mini(needed, reserve)
 	mag += take
 	reserve -= take
