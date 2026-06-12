@@ -10,6 +10,7 @@ uniform float vignette_softness : hint_range(0.1, 1.0) = 0.55;
 uniform float grain_amount : hint_range(0.0, 0.2) = 0.035;
 uniform float sharpen : hint_range(0.0, 1.5) = 0.35;
 uniform float speed_warp : hint_range(0.0, 1.0) = 0.0; // sprint: radial streak + tunnel
+uniform float low_health : hint_range(0.0, 1.0) = 0.0; // critical: pulsing red rim + drained color
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -53,6 +54,16 @@ void fragment() {
 	// Vignette.
 	float vig = smoothstep(vignette_softness, vignette_softness - 0.5, r2 * 1.4);
 	col *= mix(1.0 - vignette_strength, 1.0, vig);
+
+	// Critical health: blood-red rim that throbs with a slow pulse, plus a
+	// touch of drained saturation — the world greys out as you fade.
+	if (low_health > 0.001) {
+		float pulse = 0.7 + 0.3 * sin(TIME * 5.2);
+		float rim = smoothstep(0.06, 0.75, r2 * 2.1) * low_health * pulse;
+		col = mix(col, vec3(0.42, 0.015, 0.015), clamp(rim, 0.0, 0.78));
+		float grey = dot(col, vec3(0.333));
+		col = mix(col, vec3(grey), low_health * 0.22);
+	}
 
 	// Animated film grain (luminance-only so it stays neutral).
 	float g = hash(uv * vec2(1920.0, 1080.0) + fract(TIME) * 91.7) - 0.5;

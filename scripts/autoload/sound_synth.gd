@@ -35,6 +35,7 @@ func _ready() -> void:
 	streams["music_suburb"] = _music_suburb()
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
+	streams["breathing"] = _breathing(4.0)
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -67,6 +68,31 @@ func _ambient_wind(dur: float) -> AudioStreamWAV:
 		lp = lp * 0.96 + white * 0.04 # one-pole low-pass -> wind rush
 		var gust := 0.5 + 0.5 * sin(TAU * 0.25 * t)
 		_write(bytes, i, lp * (0.35 + 0.65 * gust) * 0.7)
+	return _to_stream(bytes, true)
+
+## Exhausted breathing (low-health loop): two breaths per seamless 4s cycle —
+## a brighter, shorter inhale hiss and a softer, longer exhale, both made of
+## filtered noise so it reads as breath, not wind.
+func _breathing(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var cycle := fmod(t, 2.0) # one full breath every 2 seconds
+		var env := 0.0
+		var bright := 0.0
+		if cycle < 0.75:
+			env = sin(PI * cycle / 0.75) # inhale: short, sharp
+			bright = 0.55
+		elif cycle >= 0.95:
+			env = sin(PI * (cycle - 0.95) / 1.05) * 0.85 # exhale: longer, softer
+			bright = 0.22
+		var white := randf() * 2.0 - 1.0
+		lp = lp * (0.93 - bright * 0.28) + white * (0.07 + bright * 0.28)
+		lp2 = lp2 * 0.55 + lp * 0.45 # second pole rounds off the hiss
+		_write(bytes, i, lp2 * env * env * 0.9)
 	return _to_stream(bytes, true)
 
 # ----- helpers -----
