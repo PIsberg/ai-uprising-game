@@ -26,6 +26,27 @@ func _ready() -> void:
 		_light_base = _light.light_energy
 	if kind == Kind.WEAPON and weapon_scene:
 		_show_weapon_model()
+	_add_blob_shadow()
+
+## A soft dark disc under the pickup. Floating items otherwise read as pasted
+## onto the floor — this grounds them for almost nothing.
+func _add_blob_shadow() -> void:
+	var disc := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.32
+	cm.bottom_radius = 0.32
+	cm.height = 0.01
+	cm.radial_segments = 14
+	cm.rings = 1
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0, 0, 0, 0.4)
+	cm.material = mat
+	disc.mesh = cm
+	disc.position = Vector3(0, 0.025, 0)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(disc)
 
 ## Weapon pickups display the ACTUAL gun hovering inside the glow ring instead
 ## of the placeholder box: the real weapon scene is instanced (its _ready swaps

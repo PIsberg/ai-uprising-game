@@ -86,6 +86,7 @@ func _ready() -> void:
 	_build_beacons(def)
 	_build_skyline(def)
 	_build_sky_traffic(def)
+	_build_stars(def)
 	_build_tasks(def)
 	_build_exit(def)
 	_build_pickups(def)
@@ -741,6 +742,16 @@ func _build_signage(def: Dictionary) -> void:
 		bar.position = Vector3(0, fy, 0)
 		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		board.add_child(bar)
+	# Holo-sign life: the frame breathes, and every few seconds the panel
+	# stutters like a failing projector — signage reads as powered, not painted.
+	var pulse := create_tween().set_loops()
+	pulse.tween_property(frame_mat, "emission_energy_multiplier", 1.5, randf_range(1.6, 2.4)) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_property(frame_mat, "emission_energy_multiplier", 2.6, randf_range(1.6, 2.4)) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse.tween_callback(func():
+		if randf() < 0.3:
+			frame_mat.emission_energy_multiplier = 0.4) # one-frame dropout
 	var title := Label3D.new()
 	title.text = str(def.get("sign", def.get("name", "OCCUPIED ZONE"))).to_upper()
 	title.font_size = 96
@@ -956,6 +967,52 @@ func _build_skyline(def: Dictionary) -> void:
 			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
 			strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mi.add_child(strip)
+
+## A starfield dome over open-sky levels: one MultiMesh of billboarded points
+## at far distance, brightness-varied so the night sky reads as real depth
+## instead of a flat gradient. Single draw call; skipped on LOW.
+func _build_stars(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = true
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.6, 1.6)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = Color(1, 1, 1, 1)
+	quad.material = mat
+	mm.mesh = quad
+	mm.instance_count = int(240 * density)
+	for i in mm.instance_count:
+		# Random dome point: full azimuth, elevation biased upward and never
+		# below ~10 degrees so stars don't poke through the skyline.
+		var az := randf() * TAU
+		var el := deg_to_rad(randf_range(10.0, 85.0))
+		var r := randf_range(300.0, 380.0)
+		var pos := Vector3(cos(az) * cos(el), sin(el), sin(az) * cos(el)) * r
+		mm.set_instance_transform(i, Transform3D(Basis(), pos))
+		var b := randf_range(0.25, 1.0)
+		b = b * b # mostly dim, a few bright — like a real sky
+		var warm := randf_range(0.85, 1.0)
+		mm.set_instance_color(i, Color(b, b * warm, b * randf_range(0.85, 1.05), 1.0))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Far outside every cull box on purpose; make sure it never pops out.
+	mmi.custom_aabb = AABB(Vector3(-400, -50, -400), Vector3(800, 500, 800))
+	add_child(mmi)
 
 ## Open-sky levels get living air space: occupation craft circling beyond the
 ## skyline and the odd meteor fall. Skipped on LOW alongside the other dressing.
