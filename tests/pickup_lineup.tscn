@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cpickuplineup1"]
+
+[ext_resource type="Script" path="res://tests/pickup_lineup.gd" id="1_s"]
+
+[node name="PickupLineup" type="Node3D"]
+script = ExtResource("1_s")

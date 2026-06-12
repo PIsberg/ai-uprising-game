@@ -1,22 +1,45 @@
-[gd_scene load_steps=6 format=3 uid="uid://b0pickup0health"]
+[gd_scene load_steps=10 format=3 uid="uid://b0pickup0health"]
 
 [ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
 
-[sub_resource type="StandardMaterial3D" id="Mat_shell"]
-albedo_color = Color(0.9, 0.95, 0.95, 1)
-metallic = 0.3
-roughness = 0.4
+[sub_resource type="StandardMaterial3D" id="Mat_core"]
+albedo_color = Color(0.95, 0.97, 0.97, 1)
+metallic = 0.2
+roughness = 0.35
 
 [sub_resource type="StandardMaterial3D" id="Mat_cross"]
 shading_mode = 0
 albedo_color = Color(0.3, 1, 0.45, 1)
 emission_enabled = true
 emission = Color(0.3, 1, 0.45, 1)
-emission_energy_multiplier = 4.0
+emission_energy_multiplier = 3.5
 
-[sub_resource type="BoxMesh" id="Box_shell"]
-size = Vector3(0.5, 0.5, 0.5)
-material = SubResource("Mat_shell")
+[sub_resource type="StandardMaterial3D" id="Mat_ring"]
+shading_mode = 0
+transparency = 1
+albedo_color = Color(0.3, 1, 0.45, 0.55)
+emission_enabled = true
+emission = Color(0.3, 1, 0.45, 1)
+emission_energy_multiplier = 1.6
+
+[sub_resource type="BoxMesh" id="Box_core"]
+size = Vector3(0.26, 0.26, 0.26)
+material = SubResource("Mat_core")
+
+[sub_resource type="BoxMesh" id="Box_arm_y"]
+size = Vector3(0.17, 0.62, 0.17)
+material = SubResource("Mat_cross")
+
+[sub_resource type="BoxMesh" id="Box_arm_x"]
+size = Vector3(0.62, 0.17, 0.17)
+material = SubResource("Mat_cross")
+
+[sub_resource type="TorusMesh" id="Torus_ring"]
+inner_radius = 0.38
+outer_radius = 0.48
+rings = 24
+ring_segments = 12
+material = SubResource("Mat_ring")
 
 [sub_resource type="SphereShape3D" id="Shape_1"]
 radius = 0.7
@@ -30,19 +53,26 @@ amount = 35
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 shape = SubResource("Shape_1")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, 0, 0.6, 0)
-mesh = SubResource("Box_shell")
+[node name="Mesh" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
 
-[node name="CrossV" type="MeshInstance3D" parent="Mesh"]
-transform = Transform3D(0.18, 0, 0, 0, 0.62, 0, 0, 0, 0.18, 0, 0, 0.38)
-mesh = SubResource("Box_shell")
-surface_material_override/0 = SubResource("Mat_cross")
+[node name="Core" type="MeshInstance3D" parent="Mesh"]
+mesh = SubResource("Box_core")
 
-[node name="CrossH" type="MeshInstance3D" parent="Mesh"]
-transform = Transform3D(0.62, 0, 0, 0, 0.18, 0, 0, 0, 0.18, 0, 0, 0.38)
-mesh = SubResource("Box_shell")
-surface_material_override/0 = SubResource("Mat_cross")
+[node name="ArmY" type="MeshInstance3D" parent="Mesh"]
+mesh = SubResource("Box_arm_y")
+
+[node name="ArmX" type="MeshInstance3D" parent="Mesh"]
+mesh = SubResource("Box_arm_x")
+
+[node name="ArmZ" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 0)
+mesh = SubResource("Box_arm_x")
+
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+mesh = SubResource("Torus_ring")
+cast_shadow = 0
 
 [node name="Light" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
