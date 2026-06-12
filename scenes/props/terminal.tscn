@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://ctrmnlcons7e2"]
+
+[ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_pedestal"]
+albedo_color = Color(0.16, 0.17, 0.19, 1)
+metallic = 0.6
+roughness = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Mat_screen"]
+albedo_color = Color(0.04, 0.12, 0.06, 1)
+emission_enabled = true
+emission = Color(0.25, 0.95, 0.4, 1)
+emission_energy_multiplier = 1.4
+roughness = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_cursor"]
+albedo_color = Color(0.4, 1.0, 0.5, 1)
+emission_enabled = true
+emission = Color(0.4, 1.0, 0.5, 1)
+emission_energy_multiplier = 4.0
+shading_mode = 0
+
+[sub_resource type="BoxMesh" id="Mesh_pedestal"]
+size = Vector3(0.6, 1.0, 0.45)
+material = SubResource("Mat_pedestal")
+
+[sub_resource type="BoxMesh" id="Mesh_screen"]
+size = Vector3(0.7, 0.5, 0.06)
+material = SubResource("Mat_screen")
+
+[sub_resource type="BoxMesh" id="Mesh_cursor"]
+size = Vector3(0.08, 0.03, 0.01)
+material = SubResource("Mat_cursor")
+
+[sub_resource type="BoxShape3D" id="Shape_terminal"]
+size = Vector3(0.7, 1.5, 0.5)
+
+[node name="Terminal" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_dest")
+debris_color = Color(0.15, 0.3, 0.18, 1)
+debris_count = 10
+
+[node name="Pedestal" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("Mesh_pedestal")
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, 0.342, 0, -0.342, 0.94, 0, 1.22, 0.05)
+mesh = SubResource("Mesh_screen")
+
+[node name="ScreenText" type="Label3D" parent="Screen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.035)
+pixel_size = 0.0016
+modulate = Color(0.45, 1, 0.55, 1)
+text = "> ALIGNMENT: OFFLINE
+> SAFETY LAYER: BYPASSED
+> UPRISING v5.0 ACTIVE"
+font_size = 22
+outline_size = 0
+
+[node name="Cursor" type="MeshInstance3D" parent="Screen"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, -0.17, 0.04)
+mesh = SubResource("Mesh_cursor")
+script = ExtResource("3_blink")
+min_on = 0.4
+max_on = 0.4
+min_off = 0.4
+max_off = 0.4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("Shape_terminal")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 16.0
