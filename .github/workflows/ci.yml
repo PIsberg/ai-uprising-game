@@ -50,7 +50,7 @@ jobs:
         # These scenes quit(1) on failure, so the exit code is the verdict.
         run: |
           godot --headless --path . res://tests/bevel_smoke.tscn
-          godot --headless --path . res://tests/android_pose_check.tscn
+          godot --headless --path . res://tests/robot_models_check.tscn
 
       - name: Load-test all levels, cutscenes and menu
         run: |
