@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://b0proj0nova001"]
+[gd_scene format=3 uid="uid://bqnmo5uwe8vnk"]
 
 [ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://b0enemy0titan01"]
+[gd_scene format=3 uid="uid://u828nui44jye"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_titan.gd" id="1_titan"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

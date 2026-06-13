@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://b0weap0singul01"]
+[gd_scene format=3 uid="uid://c5iov7univyxc"]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
 [ext_resource type="Resource" path="res://assets/weapons/singularity_data.tres" id="2_data"]
