@@ -16,6 +16,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var attack_range: float = 14.0
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
+@export var attack_lunge_speed: float = 0.0 ## >0: a melee striker that LEAPS at the target on attack instead of standing and tapping it.
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
 
@@ -52,6 +53,7 @@ var state: State = State.IDLE
 var target: Node3D
 var recoil: float = 0.0 ## 0..1, spikes to 1 on firing; subclasses read it for weapon kick.
 var _attack_timer: float = 0.0
+var _lunge_time: float = 0.0 ## While >0, a melee leap is in flight; movement logic lets the surge ride.
 var _state_timer: float = 0.0
 var _last_known_target_pos: Vector3
 var _approach_angle: float = 0.0 ## Stable angle each enemy circles to, so they flank instead of stacking.
@@ -362,6 +364,11 @@ func _state_attack(delta: float) -> void:
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
+	# A melee leap in flight: let the surge carry (don't fight it with the
+	# normal spacing logic) so the pounce reads as one committed motion.
+	if _lunge_time > 0.0:
+		_lunge_time -= delta
+		return
 	var dist := global_position.distance_to(target.global_position)
 	if dist > attack_range * 1.1:
 		set_state(State.CHASE)
@@ -496,6 +503,24 @@ func track_node_to_target(node: Node3D, delta: float, max_yaw_deg: float = 55.0,
 # Override in subclasses
 func _perform_attack() -> void:
 	pass
+
+## An aggressive committed melee strike: an explosive forward-and-up leap at the
+## target, synced to the attack animation, with the surge held alive briefly so
+## it reads as a pounce instead of a step. Melee subclasses call this from
+## _perform_attack (needs attack_lunge_speed > 0).
+func _attack_lunge() -> void:
+	if target == null or attack_lunge_speed <= 0.0:
+		return
+	var dir := target.global_position - global_position
+	dir.y = 0.0
+	if dir.length() < 0.05:
+		return
+	dir = dir.normalized()
+	velocity.x = dir.x * attack_lunge_speed
+	velocity.z = dir.z * attack_lunge_speed
+	velocity.y = maxf(velocity.y, 3.0) # a little air — a lunge, not a shuffle
+	recoil = 1.0                        # fire the attack/slam clip
+	_lunge_time = 0.22                  # let the surge ride past the spacing logic
 
 ## True when the enemy has closed to short range on its target — drives a
 ## visual "enrage" flare (brighter eyes/core) so the aggression reads.

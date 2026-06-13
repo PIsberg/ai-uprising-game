@@ -22,6 +22,7 @@ func _ready() -> void:
 	attack_range = 3.2
 	preferred_range = 2.2
 	attack_cooldown = 1.7
+	attack_lunge_speed = 9.0 # heaves its bulk forward into the slam
 	score_value = 320
 	stagger_threshold = 100000.0 # immovable
 	flinch_knockback = 0.0
@@ -101,7 +102,7 @@ func _perform_attack() -> void:
 		var d = target.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(slam_damage, self)
-		recoil = 1.0
+		_attack_lunge() # heave forward into the slam (sets recoil -> slam clip)
 		AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.6)
 		if target is CharacterBody3D:
 			var away := (target.global_position - global_position)
