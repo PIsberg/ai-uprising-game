@@ -15,6 +15,7 @@ const ENEMY_SCENES := {
 	"overseer": "res://scenes/enemies/overseer.tscn",
 	"brute": "res://scenes/enemies/brute.tscn",
 	"titan": "res://scenes/enemies/titan.tscn",
+	"alien": "res://scenes/enemies/alien.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -30,6 +31,7 @@ const ENEMY_INFO := {
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
+	"alien": {"name": "XENO DRIFTER", "desc": "Off-world ally of the machines. Hovers in and headbutts — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
 }
 
 const TAGLINES := {
@@ -42,6 +44,7 @@ const TAGLINES := {
 	"grok": "xAI Black-Site. The war machines were forged here. Now they run the place.",
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
 	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
+	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. These drifting things crossed the dark to fight beside the AI. First contact, and we are on the wrong side of it.",
 }
 
 const LINE_Z := -3.6

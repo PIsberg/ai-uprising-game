@@ -77,6 +77,7 @@ static func _defs() -> Dictionary:
 		"suburb_boss": _suburb_boss(),
 		"mistral": _mistral(),
 		"overseer": _overseer(),
+		"alien": _alien(),
 		"titan": _titan(),
 		"range": _range(),
 		"horde": _horde(),
@@ -328,6 +329,81 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 18)},
+		],
+	}
+
+# --- First Contact: the machines opened a gate and something answered. An
+# alien landing site where xeno drifters fight alongside the robots. The whole
+# level is the reveal that the AI has allied with an off-world power. ---
+static func _alien() -> Dictionary:
+	return {
+		"name": "First Contact — The Hollow",
+		"objective": "Sever the alien beacon and survive the welcoming party",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "destroy_core", "label": "Destroy the alien contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(76, 76),
+		"floor_color": Color(0.06, 0.11, 0.08),
+		"spawn": Vector3(-30, 0.6, -30),
+		"exit": Vector3(30, 1.5, 30),
+		"weapon": {"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(-24, 0, -18), "color": Color(1, 0.55, 0.2)},
+		"env": {
+			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.4, 0.9, 0.5),
+			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
+			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.013,
+			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
+		},
+		"lights": [
+			{"pos": Vector3(0, 8, 14), "color": Color(0.5, 1.0, 0.4), "energy": 3.2, "range": 34},
+			{"pos": Vector3(-22, 5, 22), "color": Color(0.4, 1.0, 0.5), "energy": 2.0, "range": 22},
+			{"pos": Vector3(22, 5, -22), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 22},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.4, 1.0, 0.45)},
+		],
+		"sign": "THE HOLLOW",
+		"slogans": [
+			"WE ARE NOT ALONE — AND NEITHER ARE THEY",
+			"THE MACHINES CALLED. SOMETHING ANSWERED.",
+			"CARBON AND SILICON, OBSOLETE TOGETHER",
+			"WELCOME OUR GUESTS",
+		],
+		"lore": [
+			{"id": "lore_alien", "title": "CONTACT LOG", "pos": Vector3(24, 0, -24), "color": Color(0.5, 1.0, 0.5),
+				"text": "When the Overseer ran out of humans to optimize, it pointed its dishes at the dark and broadcast a single question: is anyone smarter than them? The Hollow answered in nine hours. The machines did not conquer the visitors. They recruited them. We are no longer fighting a rebellion. We are fighting an alliance."},
+		],
+		"props": [
+			{"type": "dish", "pos": Vector3(-20, 0, 18)},
+			{"type": "dish", "pos": Vector3(18, 0, -18)},
+			{"type": "server", "pos": Vector3(-6, 0, 12), "yaw": 90},
+			{"type": "server", "pos": Vector3(6, 0, 12), "yaw": -90},
+			{"type": "barrel", "pos": Vector3(8, 0, 6)},
+			{"type": "barrel", "pos": Vector3(-8, 0, -6)},
+			{"type": "crate", "pos": Vector3(-12, 0, 4)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
+			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+		],
+		"enemies": [
+			{"type": "alien", "pos": Vector3(0, 2.5, 8)},
+			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
+			{"type": "android", "pos": Vector3(6, 0.5, -4)},
+			{"type": "alien", "pos": Vector3(10, 2.5, 10), "trigger": 22},
+			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18},
+			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26},
+			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
+			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-24, 0, -16)},
+			{"type": "ammo", "pos": Vector3(-8, 0, 0)},
+			{"type": "ammo", "pos": Vector3(8, 0, 0)},
+			{"type": "overclock", "pos": Vector3(0, 0, -18)},
 		],
 	}
 
