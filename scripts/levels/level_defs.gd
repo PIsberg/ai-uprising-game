@@ -825,6 +825,12 @@ static func _suburb() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(0, 0, 8)},
 			{"type": "canister", "pos": Vector3(-5, 0, 10)},
 			{"type": "canister", "pos": Vector3(12, 0, -2)},
+			# Front-yard trees between the houses — suburbs need greenery.
+			{"type": "tree", "pos": Vector3(-13.5, 0, -13)},
+			{"type": "tree", "pos": Vector3(13.5, 0, 13)},
+			{"type": "tree_small", "pos": Vector3(0.5, 0, -12)},
+			{"type": "tree_small", "pos": Vector3(-14, 0, 12.5)},
+			{"type": "tree_small", "pos": Vector3(14, 0, -12.5)},
 		],
 		"sign": "MAPLE GROVE ESTATES",
 		"slogans": [

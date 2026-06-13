@@ -11,6 +11,9 @@ const PROPS := [
 	"res://scenes/props/shelves.tscn",
 	"res://scenes/props/desk.tscn",
 	"res://scenes/props/satellite_dish.tscn",
+	"res://scenes/props/car.tscn",
+	"res://scenes/props/fence.tscn",
+	"res://scenes/props/tree.tscn",
 ]
 
 func _ready() -> void:

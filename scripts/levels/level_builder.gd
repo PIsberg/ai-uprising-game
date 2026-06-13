@@ -34,6 +34,8 @@ const PROP_SCENES := {
 	"shelves": preload("res://scenes/props/shelves.tscn"),
 	"desk": preload("res://scenes/props/desk.tscn"),
 	"dish": preload("res://scenes/props/satellite_dish.tscn"),
+	"tree": preload("res://scenes/props/tree.tscn"),
+	"tree_small": preload("res://scenes/props/tree_small.tscn"),
 }
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
@@ -575,67 +577,66 @@ func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3
 	m.metallic = 0.0
 	return m
 
-## Suburban houses: a coloured collidable box (added to the navmesh as an
-## obstacle) plus a non-colliding peaked prism roof on top. Data-driven via the
-## def's optional "buildings" list: {pos, size, color?, roof_color?, roof?}.
+## Real suburban houses (Kenney City Kit Suburban, CC0): one model per def
+## entry, cycled for variety, scaled to the def's footprint and rotated to
+## face the street (the level origin). Gameplay is untouched — the def's box
+## is still the collider and navmesh obstacle (the bake parses STATIC
+## COLLIDERS, so the invisible shape is all that matters for pathing).
+const HOUSE_SCENES: Array = [
+	preload("res://assets/models/suburb/building-type-a.glb"),
+	preload("res://assets/models/suburb/building-type-b.glb"),
+	preload("res://assets/models/suburb/building-type-c.glb"),
+	preload("res://assets/models/suburb/building-type-d.glb"),
+	preload("res://assets/models/suburb/building-type-e.glb"),
+	preload("res://assets/models/suburb/building-type-f.glb"),
+	preload("res://assets/models/suburb/building-type-g.glb"),
+	preload("res://assets/models/suburb/building-type-h.glb"),
+]
+
 func _build_buildings(def: Dictionary) -> void:
-	for b in def.get("buildings", []):
+	var entries: Array = def.get("buildings", [])
+	for i in entries.size():
+		var b: Dictionary = entries[i]
 		var size: Vector3 = b["size"]
 		var pos: Vector3 = b["pos"]
-		var color: Color = b.get("color", Color(0.7, 0.68, 0.62))
-		# House body — solid + collidable so it blocks shots and movement.
-		# Tint the textured wall panel instead of using a flat colour: untextured
-		# pastel slabs under an open sky read as translucent glass.
-		var wall := MAT_WALL.duplicate() as StandardMaterial3D
-		wall.albedo_color = color * Color(0.8, 0.8, 0.8) # texture is bright; keep the hue readable
-		_add_box(pos, size, wall)
-		_add_house_face(pos, size)
-		# Peaked roof (visual only) sitting on top of the body.
-		if b.get("roof", true):
-			var roof_h: float = b.get("roof_height", maxf(1.2, size.x * 0.35))
-			var roof := MeshInstance3D.new()
-			var pm := PrismMesh.new()
-			pm.size = Vector3(size.x * 1.08, roof_h, size.z * 1.08)
-			roof.mesh = pm
-			roof.material_override = _color_material(b.get("roof_color", Color(0.35, 0.18, 0.14)))
-			roof.position = pos + Vector3(0, size.y * 0.5 + roof_h * 0.5, 0)
-			add_child(roof)
+		# Collider + navmesh obstacle: exactly the box the def describes.
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = pos
+		body.add_to_group("surf_concrete")
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = size
+		cs.shape = bs
+		body.add_child(cs)
+		_nav_region.add_child(body)
+		# Visible house, fitted to the footprint and grounded.
+		var house := (HOUSE_SCENES[i % HOUSE_SCENES.size()] as PackedScene).instantiate() as Node3D
+		add_child(house)
+		var ab := _merged_aabb(house)
+		var s := minf(size.x / maxf(ab.size.x, 0.1), size.z / maxf(ab.size.z, 0.1))
+		house.scale = Vector3.ONE * s
+		var ground_y := pos.y - size.y * 0.5
+		house.position = Vector3(pos.x - ab.get_center().x * s, ground_y - ab.position.y * s, pos.z - ab.get_center().z * s)
+		# Turn the front door toward the street (Kenney fronts face +Z).
+		if absf(pos.z) >= absf(pos.x):
+			house.rotation.y = 0.0 if pos.z < 0.0 else PI
+		else:
+			house.rotation.y = PI * 0.5 if pos.x < 0.0 else -PI * 0.5
 
-## Door + window trim on the street-facing wall (the side toward the level
-## origin) so houses read as solid, lived-in buildings instead of blank boxes.
-func _add_house_face(pos: Vector3, size: Vector3) -> void:
-	var fd := Vector3(0, 0, -signf(pos.z)) if absf(pos.z) >= absf(pos.x) \
-			else Vector3(-signf(pos.x), 0, 0)
-	if fd.length_squared() < 0.5: # house at the origin — arbitrary front
-		fd = Vector3(0, 0, 1)
-	var across := Vector3(1, 0, 0) if fd.z != 0.0 else Vector3(0, 0, 1)
-	var half := (size.z if fd.z != 0.0 else size.x) * 0.5
-	var wall_c := pos + fd * (half + 0.05) # just proud of the wall face
-	var floor_y := pos.y - size.y * 0.5
-	var door_mat := _color_material(Color(0.2, 0.14, 0.1), 0.7)
-	var glass_mat := _color_material(Color(0.07, 0.09, 0.12), 0.15)
-	glass_mat.metallic = 0.6
-	var door_c := Vector3(wall_c.x, floor_y + 1.05, wall_c.z)
-	_add_trim(door_c, _face_box(fd, 1.0, 2.1), door_mat)
-	var win_off: float = (size.x if fd.z != 0.0 else size.z) * 0.28
-	var win_y := floor_y + size.y * 0.55
-	for s: float in [-1.0, 1.0]:
-		var win_c := wall_c + across * (win_off * s)
-		win_c.y = win_y
-		_add_trim(win_c, _face_box(fd, 1.2, 1.0), glass_mat)
-
-## A wall-mounted box: `w`×`h` across the face, thin along the facing axis.
-func _face_box(fd: Vector3, w: float, h: float) -> Vector3:
-	return Vector3(w, h, 0.1) if fd.z != 0.0 else Vector3(0.1, h, w)
-
-func _add_trim(center: Vector3, sz: Vector3, mat: Material) -> void:
-	var mi := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = sz
-	bm.material = mat
-	mi.mesh = bm
-	mi.position = center
-	add_child(mi)
+## Merged local AABB of a scene's meshes (models have varied pivots).
+func _merged_aabb(root: Node3D) -> AABB:
+	var merged := AABB(Vector3.ZERO, Vector3(1, 1, 1))
+	var first := true
+	var inv := root.global_transform.affine_inverse()
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh:
+			var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	return merged
 
 # ---------- verticality: ramps & rooftop platforms ----------
 # These are player-reachable surfaces. They're added under the builder root (NOT

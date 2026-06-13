@@ -43,4 +43,10 @@ https://opengameart.org/content/blaster-kit, released under **CC0 1.0**
 (https://fonts.google.com/specimen/Orbitron), licensed under the
 **SIL Open Font License 1.1** (see `assets/fonts/Orbitron_OFL.txt`).
 
+### Suburban houses, cars and street props (`assets/models/suburb/`)
+**"City Kit (Suburban)"** and **"Car Kit"** by **Kenney** (https://kenney.nl),
+released under **CC0 1.0** (public domain) — no attribution required, credited
+here as courtesy. Used for the Maple Grove houses, parked cars, fences, and
+trees.
+
 All other models, materials, audio, and code in this project are original.
