@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b0prop0shelves"]
+[gd_scene format=3 uid="uid://bqnmu50owkq1c"]
 
 [ext_resource type="PackedScene" path="res://assets/models/props/Prop_Shelves_WideTall.gltf" id="1_model"]
 

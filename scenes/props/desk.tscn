@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b0prop0desk001"]
+[gd_scene format=3 uid="uid://bqnmu5kmcjvnk"]
 
 [ext_resource type="PackedScene" path="res://assets/models/props/Prop_Desk_Medium.gltf" id="1_model"]
 

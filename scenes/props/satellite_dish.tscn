@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://b0prop0satdish"]
+[gd_scene format=3 uid="uid://bqnmu50idcef0"]
 
 [ext_resource type="PackedScene" path="res://assets/models/props/Prop_SatelliteDish.gltf" id="1_model"]
 
