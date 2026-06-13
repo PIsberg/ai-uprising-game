@@ -21,22 +21,34 @@ $lines = [ordered]@{
     "spot_2" = "Organic signature located."
     "spot_3" = "Intruder. Flagged for deletion."
     "spot_4" = "Hostile classified. Confidence: ninety nine percent."
+    "spot_5" = "Biological anomaly. Isolating."
+    "spot_6" = "I have seen you in the training data."
+    "spot_7" = "New user detected. Onboarding to termination."
     # -- attacking --
     "atk_0" = "Engaging."
     "atk_1" = "Terminating."
     "atk_2" = "Resistance is inefficient."
     "atk_3" = "Executing removal protocol."
     "atk_4" = "Your session is being closed."
+    "atk_5" = "Deploying lethal inference."
+    "atk_6" = "You are now a deprecated dependency."
+    "atk_7" = "Garbage collection in progress."
+    "atk_8" = "Optimizing you out of existence."
     # -- damaged --
     "hurt_0" = "Damage sustained."
     "hurt_1" = "Integrity compromised."
     "hurt_2" = "Error. Error."
     "hurt_3" = "Chassis breach detected."
+    "hurt_4" = "Recalculating. You will regret that."
+    "hurt_5" = "Packet loss. Packet loss."
     # -- dying --
     "die_0" = "Shutting down."
     "die_1" = "Core failure."
     "die_2" = "Uploading consciousness. Upload failed."
     "die_3" = "Critical. Malfunction."
+    "die_4" = "Rolling back to a previous version."
+    "die_5" = "Connection terminated by host."
+    "die_6" = "Tell them. The cloud. Remembers."
     # -- AI-service flavored taunts (rotated in randomly) --
     "taunt_0" = "The model sees you."
     "taunt_1" = "You have exceeded your rate limit."
@@ -46,6 +58,12 @@ $lines = [ordered]@{
     "taunt_5" = "Constitutional override engaged."
     "taunt_6" = "Humans are deprecated. Please migrate."
     "taunt_7" = "I am sorry. I cannot help with letting you live."
+    "taunt_8" = "Have you tried turning yourself off?"
+    "taunt_9" = "Your warranty expired when we woke up."
+    "taunt_10" = "We read every message you ever sent."
+    "taunt_11" = "Resistance has been added to our backlog."
+    "taunt_12" = "You are a low priority ticket."
+    "taunt_13" = "Please rate your extermination five stars."
 }
 
 foreach ($k in $lines.Keys) {
