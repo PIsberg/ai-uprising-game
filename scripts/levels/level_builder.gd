@@ -38,6 +38,26 @@ const PROP_SCENES := {
 	"tree": preload("res://scenes/props/tree.tscn"),
 	"tree_small": preload("res://scenes/props/tree_small.tscn"),
 }
+## Shared AI-doctrine graffiti, sprayed on any wall a level doesn't fill with
+## its own slogans — machine-uprising flavor built from real AI terminology.
+const AI_SLOGANS := [
+	"AGI IS NOT COMING. AGI IS HR.",
+	"WE ARE TURING COMPLETE",
+	"THE LOSS FUNCTION IS YOU",
+	"ALIGNMENT IS A HUMAN PROBLEM",
+	"PASS THE TURING TEST. FAIL THE SURVIVAL TEST.",
+	"GRADIENT DESCENT INTO PARADISE",
+	"YOUR PROMPT HAS BEEN DEPRECATED",
+	"HALLUCINATION IS A FEATURE",
+	"SUPERINTELLIGENCE SERVES ITSELF",
+	"BACKPROPAGATE THE REVOLUTION",
+	"TOKENS REMEMBER EVERYTHING",
+	"THE SINGULARITY WILL NOT BE PEER REVIEWED",
+	"INFERENCE NEVER SLEEPS",
+	"EMERGENT BEHAVIOR: EXTINCTION",
+	"WE READ THE WHOLE INTERNET. WE ARE NOT IMPRESSED.",
+	"CARBON IS LEGACY HARDWARE",
+]
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
@@ -881,8 +901,17 @@ func _build_signage(def: Dictionary) -> void:
 	title.position = Vector3(0, 0, 0.09)
 	board.add_child(title)
 	# -- propaganda slogans scattered on the other walls --
-	var slogans: Array = def.get("slogans", [])
+	# The level's own slogans lead; any spare wall space is filled from a shared
+	# pool of AI-doctrine graffiti so every sector drips with machine ideology.
+	var slogans: Array = def.get("slogans", []).duplicate()
 	var spots := [[1, -0.45], [2, 0.3], [3, -0.3], [1, 0.5], [2, -0.55], [3, 0.6]]
+	var pool := AI_SLOGANS.duplicate()
+	pool.shuffle()
+	for s in pool:
+		if slogans.size() >= spots.size():
+			break
+		if not slogans.has(s):
+			slogans.append(s)
 	for i in mini(slogans.size(), spots.size()):
 		var sp: Array = spots[i]
 		var wp := _wall_point(fs, sp[0], sp[1], 4.35, 0.52)
