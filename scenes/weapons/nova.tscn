@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://c5iov21vc2exc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/nova_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="3_md"]
+[ext_resource type="Material" uid="uid://b0mat0metalsteel" path="res://assets/materials/metal_steel.tres" id="4_ms"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(0.15, 0.17, 0.52)
+material = ExtResource("3_md")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_drum"]
+top_radius = 0.1
+bottom_radius = 0.1
+height = 0.16
+radial_segments = 16
+material = ExtResource("4_ms")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.06, 0.16, 0.07)
+material = ExtResource("5_pb")
+
+[node name="Nova" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_body")
+
+[node name="Drum" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, -0.04)
+mesh = SubResource("CylinderMesh_drum")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.16, 0.1)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.42)

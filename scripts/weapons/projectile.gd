@@ -5,6 +5,9 @@ extends Area3D
 @export var gravity_scale: float = 0.0
 @export var trail_color: Color = Color(0.5, 0.9, 1.0) ## Glowing trail + impact flash tint.
 @export var energy_pulse: bool = false ## If set, the round's core throbs like an energy bolt.
+@export var cluster_count: int = 0 ## On detonation, spawn this many secondary blasts scattered around — a multi-kill carpet.
+@export var cluster_radius: float = 6.0 ## How far the bomblets scatter from the impact.
+@export var cluster_delay: float = 0.06 ## Stagger between bomblets so it ripples outward.
 
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
@@ -134,4 +137,53 @@ func _explode(pos: Vector3) -> void:
 		var tw := flash.create_tween()
 		tw.tween_property(flash, "light_energy", 0.0, 0.3)
 		tw.tween_callback(flash.queue_free)
+	if cluster_count > 0:
+		_spawn_cluster(pos)
 	queue_free()
+
+## Carpet bombing: a ring of staggered secondary blasts around the impact, each
+## doing its own splash — turns one hit into a wall of explosions that clears a
+## whole pack. Scene-tree timers fire them so they ripple outward as we free.
+func _spawn_cluster(center: Vector3) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	for i in cluster_count:
+		var ang := TAU * float(i) / float(cluster_count) + randf() * 0.4
+		var rad := cluster_radius * randf_range(0.45, 1.0)
+		var spot := center + Vector3(cos(ang) * rad, randf_range(0.0, 1.5), sin(ang) * rad)
+		var shooter := _shooter
+		var dmg := _splash_damage * 0.7
+		var srad := _splash_radius * 0.55
+		var tcol := trail_color
+		var t := scene.get_tree().create_timer(cluster_delay * float(i + 1))
+		t.timeout.connect(func() -> void:
+			_detonate_bomblet(scene, spot, dmg, srad, shooter, tcol))
+
+func _detonate_bomblet(scene: Node, pos: Vector3, dmg: float, srad: float, shooter: Node, tcol: Color) -> void:
+	if not is_instance_valid(scene) or not scene is Node3D:
+		return
+	# Splash query for this bomblet.
+	var space: PhysicsDirectSpaceState3D = (scene as Node3D).get_world_3d().direct_space_state
+	var query := PhysicsShapeQueryParameters3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = srad
+	query.shape = shape
+	query.transform = Transform3D(Basis(), pos)
+	query.collision_mask = 0b0000101
+	for hit in space.intersect_shape(query, 12):
+		var col: Node = hit["collider"]
+		var d := col.get_node_or_null("Damageable")
+		var node := col as Node
+		while d == null and node != null:
+			node = node.get_parent()
+			if node:
+				d = node.get_node_or_null("Damageable")
+		if d == null:
+			continue
+		var dist := (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
+		d.apply_damage(dmg * clampf(1.0 - dist / srad, 0.0, 1.0), shooter)
+	var blast := BIG_BLAST.instantiate()
+	scene.add_child(blast)
+	(blast as Node3D).global_position = pos
+	(blast as Node3D).scale = Vector3.ONE * clampf(srad / 4.0, 0.7, 1.6)

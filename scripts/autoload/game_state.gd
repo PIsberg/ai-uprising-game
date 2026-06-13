@@ -25,7 +25,7 @@ enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
 ## Campaign-wide difficulty, chosen after "Begin Operation". Each tier scales
 ## three things on EVERY level: how many enemies spawn, how strong they are
-## (health + attack cadence + speed), and how many health/ammo pickups appear.
+## (health + attack cadence + speed), and how often kills drop supplies.
 enum Difficulty { EASY, NORMAL, HARD }
 
 const DIFFICULTY_CONFIG := {
@@ -66,6 +66,8 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_claude.tscn",
 	"res://scenes/levels/level_grok.tscn",
 	"res://scenes/levels/level_overseer.tscn",
+	"res://scenes/levels/level_alien.tscn",
+	"res://scenes/levels/level_titan.tscn",
 ]
 
 var current_state: State = State.MENU
@@ -340,6 +342,9 @@ func save_progress() -> void:
 	cf.set_value("run", "unlocked_weapons", unlocked_weapons)
 	cf.set_value("run", "equipped_weapon", equipped_weapon)
 	cf.set_value("run", "upgrades", upgrades)
+	# Persist which robots the briefings have introduced — otherwise a resumed
+	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
+	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -357,6 +362,9 @@ func load_progress() -> bool:
 	var up: Dictionary = cf.get_value("run", "upgrades", {})
 	for k in upgrades:
 		upgrades[k] = int(up.get(k, 0))
+	seen_enemy_types.clear()
+	for t in cf.get_value("run", "seen_enemies", []):
+		seen_enemy_types[str(t)] = true
 	return true
 
 func clear_save() -> void:
@@ -473,16 +481,18 @@ func incomplete_task_labels() -> Array:
 
 # ---------------------------------------------------------------------
 # Difficulty scaling. Levels call apply_level_scaling(self) at the end of
-# their _ready to adjust enemy COUNT and pickup COUNT. Enemy STRENGTH
-# (health / attack cadence / move speed) is applied per-spawn inside
-# EnemySpawner so it covers hand-placed and code-spawned enemies alike.
+# their _ready to adjust enemy COUNT. Enemy STRENGTH (health / attack
+# cadence / move speed) is applied per-spawn inside EnemySpawner so it
+# covers hand-placed and code-spawned enemies alike. Supply availability
+# (pickup_mult) is applied per-kill in EnemyBase._drop_loot.
 # ---------------------------------------------------------------------
 
 ## Scale a freshly built level to the active difficulty. Safe on NORMAL (no-op).
+## Supply availability is no longer scaled here: pickups drop from kills, and
+## EnemyBase._drop_loot applies pickup_mult to its drop chance directly.
 func apply_level_scaling(level: Node) -> void:
 	var cfg := difficulty_config()
 	_scale_enemy_count(level, cfg.get("enemy_count_mult", 1.0))
-	_scale_pickup_count(level, cfg.get("pickup_mult", 1.0))
 
 func _collect_spawners(n: Node, out: Array) -> void:
 	for c in n.get_children():
@@ -535,36 +545,6 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 	var sz := 1.0 if (idx / 2) % 2 == 0 else -1.0
 	sp.position = src.position + Vector3(2.6 * sx, 0.0, 2.6 * sz)
 	src.get_parent().add_child(sp)
-
-func _collect_pickups(n: Node, out: Array) -> void:
-	for c in n.get_children():
-		if c is Pickup and (c.kind == Pickup.Kind.HEALTH or c.kind == Pickup.Kind.AMMO):
-			out.append(c)
-		_collect_pickups(c, out)
-
-func _scale_pickup_count(level: Node, mult: float) -> void:
-	if is_equal_approx(mult, 1.0):
-		return
-	var picks: Array = []
-	_collect_pickups(level, picks)
-	if picks.is_empty():
-		return
-	var target := int(round(picks.size() * mult))
-	if mult < 1.0:
-		var want_removed: int = picks.size() - maxi(target, 1)
-		for i in range(want_removed):
-			picks[i].queue_free()
-	else:
-		var to_add := target - picks.size()
-		for i in range(to_add):
-			_clone_pickup(picks[i % picks.size()], i)
-
-func _clone_pickup(src: Pickup, idx: int) -> void:
-	var d := src.duplicate()
-	var sx := 1.0 if idx % 2 == 0 else -1.0
-	var sz := 1.0 if (idx / 2) % 2 == 0 else -1.0
-	d.position = src.position + Vector3(2.2 * sx, 0.0, 2.2 * sz)
-	src.get_parent().add_child(d)
 
 # ---------- gamepad ----------
 

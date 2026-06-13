@@ -23,11 +23,12 @@ var _leap_cd: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	# Fragile glass-cannon: a single well-timed shot drops it — the challenge is
-	# tracking it through its leap, not out-damaging it.
-	max_health = 24.0
-	move_speed = 8.2
-	turn_speed = 11.0
+	# A darting harasser: tougher than it looks (takes a few hits now) and fast
+	# enough that the challenge is tracking it as it strafes and leaps, not
+	# out-damaging it.
+	max_health = 42.0
+	move_speed = 11.0
+	turn_speed = 14.0
 	sight_range = 34.0
 	sight_angle_deg = 300.0 # many eyes — near-omnidirectional awareness
 	attack_range = 2.6

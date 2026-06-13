@@ -7,9 +7,13 @@ extends Area3D
 
 @export var task_id: String = "shards"
 
+## A real faceted crystal cluster (CC0, "Crystal" by dook via Poly Pizza) so a
+## data shard reads as an objective to collect, never a supply powerup.
+const CRYSTAL_MODEL: PackedScene = preload("res://assets/models/props/data_crystal.glb")
+
 var _taken: bool = false
 var _t: float = 0.0
-var _mesh: MeshInstance3D
+var _mesh: Node3D
 var _light: OmniLight3D
 
 func _ready() -> void:
@@ -28,33 +32,34 @@ func _build_visual() -> void:
 	cs.shape = bs
 	add_child(cs)
 
-	_mesh = MeshInstance3D.new()
-	var pm := PrismMesh.new()
-	pm.size = Vector3(0.35, 0.6, 0.35)
-	_mesh.mesh = pm
+	# The crystal cluster (~7.3 m tall in the source) shrunk to a hand-sized
+	# floating shard, lit from within so it glows cyan like live data.
+	_mesh = CRYSTAL_MODEL.instantiate() as Node3D
+	_mesh.scale = Vector3.ONE * 0.16
+	_mesh.position = Vector3(0, 0.75, 0)
+	add_child(_mesh)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.35, 0.9, 1.0)
+	mat.albedo_color = Color(0.2, 0.7, 1.0)
 	mat.emission_enabled = true
 	mat.emission = Color(0.4, 0.95, 1.0)
-	mat.emission_energy_multiplier = 3.0
-	mat.metallic = 0.5
-	mat.roughness = 0.2
-	_mesh.material_override = mat
-	_mesh.position = Vector3(0, 0.9, 0)
-	add_child(_mesh)
+	mat.emission_energy_multiplier = 2.2
+	mat.metallic = 0.4
+	mat.roughness = 0.15
+	for child in _mesh.find_children("*", "MeshInstance3D", true, false):
+		(child as MeshInstance3D).material_override = mat
 
 	_light = OmniLight3D.new()
 	_light.light_color = Color(0.4, 0.9, 1.0)
 	_light.light_energy = 1.8
 	_light.omni_range = 5.0
-	_light.position = Vector3(0, 0.9, 0)
+	_light.position = Vector3(0, 0.8, 0)
 	add_child(_light)
 
 func _process(delta: float) -> void:
 	_t += delta
 	if _mesh:
-		_mesh.rotation.y += delta * 2.0
-		_mesh.position.y = 0.9 + sin(_t * 2.2) * 0.12
+		_mesh.rotation.y += delta * 1.6
+		_mesh.position.y = 0.75 + sin(_t * 2.2) * 0.12
 
 func _on_body_entered(body: Node) -> void:
 	if _taken or not body.is_in_group("player"):

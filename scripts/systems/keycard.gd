@@ -7,9 +7,12 @@ extends Area3D
 
 @export var task_id: String = "key"
 
+## The kit's textured keycard (same Sci-Fi Essentials Kit as the pickups).
+const CARD_MODEL: PackedScene = preload("res://assets/models/pickups/Prop_KeyCard.gltf")
+
 var _taken: bool = false
 var _t: float = 0.0
-var _card: MeshInstance3D
+var _card: Node3D
 var _light: OmniLight3D
 
 func _ready() -> void:
@@ -27,35 +30,15 @@ func _build_visual() -> void:
 	cs.shape = bs
 	add_child(cs)
 
-	_card = MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.5, 0.34, 0.04)
-	_card.mesh = bm
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.85, 0.2)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.8, 0.25)
-	mat.emission_energy_multiplier = 2.2
-	mat.metallic = 0.6
-	mat.roughness = 0.3
-	_card.material_override = mat
+	# The textured card model, spinning where the old glowing tile floated.
+	# (~0.48 m tall; scaled up so the objective reads from across the level.)
+	_card = Node3D.new()
 	_card.position = Vector3(0, 1.0, 0)
 	add_child(_card)
-
-	# A little chip detail so it reads as a keycard, not just a tile.
-	var chip := MeshInstance3D.new()
-	var cm := BoxMesh.new()
-	cm.size = Vector3(0.14, 0.1, 0.05)
-	chip.mesh = cm
-	var cmat := StandardMaterial3D.new()
-	cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	cmat.albedo_color = Color(0.2, 0.25, 0.3)
-	cmat.emission_enabled = true
-	cmat.emission = Color(0.4, 0.9, 1.0)
-	cmat.emission_energy_multiplier = 3.0
-	chip.mesh.material = cmat
-	chip.position = Vector3(0.12, 0, 0.01)
-	_card.add_child(chip)
+	var model := CARD_MODEL.instantiate() as Node3D
+	model.scale = Vector3.ONE * 1.4
+	model.position.y = -0.12 # model origin sits low on the card; recentre
+	_card.add_child(model)
 
 	_light = OmniLight3D.new()
 	_light.light_color = Color(1.0, 0.8, 0.3)

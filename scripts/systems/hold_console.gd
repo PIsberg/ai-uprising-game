@@ -18,6 +18,8 @@ var _inside: int = 0
 var _t: float = 0.0
 var _panel_mat: StandardMaterial3D
 var _light: OmniLight3D
+var _holo: MeshInstance3D
+var _holo_mat: StandardMaterial3D
 
 func _ready() -> void:
 	collision_layer = 64
@@ -57,6 +59,24 @@ func _build_visual() -> void:
 	panel.rotation_degrees = Vector3(-30, 0, 0)
 	add_child(panel)
 
+	# A holographic data prism projected above the console — clearly an active
+	# terminal beaming something, not just a lit box.
+	_holo_mat = StandardMaterial3D.new()
+	_holo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_holo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_holo_mat.albedo_color = Color(accent.r, accent.g, accent.b, 0.55)
+	_holo_mat.emission_enabled = true
+	_holo_mat.emission = accent
+	_holo_mat.emission_energy_multiplier = 3.0
+	_holo = MeshInstance3D.new()
+	var pr := PrismMesh.new()
+	pr.size = Vector3(0.5, 0.7, 0.5)
+	_holo.mesh = pr
+	_holo.material_override = _holo_mat
+	_holo.position = Vector3(0, 1.95, 0)
+	_holo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_holo)
+
 	# Trigger zone (a slab the player stands in/at).
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
@@ -88,6 +108,9 @@ func _process(delta: float) -> void:
 		_panel_mat.emission_energy_multiplier = 2.5 + sin(_t * rate) * 1.2
 	if _light:
 		_light.light_energy = 2.0 + sin(_t * rate) * 0.8
+	if _holo:
+		_holo.rotate_object_local(Vector3.UP, delta * (3.0 if _inside > 0 and not _done else 1.2))
+		_holo.position.y = 1.95 + sin(_t * 2.0) * 0.06
 
 ## Current progress value of our task (0 if missing).
 func _task_progress() -> float:

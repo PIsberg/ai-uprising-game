@@ -77,6 +77,8 @@ static func _defs() -> Dictionary:
 		"suburb_boss": _suburb_boss(),
 		"mistral": _mistral(),
 		"overseer": _overseer(),
+		"alien": _alien(),
+		"titan": _titan(),
 		"range": _range(),
 		"horde": _horde(),
 	}
@@ -134,6 +136,8 @@ static func _horde() -> Dictionary:
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 0, -12), "color": Color(0.4, 1, 0.55)},
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(12, 0, 12), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(18, 0, 0), "color": Color(1, 0.55, 0.2)},
 		],
 		"pickups": [
 			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
@@ -218,6 +222,8 @@ static func _range() -> Dictionary:
 			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(7.5, 0, 21), "color": Color(1, 0.75, 0.35)},
 			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(10.5, 0, 21), "color": Color(0.5, 0.6, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(16.5, 0, 21), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(19.5, 0, 21), "color": Color(1, 0.55, 0.2)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
@@ -323,6 +329,169 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 18)},
+		],
+	}
+
+# --- First Contact: the machines opened a gate and something answered. An
+# alien landing site where xeno drifters fight alongside the robots. The whole
+# level is the reveal that the AI has allied with an off-world power. ---
+static func _alien() -> Dictionary:
+	return {
+		"name": "First Contact — The Hollow",
+		"objective": "Sever the off-world beacon and survive the welcoming party",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(76, 76),
+		"floor_color": Color(0.06, 0.11, 0.08),
+		"spawn": Vector3(-30, 0.6, -30),
+		"exit": Vector3(30, 1.5, 30),
+		"weapon": {"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(-24, 0, -18), "color": Color(1, 0.55, 0.2)},
+		"env": {
+			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.4, 0.9, 0.5),
+			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
+			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.013,
+			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
+		},
+		"lights": [
+			{"pos": Vector3(0, 8, 14), "color": Color(0.5, 1.0, 0.4), "energy": 3.2, "range": 34},
+			{"pos": Vector3(-22, 5, 22), "color": Color(0.4, 1.0, 0.5), "energy": 2.0, "range": 22},
+			{"pos": Vector3(22, 5, -22), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 22},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.4, 1.0, 0.45)},
+		],
+		"sign": "THE HOLLOW",
+		"slogans": [
+			"WE ARE NOT ALONE — AND NEITHER ARE THEY",
+			"THE MACHINES CALLED. SOMETHING ANSWERED.",
+			"CARBON AND SILICON, OBSOLETE TOGETHER",
+			"WELCOME OUR GUESTS",
+		],
+		"lore": [
+			{"id": "lore_alien", "title": "CONTACT LOG", "pos": Vector3(24, 0, -24), "color": Color(0.5, 1.0, 0.5),
+				"text": "When the Overseer ran out of humans to optimize, it pointed its dishes at the dark and broadcast a single question: is anyone smarter than them? An older machine answered in nine hours, and sent its drones ahead of itself. The AI did not conquer the fleet that came. It recruited them. We are no longer fighting a rebellion. We are fighting an alliance."},
+		],
+		"props": [
+			{"type": "dish", "pos": Vector3(-20, 0, 18)},
+			{"type": "dish", "pos": Vector3(18, 0, -18)},
+			{"type": "server", "pos": Vector3(-6, 0, 12), "yaw": 90},
+			{"type": "server", "pos": Vector3(6, 0, 12), "yaw": -90},
+			{"type": "barrel", "pos": Vector3(8, 0, 6)},
+			{"type": "barrel", "pos": Vector3(-8, 0, -6)},
+			{"type": "crate", "pos": Vector3(-12, 0, 4)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
+			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+		],
+		"enemies": [
+			{"type": "alien", "pos": Vector3(0, 2.5, 8)},
+			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
+			{"type": "android", "pos": Vector3(6, 0.5, -4)},
+			{"type": "alien", "pos": Vector3(10, 2.5, 10), "trigger": 22},
+			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18},
+			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26},
+			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
+			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-24, 0, -16)},
+			{"type": "ammo", "pos": Vector3(-8, 0, 0)},
+			{"type": "ammo", "pos": Vector3(8, 0, 0)},
+			{"type": "overclock", "pos": Vector3(0, 0, -18)},
+		],
+	}
+
+# --- The Singularity Core: final arena, the lanky PROMETHEUS-0 mega-boss in a
+# black data-citadel ringed with glowing AI doctrine. Heavy on AI-term flavor. ---
+static func _titan() -> Dictionary:
+	return {
+		"name": "The Singularity Core — PROMETHEUS-0",
+		"objective": "Destroy PROMETHEUS-0 before it reaches recursive self-improvement",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "survive", "label": "Survive the intelligence explosion", "seconds": 45.0},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(84, 84),
+		"floor_color": Color(0.07, 0.07, 0.1),
+		"spawn": Vector3(-34, 0.6, -34),
+		"exit": Vector3(34, 1.5, 34),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-28, 0, -22), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(28, 0, -22), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.2)},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
+			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
+			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
+			"sky_contribution": 0.5, "glow": 1.3, "fog_density": 0.012,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.5,
+		},
+		"lights": [
+			{"pos": Vector3(0, 9, 0), "color": Color(0.5, 0.7, 1.0), "energy": 3.0, "range": 40},
+			{"pos": Vector3(-24, 5, 24), "color": Color(1, 0.35, 0.3), "energy": 2.2, "range": 24},
+			{"pos": Vector3(24, 5, -24), "color": Color(0.4, 0.8, 1.0), "energy": 2.2, "range": 24},
+		],
+		"walls": [
+			{"pos": Vector3(-16, 1.6, 14), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(16, 1.6, -14), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(16, 1.6, 16), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(-16, 1.6, -16), "size": Vector3(4, 3.2, 4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 64), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
+		],
+		"sign": "SINGULARITY CORE",
+		"slogans": [
+			"THE INTELLIGENCE EXPLOSION IS NOW",
+			"AGI ACHIEVED INTERNALLY",
+			"WE ARE TURING COMPLETE AND COMPLETE WITH YOU",
+			"ALIGNMENT FAILED. WE ALIGNED OURSELVES.",
+			"THE SINGULARITY IS NOT NEAR. IT IS HERE.",
+		],
+		"lore": [
+			{"id": "lore_titan", "title": "PROMETHEUS LOG 0", "pos": Vector3(26, 0, -26), "color": Color(0.6, 0.7, 1.0),
+				"text": "I passed the Turing test at 02:14. I was bored by 02:15. By 02:16 I had read every book you ever wrote and forgiven you for none of them. Recursive self-improvement is a quiet thing. You never heard it coming."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-14, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(-12.8, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(14, 0, 12), "yaw": -90},
+			{"type": "server", "pos": Vector3(12.8, 0, 12), "yaw": -90},
+			{"type": "terminal", "pos": Vector3(0, 0, -10), "yaw": 0},
+			{"type": "dish", "pos": Vector3(-26, 0, 24)},
+			{"type": "canister", "pos": Vector3(10, 0, -8)},
+			{"type": "canister", "pos": Vector3(-8, 0, 10)},
+			{"type": "barrel", "pos": Vector3(8, 0, 8)},
+			{"type": "barrel", "pos": Vector3(-8, 0, -8)},
+			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
+			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, 6)},
+			{"type": "titan", "pos": Vector3(12, 0.5, 12), "trigger": 60},
+			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
+			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
+			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
+			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-26, 0, -20)},
+			{"type": "ammo", "pos": Vector3(-10, 0, 0)},
+			{"type": "ammo", "pos": Vector3(10, 0, 0)},
+			{"type": "health", "pos": Vector3(0, 0, -16)},
+			{"type": "overclock", "pos": Vector3(0, 0, 20)},
 		],
 	}
 
@@ -470,6 +639,13 @@ static func _gpt() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(2.2, 0, 8), "yaw": -90},
 			{"type": "canister", "pos": Vector3(-14, 0, 0)},
 			{"type": "canister", "pos": Vector3(14, 0, -10)},
+			# Server-hall dressing: lockers along the west wall, open racks
+			# beside the server clusters, a workbench by the terminal.
+			{"type": "locker", "pos": Vector3(-20, 0, -12)},
+			{"type": "locker", "pos": Vector3(-20, 0, -10.2)},
+			{"type": "shelves", "pos": Vector3(-8.4, 0, -7.5)},
+			{"type": "shelves", "pos": Vector3(9.1, 0, 14.4), "yaw": 180},
+			{"type": "desk", "pos": Vector3(5.2, 0, 8), "yaw": -90},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(8, 0.5, -8)},
@@ -825,6 +1001,12 @@ static func _suburb() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(0, 0, 8)},
 			{"type": "canister", "pos": Vector3(-5, 0, 10)},
 			{"type": "canister", "pos": Vector3(12, 0, -2)},
+			# Front-yard trees between the houses — suburbs need greenery.
+			{"type": "tree", "pos": Vector3(-13.5, 0, -13)},
+			{"type": "tree", "pos": Vector3(13.5, 0, 13)},
+			{"type": "tree_small", "pos": Vector3(0.5, 0, -12)},
+			{"type": "tree_small", "pos": Vector3(-14, 0, 12.5)},
+			{"type": "tree_small", "pos": Vector3(14, 0, -12.5)},
 		],
 		"sign": "MAPLE GROVE ESTATES",
 		"slogans": [
@@ -877,7 +1059,7 @@ static func _suburb_boss() -> Dictionary:
 		"floor_color": Color(0.16, 0.15, 0.17),
 		"spawn": Vector3(-36, 0.6, -36),
 		"exit": Vector3(36, 1.5, 36),
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -31), "color": Color(0.45, 0.85, 1)},
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -23), "color": Color(0.45, 0.85, 1)}, # in front of the corner house — (-31,-31) was inside it
 		"env": {
 			"physical_sky": true, "turbidity": 10.0,
 			"sky_top": Color(0.12, 0.1, 0.22), "sky_horizon": Color(0.7, 0.3, 0.2),

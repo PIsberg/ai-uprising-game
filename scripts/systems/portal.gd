@@ -27,6 +27,7 @@ var _membrane: MeshInstance3D
 var _ring_mat: StandardMaterial3D
 var _ring2_mat: StandardMaterial3D
 var _mem_mat: StandardMaterial3D
+var _beacon_mat: StandardMaterial3D
 var _light: OmniLight3D
 var _swirl: CPUParticles3D
 var _swirl_mat: StandardMaterial3D
@@ -40,18 +41,22 @@ func _ready() -> void:
 	_apply_color(LOCK_COLOR)
 
 func _build_visual() -> void:
-	# A vertical doorway: the torus ring stands upright, hole facing the player.
+	# A monumental vertical gateway, raised so its arch sits on the ground and
+	# towers over the player — visible from across the arena. The torus rings
+	# stand upright (hole facing the player) inside a built metal frame.
+	_build_frame()
 	_visual = Node3D.new()
 	_visual.rotation_degrees = Vector3(90, 0, 0)
+	_visual.position = Vector3(0, 1.7, 0) # lift the ring centre to ~gate mid-height
 	add_child(_visual)
 
 	_ring_mat = _emissive(LOCK_COLOR, 5.0)
 	_ring = MeshInstance3D.new()
 	var tm := TorusMesh.new()
-	tm.inner_radius = 1.35
-	tm.outer_radius = 1.7
-	tm.rings = 32
-	tm.ring_segments = 16
+	tm.inner_radius = 2.5
+	tm.outer_radius = 3.0
+	tm.rings = 40
+	tm.ring_segments = 18
 	_ring.mesh = tm
 	_ring.material_override = _ring_mat
 	_visual.add_child(_ring)
@@ -59,10 +64,10 @@ func _build_visual() -> void:
 	_ring2_mat = _emissive(LOCK_COLOR, 6.0)
 	_ring2 = MeshInstance3D.new()
 	var tm2 := TorusMesh.new()
-	tm2.inner_radius = 1.05
-	tm2.outer_radius = 1.2
-	tm2.rings = 24
-	tm2.ring_segments = 12
+	tm2.inner_radius = 1.95
+	tm2.outer_radius = 2.2
+	tm2.rings = 32
+	tm2.ring_segments = 14
 	_ring2.mesh = tm2
 	_ring2.material_override = _ring2_mat
 	_visual.add_child(_ring2)
@@ -73,10 +78,10 @@ func _build_visual() -> void:
 	_mem_mat.albedo_color.a = 0.4
 	_membrane = MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 1.3
-	cyl.bottom_radius = 1.3
+	cyl.top_radius = 2.4
+	cyl.bottom_radius = 2.4
 	cyl.height = 0.08
-	cyl.radial_segments = 32
+	cyl.radial_segments = 40
 	_membrane.mesh = cyl
 	_membrane.material_override = _mem_mat
 	_visual.add_child(_membrane)
@@ -86,8 +91,8 @@ func _build_visual() -> void:
 	_swirl.amount = 48
 	_swirl.lifetime = 1.3
 	_swirl.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
-	_swirl.emission_ring_radius = 1.5
-	_swirl.emission_ring_inner_radius = 1.2
+	_swirl.emission_ring_radius = 2.7
+	_swirl.emission_ring_inner_radius = 2.2
 	_swirl.emission_ring_height = 0.2
 	_swirl.emission_ring_axis = Vector3(0, 0, 1)
 	_swirl.direction = Vector3(0, 0, 0)
@@ -110,21 +115,64 @@ func _build_visual() -> void:
 	sm.material = pmat
 	_swirl.mesh = sm
 	_swirl.draw_order = CPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+	_swirl.position = Vector3(0, 1.7, 0)
 	add_child(_swirl)
 	_swirl_mat = pmat
 
-	# Collision: a generous slab so the player can't slip past the gate.
+	# Collision: a generous slab so the player can't slip past the big gate.
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(3.2, 3.2, 1.6)
+	bs.size = Vector3(6.4, 6.4, 1.8)
+	cs.position = Vector3(0, 1.7, 0)
 	cs.shape = bs
 	add_child(cs)
 
 	_light = OmniLight3D.new()
 	_light.light_color = LOCK_COLOR
-	_light.light_energy = 4.0
-	_light.omni_range = 12.0
+	_light.light_energy = 5.0
+	_light.omni_range = 20.0
+	_light.position = Vector3(0, 2.2, 0)
 	add_child(_light)
+
+## A built metal gate frame around the energy ring: two side pylons on a base
+## plinth, plus a sky-piercing beacon column so the exit is visible map-wide.
+func _build_frame() -> void:
+	var gy: float = -position.y # local y of world ground (portal sits ~1.5 up)
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.1, 0.11, 0.14)
+	dark.metallic = 0.8
+	dark.roughness = 0.35
+	# Base plinth the gate stands on.
+	var base := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(7.0, 0.5, 2.0)
+	base.mesh = bm
+	base.material_override = dark
+	base.position = Vector3(0, gy + 0.25, 0)
+	add_child(base)
+	# Two side pylons flanking the ring.
+	for sx in [-1.0, 1.0]:
+		var pylon := MeshInstance3D.new()
+		var pm := BoxMesh.new()
+		pm.size = Vector3(0.7, 6.4, 1.2)
+		pylon.mesh = pm
+		pylon.material_override = dark
+		pylon.position = Vector3(3.3 * sx, gy + 3.2, 0)
+		add_child(pylon)
+	# A vertical beacon column rising from the gate so it reads from afar.
+	_beacon_mat = _emissive(LOCK_COLOR, 3.0)
+	_beacon_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_beacon_mat.albedo_color.a = 0.32
+	var beam := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.25
+	cyl.bottom_radius = 0.5
+	cyl.height = 26.0
+	beam.mesh = cyl
+	beam.material_override = _beacon_mat
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	beam.position = Vector3(0, gy + 13.0, 0)
+	add_child(beam)
 
 func _emissive(c: Color, energy: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
@@ -143,6 +191,9 @@ func _apply_color(c: Color) -> void:
 	if _mem_mat:
 		_mem_mat.albedo_color = Color(c.r, c.g, c.b, _mem_mat.albedo_color.a)
 		_mem_mat.emission = c
+	if _beacon_mat:
+		_beacon_mat.albedo_color = Color(c.r, c.g, c.b, _beacon_mat.albedo_color.a)
+		_beacon_mat.emission = c
 	if _light:
 		_light.light_color = c
 

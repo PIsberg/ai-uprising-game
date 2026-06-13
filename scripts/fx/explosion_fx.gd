@@ -8,10 +8,98 @@ extends Object
 
 ## `size` ~ the blast's visual radius in metres. Call from the FX root's _ready.
 static func detonate(root: Node3D, size: float = 2.2, color: Color = Color(1.0, 0.62, 0.25)) -> void:
+	_flash(root, size)
 	_fireball(root, size, color)
 	_shockwave(root, size, color)
+	_embers(root, size, color)
 	_light_pop(root)
 	_kick_player(root, size)
+
+## An instantaneous oversized white blink — the eye can't track the detonation
+## frame, so a single bright pop reads as raw energy before the fireball forms.
+static func _flash(root: Node3D, size: float) -> void:
+	var fl := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.5
+	sm.height = 1.0
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(1, 1, 0.95, 1)
+	sm.material = mat
+	fl.mesh = sm
+	fl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	fl.scale = Vector3.ONE * size * 1.6
+	root.add_child(fl)
+	var tw := fl.create_tween().set_parallel(true)
+	tw.tween_property(fl, "scale", Vector3.ONE * size * 2.1, 0.12)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.12).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_callback(fl.queue_free)
+
+## A spray of hot ember darts hurled outward — the shrapnel read that turns a
+## glowing puff into a detonation. One burst, dies with the FX root.
+static func _embers(root: Node3D, size: float, color: Color) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = int(clampf(14.0 * size, 14.0, 60.0))
+	p.lifetime = 0.55
+	p.explosiveness = 0.95
+	p.spread = 180.0
+	p.initial_velocity_min = 5.0 * size
+	p.initial_velocity_max = 11.0 * size
+	p.gravity = Vector3(0, -16.0, 0)
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.4
+	var dart := BoxMesh.new()
+	dart.size = Vector3(0.05, 0.05, 0.16) # stretched -> reads as a streak
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(1.0, 0.85, 0.5)
+	m.emission_enabled = true
+	m.emission = color
+	m.emission_energy_multiplier = 6.0
+	dart.material = m
+	p.mesh = dart
+	root.add_child(p)
+
+## A short-lived smoke plume that boils up where the fireball was — the aftermath
+## that tells you something just died here.
+static func _smoke(root: Node3D, size: float) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = int(clampf(8.0 * size, 8.0, 28.0))
+	p.lifetime = 1.1
+	p.explosiveness = 0.7
+	p.spread = 60.0
+	p.direction = Vector3.UP
+	p.initial_velocity_min = 1.2 * size
+	p.initial_velocity_max = 2.6 * size
+	p.gravity = Vector3(0, 1.2, 0) # buoyant — rises and slows
+	p.scale_amount_min = size * 0.5
+	p.scale_amount_max = size * 0.9
+	p.scale_amount_curve = _ramp_up_curve()
+	var puff := SphereMesh.new()
+	puff.radius = 0.5
+	puff.height = 1.0
+	puff.radial_segments = 6
+	puff.rings = 4
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.12, 0.11, 0.1, 0.55)
+	puff.material = m
+	p.mesh = puff
+	root.add_child(p)
+
+## Particle scale curve that grows from small to full — smoke billowing out.
+static func _ramp_up_curve() -> Curve:
+	var c := Curve.new()
+	c.add_point(Vector2(0.0, 0.3))
+	c.add_point(Vector2(1.0, 1.0))
+	return c
 
 ## A white-hot core that balloons out and burns off in a tenth of a second —
 ## the single biggest "explosion, not particle puff" cue.

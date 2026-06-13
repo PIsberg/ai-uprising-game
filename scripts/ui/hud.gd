@@ -52,6 +52,7 @@ var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
 var _kill_edge: TextureRect = null
 var _kill_x: Control = null
+var _hit_x: Control = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -62,6 +63,7 @@ func _ready() -> void:
 	toast.modulate.a = 0.0
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
+	_style_health_bar()
 	_build_ammo_block()
 	_build_overclock_label()
 	GameState.overclock_changed.connect(_on_overclock_changed)
@@ -223,6 +225,22 @@ func _build_kill_confirm() -> void:
 		bar.rotation_degrees = ang
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_kill_x.add_child(bar)
+	# A smaller WHITE ✕ that snaps in on every hit (not just kills) — the
+	# per-shot "you connected" tick that makes trading fire feel good.
+	_hit_x = Control.new()
+	_hit_x.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hit_x.position = crosshair.position
+	_hit_x.modulate.a = 0.0
+	add_child(_hit_x)
+	for ang in [45.0, -45.0]:
+		var bar := ColorRect.new()
+		bar.color = Color(1, 1, 1)
+		bar.size = Vector2(20.0, 3.0)
+		bar.pivot_offset = bar.size * 0.5
+		bar.position = -bar.size * 0.5
+		bar.rotation_degrees = ang
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_hit_x.add_child(bar)
 
 func _on_level_completed() -> void:
 	win_menu.visible = true
@@ -273,6 +291,10 @@ func _process(delta: float) -> void:
 		# Kills flash red; normal hits flash bright white, easing back to neutral.
 		var hit_col := Color(1.0, 0.25, 0.2) if _hit_kill else Color(1.0, 1.0, 1.0)
 		crosshair.modulate = Color(1, 1, 1).lerp(hit_col, _hit_flash)
+		# Snap-in hit ✕: punches out from the crosshair on contact.
+		if _hit_x:
+			_hit_x.modulate = Color(1.0, 0.4, 0.35, _hit_flash) if _hit_kill else Color(1, 1, 1, _hit_flash)
+			_hit_x.scale = Vector2.ONE * (1.25 - _hit_flash * 0.35)
 	if _kill_flash > 0.0:
 		_kill_flash = maxf(0.0, _kill_flash - delta * 3.2)
 		if _kill_edge:
@@ -388,10 +410,39 @@ func _show_toast(text: String) -> void:
 	toast.text = text
 	_toast_time = 2.4 # ~1.4s held + ~1s fade
 
+var _hp_fill: StyleBoxFlat
+
+## Health bar reads GREEN when healthy and bleeds toward amber then red as it
+## drops — instant "how am I doing" glance, no more default grey.
+func _style_health_bar() -> void:
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.06, 0.07, 0.08, 0.85)
+	bg.set_border_width_all(2)
+	bg.border_color = Color(0, 0, 0, 0.6)
+	bg.set_corner_radius_all(3)
+	health_bar.add_theme_stylebox_override("background", bg)
+	_hp_fill = StyleBoxFlat.new()
+	_hp_fill.bg_color = Color(0.25, 0.9, 0.35)
+	_hp_fill.set_corner_radius_all(3)
+	health_bar.add_theme_stylebox_override("fill", _hp_fill)
+	# Brighter, bolder readout beside the bar.
+	health_label.add_theme_font_size_override("font_size", 20)
+	health_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	health_label.add_theme_constant_override("outline_size", 6)
+
 func _on_health_changed(cur: float, max_: float) -> void:
 	health_bar.max_value = max_
 	health_bar.value = cur
 	health_label.text = "%d / %d" % [int(cur), int(max_)]
+	if _hp_fill:
+		var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
+		# Green (full) -> amber (~40%) -> red (empty).
+		var col: Color
+		if r > 0.4:
+			col = Color(0.95, 0.75, 0.2).lerp(Color(0.25, 0.9, 0.35), (r - 0.4) / 0.6)
+		else:
+			col = Color(1.0, 0.2, 0.16).lerp(Color(0.95, 0.75, 0.2), r / 0.4)
+		_hp_fill.bg_color = col
 	_hp_ratio = cur / maxf(1.0, max_)
 
 # ---------- ammo block: big numerals + segmented mag bar + grenade pips ----------
@@ -424,11 +475,16 @@ func _build_ammo_block() -> void:
 	nums.add_theme_constant_override("separation", 6)
 	box.add_child(nums)
 	_ammo_big = Label.new()
-	_ammo_big.add_theme_font_size_override("font_size", 34)
+	# Big, heavy, outlined magazine count — the number you check mid-fight.
+	_ammo_big.add_theme_font_size_override("font_size", 52)
+	_ammo_big.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_ammo_big.add_theme_constant_override("outline_size", 10)
 	nums.add_child(_ammo_big)
 	_ammo_small = Label.new()
-	_ammo_small.add_theme_font_size_override("font_size", 16)
-	_ammo_small.modulate = Color(1, 1, 1, 0.55)
+	_ammo_small.add_theme_font_size_override("font_size", 22)
+	_ammo_small.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	_ammo_small.add_theme_constant_override("outline_size", 5)
+	_ammo_small.modulate = Color(1, 1, 1, 0.7)
 	_ammo_small.size_flags_vertical = Control.SIZE_SHRINK_END
 	nums.add_child(_ammo_small)
 	var segs := HBoxContainer.new()
@@ -532,13 +588,41 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	if src is Node3D and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
 
-func _on_player_dealt_damage(_amount: float, _world_pos: Vector3, killed: bool) -> void:
+func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
 	_hit_flash = 1.0
 	_hit_kill = killed
 	if killed:
 		_kill_flash = 1.0
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
+	_spawn_damage_number(amount, world_pos, killed)
+
+## A floating damage number that pops at the hit point and drifts up as it
+## fades — the running tally of a firefight, so big hits read as big.
+func _spawn_damage_number(amount: float, world_pos: Vector3, killed: bool) -> void:
+	if amount < 1.0:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or cam.is_position_behind(world_pos):
+		return
+	var lbl := Label.new()
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.text = str(int(round(amount)))
+	# Bigger + hotter for heavier hits; gold on the killing blow.
+	var heavy := clampf(amount / 80.0, 0.0, 1.0)
+	lbl.add_theme_font_size_override("font_size", int(lerpf(18.0, 34.0, heavy)) + (8 if killed else 0))
+	var col := Color(1.0, 0.85, 0.3) if killed else Color(1.0, 0.95, 0.9).lerp(Color(1.0, 0.55, 0.3), heavy)
+	lbl.add_theme_color_override("font_color", col)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	lbl.add_theme_constant_override("outline_size", 6)
+	add_child(lbl)
+	var sp := cam.unproject_position(world_pos)
+	sp += Vector2(randf_range(-14, 14), randf_range(-8, 8)) # scatter so stacks don't overlap
+	lbl.position = sp
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(lbl, "position:y", sp.y - 46.0, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.65).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(lbl.queue_free)
 
 func _on_enemy_killed(score: int, label: String) -> void:
 	if _kill_feed == null:

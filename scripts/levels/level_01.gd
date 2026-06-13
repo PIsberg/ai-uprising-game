@@ -37,6 +37,15 @@ func _setup_objectives() -> void:
 	portal.position = exit_pos
 	add_child(portal)
 
+	# Face the player toward the portal (open ground), not the spawn-corner
+	# wall behind them. Player forward is -Z, hence atan2(-x, -z).
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if p:
+		var dir := exit_pos - p.global_position
+		dir.y = 0.0
+		if dir.length() > 0.5:
+			p.rotation.y = atan2(-dir.x, -dir.z)
+
 	# A keycard along the route so the player learns the find-and-unlock loop.
 	var key := Keycard.new()
 	key.task_id = "key"

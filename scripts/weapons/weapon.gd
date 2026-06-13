@@ -94,6 +94,8 @@ const REAL_MODELS := {
 	"arccoil":    {"glb": "res://assets/models/weapons/blaster-q.glb", "len": 0.68, "tint": Color(0.58, 0.5, 0.4)},
 	"twinrail":   {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.95, "tint": Color(0.46, 0.52, 0.62)},
 	"devastator": {"glb": "res://assets/models/weapons/blaster-p.glb", "len": 0.8, "tint": Color(0.56, 0.44, 0.42)},
+	"singularity": {"glb": "res://assets/models/weapons/blaster-r.glb", "len": 0.98, "tint": Color(0.5, 0.32, 0.66)},
+	"nova":        {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.82, "tint": Color(0.62, 0.42, 0.28)},
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
@@ -276,6 +278,10 @@ func _fire_once(camera: Camera3D, shooter: Node, aiming: bool) -> void:
 	_active_shooter = shooter
 	_active_aiming = aiming
 	_do_shot()
+	# Per-shot camera punch — small, but it sells the report; heavier-recoil
+	# guns thump the view harder. (Charged alt-fire adds its own on top.)
+	if shooter and shooter.has_method("shake"):
+		shooter.shake(clampf(0.04 + data.recoil_pitch * 0.045, 0.05, 0.22))
 
 var _active_camera: Camera3D
 var _active_shooter: Node

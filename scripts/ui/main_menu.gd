@@ -82,6 +82,56 @@ func _show_panel(which: Control) -> void:
 	_diff.visible = which == _diff
 	_settings.visible = which == _settings
 	_controls.visible = which == _controls
+	if _levels_panel:
+		_levels_panel.visible = which == _levels_panel
+
+# --- cheat: type "warp" anywhere on the menu for a direct level select ---
+
+const CHEAT_WORD := "warp"
+var _cheat_buf := ""
+var _levels_panel: VBoxContainer
+
+func _input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k == null or not k.pressed or k.echo or k.unicode == 0:
+		return
+	_cheat_buf = (_cheat_buf + char(k.unicode).to_lower()).right(CHEAT_WORD.length())
+	if _cheat_buf == CHEAT_WORD:
+		_cheat_buf = ""
+		_open_level_select()
+
+func _open_level_select() -> void:
+	if _levels_panel == null:
+		_build_level_select()
+	_show_panel(_levels_panel)
+	AudioBus.play_synth_ui("pickup_health", -6.0, 1.5) # cheat-accepted chirp
+
+## Built lazily — most sessions never see it. One button per campaign level,
+## named from its def; jumping uses the normal cutscene/briefing entry path at
+## the currently selected difficulty (NORMAL unless a run set it).
+func _build_level_select() -> void:
+	_levels_panel = VBoxContainer.new()
+	_levels_panel.add_theme_constant_override("separation", 10)
+	var prompt := Label.new()
+	prompt.text = "WARP — SELECT LEVEL"
+	prompt.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_levels_panel.add_child(prompt)
+	for i in GameState.CAMPAIGN.size():
+		var path: String = GameState.CAMPAIGN[i]
+		var id := GameState.level_id_from_path(path)
+		var def: Dictionary = LevelDefs.get_def(id)
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(420, 44)
+		btn.text = "%d.  %s" % [i + 1, def.get("name", "FIRST CONTACT" if id == "01" else id.to_upper())]
+		btn.pressed.connect(func(): GameState.go_to_level(path))
+		_levels_panel.add_child(btn)
+	var back := Button.new()
+	back.custom_minimum_size = Vector2(420, 40)
+	back.text = "Back"
+	back.pressed.connect(func(): _show_panel(_main))
+	_levels_panel.add_child(back)
+	$Center/VBox.add_child(_levels_panel)
 
 func _refresh_graphics_label() -> void:
 	_graphics_btn.text = "Graphics: %s" % GraphicsSettings.quality_label()

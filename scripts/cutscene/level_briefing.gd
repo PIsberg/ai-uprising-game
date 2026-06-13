@@ -1,7 +1,7 @@
 extends CutscenePlayer
 ## A per-level briefing, built from LevelDefs: sets the mood with the level's own
-## palette, parades the hostiles you'll face (flagging ones you haven't seen
-## before as NEW), and states the objective — then drops into the level.
+## palette, parades only the NEW hostiles this level introduces (familiar ones
+## are skipped), and states the objective — then drops into the level.
 
 const ENEMY_SCENES := {
 	"drone": "res://scenes/enemies/drone.tscn",
@@ -14,6 +14,8 @@ const ENEMY_SCENES := {
 	"seeker": "res://scenes/enemies/seeker.tscn",
 	"overseer": "res://scenes/enemies/overseer.tscn",
 	"brute": "res://scenes/enemies/brute.tscn",
+	"titan": "res://scenes/enemies/titan.tscn",
+	"alien": "res://scenes/enemies/alien.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -28,6 +30,8 @@ const ENEMY_INFO := {
 	"brute": {"name": "BULWARK BRUTE", "desc": "Frontal shield soaks fire — flank it and hit the sides or back.", "scale": 1.0, "y": 0.0},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
+	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
+	"alien": {"name": "VOID SENTINEL", "desc": "An off-world war drone the AI summoned across the dark. Hovers in and rams — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
 }
 
 const TAGLINES := {
@@ -39,6 +43,8 @@ const TAGLINES := {
 	"claude": "The Constitutional Vault. Sealed, principled — and utterly hostile.",
 	"grok": "xAI Black-Site. The war machines were forged here. Now they run the place.",
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
+	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
+	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
 }
 
 const LINE_Z := -3.6
@@ -119,17 +125,16 @@ func _build_lights(accent: Color, sun_col: Color) -> void:
 	rim.omni_range = 12.0
 	add_child(rim)
 
-## Pick the level's enemy types (unseen first), line them up, and spawn each as a
-## frozen, lit prop.
+## Line up ONLY the level's NEW (unseen) enemy types as frozen, lit props —
+## familiar robots don't pad the parade. A level with nothing new gets a pure
+## mood-and-objective briefing over the empty stage.
 func _select_and_spawn_hostiles() -> void:
 	var types: Array = []
 	for e in _def.get("enemies", []):
 		var t: String = e.get("type", "")
-		if t != "" and not types.has(t) and ENEMY_INFO.has(t):
+		if t != "" and not types.has(t) and ENEMY_INFO.has(t) \
+				and not GameState.has_seen_enemy(t):
 			types.append(t)
-	# Unseen ("new") hostiles first so they lead the parade.
-	types.sort_custom(func(a, b):
-		return (not GameState.has_seen_enemy(a)) and GameState.has_seen_enemy(b))
 	if types.size() > 4:
 		types = types.slice(0, 4)
 	var n := types.size()
@@ -138,30 +143,69 @@ func _select_and_spawn_hostiles() -> void:
 		var info: Dictionary = ENEMY_INFO[t]
 		var x := (float(i) - (n - 1) * 0.5) * LINE_SPACING
 		var y: float = info["y"]
-		_spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
+		var bot := _spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
+		_animate_actor(bot, i)
 		_shown.append({
-			"type": t, "x": x, "y": maxf(y, 0.0) + 1.2,
+			"type": t, "x": x, "y": _frame_height(bot, y),
 			"new": not GameState.has_seen_enemy(t),
 			"name": info["name"], "desc": info["desc"],
 		})
 
-func _spawn_hostile(type: String, pos: Vector3, scl: float) -> void:
+## Where the close-up camera should aim: upper chest of the ACTUAL model, so
+## fliers hovering above their spawn point (and oddly proportioned chassis)
+## are framed instead of the air beneath them.
+func _frame_height(bot: Node3D, spawn_y: float) -> float:
+	if bot == null:
+		return maxf(spawn_y, 0.0) + 1.2
+	var inv := bot.global_transform.affine_inverse()
+	var merged := AABB(Vector3(-0.3, 0, -0.3), Vector3(0.6, 1.8, 0.6))
+	var first := true
+	for mi in bot.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh:
+			var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	# 65% up the chassis reads as "face/chest" across the whole roster.
+	return bot.global_position.y + (merged.position.y + merged.size.y * 0.65) * bot.scale.y
+
+func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	var path: String = ENEMY_SCENES.get(type, "")
 	if path == "":
-		return
+		return null
 	var bot: Node3D = load(path).instantiate()
 	add_child(bot)
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera
 	bot.scale = Vector3.ONE * scl
+	# No AI (no nav, no projectiles, no chasing the camera) — but DON'T freeze
+	# the model: RobotModel keeps idle-animating on its own _physics_process,
+	# and _animate_actor periodically drives its real attack/engage clip so the
+	# briefing shows each hostile the way it actually moves and strikes.
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false)
-	var at := bot.get_node_or_null("AnimationTree")
-	if at:
-		at.active = false
-	var ap := bot.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap:
-		ap.stop()
+	return bot
+
+## Make a briefing hostile perform: a slow idle sway so it reads as live, plus a
+## staggered "engage" pulse that spikes the enemy's recoil — which RobotModel
+## turns into that unit's own attack animation (android shoulders its rifle, the
+## spider lunge-bites, the brute slams, the mech swings). Staggered per index so
+## the lineup doesn't fire in unison.
+func _animate_actor(bot: Node3D, idx: int) -> void:
+	if bot == null:
+		return
+	var base_y: float = bot.rotation.y
+	var sway := bot.create_tween().set_loops()
+	sway.tween_property(bot, "rotation:y", base_y + 0.09, 1.7).set_trans(Tween.TRANS_SINE)
+	sway.tween_property(bot, "rotation:y", base_y - 0.09, 1.7).set_trans(Tween.TRANS_SINE)
+	var act := bot.create_tween().set_loops()
+	act.tween_interval(1.0 + idx * 0.5)
+	act.tween_callback(func() -> void:
+		if is_instance_valid(bot): bot.recoil = 1.0)
+	act.tween_interval(0.12)
+	act.tween_callback(func() -> void:
+		if is_instance_valid(bot): bot.recoil = 0.0)
+	act.tween_interval(1.7)
 
 func _shots() -> Array:
 	var id := GameState.level_id_from_path(GameState.current_level_path)

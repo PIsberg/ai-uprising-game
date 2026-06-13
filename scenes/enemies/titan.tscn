@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://u828nui44jye"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_titan.gd" id="1_titan"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" uid="uid://b0proj0rocket01" path="res://scenes/weapons/projectile_rocket.tscn" id="3_proj"]
+[ext_resource type="PackedScene" uid="uid://bgtxywhjwqm0v" path="res://scenes/fx/tracer_red.tscn" id="4_tracer"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="5_mf"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="6_gr"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="7_rm"]
+[ext_resource type="PackedScene" uid="uid://mhpau8qw85s4" path="res://assets/models/boss/giant_robot.glb" id="8_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 1.3
+height = 8.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_reactor"]
+radius = 0.5
+height = 1.0
+material = ExtResource("6_gr")
+
+[node name="Titan" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_titan")
+rocket_scene = ExtResource("3_proj")
+tracer_scene = ExtResource("4_tracer")
+muzzle_flash_scene = ExtResource("5_mf")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("7_rm")
+anim_walk = ""
+anim_attack = ""
+anim_stagger = ""
+
+[node name="Mesh" parent="Model" instance=ExtResource("8_model")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 5.55, 0)
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.8, 0)
+
+[node name="Eye" type="Node3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.7)
+
+[node name="EyeLight" type="SpotLight3D" parent="Head/Eye"]
+light_color = Color(1, 0.1, 0.1, 1)
+light_energy = 4.0
+spot_range = 32.0
+spot_angle = 22.0
+
+[node name="Reactor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.0, -0.7)
+mesh = SubResource("SphereMesh_reactor")
+
+[node name="MuzzleL" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 6.6, -0.7)
+
+[node name="MuzzleR" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 6.6, -0.7)
+
+[node name="MuzzleCore" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.0, -0.95)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 2600.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 1.4
+height = 9.0

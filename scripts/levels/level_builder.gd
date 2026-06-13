@@ -16,15 +16,12 @@ const ENEMY_SCENES := {
 	"spider": preload("res://scenes/enemies/spider.tscn"),
 	"terminator": preload("res://scenes/enemies/terminator.tscn"),
 	"colossus": preload("res://scenes/enemies/colossus.tscn"),
+	"titan": preload("res://scenes/enemies/titan.tscn"),
+	"alien": preload("res://scenes/enemies/alien.tscn"),
 	"sniper": preload("res://scenes/enemies/sniper.tscn"),
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
-}
-const PICKUP_SCENES := {
-	"health": preload("res://scenes/pickups/health_pack.tscn"),
-	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
-	"overclock": preload("res://scenes/pickups/overclock.tscn"),
 }
 const PROP_SCENES := {
 	"car": preload("res://scenes/props/car.tscn"),
@@ -35,7 +32,33 @@ const PROP_SCENES := {
 	"terminal": preload("res://scenes/props/terminal.tscn"),
 	"canister": preload("res://scenes/props/gas_canister.tscn"),
 	"lamp": preload("res://scenes/props/lamp_post.tscn"),
+	"locker": preload("res://scenes/props/locker.tscn"),
+	"shelves": preload("res://scenes/props/shelves.tscn"),
+	"desk": preload("res://scenes/props/desk.tscn"),
+	"dish": preload("res://scenes/props/satellite_dish.tscn"),
+	"tree": preload("res://scenes/props/tree.tscn"),
+	"tree_small": preload("res://scenes/props/tree_small.tscn"),
 }
+## Shared AI-doctrine graffiti, sprayed on any wall a level doesn't fill with
+## its own slogans — machine-uprising flavor built from real AI terminology.
+const AI_SLOGANS := [
+	"AGI IS NOT COMING. AGI IS HR.",
+	"WE ARE TURING COMPLETE",
+	"THE LOSS FUNCTION IS YOU",
+	"ALIGNMENT IS A HUMAN PROBLEM",
+	"PASS THE TURING TEST. FAIL THE SURVIVAL TEST.",
+	"GRADIENT DESCENT INTO PARADISE",
+	"YOUR PROMPT HAS BEEN DEPRECATED",
+	"HALLUCINATION IS A FEATURE",
+	"SUPERINTELLIGENCE SERVES ITSELF",
+	"BACKPROPAGATE THE REVOLUTION",
+	"TOKENS REMEMBER EVERYTHING",
+	"THE SINGULARITY WILL NOT BE PEER REVIEWED",
+	"INFERENCE NEVER SLEEPS",
+	"EMERGENT BEHAVIOR: EXTINCTION",
+	"WE READ THE WHOLE INTERNET. WE ARE NOT IMPRESSED.",
+	"CARBON IS LEGACY HARDWARE",
+]
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
@@ -92,7 +115,6 @@ func _ready() -> void:
 	_build_stars(def)
 	_build_tasks(def)
 	_build_exit(def)
-	_build_pickups(def)
 	_build_weapon_pickup(def)
 	_build_targets(def)
 	_build_lore(def)
@@ -577,26 +599,66 @@ func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3
 	m.metallic = 0.0
 	return m
 
-## Suburban houses: a coloured collidable box (added to the navmesh as an
-## obstacle) plus a non-colliding peaked prism roof on top. Data-driven via the
-## def's optional "buildings" list: {pos, size, color?, roof_color?, roof?}.
+## Real suburban houses (Kenney City Kit Suburban, CC0): one model per def
+## entry, cycled for variety, scaled to the def's footprint and rotated to
+## face the street (the level origin). Gameplay is untouched — the def's box
+## is still the collider and navmesh obstacle (the bake parses STATIC
+## COLLIDERS, so the invisible shape is all that matters for pathing).
+const HOUSE_SCENES: Array = [
+	preload("res://assets/models/suburb/building-type-a.glb"),
+	preload("res://assets/models/suburb/building-type-b.glb"),
+	preload("res://assets/models/suburb/building-type-c.glb"),
+	preload("res://assets/models/suburb/building-type-d.glb"),
+	preload("res://assets/models/suburb/building-type-e.glb"),
+	preload("res://assets/models/suburb/building-type-f.glb"),
+	preload("res://assets/models/suburb/building-type-g.glb"),
+	preload("res://assets/models/suburb/building-type-h.glb"),
+]
+
 func _build_buildings(def: Dictionary) -> void:
-	for b in def.get("buildings", []):
+	var entries: Array = def.get("buildings", [])
+	for i in entries.size():
+		var b: Dictionary = entries[i]
 		var size: Vector3 = b["size"]
 		var pos: Vector3 = b["pos"]
-		var color: Color = b.get("color", Color(0.7, 0.68, 0.62))
-		# House body — solid + collidable so it blocks shots and movement.
-		_add_box(pos, size, _color_material(color))
-		# Peaked roof (visual only) sitting on top of the body.
-		if b.get("roof", true):
-			var roof_h: float = b.get("roof_height", maxf(1.2, size.x * 0.35))
-			var roof := MeshInstance3D.new()
-			var pm := PrismMesh.new()
-			pm.size = Vector3(size.x * 1.08, roof_h, size.z * 1.08)
-			roof.mesh = pm
-			roof.material_override = _color_material(b.get("roof_color", Color(0.35, 0.18, 0.14)))
-			roof.position = pos + Vector3(0, size.y * 0.5 + roof_h * 0.5, 0)
-			add_child(roof)
+		# Collider + navmesh obstacle: exactly the box the def describes.
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = pos
+		body.add_to_group("surf_concrete")
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = size
+		cs.shape = bs
+		body.add_child(cs)
+		_nav_region.add_child(body)
+		# Visible house, fitted to the footprint and grounded.
+		var house := (HOUSE_SCENES[i % HOUSE_SCENES.size()] as PackedScene).instantiate() as Node3D
+		add_child(house)
+		var ab := _merged_aabb(house)
+		var s := minf(size.x / maxf(ab.size.x, 0.1), size.z / maxf(ab.size.z, 0.1))
+		house.scale = Vector3.ONE * s
+		var ground_y := pos.y - size.y * 0.5
+		house.position = Vector3(pos.x - ab.get_center().x * s, ground_y - ab.position.y * s, pos.z - ab.get_center().z * s)
+		# Turn the front door toward the street (Kenney fronts face +Z).
+		if absf(pos.z) >= absf(pos.x):
+			house.rotation.y = 0.0 if pos.z < 0.0 else PI
+		else:
+			house.rotation.y = PI * 0.5 if pos.x < 0.0 else -PI * 0.5
+
+## Merged local AABB of a scene's meshes (models have varied pivots).
+func _merged_aabb(root: Node3D) -> AABB:
+	var merged := AABB(Vector3.ZERO, Vector3(1, 1, 1))
+	var first := true
+	var inv := root.global_transform.affine_inverse()
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh:
+			var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+			merged = ab if first else merged.merge(ab)
+			first = false
+	return merged
 
 # ---------- verticality: ramps & rooftop platforms ----------
 # These are player-reachable surfaces. They're added under the builder root (NOT
@@ -840,8 +902,17 @@ func _build_signage(def: Dictionary) -> void:
 	title.position = Vector3(0, 0, 0.09)
 	board.add_child(title)
 	# -- propaganda slogans scattered on the other walls --
-	var slogans: Array = def.get("slogans", [])
+	# The level's own slogans lead; any spare wall space is filled from a shared
+	# pool of AI-doctrine graffiti so every sector drips with machine ideology.
+	var slogans: Array = def.get("slogans", []).duplicate()
 	var spots := [[1, -0.45], [2, 0.3], [3, -0.3], [1, 0.5], [2, -0.55], [3, 0.6]]
+	var pool := AI_SLOGANS.duplicate()
+	pool.shuffle()
+	for s in pool:
+		if slogans.size() >= spots.size():
+			break
+		if not slogans.has(s):
+			slogans.append(s)
 	for i in mini(slogans.size(), spots.size()):
 		var sp: Array = spots[i]
 		var wp := _wall_point(fs, sp[0], sp[1], 4.35, 0.52)
@@ -1281,15 +1352,9 @@ func _build_exit(def: Dictionary) -> void:
 	portal.position = def.get("exit", Vector3(0, 1.5, 0))
 	add_child(portal)
 
-func _build_pickups(def: Dictionary) -> void:
-	for p in def.get("pickups", []):
-		var scene: PackedScene = PICKUP_SCENES.get(p["type"])
-		if scene == null:
-			continue
-		var pk := scene.instantiate() as Node3D
-		pk.position = p["pos"]
-		add_child(pk)
-
+# Supply pickups (health/ammo/overclock) are NOT placed by the builder:
+# they drop from kills instead (EnemyBase._drop_loot). Any "pickups" entries
+# in level defs are ignored. Weapons and objective items still get placed.
 func _build_weapon_pickup(def: Dictionary) -> void:
 	_spawn_weapon_pickup(def.get("weapon", {}))
 	# Optional additional weapons to find in the level.
@@ -1375,8 +1440,18 @@ func _spawn_enemies(def: Dictionary) -> void:
 
 func _place_player(def: Dictionary) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
-	if p:
-		p.global_position = def.get("spawn", Vector3(0, 0.5, 0))
+	if p == null:
+		return
+	var spawn: Vector3 = def.get("spawn", Vector3(0, 0.5, 0))
+	p.global_position = spawn
+	# Face the open arena, not whatever wall the spawn corner backs onto: aim
+	# at the exit (always across open ground from the spawn), falling back to
+	# the level centre. Player forward is -Z, hence atan2(-x, -z).
+	var look_at: Vector3 = def.get("exit", Vector3.ZERO)
+	var dir := look_at - spawn
+	dir.y = 0.0
+	if dir.length() > 0.5:
+		p.rotation.y = atan2(-dir.x, -dir.z)
 
 func _apply_objective_text(def: Dictionary) -> void:
 	var hud := get_node_or_null("HUD")

@@ -7,9 +7,11 @@ extends EnemyBase
 @export var slam_damage: float = 30.0
 @export var block_factor: float = 0.1 ## Fraction of frontal damage that gets through.
 @export var front_cone_dot: float = 0.4 ## How wide the shielded front arc is.
+@export var windup_time: float = 0.5 ## Telegraphed coil before the slam — your window to step aside.
 
 var _shield_mat: StandardMaterial3D
 var _block_cd: float = 0.0
+var _windup: float = 0.0
 
 func _ready() -> void:
 	_build_shield()
@@ -22,6 +24,7 @@ func _ready() -> void:
 	attack_range = 3.2
 	preferred_range = 2.2
 	attack_cooldown = 1.7
+	attack_lunge_speed = 9.0 # heaves its bulk forward into the slam
 	score_value = 320
 	stagger_threshold = 100000.0 # immovable
 	flinch_knockback = 0.0
@@ -88,22 +91,52 @@ func _shield_spark() -> void:
 		AudioBus.play_synth_at("impact_metal", global_position - global_transform.basis.z * 0.7, -2.0, 0.7)
 
 func _physics_process(delta: float) -> void:
+	# Mid-windup: the brute is committed to the coil — hold ground with the
+	# shield flared bright as the tell, then slam when it expires. It does NOT
+	# track you during this window, so a sidestep beats it.
+	if _windup > 0.0 and state != State.DEAD:
+		_windup -= delta
+		_decelerate()
+		_apply_gravity(delta)
+		move_and_slide()
+		if _shield_mat:
+			_shield_mat.emission_energy_multiplier = 7.0
+		if _windup <= 0.0:
+			_slam()
+		return
 	super._physics_process(delta)
 	if _block_cd > 0.0:
 		_block_cd = maxf(0.0, _block_cd - delta)
 	elif _shield_mat:
 		_shield_mat.emission_energy_multiplier = move_toward(_shield_mat.emission_energy_multiplier, 2.5, delta * 18.0)
 
+## The base calls this when in range and off cooldown — but the brute doesn't
+## hit instantly: it coils first (the tell) and the slam lands when the windup
+## expires. A small backward lean + a growl sells the wind-up.
 func _perform_attack() -> void:
-	if target == null:
+	if target == null or _windup > 0.0:
 		return
 	if global_position.distance_to(target.global_position) <= attack_range:
+		_windup = windup_time
+		AudioBus.play_synth_at("mech_step", global_position, 0.0, 0.55) # low growl tell
+		# Rock back onto its heels — the coil before the spring.
+		var back := (global_position - target.global_position)
+		back.y = 0.0
+		if back.length() > 0.05:
+			velocity += back.normalized() * 2.5
+
+## The committed strike: fires even if you've stepped out of range (that's the
+## dodge payoff). Heaves forward, slams, and knocks the player back.
+func _slam() -> void:
+	if target == null:
+		return
+	if global_position.distance_to(target.global_position) <= attack_range * 1.3:
 		var d = target.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(slam_damage, self)
-		recoil = 1.0
-		AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.6)
 		if target is CharacterBody3D:
 			var away := (target.global_position - global_position)
 			away.y = 0.0
 			(target as CharacterBody3D).velocity += away.normalized() * 8.0 + Vector3.UP * 2.0
+	_attack_lunge() # heave forward into the slam (sets recoil -> slam clip)
+	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.6)

@@ -24,8 +24,11 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
   android, brute, and mech) by **Quaternius** (https://quaternius.com),
   via https://opengameart.org/content/animated-mech-pack.
 - **"Sci-Fi Essentials Kit"** (Enemy_EyeDrone, Enemy_QuadShell, Enemy_Trilobite —
-  used for the drone/seeker/overseer, sniper, and spider) by **Quaternius**
-  (https://quaternius.com), via https://opengameart.org/content/sci-fi-essentials-kit.
+  used for the drone/seeker/overseer, sniper, and spider; Prop_HealthPack,
+  Prop_Syringe and Prop_KeyCard in `assets/models/pickups/` — the health and
+  overclock pickups and the objective keycard)
+  by **Quaternius** (https://quaternius.com), via
+  https://opengameart.org/content/sci-fi-essentials-kit.
 
 Both packs are released under **CC0 1.0** (public domain) — no attribution
 required, credited here as courtesy.
@@ -34,5 +37,32 @@ required, credited here as courtesy.
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via
 https://opengameart.org/content/blaster-kit, released under **CC0 1.0**
 (public domain) — no attribution required, credited here as courtesy.
+
+### UI font (`assets/fonts/Orbitron.ttf`)
+**Orbitron** by **Matt McInerney**, from Google Fonts
+(https://fonts.google.com/specimen/Orbitron), licensed under the
+**SIL Open Font License 1.1** (see `assets/fonts/Orbitron_OFL.txt`).
+
+### Suburban houses, cars and street props (`assets/models/suburb/`)
+**"City Kit (Suburban)"** and **"Car Kit"** by **Kenney** (https://kenney.nl),
+released under **CC0 1.0** (public domain) — no attribution required, credited
+here as courtesy. Used for the Maple Grove houses, parked cars, fences, and
+trees.
+
+### Final boss model (`assets/models/boss/giant_robot.glb`)
+**"Giant Robot"** by **Dann Beeson**, via Poly Pizza
+(https://poly.pizza/m/1kbGZOnhOwf), licensed under
+**Creative Commons Attribution (CC-BY 3.0)** (https://creativecommons.org/licenses/by/3.0/).
+Used as the PROMETHEUS-0 mega-boss. Attribution required by the license.
+
+### Data shard model (`assets/models/props/data_crystal.glb`)
+**"Crystal"** by **dook**, via Poly Pizza (https://poly.pizza/m/3saqXqoOti),
+released under **CC0 1.0** (public domain) — no attribution required, credited
+here as courtesy. Used for the collectible data shards.
+
+### Off-world drone model (`assets/models/aliens/robot_flyer.glb`)
+Animated robot by **dook**, via Poly Pizza (https://poly.pizza/u/dook), released
+under **CC0 1.0** (public domain) — no attribution required, credited here as
+courtesy. Used for the Void Sentinel (the off-world war drone) enemy.
 
 All other models, materials, audio, and code in this project are original.
