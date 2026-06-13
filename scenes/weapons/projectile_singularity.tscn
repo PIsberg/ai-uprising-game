@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3 uid="uid://b0proj0singul1"]
+
+[ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_void"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(0.7, 0.3, 1, 1)
+emission_energy_multiplier = 12.0
+albedo_color = Color(0.5, 0.2, 0.9, 1)
+
+[sub_resource type="SphereMesh" id="Sphere_void"]
+radius = 0.28
+height = 0.56
+material = SubResource("Mat_void")
+
+[sub_resource type="SphereShape3D" id="Shape_void"]
+radius = 0.28
+
+[node name="ProjectileSingularity" type="Area3D"]
+collision_layer = 8
+collision_mask = 5
+script = ExtResource("1_proj")
+trail_color = Color(0.75, 0.4, 1, 1)
+energy_pulse = true
+lifetime = 5.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Sphere_void")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_void")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(0.7, 0.35, 1, 1)
+light_energy = 4.0
+omni_range = 8.0

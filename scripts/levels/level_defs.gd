@@ -135,6 +135,8 @@ static func _horde() -> Dictionary:
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 0, -12), "color": Color(0.4, 1, 0.55)},
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(12, 0, 12), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(18, 0, 0), "color": Color(1, 0.55, 0.2)},
 		],
 		"pickups": [
 			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
@@ -219,6 +221,8 @@ static func _range() -> Dictionary:
 			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(7.5, 0, 21), "color": Color(1, 0.75, 0.35)},
 			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(10.5, 0, 21), "color": Color(0.5, 0.6, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(16.5, 0, 21), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(19.5, 0, 21), "color": Color(1, 0.55, 0.2)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
@@ -344,6 +348,10 @@ static func _titan() -> Dictionary:
 		"spawn": Vector3(-34, 0.6, -34),
 		"exit": Vector3(34, 1.5, 34),
 		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-28, 0, -22), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(28, 0, -22), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.2)},
+		],
 		"env": {
 			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
 			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
