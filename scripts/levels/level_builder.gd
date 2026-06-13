@@ -1409,8 +1409,18 @@ func _spawn_enemies(def: Dictionary) -> void:
 
 func _place_player(def: Dictionary) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
-	if p:
-		p.global_position = def.get("spawn", Vector3(0, 0.5, 0))
+	if p == null:
+		return
+	var spawn: Vector3 = def.get("spawn", Vector3(0, 0.5, 0))
+	p.global_position = spawn
+	# Face the open arena, not whatever wall the spawn corner backs onto: aim
+	# at the exit (always across open ground from the spawn), falling back to
+	# the level centre. Player forward is -Z, hence atan2(-x, -z).
+	var look_at: Vector3 = def.get("exit", Vector3.ZERO)
+	var dir := look_at - spawn
+	dir.y = 0.0
+	if dir.length() > 0.5:
+		p.rotation.y = atan2(-dir.x, -dir.z)
 
 func _apply_objective_text(def: Dictionary) -> void:
 	var hud := get_node_or_null("HUD")
