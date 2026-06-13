@@ -480,7 +480,7 @@ static func _titan() -> Dictionary:
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 6)},
-			{"type": "titan", "pos": Vector3(28, 0.5, 28), "trigger": 40},
+			{"type": "titan", "pos": Vector3(12, 0.5, 12), "trigger": 60},
 			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
 			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},

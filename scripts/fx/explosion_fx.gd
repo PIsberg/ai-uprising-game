@@ -12,7 +12,6 @@ static func detonate(root: Node3D, size: float = 2.2, color: Color = Color(1.0, 
 	_fireball(root, size, color)
 	_shockwave(root, size, color)
 	_embers(root, size, color)
-	_smoke(root, size)
 	_light_pop(root)
 	_kick_player(root, size)
 

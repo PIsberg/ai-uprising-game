@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dlfmw66lfy4u2"
-path="res://.godot/imported/alien_brute.glb-76d7ed8d03163df64ac0be45eb480b2e.scn"
+uid="uid://c25sviqh0ugdm"
+path="res://.godot/imported/alien_flyer.glb-7cec9daefe3187d5948c184b92cf9eed.scn"
 
 [deps]
 
-source_file="res://assets/models/aliens/alien_brute.glb"
-dest_files=["res://.godot/imported/alien_brute.glb-76d7ed8d03163df64ac0be45eb480b2e.scn"]
+source_file="res://assets/models/aliens/alien_flyer.glb"
+dest_files=["res://.godot/imported/alien_flyer.glb-7cec9daefe3187d5948c184b92cf9eed.scn"]
 
 [params]
 
