@@ -470,6 +470,13 @@ static func _gpt() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(2.2, 0, 8), "yaw": -90},
 			{"type": "canister", "pos": Vector3(-14, 0, 0)},
 			{"type": "canister", "pos": Vector3(14, 0, -10)},
+			# Server-hall dressing: lockers along the west wall, open racks
+			# beside the server clusters, a workbench by the terminal.
+			{"type": "locker", "pos": Vector3(-20, 0, -12)},
+			{"type": "locker", "pos": Vector3(-20, 0, -10.2)},
+			{"type": "shelves", "pos": Vector3(-8.4, 0, -7.5)},
+			{"type": "shelves", "pos": Vector3(9.1, 0, 14.4), "yaw": 180},
+			{"type": "desk", "pos": Vector3(5.2, 0, 8), "yaw": -90},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(8, 0.5, -8)},
