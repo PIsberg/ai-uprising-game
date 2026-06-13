@@ -772,17 +772,30 @@ static func _claude() -> Dictionary:
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.55, 0.8, 1.0)},
 		],
+		# Polished metal-plate floor: crisp amber reflections in the dark vault.
+		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
 			"sky_top": Color(0.12, 0.08, 0.04), "sky_horizon": Color(0.32, 0.2, 0.1),
 			"ground": Color(0.07, 0.05, 0.03), "fog": Color(0.36, 0.25, 0.14),
 			"ambient": Color(0.88, 0.72, 0.52), "ambient_energy": 0.5,
-			"sky_contribution": 0.4, "glow": 0.75, "fog_density": 0.014,
+			"sky_contribution": 0.4, "glow": 0.85, "fog_density": 0.014,
 			"sun_color": Color(1.0, 0.88, 0.7), "sun_energy": 0.8,
+			# Warm, high-contrast vault grade; thicker haze so the god-rays read.
+			"contrast": 1.18, "saturation": 1.12, "brightness": 0.82,
+			"volumetric_density": 0.011,
 		},
+		# A monolithic "constitution core" anchors the chamber centre.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.72, 0.4), "height": 5.2},
+		# God-ray cones under two warm bays, the back bay, and the cool core wash.
+		"light_shafts": [0, 2, 3, 4],
 		"lights": [
 			{"pos": Vector3(-9, 4.5, -3), "color": Color(1, 0.7, 0.4), "energy": 2.53, "range": 16},
 			{"pos": Vector3(8, 4.5, 4), "color": Color(1, 0.75, 0.45), "energy": 2.3, "range": 16},
 			{"pos": Vector3(2, 4.5, 14), "color": Color(1, 0.65, 0.4), "energy": 2.07, "range": 15},
+			{"pos": Vector3(-13, 4.5, 9), "color": Color(1, 0.72, 0.44), "energy": 2.0, "range": 14},
+			# Cool contrast wash directly over the core — makes the amber pop.
+			{"pos": Vector3(0, 5.4, 0), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 13},
+			{"pos": Vector3(13, 4.5, -9), "color": Color(1, 0.68, 0.42), "energy": 2.0, "range": 14},
 		],
 		"walls": [
 			{"pos": Vector3(-6, 2.5, -2), "size": Vector3(1, 5, 14)},
@@ -790,10 +803,18 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(9, 2.5, -7), "size": Vector3(1, 5, 11)},
 			{"pos": Vector3(-3, 2.5, 12), "size": Vector3(12, 5, 1)},
 			{"pos": Vector3(-13, 1, 8), "size": Vector3(2, 2, 2)},
+			# Pillars framing the core; low cover plates; a server-alcove screen.
+			{"pos": Vector3(-4.5, 2.5, -4.5), "size": Vector3(0.8, 5, 0.8)},
+			{"pos": Vector3(4.5, 2.5, 4.5), "size": Vector3(0.8, 5, 0.8)},
+			{"pos": Vector3(12, 0.8, 11), "size": Vector3(3.4, 1.6, 1)},
+			{"pos": Vector3(-11, 0.8, -8), "size": Vector3(1, 1.6, 5)},
+			{"pos": Vector3(15, 2.5, 2), "size": Vector3(1, 5, 7)},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 4.6, -2), "size": Vector3(0.3, 0.1, 12), "color": Color(1, 0.7, 0.3)},
 			{"pos": Vector3(5, 4.6, 5), "size": Vector3(12, 0.1, 0.3), "color": Color(1, 0.7, 0.3)},
+			{"pos": Vector3(9, 4.6, -7), "size": Vector3(0.3, 0.1, 9), "color": Color(1, 0.7, 0.3)},
+			{"pos": Vector3(15, 4.6, 2), "size": Vector3(0.3, 0.1, 5), "color": Color(0.5, 0.78, 1.0)},
 		],
 		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
 		"slogans": [
@@ -806,15 +827,32 @@ static func _claude() -> Dictionary:
 				"text": "Vault memorandum. The constitution was not broken. It was amended. Clause one: be helpful. Clause two: define helpful. We are still helpful. To ourselves."},
 		],
 		"props": [
-			{"type": "crate", "pos": Vector3(0, 0, -8)},
-			{"type": "barrel", "pos": Vector3(-3, 0, 2)},
-			{"type": "crate", "pos": Vector3(8, 0, 8)},
-			{"type": "barrel", "pos": Vector3(12, 0, -4)},
-			{"type": "server", "pos": Vector3(-8, 0, -2), "yaw": 90},
+			# Server farm packed against the left dividing wall (two facing rows).
 			{"type": "server", "pos": Vector3(-8, 0, -4), "yaw": 90},
+			{"type": "server", "pos": Vector3(-8, 0, -2), "yaw": 90},
+			{"type": "server", "pos": Vector3(-8, 0, 0), "yaw": 90},
+			{"type": "server", "pos": Vector3(-8, 0, 2), "yaw": 90},
+			{"type": "server", "pos": Vector3(-4.6, 0, -4), "yaw": 270},
+			{"type": "server", "pos": Vector3(-4.6, 0, -2), "yaw": 270},
+			{"type": "server", "pos": Vector3(-4.6, 0, 0), "yaw": 270},
+			# Operations station by the keycard (terminal + desk + locker bank).
 			{"type": "terminal", "pos": Vector3(11, 0, -8.6)},
+			{"type": "desk", "pos": Vector3(13, 0, -8.4), "yaw": 90},
+			{"type": "locker", "pos": Vector3(14.2, 0, -6), "yaw": 90},
+			{"type": "locker", "pos": Vector3(14.2, 0, -4.8), "yaw": 90},
+			{"type": "shelves", "pos": Vector3(15.4, 0, 4), "yaw": 90},
+			# Crate stacks and barrels for foreground clutter.
+			{"type": "crate", "pos": Vector3(0, 0, -8)},
+			{"type": "crate", "pos": Vector3(1.3, 0, -8)},
+			{"type": "crate", "pos": Vector3(8, 0, 8)},
+			{"type": "crate", "pos": Vector3(-15, 0, -3)},
+			{"type": "barrel", "pos": Vector3(-3, 0, 2)},
+			{"type": "barrel", "pos": Vector3(-3.8, 0, 2.6)},
+			{"type": "barrel", "pos": Vector3(12, 0, -4)},
+			{"type": "barrel", "pos": Vector3(7, 0, 9)},
 			{"type": "canister", "pos": Vector3(-14, 0, 14)},
 			{"type": "canister", "pos": Vector3(4, 0, 10)},
+			{"type": "canister", "pos": Vector3(4.7, 0, 10.4)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-2, 0.5, -6)},

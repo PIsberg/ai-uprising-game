@@ -98,9 +98,11 @@ func _ready() -> void:
 	_build_ramps(def)
 	_build_platforms(def)
 	_build_props(def)
+	_build_hero(def)
 	_build_gi(def)
 	_build_accents(def)
 	_build_atmosphere(def)
+	_build_light_shafts(def)
 	_build_accent_strips(def)
 	_build_signage(def)
 	_build_floor_seams(def)
@@ -188,7 +190,7 @@ func _build_environment(def: Dictionary) -> void:
 	env.ssr_max_steps = 48
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-	env.glow_intensity = 0.62
+	env.glow_intensity = e.get("glow", 0.62)
 	env.glow_strength = 0.9
 	env.glow_bloom = 0.05
 	env.glow_hdr_threshold = 1.25 # low enough that enemy emissives halo in the dark
@@ -209,6 +211,9 @@ func _build_environment(def: Dictionary) -> void:
 	if not def.get("open_sky", false):
 		env.volumetric_fog_enabled = true
 		env.volumetric_fog_density = minf(e.get("fog_density", 0.01), 0.012) * 0.5
+		# Showcase levels can thicken the haze so light shafts/god-rays read.
+		if e.has("volumetric_density"):
+			env.volumetric_fog_density = e["volumetric_density"]
 		env.volumetric_fog_albedo = Color(0.7, 0.75, 0.8)
 		env.volumetric_fog_length = 80.0
 		env.volumetric_fog_gi_inject = 0.25
@@ -216,10 +221,11 @@ func _build_environment(def: Dictionary) -> void:
 		env.volumetric_fog_enabled = false
 
 	# Filmic grade: gentle teal shadows / warm highlights, lifted contrast.
+	# Levels can override per-theme (def "env": brightness/contrast/saturation).
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 0.84
-	env.adjustment_contrast = 1.12
-	env.adjustment_saturation = 1.06
+	env.adjustment_brightness = e.get("brightness", 0.84)
+	env.adjustment_contrast = e.get("contrast", 1.12)
+	env.adjustment_saturation = e.get("saturation", 1.06)
 	
 	# Scalability: the chosen quality tier strips back the most expensive
 	# screen-space effects so lower-end machines stay smooth. HIGH keeps it all.
@@ -407,7 +413,11 @@ func _build_geometry(def: Dictionary) -> void:
 	# Floor — optionally tinted (e.g. asphalt/grass for outdoor levels).
 	var floor_mat: Material = MAT_FLOOR
 	var floor_surf := "surf_concrete"
-	if def.has("floor_color"):
+	if def.has("floor_material"):
+		# Showcase override: a hand-authored textured material (e.g. the polished
+		# vault plate) instead of the shared concrete or a flat tint.
+		floor_mat = load(def["floor_material"])
+	elif def.has("floor_color"):
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
 	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf)
@@ -724,6 +734,144 @@ func _build_props(def: Dictionary) -> void:
 			inst.rotation.y = deg_to_rad(pr["yaw"])
 		# Add to the navmesh region so ground enemies path around it.
 		_nav_region.add_child(inst)
+
+# ---------- hero centrepiece (opt-in via def "hero") ----------
+
+## A focal monolith on a stepped dais: the room's anchor and a piece of real
+## cover. Dark machined plinth + tall slab with a pulsing emissive core seam and
+## a glowing halo ring at its foot, all in the level's theme colour. Built as a
+## solid collider BEFORE the navmesh bake, so robots path around it. Opt-in:
+## levels without a "hero" key are unchanged. def["hero"] = {pos, color?, height?}.
+func _build_hero(def: Dictionary) -> void:
+	var h: Dictionary = def.get("hero", {})
+	if h.is_empty():
+		return
+	var pos: Vector3 = h.get("pos", Vector3.ZERO)
+	var col: Color = h.get("color", _theme_color(def))
+	var height: float = h.get("height", 5.0)
+
+	# Stepped plinth: two stacked cylinders, machined dark metal.
+	var plinth := Node3D.new()
+	plinth.position = pos
+	add_child(plinth)
+	var base := MeshInstance3D.new()
+	var bc := CylinderMesh.new()
+	bc.top_radius = 2.2; bc.bottom_radius = 2.6; bc.height = 0.5; bc.radial_segments = 32
+	bc.material = MAT_PROP_B
+	base.mesh = bc; base.position = Vector3(0, 0.25, 0)
+	plinth.add_child(base)
+	var step := MeshInstance3D.new()
+	var sc := CylinderMesh.new()
+	sc.top_radius = 1.6; sc.bottom_radius = 2.0; sc.height = 0.4; sc.radial_segments = 32
+	sc.material = MAT_TRIM
+	step.mesh = sc; step.position = Vector3(0, 0.65, 0)
+	plinth.add_child(step)
+	# Solid plinth collider (path-blocking cover).
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	body.position = pos
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 2.4; shape.height = 0.9
+	cs.shape = shape; cs.position = Vector3(0, 0.45, 0)
+	body.add_child(cs)
+	_nav_region.add_child(body)
+
+	# The monolith slab.
+	var slab := MeshInstance3D.new()
+	slab.mesh = _beveled_box(Vector3(1.5, height, 0.7))
+	slab.mesh.material = MAT_TRIM
+	slab.position = pos + Vector3(0, 0.85 + height * 0.5, 0)
+	add_child(slab)
+
+	# Pulsing emissive core seam down the slab's front face + two side ribs.
+	var em := StandardMaterial3D.new()
+	em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	em.albedo_color = col
+	em.emission_enabled = true
+	em.emission = col
+	em.emission_energy_multiplier = 2.8
+	# Mirror the seam set onto both broad faces so the core glows from any angle.
+	for face_z in [0.36, -0.36]:
+		for seam in [
+			{"size": Vector3(0.34, height * 0.82, 0.06), "x": 0.0},
+			{"size": Vector3(0.09, height * 0.7, 0.06), "x": 0.52},
+			{"size": Vector3(0.09, height * 0.7, 0.06), "x": -0.52},
+		]:
+			var core := MeshInstance3D.new()
+			var cb := BoxMesh.new()
+			cb.size = seam["size"]; cb.material = em
+			core.mesh = cb
+			core.position = pos + Vector3(seam["x"], 0.85 + height * 0.5, face_z)
+			core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(core)
+
+	# Glowing halo ring at the foot of the slab.
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 1.45; tm.outer_radius = 1.7; tm.rings = 32; tm.ring_segments = 12
+	tm.material = em
+	ring.mesh = tm
+	ring.position = pos + Vector3(0, 0.9, 0)
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
+
+	# Slow breathing pulse on the shared emissive material.
+	var tw := create_tween().set_loops()
+	tw.tween_property(em, "emission_energy_multiplier", 1.6, 2.0) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(em, "emission_energy_multiplier", 3.4, 2.0) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+# ---------- volumetric light shafts (opt-in via def "light_shafts") ----------
+
+## Fake god-ray cones hanging under chosen ceiling lights: an additive,
+## double-sided, depth-write-off cone catches the eye in the dark and sells the
+## haze without the cost of true per-light volumetrics. def["light_shafts"] is
+## either `true` (a shaft under every light) or an Array of light indices.
+func _build_light_shafts(def: Dictionary) -> void:
+	var spec = def.get("light_shafts", null)
+	if spec == null:
+		return
+	var lights: Array = def.get("lights", [])
+	var idxs: Array = []
+	if spec is bool:
+		if spec:
+			for i in lights.size():
+				idxs.append(i)
+	elif spec is Array:
+		idxs = spec
+	for i in idxs:
+		if i < 0 or i >= lights.size():
+			continue
+		var l: Dictionary = lights[i]
+		var pos: Vector3 = l["pos"]
+		var col: Color = l.get("color", Color(1, 1, 1))
+		var rng: float = l.get("range", 16.0)
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.22
+		cone.bottom_radius = clampf(rng * 0.13, 0.9, 2.6)
+		cone.height = pos.y
+		cone.radial_segments = 16
+		cone.cap_top = false
+		cone.cap_bottom = false
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		m.albedo_color = Color(col.r, col.g, col.b, 0.035)
+		m.emission_enabled = true
+		m.emission = col
+		m.emission_energy_multiplier = 0.3
+		cone.material = m
+		var mi := MeshInstance3D.new()
+		mi.mesh = cone
+		mi.position = Vector3(pos.x, pos.y * 0.5, pos.z)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 # ---------- boss horizon set-piece ----------
 
