@@ -16,6 +16,8 @@ var _dead: bool = false
 var _t: float = 0.0
 var _core_mat: StandardMaterial3D
 var _light: OmniLight3D
+var _ring_a: MeshInstance3D
+var _ring_b: MeshInstance3D
 
 func _ready() -> void:
 	collision_layer = 1
@@ -75,6 +77,30 @@ func _build_visual() -> void:
 	core.position = Vector3(0, 1.75, 0)
 	add_child(core)
 
+	# Two counter-rotating containment rings caging the orb — it reads as a
+	# volatile reactor you must crack open, not just a glowing ball.
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = Color(0.7, 0.72, 0.78)
+	ring_mat.metallic = 0.9
+	ring_mat.roughness = 0.25
+	ring_mat.emission_enabled = true
+	ring_mat.emission = core_color
+	ring_mat.emission_energy_multiplier = 0.6
+	for i in 2:
+		var ring := MeshInstance3D.new()
+		var rtm := TorusMesh.new()
+		rtm.inner_radius = 0.82
+		rtm.outer_radius = 0.92
+		rtm.rings = 24
+		rtm.ring_segments = 8
+		ring.mesh = rtm
+		ring.material_override = ring_mat
+		ring.position = Vector3(0, 1.75, 0)
+		ring.rotation_degrees = Vector3(90, 0, 0) if i == 0 else Vector3(0, 0, 90)
+		add_child(ring)
+		if i == 0: _ring_a = ring
+		else: _ring_b = ring
+
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = Vector3(1.6, 2.6, 1.6)
@@ -95,6 +121,10 @@ func _process(delta: float) -> void:
 		_core_mat.emission_energy_multiplier = 4.0 + sin(_t * 4.0) * 1.5
 	if _light:
 		_light.light_energy = 3.0 + sin(_t * 4.0) * 1.0
+	if _ring_a:
+		_ring_a.rotate_object_local(Vector3.UP, delta * 1.4)
+	if _ring_b:
+		_ring_b.rotate_object_local(Vector3.UP, -delta * 1.9)
 
 func _on_destroyed(_source: Node) -> void:
 	if _dead:
