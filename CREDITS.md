@@ -55,4 +55,9 @@ trees.
 **Creative Commons Attribution (CC-BY 3.0)** (https://creativecommons.org/licenses/by/3.0/).
 Used as the PROMETHEUS-0 mega-boss. Attribution required by the license.
 
+### Data shard model (`assets/models/props/data_crystal.glb`)
+**"Crystal"** by **dook**, via Poly Pizza (https://poly.pizza/m/3saqXqoOti),
+released under **CC0 1.0** (public domain) — no attribution required, credited
+here as courtesy. Used for the collectible data shards.
+
 All other models, materials, audio, and code in this project are original.

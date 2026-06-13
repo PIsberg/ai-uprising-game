@@ -141,6 +141,7 @@ func _select_and_spawn_hostiles() -> void:
 		var x := (float(i) - (n - 1) * 0.5) * LINE_SPACING
 		var y: float = info["y"]
 		var bot := _spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
+		_animate_actor(bot, i)
 		_shown.append({
 			"type": t, "x": x, "y": _frame_height(bot, y),
 			"new": not GameState.has_seen_enemy(t),
@@ -174,15 +175,34 @@ func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera
 	bot.scale = Vector3.ONE * scl
+	# No AI (no nav, no projectiles, no chasing the camera) — but DON'T freeze
+	# the model: RobotModel keeps idle-animating on its own _physics_process,
+	# and _animate_actor periodically drives its real attack/engage clip so the
+	# briefing shows each hostile the way it actually moves and strikes.
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false)
-	var at := bot.get_node_or_null("AnimationTree")
-	if at:
-		at.active = false
-	var ap := bot.get_node_or_null("AnimationPlayer") as AnimationPlayer
-	if ap:
-		ap.stop()
 	return bot
+
+## Make a briefing hostile perform: a slow idle sway so it reads as live, plus a
+## staggered "engage" pulse that spikes the enemy's recoil — which RobotModel
+## turns into that unit's own attack animation (android shoulders its rifle, the
+## spider lunge-bites, the brute slams, the mech swings). Staggered per index so
+## the lineup doesn't fire in unison.
+func _animate_actor(bot: Node3D, idx: int) -> void:
+	if bot == null:
+		return
+	var base_y: float = bot.rotation.y
+	var sway := bot.create_tween().set_loops()
+	sway.tween_property(bot, "rotation:y", base_y + 0.09, 1.7).set_trans(Tween.TRANS_SINE)
+	sway.tween_property(bot, "rotation:y", base_y - 0.09, 1.7).set_trans(Tween.TRANS_SINE)
+	var act := bot.create_tween().set_loops()
+	act.tween_interval(1.0 + idx * 0.5)
+	act.tween_callback(func() -> void:
+		if is_instance_valid(bot): bot.recoil = 1.0)
+	act.tween_interval(0.12)
+	act.tween_callback(func() -> void:
+		if is_instance_valid(bot): bot.recoil = 0.0)
+	act.tween_interval(1.7)
 
 func _shots() -> Array:
 	var id := GameState.level_id_from_path(GameState.current_level_path)
