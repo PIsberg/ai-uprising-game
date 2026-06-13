@@ -103,7 +103,10 @@ static func _horde() -> Dictionary:
 			"ambient": Color(0.6, 0.55, 0.7), "ambient_energy": 0.5,
 			"sky_contribution": 0.5, "fog_density": 0.008,
 			"sun_color": Color(1.0, 0.6, 0.5), "sun_energy": 0.7,
+			"contrast": 1.14, "saturation": 1.12, "brightness": 0.85,
 		},
+		# A beacon god-ray marks the supply point at the heart of the holdout.
+		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.5, 0.35), "energy": 2.4, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
@@ -176,13 +179,18 @@ static func _range() -> Dictionary:
 		"open_sky": false,
 		"floor_size": Vector2(36, 64),
 		"spawn": Vector3(0, 0.6, 26),
+		# Polished range floor: clean reflective plates under the lane downlights.
+		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
 			"sky_top": Color(0.07, 0.09, 0.12), "sky_horizon": Color(0.2, 0.24, 0.28),
 			"ground": Color(0.05, 0.06, 0.07), "fog": Color(0.3, 0.34, 0.4),
 			"ambient": Color(0.7, 0.75, 0.85), "ambient_energy": 0.55,
 			"sky_contribution": 0.4, "fog_density": 0.006,
 			"sun_color": Color(0.95, 0.95, 1.0), "sun_energy": 0.7,
+			"contrast": 1.12, "saturation": 1.1, "brightness": 0.86, "volumetric_density": 0.009,
 		},
+		# Soft downlight shafts march down the firing lanes.
+		"light_shafts": [0, 1, 2, 3],
 		"lights": [
 			{"pos": Vector3(0, 5, 22), "color": Color(1, 0.95, 0.85), "energy": 2.2, "range": 18},
 			{"pos": Vector3(0, 5, 4), "color": Color(0.8, 0.9, 1), "energy": 2.0, "range": 18},
@@ -275,7 +283,10 @@ static func _overseer() -> Dictionary:
 			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.5,
 			"sky_contribution": 0.55, "glow": 1.1, "fog_density": 0.01,
 			"sun_color": Color(0.7, 0.5, 1.0), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.12, "brightness": 0.84,
 		},
+		# A god-ray drops from the command beacon at the arena centre.
+		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 7, 0), "color": Color(1, 0.35, 0.25), "energy": 2.8, "range": 30},
 			{"pos": Vector3(-18, 5, 18), "color": Color(0.4, 0.7, 1.0), "energy": 2.4, "range": 22},
@@ -356,7 +367,10 @@ static func _alien() -> Dictionary:
 			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
 			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.013,
 			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.14, "brightness": 0.84,
 		},
+		# An off-world green god-ray pours down over the contact beacon.
+		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 8, 14), "color": Color(0.5, 1.0, 0.4), "energy": 3.2, "range": 34},
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.4, 1.0, 0.5), "energy": 2.0, "range": 22},
@@ -434,7 +448,11 @@ static func _titan() -> Dictionary:
 			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
 			"sky_contribution": 0.5, "glow": 1.3, "fog_density": 0.012,
 			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.5,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.83,
 		},
+		# The Singularity Core itself — a tall central monolith under the sky-beam.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.55, 0.72, 1.0), "height": 6.5},
+		"light_shafts": [0, 2],
 		"lights": [
 			{"pos": Vector3(0, 9, 0), "color": Color(0.5, 0.7, 1.0), "energy": 3.0, "range": 40},
 			{"pos": Vector3(-24, 5, 24), "color": Color(1, 0.35, 0.3), "energy": 2.2, "range": 24},
@@ -509,13 +527,19 @@ static func _mistral() -> Dictionary:
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
 		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.4, 0.9, 1.0)},
+		# Polished cryo-lab floor: cyan light pools across the ice-metal plates.
+		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
 			"sky_top": Color(0.03, 0.1, 0.13), "sky_horizon": Color(0.1, 0.24, 0.3),
 			"ground": Color(0.03, 0.05, 0.07), "fog": Color(0.14, 0.34, 0.42),
 			"ambient": Color(0.5, 0.78, 0.9), "ambient_energy": 0.5,
 			"sky_contribution": 0.45, "glow": 0.9, "fog_density": 0.014,
 			"sun_color": Color(0.8, 0.95, 1.0), "sun_energy": 0.7,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.82, "volumetric_density": 0.011,
 		},
+		# A frozen cyan cryo-core anchors the lab (replaces the central block).
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.5, 0.95, 1.0), "height": 5.0},
+		"light_shafts": [0, 1, 3],
 		"lights": [
 			{"pos": Vector3(-11, 4.5, -11), "color": Color(0.4, 0.9, 1.0), "energy": 2.6, "range": 19},
 			{"pos": Vector3(11, 4.5, 11), "color": Color(0.45, 0.85, 1.0), "energy": 2.4, "range": 19},
@@ -527,7 +551,6 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(7, 2, -7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(-7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
-			{"pos": Vector3(0, 1.2, 0), "size": Vector3(3.4, 2.4, 3.4)},
 			{"pos": Vector3(-14, 1.5, 3), "size": Vector3(1.4, 3, 7)},
 			{"pos": Vector3(14, 1.5, -3), "size": Vector3(1.4, 3, 7)},
 			{"pos": Vector3(2, 1, -14), "size": Vector3(7, 2, 1.4)},
@@ -591,13 +614,19 @@ static func _gpt() -> Dictionary:
 		"spawn": Vector3(-18, 0.6, -18),
 		"exit": Vector3(18, 1.5, 18),
 		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.4, 0.95, 0.55)},
+		# Polished foundry floor: green server glow reflects across the hall.
+		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
 			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.1, 0.32, 0.16),
 			"ambient": Color(0.5, 0.82, 0.6), "ambient_energy": 0.45,
 			"sky_contribution": 0.45, "glow": 0.85, "fog_density": 0.013,
 			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.82, "volumetric_density": 0.011,
 		},
+		# A green Foundry core anchors the hall (replaces the central cover block).
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
+		"light_shafts": [0, 1, 2],
 		"lights": [
 			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.4, 1, 0.5), "energy": 2.53, "range": 18},
 			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
@@ -608,7 +637,6 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(6, 2, -6), "size": Vector3(1.6, 4, 1.6)},
 			{"pos": Vector3(-6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
 			{"pos": Vector3(6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(0, 1, 0), "size": Vector3(3, 2, 3)},
 			{"pos": Vector3(-13, 1.5, 4), "size": Vector3(1.4, 3, 6)},
 			{"pos": Vector3(13, 1.5, -4), "size": Vector3(1.4, 3, 6)},
 		],
@@ -689,7 +717,11 @@ static func _gemini() -> Dictionary:
 			"ambient": Color(0.55, 0.6, 0.88), "ambient_energy": 0.55,
 			"sky_contribution": 0.7, "glow": 0.95, "fog_density": 0.008,
 			"sun_color": Color(0.8, 0.88, 1.0), "sun_energy": 1.1,
+			"contrast": 1.14, "saturation": 1.12, "brightness": 0.84,
 		},
+		# A data-spire rises from the central platform (pos.y on the platform top).
+		"hero": {"pos": Vector3(0, 1, 0), "color": Color(0.5, 0.65, 1.0), "height": 5.5},
+		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 5, 0), "color": Color(0.5, 0.6, 1), "energy": 2.76, "range": 22},
 			{"pos": Vector3(-14, 4, 14), "color": Color(0.4, 0.7, 1), "energy": 2.07, "range": 18},
@@ -897,7 +929,10 @@ static func _grok() -> Dictionary:
 			"ambient": Color(0.72, 0.42, 0.42), "ambient_energy": 0.42,
 			"sky_contribution": 0.6, "glow": 1.05, "fog_density": 0.01,
 			"sun_color": Color(1.0, 0.6, 0.5), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
 		},
+		# A blood-red god-ray drops from the central tower light.
+		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.3, 0.25), "energy": 2.99, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(1, 0.4, 0.3), "energy": 2.3, "range": 20},
@@ -996,6 +1031,8 @@ static func _suburb() -> Dictionary:
 			"ambient": Color(0.72, 0.76, 0.9), "ambient_energy": 0.6,
 			"sky_contribution": 0.85, "glow": 0.8, "fog_density": 0.004,
 			"sun_color": Color(1.0, 0.85, 0.6), "sun_energy": 1.7, "sun_rot": Vector3(-22, -55, 0),
+			# Gentle dusk grade — keep the sunset natural, no heavy crush.
+			"contrast": 1.08, "saturation": 1.1, "brightness": 0.9,
 		},
 		"lights": [
 			{"pos": Vector3(-12, 5, 0), "color": Color(1, 0.85, 0.6), "energy": 1.6, "range": 16},
@@ -1105,6 +1142,8 @@ static func _suburb_boss() -> Dictionary:
 			"ambient": Color(0.72, 0.6, 0.62), "ambient_energy": 0.5,
 			"sky_contribution": 0.75, "glow": 1.0, "fog_density": 0.006,
 			"sun_color": Color(1.0, 0.6, 0.42), "sun_energy": 1.3, "sun_rot": Vector3(-18, -50, 0),
+			# Dramatic dusk grade for the boss plaza, still daylight-natural.
+			"contrast": 1.1, "saturation": 1.12, "brightness": 0.88,
 		},
 		"lights": [
 			{"pos": Vector3(0, 7, 0), "color": Color(1, 0.45, 0.3), "energy": 2.4, "range": 30},

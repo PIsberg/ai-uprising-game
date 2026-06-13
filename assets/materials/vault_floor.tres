@@ -1,4 +1,4 @@
-[gd_resource type="StandardMaterial3D" load_steps=7 format=3 uid="uid://b0mat0vaultfloor"]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cf3hgtf0lwmhp"]
 
 ; Polished metal-plate floor for the Anthropic Constitutional Vault showcase.
 ; Lower roughness than the worn plates so the arena's amber lights and emissive

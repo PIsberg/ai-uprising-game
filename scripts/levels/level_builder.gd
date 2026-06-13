@@ -778,12 +778,23 @@ func _build_hero(def: Dictionary) -> void:
 	body.add_child(cs)
 	_nav_region.add_child(body)
 
-	# The monolith slab.
+	# The monolith slab (with a collider so it reads as real cover, like the
+	# blockout walls it often replaces).
 	var slab := MeshInstance3D.new()
 	slab.mesh = _beveled_box(Vector3(1.5, height, 0.7))
 	slab.mesh.material = MAT_TRIM
 	slab.position = pos + Vector3(0, 0.85 + height * 0.5, 0)
 	add_child(slab)
+	var slab_body := StaticBody3D.new()
+	slab_body.collision_layer = 1
+	slab_body.collision_mask = 0
+	slab_body.position = slab.position
+	var slab_cs := CollisionShape3D.new()
+	var slab_shape := BoxShape3D.new()
+	slab_shape.size = Vector3(1.5, height, 0.7)
+	slab_cs.shape = slab_shape
+	slab_body.add_child(slab_cs)
+	_nav_region.add_child(slab_body)
 
 	# Pulsing emissive core seam down the slab's front face + two side ribs.
 	var em := StandardMaterial3D.new()
