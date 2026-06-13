@@ -14,6 +14,7 @@ const ENEMY_SCENES := {
 	"seeker": "res://scenes/enemies/seeker.tscn",
 	"overseer": "res://scenes/enemies/overseer.tscn",
 	"brute": "res://scenes/enemies/brute.tscn",
+	"titan": "res://scenes/enemies/titan.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -28,6 +29,7 @@ const ENEMY_INFO := {
 	"brute": {"name": "BULWARK BRUTE", "desc": "Frontal shield soaks fire — flank it and hit the sides or back.", "scale": 1.0, "y": 0.0},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
+	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
 }
 
 const TAGLINES := {
@@ -39,6 +41,7 @@ const TAGLINES := {
 	"claude": "The Constitutional Vault. Sealed, principled — and utterly hostile.",
 	"grok": "xAI Black-Site. The war machines were forged here. Now they run the place.",
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
+	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
 }
 
 const LINE_Z := -3.6

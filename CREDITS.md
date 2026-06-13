@@ -49,4 +49,10 @@ released under **CC0 1.0** (public domain) — no attribution required, credited
 here as courtesy. Used for the Maple Grove houses, parked cars, fences, and
 trees.
 
+### Final boss model (`assets/models/boss/giant_robot.glb`)
+**"Giant Robot"** by **Dann Beeson**, via Poly Pizza
+(https://poly.pizza/m/1kbGZOnhOwf), licensed under
+**Creative Commons Attribution (CC-BY 3.0)** (https://creativecommons.org/licenses/by/3.0/).
+Used as the PROMETHEUS-0 mega-boss. Attribution required by the license.
+
 All other models, materials, audio, and code in this project are original.

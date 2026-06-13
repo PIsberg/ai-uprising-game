@@ -16,6 +16,7 @@ const ENEMY_SCENES := {
 	"spider": preload("res://scenes/enemies/spider.tscn"),
 	"terminator": preload("res://scenes/enemies/terminator.tscn"),
 	"colossus": preload("res://scenes/enemies/colossus.tscn"),
+	"titan": preload("res://scenes/enemies/titan.tscn"),
 	"sniper": preload("res://scenes/enemies/sniper.tscn"),
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),

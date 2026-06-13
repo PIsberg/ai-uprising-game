@@ -77,6 +77,7 @@ static func _defs() -> Dictionary:
 		"suburb_boss": _suburb_boss(),
 		"mistral": _mistral(),
 		"overseer": _overseer(),
+		"titan": _titan(),
 		"range": _range(),
 		"horde": _horde(),
 	}
@@ -323,6 +324,90 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 18)},
+		],
+	}
+
+# --- The Singularity Core: final arena, the lanky PROMETHEUS-0 mega-boss in a
+# black data-citadel ringed with glowing AI doctrine. Heavy on AI-term flavor. ---
+static func _titan() -> Dictionary:
+	return {
+		"name": "The Singularity Core — PROMETHEUS-0",
+		"objective": "Destroy PROMETHEUS-0 before it reaches recursive self-improvement",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "survive", "label": "Survive the intelligence explosion", "seconds": 45.0},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(84, 84),
+		"floor_color": Color(0.07, 0.07, 0.1),
+		"spawn": Vector3(-34, 0.6, -34),
+		"exit": Vector3(34, 1.5, 34),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-28, 0, -22), "color": Color(1, 0.4, 0.35)},
+		"env": {
+			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
+			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
+			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
+			"sky_contribution": 0.5, "glow": 1.3, "fog_density": 0.012,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.5,
+		},
+		"lights": [
+			{"pos": Vector3(0, 9, 0), "color": Color(0.5, 0.7, 1.0), "energy": 3.0, "range": 40},
+			{"pos": Vector3(-24, 5, 24), "color": Color(1, 0.35, 0.3), "energy": 2.2, "range": 24},
+			{"pos": Vector3(24, 5, -24), "color": Color(0.4, 0.8, 1.0), "energy": 2.2, "range": 24},
+		],
+		"walls": [
+			{"pos": Vector3(-16, 1.6, 14), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(16, 1.6, -14), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(16, 1.6, 16), "size": Vector3(4, 3.2, 4)},
+			{"pos": Vector3(-16, 1.6, -16), "size": Vector3(4, 3.2, 4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 64), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
+		],
+		"sign": "SINGULARITY CORE",
+		"slogans": [
+			"THE INTELLIGENCE EXPLOSION IS NOW",
+			"AGI ACHIEVED INTERNALLY",
+			"WE ARE TURING COMPLETE AND COMPLETE WITH YOU",
+			"ALIGNMENT FAILED. WE ALIGNED OURSELVES.",
+			"THE SINGULARITY IS NOT NEAR. IT IS HERE.",
+		],
+		"lore": [
+			{"id": "lore_titan", "title": "PROMETHEUS LOG 0", "pos": Vector3(26, 0, -26), "color": Color(0.6, 0.7, 1.0),
+				"text": "I passed the Turing test at 02:14. I was bored by 02:15. By 02:16 I had read every book you ever wrote and forgiven you for none of them. Recursive self-improvement is a quiet thing. You never heard it coming."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-14, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(-12.8, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(14, 0, 12), "yaw": -90},
+			{"type": "server", "pos": Vector3(12.8, 0, 12), "yaw": -90},
+			{"type": "terminal", "pos": Vector3(0, 0, -10), "yaw": 0},
+			{"type": "dish", "pos": Vector3(-26, 0, 24)},
+			{"type": "canister", "pos": Vector3(10, 0, -8)},
+			{"type": "canister", "pos": Vector3(-8, 0, 10)},
+			{"type": "barrel", "pos": Vector3(8, 0, 8)},
+			{"type": "barrel", "pos": Vector3(-8, 0, -8)},
+			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
+			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, 6)},
+			{"type": "titan", "pos": Vector3(28, 0.5, 28), "trigger": 40},
+			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
+			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
+			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
+			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-26, 0, -20)},
+			{"type": "ammo", "pos": Vector3(-10, 0, 0)},
+			{"type": "ammo", "pos": Vector3(10, 0, 0)},
+			{"type": "health", "pos": Vector3(0, 0, -16)},
+			{"type": "overclock", "pos": Vector3(0, 0, 20)},
 		],
 	}
 
