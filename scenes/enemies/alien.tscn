@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_alien.gd" id="1_alien"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" uid="uid://c25sviqh0ugdm" path="res://assets/models/aliens/alien_flyer.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://brjhjgmjftjyu" path="res://assets/models/aliens/robot_flyer.glb" id="4_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_col"]
 radius = 0.6
@@ -16,20 +16,20 @@ script = ExtResource("1_alien")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("3_rm")
-anim_idle = "CharacterArmature|Flying_Idle"
-anim_walk = "CharacterArmature|Fast_Flying"
-anim_attack = "CharacterArmature|Headbutt"
-anim_stagger = "CharacterArmature|HitReact"
+anim_idle = "CharacterArmature|Idle"
+anim_walk = "CharacterArmature|Run"
+anim_attack = "CharacterArmature|Attack"
+anim_stagger = ""
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
-transform = Transform3D(-0.5, 0, 0, 0, 0.5, 0, 0, 0, -0.5, 0, -1.3, 0)
+transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, -0.5, 0)
 
 [node name="Eye" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.5)
 
 [node name="EyeLight" type="OmniLight3D" parent="Eye"]
-light_color = Color(0.4, 1, 0.3, 1)
-light_energy = 1.2
+light_color = Color(1, 0.3, 0.2, 1)
+light_energy = 1.4
 omni_range = 5.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

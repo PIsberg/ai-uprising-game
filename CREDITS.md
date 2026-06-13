@@ -60,9 +60,9 @@ Used as the PROMETHEUS-0 mega-boss. Attribution required by the license.
 released under **CC0 1.0** (public domain) — no attribution required, credited
 here as courtesy. Used for the collectible data shards.
 
-### Alien model (`assets/models/aliens/alien_flyer.glb`)
-Winged alien creature by **dook**, via Poly Pizza (https://poly.pizza/u/dook),
-released under **CC0 1.0** (public domain) — no attribution required, credited
-here as courtesy. Used for the flying Xeno Drifter enemy.
+### Off-world drone model (`assets/models/aliens/robot_flyer.glb`)
+Animated robot by **dook**, via Poly Pizza (https://poly.pizza/u/dook), released
+under **CC0 1.0** (public domain) — no attribution required, credited here as
+courtesy. Used for the Void Sentinel (the off-world war drone) enemy.
 
 All other models, materials, audio, and code in this project are original.

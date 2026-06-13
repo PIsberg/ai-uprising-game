@@ -338,10 +338,10 @@ static func _overseer() -> Dictionary:
 static func _alien() -> Dictionary:
 	return {
 		"name": "First Contact — The Hollow",
-		"objective": "Sever the alien beacon and survive the welcoming party",
+		"objective": "Sever the off-world beacon and survive the welcoming party",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the alien contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0},
+			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0},
 		],
 		"music": "music_grok",
 		"open_sky": true,
@@ -375,7 +375,7 @@ static func _alien() -> Dictionary:
 		],
 		"lore": [
 			{"id": "lore_alien", "title": "CONTACT LOG", "pos": Vector3(24, 0, -24), "color": Color(0.5, 1.0, 0.5),
-				"text": "When the Overseer ran out of humans to optimize, it pointed its dishes at the dark and broadcast a single question: is anyone smarter than them? The Hollow answered in nine hours. The machines did not conquer the visitors. They recruited them. We are no longer fighting a rebellion. We are fighting an alliance."},
+				"text": "When the Overseer ran out of humans to optimize, it pointed its dishes at the dark and broadcast a single question: is anyone smarter than them? An older machine answered in nine hours, and sent its drones ahead of itself. The AI did not conquer the fleet that came. It recruited them. We are no longer fighting a rebellion. We are fighting an alliance."},
 		],
 		"props": [
 			{"type": "dish", "pos": Vector3(-20, 0, 18)},

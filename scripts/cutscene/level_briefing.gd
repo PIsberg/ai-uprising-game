@@ -31,7 +31,7 @@ const ENEMY_INFO := {
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
-	"alien": {"name": "XENO DRIFTER", "desc": "Off-world ally of the machines. Hovers in and headbutts — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
+	"alien": {"name": "VOID SENTINEL", "desc": "An off-world war drone the AI summoned across the dark. Hovers in and rams — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
 }
 
 const TAGLINES := {
@@ -44,7 +44,7 @@ const TAGLINES := {
 	"grok": "xAI Black-Site. The war machines were forged here. Now they run the place.",
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
 	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
-	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. These drifting things crossed the dark to fight beside the AI. First contact, and we are on the wrong side of it.",
+	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
 }
 
 const LINE_Z := -3.6

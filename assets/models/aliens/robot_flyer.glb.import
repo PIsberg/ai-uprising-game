@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c25sviqh0ugdm"
-path="res://.godot/imported/alien_flyer.glb-7cec9daefe3187d5948c184b92cf9eed.scn"
+uid="uid://brjhjgmjftjyu"
+path="res://.godot/imported/robot_flyer.glb-814dfbb40977b3da1994dd115e03e48e.scn"
 
 [deps]
 
-source_file="res://assets/models/aliens/alien_flyer.glb"
-dest_files=["res://.godot/imported/alien_flyer.glb-7cec9daefe3187d5948c184b92cf9eed.scn"]
+source_file="res://assets/models/aliens/robot_flyer.glb"
+dest_files=["res://.godot/imported/robot_flyer.glb-814dfbb40977b3da1994dd115e03e48e.scn"]
 
 [params]
 
