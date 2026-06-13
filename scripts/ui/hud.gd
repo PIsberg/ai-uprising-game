@@ -588,13 +588,41 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	if src is Node3D and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
 
-func _on_player_dealt_damage(_amount: float, _world_pos: Vector3, killed: bool) -> void:
+func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
 	_hit_flash = 1.0
 	_hit_kill = killed
 	if killed:
 		_kill_flash = 1.0
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
+	_spawn_damage_number(amount, world_pos, killed)
+
+## A floating damage number that pops at the hit point and drifts up as it
+## fades — the running tally of a firefight, so big hits read as big.
+func _spawn_damage_number(amount: float, world_pos: Vector3, killed: bool) -> void:
+	if amount < 1.0:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or cam.is_position_behind(world_pos):
+		return
+	var lbl := Label.new()
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.text = str(int(round(amount)))
+	# Bigger + hotter for heavier hits; gold on the killing blow.
+	var heavy := clampf(amount / 80.0, 0.0, 1.0)
+	lbl.add_theme_font_size_override("font_size", int(lerpf(18.0, 34.0, heavy)) + (8 if killed else 0))
+	var col := Color(1.0, 0.85, 0.3) if killed else Color(1.0, 0.95, 0.9).lerp(Color(1.0, 0.55, 0.3), heavy)
+	lbl.add_theme_color_override("font_color", col)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	lbl.add_theme_constant_override("outline_size", 6)
+	add_child(lbl)
+	var sp := cam.unproject_position(world_pos)
+	sp += Vector2(randf_range(-14, 14), randf_range(-8, 8)) # scatter so stacks don't overlap
+	lbl.position = sp
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(lbl, "position:y", sp.y - 46.0, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 0.65).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(lbl.queue_free)
 
 func _on_enemy_killed(score: int, label: String) -> void:
 	if _kill_feed == null:
