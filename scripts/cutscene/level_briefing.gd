@@ -129,6 +129,8 @@ func _build_lights(accent: Color, sun_col: Color) -> void:
 ## familiar robots don't pad the parade. A level with nothing new gets a pure
 ## mood-and-objective briefing over the empty stage.
 func _select_and_spawn_hostiles() -> void:
+	# Parade ONLY the hostiles this level introduces for the first time — a level
+	# that adds nothing new gets a pure mood-and-objective briefing (no lineup).
 	var types: Array = []
 	for e in _def.get("enemies", []):
 		var t: String = e.get("type", "")
@@ -142,32 +144,54 @@ func _select_and_spawn_hostiles() -> void:
 		var t: String = types[i]
 		var info: Dictionary = ENEMY_INFO[t]
 		var x := (float(i) - (n - 1) * 0.5) * LINE_SPACING
-		var y: float = info["y"]
-		var bot := _spawn_hostile(t, Vector3(x, y, LINE_Z), info["scale"])
+		var pos := Vector3(x, float(info["y"]), LINE_Z)
+		var bot := _spawn_hostile(t, pos, info["scale"])
+		if bot == null:
+			continue
 		_animate_actor(bot, i)
+		var frame := _frame_info(bot)
 		_shown.append({
-			"type": t, "x": x, "y": _frame_height(bot, y),
-			"new": not GameState.has_seen_enemy(t),
+			"type": t, "node": bot, "home": pos,
+			"center": frame["center"], "radius": frame["radius"],
 			"name": info["name"], "desc": info["desc"],
 		})
 
-## Where the close-up camera should aim: upper chest of the ACTUAL model, so
-## fliers hovering above their spawn point (and oddly proportioned chassis)
-## are framed instead of the air beneath them.
-func _frame_height(bot: Node3D, spawn_y: float) -> float:
-	if bot == null:
-		return maxf(spawn_y, 0.0) + 1.2
-	var inv := bot.global_transform.affine_inverse()
-	var merged := AABB(Vector3(-0.3, 0, -0.3), Vector3(0.6, 1.8, 0.6))
+## World-space bounding box of a spawned model's meshes — every chassis is a
+## different shape and scale, so framing must be measured, not guessed.
+func _world_aabb(bot: Node3D) -> AABB:
+	var merged := AABB()
 	var first := true
 	for mi in bot.find_children("*", "MeshInstance3D", true, false):
 		var m := mi as MeshInstance3D
 		if m.mesh:
-			var ab: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+			var ab: AABB = m.global_transform * m.mesh.get_aabb()
 			merged = ab if first else merged.merge(ab)
 			first = false
-	# 65% up the chassis reads as "face/chest" across the whole roster.
-	return bot.global_position.y + (merged.position.y + merged.size.y * 0.65) * bot.scale.y
+	if first:
+		return AABB(bot.global_position - Vector3(0.6, 0.0, 0.6), Vector3(1.2, 2.0, 1.2))
+	return merged
+
+## Orbit framing for a full-body showcase: the world-space centre to look at and
+## the orbit radius that keeps the WHOLE chassis — head AND feet — inside the
+## cutscene lens, so even the tall units (colossus, titan) aren't cropped.
+func _frame_info(bot: Node3D) -> Dictionary:
+	var ab := _world_aabb(bot)
+	# Frame floor→head: clamp the bottom to the stage floor so units whose model
+	# pivot dips below ground (e.g. the scaled-down titan) aren't measured below
+	# the stage — we look at the visible span and keep the head in shot.
+	var bottom: float = maxf(ab.position.y, 0.0)
+	var top: float = ab.position.y + ab.size.y
+	var h: float = maxf(top - bottom, 0.6)
+	var w: float = maxf(maxf(ab.size.x, ab.size.z), 0.6)
+	var center := Vector3(bot.global_position.x, (bottom + top) * 0.5, bot.global_position.z)
+	var vfov := deg_to_rad(camera.fov) # Camera3D.fov is the vertical FOV
+	var hfov := 2.0 * atan(tan(vfov * 0.5) * 1.78) # ~16:9 horizontal
+	# Subject occupies ~1/margin of the frame; the 13% letterbox bars eat the top
+	# and bottom, so frame vertically loose (≈56%) to keep head and feet clear of
+	# them, while the sides have no bars and can sit tighter.
+	var d_v := (h * 0.5 * 1.8) / tan(vfov * 0.5)
+	var d_h := (w * 0.5 * 1.3) / tan(hfov * 0.5)
+	return {"center": center, "radius": maxf(maxf(d_v, d_h), 2.5)}
 
 func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	var path: String = ENEMY_SCENES.get(type, "")
@@ -207,35 +231,72 @@ func _animate_actor(bot: Node3D, idx: int) -> void:
 		if is_instance_valid(bot): bot.recoil = 0.0)
 	act.tween_interval(1.7)
 
+## The focused hostile performs for its orbit shot: it paces a step toward the
+## lens and back — RobotModel turns the velocity into that unit's walk gait — and
+## strikes at each end (the recoil spike fires its real attack clip). Loops until
+## the shot moves on. Fliers have no gait, so they just glide and strike.
+func _demo(idx: int) -> void:
+	if idx < 0 or idx >= _shown.size():
+		return
+	var bot: Node3D = _shown[idx]["node"]
+	var home: Vector3 = _shown[idx]["home"]
+	if not is_instance_valid(bot):
+		return
+	var ms: float = bot.move_speed if "move_speed" in bot else 4.0
+	var seq := bot.create_tween().set_loops()
+	seq.tween_callback(_set_vel.bind(bot, Vector3(0, 0, ms)))
+	seq.tween_property(bot, "position", home + Vector3(0, 0, 0.9), 0.9)
+	seq.tween_callback(_set_vel.bind(bot, Vector3.ZERO))
+	seq.tween_callback(_strike_once.bind(bot))
+	seq.tween_interval(0.7)
+	seq.tween_callback(_set_vel.bind(bot, Vector3(0, 0, -ms)))
+	seq.tween_property(bot, "position", home, 0.9)
+	seq.tween_callback(_set_vel.bind(bot, Vector3.ZERO))
+	seq.tween_callback(_strike_once.bind(bot))
+	seq.tween_interval(0.7)
+
+func _set_vel(bot: Node3D, v: Vector3) -> void:
+	if is_instance_valid(bot):
+		bot.velocity = v
+
+func _strike_once(bot: Node3D) -> void:
+	if not is_instance_valid(bot):
+		return
+	bot.recoil = 1.0
+	get_tree().create_timer(0.12).timeout.connect(func() -> void:
+		if is_instance_valid(bot): bot.recoil = 0.0)
+
 func _shots() -> Array:
 	var id := GameState.level_id_from_path(GameState.current_level_path)
 	var shots: Array = []
+	# Frame the establishing/objective shots high enough to clear the tallest head.
+	var top := 1.5
+	for s in _shown:
+		top = maxf(top, (s["center"] as Vector3).y + 0.6)
 	# 1) Establishing — level name + mood.
 	shots.append({
 		"dur": 4.5, "fade_in": true,
-		"from_pos": Vector3(0, 4.2, 9.0), "from_look": Vector3(0, 1.6, LINE_Z),
-		"to_pos": Vector3(0, 3.2, 7.0), "to_look": Vector3(0, 1.3, LINE_Z),
+		"from_pos": Vector3(0, top * 0.7 + 1.4, 9.0), "from_look": Vector3(0, top * 0.55, LINE_Z),
+		"to_pos": Vector3(0, top * 0.6 + 0.8, 7.0), "to_look": Vector3(0, top * 0.5, LINE_Z),
 		"title": String(_def.get("name", "INCOMING")),
 		"text": TAGLINES.get(id, "Hostile machines detected. Move in."),
 	})
-	# 2) Close-ups ONLY for hostiles the player hasn't met yet — familiar
-	# robots stay in the wide lineup instead of padding every briefing.
-	for s in _shown:
-		if not s["new"]:
-			continue
+	# 2) One orbiting showcase per NEW hostile: the camera circles the unit while
+	# it paces and strikes, so its model, gait and attack all read.
+	for i in _shown.size():
+		var s: Dictionary = _shown[i]
 		shots.append({
-			"dur": 3.2,
-			"from_pos": Vector3(s["x"] + 1.6, s["y"] + 0.4, LINE_Z + 4.2),
-			"from_look": Vector3(s["x"], s["y"], LINE_Z),
-			"to_pos": Vector3(s["x"] + 0.7, s["y"] + 0.2, LINE_Z + 2.8),
-			"to_look": Vector3(s["x"], s["y"], LINE_Z),
+			"dur": 5.0,
+			"orbit": {"center": s["center"], "radius": s["radius"], "height": 0.0,
+				"from_deg": -75.0, "to_deg": 75.0},
+			"action": _demo.bind(i),
 			"text": "NEW HOSTILE   %s — %s" % [s["name"], s["desc"]],
 		})
 	# 3) Objective.
 	shots.append({
 		"dur": 4.4, "fade_out": true,
-		"from_pos": Vector3(-0.5, 2.6, 6.5), "from_look": Vector3(0, 1.4, LINE_Z),
-		"to_pos": Vector3(0.5, 3.0, 8.0), "to_look": Vector3(0, 1.4, LINE_Z),
+		"from_pos": Vector3(-0.5, top * 0.6 + 1.0, 6.5), "from_look": Vector3(0, top * 0.45, LINE_Z),
+		"to_pos": Vector3(0.5, top * 0.6 + 1.4, 8.0), "to_look": Vector3(0, top * 0.45, LINE_Z),
 		"title": "OBJECTIVE",
 		"text": String(_def.get("objective", "Eliminate all hostiles and reach the exit.")),
 	})
