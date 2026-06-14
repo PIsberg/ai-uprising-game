@@ -534,7 +534,7 @@ static func _archon() -> Dictionary:
 		"name": "The Mind Cathedral — ARCHON",
 		"objective": "Shatter ARCHON's shield and destroy the AGI brain that controls them all",
 		"tasks": [{"type": "kill_all"}],
-		"music": "music_grok",
+		"music": "music_archon",
 		"open_sky": true,
 		"floor_size": Vector2(80, 80),
 		"floor_color": Color(0.08, 0.08, 0.13),

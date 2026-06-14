@@ -35,6 +35,7 @@ func _ready() -> void:
 	streams["music_grok"] = _music_grok()
 	streams["music_gemini"] = _music_gemini()
 	streams["music_suburb"] = _music_suburb()
+	streams["music_archon"] = _music_archon()
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
 	streams["breathing"] = _breathing(4.0)
@@ -463,6 +464,18 @@ func _music_grok() -> AudioStreamWAV:
 	return _music_track(142.0, roots, arp, {
 		"kick": 1.0, "bass": 0.26, "arp": 0.08, "hat": 0.12,
 		"drive": 1.15, "pad": 0.05, "arp_div": 0.25,
+	})
+
+## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
+## pounding kick, a big dark pad and a sparse, cold minor arp. The sound of one
+## mind running everything.
+func _music_archon() -> AudioStreamWAV:
+	var roots := [36.71, 36.71, 43.65, 49.0, 36.71, 36.71, 41.2, 38.89,
+		32.7, 32.7, 38.89, 43.65, 49.0, 43.65, 41.2, 36.71]
+	var arp := [146.83, 220.0, 293.66, 220.0, 174.61, 233.08, 293.66, 233.08]
+	return _music_track(96.0, roots, arp, {
+		"kick": 1.05, "bass": 0.3, "arp": 0.07, "hat": 0.1,
+		"drive": 1.2, "pad": 0.12, "arp_div": 0.25,
 	})
 
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
