@@ -68,6 +68,7 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_overseer.tscn",
 	"res://scenes/levels/level_alien.tscn",
 	"res://scenes/levels/level_titan.tscn",
+	"res://scenes/levels/level_archon.tscn",
 ]
 
 var current_state: State = State.MENU
@@ -500,7 +501,7 @@ func _collect_spawners(n: Node, out: Array) -> void:
 			out.append(c)
 		_collect_spawners(c, out)
 
-const BOSS_SCENES := ["terminator", "colossus", "overseer"]
+const BOSS_SCENES := ["terminator", "colossus", "overseer", "archon"]
 
 func _is_boss_spawner(s: EnemySpawner) -> bool:
 	if s.enemy_scene == null:

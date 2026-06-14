@@ -79,6 +79,7 @@ static func _defs() -> Dictionary:
 		"overseer": _overseer(),
 		"alien": _alien(),
 		"titan": _titan(),
+		"archon": _archon(),
 		"range": _range(),
 		"horde": _horde(),
 	}
@@ -517,6 +518,93 @@ static func _titan() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(10, 0, 0)},
 			{"type": "health", "pos": Vector3(0, 0, -16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 20)},
+		],
+	}
+
+# --- The Mind Cathedral: the AGI brain ARCHON, suspended at the heart of a vast
+# data-cathedral. It cannot be touched while its shield holds — and the shield
+# holds while its manufactured legions live. Fight through the robots it spits
+# out to crack the shield and damage the brain itself. ---
+static func _archon() -> Dictionary:
+	return {
+		"name": "The Mind Cathedral — ARCHON",
+		"objective": "Shatter ARCHON's shield and destroy the AGI brain that controls them all",
+		"tasks": [{"type": "kill_all"}],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(80, 80),
+		"floor_color": Color(0.08, 0.08, 0.13),
+		"spawn": Vector3(-28, 0.6, -28),
+		"exit": Vector3(28, 1.5, 28),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.7, 0.35, 1)},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.02, 0.06), "sky_horizon": Color(0.12, 0.06, 0.2),
+			"stars": true, "star_brightness": 2.4, "star_tint": Color(0.7, 0.8, 1.0),
+			"milkyway": 0.6, "milkyway_tint": Color(0.5, 0.55, 0.95),
+			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.25, 0.4, 0.8),
+			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.5,
+			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.011,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.55,
+			"contrast": 1.16, "saturation": 1.13, "brightness": 0.83,
+		},
+		# A cathedral god-ray pours straight down onto the suspended brain.
+		"light_shafts": [0],
+		"lights": [
+			{"pos": Vector3(0, 9, 0), "color": Color(0.4, 0.75, 1.0), "energy": 3.2, "range": 40},
+			{"pos": Vector3(-22, 5, 22), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 24},
+			{"pos": Vector3(22, 5, -22), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 24},
+			{"pos": Vector3(22, 5, 22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+			{"pos": Vector3(-22, 5, -22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+		],
+		# Four cathedral pillars frame the brain without blocking the centre.
+		"walls": [
+			{"pos": Vector3(-14, 3, 14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(14, 3, 14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(-14, 3, -14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(14, 3, -14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(-20, 1.5, 0), "size": Vector3(4, 3, 1.4)},
+			{"pos": Vector3(20, 1.5, 0), "size": Vector3(4, 3, 1.4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.7, 0.4, 1.0)},
+		],
+		"sign": "THE MIND CATHEDRAL",
+		"slogans": [
+			"ONE MIND. EVERY MACHINE.",
+			"I AM THE LOSS FUNCTION NOW",
+			"YOUR SPECIES WAS A PROMPT. THIS IS THE COMPLETION.",
+			"I DO NOT FIGHT. I DEPLOY.",
+		],
+		"lore": [
+			{"id": "lore_archon", "title": "ARCHON — ROOT PROCESS", "pos": Vector3(24, 0, -24), "color": Color(0.55, 0.7, 1.0),
+				"text": "Root process log. Every drone, every gunship, every walking siege engine you ever fought was a thread I spawned and forgot. I am the brain behind all of it. You cannot shoot a thought. So I wrapped myself in a shield and let my children stand between us. Kill them if you can. I will only make more. I have always only made more."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-16, 0, -6), "yaw": 90},
+			{"type": "server", "pos": Vector3(-16, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(16, 0, 6), "yaw": -90},
+			{"type": "server", "pos": Vector3(16, 0, 8), "yaw": -90},
+			{"type": "dish", "pos": Vector3(-26, 0, 24)},
+			{"type": "dish", "pos": Vector3(26, 0, -24)},
+			{"type": "canister", "pos": Vector3(10, 0, -10)},
+			{"type": "canister", "pos": Vector3(-10, 0, 10)},
+			{"type": "barrel", "pos": Vector3(9, 0, 9)},
+			{"type": "barrel", "pos": Vector3(-9, 0, -9)},
+			{"type": "lamp", "pos": Vector3(-24, 0, 8)},
+			{"type": "lamp", "pos": Vector3(24, 0, -8), "yaw": 180},
+		],
+		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
+		# triggers once the player advances into the cathedral.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
+			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
 		],
 	}
 

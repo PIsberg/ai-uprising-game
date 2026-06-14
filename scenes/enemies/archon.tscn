@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0enemy0archon1"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_archon.gd" id="1_ar"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+
+[sub_resource type="SphereShape3D" id="Shape_ar"]
+radius = 2.6
+
+[node name="Archon" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_ar")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0)
+shape = SubResource("Shape_ar")
+
+[node name="Rig" type="Node3D" parent="."]
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0)
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 2600.0
+armor = 5.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

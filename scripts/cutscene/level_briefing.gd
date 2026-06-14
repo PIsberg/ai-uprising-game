@@ -45,6 +45,7 @@ const TAGLINES := {
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
 	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
 	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
+	"archon": "The Mind Cathedral. Behind every machine that ever hunted you was one brain giving the orders — ARCHON. It hangs in the dark, shielded, and it does not fight. It deploys. Tear through everything it spits out, crack the shield, and put a round through the thought that started all of this.",
 }
 
 const LINE_Z := -3.6

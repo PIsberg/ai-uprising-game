@@ -22,6 +22,7 @@ const ENEMY_SCENES := {
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
+	"archon": preload("res://scenes/enemies/archon.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
