@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="4_bevel"]
+[ext_resource type="Shader" path="res://shaders/crt_screen.gdshader" id="5_crt"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_cabinet"]
 albedo_color = Color(0.1, 0.11, 0.13, 1)
@@ -28,13 +30,34 @@ emission = Color(1.0, 0.7, 0.2, 1)
 emission_energy_multiplier = 3.0
 shading_mode = 0
 
-[sub_resource type="BoxMesh" id="Mesh_cabinet"]
+[sub_resource type="ShaderMaterial" id="Mat_screen"]
+shader = ExtResource("5_crt")
+shader_parameter/screen_color = Color(0.3, 0.85, 1.0, 1)
+shader_parameter/bg_color = Color(0.02, 0.05, 0.08, 1)
+shader_parameter/brightness = 1.6
+shader_parameter/glow = 1.5
+shader_parameter/scanline_count = 120.0
+shader_parameter/scanline_depth = 0.3
+shader_parameter/flicker = 0.04
+shader_parameter/content_density = 0.7
+shader_parameter/scroll_speed = 0.8
+shader_parameter/rows = 16.0
+shader_parameter/cols = 26.0
+shader_parameter/curvature = 0.12
+
+[sub_resource type="PrimitiveMesh" id="Mesh_cabinet"]
+script = ExtResource("4_bevel")
 size = Vector3(0.9, 2.1, 0.8)
+bevel = 0.03
 material = SubResource("Mat_cabinet")
 
 [sub_resource type="BoxMesh" id="Mesh_face"]
 size = Vector3(0.8, 1.9, 0.04)
 material = SubResource("Mat_face")
+
+[sub_resource type="QuadMesh" id="Mesh_screen"]
+size = Vector2(0.5, 0.34)
+material = SubResource("Mat_screen")
 
 [sub_resource type="BoxMesh" id="Mesh_led_g"]
 size = Vector3(0.5, 0.05, 0.02)
@@ -62,20 +85,24 @@ mesh = SubResource("Mesh_cabinet")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0.41)
 mesh = SubResource("Mesh_face")
 
+[node name="Screen" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0.435)
+mesh = SubResource("Mesh_screen")
+
 [node name="Led1" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.7, 0.44)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.2, 0.44)
 mesh = SubResource("Mesh_led_g")
 script = ExtResource("3_blink")
 
 [node name="Led2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 1.35, 0.44)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 0.95, 0.44)
 mesh = SubResource("Mesh_led_a")
 script = ExtResource("3_blink")
 min_on = 0.4
 max_on = 2.2
 
 [node name="Led3" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.85, 0.44)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.05, 0.7, 0.44)
 mesh = SubResource("Mesh_led_g")
 script = ExtResource("3_blink")
 min_on = 0.1

@@ -17,7 +17,7 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var damage: float = 20.0
 @export var fire_rate: float = 6.0
 @export var burst_count: int = 3
-@export var range_m: float = 200.0
+@export var range_m: float = 60.0
 @export var spread_deg: float = 1.2
 @export var aim_spread_mult: float = 0.35
 @export var pellets: int = 1

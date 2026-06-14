@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8brief1probe00"]
+
+[ext_resource type="Script" path="res://tests/briefing_probe.gd" id="1_brief"]
+
+[node name="BriefingProbe" type="Node"]
+script = ExtResource("1_brief")

@@ -17,6 +17,7 @@ const MUZZLES := [
 ]
 
 var _summon_cd: float = 0.0
+var _arriving: bool = false
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
@@ -37,15 +38,61 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.armor = 4.0
 	flinch_knockback = 0.0
-	_do_entrance.call_deferred()
+	# Hold the AI until the gate-arrival cinematic finishes.
+	_arriving = true
+	hp.invulnerable = true
+	set_physics_process(false)
+	_arrive.call_deferred()
 
-func _do_entrance() -> void:
+## Portal arrival: a gate blinks open at flight height, the gunship slides out
+## of it into the arena, then the gate collapses behind it.
+func _arrive() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	AudioBus.play_synth_at("explosion", global_position, 5.0, 0.5)
-	var p := get_tree().get_first_node_in_group("player")
+	var scene := get_tree().current_scene
+	if scene == null:
+		_finish_arrival()
+		return
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var entry := Vector3(global_position.x, global_position.y + fly_height, global_position.z)
+
+	var portal := BossPortal.new()
+	portal.radius = 5.0
+	portal.color = Color(0.5, 0.8, 1.0)
+	scene.add_child(portal)
+	portal.global_position = entry
+	if p:
+		portal.face(p.global_position)
+	AudioBus.play_synth_at("explosion", entry, 4.0, 0.75) # gate whoomp
 	if p and p.has_method("shake"):
-		p.shake(1.2)
+		p.shake(0.9)
+	portal.open(0.55)
+
+	# Park the (hidden) gunship just inside the gate, then slide it out toward
+	# the arena as the portal finishes opening.
+	visible = false
+	var out_dir := Vector3.FORWARD
+	if p:
+		var to := Vector3(p.global_position.x - entry.x, 0.0, p.global_position.z - entry.z)
+		if to.length() > 0.1:
+			out_dir = to.normalized()
+	global_position = entry - out_dir * 2.0
+	await get_tree().create_timer(0.45).timeout
+	visible = true
+	AudioBus.play_synth_at("drone_shot", entry, 0.0, 0.5)
+	var emerge := entry + out_dir * 4.0
+	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "global_position", emerge, 0.7)
+	await get_tree().create_timer(0.75).timeout
+	portal.close(0.5)
+	await get_tree().create_timer(0.45).timeout
+	_finish_arrival()
+
+func _finish_arrival() -> void:
+	if hp:
+		hp.invulnerable = false
+	_arriving = false
+	set_physics_process(true)
 
 func _phase() -> int:
 	if hp == null or hp.max_health <= 0.0:

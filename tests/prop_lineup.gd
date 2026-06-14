@@ -10,6 +10,8 @@ const PROPS := [
 	"res://scenes/props/locker.tscn",
 	"res://scenes/props/shelves.tscn",
 	"res://scenes/props/desk.tscn",
+	"res://scenes/props/terminal.tscn",
+	"res://scenes/props/server_rack.tscn",
 	"res://scenes/props/satellite_dish.tscn",
 	"res://scenes/props/car.tscn",
 	"res://scenes/props/fence.tscn",

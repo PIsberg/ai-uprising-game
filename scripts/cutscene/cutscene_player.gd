@@ -277,14 +277,26 @@ func _apply_camera(raw: float) -> void:
 	if camera == null or _active.is_empty():
 		return
 	var e := ease(raw, -1.8) # smooth ease-in-out for a dolly feel
-	var fp: Vector3 = _active.get("from_pos", Vector3.ZERO)
-	var tp: Vector3 = _active.get("to_pos", fp)
-	var fl: Vector3 = _active.get("from_look", Vector3.FORWARD)
-	var tl: Vector3 = _active.get("to_look", fl)
 	# Subtle handheld sway so static shots still breathe, plus impact shake.
 	var sway := Vector3(sin(_sway_t * 0.7) * 0.03, cos(_sway_t * 0.9) * 0.025, 0.0)
 	if _shake > 0.0:
 		sway += Vector3(randf() - 0.5, randf() - 0.5, 0.0) * _shake * 0.5
+	# Orbit shot: sweep the camera along a circle around a subject (always facing
+	# it) instead of dollying between two points — shows a model off from every
+	# side. {center, radius, height (rel. to center), from_deg, to_deg}.
+	var orbit: Dictionary = _active.get("orbit", {})
+	if not orbit.is_empty():
+		var c: Vector3 = orbit["center"]
+		var rad: float = orbit.get("radius", 4.0)
+		var ang := deg_to_rad(lerpf(orbit.get("from_deg", -60.0), orbit.get("to_deg", 60.0), e))
+		camera.global_position = c + Vector3(sin(ang) * rad, orbit.get("height", 0.0), cos(ang) * rad) + sway
+		camera.look_at(c, Vector3.UP)
+		_autofocus(c)
+		return
+	var fp: Vector3 = _active.get("from_pos", Vector3.ZERO)
+	var tp: Vector3 = _active.get("to_pos", fp)
+	var fl: Vector3 = _active.get("from_look", Vector3.FORWARD)
+	var tl: Vector3 = _active.get("to_look", fl)
 	camera.global_position = fp.lerp(tp, e) + sway
 	var look := fl.lerp(tl, e)
 	if camera.global_position.distance_to(look) > 0.05:

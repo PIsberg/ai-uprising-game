@@ -1,0 +1,166 @@
+[gd_scene load_steps=20 format=3 uid="uid://dmonbank7w2qk"]
+
+[ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="4_bevel"]
+[ext_resource type="Shader" path="res://shaders/crt_screen.gdshader" id="5_crt"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_backing"]
+albedo_color = Color(0.07, 0.075, 0.085, 1)
+metallic = 0.6
+roughness = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Mat_bezel"]
+albedo_color = Color(0.03, 0.032, 0.038, 1)
+metallic = 0.25
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_led"]
+albedo_color = Color(0.3, 1.0, 0.5, 1)
+emission_enabled = true
+emission = Color(0.3, 1.0, 0.5, 1)
+emission_energy_multiplier = 4.0
+shading_mode = 0
+
+[sub_resource type="ShaderMaterial" id="Mat_green"]
+shader = ExtResource("5_crt")
+shader_parameter/screen_color = Color(0.25, 1.0, 0.45, 1)
+shader_parameter/bg_color = Color(0.02, 0.07, 0.04, 1)
+shader_parameter/brightness = 1.6
+shader_parameter/glow = 1.5
+shader_parameter/scroll_speed = 1.1
+shader_parameter/content_density = 0.6
+shader_parameter/rows = 18.0
+shader_parameter/cols = 30.0
+
+[sub_resource type="ShaderMaterial" id="Mat_cyan"]
+shader = ExtResource("5_crt")
+shader_parameter/screen_color = Color(0.3, 0.85, 1.0, 1)
+shader_parameter/bg_color = Color(0.02, 0.05, 0.08, 1)
+shader_parameter/brightness = 1.6
+shader_parameter/glow = 1.5
+shader_parameter/scroll_speed = 0.7
+shader_parameter/content_density = 0.72
+shader_parameter/rows = 14.0
+shader_parameter/cols = 24.0
+
+[sub_resource type="ShaderMaterial" id="Mat_amber"]
+shader = ExtResource("5_crt")
+shader_parameter/screen_color = Color(1.0, 0.62, 0.2, 1)
+shader_parameter/bg_color = Color(0.08, 0.04, 0.01, 1)
+shader_parameter/brightness = 1.55
+shader_parameter/glow = 1.5
+shader_parameter/scroll_speed = 1.5
+shader_parameter/content_density = 0.55
+shader_parameter/rows = 24.0
+shader_parameter/cols = 36.0
+
+[sub_resource type="PrimitiveMesh" id="Mesh_backing"]
+script = ExtResource("4_bevel")
+size = Vector3(2.4, 1.6, 0.12)
+bevel = 0.03
+material = SubResource("Mat_backing")
+
+[sub_resource type="PrimitiveMesh" id="Mesh_housing"]
+script = ExtResource("4_bevel")
+size = Vector3(0.66, 0.46, 0.05)
+bevel = 0.018
+material = SubResource("Mat_bezel")
+
+[sub_resource type="QuadMesh" id="Mesh_screen"]
+size = Vector2(0.58, 0.38)
+
+[sub_resource type="BoxMesh" id="Mesh_led"]
+size = Vector3(0.04, 0.04, 0.02)
+material = SubResource("Mat_led")
+
+[sub_resource type="BoxShape3D" id="Shape_bank"]
+size = Vector3(2.4, 1.7, 0.26)
+
+[node name="MonitorBank" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_dest")
+debris_color = Color(0.1, 0.2, 0.14, 1)
+debris_count = 18
+
+[node name="Backing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+mesh = SubResource("Mesh_backing")
+
+[node name="H0" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 2.14, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S0" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 2.14, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_green")
+
+[node name="H1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.14, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.14, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_cyan")
+
+[node name="H2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2.14, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 2.14, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_amber")
+
+[node name="H3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 1.46, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 1.46, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_amber")
+
+[node name="H4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.46, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.46, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_green")
+
+[node name="H5" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1.46, 0.14)
+mesh = SubResource("Mesh_housing")
+
+[node name="S5" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, 1.46, 0.175)
+mesh = SubResource("Mesh_screen")
+surface_material_override/0 = SubResource("Mat_cyan")
+
+[node name="Led1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.12, 2.66, 0.08)
+mesh = SubResource("Mesh_led")
+script = ExtResource("3_blink")
+min_on = 0.6
+max_on = 2.4
+
+[node name="Led2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.12, 2.66, 0.08)
+mesh = SubResource("Mesh_led")
+script = ExtResource("3_blink")
+min_on = 0.1
+max_on = 0.7
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0.1)
+shape = SubResource("Shape_bank")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 40.0

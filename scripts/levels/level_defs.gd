@@ -99,6 +99,7 @@ static func _horde() -> Dictionary:
 		"supply_center": Vector3(0, 0, 0),
 		"env": {
 			"sky_top": Color(0.04, 0.04, 0.1), "sky_horizon": Color(0.3, 0.12, 0.16),
+			"stars": true, "star_brightness": 2.2, "milkyway": 0.4, "moon_glow": 1.5,
 			"ground": Color(0.05, 0.05, 0.07), "fog": Color(0.4, 0.25, 0.3),
 			"ambient": Color(0.6, 0.55, 0.7), "ambient_energy": 0.5,
 			"sky_contribution": 0.5, "fog_density": 0.008,
@@ -279,6 +280,8 @@ static func _overseer() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-20, 0, -16), "color": Color(0.55, 0.8, 1.0)},
 		"env": {
 			"sky_top": Color(0.03, 0.04, 0.08), "sky_horizon": Color(0.16, 0.1, 0.22),
+			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.8, 0.85, 1.0),
+			"milkyway": 0.45, "milkyway_tint": Color(0.55, 0.5, 0.85),
 			"ground": Color(0.05, 0.05, 0.08), "fog": Color(0.3, 0.4, 0.7),
 			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.5,
 			"sky_contribution": 0.55, "glow": 1.1, "fog_density": 0.01,
@@ -363,6 +366,8 @@ static func _alien() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(-24, 0, -18), "color": Color(1, 0.55, 0.2)},
 		"env": {
 			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
+			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.75, 1.0, 0.8),
+			"milkyway": 0.5, "milkyway_tint": Color(0.4, 0.8, 0.5), "moon_color": Color(0.7, 1.0, 0.75),
 			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.4, 0.9, 0.5),
 			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
 			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.013,
@@ -444,6 +449,8 @@ static func _titan() -> Dictionary:
 		],
 		"env": {
 			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
+			"stars": true, "star_density": 0.1, "star_brightness": 2.4, "star_tint": Color(0.85, 0.8, 1.0),
+			"milkyway": 0.6, "milkyway_tint": Color(0.6, 0.5, 0.9),
 			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
 			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
 			"sky_contribution": 0.5, "glow": 1.3, "fog_density": 0.012,
@@ -713,6 +720,8 @@ static func _gemini() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(-16, 0, -12), "color": Color(0.45, 0.65, 1)},
 		"env": {
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
+			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
+			"milkyway": 0.4, "milkyway_tint": Color(0.5, 0.6, 0.9),
 			"ground": Color(0.04, 0.05, 0.1), "fog": Color(0.2, 0.26, 0.52),
 			"ambient": Color(0.55, 0.6, 0.88), "ambient_energy": 0.55,
 			"sky_contribution": 0.7, "glow": 0.95, "fog_density": 0.008,
@@ -867,6 +876,11 @@ static func _claude() -> Dictionary:
 			{"type": "server", "pos": Vector3(-4.6, 0, -4), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, -2), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, 0), "yaw": 270},
+			# Wall-mounted surveillance banks: the vault's control-room screens
+			# mounted on the inner faces of the east wall (x=15) and the north
+			# divider (z=5), back to the wall, facing into the chamber.
+			{"type": "monitors", "pos": Vector3(14.45, 0, 2), "yaw": 270},
+			{"type": "monitors", "pos": Vector3(5, 0, 4.45), "yaw": 180},
 			# Operations station by the keycard (terminal + desk + locker bank).
 			{"type": "terminal", "pos": Vector3(11, 0, -8.6)},
 			{"type": "desk", "pos": Vector3(13, 0, -8.4), "yaw": 90},
@@ -925,6 +939,8 @@ static func _grok() -> Dictionary:
 		],
 		"env": {
 			"sky_top": Color(0.08, 0.02, 0.03), "sky_horizon": Color(0.28, 0.07, 0.07),
+			"stars": true, "star_brightness": 2.0, "star_tint": Color(1.0, 0.7, 0.65),
+			"milkyway": 0.4, "milkyway_tint": Color(0.7, 0.3, 0.3), "moon_color": Color(1.0, 0.65, 0.55),
 			"ground": Color(0.06, 0.02, 0.02), "fog": Color(0.32, 0.09, 0.09),
 			"ambient": Color(0.72, 0.42, 0.42), "ambient_energy": 0.42,
 			"sky_contribution": 0.6, "glow": 1.05, "fog_density": 0.01,
@@ -1138,6 +1154,7 @@ static func _suburb_boss() -> Dictionary:
 		"env": {
 			"physical_sky": true, "turbidity": 10.0,
 			"sky_top": Color(0.12, 0.1, 0.22), "sky_horizon": Color(0.7, 0.3, 0.2),
+			"stars": true, "star_density": 0.04, "star_brightness": 1.0, "milkyway": 0.1, "moon_glow": 0.8,
 			"ground": Color(0.1, 0.08, 0.09), "fog": Color(0.5, 0.3, 0.26),
 			"ambient": Color(0.72, 0.6, 0.62), "ambient_energy": 0.5,
 			"sky_contribution": 0.75, "glow": 1.0, "fog_density": 0.006,

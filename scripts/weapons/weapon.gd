@@ -536,6 +536,11 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 	var proj := data.projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = origin + dir * 0.5
+	# Bound the round's reach to the weapon's range_m so projectile guns obey the
+	# same range envelope as hitscan ones (past it, the round expires —
+	# detonating splash rounds at their max range instead of flying forever).
+	if data.projectile_speed > 0.0 and "lifetime" in proj:
+		proj.lifetime = data.range_m / data.projectile_speed
 	if proj.has_method("launch"):
 		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
 
