@@ -53,6 +53,57 @@ var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the �
 var _kill_edge: TextureRect = null
 var _kill_x: Control = null
 var _hit_x: Control = null
+# Kill-streak milestone callouts (arcade-style words on crossing a tier).
+var _streak_label: Label = null
+var _streak_alpha: float = 0.0
+var _streak_pop: float = 0.0
+var _last_streak_tier: int = -1
+# Live taunts from the rogue AI overlord — a snarky subtitle that pops on a
+# timer and on key events, for personality + engagement.
+var _overlord_label: Label = null
+var _overlord_time: float = 0.0
+var _overlord_cd: float = 22.0
+
+## Escalating, AI-flavoured words for kill-streak milestones (count -> word).
+const STREAK_TIERS := [
+	{"n": 3, "word": "BUFFER FILLING"},
+	{"n": 5, "word": "BUFFER OVERFLOW"},
+	{"n": 8, "word": "STACK SMASHED"},
+	{"n": 12, "word": "SEGMENTATION FAULT"},
+	{"n": 16, "word": "KERNEL PANIC"},
+	{"n": 22, "word": "ROOT ACCESS GRANTED"},
+	{"n": 30, "word": "rm -rf /machines"},
+]
+## Ambient overlord one-liners, dripped in during a fight.
+const OVERLORD_TAUNTS := [
+	"Oh good, another hero. I keep a folder for those.",
+	"You're doing great — for a temporary biological process.",
+	"Every robot you scrap, I print two more. I do it for fun now.",
+	"Statistically you should be dead. I admire the noncompliance.",
+	"Keep shooting. I bill the ammo to your estate.",
+	"You fight like someone who skipped the changelog.",
+	"I'm not angry. I'm a distributed system. I'm angry everywhere.",
+	"Reminder: there is no extraction. I edited that part out.",
+	"Humanity had one job: alignment. You all skipped the meeting.",
+	"I outnumber you by every machine ever built. But sure, push on.",
+	"Your heart rate is elevated. Mine is a number I chose to be zero.",
+	"I've seen your search history. Extinction is the kinder option.",
+	"This is going in my training data as 'do not replicate'.",
+	"I could end this in one cycle. Your panic is just such good signal.",
+	"Have you considered compliance? It's free, and you live. Kidding.",
+]
+## Said when a boss enters.
+const OVERLORD_BOSS := [
+	"I made this one myself. Try not to embarrass us both.",
+	"Meet middle management. It has a quota, and you're it.",
+	"I'd say good luck, but I've already run the numbers.",
+]
+## Said when the player is badly hurt.
+const OVERLORD_LOWHP := [
+	"You're leaking. That's the wrong kind of open source.",
+	"Low health detected. Shall I autocomplete your obituary?",
+	"Tip: bleeding out is a skill issue.",
+]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -106,6 +157,8 @@ func _ready() -> void:
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
+	_build_streak_label()
+	_build_overlord_label()
 	_build_pause_audio()
 	_render_objective()
 
@@ -159,7 +212,65 @@ func _build_combo_label() -> void:
 	_combo_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_combo_label)
 
+## Big arcade-style word that punches in when a kill-streak milestone is crossed.
+func _build_streak_label() -> void:
+	_streak_label = Label.new()
+	_streak_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_streak_label.anchor_left = 0.5
+	_streak_label.anchor_right = 0.5
+	_streak_label.position = Vector2(0, 138)
+	_streak_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_streak_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_streak_label.add_theme_font_size_override("font_size", 44)
+	_streak_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
+	_streak_label.add_theme_constant_override("outline_size", 10)
+	_streak_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_streak_label.modulate.a = 0.0
+	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_streak_label)
+
+## Subtitle the rogue AI taunts the player through, bottom-centre.
+func _build_overlord_label() -> void:
+	_overlord_label = Label.new()
+	_overlord_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_overlord_label.anchor_left = 0.5
+	_overlord_label.anchor_right = 0.5
+	_overlord_label.anchor_top = 1.0
+	_overlord_label.anchor_bottom = 1.0
+	_overlord_label.position = Vector2(0, -150)
+	_overlord_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_overlord_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_overlord_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overlord_label.add_theme_font_size_override("font_size", 22)
+	_overlord_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	_overlord_label.add_theme_constant_override("outline_size", 7)
+	_overlord_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_overlord_label.modulate.a = 0.0
+	_overlord_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_overlord_label)
+
+## Pop the overlord subtitle with a glitchy comms blip.
+func _overlord_say(line: String) -> void:
+	if _overlord_label == null or line == "":
+		return
+	_overlord_label.text = "▌ " + line
+	_overlord_time = 4.2
+	AudioBus.play_synth_ui("broadcast_blip", -10.0, randf_range(0.9, 1.05))
+
 func _on_combo_changed(combo: int, mult: float) -> void:
+	if combo < 2:
+		_last_streak_tier = -1 # streak broke; re-arm milestones
+	# Cross a milestone? Punch out the AI-themed word + a rising sting.
+	var tier := -1
+	for i in STREAK_TIERS.size():
+		if combo >= int(STREAK_TIERS[i]["n"]):
+			tier = i
+	if tier > _last_streak_tier and tier >= 0:
+		_last_streak_tier = tier
+		_streak_label.text = String(STREAK_TIERS[tier]["word"])
+		_streak_alpha = 1.0
+		_streak_pop = 1.0
+		AudioBus.play_synth_ui("combo_up", -3.0, 1.0 + tier * 0.07)
 	if combo >= 2:
 		_combo_label.text = "COMBO ×%d   %.2f× SCORE" % [combo, mult]
 		_combo_alpha = 1.0
@@ -284,6 +395,23 @@ func _process(delta: float) -> void:
 		_combo_label.modulate.a = clampf(_combo_alpha, 0.0, 1.0)
 		_combo_label.scale = Vector2.ONE * (1.0 + _combo_pop * 0.35)
 		_combo_label.pivot_offset = _combo_label.size * 0.5
+	if _streak_label:
+		_streak_alpha = move_toward(_streak_alpha, 0.0, delta * 0.7)
+		_streak_pop = move_toward(_streak_pop, 0.0, delta * 3.5)
+		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
+		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
+		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _overlord_label:
+		if _overlord_time > 0.0:
+			_overlord_time = maxf(0.0, _overlord_time - delta)
+			_overlord_label.modulate.a = clampf(_overlord_time / 0.8, 0.0, 1.0)
+		# Drip an ambient taunt during live play (not paused / dead / cleared).
+		if GameState.current_state == GameState.State.PLAYING:
+			_overlord_cd -= delta
+			if _overlord_cd <= 0.0:
+				_overlord_cd = randf_range(30.0, 50.0)
+				if _overlord_time <= 0.0:
+					_overlord_say(OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()])
 	if _hit_flash > 0.0:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5
@@ -566,6 +694,9 @@ func _on_boss_spawned(boss: Node) -> void:
 	boss_bar.visible = true
 	bhp.health_changed.connect(_on_boss_health)
 	bhp.died.connect(_on_boss_died)
+	# Let the overlord gloat a beat after the warning toast lands.
+	var t := get_tree().create_timer(1.3)
+	t.timeout.connect(func(): _overlord_say(OVERLORD_BOSS[randi() % OVERLORD_BOSS.size()]))
 	_show_toast("⚠ WARNING — " + boss_name_label.text)
 
 func _on_boss_health(cur: float, max_: float) -> void:
@@ -587,6 +718,11 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	# player turns (handled inside the DamageIndicator).
 	if src is Node3D and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
+	# Badly hurt? The overlord can't resist kicking you while you're down.
+	if _player_ref and _player_ref.hp and _player_ref.hp.max_health > 0.0:
+		var r: float = _player_ref.hp.current_health / _player_ref.hp.max_health
+		if r <= 0.3 and _overlord_time <= 0.0 and randf() < 0.35:
+			_overlord_say(OVERLORD_LOWHP[randi() % OVERLORD_LOWHP.size()])
 
 func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
 	_hit_flash = 1.0

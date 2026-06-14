@@ -28,6 +28,8 @@ func _ready() -> void:
 	streams["eas_alert"] = _eas_alert(1.4)
 	streams["broadcast_blip"] = _broadcast_blip(0.14)
 	streams["victory"] = _victory_sting(1.3)
+	streams["combo_up"] = _combo_up(0.34)
+	streams["headshot"] = _headshot_ding(0.18)
 	streams["radio_static"] = _radio_static(1.6)
 	streams["music_techno"] = _techno_loop()
 	streams["music_grok"] = _music_grok()
@@ -502,6 +504,39 @@ func _victory_sting(duration: float) -> AudioStreamWAV:
 				s += (saw * 0.5 + sin(ph) * 0.5) * env * 0.22
 		var spark := sin(TAU * 1568.0 * t) * exp(-t * 3.0) * 0.05
 		_write(bytes, i, tanh((s + spark) * 1.1))
+	return _to_stream(bytes)
+
+## Rising chiptune arpeggio for crossing a kill-streak milestone — three quick
+## notes climbing (E5 → B5 → E6) with a square-wave bite and a spark on top.
+func _combo_up(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var notes := [659.25, 987.77, 1318.5]
+	for i in n:
+		var t := float(i) / SR
+		var s := 0.0
+		for k in notes.size():
+			var onset := float(k) * 0.06
+			if t >= onset:
+				var lt := t - onset
+				var ph := TAU * float(notes[k]) * lt
+				var env := exp(-lt * 7.0) * (1.0 - exp(-lt * 80.0))
+				var sq := 1.0 if sin(ph) >= 0.0 else -1.0
+				s += (sq * 0.32 + sin(ph) * 0.5) * env * 0.3
+		var spark := sin(TAU * 2637.0 * t) * exp(-t * 5.0) * 0.06
+		_write(bytes, i, tanh((s + spark) * 1.1))
+	return _to_stream(bytes)
+
+## Crisp headshot ding: a high, detuned bell ping with a fast click transient.
+func _headshot_ding(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 24.0)
+		var s := sin(TAU * 2100.0 * t) * 0.5 + sin(TAU * 3150.0 * t) * 0.3
+		s += (randf() * 2.0 - 1.0) * exp(-t * 120.0) * 0.4
+		_write(bytes, i, tanh(s * env * 1.2))
 	return _to_stream(bytes)
 
 func _chime(duration: float, hz_lo: float, hz_hi: float) -> AudioStreamWAV:

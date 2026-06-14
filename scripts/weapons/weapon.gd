@@ -447,7 +447,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 				is_head = hpos.y - (col as Node3D).global_position.y > 0.6
 			if is_head:
 				final_damage *= data.headshot_mult
-				AudioBus.play_synth_at("impact_metal", hpos, 0.0, 1.7)
+				AudioBus.play_synth_at("headshot", hpos, -1.0, 1.0)
 			dmg_node.apply_damage(final_damage, _active_shooter)
 			_enemy_hit_pop(hpos, is_head, final_damage)
 			# Punch through to the next enemy if this weapon pierces.
