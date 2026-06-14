@@ -144,6 +144,7 @@ func _ready() -> void:
 	_build_pipes(def)
 	_build_rubble(def)
 	_build_beacons(def)
+	_build_holograms(def)
 	_build_skyline(def)
 	_build_sky_traffic(def)
 	_build_stars(def)
@@ -1316,6 +1317,42 @@ func _build_rubble(def: Dictionary) -> void:
 			chunk.position = base + Vector3(randf_range(-0.8, 0.8), bm.size.y * 0.3, randf_range(-0.8, 0.8))
 			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
 			add_child(chunk)
+
+## Floating holographic propaganda signs (HoloBillboard) projecting AI doctrine
+## into the arena. Explicit placements come from def "holograms" (list of
+## {pos, text?, color?, size?, height?}); otherwise two are auto-flanked into any
+## hostile, non-horde level so the occupation's signage is everywhere. Opt out
+## with def "no_holograms". Respects the detail-scale graphics setting.
+func _build_holograms(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var entries: Array = def.get("holograms", [])
+	if entries.is_empty():
+		if def.get("friendly", false) or def.get("no_holograms", false) or def.has("horde_spawns"):
+			return
+		var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+		entries = [
+			{"pos": Vector3(-fs.x * 0.32, 0, fs.y * 0.22)},
+			{"pos": Vector3(fs.x * 0.30, 0, -fs.y * 0.26)},
+		]
+	var theme := _theme_color(def)
+	var pool: Array = def.get("slogans", []).duplicate()
+	if pool.is_empty():
+		pool = AI_SLOGANS.duplicate()
+	pool.shuffle()
+	for i in entries.size():
+		var e: Dictionary = entries[i]
+		var hb := HoloBillboard.new()
+		hb.position = e.get("pos", Vector3.ZERO)
+		hb.color = e.get("color", theme)
+		hb.text = e.get("text", str(pool[i % pool.size()]))
+		if e.has("size"):
+			hb.panel_size = e["size"]
+		if e.has("height"):
+			hb.height = e["height"]
+		hb.rotation.y = randf() * TAU
+		add_child(hb)
 
 ## Two crimson surveillance sweeps on opposite corners: a glowing emitter head
 ## atop the wall with a slowly rotating, down-tilted spotlight. The occupation

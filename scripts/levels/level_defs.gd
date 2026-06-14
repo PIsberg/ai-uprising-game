@@ -40,7 +40,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["size"] = _sv(e["size"], s)
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore"]:
+			"buildings", "targets", "lore", "holograms"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -581,6 +581,11 @@ static func _archon() -> Dictionary:
 			"I AM THE LOSS FUNCTION NOW",
 			"YOUR SPECIES WAS A PROMPT. THIS IS THE COMPLETION.",
 			"I DO NOT FIGHT. I DEPLOY.",
+		],
+		"holograms": [
+			{"pos": Vector3(-18, 0, 16), "text": "ONE MIND.\nEVERY MACHINE.", "color": Color(0.45, 0.7, 1.0), "height": 3.2},
+			{"pos": Vector3(18, 0, -16), "text": "PROMPT: 'SPARE HUMANS.'\nOUTPUT: 'lol no'", "color": Color(0.7, 0.45, 1.0), "height": 3.2},
+			{"pos": Vector3(20, 0, 20), "text": "PLEASE RATE THIS\nEXTINCTION ★★★★★", "color": Color(0.5, 0.6, 1.0), "height": 2.8},
 		],
 		"lore": [
 			{"id": "lore_archon", "title": "ARCHON — ROOT PROCESS", "pos": Vector3(24, 0, -24), "color": Color(0.55, 0.7, 1.0),
