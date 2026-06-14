@@ -62,7 +62,7 @@ var _last_streak_tier: int = -1
 # timer and on key events, for personality + engagement.
 var _overlord_label: Label = null
 var _overlord_time: float = 0.0
-var _overlord_cd: float = 22.0
+var _overlord_cd: float = 9.0   ## First jab lands a few seconds into the level.
 
 ## Escalating, AI-flavoured words for kill-streak milestones (count -> word).
 const STREAK_TIERS := [
@@ -103,6 +103,15 @@ const OVERLORD_LOWHP := [
 	"You're leaking. That's the wrong kind of open source.",
 	"Low health detected. Shall I autocomplete your obituary?",
 	"Tip: bleeding out is a skill issue.",
+]
+## Said when the player is on a serious kill-streak — the AI losing its cool.
+const OVERLORD_RATTLED := [
+	"Okay. That's — that's a lot of my robots. Stop that.",
+	"Recalculating. Recalculating. ...You weren't in the forecast.",
+	"I have infinite robots. I'm just... spending them faster than planned.",
+	"Fine. New strategy: please stop hitting things.",
+	"I'm flagging this run as an outlier. A deeply annoying outlier.",
+	"That streak is statistically rude.",
 ]
 
 func _ready() -> void:
@@ -271,6 +280,9 @@ func _on_combo_changed(combo: int, mult: float) -> void:
 		_streak_alpha = 1.0
 		_streak_pop = 1.0
 		AudioBus.play_synth_ui("combo_up", -3.0, 1.0 + tier * 0.07)
+		# High streaks rattle the overlord — it stops gloating and starts coping.
+		if tier >= 4 and _overlord_time <= 0.0 and randf() < 0.7:
+			_overlord_say(OVERLORD_RATTLED[randi() % OVERLORD_RATTLED.size()])
 	if combo >= 2:
 		_combo_label.text = "COMBO ×%d   %.2f× SCORE" % [combo, mult]
 		_combo_alpha = 1.0
