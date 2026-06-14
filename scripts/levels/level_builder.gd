@@ -23,6 +23,8 @@ const ENEMY_SCENES := {
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
 }
+const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
+
 const PROP_SCENES := {
 	"car": preload("res://scenes/props/car.tscn"),
 	"fence": preload("res://scenes/props/fence.tscn"),
@@ -154,6 +156,27 @@ func _build_environment(def: Dictionary) -> void:
 		phys.energy_multiplier = e.get("sky_energy", 1.0)
 		phys.use_debanding = true
 		sky.sky_material = phys
+	elif e.get("stars", false):
+		# Stylized night "heaven": tinted gradient + procedural twinkling
+		# starfield + Milky-Way haze + moon (shaders/night_sky.gdshader). Opt-in
+		# via env "stars"; reuses sky_top/sky_horizon/ground so each open-sky
+		# level keeps its colour identity. Star/moon look is tunable per def.
+		var night := ShaderMaterial.new()
+		night.shader = NIGHT_SKY_SHADER
+		night.set_shader_parameter("zenith_color", e.get("sky_top", Color(0.015, 0.02, 0.06)))
+		night.set_shader_parameter("horizon_color", e.get("sky_horizon", Color(0.1, 0.08, 0.16)))
+		night.set_shader_parameter("ground_color", e.get("ground", Color(0.01, 0.01, 0.02)))
+		night.set_shader_parameter("star_density", e.get("star_density", 0.08))
+		night.set_shader_parameter("star_brightness", e.get("star_brightness", 2.0))
+		night.set_shader_parameter("star_tint", e.get("star_tint", Color(0.85, 0.92, 1.0)))
+		night.set_shader_parameter("milkyway_strength", e.get("milkyway", 0.35))
+		night.set_shader_parameter("milkyway_tint", e.get("milkyway_tint", Color(0.5, 0.55, 0.85)))
+		if e.has("moon_dir"):
+			night.set_shader_parameter("moon_dir", e["moon_dir"])
+		night.set_shader_parameter("moon_color", e.get("moon_color", Color(0.85, 0.9, 1.0)))
+		night.set_shader_parameter("moon_size", e.get("moon_size", 0.05))
+		night.set_shader_parameter("moon_glow", e.get("moon_glow", 1.4))
+		sky.sky_material = night
 	else:
 		var psm := ProceduralSkyMaterial.new()
 		psm.sky_top_color = e.get("sky_top", Color(0.1, 0.12, 0.18))
