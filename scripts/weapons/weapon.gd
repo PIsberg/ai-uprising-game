@@ -96,6 +96,7 @@ const REAL_MODELS := {
 	"devastator": {"glb": "res://assets/models/weapons/blaster-p.glb", "len": 0.8, "tint": Color(0.56, 0.44, 0.42)},
 	"singularity": {"glb": "res://assets/models/weapons/blaster-r.glb", "len": 0.98, "tint": Color(0.5, 0.32, 0.66)},
 	"nova":        {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.82, "tint": Color(0.62, 0.42, 0.28)},
+	"swarm":       {"glb": "res://assets/models/weapons/blaster-n.glb", "len": 0.74, "tint": Color(0.62, 0.4, 0.3)},
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
