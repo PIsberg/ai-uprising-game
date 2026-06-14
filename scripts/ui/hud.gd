@@ -264,7 +264,7 @@ func _overlord_say(line: String) -> void:
 		return
 	_overlord_label.text = "▌ " + line
 	_overlord_time = 4.2
-	AudioBus.play_synth_ui("broadcast_blip", -10.0, randf_range(0.9, 1.05))
+	AudioBus.play_synth_ui("overlord_glitch", -9.0, randf_range(0.95, 1.08))
 
 func _on_combo_changed(combo: int, mult: float) -> void:
 	if combo < 2:

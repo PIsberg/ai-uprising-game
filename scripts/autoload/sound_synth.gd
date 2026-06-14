@@ -30,6 +30,7 @@ func _ready() -> void:
 	streams["victory"] = _victory_sting(1.3)
 	streams["combo_up"] = _combo_up(0.34)
 	streams["headshot"] = _headshot_ding(0.18)
+	streams["overlord_glitch"] = _glitch_comms(0.32)
 	streams["radio_static"] = _radio_static(1.6)
 	streams["music_techno"] = _techno_loop()
 	streams["music_grok"] = _music_grok()
@@ -538,6 +539,26 @@ func _combo_up(duration: float) -> AudioStreamWAV:
 				s += (sq * 0.32 + sin(ph) * 0.5) * env * 0.3
 		var spark := sin(TAU * 2637.0 * t) * exp(-t * 5.0) * 0.06
 		_write(bytes, i, tanh((s + spark) * 1.1))
+	return _to_stream(bytes)
+
+## Glitchy digital comms sting for the rogue-AI overlord taunts: a stuttered,
+## bit-crushed square tone that slides down, smeared with a little static — the
+## sound of something inhuman keying the channel.
+func _glitch_comms(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := (1.0 - exp(-t * 80.0)) * exp(-t * 6.0)
+		# Choppy gate: ~50 stutter slices/sec, every third muted.
+		var step := int(t * 50.0)
+		var gate := 0.0 if step % 3 == 0 else 1.0
+		# Descending square, then quantized hard (bit-crush bite).
+		var hz := 880.0 - 560.0 * (t / duration)
+		var sq: float = sign_wave(TAU * hz * t)
+		var crushed: float = round(sq * 3.0) / 3.0
+		var noise := (randf() * 2.0 - 1.0) * 0.12
+		_write(bytes, i, tanh((crushed * 0.32 + noise) * gate * env * 1.3))
 	return _to_stream(bytes)
 
 ## Crisp headshot ding: a high, detuned bell ping with a fast click transient.
