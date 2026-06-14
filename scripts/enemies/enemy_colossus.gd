@@ -40,8 +40,15 @@ extends EnemyBase
 @onready var _eye_light: SpotLight3D = $Head/Eye/EyeLight
 @onready var _head: Node3D = $Head
 
+## Sky-drop entrance: how far above its mark GOLIATH-IX ignites and falls in on
+## retro-rockets before slamming down.
+const DROP_HEIGHT := 44.0
+
 var _walk_phase: float = 0.0
 var _entrance: float = 0.0
+var _descending: bool = false
+var _drop_target_y: float = 0.0
+var _thrusters: Array[RocketExhaust] = []
 var _glow_mat: StandardMaterial3D
 var _last_phase: int = 1
 
@@ -81,23 +88,78 @@ func _ready() -> void:
 	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
 	if _reactor:
 		_reactor.material_override = _glow_mat
-	# Cinematic entrance: power up, invulnerable, alarms + quake.
-	_entrance = 2.0
+	# Cinematic sky-drop: GOLIATH-IX makes planetfall on its foot retro-rockets,
+	# then slams down. It hangs high and invulnerable until it lands.
+	_drop_target_y = global_position.y
+	global_position.y += DROP_HEIGHT
+	velocity = Vector3.ZERO
+	_descending = true
 	hp.invulnerable = true
+	_spawn_thrusters()
 	_do_entrance.call_deferred()
 
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	AudioBus.play_synth_at("explosion", global_position, 6.0, 0.5)
-	AudioBus.play_synth_at("mech_step", global_position, 4.0, 0.7)
+	# A distant boom + dread shake as it ignites and begins its descent.
+	AudioBus.play_synth_at("explosion", global_position, 4.0, 0.7)
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("shake"):
-		p.shake(1.4)
-	for i in 3:
+		p.shake(0.7)
+
+## Two foot thrusters plus a central booster, blazing straight down.
+func _spawn_thrusters() -> void:
+	for foot in [Vector3(1.05, 0.6, 0.3), Vector3(-1.05, 0.6, 0.3)]:
+		var th := RocketExhaust.new()
+		th.flame_length = 6.5
+		th.flame_radius = 0.95
+		th.position = foot
+		add_child(th)
+		_thrusters.append(th)
+	var core := RocketExhaust.new()
+	core.flame_length = 8.0
+	core.flame_radius = 1.3
+	core.position = Vector3(0, 0.7, -0.2)
+	add_child(core)
+	_thrusters.append(core)
+
+## Retro-rocket descent: plummet from high up, brake hard over the last metres.
+func _process_descent(delta: float) -> void:
+	var h := global_position.y - _drop_target_y
+	# A controlled retro-burn, not a plummet: steady fall, braking over the deck.
+	var desired := -clampf(h * 0.7, 7.0, 22.0)
+	if h < 8.0:
+		desired = -clampf(h * 1.4 + 1.0, 2.5, 12.0) # flare the burn, settle in
+	velocity.y = move_toward(velocity.y, desired, 30.0 * delta)
+	velocity.x = 0.0
+	velocity.z = 0.0
+	recoil = maxf(recoil, 0.35)
+	move_and_slide()
+	if global_position.y <= _drop_target_y + 0.08 or is_on_floor():
+		global_position.y = _drop_target_y
+		_land()
+
+## Touchdown: a ground-shaking impact ring, then a brief planted beat before the
+## boss engages.
+func _land() -> void:
+	_descending = false
+	velocity = Vector3.ZERO
+	_entrance = 0.6
+	AudioBus.play_synth_at("explosion", global_position, 8.0, 0.32)
+	AudioBus.play_synth_at("mech_step", global_position, 6.0, 0.45)
+	GameState.hit_stop(0.12, 0.45)
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("shake"):
+		p.shake(2.0)
+	for i in 8:
+		var ang := TAU * float(i) / 8.0
 		var fx := EXPLOSION.instantiate()
 		get_tree().current_scene.add_child(fx)
-		(fx as Node3D).global_position = global_position + Vector3(randf_range(-3, 3), randf_range(0, 6), randf_range(-3, 3))
+		(fx as Node3D).global_position = global_position + Vector3(cos(ang) * 5.0, 0.3, sin(ang) * 5.0)
+	for th in _thrusters:
+		if is_instance_valid(th):
+			th.shut_down()
+	_thrusters.clear()
 
 func _phase() -> int:
 	var frac := hp.current_health / hp.max_health
@@ -130,6 +192,9 @@ func _process(delta: float) -> void:
 			AudioBus.play_synth_at("mech_step", global_position, 1.0, randf_range(0.6, 0.75))
 
 func _physics_process(delta: float) -> void:
+	if _descending:
+		_process_descent(delta)
+		return
 	if _entrance > 0.0:
 		_entrance -= delta
 		velocity.x = move_toward(velocity.x, 0.0, 4.0)
