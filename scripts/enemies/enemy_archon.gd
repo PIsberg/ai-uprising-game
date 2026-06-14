@@ -33,13 +33,15 @@ const MINION_SCENES := {
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
 	"mech": preload("res://scenes/enemies/mech.tscn"),
+	"mender": preload("res://scenes/enemies/mender.tscn"),
 }
 
-## Wave roster per phase (1/2/3). Each phase pours out a bigger, meaner mix.
+## Wave roster per phase (1/2/3). Each phase pours out a bigger, meaner mix; from
+## phase 2 on a MENDER rides along to repair the legion under your fire.
 const WAVES := {
 	1: ["drone", "android", "android", "drone", "spider"],
-	2: ["android", "spider", "seeker", "drone", "android", "brute", "spider"],
-	3: ["brute", "spider", "seeker", "mech", "android", "seeker", "drone", "spider", "android"],
+	2: ["android", "spider", "seeker", "mender", "drone", "android", "brute", "spider"],
+	3: ["brute", "spider", "mender", "seeker", "mech", "android", "seeker", "drone", "spider", "android"],
 }
 
 ## How long the core stays exposed (and ARCHON stays vulnerable) after a wave is

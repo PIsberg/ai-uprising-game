@@ -16,6 +16,7 @@ const ENEMY_SCENES := {
 	"brute": "res://scenes/enemies/brute.tscn",
 	"titan": "res://scenes/enemies/titan.tscn",
 	"alien": "res://scenes/enemies/alien.tscn",
+	"mender": "res://scenes/enemies/mender.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -28,6 +29,7 @@ const ENEMY_INFO := {
 	"seeker": {"name": "SEEKER", "desc": "Kamikaze flyer — rushes in and detonates. Drop it early.", "scale": 1.0, "y": 1.3},
 	"overseer": {"name": "OVERSEER", "desc": "Gunship boss — volley fire and summons Seekers. Use cover.", "scale": 0.45, "y": 0.0},
 	"brute": {"name": "BULWARK BRUTE", "desc": "Frontal shield soaks fire — flank it and hit the sides or back.", "scale": 1.0, "y": 0.0},
+	"mender": {"name": "MENDER", "desc": "Support flyer — beam-heals other robots and flees from you. Kill it FIRST or nothing else dies.", "scale": 1.0, "y": 1.5},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
