@@ -14,9 +14,11 @@ extends Area3D
 @export var accent: Color = Color(0.55, 0.95, 0.9)
 
 const CPS := 28.0 # typed characters per second, roughly matching speech pace
+const CRT_SHADER := preload("res://shaders/crt_screen.gdshader")
 
 var _played: bool = false
-var _screen_mat: StandardMaterial3D
+var _holo_mat: StandardMaterial3D
+var _screen_mat: ShaderMaterial
 
 func _ready() -> void:
 	collision_layer = 64
@@ -25,31 +27,81 @@ func _ready() -> void:
 	_build_visual()
 
 func _build_visual() -> void:
-	var pillar := MeshInstance3D.new()
-	var pm := BoxMesh.new()
-	pm.size = Vector3(0.5, 1.3, 0.5)
-	var bmat := StandardMaterial3D.new()
-	bmat.albedo_color = Color(0.2, 0.22, 0.25)
-	bmat.metallic = 0.7
-	bmat.roughness = 0.35
-	pm.material = bmat
-	pillar.mesh = pm
-	pillar.position = Vector3(0, 0.65, 0)
-	add_child(pillar)
+	# A proper archive console: chamfered pedestal, monitor on a stand with a
+	# live CRT screen, plus the hovering holo-cube beacon so it reads as "data"
+	# from across the room.
+	var plastic := StandardMaterial3D.new()
+	plastic.albedo_color = Color(0.16, 0.18, 0.21)
+	plastic.metallic = 0.6
+	plastic.roughness = 0.4
+
+	var pedestal := MeshInstance3D.new()
+	var pm := BeveledBoxMesh.new()
+	pm.size = Vector3(0.5, 0.95, 0.42)
+	pm.bevel = 0.025
+	pm.material = plastic
+	pedestal.mesh = pm
+	pedestal.position = Vector3(0, 0.475, 0)
+	add_child(pedestal)
+
+	# Monitor: stand neck + chamfered housing + emissive shader screen, tilted
+	# back a touch. Screen faces +Z; the holo-cube above flags it from any side.
+	var neck := MeshInstance3D.new()
+	var nm := BoxMesh.new()
+	nm.size = Vector3(0.05, 0.18, 0.05)
+	nm.material = plastic
+	neck.mesh = nm
+	neck.position = Vector3(0, 1.05, 0)
+	add_child(neck)
+
+	var monitor := Node3D.new()
+	monitor.position = Vector3(0, 1.16, 0)
+	monitor.rotation = Vector3(deg_to_rad(-10.0), 0.0, 0.0)
+	add_child(monitor)
+
+	var bezel := StandardMaterial3D.new()
+	bezel.albedo_color = Color(0.04, 0.045, 0.05)
+	bezel.metallic = 0.25
+	bezel.roughness = 0.55
+	var housing := MeshInstance3D.new()
+	var hm := BeveledBoxMesh.new()
+	hm.size = Vector3(0.66, 0.5, 0.07)
+	hm.bevel = 0.02
+	hm.material = bezel
+	housing.mesh = hm
+	housing.position = Vector3(0, 0.22, 0)
+	monitor.add_child(housing)
+
+	var screen := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.56, 0.4)
+	_screen_mat = ShaderMaterial.new()
+	_screen_mat.shader = CRT_SHADER
+	_screen_mat.set_shader_parameter("screen_color", Vector3(accent.r, accent.g, accent.b))
+	_screen_mat.set_shader_parameter("bg_color", Vector3(accent.r * 0.06, accent.g * 0.07, accent.b * 0.08))
+	_screen_mat.set_shader_parameter("brightness", 1.6)
+	_screen_mat.set_shader_parameter("glow", 1.5)
+	_screen_mat.set_shader_parameter("scroll_speed", 0.7)
+	_screen_mat.set_shader_parameter("content_density", 0.7)
+	qm.material = _screen_mat
+	screen.mesh = qm
+	screen.position = Vector3(0, 0.22, 0.04)
+	monitor.add_child(screen)
+
 	# Slowly pulsing holo-cube hovering above: "data here".
 	var cube := MeshInstance3D.new()
 	var cm := BoxMesh.new()
 	cm.size = Vector3(0.28, 0.28, 0.28)
-	_screen_mat = StandardMaterial3D.new()
-	_screen_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_screen_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_screen_mat.albedo_color = Color(accent.r, accent.g, accent.b, 0.75)
-	_screen_mat.emission_enabled = true
-	_screen_mat.emission = accent
-	_screen_mat.emission_energy_multiplier = 2.0
-	cm.material = _screen_mat
+	_holo_mat = StandardMaterial3D.new()
+	_holo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_holo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_holo_mat.albedo_color = Color(accent.r, accent.g, accent.b, 0.75)
+	_holo_mat.emission_enabled = true
+	_holo_mat.emission = accent
+	_holo_mat.emission_energy_multiplier = 2.0
+	cm.material = _holo_mat
 	cube.mesh = cm
-	cube.position = Vector3(0, 1.62, 0)
+	cube.position = Vector3(0, 1.92, 0)
 	add_child(cube)
 	var tw := cube.create_tween().set_loops()
 	tw.tween_property(cube, "rotation:y", TAU, 4.0).as_relative()
@@ -58,7 +110,7 @@ func _build_visual() -> void:
 	light.light_energy = 1.4
 	light.omni_range = 4.0
 	light.shadow_enabled = false
-	light.position = Vector3(0, 1.6, 0)
+	light.position = Vector3(0, 1.9, 0)
 	add_child(light)
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
@@ -71,9 +123,12 @@ func _on_body_entered(body: Node) -> void:
 	if _played or not body.is_in_group("player"):
 		return
 	_played = true
-	# Dim the beacon — log retrieved.
-	_screen_mat.emission_energy_multiplier = 0.5
-	_screen_mat.albedo_color.a = 0.3
+	# Dim the beacon — log retrieved. Settle the screen and fade the holo-cube.
+	_screen_mat.set_shader_parameter("brightness", 0.7)
+	_screen_mat.set_shader_parameter("glow", 0.6)
+	_screen_mat.set_shader_parameter("scroll_speed", 0.0)
+	_holo_mat.emission_energy_multiplier = 0.5
+	_holo_mat.albedo_color.a = 0.3
 	AudioBus.play_lore(log_id)
 	_show_text()
 

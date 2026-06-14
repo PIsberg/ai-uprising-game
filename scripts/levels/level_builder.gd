@@ -30,6 +30,7 @@ const PROP_SCENES := {
 	"barrel": preload("res://scenes/props/barrel.tscn"),
 	"server": preload("res://scenes/props/server_rack.tscn"),
 	"terminal": preload("res://scenes/props/terminal.tscn"),
+	"monitors": preload("res://scenes/props/monitor_bank.tscn"),
 	"canister": preload("res://scenes/props/gas_canister.tscn"),
 	"lamp": preload("res://scenes/props/lamp_post.tscn"),
 	"locker": preload("res://scenes/props/locker.tscn"),

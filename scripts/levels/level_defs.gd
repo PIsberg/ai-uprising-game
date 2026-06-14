@@ -867,6 +867,11 @@ static func _claude() -> Dictionary:
 			{"type": "server", "pos": Vector3(-4.6, 0, -4), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, -2), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, 0), "yaw": 270},
+			# Wall-mounted surveillance banks: the vault's control-room screens
+			# mounted on the inner faces of the east wall (x=15) and the north
+			# divider (z=5), back to the wall, facing into the chamber.
+			{"type": "monitors", "pos": Vector3(14.45, 0, 2), "yaw": 270},
+			{"type": "monitors", "pos": Vector3(5, 0, 4.45), "yaw": 180},
 			# Operations station by the keycard (terminal + desk + locker bank).
 			{"type": "terminal", "pos": Vector3(11, 0, -8.6)},
 			{"type": "desk", "pos": Vector3(13, 0, -8.4), "yaw": 90},

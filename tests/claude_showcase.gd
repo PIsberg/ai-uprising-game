@@ -29,6 +29,11 @@ func _ready() -> void:
 	await get_tree().create_timer(0.3).timeout
 	await _snap("claude_arena.png")
 
+	# The east-wall surveillance monitor bank (authored x=14.45 -> world ~20.2).
+	_pose(Vector3(14.5, 2.4, 2.8), deg_to_rad(-90))
+	await get_tree().create_timer(0.3).timeout
+	await _snap("claude_screens.png")
+
 	get_tree().quit()
 
 func _clear_enemies() -> void:

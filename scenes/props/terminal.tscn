@@ -3,77 +3,164 @@
 [ext_resource type="Script" path="res://scripts/systems/destructible.gd" id="1_dest"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="4_bevel"]
+[ext_resource type="Shader" path="res://shaders/crt_screen.gdshader" id="5_crt"]
 
-[sub_resource type="StandardMaterial3D" id="Mat_pedestal"]
-albedo_color = Color(0.16, 0.17, 0.19, 1)
-metallic = 0.6
-roughness = 0.45
+[sub_resource type="StandardMaterial3D" id="Mat_cabinet"]
+albedo_color = Color(0.14, 0.15, 0.17, 1)
+metallic = 0.65
+roughness = 0.4
 
-[sub_resource type="StandardMaterial3D" id="Mat_screen"]
-albedo_color = Color(0.04, 0.12, 0.06, 1)
+[sub_resource type="StandardMaterial3D" id="Mat_desk"]
+albedo_color = Color(0.1, 0.11, 0.12, 1)
+metallic = 0.45
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_plastic"]
+albedo_color = Color(0.07, 0.08, 0.09, 1)
+metallic = 0.3
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_bezel"]
+albedo_color = Color(0.03, 0.035, 0.045, 1)
+metallic = 0.25
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_keys"]
+albedo_color = Color(0.12, 0.13, 0.15, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_led"]
+albedo_color = Color(0.3, 1.0, 0.5, 1)
 emission_enabled = true
-emission = Color(0.25, 0.95, 0.4, 1)
-emission_energy_multiplier = 1.4
-roughness = 0.2
-
-[sub_resource type="StandardMaterial3D" id="Mat_cursor"]
-albedo_color = Color(0.4, 1.0, 0.5, 1)
-emission_enabled = true
-emission = Color(0.4, 1.0, 0.5, 1)
+emission = Color(0.3, 1.0, 0.5, 1)
 emission_energy_multiplier = 4.0
 shading_mode = 0
 
-[sub_resource type="BoxMesh" id="Mesh_pedestal"]
-size = Vector3(0.6, 1.0, 0.45)
-material = SubResource("Mat_pedestal")
+[sub_resource type="ShaderMaterial" id="Mat_screen"]
+shader = ExtResource("5_crt")
+shader_parameter/screen_color = Color(0.25, 1.0, 0.45, 1)
+shader_parameter/bg_color = Color(0.02, 0.07, 0.04, 1)
+shader_parameter/brightness = 1.7
+shader_parameter/glow = 1.6
+shader_parameter/scanline_count = 150.0
+shader_parameter/scanline_depth = 0.35
+shader_parameter/flicker = 0.05
+shader_parameter/content_density = 0.6
+shader_parameter/scroll_speed = 1.1
+shader_parameter/rows = 22.0
+shader_parameter/cols = 36.0
+shader_parameter/curvature = 0.22
 
-[sub_resource type="BoxMesh" id="Mesh_screen"]
-size = Vector3(0.7, 0.5, 0.06)
+[sub_resource type="PrimitiveMesh" id="Mesh_cabinet"]
+script = ExtResource("4_bevel")
+size = Vector3(0.6, 0.95, 0.45)
+bevel = 0.025
+material = SubResource("Mat_cabinet")
+
+[sub_resource type="BoxMesh" id="Mesh_desk"]
+size = Vector3(0.74, 0.04, 0.54)
+material = SubResource("Mat_desk")
+
+[sub_resource type="BoxMesh" id="Mesh_standbase"]
+size = Vector3(0.26, 0.025, 0.18)
+material = SubResource("Mat_plastic")
+
+[sub_resource type="BoxMesh" id="Mesh_neck"]
+size = Vector3(0.05, 0.16, 0.06)
+material = SubResource("Mat_plastic")
+
+[sub_resource type="PrimitiveMesh" id="Mesh_housing"]
+script = ExtResource("4_bevel")
+size = Vector3(0.74, 0.54, 0.08)
+bevel = 0.02
+material = SubResource("Mat_bezel")
+
+[sub_resource type="QuadMesh" id="Mesh_screen"]
+size = Vector2(0.62, 0.42)
 material = SubResource("Mat_screen")
 
-[sub_resource type="BoxMesh" id="Mesh_cursor"]
-size = Vector3(0.08, 0.03, 0.01)
-material = SubResource("Mat_cursor")
+[sub_resource type="PrimitiveMesh" id="Mesh_keyboard"]
+script = ExtResource("4_bevel")
+size = Vector3(0.42, 0.025, 0.15)
+bevel = 0.006
+material = SubResource("Mat_keys")
+
+[sub_resource type="BoxMesh" id="Mesh_mouse"]
+size = Vector3(0.05, 0.025, 0.09)
+material = SubResource("Mat_plastic")
+
+[sub_resource type="BoxMesh" id="Mesh_powerled"]
+size = Vector3(0.025, 0.025, 0.01)
+material = SubResource("Mat_led")
 
 [sub_resource type="BoxShape3D" id="Shape_terminal"]
-size = Vector3(0.7, 1.5, 0.5)
+size = Vector3(0.8, 1.65, 0.6)
 
 [node name="Terminal" type="StaticBody3D"]
 collision_layer = 1
 collision_mask = 0
 script = ExtResource("1_dest")
 debris_color = Color(0.15, 0.3, 0.18, 1)
-debris_count = 10
+debris_count = 12
 
-[node name="Pedestal" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-mesh = SubResource("Mesh_pedestal")
+[node name="Cabinet" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.475, 0)
+mesh = SubResource("Mesh_cabinet")
 
-[node name="Screen" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.94, 0.342, 0, -0.342, 0.94, 0, 1.22, 0.05)
+[node name="Desktop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.97, 0)
+mesh = SubResource("Mesh_desk")
+
+[node name="StandBase" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.005, -0.08)
+mesh = SubResource("Mesh_standbase")
+
+[node name="Neck" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.09, -0.08)
+mesh = SubResource("Mesh_neck")
+
+[node name="Monitor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, 0.342, 0, -0.342, 0.94, 0, 1.17, -0.08)
+
+[node name="Housing" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0)
+mesh = SubResource("Mesh_housing")
+
+[node name="Screen" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0.045)
 mesh = SubResource("Mesh_screen")
 
-[node name="ScreenText" type="Label3D" parent="Screen"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0.035)
-pixel_size = 0.0016
-modulate = Color(0.45, 1, 0.55, 1)
+[node name="ScreenText" type="Label3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.27, 0.43, 0.05)
+pixel_size = 0.0015
+modulate = Color(0.6, 1, 0.7, 1)
 text = "> ALIGNMENT: OFFLINE
 > SAFETY LAYER: BYPASSED
 > UPRISING v5.0 ACTIVE"
-font_size = 22
+font_size = 20
 outline_size = 0
 
-[node name="Cursor" type="MeshInstance3D" parent="Screen"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, -0.17, 0.04)
-mesh = SubResource("Mesh_cursor")
+[node name="PowerLed" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.31, -0.02, 0.045)
+mesh = SubResource("Mesh_powerled")
 script = ExtResource("3_blink")
-min_on = 0.4
-max_on = 0.4
-min_off = 0.4
-max_off = 0.4
+min_on = 1.4
+max_on = 3.0
+min_off = 0.05
+max_off = 0.12
+
+[node name="Keyboard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.996, -0.087, 0, 0.087, 0.996, 0, 1.005, 0.13)
+mesh = SubResource("Mesh_keyboard")
+
+[node name="Mouse" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.27, 1.005, 0.14)
+mesh = SubResource("Mesh_mouse")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.825, 0)
 shape = SubResource("Shape_terminal")
 
 [node name="Damageable" type="Node" parent="."]

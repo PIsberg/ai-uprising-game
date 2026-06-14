@@ -1,6 +1,74 @@
-[gd_scene format=3 uid="uid://bqnmu5kmcjvnk"]
+[gd_scene load_steps=14 format=3 uid="uid://bqnmu5kmcjvnk"]
 
 [ext_resource type="PackedScene" path="res://assets/models/props/Prop_Desk_Medium.gltf" id="1_model"]
+[ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="2_bevel"]
+[ext_resource type="Shader" path="res://shaders/crt_screen.gdshader" id="3_crt"]
+[ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="4_blink"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_plastic"]
+albedo_color = Color(0.08, 0.08, 0.09, 1)
+metallic = 0.3
+roughness = 0.5
+
+[sub_resource type="StandardMaterial3D" id="Mat_bezel"]
+albedo_color = Color(0.04, 0.04, 0.045, 1)
+metallic = 0.25
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_keys"]
+albedo_color = Color(0.11, 0.11, 0.13, 1)
+metallic = 0.2
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_led"]
+albedo_color = Color(1.0, 0.55, 0.2, 1)
+emission_enabled = true
+emission = Color(1.0, 0.55, 0.2, 1)
+emission_energy_multiplier = 4.0
+shading_mode = 0
+
+[sub_resource type="ShaderMaterial" id="Mat_screen"]
+shader = ExtResource("3_crt")
+shader_parameter/screen_color = Color(1.0, 0.62, 0.2, 1)
+shader_parameter/bg_color = Color(0.08, 0.04, 0.01, 1)
+shader_parameter/brightness = 1.6
+shader_parameter/glow = 1.5
+shader_parameter/scanline_count = 130.0
+shader_parameter/scanline_depth = 0.35
+shader_parameter/flicker = 0.06
+shader_parameter/content_density = 0.65
+shader_parameter/scroll_speed = 0.9
+shader_parameter/rows = 20.0
+shader_parameter/cols = 32.0
+shader_parameter/curvature = 0.18
+
+[sub_resource type="BoxMesh" id="Mesh_standbase"]
+size = Vector3(0.22, 0.02, 0.15)
+material = SubResource("Mat_plastic")
+
+[sub_resource type="BoxMesh" id="Mesh_neck"]
+size = Vector3(0.04, 0.14, 0.05)
+material = SubResource("Mat_plastic")
+
+[sub_resource type="PrimitiveMesh" id="Mesh_housing"]
+script = ExtResource("2_bevel")
+size = Vector3(0.6, 0.42, 0.06)
+bevel = 0.018
+material = SubResource("Mat_bezel")
+
+[sub_resource type="QuadMesh" id="Mesh_screen"]
+size = Vector2(0.5, 0.32)
+material = SubResource("Mat_screen")
+
+[sub_resource type="PrimitiveMesh" id="Mesh_keyboard"]
+script = ExtResource("2_bevel")
+size = Vector3(0.38, 0.02, 0.13)
+bevel = 0.005
+material = SubResource("Mat_keys")
+
+[sub_resource type="BoxMesh" id="Mesh_powerled"]
+size = Vector3(0.02, 0.02, 0.008)
+material = SubResource("Mat_led")
 
 [sub_resource type="BoxShape3D" id="Shape_1"]
 size = Vector3(2.4, 0.8, 0.9)
@@ -11,6 +79,38 @@ collision_mask = 0
 
 [node name="Model" parent="." instance=ExtResource("1_model")]
 transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, 0, 0, 0)
+
+[node name="StandBase" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.81, -0.12)
+mesh = SubResource("Mesh_standbase")
+
+[node name="Neck" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.89, -0.12)
+mesh = SubResource("Mesh_neck")
+
+[node name="Monitor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.985, 0.174, 0, -0.174, 0.985, -0.55, 0.96, -0.12)
+
+[node name="Housing" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.21, 0)
+mesh = SubResource("Mesh_housing")
+
+[node name="Screen" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.21, 0.035)
+mesh = SubResource("Mesh_screen")
+
+[node name="PowerLed" type="MeshInstance3D" parent="Monitor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26, -0.02, 0.035)
+mesh = SubResource("Mesh_powerled")
+script = ExtResource("4_blink")
+min_on = 1.6
+max_on = 3.4
+min_off = 0.05
+max_off = 0.12
+
+[node name="Keyboard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.996, -0.087, 0, 0.087, 0.996, -0.5, 0.81, 0.14)
+mesh = SubResource("Mesh_keyboard")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
