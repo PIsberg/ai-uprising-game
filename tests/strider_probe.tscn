@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0test0strider"]
+[ext_resource type="Script" path="res://tests/strider_probe.gd" id="1"]
+[node name="StriderProbe" type="Node3D"]
+script = ExtResource("1")

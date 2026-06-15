@@ -337,6 +337,7 @@ static func _overseer() -> Dictionary:
 			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
 			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
+			{"type": "strider", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -514,6 +515,7 @@ static func _titan() -> Dictionary:
 			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
 			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 14), "count": 8, "trigger": 22},
+			{"type": "strider", "pos": Vector3(-14, 0.5, 10), "trigger": 24},
 			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
 			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
@@ -794,6 +796,7 @@ static func _gpt() -> Dictionary:
 			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
 			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
+			{"type": "strider", "pos": Vector3(12, 0.5, 10), "trigger": 17},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, -8)},

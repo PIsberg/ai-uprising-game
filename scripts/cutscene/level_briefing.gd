@@ -18,6 +18,7 @@ const ENEMY_SCENES := {
 	"alien": "res://scenes/enemies/alien.tscn",
 	"mender": "res://scenes/enemies/mender.tscn",
 	"skitter": "res://scenes/enemies/skitter.tscn",
+	"strider": "res://scenes/enemies/strider.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -32,6 +33,7 @@ const ENEMY_INFO := {
 	"brute": {"name": "BULWARK BRUTE", "desc": "Frontal shield soaks fire — flank it and hit the sides or back.", "scale": 1.0, "y": 0.0},
 	"mender": {"name": "MENDER", "desc": "Support flyer — beam-heals other robots and flees from you. Kill it FIRST or nothing else dies.", "scale": 1.0, "y": 1.5},
 	"skitter": {"name": "SKITTER", "desc": "Tiny, fast, fragile — and never alone. They pour in by the dozen and swarm you from every side. Crowd control wins; getting surrounded loses.", "scale": 2.2, "y": 0.0},
+	"strider": {"name": "STRIDER", "desc": "A chicken-walker sentry with a single red eye and a chin gun. Strides to mid-range and rakes you with bolt bursts — break its line of sight and close in.", "scale": 1.0, "y": 0.0},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},

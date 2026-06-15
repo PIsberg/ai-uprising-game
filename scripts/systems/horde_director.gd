@@ -15,6 +15,7 @@ const POOL := [
 	[2, "res://scenes/enemies/spider.tscn", 2],
 	[3, "res://scenes/enemies/seeker.tscn", 2],
 	[4, "res://scenes/enemies/sniper.tscn", 3],
+	[4, "res://scenes/enemies/strider.tscn", 3],
 	[5, "res://scenes/enemies/mech.tscn", 4],
 	[6, "res://scenes/enemies/brute.tscn", 4],
 	[7, "res://scenes/enemies/terminator.tscn", 5],
