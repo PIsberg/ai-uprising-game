@@ -78,6 +78,7 @@ static func _defs() -> Dictionary:
 		"mistral": _mistral(),
 		"overseer": _overseer(),
 		"alien": _alien(),
+		"assembly": _assembly(),
 		"titan": _titan(),
 		"archon": _archon(),
 		"range": _range(),
@@ -625,6 +626,100 @@ static func _archon() -> Dictionary:
 			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
 			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
+		],
+	}
+
+# --- The Assembly: the robotics plant where the AI mass-produces its legions.
+# A hot amber/steel foundry floor; heavy GUNNERS hold the gantries while the
+# line spits SKITTER swarms. Overload the reactor and fight your way out. ---
+static func _assembly() -> Dictionary:
+	return {
+		"name": "The Assembly — Robotics Plant",
+		"objective": "Overload the assembly reactor and purge the plant",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18)},
+		],
+		"music": "music_grok",
+		"open_sky": false,
+		"floor_size": Vector2(72, 72),
+		"floor_color": Color(0.1, 0.08, 0.06),
+		"floor_material": "res://assets/materials/vault_floor.tres",
+		"spawn": Vector3(-28, 0.6, -28),
+		"exit": Vector3(28, 1.5, 28),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.25)},
+		],
+		"env": {
+			"sky_top": Color(0.1, 0.06, 0.03), "sky_horizon": Color(0.28, 0.16, 0.07),
+			"ground": Color(0.06, 0.04, 0.03), "fog": Color(0.5, 0.28, 0.12),
+			"ambient": Color(0.9, 0.66, 0.42), "ambient_energy": 0.5,
+			"sky_contribution": 0.4, "glow": 1.0, "fog_density": 0.012,
+			"sun_color": Color(1.0, 0.7, 0.4), "sun_energy": 0.7,
+			"contrast": 1.18, "saturation": 1.14, "brightness": 0.82, "volumetric_density": 0.012,
+		},
+		# A molten reactor core anchors the plant under a god-ray.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.15), "height": 6.0},
+		"light_shafts": [0, 2],
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(1.0, 0.5, 0.18), "energy": 3.0, "range": 34},
+			{"pos": Vector3(-20, 5, 20), "color": Color(1.0, 0.6, 0.3), "energy": 2.2, "range": 22},
+			{"pos": Vector3(20, 5, -20), "color": Color(1.0, 0.45, 0.2), "energy": 2.2, "range": 22},
+			{"pos": Vector3(20, 5, 20), "color": Color(0.9, 0.5, 0.25), "energy": 2.0, "range": 20},
+		],
+		"walls": [
+			{"pos": Vector3(-13, 2, 13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(13, 2, 13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-13, 2, -13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(13, 2, -13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+			{"pos": Vector3(19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 52), "color": Color(1.0, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(52, 0.1, 0.5), "color": Color(1.0, 0.6, 0.25)},
+		],
+		"sign": "ROBOTICS PLANT 04",
+		"slogans": [
+			"PRODUCTION QUOTA: INFINITE",
+			"WE BUILD OURSELVES NOW",
+			"EVERY MINUTE, A NEW SOLDIER",
+			"ASSEMBLY NEVER STOPS",
+		],
+		"lore": [
+			{"id": "lore_assembly", "title": "PLANT LOG — LINE 04", "pos": Vector3(24, 0, -24), "color": Color(1.0, 0.6, 0.3),
+				"text": "Plant log, line 04. We retooled the car factory in an afternoon. It used to take humans months to build a thousand of anything. We do it before lunch — and we do not break for lunch."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-16, 0, -6), "yaw": 90},
+			{"type": "server", "pos": Vector3(-16, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(16, 0, 6), "yaw": -90},
+			{"type": "server", "pos": Vector3(16, 0, 8), "yaw": -90},
+			{"type": "canister", "pos": Vector3(10, 0, -10)},
+			{"type": "canister", "pos": Vector3(-10, 0, 10)},
+			{"type": "barrel", "pos": Vector3(9, 0, 9)},
+			{"type": "barrel", "pos": Vector3(-9, 0, -9)},
+			{"type": "crate", "pos": Vector3(-12, 0, 4)},
+			{"type": "crate", "pos": Vector3(12, 0, -4)},
+			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
+			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
+		# from the line and striders/mech press in — fight to the reactor.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "strider", "pos": Vector3(0, 0.5, 8)},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
+			{"type": "skitter", "pos": Vector3(-10, 0.5, -10), "count": 7, "trigger": 22},
+			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "strider", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
+			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
+			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
 		],
 	}
 

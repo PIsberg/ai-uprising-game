@@ -26,6 +26,7 @@ const ENEMY_SCENES := {
 	"mender": preload("res://scenes/enemies/mender.tscn"),
 	"skitter": preload("res://scenes/enemies/skitter.tscn"),
 	"strider": preload("res://scenes/enemies/strider.tscn"),
+	"gunner": preload("res://scenes/enemies/gunner.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
