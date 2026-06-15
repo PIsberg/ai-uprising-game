@@ -1242,16 +1242,31 @@ func _build_floor_seams(def: Dictionary) -> void:
 	glow.emission = tc
 	glow.emission_energy_multiplier = 1.6
 	var spacing := 6.5
+	var xs: Array[float] = []
+	var zs: Array[float] = []
 	var x := -fs.x * 0.5 + spacing
 	while x < fs.x * 0.5 - 1.0:
 		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.16, 0.016, fs.y - 1.4), dark)
 		_seam_strip(Vector3(x, 0.013, 0), Vector3(0.045, 0.018, fs.y - 1.4), glow)
+		xs.append(x)
 		x += spacing
 	var z := -fs.y * 0.5 + spacing
 	while z < fs.y * 0.5 - 1.0:
 		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.16), dark)
 		_seam_strip(Vector3(0, 0.013, z), Vector3(fs.x - 1.4, 0.018, 0.045), glow)
+		zs.append(z)
 		z += spacing
+	# Brighter "data node" pips where the grid lines cross — a touch of polish
+	# that sells the lattice and catches the bloom.
+	var node := StandardMaterial3D.new()
+	node.albedo_color = tc
+	node.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	node.emission_enabled = true
+	node.emission = tc
+	node.emission_energy_multiplier = 3.2
+	for nx in xs:
+		for nz in zs:
+			_seam_strip(Vector3(nx, 0.015, nz), Vector3(0.22, 0.02, 0.22), node)
 
 func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	var mi := MeshInstance3D.new()

@@ -4,7 +4,7 @@ extends Node3D
 ##   godot --path . tests/level_shot.tscn
 ## Saves user://shot_<id>.png for each.
 
-const LEVELS := ["grok", "uplink", "overseer", "alien", "titan", "archon"]
+const LEVELS := ["gpt", "gemini", "mistral", "claude", "assembly", "suburb"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
