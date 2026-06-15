@@ -257,8 +257,13 @@ func _build_environment(def: Dictionary) -> void:
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
+	# Interiors: darken the distance fog so far walls recede into shadow instead of
+	# washing out into a bright themed band (open-sky levels keep their bright haze
+	# so the sky/horizon reads). Big readability + depth win for enclosed arenas.
+	if not def.get("open_sky", false):
+		env.fog_light_color = env.fog_light_color.darkened(0.5)
 	env.fog_density = e.get("fog_density", 0.01)
-	env.fog_aerial_perspective = 0.25
+	env.fog_aerial_perspective = 0.12
 	env.fog_sky_affect = 0.3
 
 	# Volumetric fog is for interior atmosphere / god-rays. Outdoors it floods
@@ -270,7 +275,10 @@ func _build_environment(def: Dictionary) -> void:
 		# Showcase levels can thicken the haze so light shafts/god-rays read.
 		if e.has("volumetric_density"):
 			env.volumetric_fog_density = e["volumetric_density"]
-		env.volumetric_fog_albedo = Color(0.7, 0.75, 0.8)
+		# A darker, less milky veil: the near-white albedo washed enclosed arenas
+		# into a flat bright haze. This keeps god-rays/shafts readable but lets the
+		# space hold shadow and depth.
+		env.volumetric_fog_albedo = Color(0.34, 0.37, 0.43)
 		env.volumetric_fog_length = 80.0
 		env.volumetric_fog_gi_inject = 0.25
 	else:
