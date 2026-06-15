@@ -30,6 +30,7 @@ func _ready() -> void:
 	attack_cooldown = 2.0
 	score_value = 140
 	head_radius = 0.5
+	combat_strafe = true # circle-strafe while shooting (and bank into it)
 	hp.max_health = max_health
 	hp.current_health = max_health
 
