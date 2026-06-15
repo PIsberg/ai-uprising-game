@@ -422,6 +422,9 @@ static func _alien() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 7, "trigger": 20},
 			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
 			{"type": "mender", "pos": Vector3(-12, 2.5, -8), "trigger": 26},
+			{"type": "alien", "pos": Vector3(18, 2.5, 6), "trigger": 28},
+			{"type": "strider", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
+			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
 		],
 		"pickups": [
@@ -702,6 +705,10 @@ static func _mistral() -> Dictionary:
 			{"type": "drone", "pos": Vector3(13, 2.5, 11), "trigger": 16},
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 17},
 			{"type": "mech", "pos": Vector3(15, 0.5, 15), "trigger": 20},
+			{"type": "strider", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
+			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15},
+			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -1017,6 +1024,11 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16},
 			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16},
 			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14},
+			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			{"type": "strider", "pos": Vector3(12, 0.5, -12), "trigger": 18},
+			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20},
+			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -10)},
@@ -1232,6 +1244,10 @@ static func _suburb() -> Dictionary:
 			{"type": "spider", "pos": Vector3(8, 0.5, 12), "trigger": 18},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},
 			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
+			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 22},
+			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
+			{"type": "strider", "pos": Vector3(-18, 0.5, 14), "trigger": 24},
+			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -16)},
