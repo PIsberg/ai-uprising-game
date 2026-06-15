@@ -210,7 +210,7 @@ func set_state(new_state: State) -> void:
 	elif not _alerted and (new_state == State.CHASE or new_state == State.ALERT or new_state == State.ATTACK):
 		_alerted = true
 		_alert()
-		_alert_allies(16.0, target) # first contact rallies the squad
+		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 
@@ -620,7 +620,7 @@ func _on_damaged(_amount: float, source: Node) -> void:
 		set_state(State.CHASE)
 	# Taking fire from off-screen rallies nearby allies to the shooter too.
 	if source and source.is_in_group("player") and source is Node3D:
-		_alert_allies(12.0, source as Node3D)
+		_alert_allies(16.0, source as Node3D)
 	# Hit reaction: white flash + a backward shove away from the damage source.
 	if state == State.DEAD:
 		return
