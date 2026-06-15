@@ -4,7 +4,7 @@ extends Node3D
 ##   godot --path . tests/level_shot.tscn
 ## Saves user://shot_<id>.png for each.
 
-const LEVELS := ["gpt", "gemini", "mistral", "claude", "assembly", "suburb"]
+const LEVELS := ["grok", "uplink", "overseer", "alien", "titan", "archon"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
@@ -35,10 +35,13 @@ func _ready() -> void:
 		var pcam := lvl.find_child("Camera3D", true, false) as Camera3D
 		if pcam:
 			pcam.current = false
-		# Interior-friendly framing: inside the room, eye-ish height, 3/4 angle.
+		# Player eye-level view: stand near the spawn, look toward the arena centre
+		# — the real in-game read (not a floor-filling overhead).
+		var player := lvl.find_child("Player", false, false) as Node3D
+		var spawn := player.global_position if player else Vector3(16, 0, 16)
 		cam.current = true
-		cam.global_position = Vector3(14, 6, 14)
-		cam.look_at(Vector3(0, 1.2, 0), Vector3.UP)
+		cam.global_position = Vector3(spawn.x * 0.7, 1.7, spawn.z * 0.7)
+		cam.look_at(Vector3(0, 1.4, 0), Vector3.UP)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		var img := get_viewport().get_texture().get_image()
