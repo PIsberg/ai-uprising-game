@@ -19,6 +19,7 @@ const ENEMY_SCENES := {
 	"mender": "res://scenes/enemies/mender.tscn",
 	"skitter": "res://scenes/enemies/skitter.tscn",
 	"strider": "res://scenes/enemies/strider.tscn",
+	"archon": "res://scenes/enemies/archon.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -38,6 +39,7 @@ const ENEMY_INFO := {
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
 	"alien": {"name": "VOID SENTINEL", "desc": "An off-world flyer the AI summoned across the dark. Strafes and spits corrosive bio-plasma volleys — its throat flares green right before it fires. Juke the orbs and shoot it down.", "scale": 1.0, "y": 1.4},
+	"archon": {"name": "ARCHON", "desc": "The AGI brain behind every machine you've fought. It does not fight — it hangs shielded and DEPLOYS endless legions. Wipe out each wave to drop the shield, then put a round through the mind.", "scale": 0.45, "y": 0.0},
 }
 
 const TAGLINES := {
@@ -205,6 +207,8 @@ func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	if path == "":
 		return null
 	var bot: Node3D = load(path).instantiate()
+	if "preview" in bot:
+		bot.preview = true # bosses with their own boot/wave logic: show the idle only
 	add_child(bot)
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera
@@ -250,6 +254,13 @@ func _demo(idx: int) -> void:
 	if not is_instance_valid(bot):
 		return
 	var ms: float = bot.move_speed if "move_speed" in bot else 4.0
+	if ms <= 0.1:
+		# Immovable units (the hovering ARCHON brain) idle and spin on their own —
+		# don't drag them across the stage; just pulse the occasional strike.
+		var hold := bot.create_tween().set_loops()
+		hold.tween_callback(_strike_once.bind(bot))
+		hold.tween_interval(2.2)
+		return
 	var seq := bot.create_tween().set_loops()
 	seq.tween_callback(_set_vel.bind(bot, Vector3(0, 0, ms)))
 	seq.tween_property(bot, "position", home + Vector3(0, 0, 0.9), 0.9)

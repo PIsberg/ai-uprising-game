@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://b0test0mender1"]
+[gd_scene format=3 uid="uid://buaqy5tl6cafk"]
 
 [ext_resource type="Script" path="res://tests/mender_probe.gd" id="1_probe"]
 

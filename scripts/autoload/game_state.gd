@@ -89,6 +89,29 @@ func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
 		unlocked_weapons.append(scene_path)
 
+## Every weapon scene in the game, in roughly ascending power. The warp cheat
+## hands the player the whole arsenal so any level can be played with everything.
+const ALL_WEAPONS: Array[String] = [
+	"res://scenes/weapons/pistol.tscn",
+	"res://scenes/weapons/smg.tscn",
+	"res://scenes/weapons/rifle.tscn",
+	"res://scenes/weapons/shotgun.tscn",
+	"res://scenes/weapons/tesla.tscn",
+	"res://scenes/weapons/arccoil.tscn",
+	"res://scenes/weapons/plasma.tscn",
+	"res://scenes/weapons/nova.tscn",
+	"res://scenes/weapons/gauss.tscn",
+	"res://scenes/weapons/twinrail.tscn",
+	"res://scenes/weapons/swarm.tscn",
+	"res://scenes/weapons/devastator.tscn",
+	"res://scenes/weapons/singularity.tscn",
+	"res://scenes/weapons/omega.tscn",
+]
+
+func unlock_all_weapons() -> void:
+	for path in ALL_WEAPONS:
+		unlock_weapon(path)
+
 # ---------- armory upgrades (bought with score between levels) ----------
 ## Three permanent per-run tracks; every weapon reads the multipliers live
 ## (Weapon.eff_damage / eff_mag_size / eff_reload_time). Score is the currency,

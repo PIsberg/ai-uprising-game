@@ -124,7 +124,11 @@ func _build_level_select() -> void:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(420, 44)
 		btn.text = "%d.  %s" % [i + 1, def.get("name", "FIRST CONTACT" if id == "01" else id.to_upper())]
-		btn.pressed.connect(func(): GameState.go_to_level(path))
+		# Warping in is for testing/showing off — hand over the entire arsenal so
+		# any level can be tried with every weapon.
+		btn.pressed.connect(func():
+			GameState.unlock_all_weapons()
+			GameState.go_to_level(path))
 		_levels_panel.add_child(btn)
 	var back := Button.new()
 	back.custom_minimum_size = Vector2(420, 40)

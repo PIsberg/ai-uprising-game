@@ -21,6 +21,7 @@ extends EnemyBase
 @export var hover_height: float = 4.6      ## Brain centre height above the floor.
 @export var proj_speed: float = 36.0
 @export var proj_damage: float = 12.0
+@export var preview: bool = false ## Briefing/menu showcase: idle the shielded brain, skip boot/waves/HUD/AI.
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 
@@ -99,6 +100,17 @@ func _ready() -> void:
 		eye = get_node_or_null("Eye")
 
 	_build_brain()
+
+	if preview:
+		# Briefing/menu showcase: just the idling, shielded brain — no boot
+		# cinematic, no boss bar, no minion waves, no AI. _process still spins the
+		# brain and pulses the core; SHIELDED never self-exposes (no live wave).
+		_mode = Mode.SHIELDED
+		_bob.scale = Vector3.ONE
+		_shield.visible = true
+		hp.invulnerable = true
+		set_physics_process(false)
+		return
 
 	# Hold the AI until the boot-up cinematic finishes.
 	_mode = Mode.BOOTING

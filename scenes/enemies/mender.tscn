@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://b0enemy0mender1"]
+[gd_scene format=3 uid="uid://u828nnex7aqe"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_mender.gd" id="1_mender"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

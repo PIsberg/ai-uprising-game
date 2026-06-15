@@ -549,6 +549,8 @@ static func _archon() -> Dictionary:
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.7, 0.35, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(-22, 0, 16), "color": Color(1, 0.55, 0.25)},
+			# The finale ultimate, sat right by the spawn — a cluster-carpet for the siege.
+			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(-22, 0, -22), "color": Color(1, 0.78, 0.35)},
 		],
 		"env": {
 			"sky_top": Color(0.02, 0.02, 0.06), "sky_horizon": Color(0.12, 0.06, 0.2),
