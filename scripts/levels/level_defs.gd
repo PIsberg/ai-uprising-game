@@ -924,15 +924,16 @@ static func _gpt() -> Dictionary:
 		"spawn": Vector3(-18, 0.6, -18),
 		"exit": Vector3(18, 1.5, 18),
 		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.4, 0.95, 0.55)},
-		# Polished foundry floor: green server glow reflects across the hall.
-		"floor_material": "res://assets/materials/vault_floor.tres",
+		# Dark foundry deck so the green tech-grid + server glow read as contrast
+		# instead of a flat bright sheet washed out by auto-exposure.
+		"floor_color": Color(0.05, 0.09, 0.06),
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.1, 0.32, 0.16),
-			"ambient": Color(0.5, 0.82, 0.6), "ambient_energy": 0.45,
-			"sky_contribution": 0.45, "glow": 0.85, "fog_density": 0.013,
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.08, 0.22, 0.12),
+			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.32,
+			"sky_contribution": 0.4, "glow": 0.85, "fog_density": 0.009,
 			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
-			"contrast": 1.16, "saturation": 1.12, "brightness": 0.82, "volumetric_density": 0.011,
+			"contrast": 1.16, "saturation": 1.02, "brightness": 0.82, "volumetric_density": 0.011,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
