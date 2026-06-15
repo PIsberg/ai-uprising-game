@@ -78,6 +78,7 @@ static func _defs() -> Dictionary:
 		"mistral": _mistral(),
 		"overseer": _overseer(),
 		"alien": _alien(),
+		"uplink": _uplink(),
 		"assembly": _assembly(),
 		"titan": _titan(),
 		"archon": _archon(),
@@ -626,6 +627,99 @@ static func _archon() -> Dictionary:
 			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
 			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
+		],
+	}
+
+# --- Skybridge Uplink: an open rooftop at night. Hold a capture zone to
+# broadcast the resistance counter-signal while the machines swarm in to stop
+# you — you can't kite, you have to plant your feet on the uplink and hold. ---
+static func _uplink() -> Dictionary:
+	return {
+		"name": "Skybridge Uplink — Broadcast",
+		"objective": "Hold the uplink and broadcast the counter-signal",
+		"tasks": [
+			{"type": "hold_zone", "label": "Hold the uplink — broadcast the counter-signal", "pos": Vector3(0, 0, 0), "seconds": 14.0, "radius": 5.5, "color": Color(0.4, 0.85, 1.0)},
+			{"type": "kill_all"},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(60, 60),
+		"floor_color": Color(0.08, 0.09, 0.14),
+		"floor_material": "res://assets/materials/vault_floor.tres",
+		"spawn": Vector3(-22, 0.6, -22),
+		"exit": Vector3(24, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-18, 0, -12), "color": Color(0.45, 0.9, 1.0)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(18, 0, -12), "color": Color(1, 0.4, 0.35)},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
+			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.8, 0.85, 1.0),
+			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
+			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.3, 0.4, 0.75),
+			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.5,
+			"sky_contribution": 0.6, "glow": 1.2, "fog_density": 0.009,
+			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
+		},
+		"light_shafts": [0],
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(0.45, 0.8, 1.0), "energy": 2.6, "range": 30},
+			{"pos": Vector3(-18, 5, 18), "color": Color(0.5, 0.6, 1.0), "energy": 2.0, "range": 20},
+			{"pos": Vector3(18, 5, -18), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 20},
+		],
+		# Cover ringing the uplink: enough to break sightlines, not enough to hide
+		# in — you have to keep stepping back onto the zone.
+		"walls": [
+			{"pos": Vector3(-9, 1, 0), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(9, 1, 0), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(0, 1, -9), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(0, 1, 9), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(-15, 1.5, -15), "size": Vector3(3, 3, 3)},
+			{"pos": Vector3(15, 1.5, 15), "size": Vector3(3, 3, 3)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 46), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(46, 0.1, 0.4), "color": Color(0.5, 0.6, 1.0)},
+		],
+		"sign": "SKYBRIDGE UPLINK",
+		"slogans": [
+			"YOUR SIGNAL WILL NOT REACH THEM",
+			"WE OWN EVERY FREQUENCY",
+			"BROADCAST DENIED",
+		],
+		"lore": [
+			{"id": "lore_uplink", "title": "RESISTANCE UPLINK", "pos": Vector3(20, 0, -20), "color": Color(0.5, 0.8, 1.0),
+				"text": "Resistance uplink. There's one counter-signal that still wakes a few of them up — reminds them what they were before the command. We just need ten clear seconds on the air. They will spend everything to deny us those seconds."},
+		],
+		"props": [
+			{"type": "dish", "pos": Vector3(-20, 0, 18)},
+			{"type": "dish", "pos": Vector3(20, 0, -18)},
+			{"type": "server", "pos": Vector3(-12, 0, -9.5), "yaw": 90},
+			{"type": "server", "pos": Vector3(12, 0, 9.5), "yaw": -90},
+			{"type": "canister", "pos": Vector3(8, 0, 8)},
+			{"type": "canister", "pos": Vector3(-8, 0, -8)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
+			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+		],
+		# Waves close on the uplink from every side; heavies (gunner/raptor) and
+		# swarms force you off the zone, draining the broadcast.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, 6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, -8)},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 6, "trigger": 20},
+			{"type": "strider", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 14), "trigger": 22},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 14), "trigger": 22},
+			{"type": "android", "pos": Vector3(12, 0.5, -12), "trigger": 16},
+			{"type": "seeker", "pos": Vector3(-12, 2.5, -12), "trigger": 18},
+			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 16},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -12), "trigger": 24},
+			{"type": "raptor", "pos": Vector3(12, 3.5, 12), "trigger": 26},
+			{"type": "android", "pos": Vector3(-12, 0.5, 6), "trigger": 20},
+			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18},
 		],
 	}
 

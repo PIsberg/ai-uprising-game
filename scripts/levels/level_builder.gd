@@ -1603,6 +1603,19 @@ func _build_tasks(def: Dictionary) -> void:
 				timer.task_id = id
 				timer.seconds = secs
 				add_child(timer)
+			"hold_zone":
+				var id: String = t.get("id", "hold")
+				var secs: float = t.get("seconds", 12.0)
+				GameState.register_task(id, t.get("label", "Hold the capture zone"), secs)
+				var zone := HoldZone.new()
+				zone.task_id = id
+				zone.hold_seconds = secs
+				if t.has("radius"):
+					zone.radius = t["radius"]
+				if t.has("color"):
+					zone.accent = t["color"]
+				zone.position = t.get("pos", Vector3.ZERO)
+				add_child(zone)
 
 func _build_exit(def: Dictionary) -> void:
 	if def.get("no_exit", false):
