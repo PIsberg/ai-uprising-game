@@ -148,7 +148,7 @@ func _ready() -> void:
 			_on_grenades_changed(player.grenades)
 		if player.has_signal("pickup_message"):
 			player.pickup_message.connect(_show_toast)
-	GameState.score_changed.connect(func(s): score_label.text = "Score: %d" % s)
+	GameState.score_changed.connect(func(s): score_label.text = tr("Score: %d") % s)
 	score_label.text = "Score: 0"
 	objective_label.text = "Eliminate the AI and reach the green beacon"
 	GameState.player_died.connect(func(): game_over_menu.visible = true)
@@ -182,8 +182,29 @@ func _build_pause_audio() -> void:
 	sfx.value_changed.connect(func(v: float): AudioBus.set_sfx_volume(v))
 	var music := _audio_slider_row(vbox, "Music", AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
+	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
+
+## Language picker in the pause menu. Static Controls re-translate live on the
+## locale change; the few code-built labels refresh next time the menu is opened.
+func _build_language_row(parent: Node) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = "Language"
+	lbl.custom_minimum_size = Vector2(110, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opt.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	for entry in GraphicsSettings.LANGUAGES:
+		opt.add_item(entry[1])
+	opt.selected = GraphicsSettings.language_index()
+	opt.item_selected.connect(func(idx: int):
+		GraphicsSettings.set_language(GraphicsSettings.LANGUAGES[idx][0]))
+	row.add_child(lbl)
+	row.add_child(opt)
+	parent.add_child(row)
 
 func _audio_slider_row(parent: Node, label: String, val: float) -> HSlider:
 	var row := HBoxContainer.new()
@@ -262,7 +283,7 @@ func _build_overlord_label() -> void:
 func _overlord_say(line: String) -> void:
 	if _overlord_label == null or line == "":
 		return
-	_overlord_label.text = "▌ " + line
+	_overlord_label.text = "▌ " + tr(line)
 	_overlord_time = 4.2
 	AudioBus.play_synth_ui("overlord_glitch", -9.0, randf_range(0.95, 1.08))
 
@@ -284,7 +305,7 @@ func _on_combo_changed(combo: int, mult: float) -> void:
 		if tier >= 4 and _overlord_time <= 0.0 and randf() < 0.7:
 			_overlord_say(OVERLORD_RATTLED[randi() % OVERLORD_RATTLED.size()])
 	if combo >= 2:
-		_combo_label.text = "COMBO ×%d   %.2f× SCORE" % [combo, mult]
+		_combo_label.text = tr("COMBO ×%d   %.2f× SCORE") % [combo, mult]
 		_combo_alpha = 1.0
 		_combo_pop = 1.0
 	else:
@@ -296,7 +317,7 @@ func _on_level_graded(grade: String, stats: Dictionary) -> void:
 
 ## Cheer a finished task on the toast (the checklist updates via tasks_changed).
 func _on_task_completed(label: String) -> void:
-	_show_toast("✔ %s" % label)
+	_show_toast("✔ " + tr(label))
 
 ## Polls the hostiles a few times a second and tells AudioBus whether the player
 ## is in active combat, so the score swells during fights and settles when clear.
@@ -370,16 +391,18 @@ func _on_level_completed() -> void:
 	# Triumphant sting on clear.
 	AudioBus.play_synth_ui("victory", -1.0, 1.0)
 	if GameState.has_next_level():
-		win_title.text = "SECTOR CLEARED"
+		win_title.text = tr("SECTOR CLEARED")
 		win_continue.text = "Continue  ▸"
 	else:
-		win_title.text = "AI UPRISING ENDED"
+		win_title.text = tr("AI UPRISING ENDED")
 		win_continue.text = "Finish"
 	if _last_grade != "":
 		var acc := int(round(float(_last_stats.get("accuracy", 0.0)) * 100.0))
 		var t := int(round(float(_last_stats.get("time", 0.0))))
-		win_title.text += "\n\nRANK  %s\nAccuracy %d%%   ·   Best Combo ×%d   ·   %02d:%02d" % [
-			_last_grade, acc, int(_last_stats.get("max_combo", 0)), t / 60, t % 60]
+		win_title.text += "\n\n" + (tr("RANK  %s") % _last_grade) \
+			+ "\n" + (tr("Accuracy %d%%") % acc) \
+			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
+			+ "   ·   %02d:%02d" % [t / 60, t % 60]
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
@@ -501,7 +524,7 @@ func _exit_pause() -> void:
 
 func _refresh_pause_graphics() -> void:
 	if pause_graphics:
-		pause_graphics.text = "Graphics: %s" % GraphicsSettings.quality_label()
+		pause_graphics.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 
 # ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
 
@@ -540,7 +563,7 @@ func _render_objective() -> void:
 		return
 	var parts: Array = []
 	for t in GameState.level_tasks:
-		var line: String = "%s %s" % ["✔" if t["done"] else "▢", t["label"]]
+		var line: String = "%s %s" % ["✔" if t["done"] else "▢", tr(t["label"])]
 		if not t["done"] and t.get("goal", 0.0) > 0.0:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
@@ -691,7 +714,7 @@ func _reticle_hue(name: String) -> Color:
 
 func _on_weapon_added(w: Weapon) -> void:
 	if w and w.data:
-		_show_toast("WEAPON ACQUIRED — " + w.data.display_name)
+		_show_toast(tr("WEAPON ACQUIRED — ") + w.data.display_name)
 
 func _on_boss_spawned(boss: Node) -> void:
 	if boss == null or not is_instance_valid(boss):
@@ -709,7 +732,7 @@ func _on_boss_spawned(boss: Node) -> void:
 	# Let the overlord gloat a beat after the warning toast lands.
 	var t := get_tree().create_timer(1.3)
 	t.timeout.connect(func(): _overlord_say(OVERLORD_BOSS[randi() % OVERLORD_BOSS.size()]))
-	_show_toast("⚠ WARNING — " + boss_name_label.text)
+	_show_toast(tr("⚠ WARNING — ") + boss_name_label.text)
 
 func _on_boss_health(cur: float, max_: float) -> void:
 	boss_health_bar.max_value = max_
@@ -717,10 +740,10 @@ func _on_boss_health(cur: float, max_: float) -> void:
 
 func _on_boss_died(_src: Node) -> void:
 	boss_bar.visible = false
-	_show_toast(boss_name_label.text + " DESTROYED")
+	_show_toast(boss_name_label.text + tr(" DESTROYED"))
 
 func _on_grenades_changed(count: int) -> void:
-	grenade_label.text = "Grenades (G): %d" % count # hidden node; kept in sync anyway
+	grenade_label.text = tr("Grenades (G): %d") % count # hidden node; kept in sync anyway
 	for i in _pips.size():
 		_pips[i].color = Color(1.0, 0.72, 0.2) if i < count else Color(1, 1, 1, 0.14)
 

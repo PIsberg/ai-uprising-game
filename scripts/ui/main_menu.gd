@@ -40,7 +40,7 @@ func _build_extra_settings() -> void:
 
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
-	_fps_btn.text = "Framerate: " + GraphicsSettings.fps_label()
+	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()
 	_fps_btn.pressed.connect(_on_fps_pressed)
 	_settings.add_child(_fps_btn)
 
@@ -50,9 +50,34 @@ func _build_extra_settings() -> void:
 	var music := _add_slider_row("Music Volume", 0.0, 1.0, 0.05, AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
 
+	_add_language_row()
+
 	# Keep the Back button at the bottom of the panel.
 	if back:
 		_settings.move_child(back, _settings.get_child_count() - 1)
+
+## Language picker: an OptionButton of the available locales. Changing it applies
+## the locale immediately and reloads the menu so every runtime-built label
+## rebuilds in the new language.
+func _add_language_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = "Language"
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opt.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED # native names stay native
+	for entry in GraphicsSettings.LANGUAGES:
+		opt.add_item(entry[1])
+	opt.selected = GraphicsSettings.language_index()
+	opt.item_selected.connect(func(idx: int):
+		GraphicsSettings.set_language(GraphicsSettings.LANGUAGES[idx][0])
+		get_tree().reload_current_scene())
+	row.add_child(lbl)
+	row.add_child(opt)
+	_settings.add_child(row)
 
 func _add_slider_row(label: String, mn: float, mx: float, step: float, val: float) -> HSlider:
 	var row := HBoxContainer.new()
@@ -75,7 +100,7 @@ func _add_slider_row(label: String, mn: float, mx: float, step: float, val: floa
 
 func _on_fps_pressed() -> void:
 	GraphicsSettings.cycle_fps()
-	_fps_btn.text = "Framerate: " + GraphicsSettings.fps_label()
+	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()
 
 func _show_panel(which: Control) -> void:
 	_main.visible = which == _main
@@ -138,7 +163,7 @@ func _build_level_select() -> void:
 	$Center/VBox.add_child(_levels_panel)
 
 func _refresh_graphics_label() -> void:
-	_graphics_btn.text = "Graphics: %s" % GraphicsSettings.quality_label()
+	_graphics_btn.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 
 # --- main ---
 func _on_play_pressed() -> void:

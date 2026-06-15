@@ -28,6 +28,11 @@ AudioBus="*res://scripts/autoload/audio_bus.gd"
 SoundSynth="*res://scripts/autoload/sound_synth.gd"
 GraphicsSettings="*res://scripts/autoload/graphics_settings.gd"
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://assets/i18n/strings.en.translation", "res://assets/i18n/strings.es.translation", "res://assets/i18n/strings.fr.translation", "res://assets/i18n/strings.de.translation", "res://assets/i18n/strings.pt.translation")
+locale/fallback="en"
+
 [display]
 
 window/size/viewport_width=1920

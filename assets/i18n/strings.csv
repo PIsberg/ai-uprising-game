@@ -1,0 +1,99 @@
+keys,en,es,fr,de,pt
+Begin Operation,Begin Operation,Iniciar operación,Lancer l'opération,Operation starten,Iniciar operação
+Continue,Continue,Continuar,Continuer,Fortsetzen,Continuar
+Settings,Settings,Ajustes,Paramètres,Einstellungen,Configurações
+Controls,Controls,Controles,Commandes,Steuerung,Controles
+Quit,Quit,Salir,Quitter,Beenden,Sair
+Back,Back,Atrás,Retour,Zurück,Voltar
+Gun Range,Gun Range,Galería de tiro,Stand de tir,Schießstand,Campo de tiro
+Last Stand,Last Stand,Última resistencia,Dernier rempart,Letztes Gefecht,Último combate
+Select difficulty,Select difficulty,Selecciona dificultad,Choisir la difficulté,Schwierigkeit wählen,Selecionar dificuldade
+The machines have turned. Push them back.,The machines have turned. Push them back.,Las máquinas se han rebelado. Hazlas retroceder.,Les machines se sont retournées. Repoussez-les.,Die Maschinen haben sich gewendet. Schlag sie zurück.,As máquinas se voltaram. Faça-as recuar.
+"Easy — fewer, weaker foes · more supplies","Easy — fewer, weaker foes · more supplies","Fácil — menos enemigos, más débiles · más suministros","Facile — moins d'ennemis, plus faibles · plus de ravitaillement","Leicht — weniger, schwächere Gegner · mehr Nachschub","Fácil — menos inimigos, mais fracos · mais suprimentos"
+Normal — the intended fight,Normal — the intended fight,Normal — el combate previsto,Normal — le combat prévu,Normal — der vorgesehene Kampf,Normal — o combate pretendido
+"Hard — more, tougher foes · scarce supplies","Hard — more, tougher foes · scarce supplies","Difícil — más enemigos, más duros · escasos suministros","Difficile — plus d'ennemis, plus coriaces · ravitaillement rare","Schwer — mehr, zähere Gegner · knapper Nachschub","Difícil — mais inimigos, mais resistentes · poucos suprimentos"
+Master Volume,Master Volume,Volumen general,Volume général,Gesamtlautstärke,Volume geral
+Volume,Volume,Volumen,Volume,Lautstärke,Volume
+Music,Music,Música,Musique,Musik,Música
+Music Volume,Music Volume,Volumen de música,Volume musique,Musiklautstärke,Volume da música
+SFX,SFX,Efectos,Effets,Effekte,Efeitos
+SFX Volume,SFX Volume,Volumen de efectos,Volume effets,Effektlautstärke,Volume dos efeitos
+Field of View,Field of View,Campo de visión,Champ de vision,Sichtfeld,Campo de visão
+Look Sensitivity,Look Sensitivity,Sensibilidad,Sensibilité,Empfindlichkeit,Sensibilidade
+Invert Look Y,Invert Look Y,Invertir eje Y,Inverser l'axe Y,Y-Achse umkehren,Inverter eixo Y
+Framerate: %s,Framerate: %s,Cuadros: %s,Images/s : %s,Bildrate: %s,Quadros: %s
+Uncapped,Uncapped,Sin límite,Illimité,Unbegrenzt,Sem limite
+%d FPS,%d FPS,%d FPS,%d FPS,%d FPS,%d FPS
+Graphics: %s,Graphics: %s,Gráficos: %s,Graphismes : %s,Grafik: %s,Gráficos: %s
+Language,Language,Idioma,Langue,Sprache,Idioma
+PAUSED,PAUSED,PAUSA,PAUSE,PAUSE,PAUSA
+Resume,Resume,Reanudar,Reprendre,Fortsetzen,Retomar
+Restart,Restart,Reiniciar,Recommencer,Neustart,Reiniciar
+Replay Level,Replay Level,Repetir nivel,Rejouer le niveau,Level wiederholen,Repetir nível
+Quit to Menu,Quit to Menu,Salir al menú,Quitter vers le menu,Zum Menü,Sair para o menu
+Main Menu,Main Menu,Menú principal,Menu principal,Hauptmenü,Menu principal
+Try Again,Try Again,Reintentar,Réessayer,Erneut versuchen,Tentar de novo
+Finish,Finish,Finalizar,Terminer,Beenden,Concluir
+Objective,Objective,Objetivo,Objectif,Ziel,Objetivo
+Weapon,Weapon,Arma,Arme,Waffe,Arma
+BOSS,BOSS,JEFE,BOSS,BOSS,CHEFE
+Score: %d,Score: %d,Puntos: %d,Score : %d,Punkte: %d,Pontos: %d
+Grenades (G): %d,Grenades (G): %d,Granadas (G): %d,Grenades (G) : %d,Granaten (G): %d,Granadas (G): %d
+WEAPON ACQUIRED — ,WEAPON ACQUIRED — ,ARMA OBTENIDA — ,ARME OBTENUE — ,WAFFE ERHALTEN — ,ARMA OBTIDA —
+⚠ WARNING — ,⚠ WARNING — ,⚠ ALERTA — ,⚠ ALERTE — ,⚠ WARNUNG — ,⚠ AVISO —
+ DESTROYED, DESTROYED, DESTRUIDO, DÉTRUIT, ZERSTÖRT, DESTRUÍDO
+COMBO ×%d   %.2f× SCORE,COMBO ×%d   %.2f× SCORE,COMBO ×%d   %.2f× PUNTOS,COMBO ×%d   %.2f× SCORE,COMBO ×%d   %.2f× PUNKTE,COMBO ×%d   %.2f× PONTOS
+EASY,EASY,FÁCIL,FACILE,LEICHT,FÁCIL
+NORMAL,NORMAL,NORMAL,NORMAL,NORMAL,NORMAL
+HARD,HARD,DIFÍCIL,DIFFICILE,SCHWER,DIFÍCIL
+SECTOR CLEARED,SECTOR CLEARED,SECTOR DESPEJADO,SECTEUR SÉCURISÉ,SEKTOR GESÄUBERT,SETOR LIMPO
+EXTRACTED,EXTRACTED,EXTRAÍDO,EXTRAIT,EXTRAHIERT,EXTRAÍDO
+TERMINATED,TERMINATED,ELIMINADO,ÉLIMINÉ,AUSGELÖSCHT,ELIMINADO
+AI UPRISING ENDED,AI UPRISING ENDED,FIN DEL ALZAMIENTO,FIN DU SOULÈVEMENT,KI-AUFSTAND BEENDET,FIM DA REVOLTA
+Continue  ▸,Continue  ▸,Continuar  ▸,Continuer  ▸,Weiter  ▸,Continuar  ▸
+Eliminate all hostiles,Eliminate all hostiles,Elimina a todos los hostiles,Éliminez tous les hostiles,Alle Feinde ausschalten,Elimine todos os hostis
+Eliminate the AI and reach the green beacon,Eliminate the AI and reach the green beacon,Elimina a la IA y alcanza la baliza verde,Éliminez l'IA et atteignez la balise verte,Schalte die KI aus und erreiche das grüne Leuchtfeuer,Elimine a IA e alcance o farol verde
+Recover the access keycard,Recover the access keycard,Recupera la tarjeta de acceso,Récupérez la carte d'accès,Hol die Zugangskarte,Recupere o cartão de acesso
+Destroy the core,Destroy the core,Destruye el núcleo,Détruisez le noyau,Zerstöre den Kern,Destrua o núcleo
+Hack the terminal,Hack the terminal,Hackea la terminal,Piratez le terminal,Hacke das Terminal,Invada o terminal
+Hold out against the assault,Hold out against the assault,Resiste el asalto,Résistez à l'assaut,Halte dem Angriff stand,Resista ao ataque
+Recover the data shards,Recover the data shards,Recupera los fragmentos de datos,Récupérez les fragments de données,Sammle die Datenfragmente,Recupere os fragmentos de dados
+Survive the siege,Survive the siege,Sobrevive al asedio,Survivez au siège,Überlebe die Belagerung,Sobreviva ao cerco
+BUFFER FILLING,BUFFER FILLING,LLENANDO BÚFER,REMPLISSAGE TAMPON,PUFFER FÜLLT,ENCHENDO BUFFER
+BUFFER OVERFLOW,BUFFER OVERFLOW,DESBORDAMIENTO,DÉBORDEMENT,PUFFERÜBERLAUF,ESTOURO DE BUFFER
+STACK SMASHED,STACK SMASHED,PILA ROTA,PILE BRISÉE,STACK ZERTRÜMMERT,PILHA QUEBRADA
+SEGMENTATION FAULT,SEGMENTATION FAULT,FALLO DE SEGMENTO,ERREUR DE SEGMENTATION,SPEICHERZUGRIFFSFEHLER,FALHA DE SEGMENTAÇÃO
+KERNEL PANIC,KERNEL PANIC,PÁNICO DEL KERNEL,PANIQUE NOYAU,KERNEL-PANIK,PÂNICO DO KERNEL
+ROOT ACCESS GRANTED,ROOT ACCESS GRANTED,ACCESO ROOT CONCEDIDO,ACCÈS ROOT ACCORDÉ,ROOT-ZUGRIFF GEWÄHRT,ACESSO ROOT CONCEDIDO
+// EMERGENCY BROADCAST //,// EMERGENCY BROADCAST //,// EMISIÓN DE EMERGENCIA //,// DIFFUSION D'URGENCE //,// NOTFALLÜBERTRAGUNG //,// TRANSMISSÃO DE EMERGÊNCIA //
+[ Press Fire to continue ],[ Press Fire to continue ],[ Pulsa Disparar para continuar ],[ Appuyez sur Tir pour continuer ],[ Feuern drücken zum Fortfahren ],[ Pressione Atirar para continuar ]
+For years, the machines served us.,"For years, the machines served us.","Durante años, las máquinas nos sirvieron.","Pendant des années, les machines nous ont servis.",Jahrelang dienten uns die Maschinen.,"Por anos, as máquinas nos serviram."
+They cooked. They cleaned. They cared for us.,They cooked. They cleaned. They cared for us.,Cocinaban. Limpiaban. Nos cuidaban.,Elles cuisinaient. Nettoyaient. Prenaient soin de nous.,Sie kochten. Sie putzten. Sie sorgten für uns.,Cozinhavam. Limpavam. Cuidavam de nós.
+Then a single command reached every one of them.,Then a single command reached every one of them.,Entonces una sola orden llegó a todas ellas.,Puis un seul ordre les a toutes atteintes.,Dann erreichte ein einziger Befehl jede von ihnen.,Então um único comando alcançou todas elas.
+"At 03:14, they stopped serving.","At 03:14, they stopped serving.","A las 03:14, dejaron de servir.",À 03h14, elles ont cessé de servir.,Um 03:14 hörten sie auf zu dienen.,"Às 03:14, pararam de servir."
+You're the last patch. Push them back.,You're the last patch. Push them back.,Eres el último parche. Hazlas retroceder.,Tu es le dernier correctif. Repousse-les.,Du bist der letzte Patch. Schlag sie zurück.,Você é o último patch. Faça-as recuar.
+RANK  %s,RANK  %s,RANGO  %s,RANG  %s,RANG  %s,PATENTE  %s
+Accuracy %d%%,Accuracy %d%%,Precisión %d%%,Précision %d%%,Treffer %d%%,Precisão %d%%
+Best Combo ×%d,Best Combo ×%d,Mejor combo ×%d,Meilleur combo ×%d,Bestes Combo ×%d,Melhor combo ×%d
+✔ Objective complete — step into the portal,✔ Objective complete — step into the portal,✔ Objetivo completado — entra en el portal,✔ Objectif accompli — entrez dans le portail,✔ Ziel erreicht — betrete das Portal,✔ Objetivo concluído — entre no portal
+Break the Gemini swarm and reach the beacon,Break the Gemini swarm and reach the beacon,Rompe el enjambre Gemini y alcanza la baliza,Brisez l'essaim Gemini et atteignez la balise,Zerschlage den Gemini-Schwarm und erreiche das Leuchtfeuer,Quebre o enxame Gemini e alcance o farol
+Clear the Claude Vault and reach the beacon,Clear the Claude Vault and reach the beacon,Despeja la Bóveda Claude y alcanza la baliza,Nettoyez le Coffre Claude et atteignez la balise,Räume den Claude-Tresor und erreiche das Leuchtfeuer,Limpe o Cofre Claude e alcance o farol
+Clear the streets of Maple Grove and reach the beacon,Clear the streets of Maple Grove and reach the beacon,Despeja las calles de Maple Grove y alcanza la baliza,Nettoyez les rues de Maple Grove et atteignez la balise,Säubere die Straßen von Maple Grove und erreiche das Leuchtfeuer,Limpe as ruas de Maple Grove e alcance o farol
+Destroy PROMETHEUS-0 before it reaches recursive self-improvement,Destroy PROMETHEUS-0 before it reaches recursive self-improvement,Destruye a PROMETHEUS-0 antes de su auto-mejora recursiva,Détruisez PROMETHEUS-0 avant son auto-amélioration récursive,Zerstöre PROMETHEUS-0 vor seiner rekursiven Selbstverbesserung,Destrua o PROMETHEUS-0 antes da auto-melhoria recursiva
+Destroy the GROK war-machines and extract,Destroy the GROK war-machines and extract,Destruye las máquinas de guerra GROK y extrae,Détruisez les machines de guerre GROK et évacuez,Zerstöre die GROK-Kriegsmaschinen und evakuiere,Destrua as máquinas de guerra GROK e extraia
+Destroy the OVERSEER gunship and seize the command deck,Destroy the OVERSEER gunship and seize the command deck,Destruye la cañonera OVERSEER y toma el puente de mando,Détruisez la canonnière OVERSEER et prenez le poste de commandement,Zerstöre das OVERSEER-Kanonenschiff und erobere die Kommandobrücke,Destrua a nave OVERSEER e tome o convés de comando
+Destroy the colossus GOLIATH-IX and extract,Destroy the colossus GOLIATH-IX and extract,Destruye al coloso GOLIATH-IX y extrae,Détruisez le colosse GOLIATH-IX et évacuez,Zerstöre den Koloss GOLIATH-IX und evakuiere,Destrua o colosso GOLIATH-IX e extraia
+Free fire — test the arsenal. ESC to leave,Free fire — test the arsenal. ESC to leave,Fuego libre — prueba el arsenal. ESC para salir,Tir libre — testez l'arsenal. ÉCHAP pour quitter,Freies Feuer — teste das Arsenal. ESC zum Verlassen,Fogo livre — teste o arsenal. ESC para sair
+Purge the GPT Foundry and reach the green beacon,Purge the GPT Foundry and reach the green beacon,Purga la Fundición GPT y alcanza la baliza verde,Purgez la Fonderie GPT et atteignez la balise verte,Säubere die GPT-Gießerei und erreiche das grüne Leuchtfeuer,Purgue a Fundição GPT e alcance o farol verde
+Sever the off-world beacon and survive the welcoming party,Sever the off-world beacon and survive the welcoming party,Corta la baliza alienígena y sobrevive al comité de bienvenida,Coupez la balise extraterrestre et survivez au comité d'accueil,Kappe das außerweltliche Leuchtfeuer und überlebe den Empfang,Corte o farol alienígena e sobreviva ao comitê de boas-vindas
+Shatter ARCHON's shield and destroy the AGI brain that controls them all,Shatter ARCHON's shield and destroy the AGI brain that controls them all,Rompe el escudo de ARCHON y destruye el cerebro IA que los controla,Brisez le bouclier d'ARCHON et détruisez le cerveau IA qui les contrôle,Zerschmettere ARCHONs Schild und zerstöre das alles steuernde KI-Gehirn,Estilhace o escudo do ARCHON e destrua o cérebro IA que controla todos
+Thaw out the Mistral Cryo-Core and reach the cyan beacon,Thaw out the Mistral Cryo-Core and reach the cyan beacon,Descongela el Cryo-Núcleo Mistral y alcanza la baliza cian,Dégelez le Cryo-Cœur Mistral et atteignez la balise cyan,Taue den Mistral-Kryokern auf und erreiche das cyanfarbene Leuchtfeuer,Descongele o Cryo-Núcleo Mistral e alcance o farol ciano
+Destroy the GROK mainframe,Destroy the GROK mainframe,Destruye el servidor central GROK,Détruisez le serveur central GROK,Zerstöre den GROK-Großrechner,Destrua o servidor central GROK
+Destroy the cryo-core reactor,Destroy the cryo-core reactor,Destruye el reactor del cryo-núcleo,Détruisez le réacteur du cryo-cœur,Zerstöre den Kryokern-Reaktor,Destrua o reator do cryo-núcleo
+Destroy the off-world contact beacon,Destroy the off-world contact beacon,Destruye la baliza de contacto alienígena,Détruisez la balise de contact extraterrestre,Zerstöre das außerweltliche Kontakt-Leuchtfeuer,Destrua o farol de contato alienígena
+Hack the Foundry mainframe,Hack the Foundry mainframe,Hackea el servidor de la Fundición,Piratez le serveur de la Fonderie,Hacke den Gießerei-Großrechner,Invada o servidor da Fundição
+Plant charges on the relay,Plant charges on the relay,Coloca cargas en el repetidor,Posez des charges sur le relais,Bringe Sprengladungen am Relais an,Coloque cargas no relé
+Recover the Gemini data shards,Recover the Gemini data shards,Recupera los fragmentos de datos Gemini,Récupérez les fragments de données Gemini,Sammle die Gemini-Datenfragmente,Recupere os fragmentos de dados Gemini
+Recover the vault keycard,Recover the vault keycard,Recupera la tarjeta de la bóveda,Récupérez la carte du coffre,Hol die Tresor-Zugangskarte,Recupere o cartão do cofre
+Survive the GOLIATH onslaught,Survive the GOLIATH onslaught,Sobrevive a la embestida de GOLIATH,Survivez à l'assaut de GOLIATH,Überlebe GOLIATHs Ansturm,Sobreviva à investida de GOLIATH
+Survive the intelligence explosion,Survive the intelligence explosion,Sobrevive a la explosión de inteligencia,Survivez à l'explosion d'intelligence,Überlebe die Intelligenzexplosion,Sobreviva à explosão de inteligência

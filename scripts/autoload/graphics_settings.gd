@@ -29,10 +29,35 @@ const FPS_OPTIONS := [0, 30, 60, 120, 144]
 const SETTINGS_PATH := "user://settings.cfg"
 const LABELS := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
 
+## Selectable UI languages: [locale code, native display name]. English is the
+## default and the fallback for any string a language hasn't translated yet.
+const LANGUAGES := [
+	["en", "English"],
+	["es", "Español"],
+	["fr", "Français"],
+	["de", "Deutsch"],
+	["pt", "Português"],
+]
+var language: String = "en"
+
 func _ready() -> void:
 	_load_settings()
+	TranslationServer.set_locale(language)
 	_apply_viewport.call_deferred()
 	Engine.max_fps = max_fps
+
+## Switch UI language live and persist it. Controls re-translate automatically;
+## menus that build text in code should refresh/reload after calling this.
+func set_language(code: String) -> void:
+	language = code
+	TranslationServer.set_locale(code)
+	_save_settings()
+
+func language_index() -> int:
+	for i in LANGUAGES.size():
+		if LANGUAGES[i][0] == language:
+			return i
+	return 0
 
 func set_fov(v: float) -> void:
 	fov = clampf(v, 60.0, 110.0)
@@ -60,7 +85,7 @@ func cycle_fps() -> void:
 	set_max_fps(FPS_OPTIONS[(idx + 1) % FPS_OPTIONS.size()] if idx != -1 else 60)
 
 func fps_label() -> String:
-	return "Uncapped" if max_fps == 0 else "%d FPS" % max_fps
+	return tr("Uncapped") if max_fps == 0 else tr("%d FPS") % max_fps
 
 ## "At least HIGH" — ULTRA inherits everything gated on this.
 func is_high() -> bool:
@@ -217,6 +242,7 @@ func _load_settings() -> void:
 		fov = clampf(float(cf.get_value("display", "fov", 85.0)), 60.0, 110.0)
 		sensitivity = clampf(float(cf.get_value("input", "sensitivity", 1.0)), 0.2, 3.0)
 		invert_y = bool(cf.get_value("input", "invert_y", false))
+		language = String(cf.get_value("locale", "language", "en"))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -226,4 +252,5 @@ func _save_settings() -> void:
 	cf.set_value("display", "fov", fov)
 	cf.set_value("input", "sensitivity", sensitivity)
 	cf.set_value("input", "invert_y", invert_y)
+	cf.set_value("locale", "language", language)
 	cf.save(SETTINGS_PATH)
