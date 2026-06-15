@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://buaqy504sqink"]
+[ext_resource type="Script" path="res://tests/swarm_probe.gd" id="1_probe"]
+[node name="SwarmProbe" type="Node3D"]
+script = ExtResource("1_probe")

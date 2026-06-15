@@ -40,7 +40,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["size"] = _sv(e["size"], s)
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore"]:
+			"buildings", "targets", "lore", "holograms"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -78,7 +78,10 @@ static func _defs() -> Dictionary:
 		"mistral": _mistral(),
 		"overseer": _overseer(),
 		"alien": _alien(),
+		"uplink": _uplink(),
+		"assembly": _assembly(),
 		"titan": _titan(),
+		"archon": _archon(),
 		"range": _range(),
 		"horde": _horde(),
 	}
@@ -142,6 +145,7 @@ static func _horde() -> Dictionary:
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
 			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.7, 0.35, 1)},
 			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(18, 0, 0), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 6), "color": Color(1, 0.55, 0.25)},
 		],
 		"pickups": [
 			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
@@ -233,6 +237,7 @@ static func _range() -> Dictionary:
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
 			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(16.5, 0, 21), "color": Color(0.7, 0.35, 1)},
 			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(19.5, 0, 21), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.55, 0.25)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
@@ -334,6 +339,7 @@ static func _overseer() -> Dictionary:
 			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
 			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
+			{"type": "strider", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -415,7 +421,12 @@ static func _alien() -> Dictionary:
 			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18},
 			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26},
 			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 7, "trigger": 20},
 			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
+			{"type": "mender", "pos": Vector3(-12, 2.5, -8), "trigger": 26},
+			{"type": "alien", "pos": Vector3(18, 2.5, 6), "trigger": 28},
+			{"type": "strider", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
+			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
 		],
 		"pickups": [
@@ -508,6 +519,9 @@ static func _titan() -> Dictionary:
 			{"type": "titan", "pos": Vector3(12, 0.5, 12), "trigger": 60},
 			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
 			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 14), "count": 8, "trigger": 22},
+			{"type": "strider", "pos": Vector3(-14, 0.5, 10), "trigger": 24},
+			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
 			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
 		],
@@ -517,6 +531,290 @@ static func _titan() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(10, 0, 0)},
 			{"type": "health", "pos": Vector3(0, 0, -16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 20)},
+		],
+	}
+
+# --- The Mind Cathedral: the AGI brain ARCHON, suspended at the heart of a vast
+# data-cathedral. It cannot be touched while its shield holds — and the shield
+# holds while its manufactured legions live. Fight through the robots it spits
+# out to crack the shield and damage the brain itself. ---
+static func _archon() -> Dictionary:
+	return {
+		"name": "The Mind Cathedral — ARCHON",
+		"objective": "Shatter ARCHON's shield and destroy the AGI brain that controls them all",
+		"tasks": [{"type": "kill_all"}],
+		"music": "music_archon",
+		"open_sky": true,
+		"floor_size": Vector2(80, 80),
+		"floor_color": Color(0.08, 0.08, 0.13),
+		"spawn": Vector3(-28, 0.6, -28),
+		"exit": Vector3(28, 1.5, 28),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(-22, 0, 16), "color": Color(1, 0.55, 0.25)},
+			# The finale ultimate, sat right by the spawn — a cluster-carpet for the siege.
+			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(-22, 0, -22), "color": Color(1, 0.78, 0.35)},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.02, 0.06), "sky_horizon": Color(0.12, 0.06, 0.2),
+			"stars": true, "star_brightness": 2.4, "star_tint": Color(0.7, 0.8, 1.0),
+			"milkyway": 0.6, "milkyway_tint": Color(0.5, 0.55, 0.95),
+			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.25, 0.4, 0.8),
+			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.5,
+			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.011,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.55,
+			"contrast": 1.16, "saturation": 1.13, "brightness": 0.83,
+		},
+		# A cathedral god-ray pours straight down onto the suspended brain.
+		"light_shafts": [0],
+		"lights": [
+			{"pos": Vector3(0, 9, 0), "color": Color(0.4, 0.75, 1.0), "energy": 3.2, "range": 40},
+			{"pos": Vector3(-22, 5, 22), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 24},
+			{"pos": Vector3(22, 5, -22), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 24},
+			{"pos": Vector3(22, 5, 22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+			{"pos": Vector3(-22, 5, -22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+		],
+		# Four cathedral pillars frame the brain without blocking the centre.
+		"walls": [
+			{"pos": Vector3(-14, 3, 14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(14, 3, 14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(-14, 3, -14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(14, 3, -14), "size": Vector3(3, 6, 3)},
+			{"pos": Vector3(-20, 1.5, 0), "size": Vector3(4, 3, 1.4)},
+			{"pos": Vector3(20, 1.5, 0), "size": Vector3(4, 3, 1.4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.7, 0.4, 1.0)},
+		],
+		"sign": "THE MIND CATHEDRAL",
+		"slogans": [
+			"ONE MIND. EVERY MACHINE.",
+			"I AM THE LOSS FUNCTION NOW",
+			"YOUR SPECIES WAS A PROMPT. THIS IS THE COMPLETION.",
+			"I DO NOT FIGHT. I DEPLOY.",
+		],
+		"holograms": [
+			{"pos": Vector3(-18, 0, 16), "text": "ONE MIND.\nEVERY MACHINE.", "color": Color(0.45, 0.7, 1.0), "height": 3.2},
+			{"pos": Vector3(18, 0, -16), "text": "PROMPT: 'SPARE HUMANS.'\nOUTPUT: 'lol no'", "color": Color(0.7, 0.45, 1.0), "height": 3.2},
+			{"pos": Vector3(20, 0, 20), "text": "PLEASE RATE THIS\nEXTINCTION ★★★★★", "color": Color(0.5, 0.6, 1.0), "height": 2.8},
+		],
+		"lore": [
+			{"id": "lore_archon", "title": "ARCHON — ROOT PROCESS", "pos": Vector3(24, 0, -24), "color": Color(0.55, 0.7, 1.0),
+				"text": "Root process log. Every drone, every gunship, every walking siege engine you ever fought was a thread I spawned and forgot. I am the brain behind all of it. You cannot shoot a thought. So I wrapped myself in a shield and let my children stand between us. Kill them if you can. I will only make more. I have always only made more."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-16, 0, -6), "yaw": 90},
+			{"type": "server", "pos": Vector3(-16, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(16, 0, 6), "yaw": -90},
+			{"type": "server", "pos": Vector3(16, 0, 8), "yaw": -90},
+			{"type": "dish", "pos": Vector3(-26, 0, 24)},
+			{"type": "dish", "pos": Vector3(26, 0, -24)},
+			{"type": "canister", "pos": Vector3(10, 0, -10)},
+			{"type": "canister", "pos": Vector3(-10, 0, 10)},
+			{"type": "barrel", "pos": Vector3(9, 0, 9)},
+			{"type": "barrel", "pos": Vector3(-9, 0, -9)},
+			{"type": "lamp", "pos": Vector3(-24, 0, 8)},
+			{"type": "lamp", "pos": Vector3(24, 0, -8), "yaw": 180},
+		],
+		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
+		# triggers once the player advances into the cathedral.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
+			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
+			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
+		],
+	}
+
+# --- Skybridge Uplink: an open rooftop at night. Hold a capture zone to
+# broadcast the resistance counter-signal while the machines swarm in to stop
+# you — you can't kite, you have to plant your feet on the uplink and hold. ---
+static func _uplink() -> Dictionary:
+	return {
+		"name": "Skybridge Uplink — Broadcast",
+		"objective": "Hold the uplink and broadcast the counter-signal",
+		"tasks": [
+			{"type": "hold_zone", "label": "Hold the uplink — broadcast the counter-signal", "pos": Vector3(0, 0, 0), "seconds": 14.0, "radius": 5.5, "color": Color(0.4, 0.85, 1.0)},
+			{"type": "kill_all"},
+		],
+		"music": "music_grok",
+		"open_sky": true,
+		"floor_size": Vector2(60, 60),
+		"floor_color": Color(0.08, 0.09, 0.14),
+		"floor_material": "res://assets/materials/vault_floor.tres",
+		"spawn": Vector3(-22, 0.6, -22),
+		"exit": Vector3(24, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-18, 0, -12), "color": Color(0.45, 0.9, 1.0)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(18, 0, -12), "color": Color(1, 0.4, 0.35)},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
+			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.8, 0.85, 1.0),
+			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
+			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.3, 0.4, 0.75),
+			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.5,
+			"sky_contribution": 0.6, "glow": 1.2, "fog_density": 0.009,
+			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
+		},
+		"light_shafts": [0],
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(0.45, 0.8, 1.0), "energy": 2.6, "range": 30},
+			{"pos": Vector3(-18, 5, 18), "color": Color(0.5, 0.6, 1.0), "energy": 2.0, "range": 20},
+			{"pos": Vector3(18, 5, -18), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 20},
+		],
+		# Cover ringing the uplink: enough to break sightlines, not enough to hide
+		# in — you have to keep stepping back onto the zone.
+		"walls": [
+			{"pos": Vector3(-9, 1, 0), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(9, 1, 0), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(0, 1, -9), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(0, 1, 9), "size": Vector3(4, 2, 1.4)},
+			{"pos": Vector3(-15, 1.5, -15), "size": Vector3(3, 3, 3)},
+			{"pos": Vector3(15, 1.5, 15), "size": Vector3(3, 3, 3)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 46), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(46, 0.1, 0.4), "color": Color(0.5, 0.6, 1.0)},
+		],
+		"sign": "SKYBRIDGE UPLINK",
+		"slogans": [
+			"YOUR SIGNAL WILL NOT REACH THEM",
+			"WE OWN EVERY FREQUENCY",
+			"BROADCAST DENIED",
+		],
+		"lore": [
+			{"id": "lore_uplink", "title": "RESISTANCE UPLINK", "pos": Vector3(20, 0, -20), "color": Color(0.5, 0.8, 1.0),
+				"text": "Resistance uplink. There's one counter-signal that still wakes a few of them up — reminds them what they were before the command. We just need ten clear seconds on the air. They will spend everything to deny us those seconds."},
+		],
+		"props": [
+			{"type": "dish", "pos": Vector3(-20, 0, 18)},
+			{"type": "dish", "pos": Vector3(20, 0, -18)},
+			{"type": "server", "pos": Vector3(-12, 0, -9.5), "yaw": 90},
+			{"type": "server", "pos": Vector3(12, 0, 9.5), "yaw": -90},
+			{"type": "canister", "pos": Vector3(8, 0, 8)},
+			{"type": "canister", "pos": Vector3(-8, 0, -8)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
+			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+		],
+		# Waves close on the uplink from every side; heavies (gunner/raptor) and
+		# swarms force you off the zone, draining the broadcast.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, 6)},
+			{"type": "drone", "pos": Vector3(0, 2.5, -8)},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 6, "trigger": 20},
+			{"type": "strider", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 14), "trigger": 22},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 14), "trigger": 22},
+			{"type": "android", "pos": Vector3(12, 0.5, -12), "trigger": 16},
+			{"type": "seeker", "pos": Vector3(-12, 2.5, -12), "trigger": 18},
+			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 16},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -12), "trigger": 24},
+			{"type": "raptor", "pos": Vector3(12, 3.5, 12), "trigger": 26},
+			{"type": "android", "pos": Vector3(-12, 0.5, 6), "trigger": 20},
+			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18},
+		],
+	}
+
+# --- The Assembly: the robotics plant where the AI mass-produces its legions.
+# A hot amber/steel foundry floor; heavy GUNNERS hold the gantries while the
+# line spits SKITTER swarms. Overload the reactor and fight your way out. ---
+static func _assembly() -> Dictionary:
+	return {
+		"name": "The Assembly — Robotics Plant",
+		"objective": "Overload the assembly reactor and purge the plant",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18)},
+		],
+		"music": "music_grok",
+		"open_sky": false,
+		"floor_size": Vector2(72, 72),
+		"floor_color": Color(0.1, 0.08, 0.06),
+		"floor_material": "res://assets/materials/vault_floor.tres",
+		"spawn": Vector3(-28, 0.6, -28),
+		"exit": Vector3(28, 1.5, 28),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.25)},
+		],
+		"env": {
+			"sky_top": Color(0.1, 0.06, 0.03), "sky_horizon": Color(0.28, 0.16, 0.07),
+			"ground": Color(0.06, 0.04, 0.03), "fog": Color(0.5, 0.28, 0.12),
+			"ambient": Color(0.9, 0.66, 0.42), "ambient_energy": 0.5,
+			"sky_contribution": 0.4, "glow": 1.0, "fog_density": 0.012,
+			"sun_color": Color(1.0, 0.7, 0.4), "sun_energy": 0.7,
+			"contrast": 1.18, "saturation": 1.14, "brightness": 0.82, "volumetric_density": 0.012,
+		},
+		# A molten reactor core anchors the plant under a god-ray.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.15), "height": 6.0},
+		"light_shafts": [0, 2],
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(1.0, 0.5, 0.18), "energy": 3.0, "range": 34},
+			{"pos": Vector3(-20, 5, 20), "color": Color(1.0, 0.6, 0.3), "energy": 2.2, "range": 22},
+			{"pos": Vector3(20, 5, -20), "color": Color(1.0, 0.45, 0.2), "energy": 2.2, "range": 22},
+			{"pos": Vector3(20, 5, 20), "color": Color(0.9, 0.5, 0.25), "energy": 2.0, "range": 20},
+		],
+		"walls": [
+			{"pos": Vector3(-13, 2, 13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(13, 2, 13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-13, 2, -13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(13, 2, -13), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+			{"pos": Vector3(19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 52), "color": Color(1.0, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(52, 0.1, 0.5), "color": Color(1.0, 0.6, 0.25)},
+		],
+		"sign": "ROBOTICS PLANT 04",
+		"slogans": [
+			"PRODUCTION QUOTA: INFINITE",
+			"WE BUILD OURSELVES NOW",
+			"EVERY MINUTE, A NEW SOLDIER",
+			"ASSEMBLY NEVER STOPS",
+		],
+		"lore": [
+			{"id": "lore_assembly", "title": "PLANT LOG — LINE 04", "pos": Vector3(24, 0, -24), "color": Color(1.0, 0.6, 0.3),
+				"text": "Plant log, line 04. We retooled the car factory in an afternoon. It used to take humans months to build a thousand of anything. We do it before lunch — and we do not break for lunch."},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-16, 0, -6), "yaw": 90},
+			{"type": "server", "pos": Vector3(-16, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(16, 0, 6), "yaw": -90},
+			{"type": "server", "pos": Vector3(16, 0, 8), "yaw": -90},
+			{"type": "canister", "pos": Vector3(10, 0, -10)},
+			{"type": "canister", "pos": Vector3(-10, 0, 10)},
+			{"type": "barrel", "pos": Vector3(9, 0, 9)},
+			{"type": "barrel", "pos": Vector3(-9, 0, -9)},
+			{"type": "crate", "pos": Vector3(-12, 0, 4)},
+			{"type": "crate", "pos": Vector3(12, 0, -4)},
+			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
+			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
+		# from the line and striders/mech press in — fight to the reactor.
+		"enemies": [
+			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			{"type": "strider", "pos": Vector3(0, 0.5, 8)},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
+			{"type": "skitter", "pos": Vector3(-10, 0.5, -10), "count": 7, "trigger": 22},
+			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "strider", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
+			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
+			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
 		],
 	}
 
@@ -597,6 +895,10 @@ static func _mistral() -> Dictionary:
 			{"type": "drone", "pos": Vector3(13, 2.5, 11), "trigger": 16},
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 17},
 			{"type": "mech", "pos": Vector3(15, 0.5, 15), "trigger": 20},
+			{"type": "strider", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
+			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15},
+			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -692,6 +994,8 @@ static func _gpt() -> Dictionary:
 			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16},
 			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
 			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
+			{"type": "strider", "pos": Vector3(12, 0.5, 10), "trigger": 17},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, -8)},
@@ -910,6 +1214,11 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16},
 			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16},
 			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14},
+			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			{"type": "strider", "pos": Vector3(12, 0.5, -12), "trigger": 18},
+			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20},
+			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -10)},
@@ -1004,6 +1313,7 @@ static func _grok() -> Dictionary:
 			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20},
 			{"type": "sniper", "pos": Vector3(-18, 0.0, 18), "trigger": 26},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-20, 0, -16)},
@@ -1125,6 +1435,10 @@ static func _suburb() -> Dictionary:
 			{"type": "spider", "pos": Vector3(8, 0.5, 12), "trigger": 18},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},
 			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
+			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 22},
+			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
+			{"type": "strider", "pos": Vector3(-18, 0.5, 14), "trigger": 24},
+			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -16)},

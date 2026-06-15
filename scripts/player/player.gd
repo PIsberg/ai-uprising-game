@@ -102,6 +102,9 @@ func _handle_speed_warp(delta: float) -> void:
 	var speed := Vector2(velocity.x, velocity.z).length()
 	var sprinting := Input.is_action_pressed("sprint") and is_on_floor() and not _is_crouching
 	var target := clampf(speed / sprint_speed, 0.0, 1.0) if sprinting else 0.0
+	# OVERDRIVE keeps the radial speed-streaks up the whole time it's active.
+	if GameState.overdrive_active():
+		target = maxf(target, 0.55)
 	_speed_warp = lerpf(_speed_warp, target, clampf(6.0 * delta, 0.0, 1.0))
 	if _post_overlay and _post_overlay.material is ShaderMaterial:
 		(_post_overlay.material as ShaderMaterial).set_shader_parameter("speed_warp", _speed_warp)
@@ -306,11 +309,13 @@ func _handle_stance(delta: float) -> void:
 	head.position.y = shape.height - 0.2
 
 func _current_speed() -> float:
+	# OVERDRIVE powerup boosts every movement state.
+	var mult: float = GameState.move_speed_mult()
 	if _is_crouching:
-		return crouch_speed
+		return crouch_speed * mult
 	if Input.is_action_pressed("sprint") and not _is_crouching:
-		return sprint_speed
-	return walk_speed
+		return sprint_speed * mult
+	return walk_speed * mult
 
 func _handle_movement(delta: float) -> void:
 	# Dash and slide fully own the horizontal velocity while active.

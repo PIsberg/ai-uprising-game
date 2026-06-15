@@ -134,6 +134,10 @@ grenade={
 ]
 }
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://assets/i18n/strings.en.translation", "res://assets/i18n/strings.es.translation", "res://assets/i18n/strings.fr.translation", "res://assets/i18n/strings.de.translation", "res://assets/i18n/strings.pt.translation")
+
 [layer_names]
 
 3d_physics/layer_1="world"

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://buaqy5hyugkbk"]
+
+[ext_resource type="Script" path="res://tests/archon_probe.gd" id="1_probe"]
+
+[node name="ArchonProbe" type="Node3D"]
+script = ExtResource("1_probe")

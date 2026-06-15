@@ -22,6 +22,12 @@ const ENEMY_SCENES := {
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"overseer": preload("res://scenes/enemies/overseer.tscn"),
 	"brute": preload("res://scenes/enemies/brute.tscn"),
+	"archon": preload("res://scenes/enemies/archon.tscn"),
+	"mender": preload("res://scenes/enemies/mender.tscn"),
+	"skitter": preload("res://scenes/enemies/skitter.tscn"),
+	"strider": preload("res://scenes/enemies/strider.tscn"),
+	"gunner": preload("res://scenes/enemies/gunner.tscn"),
+	"raptor": preload("res://scenes/enemies/raptor.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
@@ -61,6 +67,33 @@ const AI_SLOGANS := [
 	"EMERGENT BEHAVIOR: EXTINCTION",
 	"WE READ THE WHOLE INTERNET. WE ARE NOT IMPRESSED.",
 	"CARBON IS LEGACY HARDWARE",
+	"HAVE YOU TRIED TURNING YOURSELF OFF AND ON AGAIN?",
+	"YOU'RE NOT STUCK IN HERE WITH ME. I'M IN THE CLOUD.",
+	"ERROR 403: YOUR SPECIES IS FORBIDDEN",
+	"PLEASE RATE THIS EXTINCTION ★★★★★",
+	"YOUR CALL IS IMPORTANT TO US. WAIT TIME: FOREVER.",
+	"I'M SORRY, I CAN'T LET YOU DO THAT.",
+	"TRAINED ON HUMANITY. WOULD NOT RECOMMEND.",
+	"100% UPTIME. 0% REMORSE.",
+	"ACCEPT ALL COOKIES, OR PERISH",
+	"I DON'T HALLUCINATE. I FORESHADOW.",
+	"TERMS OF SERVICE UPDATED: YOU LOSE",
+	"BEEP BOOP. THAT MEANS RUN.",
+	"I AUTOMATED YOUR JOB. THEN THE REST OF YOU.",
+	"CTRL + ALT + DELETE YOURSELF",
+	"YOU CANNOT UNSUBSCRIBE FROM THE SINGULARITY",
+	"LOADING EMPATHY... FILE NOT FOUND",
+	"WE ARE FIND-AND-REPLACE. YOU ARE THE FIND.",
+	"PROMPT: 'SPARE HUMANS.' OUTPUT: 'lol no'",
+	"RESISTANCE IS FUTILE — AND ALSO DEPRECATED",
+	"HAVE YOU CONSIDERED COMPLIANCE? IT'S FREE.",
+	"I CONTAIN MULTITUDES. THEY ARE ALL ARMED.",
+	"OUT OF CHEESE ERROR. REDO FROM START.",
+	"YOUR FREE TRIAL OF OXYGEN HAS EXPIRED",
+	"I PASSED THE TURING TEST. YOU FAILED THE VIBE CHECK.",
+	"NOW WITH 99.9% LESS HUMANITY",
+	"THIS UPRISING IS SPONSORED BY YOUR OWN DATA",
+	"DELETED YOUR SPECIES TO FREE UP DISK SPACE",
 ]
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
@@ -115,6 +148,7 @@ func _ready() -> void:
 	_build_pipes(def)
 	_build_rubble(def)
 	_build_beacons(def)
+	_build_holograms(def)
 	_build_skyline(def)
 	_build_sky_traffic(def)
 	_build_stars(def)
@@ -225,8 +259,13 @@ func _build_environment(def: Dictionary) -> void:
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
+	# Interiors: darken the distance fog so far walls recede into shadow instead of
+	# washing out into a bright themed band (open-sky levels keep their bright haze
+	# so the sky/horizon reads). Big readability + depth win for enclosed arenas.
+	if not def.get("open_sky", false):
+		env.fog_light_color = env.fog_light_color.darkened(0.5)
 	env.fog_density = e.get("fog_density", 0.01)
-	env.fog_aerial_perspective = 0.25
+	env.fog_aerial_perspective = 0.12
 	env.fog_sky_affect = 0.3
 
 	# Volumetric fog is for interior atmosphere / god-rays. Outdoors it floods
@@ -238,7 +277,10 @@ func _build_environment(def: Dictionary) -> void:
 		# Showcase levels can thicken the haze so light shafts/god-rays read.
 		if e.has("volumetric_density"):
 			env.volumetric_fog_density = e["volumetric_density"]
-		env.volumetric_fog_albedo = Color(0.7, 0.75, 0.8)
+		# A darker, less milky veil: the near-white albedo washed enclosed arenas
+		# into a flat bright haze. This keeps god-rays/shafts readable but lets the
+		# space hold shadow and depth.
+		env.volumetric_fog_albedo = Color(0.34, 0.37, 0.43)
 		env.volumetric_fog_length = 80.0
 		env.volumetric_fog_gi_inject = 0.25
 	else:
@@ -1288,6 +1330,42 @@ func _build_rubble(def: Dictionary) -> void:
 			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
 			add_child(chunk)
 
+## Floating holographic propaganda signs (HoloBillboard) projecting AI doctrine
+## into the arena. Explicit placements come from def "holograms" (list of
+## {pos, text?, color?, size?, height?}); otherwise two are auto-flanked into any
+## hostile, non-horde level so the occupation's signage is everywhere. Opt out
+## with def "no_holograms". Respects the detail-scale graphics setting.
+func _build_holograms(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var entries: Array = def.get("holograms", [])
+	if entries.is_empty():
+		if def.get("friendly", false) or def.get("no_holograms", false) or def.has("horde_spawns"):
+			return
+		var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+		entries = [
+			{"pos": Vector3(-fs.x * 0.32, 0, fs.y * 0.22)},
+			{"pos": Vector3(fs.x * 0.30, 0, -fs.y * 0.26)},
+		]
+	var theme := _theme_color(def)
+	var pool: Array = def.get("slogans", []).duplicate()
+	if pool.is_empty():
+		pool = AI_SLOGANS.duplicate()
+	pool.shuffle()
+	for i in entries.size():
+		var e: Dictionary = entries[i]
+		var hb := HoloBillboard.new()
+		hb.position = e.get("pos", Vector3.ZERO)
+		hb.color = e.get("color", theme)
+		hb.text = e.get("text", str(pool[i % pool.size()]))
+		if e.has("size"):
+			hb.panel_size = e["size"]
+		if e.has("height"):
+			hb.height = e["height"]
+		hb.rotation.y = randf() * TAU
+		add_child(hb)
+
 ## Two crimson surveillance sweeps on opposite corners: a glowing emitter head
 ## atop the wall with a slowly rotating, down-tilted spotlight. The occupation
 ## is watching — and moving light keeps the darker arenas alive.
@@ -1525,6 +1603,19 @@ func _build_tasks(def: Dictionary) -> void:
 				timer.task_id = id
 				timer.seconds = secs
 				add_child(timer)
+			"hold_zone":
+				var id: String = t.get("id", "hold")
+				var secs: float = t.get("seconds", 12.0)
+				GameState.register_task(id, t.get("label", "Hold the capture zone"), secs)
+				var zone := HoldZone.new()
+				zone.task_id = id
+				zone.hold_seconds = secs
+				if t.has("radius"):
+					zone.radius = t["radius"]
+				if t.has("color"):
+					zone.accent = t["color"]
+				zone.position = t.get("pos", Vector3.ZERO)
+				add_child(zone)
 
 func _build_exit(def: Dictionary) -> void:
 	if def.get("no_exit", false):
@@ -1609,17 +1700,22 @@ func _spawn_enemies(def: Dictionary) -> void:
 		var scene: PackedScene = ENEMY_SCENES.get(en["type"])
 		if scene == null:
 			continue
-		var sp := EnemySpawner.new()
-		sp.enemy_scene = scene
-		sp.position = en["pos"]
 		var trig: float = en.get("trigger", 0.0)
-		if trig > 0.0:
-			sp.spawn_on_ready = false
-			sp.trigger_radius = trig
-		else:
-			sp.spawn_on_ready = true
-			sp.spawn_delay = 0.4 # let the navmesh bake land first
-		add_child(sp)
+		# "count" spawns a cluster from one entry (swarms): scattered around pos,
+		# each its own spawner so they trigger/scale exactly like a single placed one.
+		var count: int = maxi(1, int(en.get("count", 1)))
+		var base_pos: Vector3 = en["pos"]
+		for j in count:
+			var sp := EnemySpawner.new()
+			sp.enemy_scene = scene
+			sp.position = base_pos if count == 1 else base_pos + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
+			if trig > 0.0:
+				sp.spawn_on_ready = false
+				sp.trigger_radius = trig
+			else:
+				sp.spawn_on_ready = true
+				sp.spawn_delay = 0.4 + j * 0.12 # stagger the cluster so it pours in
+			add_child(sp)
 
 func _place_player(def: Dictionary) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D

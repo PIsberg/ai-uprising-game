@@ -38,6 +38,7 @@ const DAMAGED_FX: PackedScene = preload("res://scenes/fx/damaged_fx.tscn")
 const PICKUP_AMMO: PackedScene = preload("res://scenes/pickups/ammo_box.tscn")
 const PICKUP_HEALTH: PackedScene = preload("res://scenes/pickups/health_pack.tscn")
 const PICKUP_OVERCLOCK: PackedScene = preload("res://scenes/pickups/overclock.tscn")
+const PICKUP_OVERDRIVE: PackedScene = preload("res://scenes/pickups/overdrive.tscn")
 
 
 @onready var hp: Damageable = $Damageable
@@ -57,6 +58,9 @@ var _lunge_time: float = 0.0 ## While >0, a melee leap is in flight; movement lo
 var _state_timer: float = 0.0
 var _last_known_target_pos: Vector3
 var _approach_angle: float = 0.0 ## Stable angle each enemy circles to, so they flank instead of stacking.
+var combat_strafe: bool = false ## Ranged enemies opt in: circle-strafe at preferred range instead of standing still.
+var _strafe_sign: float = 1.0
+var _strafe_cd: float = 0.0
 var _visual_root: Node3D ## Rig/Model node nudged for the hit-flinch.
 var _visual_base: Vector3
 var _visual_base_rot: Vector3
@@ -206,7 +210,7 @@ func set_state(new_state: State) -> void:
 	elif not _alerted and (new_state == State.CHASE or new_state == State.ALERT or new_state == State.ATTACK):
 		_alerted = true
 		_alert()
-		_alert_allies(16.0, target) # first contact rallies the squad
+		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 
@@ -377,6 +381,8 @@ func _state_attack(delta: float) -> void:
 		_move_toward(global_position + (global_position - target.global_position).normalized() * 2.0, delta)
 	elif dist > preferred_range * 1.3:
 		_move_toward(target.global_position, delta)
+	elif combat_strafe:
+		_combat_strafe(delta) # circle-strafe at range instead of standing still
 	else:
 		_decelerate()
 	if _attack_timer <= 0.0:
@@ -463,6 +469,29 @@ func _update_overload(delta: float) -> void:
 	var sev := clampf((damage_heat - 0.7) / 0.3, 0.0, 1.0)
 	var flick := 0.6 + 0.4 * sin(_overload_t * (24.0 + sev * 36.0))
 	_overload_light.light_energy = (1.5 + sev * 3.5) * flick
+
+## Circle-strafe the target at range: slide sideways while keeping the gun on the
+## player, flipping direction now and then. Velocity is set directly (not via
+## _move_toward) so the body keeps facing the target while it sidesteps — and the
+## RobotModel banks into it. Ranged enemies set `combat_strafe = true`.
+func _combat_strafe(delta: float) -> void:
+	if target == null:
+		_decelerate()
+		return
+	_strafe_cd -= delta
+	if _strafe_cd <= 0.0:
+		_strafe_cd = randf_range(1.1, 2.3)
+		_strafe_sign = -_strafe_sign
+	var to := target.global_position - global_position
+	to.y = 0.0
+	if to.length() < 0.2:
+		_decelerate()
+		return
+	var right := to.normalized().cross(Vector3.UP)
+	var spd := chase_speed() * 0.55
+	velocity.x = move_toward(velocity.x, right.x * _strafe_sign * spd, 14.0 * delta)
+	velocity.z = move_toward(velocity.z, right.z * _strafe_sign * spd, 14.0 * delta)
+	_face_target(delta)
 
 func _decelerate() -> void:
 	velocity.x = move_toward(velocity.x, 0.0, 0.8)
@@ -591,7 +620,7 @@ func _on_damaged(_amount: float, source: Node) -> void:
 		set_state(State.CHASE)
 	# Taking fire from off-screen rallies nearby allies to the shooter too.
 	if source and source.is_in_group("player") and source is Node3D:
-		_alert_allies(12.0, source as Node3D)
+		_alert_allies(16.0, source as Node3D)
 	# Hit reaction: white flash + a backward shove away from the damage source.
 	if state == State.DEAD:
 		return
@@ -885,7 +914,10 @@ func _drop_loot() -> void:
 		var d := player.get_node_or_null("Damageable")
 		if d and d.max_health > 0.0:
 			health_w = lerpf(0.2, 0.6, 1.0 - d.current_health / d.max_health)
-	var scene := PICKUP_OVERCLOCK if randf() < overclock_w \
+	# The rare prize is a coin-flip between OVERCLOCK (damage) and OVERDRIVE
+	# (rapid-fire + speed) so both powerups show up across a run.
+	var prize: PackedScene = PICKUP_OVERDRIVE if randf() < 0.5 else PICKUP_OVERCLOCK
+	var scene := prize if randf() < overclock_w \
 			else (PICKUP_HEALTH if randf() < health_w else PICKUP_AMMO)
 	var p := scene.instantiate() as Node3D
 	get_parent().add_child(p)

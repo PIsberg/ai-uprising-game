@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://u828nnex7aqe"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_mender.gd" id="1_mender"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://cru0ti7g5r10d" path="res://assets/models/robots/Enemy_EyeDrone.gltf" id="4_model"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_col"]
+radius = 0.45
+
+[node name="Mender" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+floor_max_angle = 1.57
+script = ExtResource("1_mender")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+tint = Color(0.4, 1, 0.65, 1)
+anim_walk = ""
+anim_attack = ""
+anim_stagger = "Hit"
+menace_color = Color(0.4, 1, 0.6, 1)
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0)
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.36)
+
+[node name="EyeLight" type="OmniLight3D" parent="Eye"]
+light_color = Color(0.4, 1, 0.6, 1)
+light_energy = 0.8
+omni_range = 5.0
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.42)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_col")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 70.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+avoidance_enabled = true
+radius = 0.5

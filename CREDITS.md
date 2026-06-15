@@ -30,8 +30,15 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
   by **Quaternius** (https://quaternius.com), via
   https://opengameart.org/content/sci-fi-essentials-kit.
 
-Both packs are released under **CC0 1.0** (public domain) — no attribution
-required, credited here as courtesy.
+- **Low-poly robot** (`quaternius_bot.glb` — used for the STRIDER chicken-walker
+  enemy) by **Quaternius** (https://quaternius.com), via Poly Pizza
+  (https://poly.pizza/), released under **CC0 1.0**.
+- **Robot Enemy Large Gun** (`quaternius_gunner.glb` — the GUNNER heavy) and
+  **Robot Enemy Flying Gun** (`quaternius_flyergun.glb`) by **Quaternius**
+  (https://quaternius.com), via Poly Pizza, released under **CC0 1.0**.
+
+All Quaternius packs/models are released under **CC0 1.0** (public domain)
+— no attribution required, credited here as courtesy.
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via

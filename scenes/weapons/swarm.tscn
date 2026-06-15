@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://c5iov8aatoexc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/swarm_data.tres" id="2_data"]
+[ext_resource type="Material" path="res://assets/materials/metal_dark.tres" id="3_md"]
+[ext_resource type="Material" path="res://assets/materials/glow_red.tres" id="4_glow"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_receiver"]
+size = Vector3(0.1, 0.12, 0.4)
+material = ExtResource("3_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.055, 0.16, 0.06)
+material = ExtResource("3_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_pod"]
+size = Vector3(0.13, 0.05, 0.34)
+material = ExtResource("4_glow")
+
+[node name="Swarm" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Receiver" type="MeshInstance3D" parent="Viewmodel"]
+mesh = SubResource("BoxMesh_receiver")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.98, 0.17, 0, -0.17, 0.98, 0, 0, 0, 1, 0, -0.13, 0.07)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="PodTop" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, -0.16)
+mesh = SubResource("BoxMesh_pod")
+
+[node name="PodBottom" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, -0.16)
+mesh = SubResource("BoxMesh_pod")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, -0.36)

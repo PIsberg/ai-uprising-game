@@ -65,9 +65,12 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_suburb_boss.tscn",
 	"res://scenes/levels/level_claude.tscn",
 	"res://scenes/levels/level_grok.tscn",
+	"res://scenes/levels/level_uplink.tscn",
 	"res://scenes/levels/level_overseer.tscn",
 	"res://scenes/levels/level_alien.tscn",
+	"res://scenes/levels/level_assembly.tscn",
 	"res://scenes/levels/level_titan.tscn",
+	"res://scenes/levels/level_archon.tscn",
 ]
 
 var current_state: State = State.MENU
@@ -87,6 +90,29 @@ var intro_played: bool = false
 func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
 		unlocked_weapons.append(scene_path)
+
+## Every weapon scene in the game, in roughly ascending power. The warp cheat
+## hands the player the whole arsenal so any level can be played with everything.
+const ALL_WEAPONS: Array[String] = [
+	"res://scenes/weapons/pistol.tscn",
+	"res://scenes/weapons/smg.tscn",
+	"res://scenes/weapons/rifle.tscn",
+	"res://scenes/weapons/shotgun.tscn",
+	"res://scenes/weapons/tesla.tscn",
+	"res://scenes/weapons/arccoil.tscn",
+	"res://scenes/weapons/plasma.tscn",
+	"res://scenes/weapons/nova.tscn",
+	"res://scenes/weapons/gauss.tscn",
+	"res://scenes/weapons/twinrail.tscn",
+	"res://scenes/weapons/swarm.tscn",
+	"res://scenes/weapons/devastator.tscn",
+	"res://scenes/weapons/singularity.tscn",
+	"res://scenes/weapons/omega.tscn",
+]
+
+func unlock_all_weapons() -> void:
+	for path in ALL_WEAPONS:
+		unlock_weapon(path)
 
 # ---------- armory upgrades (bought with score between levels) ----------
 ## Three permanent per-run tracks; every weapon reads the multipliers live
@@ -188,6 +214,11 @@ func _process(delta: float) -> void:
 		overclock_changed.emit(overclock_left)
 		if overclock_left <= 0.0:
 			AudioBus.play_synth_ui("empty_click", -8.0, 0.6) # power-down tick
+	if overdrive_left > 0.0:
+		overdrive_left = maxf(0.0, overdrive_left - delta)
+		overdrive_changed.emit(overdrive_left)
+		if overdrive_left <= 0.0:
+			AudioBus.play_synth_ui("empty_click", -8.0, 0.6)
 
 # ---------- OVERCLOCK powerup (quad-damage analog) ----------
 ## While active, every player weapon hits at OVERCLOCK_MULT (Weapon.eff_damage
@@ -205,6 +236,31 @@ func activate_overclock() -> void:
 
 func damage_mult() -> float:
 	return OVERCLOCK_MULT if overclock_left > 0.0 else 1.0
+
+# ---------- OVERDRIVE powerup (rapid-fire + speed burst) ----------
+## While active, weapons fire OVERDRIVE_FIRE_MULT faster (Weapon.eff_fire_rate)
+## and the player moves OVERDRIVE_SPEED_MULT faster (Player._current_speed).
+## A power-fantasy burst, distinct from OVERCLOCK's raw damage.
+
+signal overdrive_changed(seconds_left: float)
+
+const OVERDRIVE_DURATION := 8.0
+const OVERDRIVE_FIRE_MULT := 1.85
+const OVERDRIVE_SPEED_MULT := 1.35
+var overdrive_left: float = 0.0
+
+func activate_overdrive() -> void:
+	overdrive_left = OVERDRIVE_DURATION
+	overdrive_changed.emit(overdrive_left)
+
+func fire_rate_mult() -> float:
+	return OVERDRIVE_FIRE_MULT if overdrive_left > 0.0 else 1.0
+
+func move_speed_mult() -> float:
+	return OVERDRIVE_SPEED_MULT if overdrive_left > 0.0 else 1.0
+
+func overdrive_active() -> bool:
+	return overdrive_left > 0.0
 
 # ---------- per-level performance stats (drive the end grade) ----------
 var stat_shots: int = 0
@@ -500,7 +556,7 @@ func _collect_spawners(n: Node, out: Array) -> void:
 			out.append(c)
 		_collect_spawners(c, out)
 
-const BOSS_SCENES := ["terminator", "colossus", "overseer"]
+const BOSS_SCENES := ["terminator", "colossus", "overseer", "archon"]
 
 func _is_boss_spawner(s: EnemySpawner) -> bool:
 	if s.enemy_scene == null:

@@ -51,6 +51,8 @@ func _ready() -> void:
 		_instantiate_weapon(s)
 	# Bonus weapons unlocked earlier in the campaign carry across levels.
 	for path in GameState.unlocked_weapons:
+		if _owns_scene_path(path):
+			continue # warp grants the full arsenal; don't double up the base loadout
 		var ps := load(path) as PackedScene
 		if ps:
 			_instantiate_weapon(ps)
@@ -92,6 +94,13 @@ func _instantiate_weapon(scene: PackedScene) -> Weapon:
 	w.ammo_changed.connect(func(m, r): ammo_changed.emit(m, r))
 	weapons.append(w)
 	return w
+
+## True if a weapon spawned from this scene path is already in the rack.
+func _owns_scene_path(path: String) -> bool:
+	for w in weapons:
+		if w.scene_file_path == path:
+			return true
+	return false
 
 ## Add a weapon at runtime (weapon pickup). Returns true if newly added.
 func add_weapon(scene: PackedScene, equip: bool = true) -> bool:

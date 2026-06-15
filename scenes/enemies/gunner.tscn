@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://u828nhuyiaqe"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_gunner.gd" id="1_gn"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://cynjfahdp6i0m" path="res://assets/models/robots/quaternius_gunner.glb" id="4_model"]
+
+[sub_resource type="BoxShape3D" id="Box_col"]
+size = Vector3(1.3, 1.9, 1.3)
+
+[node name="Gunner" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_gn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("Box_col")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+anim_idle = "CharacterArmature|Idle"
+anim_walk = "CharacterArmature|Run"
+anim_attack = "CharacterArmature|Shoot"
+anim_stagger = ""
+walk_speed_scale = 1.3
+menace_color = Color(1, 0.18, 0.12, 1)
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-1.7, 0, 0, 0, 1.7, 0, 0, 0, -1.7, 0, 0, 0)
+
+[node name="EyeLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -0.55)
+light_color = Color(1, 0.2, 0.14, 1)
+light_energy = 1.4
+omni_range = 5.5
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -0.6)
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 1.35, -0.95)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 230.0
+armor = 4.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.6
+height = 1.8

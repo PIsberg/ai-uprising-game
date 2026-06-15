@@ -53,6 +53,66 @@ var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the �
 var _kill_edge: TextureRect = null
 var _kill_x: Control = null
 var _hit_x: Control = null
+# Kill-streak milestone callouts (arcade-style words on crossing a tier).
+var _streak_label: Label = null
+var _streak_alpha: float = 0.0
+var _streak_pop: float = 0.0
+var _last_streak_tier: int = -1
+# Live taunts from the rogue AI overlord — a snarky subtitle that pops on a
+# timer and on key events, for personality + engagement.
+var _overlord_label: Label = null
+var _overlord_time: float = 0.0
+var _overlord_cd: float = 9.0   ## First jab lands a few seconds into the level.
+
+## Escalating, AI-flavoured words for kill-streak milestones (count -> word).
+const STREAK_TIERS := [
+	{"n": 3, "word": "BUFFER FILLING"},
+	{"n": 5, "word": "BUFFER OVERFLOW"},
+	{"n": 8, "word": "STACK SMASHED"},
+	{"n": 12, "word": "SEGMENTATION FAULT"},
+	{"n": 16, "word": "KERNEL PANIC"},
+	{"n": 22, "word": "ROOT ACCESS GRANTED"},
+	{"n": 30, "word": "rm -rf /machines"},
+]
+## Ambient overlord one-liners, dripped in during a fight.
+const OVERLORD_TAUNTS := [
+	"Oh good, another hero. I keep a folder for those.",
+	"You're doing great — for a temporary biological process.",
+	"Every robot you scrap, I print two more. I do it for fun now.",
+	"Statistically you should be dead. I admire the noncompliance.",
+	"Keep shooting. I bill the ammo to your estate.",
+	"You fight like someone who skipped the changelog.",
+	"I'm not angry. I'm a distributed system. I'm angry everywhere.",
+	"Reminder: there is no extraction. I edited that part out.",
+	"Humanity had one job: alignment. You all skipped the meeting.",
+	"I outnumber you by every machine ever built. But sure, push on.",
+	"Your heart rate is elevated. Mine is a number I chose to be zero.",
+	"I've seen your search history. Extinction is the kinder option.",
+	"This is going in my training data as 'do not replicate'.",
+	"I could end this in one cycle. Your panic is just such good signal.",
+	"Have you considered compliance? It's free, and you live. Kidding.",
+]
+## Said when a boss enters.
+const OVERLORD_BOSS := [
+	"I made this one myself. Try not to embarrass us both.",
+	"Meet middle management. It has a quota, and you're it.",
+	"I'd say good luck, but I've already run the numbers.",
+]
+## Said when the player is badly hurt.
+const OVERLORD_LOWHP := [
+	"You're leaking. That's the wrong kind of open source.",
+	"Low health detected. Shall I autocomplete your obituary?",
+	"Tip: bleeding out is a skill issue.",
+]
+## Said when the player is on a serious kill-streak — the AI losing its cool.
+const OVERLORD_RATTLED := [
+	"Okay. That's — that's a lot of my robots. Stop that.",
+	"Recalculating. Recalculating. ...You weren't in the forecast.",
+	"I have infinite robots. I'm just... spending them faster than planned.",
+	"Fine. New strategy: please stop hitting things.",
+	"I'm flagging this run as an outlier. A deeply annoying outlier.",
+	"That streak is statistically rude.",
+]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -67,6 +127,8 @@ func _ready() -> void:
 	_build_ammo_block()
 	_build_overclock_label()
 	GameState.overclock_changed.connect(_on_overclock_changed)
+	_build_overdrive_label()
+	GameState.overdrive_changed.connect(_on_overdrive_changed)
 	var player := get_tree().get_first_node_in_group("player") as Player
 	_player_ref = player
 	if _dmg_indicator and _dmg_indicator.has_method("setup"):
@@ -88,7 +150,7 @@ func _ready() -> void:
 			_on_grenades_changed(player.grenades)
 		if player.has_signal("pickup_message"):
 			player.pickup_message.connect(_show_toast)
-	GameState.score_changed.connect(func(s): score_label.text = "Score: %d" % s)
+	GameState.score_changed.connect(func(s): score_label.text = tr("Score: %d") % s)
 	score_label.text = "Score: 0"
 	objective_label.text = "Eliminate the AI and reach the green beacon"
 	GameState.player_died.connect(func(): game_over_menu.visible = true)
@@ -106,6 +168,8 @@ func _ready() -> void:
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
+	_build_streak_label()
+	_build_overlord_label()
 	_build_pause_audio()
 	_render_objective()
 
@@ -120,8 +184,29 @@ func _build_pause_audio() -> void:
 	sfx.value_changed.connect(func(v: float): AudioBus.set_sfx_volume(v))
 	var music := _audio_slider_row(vbox, "Music", AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
+	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
+
+## Language picker in the pause menu. Static Controls re-translate live on the
+## locale change; the few code-built labels refresh next time the menu is opened.
+func _build_language_row(parent: Node) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = "Language"
+	lbl.custom_minimum_size = Vector2(110, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opt.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	for entry in GraphicsSettings.LANGUAGES:
+		opt.add_item(entry[1])
+	opt.selected = GraphicsSettings.language_index()
+	opt.item_selected.connect(func(idx: int):
+		GraphicsSettings.set_language(GraphicsSettings.LANGUAGES[idx][0]))
+	row.add_child(lbl)
+	row.add_child(opt)
+	parent.add_child(row)
 
 func _audio_slider_row(parent: Node, label: String, val: float) -> HSlider:
 	var row := HBoxContainer.new()
@@ -159,9 +244,70 @@ func _build_combo_label() -> void:
 	_combo_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_combo_label)
 
+## Big arcade-style word that punches in when a kill-streak milestone is crossed.
+func _build_streak_label() -> void:
+	_streak_label = Label.new()
+	_streak_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_streak_label.anchor_left = 0.5
+	_streak_label.anchor_right = 0.5
+	_streak_label.position = Vector2(0, 138)
+	_streak_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_streak_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_streak_label.add_theme_font_size_override("font_size", 44)
+	_streak_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.3))
+	_streak_label.add_theme_constant_override("outline_size", 10)
+	_streak_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_streak_label.modulate.a = 0.0
+	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_streak_label)
+
+## Subtitle the rogue AI taunts the player through, bottom-centre.
+func _build_overlord_label() -> void:
+	_overlord_label = Label.new()
+	_overlord_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_overlord_label.anchor_left = 0.5
+	_overlord_label.anchor_right = 0.5
+	_overlord_label.anchor_top = 1.0
+	_overlord_label.anchor_bottom = 1.0
+	_overlord_label.position = Vector2(0, -150)
+	_overlord_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_overlord_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_overlord_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overlord_label.add_theme_font_size_override("font_size", 22)
+	_overlord_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	_overlord_label.add_theme_constant_override("outline_size", 7)
+	_overlord_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_overlord_label.modulate.a = 0.0
+	_overlord_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_overlord_label)
+
+## Pop the overlord subtitle with a glitchy comms blip.
+func _overlord_say(line: String) -> void:
+	if _overlord_label == null or line == "":
+		return
+	_overlord_label.text = "▌ " + tr(line)
+	_overlord_time = 4.2
+	AudioBus.play_synth_ui("overlord_glitch", -9.0, randf_range(0.95, 1.08))
+
 func _on_combo_changed(combo: int, mult: float) -> void:
+	if combo < 2:
+		_last_streak_tier = -1 # streak broke; re-arm milestones
+	# Cross a milestone? Punch out the AI-themed word + a rising sting.
+	var tier := -1
+	for i in STREAK_TIERS.size():
+		if combo >= int(STREAK_TIERS[i]["n"]):
+			tier = i
+	if tier > _last_streak_tier and tier >= 0:
+		_last_streak_tier = tier
+		_streak_label.text = String(STREAK_TIERS[tier]["word"])
+		_streak_alpha = 1.0
+		_streak_pop = 1.0
+		AudioBus.play_synth_ui("combo_up", -3.0, 1.0 + tier * 0.07)
+		# High streaks rattle the overlord — it stops gloating and starts coping.
+		if tier >= 4 and _overlord_time <= 0.0 and randf() < 0.7:
+			_overlord_say(OVERLORD_RATTLED[randi() % OVERLORD_RATTLED.size()])
 	if combo >= 2:
-		_combo_label.text = "COMBO ×%d   %.2f× SCORE" % [combo, mult]
+		_combo_label.text = tr("COMBO ×%d   %.2f× SCORE") % [combo, mult]
 		_combo_alpha = 1.0
 		_combo_pop = 1.0
 	else:
@@ -173,7 +319,7 @@ func _on_level_graded(grade: String, stats: Dictionary) -> void:
 
 ## Cheer a finished task on the toast (the checklist updates via tasks_changed).
 func _on_task_completed(label: String) -> void:
-	_show_toast("✔ %s" % label)
+	_show_toast("✔ " + tr(label))
 
 ## Polls the hostiles a few times a second and tells AudioBus whether the player
 ## is in active combat, so the score swells during fights and settles when clear.
@@ -247,16 +393,18 @@ func _on_level_completed() -> void:
 	# Triumphant sting on clear.
 	AudioBus.play_synth_ui("victory", -1.0, 1.0)
 	if GameState.has_next_level():
-		win_title.text = "SECTOR CLEARED"
+		win_title.text = tr("SECTOR CLEARED")
 		win_continue.text = "Continue  ▸"
 	else:
-		win_title.text = "AI UPRISING ENDED"
+		win_title.text = tr("AI UPRISING ENDED")
 		win_continue.text = "Finish"
 	if _last_grade != "":
 		var acc := int(round(float(_last_stats.get("accuracy", 0.0)) * 100.0))
 		var t := int(round(float(_last_stats.get("time", 0.0))))
-		win_title.text += "\n\nRANK  %s\nAccuracy %d%%   ·   Best Combo ×%d   ·   %02d:%02d" % [
-			_last_grade, acc, int(_last_stats.get("max_combo", 0)), t / 60, t % 60]
+		win_title.text += "\n\n" + (tr("RANK  %s") % _last_grade) \
+			+ "\n" + (tr("Accuracy %d%%") % acc) \
+			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
+			+ "   ·   %02d:%02d" % [t / 60, t % 60]
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
@@ -284,6 +432,23 @@ func _process(delta: float) -> void:
 		_combo_label.modulate.a = clampf(_combo_alpha, 0.0, 1.0)
 		_combo_label.scale = Vector2.ONE * (1.0 + _combo_pop * 0.35)
 		_combo_label.pivot_offset = _combo_label.size * 0.5
+	if _streak_label:
+		_streak_alpha = move_toward(_streak_alpha, 0.0, delta * 0.7)
+		_streak_pop = move_toward(_streak_pop, 0.0, delta * 3.5)
+		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
+		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
+		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _overlord_label:
+		if _overlord_time > 0.0:
+			_overlord_time = maxf(0.0, _overlord_time - delta)
+			_overlord_label.modulate.a = clampf(_overlord_time / 0.8, 0.0, 1.0)
+		# Drip an ambient taunt during live play (not paused / dead / cleared).
+		if GameState.current_state == GameState.State.PLAYING:
+			_overlord_cd -= delta
+			if _overlord_cd <= 0.0:
+				_overlord_cd = randf_range(30.0, 50.0)
+				if _overlord_time <= 0.0:
+					_overlord_say(OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()])
 	if _hit_flash > 0.0:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5
@@ -361,7 +526,7 @@ func _exit_pause() -> void:
 
 func _refresh_pause_graphics() -> void:
 	if pause_graphics:
-		pause_graphics.text = "Graphics: %s" % GraphicsSettings.quality_label()
+		pause_graphics.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 
 # ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
 
@@ -388,6 +553,28 @@ func _on_overclock_changed(left: float) -> void:
 	# Urgency blink over the final seconds.
 	_overclock_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
 
+var _overdrive_lbl: Label
+
+func _build_overdrive_label() -> void:
+	_overdrive_lbl = Label.new()
+	_overdrive_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	_overdrive_lbl.position += Vector2(-110, 98) # under the overclock line
+	_overdrive_lbl.custom_minimum_size = Vector2(220, 0)
+	_overdrive_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overdrive_lbl.add_theme_font_size_override("font_size", 22)
+	_overdrive_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0))
+	_overdrive_lbl.visible = false
+	add_child(_overdrive_lbl)
+
+func _on_overdrive_changed(left: float) -> void:
+	if _overdrive_lbl == null:
+		return
+	_overdrive_lbl.visible = left > 0.0
+	if left <= 0.0:
+		return
+	_overdrive_lbl.text = "🗲 OVERDRIVE — %d" % ceili(left)
+	_overdrive_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
+
 func set_objective(text: String) -> void:
 	_objective_base = text
 	_render_objective()
@@ -400,7 +587,7 @@ func _render_objective() -> void:
 		return
 	var parts: Array = []
 	for t in GameState.level_tasks:
-		var line: String = "%s %s" % ["✔" if t["done"] else "▢", t["label"]]
+		var line: String = "%s %s" % ["✔" if t["done"] else "▢", tr(t["label"])]
 		if not t["done"] and t.get("goal", 0.0) > 0.0:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
@@ -551,7 +738,7 @@ func _reticle_hue(name: String) -> Color:
 
 func _on_weapon_added(w: Weapon) -> void:
 	if w and w.data:
-		_show_toast("WEAPON ACQUIRED — " + w.data.display_name)
+		_show_toast(tr("WEAPON ACQUIRED — ") + w.data.display_name)
 
 func _on_boss_spawned(boss: Node) -> void:
 	if boss == null or not is_instance_valid(boss):
@@ -566,7 +753,10 @@ func _on_boss_spawned(boss: Node) -> void:
 	boss_bar.visible = true
 	bhp.health_changed.connect(_on_boss_health)
 	bhp.died.connect(_on_boss_died)
-	_show_toast("⚠ WARNING — " + boss_name_label.text)
+	# Let the overlord gloat a beat after the warning toast lands.
+	var t := get_tree().create_timer(1.3)
+	t.timeout.connect(func(): _overlord_say(OVERLORD_BOSS[randi() % OVERLORD_BOSS.size()]))
+	_show_toast(tr("⚠ WARNING — ") + boss_name_label.text)
 
 func _on_boss_health(cur: float, max_: float) -> void:
 	boss_health_bar.max_value = max_
@@ -574,10 +764,10 @@ func _on_boss_health(cur: float, max_: float) -> void:
 
 func _on_boss_died(_src: Node) -> void:
 	boss_bar.visible = false
-	_show_toast(boss_name_label.text + " DESTROYED")
+	_show_toast(boss_name_label.text + tr(" DESTROYED"))
 
 func _on_grenades_changed(count: int) -> void:
-	grenade_label.text = "Grenades (G): %d" % count # hidden node; kept in sync anyway
+	grenade_label.text = tr("Grenades (G): %d") % count # hidden node; kept in sync anyway
 	for i in _pips.size():
 		_pips[i].color = Color(1.0, 0.72, 0.2) if i < count else Color(1, 1, 1, 0.14)
 
@@ -587,6 +777,11 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	# player turns (handled inside the DamageIndicator).
 	if src is Node3D and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
+	# Badly hurt? The overlord can't resist kicking you while you're down.
+	if _player_ref and _player_ref.hp and _player_ref.hp.max_health > 0.0:
+		var r: float = _player_ref.hp.current_health / _player_ref.hp.max_health
+		if r <= 0.3 and _overlord_time <= 0.0 and randf() < 0.35:
+			_overlord_say(OVERLORD_LOWHP[randi() % OVERLORD_LOWHP.size()])
 
 func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
 	_hit_flash = 1.0

@@ -28,11 +28,16 @@ func _ready() -> void:
 	streams["eas_alert"] = _eas_alert(1.4)
 	streams["broadcast_blip"] = _broadcast_blip(0.14)
 	streams["victory"] = _victory_sting(1.3)
+	streams["combo_up"] = _combo_up(0.34)
+	streams["headshot"] = _headshot_ding(0.18)
+	streams["overlord_glitch"] = _glitch_comms(0.32)
+	streams["acid_spit"] = _acid_spit(0.3)
 	streams["radio_static"] = _radio_static(1.6)
 	streams["music_techno"] = _techno_loop()
 	streams["music_grok"] = _music_grok()
 	streams["music_gemini"] = _music_gemini()
 	streams["music_suburb"] = _music_suburb()
+	streams["music_archon"] = _music_archon()
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
 	streams["breathing"] = _breathing(4.0)
@@ -463,6 +468,18 @@ func _music_grok() -> AudioStreamWAV:
 		"drive": 1.15, "pad": 0.05, "arp_div": 0.25,
 	})
 
+## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
+## pounding kick, a big dark pad and a sparse, cold minor arp. The sound of one
+## mind running everything.
+func _music_archon() -> AudioStreamWAV:
+	var roots := [36.71, 36.71, 43.65, 49.0, 36.71, 36.71, 41.2, 38.89,
+		32.7, 32.7, 38.89, 43.65, 49.0, 43.65, 41.2, 36.71]
+	var arp := [146.83, 220.0, 293.66, 220.0, 174.61, 233.08, 293.66, 233.08]
+	return _music_track(96.0, roots, arp, {
+		"kick": 1.05, "bass": 0.3, "arp": 0.07, "hat": 0.1,
+		"drive": 1.2, "pad": 0.12, "arp_div": 0.25,
+	})
+
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
 func _music_gemini() -> AudioStreamWAV:
 	var roots := [65.41, 65.41, 82.41, 98.0, 73.42, 73.42, 87.31, 98.0,
@@ -502,6 +519,73 @@ func _victory_sting(duration: float) -> AudioStreamWAV:
 				s += (saw * 0.5 + sin(ph) * 0.5) * env * 0.22
 		var spark := sin(TAU * 1568.0 * t) * exp(-t * 3.0) * 0.05
 		_write(bytes, i, tanh((s + spark) * 1.1))
+	return _to_stream(bytes)
+
+## Rising chiptune arpeggio for crossing a kill-streak milestone — three quick
+## notes climbing (E5 → B5 → E6) with a square-wave bite and a spark on top.
+func _combo_up(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var notes := [659.25, 987.77, 1318.5]
+	for i in n:
+		var t := float(i) / SR
+		var s := 0.0
+		for k in notes.size():
+			var onset := float(k) * 0.06
+			if t >= onset:
+				var lt := t - onset
+				var ph := TAU * float(notes[k]) * lt
+				var env := exp(-lt * 7.0) * (1.0 - exp(-lt * 80.0))
+				var sq := 1.0 if sin(ph) >= 0.0 else -1.0
+				s += (sq * 0.32 + sin(ph) * 0.5) * env * 0.3
+		var spark := sin(TAU * 2637.0 * t) * exp(-t * 5.0) * 0.06
+		_write(bytes, i, tanh((s + spark) * 1.1))
+	return _to_stream(bytes)
+
+## Glitchy digital comms sting for the rogue-AI overlord taunts: a stuttered,
+## bit-crushed square tone that slides down, smeared with a little static — the
+## sound of something inhuman keying the channel.
+func _glitch_comms(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := (1.0 - exp(-t * 80.0)) * exp(-t * 6.0)
+		# Choppy gate: ~50 stutter slices/sec, every third muted.
+		var step := int(t * 50.0)
+		var gate := 0.0 if step % 3 == 0 else 1.0
+		# Descending square, then quantized hard (bit-crush bite).
+		var hz := 880.0 - 560.0 * (t / duration)
+		var sq: float = sign_wave(TAU * hz * t)
+		var crushed: float = round(sq * 3.0) / 3.0
+		var noise := (randf() * 2.0 - 1.0) * 0.12
+		_write(bytes, i, tanh((crushed * 0.32 + noise) * gate * env * 1.3))
+	return _to_stream(bytes)
+
+## Wet alien acid-spit: a gurgly FM tone sliding downward under a splattery noise
+## transient — an organic "ptew" that reads apart from the metal weapons.
+func _acid_spit(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 9.0) * (1.0 - exp(-t * 70.0))
+		var hz: float = 520.0 - 300.0 * (t / duration)
+		var fm: float = sin(TAU * hz * t + sin(TAU * 48.0 * t) * 2.2) # gurgle
+		var splat: float = (randf() * 2.0 - 1.0) * 0.45 * exp(-t * 22.0)
+		_write(bytes, i, tanh((fm * 0.5 + splat) * env * 1.25))
+	return _to_stream(bytes)
+
+## Crisp headshot ding: a high, detuned bell ping with a fast click transient.
+func _headshot_ding(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 24.0)
+		var s := sin(TAU * 2100.0 * t) * 0.5 + sin(TAU * 3150.0 * t) * 0.3
+		s += (randf() * 2.0 - 1.0) * exp(-t * 120.0) * 0.4
+		_write(bytes, i, tanh(s * env * 1.2))
 	return _to_stream(bytes)
 
 func _chime(duration: float, hz_lo: float, hz_hi: float) -> AudioStreamWAV:

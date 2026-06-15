@@ -9,12 +9,16 @@ extends Node
 
 ## [min_wave, scene_path, budget_cost]
 const POOL := [
+	[1, "res://scenes/enemies/skitter.tscn", 1],
 	[1, "res://scenes/enemies/drone.tscn", 1],
 	[1, "res://scenes/enemies/android.tscn", 1],
 	[2, "res://scenes/enemies/spider.tscn", 2],
 	[3, "res://scenes/enemies/seeker.tscn", 2],
 	[4, "res://scenes/enemies/sniper.tscn", 3],
+	[4, "res://scenes/enemies/strider.tscn", 3],
+	[5, "res://scenes/enemies/raptor.tscn", 4],
 	[5, "res://scenes/enemies/mech.tscn", 4],
+	[6, "res://scenes/enemies/gunner.tscn", 5],
 	[6, "res://scenes/enemies/brute.tscn", 4],
 	[7, "res://scenes/enemies/terminator.tscn", 5],
 	[10, "res://scenes/enemies/colossus.tscn", 12],

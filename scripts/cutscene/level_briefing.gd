@@ -16,6 +16,12 @@ const ENEMY_SCENES := {
 	"brute": "res://scenes/enemies/brute.tscn",
 	"titan": "res://scenes/enemies/titan.tscn",
 	"alien": "res://scenes/enemies/alien.tscn",
+	"mender": "res://scenes/enemies/mender.tscn",
+	"skitter": "res://scenes/enemies/skitter.tscn",
+	"strider": "res://scenes/enemies/strider.tscn",
+	"gunner": "res://scenes/enemies/gunner.tscn",
+	"raptor": "res://scenes/enemies/raptor.tscn",
+	"archon": "res://scenes/enemies/archon.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -28,10 +34,16 @@ const ENEMY_INFO := {
 	"seeker": {"name": "SEEKER", "desc": "Kamikaze flyer — rushes in and detonates. Drop it early.", "scale": 1.0, "y": 1.3},
 	"overseer": {"name": "OVERSEER", "desc": "Gunship boss — volley fire and summons Seekers. Use cover.", "scale": 0.45, "y": 0.0},
 	"brute": {"name": "BULWARK BRUTE", "desc": "Frontal shield soaks fire — flank it and hit the sides or back.", "scale": 1.0, "y": 0.0},
+	"mender": {"name": "MENDER", "desc": "Support flyer — beam-heals other robots and flees from you. Kill it FIRST or nothing else dies.", "scale": 1.0, "y": 1.5},
+	"skitter": {"name": "SKITTER", "desc": "Tiny, fast, fragile — and never alone. They pour in by the dozen and swarm you from every side. Crowd control wins; getting surrounded loses.", "scale": 2.2, "y": 0.0},
+	"strider": {"name": "STRIDER", "desc": "A chicken-walker sentry with a single red eye and a chin gun. Strides to mid-range and rakes you with bolt bursts — break its line of sight and close in.", "scale": 1.0, "y": 0.0},
+	"gunner": {"name": "GUNNER", "desc": "Heavy weapons bot — twin red eyes, top-mounted chaingun. Slow and armored; after a spin-up it unloads a long suppressive burst. Use cover during the burst, then flank and focus it down.", "scale": 0.7, "y": 0.0},
+	"raptor": {"name": "RAPTOR", "desc": "Flying heavy gunner — hovers at range and strafes while raking you with bolt bursts. Harder to hit than a ground unit; lead it and shoot it out of the air.", "scale": 0.7, "y": 1.6},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
-	"alien": {"name": "VOID SENTINEL", "desc": "An off-world war drone the AI summoned across the dark. Hovers in and rams — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
+	"alien": {"name": "VOID SENTINEL", "desc": "An off-world flyer the AI summoned across the dark. Strafes and spits corrosive bio-plasma volleys — its throat flares green right before it fires. Juke the orbs and shoot it down.", "scale": 1.0, "y": 1.4},
+	"archon": {"name": "ARCHON", "desc": "The AGI brain behind every machine you've fought. It does not fight — it hangs shielded and DEPLOYS endless legions. Wipe out each wave to drop the shield, then put a round through the mind.", "scale": 0.45, "y": 0.0},
 }
 
 const TAGLINES := {
@@ -45,6 +57,7 @@ const TAGLINES := {
 	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
 	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
 	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
+	"archon": "The Mind Cathedral. Behind every machine that ever hunted you was one brain giving the orders — ARCHON. It hangs in the dark, shielded, and it does not fight. It deploys. Tear through everything it spits out, crack the shield, and put a round through the thought that started all of this.",
 }
 
 const LINE_Z := -3.6
@@ -198,6 +211,8 @@ func _spawn_hostile(type: String, pos: Vector3, scl: float) -> Node3D:
 	if path == "":
 		return null
 	var bot: Node3D = load(path).instantiate()
+	if "preview" in bot:
+		bot.preview = true # bosses with their own boot/wave logic: show the idle only
 	add_child(bot)
 	bot.global_position = pos
 	bot.rotation.y = PI # face the camera
@@ -243,6 +258,13 @@ func _demo(idx: int) -> void:
 	if not is_instance_valid(bot):
 		return
 	var ms: float = bot.move_speed if "move_speed" in bot else 4.0
+	if ms <= 0.1:
+		# Immovable units (the hovering ARCHON brain) idle and spin on their own —
+		# don't drag them across the stage; just pulse the occasional strike.
+		var hold := bot.create_tween().set_loops()
+		hold.tween_callback(_strike_once.bind(bot))
+		hold.tween_interval(2.2)
+		return
 	var seq := bot.create_tween().set_loops()
 	seq.tween_callback(_set_vel.bind(bot, Vector3(0, 0, ms)))
 	seq.tween_property(bot, "position", home + Vector3(0, 0, 0.9), 0.9)
