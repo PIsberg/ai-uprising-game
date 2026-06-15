@@ -933,21 +933,34 @@ func _build_light_shafts(def: Dictionary) -> void:
 		cone.radial_segments = 16
 		cone.cap_top = false
 		cone.cap_bottom = false
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
-		m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-		m.albedo_color = Color(col.r, col.g, col.b, 0.035)
-		m.emission_enabled = true
-		m.emission = col
-		m.emission_energy_multiplier = 0.3
-		cone.material = m
+		
+		var use_noise := bool(GraphicsSettings.get("volumetric_noise_enabled"))
+		if use_noise:
+			var sm := ShaderMaterial.new()
+			sm.shader = preload("res://shaders/light_shaft.gdshader")
+			sm.set_shader_parameter("color", col)
+			sm.set_shader_parameter("intensity", 0.35)
+			sm.set_shader_parameter("noise_enabled", true)
+			cone.material = sm
+		else:
+			var m := StandardMaterial3D.new()
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+			m.albedo_color = Color(col.r, col.g, col.b, 0.035)
+			m.emission_enabled = true
+			m.emission = col
+			m.emission_energy_multiplier = 0.3
+			cone.material = m
+			
 		var mi := MeshInstance3D.new()
 		mi.mesh = cone
 		mi.position = Vector3(pos.x, pos.y * 0.5, pos.z)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.add_to_group("light_shaft_meshes")
+		mi.set_meta("light_color", col)
 		add_child(mi)
 
 # ---------- boss horizon set-piece ----------
@@ -1246,22 +1259,18 @@ func _build_puddles(def: Dictionary) -> void:
 		return
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var count := int(maxf(fs.x, fs.y) / 7.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.02, 0.025, 0.035, 0.92)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.metallic = 0.85
-	mat.roughness = 0.04
-	mat.cull_mode = BaseMaterial3D.CULL_BACK
 	for i in count:
 		var p := MeshInstance3D.new()
 		var pm := PlaneMesh.new()
 		pm.size = Vector2(randf_range(1.6, 3.6), randf_range(1.2, 2.8))
-		pm.material = mat
 		p.mesh = pm
 		p.position = Vector3(randf_range(-fs.x * 0.42, fs.x * 0.42), 0.012, randf_range(-fs.y * 0.42, fs.y * 0.42))
 		p.rotation.y = randf() * TAU
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.add_to_group("puddle_meshes")
 		add_child(p)
+		if gs and gs.has_method("apply_puddle_material_to_node"):
+			gs.apply_puddle_material_to_node(p)
 
 ## Interior ceiling infrastructure: parallel dark conduit pipes running the
 ## length of the room with sparse glowing junction collars. Visual only.

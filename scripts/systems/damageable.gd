@@ -16,6 +16,9 @@ func _ready() -> void:
 
 func apply_damage(amount: float, source: Node = null) -> void:
 	if invulnerable or current_health <= 0.0:
+		var parent := get_parent()
+		if parent and parent.has_method("notify_shield_hit"):
+			parent.notify_shield_hit(source)
 		return
 	# Owners can intercept/scale incoming damage (e.g. a brute's frontal shield).
 	var parent := get_parent()

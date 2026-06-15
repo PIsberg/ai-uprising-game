@@ -121,6 +121,13 @@ func _apply_user_settings() -> void:
 		_look_sens_mult = gs.sensitivity
 	if "invert_y" in gs:
 		_look_y_sign = -1.0 if gs.invert_y else 1.0
+	update_post_process_settings()
+
+func update_post_process_settings() -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and _post_overlay and _post_overlay.material is ShaderMaterial:
+		var enabled := bool(gs.get("advanced_post_process_enabled"))
+		(_post_overlay.material as ShaderMaterial).set_shader_parameter("advanced_post_process_enabled", enabled)
 
 func _on_hp_damaged(amount: float, _source: Node) -> void:
 	# Every hit lands as a camera kick, scaled with the bite taken.

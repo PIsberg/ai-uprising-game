@@ -38,6 +38,41 @@ func _build_extra_settings() -> void:
 	invert.toggled.connect(func(p: bool): GraphicsSettings.set_invert_y(p))
 	_settings.add_child(invert)
 
+	var gpu_parts := CheckButton.new()
+	gpu_parts.text = "Enable GPU Particles"
+	gpu_parts.custom_minimum_size = Vector2(360, 44)
+	gpu_parts.button_pressed = GraphicsSettings.gpu_particles_enabled
+	gpu_parts.toggled.connect(func(p: bool): GraphicsSettings.set_gpu_particles_enabled(p))
+	_settings.add_child(gpu_parts)
+
+	var vol_noise := CheckButton.new()
+	vol_noise.text = "Volumetric Noise Shafts"
+	vol_noise.custom_minimum_size = Vector2(360, 44)
+	vol_noise.button_pressed = GraphicsSettings.volumetric_noise_enabled
+	vol_noise.toggled.connect(func(p: bool): GraphicsSettings.set_volumetric_noise_enabled(p))
+	_settings.add_child(vol_noise)
+
+	var tri_robots := CheckButton.new()
+	tri_robots.text = "Triplanar Damage Robots"
+	tri_robots.custom_minimum_size = Vector2(360, 44)
+	tri_robots.button_pressed = GraphicsSettings.robot_triplanar_enabled
+	tri_robots.toggled.connect(func(p: bool): GraphicsSettings.set_robot_triplanar_enabled(p))
+	_settings.add_child(tri_robots)
+
+	var puddles := CheckButton.new()
+	puddles.text = "Animated Puddle Ripples"
+	puddles.custom_minimum_size = Vector2(360, 44)
+	puddles.button_pressed = GraphicsSettings.puddle_ripples_enabled
+	puddles.toggled.connect(func(p: bool): GraphicsSettings.set_puddle_ripples_enabled(p))
+	_settings.add_child(puddles)
+
+	var post_proc := CheckButton.new()
+	post_proc.text = "Advanced Lens Flares & Bloom"
+	post_proc.custom_minimum_size = Vector2(360, 44)
+	post_proc.button_pressed = GraphicsSettings.advanced_post_process_enabled
+	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
+	_settings.add_child(post_proc)
+
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()

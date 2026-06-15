@@ -512,18 +512,6 @@ func _enemy_hit_pop(pos: Vector3, is_head: bool, dmg: float = 10.0) -> void:
 
 ## Metal chunks/embers flung off the enemy on a hit; more on heavier hits.
 func _spawn_debris(scene: Node, pos: Vector3, dmg: float, is_head: bool) -> void:
-	var p := CPUParticles3D.new()
-	p.emitting = true
-	p.one_shot = true
-	p.amount = clampi(int(4 + dmg * 0.4), 5, 26)
-	p.lifetime = 0.5
-	p.explosiveness = 1.0
-	p.spread = 80.0
-	p.gravity = Vector3(0, -22, 0)
-	p.initial_velocity_min = 3.0
-	p.initial_velocity_max = 7.0 + dmg * 0.1
-	p.scale_amount_min = 0.2
-	p.scale_amount_max = 0.5
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.04, 0.04, 0.04)
 	var mat := StandardMaterial3D.new()
@@ -534,7 +522,24 @@ func _spawn_debris(scene: Node, pos: Vector3, dmg: float, is_head: bool) -> void
 	mat.emission = Color(1.0, 0.6, 0.25) if is_head else Color(1.0, 0.5, 0.2)
 	mat.emission_energy_multiplier = 2.5
 	mesh.material = mat
-	p.mesh = mesh
+
+	var amount := clampi(int(4 + dmg * 0.4), 5, 26)
+	if GraphicsSettings.gpu_particles_enabled:
+		amount *= 3
+		
+	var p := GraphicsSettings.create_particles(
+		amount,
+		0.5,
+		1.0,
+		Vector3.UP,
+		80.0,
+		Vector3(0, -22, 0),
+		3.0,
+		7.0 + dmg * 0.1,
+		0.2,
+		0.5,
+		mesh
+	)
 	scene.add_child(p)
 	p.global_position = pos
 	get_tree().create_timer(1.2).timeout.connect(p.queue_free)
@@ -754,20 +759,11 @@ func _eject_brass() -> void:
 func _muzzle_smoke() -> void:
 	if muzzle == null:
 		return
-	var p := CPUParticles3D.new()
-	p.emitting = true; p.one_shot = true; p.amount = 5; p.lifetime = 0.6; p.explosiveness = 0.65
-	p.local_coords = false
-	p.direction = -muzzle.global_basis.z
-	p.spread = 24.0
-	p.initial_velocity_min = 0.4; p.initial_velocity_max = 1.1
-	p.gravity = Vector3(0, 0.5, 0)
 	var grad := Gradient.new()
 	grad.offsets = PackedFloat32Array([0.0, 0.25, 1.0])
 	grad.colors = PackedColorArray([Color(0.7, 0.7, 0.72, 0.0), Color(0.62, 0.62, 0.64, 0.32), Color(0.5, 0.5, 0.52, 0.0)])
-	p.color_ramp = grad
 	var curve := Curve.new()
 	curve.add_point(Vector2(0.0, 0.4)); curve.add_point(Vector2(1.0, 1.0))
-	p.scale_amount_curve = curve
 	var sm := SphereMesh.new()
 	sm.radius = 0.04; sm.height = 0.08; sm.radial_segments = 6; sm.rings = 3
 	var smat := StandardMaterial3D.new()
@@ -776,7 +772,26 @@ func _muzzle_smoke() -> void:
 	smat.vertex_color_use_as_albedo = true
 	smat.albedo_color = Color(1, 1, 1, 1)
 	sm.material = smat
-	p.mesh = sm
+	
+	var amount := 5
+	if GraphicsSettings.gpu_particles_enabled:
+		amount = 15
+		
+	var p := GraphicsSettings.create_particles(
+		amount,
+		0.6,
+		0.65,
+		-muzzle.global_basis.z,
+		24.0,
+		Vector3(0, 0.5, 0),
+		0.4,
+		1.1,
+		1.0,
+		1.0,
+		sm,
+		grad,
+		curve
+	)
 	get_tree().current_scene.add_child(p)
 	p.global_position = muzzle.global_position
 	get_tree().create_timer(1.0).timeout.connect(p.queue_free)
@@ -789,22 +804,9 @@ func _muzzle_sparks() -> void:
 		return
 	var energy := data.damage_type == WeaponData.DamageType.PROJECTILE
 	var col: Color = data.tracer_color if energy else Color(1.0, 0.78, 0.4)
-	var p := CPUParticles3D.new()
-	p.emitting = true
-	p.one_shot = true
-	p.amount = 8
-	p.lifetime = 0.22
-	p.explosiveness = 1.0
-	p.local_coords = false
-	p.direction = -muzzle.global_basis.z
-	p.spread = 26.0
-	p.initial_velocity_min = 5.0
-	p.initial_velocity_max = 11.0
-	p.gravity = Vector3(0, -14.0, 0)
-	p.scale_amount_min = 0.5
-	p.scale_amount_max = 1.2
+	
 	var dart := BoxMesh.new()
-	dart.size = Vector3(0.012, 0.012, 0.06) # stretched -> reads as a spark streak
+	dart.size = Vector3(0.012, 0.012, 0.06)
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = col
@@ -812,8 +814,24 @@ func _muzzle_sparks() -> void:
 	mat.emission = col
 	mat.emission_energy_multiplier = 6.0
 	dart.material = mat
-	p.mesh = dart
-	p.draw_order = CPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+	
+	var amount := 8
+	if GraphicsSettings.gpu_particles_enabled:
+		amount = 24
+		
+	var p := GraphicsSettings.create_particles(
+		amount,
+		0.22,
+		1.0,
+		-muzzle.global_basis.z,
+		26.0,
+		Vector3(0, -14.0, 0),
+		5.0,
+		11.0,
+		0.5,
+		1.2,
+		dart
+	)
 	get_tree().current_scene.add_child(p)
 	p.global_position = muzzle.global_position
 	get_tree().create_timer(0.6).timeout.connect(p.queue_free)

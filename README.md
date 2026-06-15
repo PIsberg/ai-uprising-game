@@ -53,7 +53,7 @@ godot --headless --path . res://scenes/levels/level_gpt.tscn --quit-after 120
 | Interact / pick up | `E` | X |
 | Pause | `Esc` | Start |
 
-Sensitivity, FOV, invert-Y, framerate cap, graphics tier, and master/SFX/music volume are all in **Settings** (main menu and in-game pause), and persist to `user://settings.cfg`.
+Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra), and master/SFX/music volume are all in **Settings** (main menu and in-game pause). It also includes independent toggles for advanced features (GPU Particles, Volumetric Noise Shafts, Triplanar Damage, Puddle Ripples, and Advanced Post-Process FX), which persist to `user://settings.cfg`.
 
 ---
 
@@ -63,9 +63,10 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier, and master/SFX/music v
 - **9 wieldable weapons** — pistol, SMG, rifle, shotgun, twin-rail, arc-coil, plasma, rocket *Devastator*, and the piercing *Gauss Lance* — plus grenades. Hitscan & projectile, ADS, recoil, per-weapon viewmodels, and a piercing mechanic.
 - **10 enemy types** including 3 bosses: recon **drone**, infantry **android**, leaping **spider**, heavy **mech**, **sniper** sentry (charged beam), kamikaze **seeker**, shielded **bulwark brute** (flank it), and the **terminator**, **colossus**, and hovering **overseer** bosses.
 - **Game feel** — trauma camera shake, dynamic FOV, dash/slide, recoil, tracers, muzzle flash & smoke, ejected casings, surface-aware impacts, **bullet-hole + scorch decals**, debris, oil/spark sprays on robots, hit-stop, enemy flinch/stagger/last-stand, death topples.
+- **Premium Graphics Upgrades (Forward+)** — GPU-accelerated sparks and debris with rigid body collision physics, volumetric noise-animated light shafts (god-rays), triplanar metal shell shading on robots displaying exposed glowing electrical damage grids, dynamic hexagonal-grid energy shields with real-time hit ripple distortion on the Brute and Archon boss, procedural wind waves & concentric rain drip puddles, and anamorphic blue/cyan lens flares combined with fisheye speed-warp barrel distortion during high-velocity dashes/sprints.
 - **Mood** — themed per-level lighting + fog, cinematic post (vignette / chromatic aberration / film grain / sharpen), AgX tonemap, glow, SSAO/SSIL/SSR, soft shadows, ambient dust, **adaptive combat music** (the score swells in a fight), and an "area cleared" slow-mo.
 - **Cutscenes** — a hand-staged story intro (peaceful green-eyed helper robots → the signal → they arm and turn red) and a reusable, choreographed cutscene system used for the per-level briefings.
-- **Systems** — EASY/NORMAL/HARD scaling, save/checkpoint + Continue, score combos & end-of-level grade, kill feed, radar, objective waypoint, boss bar, directional damage indicator, 3-tier graphics (LOW/MEDIUM/HIGH) that actually change render scale/AA/shadows/effects, and full keyboard-mouse **and** gamepad support.
+- **Systems** — EASY/NORMAL/HARD scaling, save/checkpoint + Continue, score combos & end-of-level grade, kill feed, radar, objective waypoint, boss bar, directional damage indicator, 4-tier graphics (LOW/MEDIUM/HIGH/ULTRA) that actually change render scale/AA/shadows/effects, and full keyboard-mouse **and** gamepad support.
 
 ---
 
@@ -83,7 +84,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier, and master/SFX/music v
 - **`GameState`** — campaign flow (`CAMPAIGN` order, `go_to_level`/`load_level`), score + kill-streak combos + end-of-level grade, the per-level **task** checklist, difficulty config + level scaling, save/checkpoint (`user://savegame.cfg`), and hit-stop.
 - **`SoundSynth`** — synthesizes all audio procedurally into a stream table on `_ready`.
 - **`AudioBus`** — Master / Music / SFX buses, a 3D player pool, plays synth-or-sampled sounds, themed music per level, and **adaptive combat intensity**.
-- **`GraphicsSettings`** — LOW/MEDIUM/HIGH quality tiers (render scale, AA, shadow filtering, screen-space effects) plus FOV / sensitivity / invert-Y / FPS-cap, persisted.
+- **`GraphicsSettings`** — LOW/MEDIUM/HIGH/ULTRA quality tiers (render scale, AA, shadow filtering, screen-space effects) plus FOV, sensitivity, invert-Y, FPS-cap, and independent toggles for advanced GPU particles, volumetric light shafts, triplanar robot damage, puddle ripples, and advanced post-processing.
 
 ---
 

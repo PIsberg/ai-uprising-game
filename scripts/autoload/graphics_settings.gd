@@ -24,6 +24,13 @@ var sensitivity: float = 1.0 ## Multiplier on the player's base look speed.
 var invert_y: bool = false
 var max_fps: int = 0 ## 0 = uncapped.
 
+# Advanced graphics settings (toggled independently in the settings menu)
+var gpu_particles_enabled: bool = true
+var volumetric_noise_enabled: bool = true
+var robot_triplanar_enabled: bool = true
+var puddle_ripples_enabled: bool = true
+var advanced_post_process_enabled: bool = true
+
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
 const SETTINGS_PATH := "user://settings.cfg"
@@ -105,6 +112,178 @@ func set_quality(q: int) -> void:
 	_apply_viewport()
 	_apply_to_live_environment()
 	_save_settings()
+
+# ---------- advanced settings triggers ----------
+
+func set_gpu_particles_enabled(v: bool) -> void:
+	gpu_particles_enabled = v
+	_save_settings()
+
+func set_volumetric_noise_enabled(v: bool) -> void:
+	volumetric_noise_enabled = v
+	_apply_to_live_light_shafts()
+	_save_settings()
+
+func set_robot_triplanar_enabled(v: bool) -> void:
+	robot_triplanar_enabled = v
+	_apply_to_live_robots()
+	_save_settings()
+
+func set_puddle_ripples_enabled(v: bool) -> void:
+	puddle_ripples_enabled = v
+	_apply_to_live_puddles()
+	_save_settings()
+
+func set_advanced_post_process_enabled(v: bool) -> void:
+	advanced_post_process_enabled = v
+	_apply_to_live_post_process()
+	_save_settings()
+
+func _apply_to_live_robots() -> void:
+	if not is_inside_tree():
+		return
+	for r in get_tree().get_nodes_in_group("robot_models"):
+		if r.has_method("update_advanced_materials"):
+			r.update_advanced_materials()
+	for s in get_tree().get_nodes_in_group("shield_enemies"):
+		if s.has_method("update_shield_settings"):
+			s.update_shield_settings()
+
+func _apply_to_live_puddles() -> void:
+	if not is_inside_tree():
+		return
+	for p in get_tree().get_nodes_in_group("puddle_meshes"):
+		if p is MeshInstance3D:
+			apply_puddle_material_to_node(p)
+
+func _apply_to_live_post_process() -> void:
+	if not is_inside_tree():
+		return
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("update_post_process_settings"):
+		player.update_post_process_settings()
+
+func apply_puddle_material_to_node(p: MeshInstance3D) -> void:
+	if puddle_ripples_enabled:
+		var sm := ShaderMaterial.new()
+		sm.shader = preload("res://shaders/puddle.gdshader")
+		sm.set_shader_parameter("water_color", Color(0.015, 0.022, 0.032, 0.92))
+		sm.set_shader_parameter("metallic", 0.9)
+		sm.set_shader_parameter("roughness_wet", 0.03)
+		sm.set_shader_parameter("wave_scale", 16.0)
+		sm.set_shader_parameter("ripple_speed", 1.3)
+		sm.set_shader_parameter("ripples_enabled", true)
+		p.material_override = sm
+	else:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.02, 0.025, 0.035, 0.92)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.metallic = 0.85
+		mat.roughness = 0.04
+		mat.cull_mode = BaseMaterial3D.CULL_BACK
+		p.material_override = mat
+
+func _apply_to_live_light_shafts() -> void:
+	if not is_inside_tree():
+		return
+	for mi in get_tree().get_nodes_in_group("light_shaft_meshes"):
+		if mi is MeshInstance3D and mi.mesh is CylinderMesh:
+			var col: Color = mi.get_meta("light_color", Color.WHITE)
+			if volumetric_noise_enabled:
+				var sm := ShaderMaterial.new()
+				sm.shader = preload("res://shaders/light_shaft.gdshader")
+				sm.set_shader_parameter("color", col)
+				sm.set_shader_parameter("intensity", 0.35)
+				sm.set_shader_parameter("noise_enabled", true)
+				mi.mesh.material = sm
+			else:
+				var m := StandardMaterial3D.new()
+				m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+				m.cull_mode = BaseMaterial3D.CULL_DISABLED
+				m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+				m.albedo_color = Color(col.r, col.g, col.b, 0.035)
+				m.emission_enabled = true
+				m.emission = col
+				m.emission_energy_multiplier = 0.3
+				mi.mesh.material = m
+
+# ---------- particle instantiation helper ----------
+
+func create_particles(
+	amount: int,
+	lifetime: float,
+	explosiveness: float,
+	direction: Vector3,
+	spread: float,
+	gravity: Vector3,
+	vel_min: float,
+	vel_max: float,
+	scale_min: float,
+	scale_max: float,
+	mesh: Mesh,
+	color_ramp: Gradient = null,
+	scale_curve: Curve = null
+) -> Node3D:
+	if gpu_particles_enabled:
+		var p := GPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = lifetime
+		p.explosiveness = explosiveness
+		p.one_shot = true
+		p.emitting = true
+		p.local_coords = false
+		p.draw_order = GPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+		p.draw_pass_1 = mesh  # GPUParticles3D draws via draw_pass_N, not a `mesh` property
+		
+		var pm := ParticleProcessMaterial.new()
+		pm.direction = direction
+		pm.spread = spread
+		pm.gravity = gravity
+		pm.initial_velocity_min = vel_min
+		pm.initial_velocity_max = vel_max
+		pm.scale_min = scale_min
+		pm.scale_max = scale_max
+		
+		# Collision settings for GPUParticles
+		pm.collision_mode = ParticleProcessMaterial.COLLISION_RIGID
+		pm.collision_friction = 0.25
+		pm.collision_bounce = 0.5
+		
+		if color_ramp:
+			var grad_tex := GradientTexture1D.new()
+			grad_tex.gradient = color_ramp
+			pm.color_ramp = grad_tex
+		if scale_curve:
+			var curve_tex := CurveTexture.new()
+			curve_tex.curve = scale_curve
+			pm.scale_curve = curve_tex
+			
+		p.process_material = pm
+		return p
+	else:
+		var p := CPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = lifetime
+		p.explosiveness = explosiveness
+		p.one_shot = true
+		p.emitting = true
+		p.local_coords = false
+		p.draw_order = CPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+		p.mesh = mesh
+		p.direction = direction
+		p.spread = spread
+		p.gravity = gravity
+		p.initial_velocity_min = vel_min
+		p.initial_velocity_max = vel_max
+		p.scale_amount_min = scale_min
+		p.scale_amount_max = scale_max
+		if color_ramp:
+			p.color_ramp = color_ramp
+		if scale_curve:
+			p.scale_amount_curve = scale_curve
+		return p
 
 ## Re-tier the environment of the level that's running RIGHT NOW, so picking a
 ## quality mid-game visibly strips/restores SSAO/SSR/volumetrics immediately
@@ -243,6 +422,13 @@ func _load_settings() -> void:
 		sensitivity = clampf(float(cf.get_value("input", "sensitivity", 1.0)), 0.2, 3.0)
 		invert_y = bool(cf.get_value("input", "invert_y", false))
 		language = String(cf.get_value("locale", "language", "en"))
+		
+		# Load advanced options
+		gpu_particles_enabled = bool(cf.get_value("graphics_adv", "gpu_particles", true))
+		volumetric_noise_enabled = bool(cf.get_value("graphics_adv", "volumetric_noise", true))
+		robot_triplanar_enabled = bool(cf.get_value("graphics_adv", "robot_triplanar", true))
+		puddle_ripples_enabled = bool(cf.get_value("graphics_adv", "puddle_ripples", true))
+		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -253,4 +439,12 @@ func _save_settings() -> void:
 	cf.set_value("input", "sensitivity", sensitivity)
 	cf.set_value("input", "invert_y", invert_y)
 	cf.set_value("locale", "language", language)
+	
+	# Save advanced options
+	cf.set_value("graphics_adv", "gpu_particles", gpu_particles_enabled)
+	cf.set_value("graphics_adv", "volumetric_noise", volumetric_noise_enabled)
+	cf.set_value("graphics_adv", "robot_triplanar", robot_triplanar_enabled)
+	cf.set_value("graphics_adv", "puddle_ripples", puddle_ripples_enabled)
+	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
+	
 	cf.save(SETTINGS_PATH)
