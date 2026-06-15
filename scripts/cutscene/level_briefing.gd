@@ -33,7 +33,7 @@ const ENEMY_INFO := {
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
-	"alien": {"name": "VOID SENTINEL", "desc": "An off-world war drone the AI summoned across the dark. Hovers in and rams — shoot it out of the air before it dives.", "scale": 1.0, "y": 1.4},
+	"alien": {"name": "VOID SENTINEL", "desc": "An off-world flyer the AI summoned across the dark. Strafes and spits corrosive bio-plasma volleys — its throat flares green right before it fires. Juke the orbs and shoot it down.", "scale": 1.0, "y": 1.4},
 }
 
 const TAGLINES := {

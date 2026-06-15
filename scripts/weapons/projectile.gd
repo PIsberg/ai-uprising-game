@@ -10,6 +10,7 @@ extends Area3D
 @export var cluster_delay: float = 0.06 ## Stagger between bomblets so it ripples outward.
 @export var homing_turn_rate: float = 0.0 ## Radians/sec the round can steer toward a locked target (0 = dumb-fire).
 @export var homing_range: float = 42.0 ## Max distance to acquire/keep a homing target.
+@export var direct_damage: bool = false ## Apply `damage` to the body it strikes (enemy rounds whose splash mask excludes the player). Off by default so splash weapons don't double-dip.
 
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
@@ -148,6 +149,16 @@ func _energy_mesh() -> MeshInstance3D:
 func _on_body_entered(body: Node) -> void:
 	if body == _shooter:
 		return
+	# Enemy rounds (splash mask excludes the player) land their hit here instead.
+	if direct_damage and body != null:
+		var d := body.get_node_or_null("Damageable")
+		var node := body
+		while d == null and node != null:
+			node = node.get_parent()
+			if node:
+				d = node.get_node_or_null("Damageable")
+		if d:
+			d.apply_damage(_damage, _shooter)
 	_explode(global_position)
 
 func _on_area_entered(area: Area3D) -> void:

@@ -31,6 +31,7 @@ func _ready() -> void:
 	streams["combo_up"] = _combo_up(0.34)
 	streams["headshot"] = _headshot_ding(0.18)
 	streams["overlord_glitch"] = _glitch_comms(0.32)
+	streams["acid_spit"] = _acid_spit(0.3)
 	streams["radio_static"] = _radio_static(1.6)
 	streams["music_techno"] = _techno_loop()
 	streams["music_grok"] = _music_grok()
@@ -559,6 +560,20 @@ func _glitch_comms(duration: float) -> AudioStreamWAV:
 		var crushed: float = round(sq * 3.0) / 3.0
 		var noise := (randf() * 2.0 - 1.0) * 0.12
 		_write(bytes, i, tanh((crushed * 0.32 + noise) * gate * env * 1.3))
+	return _to_stream(bytes)
+
+## Wet alien acid-spit: a gurgly FM tone sliding downward under a splattery noise
+## transient — an organic "ptew" that reads apart from the metal weapons.
+func _acid_spit(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 9.0) * (1.0 - exp(-t * 70.0))
+		var hz: float = 520.0 - 300.0 * (t / duration)
+		var fm: float = sin(TAU * hz * t + sin(TAU * 48.0 * t) * 2.2) # gurgle
+		var splat: float = (randf() * 2.0 - 1.0) * 0.45 * exp(-t * 22.0)
+		_write(bytes, i, tanh((fm * 0.5 + splat) * env * 1.25))
 	return _to_stream(bytes)
 
 ## Crisp headshot ding: a high, detuned bell ping with a fast click transient.
