@@ -720,6 +720,7 @@ static func _assembly() -> Dictionary:
 			{"type": "strider", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
 			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
 		],
 	}
 
@@ -1218,6 +1219,7 @@ static func _grok() -> Dictionary:
 			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20},
 			{"type": "sniper", "pos": Vector3(-18, 0.0, 18), "trigger": 26},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-20, 0, -16)},

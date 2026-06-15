@@ -20,6 +20,7 @@ const ENEMY_SCENES := {
 	"skitter": "res://scenes/enemies/skitter.tscn",
 	"strider": "res://scenes/enemies/strider.tscn",
 	"gunner": "res://scenes/enemies/gunner.tscn",
+	"raptor": "res://scenes/enemies/raptor.tscn",
 	"archon": "res://scenes/enemies/archon.tscn",
 }
 
@@ -37,6 +38,7 @@ const ENEMY_INFO := {
 	"skitter": {"name": "SKITTER", "desc": "Tiny, fast, fragile — and never alone. They pour in by the dozen and swarm you from every side. Crowd control wins; getting surrounded loses.", "scale": 2.2, "y": 0.0},
 	"strider": {"name": "STRIDER", "desc": "A chicken-walker sentry with a single red eye and a chin gun. Strides to mid-range and rakes you with bolt bursts — break its line of sight and close in.", "scale": 1.0, "y": 0.0},
 	"gunner": {"name": "GUNNER", "desc": "Heavy weapons bot — twin red eyes, top-mounted chaingun. Slow and armored; after a spin-up it unloads a long suppressive burst. Use cover during the burst, then flank and focus it down.", "scale": 0.7, "y": 0.0},
+	"raptor": {"name": "RAPTOR", "desc": "Flying heavy gunner — hovers at range and strafes while raking you with bolt bursts. Harder to hit than a ground unit; lead it and shoot it out of the air.", "scale": 0.7, "y": 1.6},
 	"terminator": {"name": "TERMINATOR", "desc": "Elite hunter — relentless and armored.", "scale": 0.85, "y": 0.0},
 	"colossus": {"name": "GOLIATH-IX", "desc": "A walking siege engine. Bring everything.", "scale": 0.32, "y": 0.0},
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
