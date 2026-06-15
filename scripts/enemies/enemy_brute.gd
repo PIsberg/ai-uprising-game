@@ -18,8 +18,8 @@ func _ready() -> void:
 	_build_shield()
 	super._ready()
 	max_health = 280.0
-	move_speed = 2.9
-	turn_speed = 3.2
+	move_speed = 2.5
+	turn_speed = 1.8 # turns slowly — circle to its unshielded sides/back to flank it
 	sight_range = 40.0
 	sight_angle_deg = 200.0
 	attack_range = 3.2

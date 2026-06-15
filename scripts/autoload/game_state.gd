@@ -558,6 +558,24 @@ func _collect_spawners(n: Node, out: Array) -> void:
 
 const BOSS_SCENES := ["terminator", "colossus", "overseer", "archon"]
 
+## Plentiful grunt types — thinned first on lower difficulties so rarer special
+## enemies (spider, brute, gunner, mender, …) stay in the mix.
+const COMMON_ENEMIES := ["drone", "android", "seeker", "skitter"]
+
+## Lower rank = removed first when thinning. Common+trigger goes first, rare and
+## hand-placed enemies last, so Easy still shows the full roster.
+func _cull_rank(s: EnemySpawner) -> int:
+	var path: String = s.enemy_scene.resource_path if s.enemy_scene else ""
+	var common := false
+	for c in COMMON_ENEMIES:
+		if c in path:
+			common = true
+			break
+	var rank := 0 if common else 2
+	if s.trigger_radius <= 0.0:
+		rank += 1 # spare hand-placed/immediate before trigger reinforcements
+	return rank
+
 func _is_boss_spawner(s: EnemySpawner) -> bool:
 	if s.enemy_scene == null:
 		return false
@@ -575,11 +593,12 @@ func _scale_enemy_count(level: Node, mult: float) -> void:
 		return
 	var target := int(round(spawners.size() * mult))
 	if mult < 1.0:
-		# Thin the pack to actually hit the target count. Bosses are always
-		# spared; among the rest, drop trigger-spawned reinforcements first so the
-		# opening fight stays as intact as possible before we thin placed enemies.
+		# Thin the pack to hit the target. Bosses are always spared. Cull the
+		# plentiful grunts first (and trigger-spawned reinforcements before
+		# hand-placed ones) so rarer enemies — spider, brute, gunner, … — survive
+		# and the player still meets the full roster even on Easy.
 		var removable := spawners.filter(func(s): return not _is_boss_spawner(s))
-		removable.sort_custom(func(a, b): return a.trigger_radius > b.trigger_radius)
+		removable.sort_custom(func(a, b): return _cull_rank(a) < _cull_rank(b))
 		var want_removed: int = mini(spawners.size() - maxi(target, 1), removable.size())
 		for i in range(want_removed):
 			removable[i].queue_free()
