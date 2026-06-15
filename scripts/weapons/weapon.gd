@@ -396,6 +396,8 @@ func _do_shot() -> void:
 	_play_muzzle()
 	if data.damage_type == WeaponData.DamageType.PROJECTILE:
 		_energy_muzzle()
+	_muzzle_sparks()
+	_muzzle_shockwave()
 	_eject_brass()
 	_muzzle_smoke()
 	_play_fire_sound()
@@ -773,6 +775,77 @@ func _muzzle_smoke() -> void:
 	get_tree().current_scene.add_child(p)
 	p.global_position = muzzle.global_position
 	get_tree().create_timer(1.0).timeout.connect(p.queue_free)
+
+## A burst of hot sparks/embers flung from the barrel on every shot — warm for
+## ballistic guns, the round's energy colour for plasma/energy weapons. Spawned
+## in world space at the muzzle so they streak as the gun moves.
+func _muzzle_sparks() -> void:
+	if muzzle == null:
+		return
+	var energy := data.damage_type == WeaponData.DamageType.PROJECTILE
+	var col: Color = data.tracer_color if energy else Color(1.0, 0.78, 0.4)
+	var p := CPUParticles3D.new()
+	p.emitting = true
+	p.one_shot = true
+	p.amount = 8
+	p.lifetime = 0.22
+	p.explosiveness = 1.0
+	p.local_coords = false
+	p.direction = -muzzle.global_basis.z
+	p.spread = 26.0
+	p.initial_velocity_min = 5.0
+	p.initial_velocity_max = 11.0
+	p.gravity = Vector3(0, -14.0, 0)
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 1.2
+	var dart := BoxMesh.new()
+	dart.size = Vector3(0.012, 0.012, 0.06) # stretched -> reads as a spark streak
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 6.0
+	dart.material = mat
+	p.mesh = dart
+	p.draw_order = CPUParticles3D.DRAW_ORDER_VIEW_DEPTH
+	get_tree().current_scene.add_child(p)
+	p.global_position = muzzle.global_position
+	get_tree().create_timer(0.6).timeout.connect(p.queue_free)
+
+## A flat air-pressure ring snapping off the muzzle — only the heavy hitters
+## (high recoil or splash rounds) earn it, so it reads as real blast force.
+func _muzzle_shockwave() -> void:
+	if muzzle == null:
+		return
+	if data.recoil_pitch < 1.8 and data.splash_radius <= 0.0:
+		return
+	var col := data.tracer_color
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.05
+	tm.outer_radius = 0.12
+	tm.rings = 20
+	tm.ring_segments = 8
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.6)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 3.0
+	tm.material = mat
+	ring.mesh = tm
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Stand the ring up facing down the barrel (TorusMesh axis is +Y).
+	ring.rotation_degrees = Vector3(90, 0, 0)
+	muzzle.add_child(ring)
+	ring.position = Vector3(0, 0, -0.1)
+	var tw := ring.create_tween().set_parallel(true)
+	tw.tween_property(ring, "scale", Vector3.ONE * 6.0, 0.18).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.chain().tween_callback(ring.queue_free)
 
 func _resolve_sound(explicit: AudioStream, fallback_id: String) -> AudioStream:
 	if explicit:
