@@ -31,7 +31,7 @@ func _ready() -> void:
 	# Non-positional players for music + UI/broadcast. process_mode ALWAYS so the
 	# broadcast intro can play while the game tree is paused.
 	_music = AudioStreamPlayer.new()
-	_music.volume_db = -20.0
+	_music.volume_db = MUSIC_CALM_DB
 	_music.bus = "Music"
 	_music.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_music)
@@ -282,8 +282,8 @@ var _current_music_id: String = ""
 # player is actively in combat, and settles back when things go quiet.
 var _combat: float = 0.0
 var _combat_target: float = 0.0
-const MUSIC_CALM_DB := -20.0
-const MUSIC_COMBAT_DB := -11.0
+const MUSIC_CALM_DB := -12.0
+const MUSIC_COMBAT_DB := -6.0
 
 func set_combat(active: bool) -> void:
 	_combat_target = 1.0 if active else 0.0

@@ -8,6 +8,7 @@ uniform float metallic : hint_range(0.0, 1.0) = 0.85;
 uniform float roughness : hint_range(0.0, 1.0) = 0.45;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
+uniform bool use_normal_map = false; // only sample normal_tex when the model actually has one
 
 // Dynamic damage parameters
 uniform float health_ratio : hint_range(0.0, 1.0) = 1.0;
@@ -15,9 +16,7 @@ uniform float menace_blink : hint_range(0.0, 10.0) = 0.0;
 uniform vec3 menace_color : source_color = vec3(1.0, 0.16, 0.1);
 uniform vec3 core_color : source_color = vec3(1.0, 0.4, 0.0);
 
-// Triplanar settings
-uniform float triplanar_sharpness = 4.0;
-varying vec3 power_normal;
+// World-ish position used only to drive the procedural damage pattern.
 varying vec3 triplanar_pos;
 
 float hash(vec2 p) {
@@ -34,40 +33,25 @@ float noise(vec2 p) {
 }
 
 void vertex() {
-	TANGENT = vec3(0.0, 0.0, -1.0) * abs(NORMAL.x);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(NORMAL.y);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(NORMAL.z);
-	TANGENT = normalize(TANGENT);
-	BINORMAL = vec3(0.0, 1.0, 0.0) * abs(NORMAL.x);
-	BINORMAL += vec3(0.0, 0.0, -1.0) * abs(NORMAL.y);
-	BINORMAL += vec3(0.0, 1.0, 0.0) * abs(NORMAL.z);
-	BINORMAL = normalize(BINORMAL);
-	
-	power_normal = pow(abs(NORMAL), vec3(triplanar_sharpness));
-	power_normal /= (power_normal.x + power_normal.y + power_normal.z);
+	// Mesh tangents (imported) drive any normal mapping; we don't override them.
 	triplanar_pos = VERTEX * 1.5;
-}
-
-vec4 triplanar_texture(sampler2D tex, vec3 pos, vec3 normal) {
-	vec4 col_x = texture(tex, pos.zy);
-	vec4 col_y = texture(tex, pos.xz);
-	vec4 col_z = texture(tex, pos.xy);
-	return col_x * normal.x + col_y * normal.y + col_z * normal.z;
 }
 
 void fragment() {
 	// Sample textures using standard UV coordinates to preserve hand-authored texture mapping
 	vec4 tex_albedo = texture(albedo_tex, UV);
 	vec4 final_albedo = albedo_color * tex_albedo;
-	
-	vec3 tex_normal = texture(normal_tex, UV).rgb;
-	
+
 	// PBR
 	ALBEDO = final_albedo.rgb;
 	METALLIC = metallic;
 	ROUGHNESS = roughness;
-	NORMAL_MAP = tex_normal;
-	NORMAL_MAP_DEPTH = normal_scale;
+	// Only apply a normal map when the model actually ships one — sampling an
+	// unbound normal_tex yields garbage normals that read as seam lines.
+	if (use_normal_map) {
+		NORMAL_MAP = texture(normal_tex, UV).rgb;
+		NORMAL_MAP_DEPTH = normal_scale;
+	}
 	
 	// Dynamic Damage Effect (exposed core)
 	// Ramps up as health drops below 75%

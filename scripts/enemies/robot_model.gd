@@ -114,7 +114,8 @@ func _apply_materials() -> void:
 						sm.set_shader_parameter("albedo_tex", m.albedo_texture)
 						sm.set_shader_parameter("metallic", m.metallic)
 						sm.set_shader_parameter("roughness", m.roughness)
-						if m.normal_enabled:
+						if m.normal_enabled and m.normal_texture != null:
+							sm.set_shader_parameter("use_normal_map", true)
 							sm.set_shader_parameter("normal_tex", m.normal_texture)
 							sm.set_shader_parameter("normal_scale", m.normal_scale)
 						sm.set_shader_parameter("menace_color", menace_color)
