@@ -32,7 +32,7 @@ const DIFFICULTY_CONFIG := {
 	Difficulty.EASY: {
 		"label": "EASY",
 		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.88,
-		"enemy_count_mult": 0.6, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
+		"enemy_count_mult": 0.5, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
@@ -42,7 +42,7 @@ const DIFFICULTY_CONFIG := {
 	Difficulty.HARD: {
 		"label": "HARD",
 		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.12,
-		"enemy_count_mult": 1.45, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
+		"enemy_count_mult": 1.6, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
 	},
 }
 
@@ -575,10 +575,11 @@ func _scale_enemy_count(level: Node, mult: float) -> void:
 		return
 	var target := int(round(spawners.size() * mult))
 	if mult < 1.0:
-		# Thin the pack: only drop trigger-spawned, non-boss reinforcements so
-		# the opening fight and any boss stay intact.
-		var removable := spawners.filter(func(s):
-			return s.trigger_radius > 0.0 and not _is_boss_spawner(s))
+		# Thin the pack to actually hit the target count. Bosses are always
+		# spared; among the rest, drop trigger-spawned reinforcements first so the
+		# opening fight stays as intact as possible before we thin placed enemies.
+		var removable := spawners.filter(func(s): return not _is_boss_spawner(s))
+		removable.sort_custom(func(a, b): return a.trigger_radius > b.trigger_radius)
 		var want_removed: int = mini(spawners.size() - maxi(target, 1), removable.size())
 		for i in range(want_removed):
 			removable[i].queue_free()
