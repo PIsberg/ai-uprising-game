@@ -1230,15 +1230,27 @@ func _build_floor_seams(def: Dictionary) -> void:
 	if def.get("open_sky", false):
 		return # outdoor asphalt/dirt isn't panelled
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
-	var mat := _color_material(Color(0.07, 0.075, 0.09), 0.9)
+	# A dark recessed seam with a thin theme-coloured glow line on top, so interior
+	# floors read as a lit tech-grid (a data-centre lattice) instead of a flat
+	# sheet of colour. The glow tints toward white so it reads on any floor colour.
+	var dark := _color_material(Color(0.06, 0.065, 0.08), 0.9)
+	var glow := StandardMaterial3D.new()
+	var tc: Color = _theme_color(def).lerp(Color(1, 1, 1), 0.35)
+	glow.albedo_color = tc
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow.emission_enabled = true
+	glow.emission = tc
+	glow.emission_energy_multiplier = 1.6
 	var spacing := 6.5
 	var x := -fs.x * 0.5 + spacing
 	while x < fs.x * 0.5 - 1.0:
-		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.1, 0.016, fs.y - 1.4), mat)
+		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.16, 0.016, fs.y - 1.4), dark)
+		_seam_strip(Vector3(x, 0.013, 0), Vector3(0.045, 0.018, fs.y - 1.4), glow)
 		x += spacing
 	var z := -fs.y * 0.5 + spacing
 	while z < fs.y * 0.5 - 1.0:
-		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.1), mat)
+		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.16), dark)
+		_seam_strip(Vector3(0, 0.013, z), Vector3(fs.x - 1.4, 0.018, 0.045), glow)
 		z += spacing
 
 func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
