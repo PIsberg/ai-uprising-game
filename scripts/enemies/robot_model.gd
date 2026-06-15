@@ -21,6 +21,8 @@ extends Node3D
 @export var anim_attack: String = "" ## Played as a one-shot on each weapon discharge.
 @export var anim_stagger: String = "" ## Hit-reaction clip while the parent is staggered.
 @export var walk_speed_scale: float = 1.4 ## Walk clip speed at full ground speed.
+@export var lean_max: float = 0.14 ## Max forward/back lean (radians) from movement.
+@export var bank_max: float = 0.22 ## Max roll into lateral movement (radians). Flyers auto-bank harder.
 
 var _anim: AnimationPlayer
 var _parent: EnemyBase
@@ -28,14 +30,31 @@ var _prev_recoil: float = 0.0
 var _menace_light: OmniLight3D
 var _glow_mats: Array[BaseMaterial3D] = []
 var _blink_tween: Tween
+# Velocity-driven lean/bank applied to the imported mesh (composed under its
+# base flip/scale so it never fights EnemyBase's flinch on the Model node).
+var _mesh: Node3D
+var _mesh_base: Transform3D
+var _lean_pitch: float = 0.0
+var _lean_roll: float = 0.0
 
 func _ready() -> void:
 	_parent = get_parent() as EnemyBase
 	_anim = find_child("AnimationPlayer", true, false) as AnimationPlayer
 	_apply_materials()
 	_build_menace_glow()
+	# The imported model node we lean/bank (the direct child holding the rig).
+	for c in get_children():
+		if c is Node3D and not (c is AnimationPlayer):
+			_mesh = c
+			_mesh_base = (c as Node3D).transform
+			break
+	# Flyers (no walk gait) bank like aircraft; walkers just lean a little.
+	if anim_walk == "":
+		bank_max *= 2.6
+		lean_max *= 1.5
 	if _anim == null:
-		set_physics_process(false)
+		if _mesh == null:
+			set_physics_process(false) # nothing to drive
 		return
 	for n in [anim_idle, anim_walk]:
 		if n != "" and _anim.has_animation(n):
@@ -125,6 +144,23 @@ func _extinguish() -> void:
 	for m in _glow_mats:
 		create_tween().tween_property(m, "emission_energy_multiplier", 0.0, 0.9)
 
+## Bank/lean the chassis into its movement: tilt forward when advancing, roll
+## into lateral motion. Flyers bank hard (aircraft), walkers lean subtly — sells
+## momentum and makes the whole roster read as alive instead of sliding.
+func _apply_lean(delta: float) -> void:
+	if _mesh == null or _parent == null:
+		return
+	var lv := _parent.global_transform.basis.inverse() * _parent.velocity
+	var spd := maxf(_parent.move_speed, 1.0)
+	var fwd := clampf(-lv.z / spd, -1.0, 1.0) # +1 advancing (forward is -Z)
+	var lat := clampf(lv.x / spd, -1.0, 1.0)  # +1 strafing right
+	var t := clampf(8.0 * delta, 0.0, 1.0)
+	_lean_pitch = lerpf(_lean_pitch, fwd * lean_max, t)
+	_lean_roll = lerpf(_lean_roll, -lat * bank_max, t)
+	_mesh.transform = Transform3D(
+		_mesh_base.basis * Basis.from_euler(Vector3(_lean_pitch, 0.0, _lean_roll)),
+		_mesh_base.origin)
+
 func _collect_meshes(n: Node) -> Array[MeshInstance3D]:
 	var out: Array[MeshInstance3D] = []
 	if n is MeshInstance3D:
@@ -137,9 +173,13 @@ func _physics_process(delta: float) -> void:
 	if _parent == null:
 		return
 	if _parent.state == EnemyBase.State.DEAD:
-		_anim.pause()
+		if _anim:
+			_anim.pause()
 		_extinguish()
 		set_physics_process(false)
+		return
+	_apply_lean(delta)
+	if _anim == null:
 		return
 	# Weapon discharge -> attack one-shot (recoil spikes to 1 on every shot).
 	if anim_attack != "" and _parent.recoil > 0.9 and _prev_recoil <= 0.9 \
