@@ -14,7 +14,13 @@ var current_health: float
 func _ready() -> void:
 	current_health = max_health
 
-func apply_damage(amount: float, source: Node = null) -> void:
+func apply_damage(amount: float, source = null) -> void:
+	# A stored shooter (a projectile/explosion's source) can be freed before its
+	# hit lands. Passing a freed object to a typed `Node` param crashes Godot at
+	# the call itself, so we take `source` untyped and null out a dead reference
+	# here — this shields every caller and the source-typed signals below.
+	if source != null and not is_instance_valid(source):
+		source = null
 	if invulnerable or current_health <= 0.0:
 		var parent := get_parent()
 		if parent and parent.has_method("notify_shield_hit"):
