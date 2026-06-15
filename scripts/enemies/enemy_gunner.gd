@@ -35,6 +35,7 @@ func _ready() -> void:
 	head_radius = 0.7
 	stagger_threshold = 220.0    # shrugs off small-arms; flank or burst it down
 	flinch_knockback = 0.0
+	combat_strafe = true         # reposition between bursts (plants while firing)
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 4.0
@@ -69,6 +70,14 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 		_face_target(delta)
 		return
 	super._move_toward(dest, delta)
+
+## Strafe to reposition between bursts, but plant the moment it commits to firing.
+func _combat_strafe(delta: float) -> void:
+	if _winding or _burst_left > 0:
+		_decelerate()
+		_face_target(delta)
+		return
+	super._combat_strafe(delta)
 
 ## Telegraphed spin-up; the burst itself streams out in _physics_process.
 func _perform_attack() -> void:

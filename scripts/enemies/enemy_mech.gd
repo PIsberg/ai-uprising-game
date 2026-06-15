@@ -31,11 +31,52 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.armor = 4.0
 	flinch_knockback = 1.2 # Heavy chassis barely budges when shot.
+	_make_charge_dust()
+
+
+var _dust: CPUParticles3D
+
+## Ground dust kicked up while the mech is barreling forward — sells the weight
+## and speed of the charge.
+func _make_charge_dust() -> void:
+	_dust = CPUParticles3D.new()
+	_dust.emitting = false
+	_dust.amount = 18
+	_dust.lifetime = 0.6
+	_dust.local_coords = false
+	_dust.direction = Vector3(0, 1, 0)
+	_dust.spread = 55.0
+	_dust.initial_velocity_min = 0.8
+	_dust.initial_velocity_max = 2.2
+	_dust.gravity = Vector3(0, -2.0, 0)
+	var ramp := Curve.new()
+	ramp.add_point(Vector2(0.0, 0.4)); ramp.add_point(Vector2(1.0, 1.4))
+	_dust.scale_amount_curve = ramp
+	_dust.scale_amount_min = 0.6; _dust.scale_amount_max = 1.3
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
+	grad.colors = PackedColorArray([Color(0.4, 0.36, 0.3, 0.0), Color(0.42, 0.38, 0.32, 0.4), Color(0.4, 0.36, 0.3, 0.0)])
+	_dust.color_ramp = grad
+	var sm := SphereMesh.new()
+	sm.radius = 0.12; sm.height = 0.24; sm.radial_segments = 6; sm.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	sm.material = mat
+	_dust.mesh = sm
+	add_child(_dust)
+	_dust.position = Vector3(0, 0.1, 0)
 
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
+		if _dust:
+			_dust.emitting = false
 		return
+	# Kick up dust while charging the player down.
+	if _dust:
+		_dust.emitting = _charging and is_on_floor()
 	# Tick a telegraphed ground-slam; it lands when the windup elapses.
 	if _slam_windup > 0.0:
 		_slam_windup -= delta
