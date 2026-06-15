@@ -1,44 +1,41 @@
 [gd_scene format=3 uid="uid://u828nbls8jye"]
 
-[ext_resource type="Script" path="res://scripts/enemies/enemy_alien.gd" id="1_alien"]
-[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
-[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="Script" uid="uid://d1u6dgh0dj1pd" path="res://scripts/enemies/enemy_alien.gd" id="1_alien"]
+[ext_resource type="Script" uid="uid://bhkipm3k7nier" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" uid="uid://bsb47peylw1l5" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
 [ext_resource type="PackedScene" uid="uid://brjhjgmjftjyu" path="res://assets/models/aliens/robot_flyer.glb" id="4_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_col"]
 radius = 0.6
 
-[node name="Alien" type="CharacterBody3D" groups=["enemy"]]
+[node name="Alien" type="CharacterBody3D" unique_id=510928311 groups=["enemy"]]
 collision_layer = 4
-collision_mask = 1
 floor_max_angle = 1.57
 script = ExtResource("1_alien")
 
-[node name="Model" type="Node3D" parent="."]
+[node name="Model" type="Node3D" parent="." unique_id=1454021350]
 script = ExtResource("3_rm")
 anim_idle = "CharacterArmature|Idle"
 anim_walk = "CharacterArmature|Run"
 anim_attack = "CharacterArmature|Attack"
-anim_stagger = ""
 
-[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+[node name="Mesh" parent="Model" unique_id=1491390451 instance=ExtResource("4_model")]
 transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, -0.5, 0)
 
-[node name="Eye" type="Node3D" parent="."]
+[node name="Eye" type="Node3D" parent="." unique_id=1657868140]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.5)
 
-[node name="EyeLight" type="OmniLight3D" parent="Eye"]
+[node name="EyeLight" type="OmniLight3D" parent="Eye" unique_id=1661724407]
 light_color = Color(1, 0.3, 0.2, 1)
 light_energy = 1.4
-omni_range = 5.0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1558401563]
 shape = SubResource("SphereShape3D_col")
 
-[node name="Damageable" type="Node" parent="."]
+[node name="Damageable" type="Node" parent="." unique_id=1677164174]
 script = ExtResource("2_dmg")
 max_health = 70.0
 
-[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
-radius = 0.6
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=142441452]
 height = 1.6
+radius = 0.6
