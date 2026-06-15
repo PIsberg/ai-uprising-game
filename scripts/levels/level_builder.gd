@@ -24,6 +24,7 @@ const ENEMY_SCENES := {
 	"brute": preload("res://scenes/enemies/brute.tscn"),
 	"archon": preload("res://scenes/enemies/archon.tscn"),
 	"mender": preload("res://scenes/enemies/mender.tscn"),
+	"skitter": preload("res://scenes/enemies/skitter.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
@@ -1675,17 +1676,22 @@ func _spawn_enemies(def: Dictionary) -> void:
 		var scene: PackedScene = ENEMY_SCENES.get(en["type"])
 		if scene == null:
 			continue
-		var sp := EnemySpawner.new()
-		sp.enemy_scene = scene
-		sp.position = en["pos"]
 		var trig: float = en.get("trigger", 0.0)
-		if trig > 0.0:
-			sp.spawn_on_ready = false
-			sp.trigger_radius = trig
-		else:
-			sp.spawn_on_ready = true
-			sp.spawn_delay = 0.4 # let the navmesh bake land first
-		add_child(sp)
+		# "count" spawns a cluster from one entry (swarms): scattered around pos,
+		# each its own spawner so they trigger/scale exactly like a single placed one.
+		var count: int = maxi(1, int(en.get("count", 1)))
+		var base_pos: Vector3 = en["pos"]
+		for j in count:
+			var sp := EnemySpawner.new()
+			sp.enemy_scene = scene
+			sp.position = base_pos if count == 1 else base_pos + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
+			if trig > 0.0:
+				sp.spawn_on_ready = false
+				sp.trigger_radius = trig
+			else:
+				sp.spawn_on_ready = true
+				sp.spawn_delay = 0.4 + j * 0.12 # stagger the cluster so it pours in
+			add_child(sp)
 
 func _place_player(def: Dictionary) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D

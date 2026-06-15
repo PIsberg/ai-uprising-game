@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0test0skitter"]
+[ext_resource type="Script" path="res://tests/skitter_probe.gd" id="1"]
+[node name="SkitterProbe" type="Node3D"]
+script = ExtResource("1")
