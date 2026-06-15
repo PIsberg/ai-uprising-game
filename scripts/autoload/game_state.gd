@@ -214,6 +214,11 @@ func _process(delta: float) -> void:
 		overclock_changed.emit(overclock_left)
 		if overclock_left <= 0.0:
 			AudioBus.play_synth_ui("empty_click", -8.0, 0.6) # power-down tick
+	if overdrive_left > 0.0:
+		overdrive_left = maxf(0.0, overdrive_left - delta)
+		overdrive_changed.emit(overdrive_left)
+		if overdrive_left <= 0.0:
+			AudioBus.play_synth_ui("empty_click", -8.0, 0.6)
 
 # ---------- OVERCLOCK powerup (quad-damage analog) ----------
 ## While active, every player weapon hits at OVERCLOCK_MULT (Weapon.eff_damage
@@ -231,6 +236,31 @@ func activate_overclock() -> void:
 
 func damage_mult() -> float:
 	return OVERCLOCK_MULT if overclock_left > 0.0 else 1.0
+
+# ---------- OVERDRIVE powerup (rapid-fire + speed burst) ----------
+## While active, weapons fire OVERDRIVE_FIRE_MULT faster (Weapon.eff_fire_rate)
+## and the player moves OVERDRIVE_SPEED_MULT faster (Player._current_speed).
+## A power-fantasy burst, distinct from OVERCLOCK's raw damage.
+
+signal overdrive_changed(seconds_left: float)
+
+const OVERDRIVE_DURATION := 8.0
+const OVERDRIVE_FIRE_MULT := 1.85
+const OVERDRIVE_SPEED_MULT := 1.35
+var overdrive_left: float = 0.0
+
+func activate_overdrive() -> void:
+	overdrive_left = OVERDRIVE_DURATION
+	overdrive_changed.emit(overdrive_left)
+
+func fire_rate_mult() -> float:
+	return OVERDRIVE_FIRE_MULT if overdrive_left > 0.0 else 1.0
+
+func move_speed_mult() -> float:
+	return OVERDRIVE_SPEED_MULT if overdrive_left > 0.0 else 1.0
+
+func overdrive_active() -> bool:
+	return overdrive_left > 0.0
 
 # ---------- per-level performance stats (drive the end grade) ----------
 var stat_shots: int = 0

@@ -38,6 +38,7 @@ const DAMAGED_FX: PackedScene = preload("res://scenes/fx/damaged_fx.tscn")
 const PICKUP_AMMO: PackedScene = preload("res://scenes/pickups/ammo_box.tscn")
 const PICKUP_HEALTH: PackedScene = preload("res://scenes/pickups/health_pack.tscn")
 const PICKUP_OVERCLOCK: PackedScene = preload("res://scenes/pickups/overclock.tscn")
+const PICKUP_OVERDRIVE: PackedScene = preload("res://scenes/pickups/overdrive.tscn")
 
 
 @onready var hp: Damageable = $Damageable
@@ -885,7 +886,10 @@ func _drop_loot() -> void:
 		var d := player.get_node_or_null("Damageable")
 		if d and d.max_health > 0.0:
 			health_w = lerpf(0.2, 0.6, 1.0 - d.current_health / d.max_health)
-	var scene := PICKUP_OVERCLOCK if randf() < overclock_w \
+	# The rare prize is a coin-flip between OVERCLOCK (damage) and OVERDRIVE
+	# (rapid-fire + speed) so both powerups show up across a run.
+	var prize: PackedScene = PICKUP_OVERDRIVE if randf() < 0.5 else PICKUP_OVERCLOCK
+	var scene := prize if randf() < overclock_w \
 			else (PICKUP_HEALTH if randf() < health_w else PICKUP_AMMO)
 	var p := scene.instantiate() as Node3D
 	get_parent().add_child(p)

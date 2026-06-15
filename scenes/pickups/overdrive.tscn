@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3 uid="uid://d0eaw86627g2f"]
+
+[ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
+[ext_resource type="PackedScene" path="res://assets/models/pickups/Prop_Syringe.gltf" id="2_model"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_ring"]
+shading_mode = 0
+transparency = 1
+albedo_color = Color(0.3, 0.85, 1, 0.55)
+emission_enabled = true
+emission = Color(0.3, 0.85, 1, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="TorusMesh" id="Torus_ring"]
+inner_radius = 0.38
+outer_radius = 0.48
+rings = 24
+ring_segments = 12
+material = SubResource("Mat_ring")
+
+[sub_resource type="SphereShape3D" id="Shape_1"]
+radius = 0.75
+
+[node name="Overdrive" type="Area3D"]
+script = ExtResource("1_pickup")
+kind = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("Shape_1")
+
+[node name="Mesh" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+
+[node name="Model" parent="Mesh" instance=ExtResource("2_model")]
+transform = Transform3D(1.35, 0, 0, 0, 1.16913, -0.675, 0, 0.675, 1.16913, 0, -0.12, 0)
+
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+mesh = SubResource("Torus_ring")
+cast_shadow = 0
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_color = Color(0.35, 0.85, 1, 1)
+light_energy = 2.2
+omni_range = 5.5

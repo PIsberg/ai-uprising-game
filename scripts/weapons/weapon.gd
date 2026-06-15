@@ -17,6 +17,11 @@ signal ammo_changed(mag: int, reserve: int)
 func eff_damage() -> float:
 	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * _alt_boost
 
+## Effective fire rate — OVERDRIVE cranks it up so cooldowns shorten across all
+## fire modes (semi/auto/burst/beam).
+func eff_fire_rate() -> float:
+	return data.fire_rate * GameState.fire_rate_mult()
+
 func eff_mag_size() -> int:
 	return int(round(data.mag_size * GameState.upgrade_mult("mag")))
 
@@ -228,7 +233,7 @@ func _process(delta: float) -> void:
 	if _burst_remaining > 0:
 		_burst_timer -= delta
 		if _burst_timer <= 0.0:
-			_burst_timer = 1.0 / maxf(0.1, data.fire_rate)
+			_burst_timer = 1.0 / maxf(0.1, eff_fire_rate())
 			_burst_remaining -= 1
 			_do_shot()
 
@@ -269,7 +274,7 @@ func _fire_once(camera: Camera3D, shooter: Node, aiming: bool) -> void:
 	if mag <= 0:
 		return
 	mag -= 1
-	_cooldown = 1.0 / maxf(0.1, data.fire_rate)
+	_cooldown = 1.0 / maxf(0.1, eff_fire_rate())
 	ammo_changed.emit(mag, reserve)
 	# Low-mag warning: a dry tick under the report that rises in pitch as the
 	# mag runs down — you hear the reload coming without checking the HUD.
@@ -373,7 +378,7 @@ func _fire_volley(camera: Camera3D, shooter: Node) -> void:
 			if not is_instance_valid(self) or not is_inside_tree():
 				return
 	_alt_tight = false
-	_cooldown = (1.0 / maxf(0.1, data.fire_rate)) * 2.2 # breather after the volley
+	_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * 2.2 # breather after the volley
 
 func _do_shot() -> void:
 	if _active_camera == null or data == null:
@@ -633,7 +638,7 @@ func _update_beam(delta: float) -> void:
 	_beam_tick -= delta
 	if _beam_tick > 0.0:
 		return
-	_beam_tick += 1.0 / maxf(0.1, data.fire_rate)
+	_beam_tick += 1.0 / maxf(0.1, eff_fire_rate())
 	_beam_pop += 1
 	mag -= 1
 	ammo_changed.emit(mag, reserve)

@@ -127,6 +127,8 @@ func _ready() -> void:
 	_build_ammo_block()
 	_build_overclock_label()
 	GameState.overclock_changed.connect(_on_overclock_changed)
+	_build_overdrive_label()
+	GameState.overdrive_changed.connect(_on_overdrive_changed)
 	var player := get_tree().get_first_node_in_group("player") as Player
 	_player_ref = player
 	if _dmg_indicator and _dmg_indicator.has_method("setup"):
@@ -550,6 +552,28 @@ func _on_overclock_changed(left: float) -> void:
 	_overclock_lbl.text = "⚡ OVERCLOCK ×%d — %d" % [int(GameState.OVERCLOCK_MULT), ceili(left)]
 	# Urgency blink over the final seconds.
 	_overclock_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
+
+var _overdrive_lbl: Label
+
+func _build_overdrive_label() -> void:
+	_overdrive_lbl = Label.new()
+	_overdrive_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	_overdrive_lbl.position += Vector2(-110, 98) # under the overclock line
+	_overdrive_lbl.custom_minimum_size = Vector2(220, 0)
+	_overdrive_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overdrive_lbl.add_theme_font_size_override("font_size", 22)
+	_overdrive_lbl.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0))
+	_overdrive_lbl.visible = false
+	add_child(_overdrive_lbl)
+
+func _on_overdrive_changed(left: float) -> void:
+	if _overdrive_lbl == null:
+		return
+	_overdrive_lbl.visible = left > 0.0
+	if left <= 0.0:
+		return
+	_overdrive_lbl.text = "🗲 OVERDRIVE — %d" % ceili(left)
+	_overdrive_lbl.modulate.a = 1.0 if left > 3.0 else (0.45 + 0.55 * absf(sin(left * TAU)))
 
 func set_objective(text: String) -> void:
 	_objective_base = text
