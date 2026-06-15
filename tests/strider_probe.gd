@@ -20,6 +20,8 @@ func _ready() -> void:
 	var cam := Camera3D.new(); add_child(cam); cam.fov = 50
 	cam.position = Vector3(2.4,2.2,-3.0); cam.look_at(Vector3(0,1.0,14), Vector3.UP)
 	await get_tree().create_timer(4.0).timeout
-	get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir()+"/strider_ingame.png")
+	# Screenshot only with a real display; --headless has no framebuffer to read.
+	if DisplayServer.get_name() != "headless":
+		get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir()+"/strider_ingame.png")
 	print("PROBE player_hp_before=", hp0, " after=", pdmg.current_health, " strider_shot=", pdmg.current_health < hp0)
 	get_tree().quit()

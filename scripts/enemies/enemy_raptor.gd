@@ -41,6 +41,38 @@ func _ready() -> void:
 	hp.current_health = max_health
 	_hover = randf() * TAU
 	_strafe_dir = 1.0 if randf() < 0.5 else -1.0
+	_make_thrusters()
+
+## Twin glowing thruster jets under the body — a streaming exhaust trail that
+## sells the hover and reads as a live engine as it banks around.
+func _make_thrusters() -> void:
+	for sx in [-0.32, 0.32]:
+		var p := CPUParticles3D.new()
+		p.amount = 14
+		p.lifetime = 0.45
+		p.local_coords = false
+		p.direction = Vector3(0, -1, 0)
+		p.spread = 14.0
+		p.initial_velocity_min = 0.6
+		p.initial_velocity_max = 1.4
+		p.gravity = Vector3.ZERO
+		var curve := Curve.new()
+		curve.add_point(Vector2(0.0, 1.0)); curve.add_point(Vector2(1.0, 0.0))
+		p.scale_amount_curve = curve
+		p.scale_amount_min = 0.5; p.scale_amount_max = 1.0
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.05; mesh.height = 0.1; mesh.radial_segments = 6; mesh.rings = 3
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(1.0, 0.7, 0.3, 0.55)
+		mat.emission_enabled = true
+		mat.emission = Color(1.0, 0.55, 0.2)
+		mat.emission_energy_multiplier = 4.0
+		mesh.material = mat
+		p.mesh = mesh
+		add_child(p)
+		p.position = Vector3(sx, -0.25, 0.25)
 
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies (until it dies)
