@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3 uid="uid://b0wpn0omega001"]
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://bxll5ttlx8vnk"]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]

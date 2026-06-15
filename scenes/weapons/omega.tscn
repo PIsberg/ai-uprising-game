@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c0wpn0omega0001"]
+[gd_scene format=3 uid="uid://duwq65v4hlpdo"]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
 [ext_resource type="Resource" path="res://assets/weapons/omega_data.tres" id="2_data"]

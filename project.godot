@@ -28,11 +28,6 @@ AudioBus="*res://scripts/autoload/audio_bus.gd"
 SoundSynth="*res://scripts/autoload/sound_synth.gd"
 GraphicsSettings="*res://scripts/autoload/graphics_settings.gd"
 
-[internationalization]
-
-locale/translations=PackedStringArray("res://assets/i18n/strings.en.translation", "res://assets/i18n/strings.es.translation", "res://assets/i18n/strings.fr.translation", "res://assets/i18n/strings.de.translation", "res://assets/i18n/strings.pt.translation")
-locale/fallback="en"
-
 [display]
 
 window/size/viewport_width=1920
@@ -138,6 +133,10 @@ grenade={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":71,"key_label":0,"unicode":103,"location":0,"echo":false,"script":null)
 ]
 }
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://assets/i18n/strings.en.translation", "res://assets/i18n/strings.es.translation", "res://assets/i18n/strings.fr.translation", "res://assets/i18n/strings.de.translation", "res://assets/i18n/strings.pt.translation")
 
 [layer_names]
 

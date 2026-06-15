@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://d0eaw86627g2f"]
+[gd_scene format=3 uid="uid://d0eaw86627g2f"]
 
 [ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
 [ext_resource type="PackedScene" path="res://assets/models/pickups/Prop_Syringe.gltf" id="2_model"]
