@@ -16,6 +16,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var attack_range: float = 14.0
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
+@export var reaction_time: float = 0.45 ## Delay between first spotting the player and the first attack. Difficulty scales this (reaction_mult) so easy robots are slow on the trigger, hard ones snap to.
 @export var attack_lunge_speed: float = 0.0 ## >0: a melee striker that LEAPS at the target on attack instead of standing and tapping it.
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
@@ -209,6 +210,9 @@ func set_state(new_state: State) -> void:
 		_alerted = false
 	elif not _alerted and (new_state == State.CHASE or new_state == State.ALERT or new_state == State.ATTACK):
 		_alerted = true
+		# Reaction delay before it can open fire on first contact — the window
+		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
+		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
 		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
 	state_changed.emit(new_state)

@@ -23,26 +23,30 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool) -> void:
 
 enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
-## Campaign-wide difficulty, chosen after "Begin Operation". Each tier scales
-## three things on EVERY level: how many enemies spawn, how strong they are
-## (health + attack cadence + speed), and how often kills drop supplies.
+## Campaign-wide difficulty, chosen after "Begin Operation". Each tier scales,
+## on EVERY level: how many enemies spawn, how strong they are (health + attack
+## cadence + move speed), how fast they react and open fire on first contact
+## (reaction_mult), their aim accuracy, and how often kills drop supplies.
 enum Difficulty { EASY, NORMAL, HARD }
 
 const DIFFICULTY_CONFIG := {
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.88,
+		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.82,
 		"enemy_count_mult": 0.5, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
+		"reaction_mult": 1.9, # slow to wake up and open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
 		"health_mult": 1.0, "cooldown_mult": 1.0, "speed_mult": 1.0,
 		"enemy_count_mult": 1.0, "pickup_mult": 1.0, "aim_spread_deg": 2.5,
+		"reaction_mult": 1.0,
 	},
 	Difficulty.HARD: {
 		"label": "HARD",
-		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.12,
+		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.25,
 		"enemy_count_mult": 1.6, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
+		"reaction_mult": 0.4, # snaps onto you and opens fire almost instantly
 	},
 }
 

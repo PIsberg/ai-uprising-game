@@ -472,7 +472,9 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 		else:
 			end_point = hpos # world geometry stops the beam
 			break
-	_spawn_tracer(origin, end_point)
+	# Draw the visible round from the muzzle (not the eye) to where it landed, so
+	# it reads as leaving the rifle and striking the target.
+	_spawn_tracer(muzzle.global_position if muzzle else origin, end_point)
 
 ## A bright expanding flash + light when a shot connects with an enemy, plus a
 ## burst of metal embers/debris that scales with how hard the hit landed.
@@ -572,6 +574,14 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 		return
 	var t := data.tracer_scene.instantiate()
 	get_tree().current_scene.add_child(t)
+	# Fly the round as a visible bolt from the muzzle to the impact point so the
+	# player sees the shot travel and connect (damage stays instant hitscan; the
+	# bolt is fast enough — 150 m/s — to stay snappy).
+	if "bolt" in t:
+		t.bolt = true
+		t.bolt_speed = 150.0
+		t.bolt_length = 2.2
+		t.bolt_width = 1.5
 	if t.has_method("setup"):
 		t.setup(from, to, data.tracer_color)
 
