@@ -30,7 +30,30 @@ godot --headless --path . --import
 godot --headless --path . res://scenes/levels/level_gpt.tscn --quit-after 120
 ```
 
-**Export a build:** Project → Export → add a *Windows Desktop* (or other) preset → Export Project (Godot will offer to download export templates on first use).
+### Run outside Godot (standalone build)
+
+To play **without the Godot editor**, export the project to a self-contained executable. The repo already ships export presets (`export_presets.cfg`) for **Windows Desktop** and **Linux**; both embed the game data (PCK) into a single file and exclude the `tests/` probes.
+
+**One-time setup — export templates** (the engine code that gets bundled into your build). They must match your Godot version (4.6.x):
+- In the editor: **Editor → Manage Export Templates → Download and Install**, *or*
+- CLI: `godot --headless --install-export-templates` (4.6+), or download the `.tpz` from the Godot site and install it.
+
+**Export from the terminal** (headless — no editor window):
+```bash
+godot --headless --export-release "Windows Desktop" build/windows/ai-uprising.exe
+godot --headless --export-release "Linux"           build/linux/ai-uprising.x86_64
+# use --export-debug instead of --export-release for a build with a debug console
+```
+*(Or in the editor: **Project → Export → pick a preset → Export Project**.)*
+
+**Run the standalone build** — no Godot needed; the executable is fully self-contained, so you can copy/ship just this one file:
+```bash
+# Windows
+build\windows\ai-uprising.exe
+# Linux (mark executable first if needed)
+chmod +x build/linux/ai-uprising.x86_64 && ./build/linux/ai-uprising.x86_64
+```
+Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, game data embedded) — verified to boot standalone with no editor. To see logs, run it from a terminal with `--verbose`, or export a `--export-debug` build.
 
 ---
 
