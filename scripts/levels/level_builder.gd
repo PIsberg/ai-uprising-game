@@ -147,6 +147,7 @@ func _ready() -> void:
 	_build_puddles(def)
 	_build_pipes(def)
 	_build_facility_detail(def)
+	_build_outdoor_detail(def)
 	_build_rubble(def)
 	_build_beacons(def)
 	_build_holograms(def)
@@ -1562,6 +1563,134 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission = color
 	m.emission_energy_multiplier = energy
 	return m
+
+## Open-air dressing for outdoor levels: utility poles strung with sagging power
+## lines overhead (fills the empty sky-space), plus scattered cordon clutter —
+## jersey barriers, traffic cones, bollards — hugging the perimeter. All
+## visual-only; counts scale with the graphics-tier detail density.
+func _build_outdoor_detail(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return  # outdoor only — complements the interior facility pass
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	_outdoor_powerlines(fs.x * 0.5, fs.y * 0.5, density)
+	_outdoor_clutter(def, fs.x * 0.5, fs.y * 0.5, density)
+
+## Utility poles down two opposite edges, strung with two sagging wires each span.
+func _outdoor_powerlines(hx: float, hz: float, density: float) -> void:
+	var pole_h := 6.5
+	var n := int(round(3 + 2 * density))
+	for side in [-1.0, 1.0]:
+		var px: float = side * (hx - 2.5)
+		var have_prev := false
+		var prev_top := Vector3.ZERO
+		for i in n:
+			var pz := lerpf(-hz + 5.0, hz - 5.0, float(i) / float(maxi(n - 1, 1)))
+			_utility_pole(Vector3(px, 0, pz), pole_h)
+			var top := Vector3(px, pole_h, pz)
+			if have_prev:
+				for w in [-0.6, 0.6]:
+					_hang_cable(prev_top + Vector3(0, -0.2, w), top + Vector3(0, -0.2, w), randf_range(0.5, 1.1), false)
+			prev_top = top
+			have_prev = true
+
+func _utility_pole(base: Vector3, h: float) -> void:
+	var pole := CylinderMesh.new()
+	pole.top_radius = 0.12
+	pole.bottom_radius = 0.15
+	pole.height = h
+	pole.radial_segments = 8
+	pole.material = MAT_TRIM
+	var pm := MeshInstance3D.new()
+	pm.mesh = pole
+	pm.position = base + Vector3(0, h * 0.5, 0)
+	pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(pm)
+	var arm := BoxMesh.new()
+	arm.size = Vector3(0.12, 0.12, 1.7)
+	arm.material = MAT_TRIM
+	_add_detail_mesh(arm, base + Vector3(0, h - 0.4, 0), 0.0)
+	# Ceramic insulators at the crossarm ends.
+	for zoff in [-0.6, 0.6]:
+		var ins := CylinderMesh.new()
+		ins.top_radius = 0.07; ins.bottom_radius = 0.09; ins.height = 0.2; ins.radial_segments = 6
+		ins.material = MAT_PROP
+		var im := MeshInstance3D.new()
+		im.mesh = ins
+		im.position = base + Vector3(0, h - 0.28, zoff)
+		im.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(im)
+
+## Scattered cordon clutter near the perimeter, kept clear of spawn/exit.
+func _outdoor_clutter(def: Dictionary, hx: float, hz: float, density: float) -> void:
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	var n := int(round(7 + 11 * density))
+	for i in n:
+		var pos := _perimeter_point(hx, hz)
+		if Vector2(pos.x - spawn.x, pos.z - spawn.z).length() < 6.0:
+			continue
+		if Vector2(pos.x - exitp.x, pos.z - exitp.z).length() < 6.0:
+			continue
+		match i % 3:
+			0: _traffic_cone(pos)
+			1: _jersey_barrier(pos, randf() * TAU)
+			_: _bollard(pos)
+
+func _perimeter_point(hx: float, hz: float) -> Vector3:
+	var inset := randf_range(2.0, 5.5)
+	if randf() < 0.5:
+		return Vector3(randf_range(-hx + 2.5, hx - 2.5), 0.0, (hz - inset) * (1.0 if randf() < 0.5 else -1.0))
+	return Vector3((hx - inset) * (1.0 if randf() < 0.5 else -1.0), 0.0, randf_range(-hz + 2.5, hz - 2.5))
+
+func _traffic_cone(pos: Vector3) -> void:
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.02; cone.bottom_radius = 0.19; cone.height = 0.52; cone.radial_segments = 10
+	cone.material = _emissive_material(Color(1.0, 0.4, 0.07), 0.5)
+	var cm := MeshInstance3D.new()
+	cm.mesh = cone
+	cm.position = pos + Vector3(0, 0.26, 0)
+	cm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(cm)
+	var band := CylinderMesh.new()
+	band.top_radius = 0.13; band.bottom_radius = 0.15; band.height = 0.08; band.radial_segments = 10
+	band.material = _emissive_material(Color(1, 1, 1), 0.6)
+	_add_detail_mesh(band, pos + Vector3(0, 0.3, 0), 0.0)
+	var pad := BoxMesh.new()
+	pad.size = Vector3(0.42, 0.04, 0.42)
+	pad.material = MAT_SEAM
+	_add_detail_mesh(pad, pos + Vector3(0, 0.02, 0), 0.0)
+
+func _jersey_barrier(pos: Vector3, yaw: float) -> void:
+	var body := _beveled_box(Vector3(1.7, 0.85, 0.5))
+	body.material = MAT_PROP_B
+	_add_detail_mesh(body, pos + Vector3(0, 0.42, 0), yaw)
+	# A diagonal hazard stripe band across the front faces.
+	var stripe := BoxMesh.new()
+	stripe.size = Vector3(1.55, 0.18, 0.02)
+	stripe.material = _emissive_material(Color(0.95, 0.72, 0.06), 0.7)
+	var n := Vector3(0, 0, 1).rotated(Vector3.UP, yaw)
+	_add_detail_mesh(stripe, pos + n * 0.26 + Vector3(0, 0.5, 0), yaw)
+	_add_detail_mesh(stripe.duplicate(), pos - n * 0.26 + Vector3(0, 0.5, 0), yaw)
+
+func _bollard(pos: Vector3) -> void:
+	var post := CylinderMesh.new()
+	post.top_radius = 0.11; post.bottom_radius = 0.12; post.height = 0.95; post.radial_segments = 10
+	post.material = _emissive_material(Color(0.9, 0.7, 0.1), 0.35)
+	var bm := MeshInstance3D.new()
+	bm.mesh = post
+	bm.position = pos + Vector3(0, 0.48, 0)
+	bm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(bm)
+	var cap := CylinderMesh.new()
+	cap.top_radius = 0.13; cap.bottom_radius = 0.13; cap.height = 0.08; cap.radial_segments = 10
+	cap.material = MAT_TRIM
+	_add_detail_mesh(cap, pos + Vector3(0, 0.96, 0), 0.0)
 
 ## Battle-damage rubble piles hugging the wall bases: clustered gray chunks at
 ## random sizes/tilts. Pure dressing — no collision, navmesh ignores them.
