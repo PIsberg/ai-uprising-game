@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://clevelshot00001"]
+[gd_scene format=3 uid="uid://vgu76xixauls"]
 [ext_resource type="Script" path="res://tests/level_shot.gd" id="1"]
 [node name="LevelShot" type="Node3D"]
 script = ExtResource("1")

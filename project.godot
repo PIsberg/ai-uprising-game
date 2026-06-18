@@ -36,6 +36,13 @@ window/size/mode=3
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[editor]
+
+movie_writer/video_quality=1.0
+movie_writer/ogv/audio_quality=1.0
+movie_writer/movie_file="C:/dev/private/ai-uprising-game/build/ai-uprising 4.avi"
+movie_writer/fps=30
+
 [input]
 
 move_forward={
