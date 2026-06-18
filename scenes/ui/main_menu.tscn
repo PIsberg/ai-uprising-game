@@ -93,6 +93,11 @@ custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 text = "Begin Operation"
 
+[node name="Map" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 48)
+layout_mode = 2
+text = "Campaign Map"
+
 [node name="Horde" type="Button" parent="Center/VBox/MainButtons"]
 custom_minimum_size = Vector2(320, 48)
 layout_mode = 2
@@ -221,6 +226,7 @@ text = "Back"
 
 [connection signal="pressed" from="Center/VBox/MainButtons/Continue" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/Map" to="." method="_on_map_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Horde" to="." method="_on_horde_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Range" to="." method="_on_range_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Settings" to="." method="_on_settings_pressed"]

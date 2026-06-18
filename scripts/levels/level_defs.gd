@@ -16,6 +16,22 @@ static func get_def(id: String) -> Dictionary:
 		return def
 	return _scaled(def, WORLD_SCALE)
 
+## Enemy types that headline their own level — used to flag boss levels on the
+## campaign map. Each appears exactly once across the campaign.
+const BOSS_ENEMY_TYPES := ["colossus", "titan", "overseer", "archon", "terminator"]
+
+## True if `id`'s level spawns a campaign boss.
+static func level_is_boss(id: String) -> bool:
+	for e in get_def(id).get("enemies", []):
+		if String(e.get("type", "")) in BOSS_ENEMY_TYPES:
+			return true
+	return false
+
+## A short display name for a level (the def's "name", or a sensible fallback).
+static func level_title(id: String) -> String:
+	var def := get_def(id)
+	return String(def.get("name", id.to_upper()))
+
 static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	if is_equal_approx(s, 1.0):
 		return def
