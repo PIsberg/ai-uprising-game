@@ -29,10 +29,23 @@ const RISE_DEPTH := 4.2
 const TELEGRAPH_TIME := 0.75
 const RISE_TIME := 0.9
 
+# --- Optic Lance: a tracking green death-ray fired from the eye. It charges,
+# then sweeps toward the player at a capped turn rate so you watch it close in;
+# standing in it burns fast, but you can outrun it by strafing.
+const BEAM_WINDUP := 0.6        ## eye charges green before firing
+const BEAM_DURATION := 2.6      ## seconds the beam stays live
+const BEAM_RANGE := 60.0
+const BEAM_TICK := 0.18         ## damage cadence while it's on you
+const BEAM_DAMAGE := 15.0
+const BEAM_TURN := 1.5          ## rad/s sweep speed (ramps up when wounded)
+const BEAM_COOLDOWN := 5.5
+const BEAM_COLOR := Color(0.3, 1.0, 0.35)
+
 @onready var _model: Node3D = $Model
 @onready var _muzzle_l: Node3D = $MuzzleL
 @onready var _muzzle_r: Node3D = $MuzzleR
 @onready var _eye_glow: SpotLight3D = $EyeGlow
+@onready var _eye: Node3D = $Eye
 
 var _burst_remaining: int = 0
 var _burst_timer: float = 0.0
@@ -47,6 +60,14 @@ var _rise_t: float = 0.0
 var _rise_target_y: float = 0.0     ## the floor height its feet settle at
 var _breached: bool = false
 var _telegraph: Node3D = null
+# Optic Lance state.
+var _beam: ElectricBeam = null
+var _beam_windup: float = 0.0
+var _beam_time: float = 0.0
+var _beam_cd: float = BEAM_COOLDOWN * 0.5   ## first lance comes a few seconds in
+var _beam_dir: Vector3 = Vector3.FORWARD
+var _beam_tick_t: float = 0.0
+var _beam_charge: float = 0.0               ## 0..1, drives the eye turning green
 
 func _ready() -> void:
 	super._ready()
@@ -258,7 +279,9 @@ func _process(delta: float) -> void:
 		_model.rotation.y = deg_to_rad(model_yaw_deg)
 	if _eye_glow:
 		var flare := _entrance * 6.0 # eyes blaze brighter while powering up
-		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare
+		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare + _beam_charge * 10.0
+		# The optic shifts from its combat red to a hot green as the lance charges.
+		_eye_glow.light_color = Color(1, 0.1, 0.1).lerp(BEAM_COLOR, _beam_charge)
 	# Footstep booms on each footfall.
 	if speed > 0.1 and is_on_floor():
 		var fs := sin(_walk_phase)
@@ -269,6 +292,11 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if _rising:
 		_process_rise(delta)
+		return
+	_beam_cd = maxf(0.0, _beam_cd - delta)
+	# The lance owns the boss while it's charging/firing — planted, no bursts.
+	if _beaming():
+		_process_beam(delta)
 		return
 	super._physics_process(delta)
 	if _burst_remaining > 0:
@@ -284,9 +312,98 @@ func _state_attack(delta: float) -> void:
 		return
 	_face_target(delta)
 	_decelerate()
+	var dist := global_position.distance_to(target.global_position)
+	# Optic Lance when it's off cooldown and you're at a beam-able distance;
+	# otherwise the dual-cannon burst.
+	if _beam_cd <= 0.0 and dist >= 6.0 and dist <= BEAM_RANGE:
+		_begin_beam()
+		return
 	if _attack_timer <= 0.0:
 		_start_burst()
 		_attack_timer = attack_interval()
+
+func _beaming() -> bool:
+	return _beam_windup > 0.0 or _beam_time > 0.0
+
+## Fire up the optic lance: a green charge, then a sweeping death-ray.
+func _begin_beam() -> void:
+	_beam_windup = BEAM_WINDUP
+	_beam_time = 0.0
+	_beam_tick_t = 0.0
+	if target:
+		_beam_dir = (target.global_position + Vector3.UP * 0.7 - _beam_origin()).normalized()
+	if _beam == null:
+		_beam = ElectricBeam.new()
+		_beam.set_color(BEAM_COLOR)
+		get_tree().current_scene.add_child(_beam)
+	AudioBus.play_synth_at("plasma_fire", _beam_origin(), 2.0, 0.45)
+
+func _beam_origin() -> Vector3:
+	return _eye.global_position if _eye else global_position + Vector3.UP * 2.0
+
+## Drive the charge + the tracking, damaging beam.
+func _process_beam(delta: float) -> void:
+	# Plant and keep turning the body toward the player so the sweep starts aimed.
+	_decelerate()
+	if not is_on_floor():
+		_apply_gravity(delta)
+	move_and_slide()
+	if target and _can_see(target):
+		_face_target(delta)
+
+	var origin := _beam_origin()
+	var aim_pt := (target.global_position + Vector3.UP * 0.7) if target else origin + _beam_dir
+	var desired := (aim_pt - origin).normalized()
+
+	# Charge phase: eye spins up green, beam not yet lethal.
+	if _beam_windup > 0.0:
+		_beam_windup -= delta
+		_beam_charge = clampf(1.0 - _beam_windup / BEAM_WINDUP, 0.0, 1.0)
+		_beam_dir = desired   # lock straight onto the player at ignition
+		if _beam_windup <= 0.0:
+			_beam_time = BEAM_DURATION
+			AudioBus.play_synth_at("plasma_fire", origin, 4.0, 0.3)
+		return
+
+	# Firing: sweep the beam toward the player at a capped rate (faster when hurt).
+	_beam_charge = 1.0
+	_beam_time -= delta
+	var ramp := 1.0 + (1.0 - hp.current_health / maxf(hp.max_health, 1.0)) * 1.2
+	var max_step := BEAM_TURN * ramp * delta
+	var ang := _beam_dir.angle_to(desired)
+	if ang > 0.0001:
+		_beam_dir = _beam_dir.slerp(desired, clampf(max_step / ang, 0.0, 1.0))
+
+	# Trace the beam: world + player. Damage only when it actually lands on you.
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(origin, origin + _beam_dir * BEAM_RANGE)
+	q.collision_mask = 0b0000011
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	var end_point := origin + _beam_dir * BEAM_RANGE
+	var on_player := false
+	if not hit.is_empty():
+		end_point = hit.position
+		var col: Node = hit.collider
+		on_player = col != null and col.is_in_group("player")
+		_beam_tick_t -= delta
+		if on_player and _beam_tick_t <= 0.0:
+			var d: Node = col.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(BEAM_DAMAGE, self)
+			_beam_tick_t = BEAM_TICK
+	if _beam:
+		_beam.update_beam(origin, end_point, true)
+	if _beam_time <= 0.0:
+		_end_beam()
+
+func _end_beam() -> void:
+	_beam_windup = 0.0
+	_beam_time = 0.0
+	_beam_charge = 0.0
+	_beam_cd = BEAM_COOLDOWN
+	if _beam:
+		_beam.deactivate()
 
 func _start_burst() -> void:
 	_burst_remaining = burst_count
@@ -328,6 +445,12 @@ func _perform_attack() -> void:
 
 func _on_died(source: Node) -> void:
 	# Boss kill payoff: a camera kick + brief slow-mo before the base death.
+	_beam_windup = 0.0
+	_beam_time = 0.0
+	_beam_charge = 0.0
+	if is_instance_valid(_beam):
+		_beam.queue_free()
+		_beam = null
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("shake"):
 		p.shake(1.0)
