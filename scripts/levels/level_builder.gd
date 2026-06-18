@@ -161,6 +161,7 @@ func _ready() -> void:
 	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
+	_build_lava(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
@@ -974,6 +975,21 @@ func _build_set_piece(def: Dictionary) -> void:
 	t.figure_height = sp.get("height", 22.0)
 	t.face_point = sp.get("face", Vector3.ZERO)
 	add_child(t)
+
+## Lava streams: molten beds laid across the arena that carve the navmesh (so
+## enemies route around) and burn anyone who crosses (so the player detours too)
+## — turning a straight run to the exit into a longer path. Each entry:
+##   {"pos": Vector3, "size": Vector2(x,z), "dmg": float (optional), "yaw": deg (optional)}
+## Placed under _nav_region BEFORE the deferred bake so the static carve takes.
+func _build_lava(def: Dictionary) -> void:
+	for entry in def.get("lava", []):
+		var lava := LavaHazard.new()
+		lava.size = entry.get("size", Vector2(8, 3))
+		if entry.has("dmg"):
+			lava.damage_per_tick = entry["dmg"]
+		lava.position = entry.get("pos", Vector3.ZERO)
+		lava.rotation.y = deg_to_rad(entry.get("yaw", 0.0))
+		_nav_region.add_child(lava)
 
 ## Floating dust motes / embers drifting through the play space — a cheap but
 ## atmospheric detail that catches the level's light. Density scales with the
