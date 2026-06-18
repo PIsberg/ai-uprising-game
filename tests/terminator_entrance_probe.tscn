@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8termentr0probe08"]
+[ext_resource type="Script" path="res://tests/terminator_entrance_probe.gd" id="1"]
+[node name="TerminatorEntranceProbe" type="Node3D"]
+script = ExtResource("1")
