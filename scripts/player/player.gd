@@ -60,6 +60,7 @@ var _grenade_cd: float = 0.0
 @onready var _post_overlay: ColorRect = $PostFX/Overlay
 var _speed_warp: float = 0.0
 
+var _dead: bool = false
 var _bob_phase: float = 0.0
 var _was_on_floor: bool = true
 var _camera_base_y: float = 0.0
@@ -164,6 +165,8 @@ func _handle_low_health(delta: float) -> void:
 		_breath.stop()
 
 func _input(event: InputEvent) -> void:
+	if _dead:
+		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var m := event as InputEventMouseMotion
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
@@ -171,6 +174,13 @@ func _input(event: InputEvent) -> void:
 		head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
 
 func _physics_process(delta: float) -> void:
+	if _dead:
+		# Collapsed: gravity holds you on the deck, momentum bleeds off; no control.
+		_apply_gravity(delta)
+		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+		move_and_slide()
+		return
 	_apply_gravity(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
@@ -422,5 +432,16 @@ func _on_health_changed(cur: float, max_: float) -> void:
 	health_changed.emit(cur, max_)
 
 func _on_died(_source: Node) -> void:
+	if _dead:
+		return
+	_dead = true
 	died.emit()
+	# Lock out further play: stop the weapon (and any input it reads) entirely.
+	if weapon_holder:
+		weapon_holder.process_mode = Node.PROCESS_MODE_DISABLED
+	# Fall over: the view rolls onto its side and sinks to the deck as you drop.
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
+	tw.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	GameState.on_player_died()

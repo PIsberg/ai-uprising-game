@@ -30,23 +30,26 @@ enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 enum Difficulty { EASY, NORMAL, HARD }
 
 const DIFFICULTY_CONFIG := {
+	# Tuned a notch friendlier across the board (2026-06): every tier got slightly
+	# slower + fewer enemies and looser enemy aim, while the EASY<NORMAL<HARD
+	# scaling is preserved.
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.82,
-		"enemy_count_mult": 0.5, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
-		"reaction_mult": 1.9, # slow to wake up and open fire — gives you a beat
+		"health_mult": 0.6, "cooldown_mult": 1.5, "speed_mult": 0.72,
+		"enemy_count_mult": 0.4, "pickup_mult": 1.5, "aim_spread_deg": 11.0,
+		"reaction_mult": 2.0, # slow to wake up and open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
-		"health_mult": 1.0, "cooldown_mult": 1.0, "speed_mult": 1.0,
-		"enemy_count_mult": 1.0, "pickup_mult": 1.0, "aim_spread_deg": 2.5,
-		"reaction_mult": 1.0,
+		"health_mult": 1.0, "cooldown_mult": 1.08, "speed_mult": 0.88,
+		"enemy_count_mult": 0.82, "pickup_mult": 1.05, "aim_spread_deg": 5.0,
+		"reaction_mult": 1.15,
 	},
 	Difficulty.HARD: {
 		"label": "HARD",
-		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.25,
-		"enemy_count_mult": 1.6, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
-		"reaction_mult": 0.4, # snaps onto you and opens fire almost instantly
+		"health_mult": 1.6, "cooldown_mult": 0.75, "speed_mult": 1.1,
+		"enemy_count_mult": 1.3, "pickup_mult": 0.65, "aim_spread_deg": 2.0,
+		"reaction_mult": 0.5, # snaps onto you and opens fire almost instantly
 	},
 }
 

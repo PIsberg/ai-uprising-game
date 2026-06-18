@@ -339,7 +339,7 @@ horizontal_alignment = 1
 
 [node name="Restart" type="Button" parent="GameOverMenu/VBox"]
 layout_mode = 2
-text = "Try Again"
+text = "TRY AGAIN (SPACE)"
 
 [node name="Quit" type="Button" parent="GameOverMenu/VBox"]
 layout_mode = 2

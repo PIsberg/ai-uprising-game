@@ -538,6 +538,13 @@ func _update_crosshair(delta: float) -> void:
 	crosshair.modulate = col
 
 func _unhandled_input(event: InputEvent) -> void:
+	# On the game-over screen, SPACE retries the level (matches the button label).
+	if game_over_menu.visible:
+		var k := event as InputEventKey
+		if k and k.pressed and not k.echo and k.keycode == KEY_SPACE:
+			get_viewport().set_input_as_handled()
+			_on_restart_pressed()
+		return
 	if event.is_action_pressed("pause"):
 		if GameState.current_state == GameState.State.PLAYING:
 			GameState.set_state(GameState.State.PAUSED)
