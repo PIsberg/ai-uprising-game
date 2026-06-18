@@ -39,6 +39,28 @@ static func pose_giant_robot_arms(mesh_root: Node3D) -> void:
 	_swing_limb(mesh_root, right_parts, Vector3(0.60, 1.12, 0.10), Vector3(deg_to_rad(-74.0), 0.0, deg_to_rad(8.0)), "ArmPivotR")
 	_swing_limb(mesh_root, left_parts, Vector3(-0.62, 1.10, 0.28), Vector3(deg_to_rad(-6.0), 0.0, deg_to_rad(16.0)), "ArmPivotL")
 
+## For a RIGGED model whose clips bake the arms up, attach an ArmRelaxModifier to
+## its Skeleton3D so the named bones get a fixed downward nudge after every clip.
+## `bone_specs` is an Array of {"bone": String, "euler": Vector3} (degrees, local).
+static func relax_skeleton_arms(model_root: Node, bone_specs: Array) -> ArmRelaxModifier:
+	var sk := _find_skeleton(model_root)
+	if sk == null:
+		return null   # rigless model (e.g. the titan): nothing to relax, no-op
+	var mod := ArmRelaxModifier.new()
+	mod.name = "ArmRelax"
+	mod.specs = bone_specs
+	sk.add_child(mod)
+	return mod
+
+static func _find_skeleton(n: Node) -> Skeleton3D:
+	if n is Skeleton3D:
+		return n
+	for c in n.get_children():
+		var r := _find_skeleton(c)
+		if r:
+			return r
+	return null
+
 ## Reparent `parts` under a fresh pivot at `pivot_local` (in mesh_root space) and
 ## apply `euler` rotation, keeping each part's world transform across the move.
 static func _swing_limb(mesh_root: Node3D, parts: Array[Node3D], pivot_local: Vector3, euler: Vector3, pivot_name: String) -> void:

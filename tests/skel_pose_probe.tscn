@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8skelpose0probe5"]
+[ext_resource type="Script" path="res://tests/skel_pose_probe.gd" id="1"]
+[node name="SkelPoseProbe" type="Node3D"]
+script = ExtResource("1")
