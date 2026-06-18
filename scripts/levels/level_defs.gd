@@ -16,6 +16,22 @@ static func get_def(id: String) -> Dictionary:
 		return def
 	return _scaled(def, WORLD_SCALE)
 
+## Enemy types that headline their own level — used to flag boss levels on the
+## campaign map. Each appears exactly once across the campaign.
+const BOSS_ENEMY_TYPES := ["colossus", "titan", "overseer", "archon", "terminator"]
+
+## True if `id`'s level spawns a campaign boss.
+static func level_is_boss(id: String) -> bool:
+	for e in get_def(id).get("enemies", []):
+		if String(e.get("type", "")) in BOSS_ENEMY_TYPES:
+			return true
+	return false
+
+## A short display name for a level (the def's "name", or a sensible fallback).
+static func level_title(id: String) -> String:
+	var def := get_def(id)
+	return String(def.get("name", id.to_upper()))
+
 static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	if is_equal_approx(s, 1.0):
 		return def
@@ -482,6 +498,12 @@ static func _titan() -> Dictionary:
 			{"pos": Vector3(16, 1.6, 16), "size": Vector3(4, 3.2, 4)},
 			{"pos": Vector3(-16, 1.6, -16), "size": Vector3(4, 3.2, 4)},
 		],
+		# Molten coolant breaches: two streams across the core force a serpentine
+		# route to the NE exit (gaps alternate east/west) instead of a straight run.
+		"lava": [
+			{"pos": Vector3(-12, 0, -12), "size": Vector2(36, 4.0)},
+			{"pos": Vector3(12, 0, 12), "size": Vector2(36, 4.0)},
+		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 64), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
@@ -771,6 +793,12 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(-19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
 			{"pos": Vector3(19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
 		],
+		# Reactor smelt overflow: molten channels force a serpentine route past the
+		# central reactor (the sabotage point at origin stays clear).
+		"lava": [
+			{"pos": Vector3(-12, 0, -9), "size": Vector2(40, 4.0), "dmg": 30.0},
+			{"pos": Vector3(12, 0, 9), "size": Vector2(40, 4.0), "dmg": 30.0},
+		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 52), "color": Color(1.0, 0.5, 0.2)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(52, 0.1, 0.5), "color": Color(1.0, 0.6, 0.25)},
@@ -950,6 +978,12 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
 			{"pos": Vector3(-13, 1.5, 4), "size": Vector3(1.4, 3, 6)},
 			{"pos": Vector3(13, 1.5, -4), "size": Vector3(1.4, 3, 6)},
+		],
+		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
+		# to the exit, kept clear of the central core and the hack terminal at z=8.
+		"lava": [
+			{"pos": Vector3(-8, 0, -9), "size": Vector2(28, 3.5)},
+			{"pos": Vector3(8, 0, 13), "size": Vector2(28, 3.5)},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, -10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},

@@ -146,6 +146,8 @@ func _ready() -> void:
 	_build_cover_trim(def)
 	_build_puddles(def)
 	_build_pipes(def)
+	_build_facility_detail(def)
+	_build_outdoor_detail(def)
 	_build_rubble(def)
 	_build_beacons(def)
 	_build_holograms(def)
@@ -161,6 +163,7 @@ func _ready() -> void:
 	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
+	_build_lava(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
@@ -975,6 +978,21 @@ func _build_set_piece(def: Dictionary) -> void:
 	t.face_point = sp.get("face", Vector3.ZERO)
 	add_child(t)
 
+## Lava streams: molten beds laid across the arena that carve the navmesh (so
+## enemies route around) and burn anyone who crosses (so the player detours too)
+## — turning a straight run to the exit into a longer path. Each entry:
+##   {"pos": Vector3, "size": Vector2(x,z), "dmg": float (optional), "yaw": deg (optional)}
+## Placed under _nav_region BEFORE the deferred bake so the static carve takes.
+func _build_lava(def: Dictionary) -> void:
+	for entry in def.get("lava", []):
+		var lava := LavaHazard.new()
+		lava.size = entry.get("size", Vector2(8, 3))
+		if entry.has("dmg"):
+			lava.damage_per_tick = entry["dmg"]
+		lava.position = entry.get("pos", Vector3.ZERO)
+		lava.rotation.y = deg_to_rad(entry.get("yaw", 0.0))
+		_nav_region.add_child(lava)
+
 ## Floating dust motes / embers drifting through the play space — a cheap but
 ## atmospheric detail that catches the level's light. Density scales with the
 ## graphics tier (HIGH dense, MEDIUM light, LOW off) so it doubles as a visible
@@ -1339,6 +1357,340 @@ func _build_pipes(def: Dictionary) -> void:
 			collar.position = pipe.position + Vector3(0, 0, fs.y * (-0.3 + 0.3 * j))
 			collar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(collar)
+
+## Working-facility dressing for interiors: cables slung under the ceiling,
+## ceiling vent grilles, wall-mounted vents / junction boxes / conduit risers,
+## and painted floor hazard chevrons by the perimeter. All visual-only
+## (cast_shadow off, no colliders) so the navmesh and gameplay are untouched;
+## counts scale with the graphics-tier detail density, like the other dressing.
+func _build_facility_detail(def: Dictionary) -> void:
+	if def.get("open_sky", false):
+		return  # interiors only — these read as inside-a-building fittings
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	_facility_cables(hx, hz, density)
+	_facility_ceiling_vents(hx, hz, density)
+	_facility_wall_fittings(fs, density)
+	_facility_floor_hazard(hx, hz, density)
+
+## Hot wire/coolant lines slung between ceiling anchors, sagging under gravity —
+## a couple carry a faint emissive node so the room reads as powered.
+func _facility_cables(hx: float, hz: float, density: float) -> void:
+	var n := int(round(3 + 4 * density))
+	var seed_v := 0.0
+	for i in n:
+		seed_v = float(i) * 1.6180339
+		var ay := WALL_HEIGHT - randf_range(0.15, 0.7)
+		var a := Vector3(randf_range(-hx + 2.5, hx - 2.5), ay, randf_range(-hz + 2.5, hz - 2.5))
+		var b := a + Vector3(randf_range(-9.0, 9.0), randf_range(-0.4, 0.4), randf_range(-9.0, 9.0))
+		b.x = clampf(b.x, -hx + 2.0, hx - 2.0)
+		b.z = clampf(b.z, -hz + 2.0, hz - 2.0)
+		b.y = clampf(b.y, 2.6, WALL_HEIGHT - 0.1)
+		var sag := randf_range(0.6, 1.7)
+		var hot := i % 4 == 0
+		_hang_cable(a, b, sag, hot)
+
+func _hang_cable(a: Vector3, b: Vector3, sag: float, hot: bool) -> void:
+	var mat := MAT_SEAM if not hot else _emissive_material(Color(0.9, 0.45, 0.15), 1.4)
+	var segs := 7
+	var prev := a
+	for s in range(1, segs + 1):
+		var t := float(s) / float(segs)
+		var p := a.lerp(b, t)
+		p.y -= sag * (1.0 - pow(2.0 * t - 1.0, 2.0))  # parabolic droop, 0 at the ends
+		_strut(prev, p, 0.035, mat)
+		prev = p
+
+## Recessed vent grilles set into the ceiling — a dark frame with bright slats.
+func _facility_ceiling_vents(hx: float, hz: float, density: float) -> void:
+	var n := int(round(2 + 2 * density))
+	for i in n:
+		var c := Vector3(randf_range(-hx + 4, hx - 4), WALL_HEIGHT - 0.18, randf_range(-hz + 4, hz - 4))
+		var w := randf_range(1.2, 2.2)
+		var dgth := randf_range(0.9, 1.6)
+		var frame := BoxMesh.new()
+		frame.size = Vector3(w, 0.22, dgth)
+		frame.material = MAT_TRIM
+		_add_detail_mesh(frame, c, 0.0)
+		# A few lighter slats across the opening.
+		var slats := 4
+		for sidx in slats:
+			var slat := BoxMesh.new()
+			slat.size = Vector3(w * 0.86, 0.06, 0.06)
+			slat.material = MAT_PROP
+			var zoff := lerpf(-dgth * 0.34, dgth * 0.34, float(sidx) / float(slats - 1))
+			_add_detail_mesh(slat, c + Vector3(0, -0.06, zoff), 0.0)
+
+## Vent grilles, junction boxes (with a status LED) and conduit risers fixed to
+## the inner faces of the four perimeter walls.
+func _facility_wall_fittings(fs: Vector2, density: float) -> void:
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var walls := [
+		{"c": Vector3(0, 0, -hz + 0.55), "n": Vector3(0, 0, 1), "len": fs.x, "yaw": 0.0},
+		{"c": Vector3(0, 0, hz - 0.55), "n": Vector3(0, 0, -1), "len": fs.x, "yaw": PI},
+		{"c": Vector3(-hx + 0.55, 0, 0), "n": Vector3(1, 0, 0), "len": fs.y, "yaw": PI * 0.5},
+		{"c": Vector3(hx - 0.55, 0, 0), "n": Vector3(-1, 0, 0), "len": fs.y, "yaw": -PI * 0.5},
+	]
+	var step := 9.0 / maxf(density, 0.34)
+	for w in walls:
+		var c: Vector3 = w["c"]
+		var n: Vector3 = w["n"]
+		var length: float = w["len"]
+		var yaw: float = w["yaw"]
+		var along := Vector3(0, 0, 1).rotated(Vector3.UP, yaw)  # runs along the wall
+		var x := -length * 0.5 + 3.0
+		var k := 0
+		while x <= length * 0.5 - 3.0:
+			var base := c + along * x
+			match k % 4:
+				0:  # vent grille at chest height
+					var vent := BoxMesh.new()
+					vent.size = Vector3(1.1, 0.8, 0.12)
+					vent.material = MAT_TRIM
+					_add_detail_mesh(vent, base + n * 0.08 + Vector3(0, 2.0, 0), yaw)
+					for s in 3:
+						var slat := BoxMesh.new()
+						slat.size = Vector3(0.95, 0.07, 0.05)
+						slat.material = MAT_PROP
+						_add_detail_mesh(slat, base + n * 0.12 + Vector3(0, 1.78 + s * 0.22, 0), yaw)
+				1:  # junction box with a small status LED
+					var jb := _beveled_box(Vector3(0.5, 0.65, 0.22))
+					jb.material = MAT_PROP_B
+					_add_detail_mesh(jb, base + n * 0.11 + Vector3(0, 1.7, 0), yaw)
+					var led_col: Color = [Color(0.3, 1, 0.4), Color(1, 0.7, 0.2), Color(1, 0.3, 0.3)][k % 3]
+					var led := BoxMesh.new()
+					led.size = Vector3(0.09, 0.09, 0.05)
+					led.material = _emissive_material(led_col, 2.4)
+					_add_detail_mesh(led, base + n * 0.2 + Vector3(0, 1.86, 0), yaw)
+				2:  # conduit riser up the wall with bracket bumps
+					var pipe := CylinderMesh.new()
+					pipe.top_radius = 0.07
+					pipe.bottom_radius = 0.07
+					pipe.height = WALL_HEIGHT - 1.2
+					pipe.radial_segments = 8
+					pipe.material = MAT_PROP
+					var pm := MeshInstance3D.new()
+					pm.mesh = pipe
+					pm.position = base + n * 0.12 + Vector3(0, (WALL_HEIGHT - 1.2) * 0.5 + 0.4, 0)
+					pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+					add_child(pm)
+				3:  # a powered server/status panel: dark plate studded with blinkenlights
+					var plate := _beveled_box(Vector3(1.3, 1.4, 0.12))
+					plate.material = MAT_SEAM
+					_add_detail_mesh(plate, base + n * 0.08 + Vector3(0, 2.2, 0), yaw)
+					var palette := [Color(0.3, 1, 0.45), Color(0.3, 0.7, 1), Color(1, 0.75, 0.2), Color(1, 0.35, 0.3)]
+					for row in 4:
+						for coli in 3:
+							# A scattered on/off + colour pattern so panels read distinct.
+							if (row * 3 + coli + k) % 4 == 0:
+								continue
+							var dot := BoxMesh.new()
+							dot.size = Vector3(0.1, 0.1, 0.04)
+							dot.material = _emissive_material(palette[(row + coli + k) % palette.size()], 2.6)
+							var dx := lerpf(-0.42, 0.42, coli / 2.0)
+							var dy := lerpf(1.72, 2.68, row / 3.0)
+							_add_detail_mesh(dot, base + n * 0.16 + along * dx + Vector3(0, dy, 0), yaw)
+			x += step
+			k += 1
+
+## Painted hazard chevrons inset from the perimeter — emissive caution stripes
+## that catch the level's lighting and sell an industrial deck. A ">" of two
+## angled slabs, laid flat, pointing into the room from each wall.
+func _facility_floor_hazard(hx: float, hz: float, density: float) -> void:
+	var mat := _emissive_material(Color(0.95, 0.74, 0.08), 1.5)
+	# `fwd` points from the wall into the room; lay a chevron opening toward it.
+	var stripe := func(center: Vector3, fwd: Vector3):
+		var base_yaw := atan2(fwd.x, fwd.z)
+		for sgn in [-1.0, 1.0]:
+			var arm := BoxMesh.new()
+			arm.size = Vector3(1.15, 0.05, 0.26)
+			arm.material = mat
+			var mi := MeshInstance3D.new()
+			mi.mesh = arm
+			var yaw: float = base_yaw + sgn * deg_to_rad(40.0)
+			# Offset each arm sideways so their inner ends meet at the chevron tip.
+			var side: Vector3 = Vector3(cos(base_yaw), 0, -sin(base_yaw)) * sgn * 0.42
+			mi.position = center + Vector3(0, 0.05, 0) + side
+			mi.rotation.y = yaw
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(mi)
+	var inset := 2.6
+	var count := int(round(clampf(hx / 3.5, 3, 8) * clampf(density, 0.45, 1.0)))
+	for i in count:
+		var t := float(i) / float(maxi(count - 1, 1))
+		var fx := lerpf(-hx + 4.0, hx - 4.0, t)
+		var fz := lerpf(-hz + 4.0, hz - 4.0, t)
+		stripe.call(Vector3(fx, 0, -hz + inset), Vector3(0, 0, 1))   # -Z wall -> +Z
+		stripe.call(Vector3(fx, 0, hz - inset), Vector3(0, 0, -1))   # +Z wall -> -Z
+		stripe.call(Vector3(-hx + inset, 0, fz), Vector3(1, 0, 0))   # -X wall -> +X
+		stripe.call(Vector3(hx - inset, 0, fz), Vector3(-1, 0, 0))   # +X wall -> -X
+
+## A short oriented cylinder spanning a->b (used for slung cables). Visual only.
+func _strut(a: Vector3, b: Vector3, radius: float, mat: Material) -> void:
+	var d := b - a
+	var l := d.length()
+	if l < 0.001:
+		return
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
+	cyl.height = l
+	cyl.radial_segments = 6
+	cyl.material = mat
+	var mi := MeshInstance3D.new()
+	mi.mesh = cyl
+	var up := Vector3.UP if absf(d.normalized().dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
+	var basis := Basis.looking_at(d / l, up) * Basis(Vector3.RIGHT, PI * 0.5)  # cylinder runs along +Y
+	mi.transform = Transform3D(basis, (a + b) * 0.5)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+## A cached unshaded-ish emissive material (panel LEDs, hazard paint, hot cables).
+func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.6
+	m.metallic = 0.0
+	m.emission_enabled = true
+	m.emission = color
+	m.emission_energy_multiplier = energy
+	return m
+
+## Open-air dressing for outdoor levels: utility poles strung with sagging power
+## lines overhead (fills the empty sky-space), plus scattered cordon clutter —
+## jersey barriers, traffic cones, bollards — hugging the perimeter. All
+## visual-only; counts scale with the graphics-tier detail density.
+func _build_outdoor_detail(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return  # outdoor only — complements the interior facility pass
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	_outdoor_powerlines(fs.x * 0.5, fs.y * 0.5, density)
+	_outdoor_clutter(def, fs.x * 0.5, fs.y * 0.5, density)
+
+## Utility poles down two opposite edges, strung with two sagging wires each span.
+func _outdoor_powerlines(hx: float, hz: float, density: float) -> void:
+	var pole_h := 6.5
+	var n := int(round(3 + 2 * density))
+	for side in [-1.0, 1.0]:
+		var px: float = side * (hx - 2.5)
+		var have_prev := false
+		var prev_top := Vector3.ZERO
+		for i in n:
+			var pz := lerpf(-hz + 5.0, hz - 5.0, float(i) / float(maxi(n - 1, 1)))
+			_utility_pole(Vector3(px, 0, pz), pole_h)
+			var top := Vector3(px, pole_h, pz)
+			if have_prev:
+				for w in [-0.6, 0.6]:
+					_hang_cable(prev_top + Vector3(0, -0.2, w), top + Vector3(0, -0.2, w), randf_range(0.5, 1.1), false)
+			prev_top = top
+			have_prev = true
+
+func _utility_pole(base: Vector3, h: float) -> void:
+	var pole := CylinderMesh.new()
+	pole.top_radius = 0.12
+	pole.bottom_radius = 0.15
+	pole.height = h
+	pole.radial_segments = 8
+	pole.material = MAT_TRIM
+	var pm := MeshInstance3D.new()
+	pm.mesh = pole
+	pm.position = base + Vector3(0, h * 0.5, 0)
+	pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(pm)
+	var arm := BoxMesh.new()
+	arm.size = Vector3(0.12, 0.12, 1.7)
+	arm.material = MAT_TRIM
+	_add_detail_mesh(arm, base + Vector3(0, h - 0.4, 0), 0.0)
+	# Ceramic insulators at the crossarm ends.
+	for zoff in [-0.6, 0.6]:
+		var ins := CylinderMesh.new()
+		ins.top_radius = 0.07; ins.bottom_radius = 0.09; ins.height = 0.2; ins.radial_segments = 6
+		ins.material = MAT_PROP
+		var im := MeshInstance3D.new()
+		im.mesh = ins
+		im.position = base + Vector3(0, h - 0.28, zoff)
+		im.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(im)
+
+## Scattered cordon clutter near the perimeter, kept clear of spawn/exit.
+func _outdoor_clutter(def: Dictionary, hx: float, hz: float, density: float) -> void:
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	var n := int(round(7 + 11 * density))
+	for i in n:
+		var pos := _perimeter_point(hx, hz)
+		if Vector2(pos.x - spawn.x, pos.z - spawn.z).length() < 6.0:
+			continue
+		if Vector2(pos.x - exitp.x, pos.z - exitp.z).length() < 6.0:
+			continue
+		match i % 3:
+			0: _traffic_cone(pos)
+			1: _jersey_barrier(pos, randf() * TAU)
+			_: _bollard(pos)
+
+func _perimeter_point(hx: float, hz: float) -> Vector3:
+	var inset := randf_range(2.0, 5.5)
+	if randf() < 0.5:
+		return Vector3(randf_range(-hx + 2.5, hx - 2.5), 0.0, (hz - inset) * (1.0 if randf() < 0.5 else -1.0))
+	return Vector3((hx - inset) * (1.0 if randf() < 0.5 else -1.0), 0.0, randf_range(-hz + 2.5, hz - 2.5))
+
+func _traffic_cone(pos: Vector3) -> void:
+	var cone := CylinderMesh.new()
+	cone.top_radius = 0.02; cone.bottom_radius = 0.19; cone.height = 0.52; cone.radial_segments = 10
+	cone.material = _emissive_material(Color(1.0, 0.4, 0.07), 0.5)
+	var cm := MeshInstance3D.new()
+	cm.mesh = cone
+	cm.position = pos + Vector3(0, 0.26, 0)
+	cm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(cm)
+	var band := CylinderMesh.new()
+	band.top_radius = 0.13; band.bottom_radius = 0.15; band.height = 0.08; band.radial_segments = 10
+	band.material = _emissive_material(Color(1, 1, 1), 0.6)
+	_add_detail_mesh(band, pos + Vector3(0, 0.3, 0), 0.0)
+	var pad := BoxMesh.new()
+	pad.size = Vector3(0.42, 0.04, 0.42)
+	pad.material = MAT_SEAM
+	_add_detail_mesh(pad, pos + Vector3(0, 0.02, 0), 0.0)
+
+func _jersey_barrier(pos: Vector3, yaw: float) -> void:
+	var body := _beveled_box(Vector3(1.7, 0.85, 0.5))
+	body.material = MAT_PROP_B
+	_add_detail_mesh(body, pos + Vector3(0, 0.42, 0), yaw)
+	# A diagonal hazard stripe band across the front faces.
+	var stripe := BoxMesh.new()
+	stripe.size = Vector3(1.55, 0.18, 0.02)
+	stripe.material = _emissive_material(Color(0.95, 0.72, 0.06), 0.7)
+	var n := Vector3(0, 0, 1).rotated(Vector3.UP, yaw)
+	_add_detail_mesh(stripe, pos + n * 0.26 + Vector3(0, 0.5, 0), yaw)
+	_add_detail_mesh(stripe.duplicate(), pos - n * 0.26 + Vector3(0, 0.5, 0), yaw)
+
+func _bollard(pos: Vector3) -> void:
+	var post := CylinderMesh.new()
+	post.top_radius = 0.11; post.bottom_radius = 0.12; post.height = 0.95; post.radial_segments = 10
+	post.material = _emissive_material(Color(0.9, 0.7, 0.1), 0.35)
+	var bm := MeshInstance3D.new()
+	bm.mesh = post
+	bm.position = pos + Vector3(0, 0.48, 0)
+	bm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(bm)
+	var cap := CylinderMesh.new()
+	cap.top_radius = 0.13; cap.bottom_radius = 0.13; cap.height = 0.08; cap.radial_segments = 10
+	cap.material = MAT_TRIM
+	_add_detail_mesh(cap, pos + Vector3(0, 0.96, 0), 0.0)
 
 ## Battle-damage rubble piles hugging the wall bases: clustered gray chunks at
 ## random sizes/tilts. Pure dressing — no collision, navmesh ignores them.

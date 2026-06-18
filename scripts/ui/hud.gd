@@ -184,7 +184,14 @@ func _build_pause_audio() -> void:
 	sfx.value_changed.connect(func(v: float): AudioBus.set_sfx_volume(v))
 	var music := _audio_slider_row(vbox, "Music", AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
-	
+
+	# Mouse / look sensitivity — persists and applies to the live player at once.
+	var sens := _audio_slider_row(vbox, tr("Mouse Sensitivity"), GraphicsSettings.sensitivity, 0.2, 3.0, 0.05)
+	sens.value_changed.connect(func(v: float):
+		GraphicsSettings.set_sensitivity(v)
+		if is_instance_valid(_player_ref) and _player_ref.has_method("set_look_sensitivity"):
+			_player_ref.set_look_sensitivity(v))
+
 	# Advanced Graphics Toggles
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = tr("GPU Particles")
@@ -240,16 +247,16 @@ func _build_language_row(parent: Node) -> void:
 	row.add_child(opt)
 	parent.add_child(row)
 
-func _audio_slider_row(parent: Node, label: String, val: float) -> HSlider:
+func _audio_slider_row(parent: Node, label: String, val: float, mn: float = 0.0, mx: float = 1.0, step: float = 0.05) -> HSlider:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	var lbl := Label.new()
 	lbl.text = label
 	lbl.custom_minimum_size = Vector2(110, 0)
 	var s := HSlider.new()
-	s.min_value = 0.0
-	s.max_value = 1.0
-	s.step = 0.05
+	s.min_value = mn
+	s.max_value = mx
+	s.step = step
 	s.value = val
 	s.custom_minimum_size = Vector2(180, 0)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -538,6 +545,13 @@ func _update_crosshair(delta: float) -> void:
 	crosshair.modulate = col
 
 func _unhandled_input(event: InputEvent) -> void:
+	# On the game-over screen, SPACE retries the level (matches the button label).
+	if game_over_menu.visible:
+		var k := event as InputEventKey
+		if k and k.pressed and not k.echo and k.keycode == KEY_SPACE:
+			get_viewport().set_input_as_handled()
+			_on_restart_pressed()
+		return
 	if event.is_action_pressed("pause"):
 		if GameState.current_state == GameState.State.PLAYING:
 			GameState.set_state(GameState.State.PAUSED)

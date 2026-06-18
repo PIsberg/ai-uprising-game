@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8bossingame0probe4"]
+[ext_resource type="Script" path="res://tests/boss_ingame_probe.gd" id="1"]
+[node name="BossIngameProbe" type="Node3D"]
+script = ExtResource("1")

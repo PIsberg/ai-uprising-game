@@ -30,23 +30,26 @@ enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 enum Difficulty { EASY, NORMAL, HARD }
 
 const DIFFICULTY_CONFIG := {
+	# Tuned a notch friendlier across the board (2026-06): every tier got slightly
+	# slower + fewer enemies and looser enemy aim, while the EASY<NORMAL<HARD
+	# scaling is preserved.
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.82,
-		"enemy_count_mult": 0.5, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
-		"reaction_mult": 1.9, # slow to wake up and open fire — gives you a beat
+		"health_mult": 0.6, "cooldown_mult": 1.5, "speed_mult": 0.72,
+		"enemy_count_mult": 0.4, "pickup_mult": 1.5, "aim_spread_deg": 11.0,
+		"reaction_mult": 2.0, # slow to wake up and open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
-		"health_mult": 1.0, "cooldown_mult": 1.0, "speed_mult": 1.0,
-		"enemy_count_mult": 1.0, "pickup_mult": 1.0, "aim_spread_deg": 2.5,
-		"reaction_mult": 1.0,
+		"health_mult": 1.0, "cooldown_mult": 1.08, "speed_mult": 0.88,
+		"enemy_count_mult": 0.82, "pickup_mult": 1.05, "aim_spread_deg": 5.0,
+		"reaction_mult": 1.15,
 	},
 	Difficulty.HARD: {
 		"label": "HARD",
-		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.25,
-		"enemy_count_mult": 1.6, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
-		"reaction_mult": 0.4, # snaps onto you and opens fire almost instantly
+		"health_mult": 1.6, "cooldown_mult": 0.75, "speed_mult": 1.1,
+		"enemy_count_mult": 1.3, "pickup_mult": 0.65, "aim_spread_deg": 2.0,
+		"reaction_mult": 0.5, # snaps onto you and opens fire almost instantly
 	},
 }
 
@@ -82,6 +85,9 @@ var score: int = 0
 var kills: int = 0
 var current_level_path: String = ""
 var level_index: int = 0
+## Furthest campaign level the player has ever entered (0-based). Drives which
+## nodes the campaign map unlocks; never walked backward by replaying a level.
+var max_level_reached: int = 0
 ## Scene paths of bonus weapons picked up this campaign run. The WeaponManager
 ## re-adds these on every level so the arsenal carries forward.
 var unlocked_weapons: Array[String] = []
@@ -334,6 +340,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	upgrades = {"damage": 0, "mag": 0, "reload": 0} # armory resets with the run
 	intro_played = false
 	level_index = 0
+	max_level_reached = 0
 	go_to_level(CAMPAIGN[0], false)
 
 const INTRO_CUTSCENE := "res://scenes/cutscene/intro_cutscene.tscn"
@@ -347,6 +354,7 @@ func go_to_level(path: String, reset: bool = false) -> void:
 	var found := CAMPAIGN.find(path)
 	if found != -1:
 		level_index = found
+		max_level_reached = maxi(max_level_reached, found)
 	if reset:
 		reset_run()
 	set_state(State.PLAYING)
@@ -377,6 +385,7 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	var found := CAMPAIGN.find(scene_path)
 	if found != -1:
 		level_index = found
+		max_level_reached = maxi(max_level_reached, found)
 	if reset:
 		reset_run()
 	reset_level_stats()
@@ -396,6 +405,7 @@ func has_save() -> bool:
 func save_progress() -> void:
 	var cf := ConfigFile.new()
 	cf.set_value("run", "level_index", level_index)
+	cf.set_value("run", "max_level_reached", max_level_reached)
 	cf.set_value("run", "difficulty", difficulty)
 	cf.set_value("run", "score", score)
 	cf.set_value("run", "kills", kills)
@@ -412,6 +422,7 @@ func load_progress() -> bool:
 	if cf.load(SAVE_PATH) != OK:
 		return false
 	level_index = int(cf.get_value("run", "level_index", 0))
+	max_level_reached = int(cf.get_value("run", "max_level_reached", level_index))
 	difficulty = int(cf.get_value("run", "difficulty", Difficulty.NORMAL))
 	score = int(cf.get_value("run", "score", 0))
 	kills = int(cf.get_value("run", "kills", 0))

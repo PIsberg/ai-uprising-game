@@ -88,6 +88,9 @@ func _ready() -> void:
 	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
 	if _reactor:
 		_reactor.material_override = _glow_mat
+	# The George rig bakes the arms into a raised "guard" across every clip; drop
+	# the upper arms to a natural carry (no-op on rigless models like the titan).
+	_relax_arms()
 	# Cinematic sky-drop: GOLIATH-IX makes planetfall on its foot retro-rockets,
 	# then slams down. It hangs high and invulnerable until it lands.
 	_drop_target_y = global_position.y
@@ -97,6 +100,21 @@ func _ready() -> void:
 	hp.invulnerable = true
 	_spawn_thrusters()
 	_do_entrance.call_deferred()
+
+## Drop the George rig's raised "guard" arms to a natural carry. The pose is
+## baked into every clip, so an ArmRelaxModifier nudges the upper-arm bones down
+## (and slightly straightens the elbows) after each frame's animation. No-op on
+## rigless chassis like the titan's, which re-pose their loose parts instead.
+func _relax_arms() -> void:
+	var model := get_node_or_null("Model/Mesh")
+	if model == null:
+		return
+	ModelPoser.relax_skeleton_arms(model, [
+		{"bone": "UpperArm.L", "euler": Vector3(0, 0, -85)},
+		{"bone": "UpperArm.R", "euler": Vector3(0, 0, 85)},
+		{"bone": "LowerArm.L", "euler": Vector3(0, 0, 25)},
+		{"bone": "LowerArm.R", "euler": Vector3(0, 0, -25)},
+	])
 
 func _do_entrance() -> void:
 	GameState.announce_boss(self)

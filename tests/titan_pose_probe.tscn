@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8titanpose0probe1"]
+[ext_resource type="Script" path="res://tests/titan_pose_probe.gd" id="1"]
+[node name="TitanPoseProbe" type="Node3D"]
+script = ExtResource("1")

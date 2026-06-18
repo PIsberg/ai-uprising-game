@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8lava0probe00007"]
+[ext_resource type="Script" path="res://tests/lava_probe.gd" id="1"]
+[node name="LavaProbe" type="Node3D"]
+script = ExtResource("1")

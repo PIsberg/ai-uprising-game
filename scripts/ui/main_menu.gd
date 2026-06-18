@@ -207,6 +207,9 @@ func _on_play_pressed() -> void:
 func _on_continue_pressed() -> void:
 	GameState.continue_campaign()
 
+func _on_map_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/campaign_map.tscn")
+
 ## Sandbox firing range: straight in, no cutscene/briefing, doesn't touch the
 ## campaign checkpoint (load_level only saves for CAMPAIGN levels).
 func _on_range_pressed() -> void:
