@@ -1,11 +1,15 @@
 class_name EnemyTerminator
 extends EnemyBase
-## Boss android built around an imported glTF model (CC-BY 4.0, "Modular Low-Poly
-## Robot Character" by SagePeeker — see CREDITS.md). Heavily armored and fast,
-## fires alternating dual-muzzle red beams. The model is a single static mesh
-## (no rig), so animation is whole-body (stomp bob + lean + recoil) plus a
-## pulsing red eye light. The model is auto-fit at runtime: scaled to
-## `target_height` and stood on the floor regardless of its authored scale/pivot.
+## Boss android built around an imported glTF model (CC0, Quaternius "Animated
+## Robot" — see CREDITS.md). Heavily armored and fast, fires alternating
+## dual-muzzle red beams. The model is rigged, so its idle/walk clips drive the
+## limbs while the script layers a heavy whole-body stomp bob + lean + recoil on
+## the wrapper and a pulsing red eye light. The model is auto-fit at runtime:
+## scaled to `target_height` and stood on the floor regardless of its authored
+## scale/pivot.
+
+const ANIM_IDLE := "RobotArmature|Robot_Idle"
+const ANIM_WALK := "RobotArmature|Robot_Walking"
 
 @export var hitscan_damage: float = 12.0
 @export var burst_count: int = 6
@@ -30,6 +34,7 @@ var _fire_left_next: bool = false
 var _walk_phase: float = 0.0
 var _model_base_y: float = 0.0
 var _entrance: float = 0.0
+var _anim: AnimationPlayer = null
 
 func _ready() -> void:
 	super._ready()
@@ -49,6 +54,15 @@ func _ready() -> void:
 	flinch_knockback = 0.4 # near-immune to stagger
 	_fit_model()
 	_model_base_y = _model.position.y if _model else 0.0
+	# Drive the rig's looping locomotion clips (idle <-> walk in _process).
+	if _model:
+		_anim = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if _anim:
+		for clip in [ANIM_IDLE, ANIM_WALK]:
+			if _anim.has_animation(clip):
+				_anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+		if _anim.has_animation(ANIM_IDLE):
+			_anim.play(ANIM_IDLE)
 	# Dramatic entrance: brief invulnerable power-up while alarms blare.
 	_entrance = 1.3
 	hp.invulnerable = true
@@ -107,10 +121,22 @@ func _process(delta: float) -> void:
 	var rate := 4.5 + speed * 1.8
 	_walk_phase += delta * rate
 	var amp := clampf(speed / move_speed, 0.0, 1.0)
-	# Heavy stomp: body dips per step + leans into movement; recoil leans it back.
+	# Blend the rig's locomotion: walk while moving (clip speed tracks ground
+	# speed), idle when planted.
+	if _anim:
+		if amp > 0.12 and _anim.has_animation(ANIM_WALK):
+			if _anim.current_animation != ANIM_WALK:
+				_anim.play(ANIM_WALK, 0.2)
+			_anim.speed_scale = lerpf(0.9, 1.7, amp)
+		elif _anim.has_animation(ANIM_IDLE):
+			if _anim.current_animation != ANIM_IDLE:
+				_anim.play(ANIM_IDLE, 0.3)
+			_anim.speed_scale = 1.0
+	# A subtler whole-body sway layered on the rig: lean into movement, recoil
+	# rocks it back. The rig now does the leg stomp, so the wrapper bob is light.
 	if _model:
-		_model.position.y = _model_base_y - absf(sin(_walk_phase)) * amp * 0.08
-		_model.rotation.x = amp * 0.06 - recoil * 0.12
+		_model.position.y = _model_base_y - absf(sin(_walk_phase)) * amp * 0.03
+		_model.rotation.x = amp * 0.05 - recoil * 0.12
 		_model.rotation.y = deg_to_rad(model_yaw_deg)
 	if _eye_glow:
 		var flare := _entrance * 6.0 # eyes blaze brighter while powering up

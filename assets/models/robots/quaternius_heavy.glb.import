@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cybq3ssh26u7o"
-path="res://.godot/imported/scene.gltf-f83af9208a98f9fe230a10a25c4d99cc.scn"
+uid="uid://i0g402crie8t"
+path="res://.godot/imported/quaternius_heavy.glb-916e2d8fe0e2b0f30b62bbb499c4553b.scn"
 
 [deps]
 
-source_file="res://assets/models/scene.gltf"
-dest_files=["res://.godot/imported/scene.gltf-f83af9208a98f9fe230a10a25c4d99cc.scn"]
+source_file="res://assets/models/robots/quaternius_heavy.glb"
+dest_files=["res://.godot/imported/quaternius_heavy.glb-916e2d8fe0e2b0f30b62bbb499c4553b.scn"]
 
 [params]
 
