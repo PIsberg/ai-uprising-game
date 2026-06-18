@@ -71,6 +71,11 @@ var _cam_roll: float = 0.0
 ## External camera shake (e.g. a boss entrance). 0..~1.
 func shake(amount: float) -> void:
 	_shake_amount = maxf(_shake_amount, amount)
+
+## Live look-sensitivity update (e.g. the pause-menu slider) so it takes effect
+## immediately, not just on the next spawn.
+func set_look_sensitivity(mult: float) -> void:
+	_look_sens_mult = mult
 var _is_crouching: bool = false
 var _dash_time: float = 0.0
 var _dash_cd: float = 0.0
