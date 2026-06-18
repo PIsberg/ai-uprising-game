@@ -23,26 +23,30 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool) -> void:
 
 enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
-## Campaign-wide difficulty, chosen after "Begin Operation". Each tier scales
-## three things on EVERY level: how many enemies spawn, how strong they are
-## (health + attack cadence + speed), and how often kills drop supplies.
+## Campaign-wide difficulty, chosen after "Begin Operation". Each tier scales,
+## on EVERY level: how many enemies spawn, how strong they are (health + attack
+## cadence + move speed), how fast they react and open fire on first contact
+## (reaction_mult), their aim accuracy, and how often kills drop supplies.
 enum Difficulty { EASY, NORMAL, HARD }
 
 const DIFFICULTY_CONFIG := {
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.88,
-		"enemy_count_mult": 0.6, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
+		"health_mult": 0.6, "cooldown_mult": 1.45, "speed_mult": 0.82,
+		"enemy_count_mult": 0.5, "pickup_mult": 1.5, "aim_spread_deg": 8.0,
+		"reaction_mult": 1.9, # slow to wake up and open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
 		"health_mult": 1.0, "cooldown_mult": 1.0, "speed_mult": 1.0,
 		"enemy_count_mult": 1.0, "pickup_mult": 1.0, "aim_spread_deg": 2.5,
+		"reaction_mult": 1.0,
 	},
 	Difficulty.HARD: {
 		"label": "HARD",
-		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.12,
-		"enemy_count_mult": 1.45, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
+		"health_mult": 1.6, "cooldown_mult": 0.7, "speed_mult": 1.25,
+		"enemy_count_mult": 1.6, "pickup_mult": 0.6, "aim_spread_deg": 0.0,
+		"reaction_mult": 0.4, # snaps onto you and opens fire almost instantly
 	},
 }
 
@@ -558,6 +562,24 @@ func _collect_spawners(n: Node, out: Array) -> void:
 
 const BOSS_SCENES := ["terminator", "colossus", "overseer", "archon"]
 
+## Plentiful grunt types — thinned first on lower difficulties so rarer special
+## enemies (spider, brute, gunner, mender, …) stay in the mix.
+const COMMON_ENEMIES := ["drone", "android", "seeker", "skitter"]
+
+## Lower rank = removed first when thinning. Common+trigger goes first, rare and
+## hand-placed enemies last, so Easy still shows the full roster.
+func _cull_rank(s: EnemySpawner) -> int:
+	var path: String = s.enemy_scene.resource_path if s.enemy_scene else ""
+	var common := false
+	for c in COMMON_ENEMIES:
+		if c in path:
+			common = true
+			break
+	var rank := 0 if common else 2
+	if s.trigger_radius <= 0.0:
+		rank += 1 # spare hand-placed/immediate before trigger reinforcements
+	return rank
+
 func _is_boss_spawner(s: EnemySpawner) -> bool:
 	if s.enemy_scene == null:
 		return false
@@ -575,10 +597,12 @@ func _scale_enemy_count(level: Node, mult: float) -> void:
 		return
 	var target := int(round(spawners.size() * mult))
 	if mult < 1.0:
-		# Thin the pack: only drop trigger-spawned, non-boss reinforcements so
-		# the opening fight and any boss stay intact.
-		var removable := spawners.filter(func(s):
-			return s.trigger_radius > 0.0 and not _is_boss_spawner(s))
+		# Thin the pack to hit the target. Bosses are always spared. Cull the
+		# plentiful grunts first (and trigger-spawned reinforcements before
+		# hand-placed ones) so rarer enemies — spider, brute, gunner, … — survive
+		# and the player still meets the full roster even on Easy.
+		var removable := spawners.filter(func(s): return not _is_boss_spawner(s))
+		removable.sort_custom(func(a, b): return _cull_rank(a) < _cull_rank(b))
 		var want_removed: int = mini(spawners.size() - maxi(target, 1), removable.size())
 		for i in range(want_removed):
 			removable[i].queue_free()

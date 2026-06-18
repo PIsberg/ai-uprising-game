@@ -31,7 +31,7 @@ func _ready() -> void:
 	# Non-positional players for music + UI/broadcast. process_mode ALWAYS so the
 	# broadcast intro can play while the game tree is paused.
 	_music = AudioStreamPlayer.new()
-	_music.volume_db = -20.0
+	_music.volume_db = MUSIC_CALM_DB
 	_music.bus = "Music"
 	_music.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_music)
@@ -80,6 +80,10 @@ func _exit_tree() -> void:
 func _setup_buses() -> void:
 	_ensure_bus("Music")
 	_ensure_bus("SFX")
+	# Start the looping theme once, unconditionally — NOT as a side effect of a
+	# bus being freshly created (which silently skipped music whenever the buses
+	# already existed). Deferred so SoundSynth's _ready has built its streams.
+	_start_music.call_deferred()
 
 func _ensure_bus(bus_name: String) -> void:
 	if AudioServer.get_bus_index(bus_name) != -1:
@@ -88,8 +92,6 @@ func _ensure_bus(bus_name: String) -> void:
 	AudioServer.add_bus(idx)
 	AudioServer.set_bus_name(idx, bus_name)
 	AudioServer.set_bus_send(idx, "Master")
-	# SoundSynth populates its streams in its own _ready; defer so it's ready.
-	_start_music.call_deferred()
 
 # ---------- per-bus volume (persisted to user://settings.cfg) ----------
 
@@ -280,8 +282,8 @@ var _current_music_id: String = ""
 # player is actively in combat, and settles back when things go quiet.
 var _combat: float = 0.0
 var _combat_target: float = 0.0
-const MUSIC_CALM_DB := -20.0
-const MUSIC_COMBAT_DB := -11.0
+const MUSIC_CALM_DB := -12.0
+const MUSIC_COMBAT_DB := -6.0
 
 func set_combat(active: bool) -> void:
 	_combat_target = 1.0 if active else 0.0
@@ -296,6 +298,10 @@ func _process(delta: float) -> void:
 
 func _start_music() -> void:
 	play_music("music_techno")
+	# If the synth wasn't ready yet (stream unresolved), play_music is a no-op and
+	# _current_music_id stays empty — retry next frame so launch is never silent.
+	if _current_music_id == "":
+		_start_music.call_deferred()
 
 ## Switch the looping music to a themed track (e.g. per level). No-op if that
 ## track is already playing, so re-entering a level doesn't restart the loop.

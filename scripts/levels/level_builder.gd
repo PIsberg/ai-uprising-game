@@ -933,21 +933,34 @@ func _build_light_shafts(def: Dictionary) -> void:
 		cone.radial_segments = 16
 		cone.cap_top = false
 		cone.cap_bottom = false
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
-		m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
-		m.albedo_color = Color(col.r, col.g, col.b, 0.035)
-		m.emission_enabled = true
-		m.emission = col
-		m.emission_energy_multiplier = 0.3
-		cone.material = m
+		
+		var use_noise := bool(GraphicsSettings.get("volumetric_noise_enabled"))
+		if use_noise:
+			var sm := ShaderMaterial.new()
+			sm.shader = preload("res://shaders/light_shaft.gdshader")
+			sm.set_shader_parameter("color", col)
+			sm.set_shader_parameter("intensity", 0.35)
+			sm.set_shader_parameter("noise_enabled", true)
+			cone.material = sm
+		else:
+			var m := StandardMaterial3D.new()
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			m.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+			m.albedo_color = Color(col.r, col.g, col.b, 0.035)
+			m.emission_enabled = true
+			m.emission = col
+			m.emission_energy_multiplier = 0.3
+			cone.material = m
+			
 		var mi := MeshInstance3D.new()
 		mi.mesh = cone
 		mi.position = Vector3(pos.x, pos.y * 0.5, pos.z)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.add_to_group("light_shaft_meshes")
+		mi.set_meta("light_color", col)
 		add_child(mi)
 
 # ---------- boss horizon set-piece ----------
@@ -1217,16 +1230,43 @@ func _build_floor_seams(def: Dictionary) -> void:
 	if def.get("open_sky", false):
 		return # outdoor asphalt/dirt isn't panelled
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
-	var mat := _color_material(Color(0.07, 0.075, 0.09), 0.9)
+	# A dark recessed seam with a thin theme-coloured glow line on top, so interior
+	# floors read as a lit tech-grid (a data-centre lattice) instead of a flat
+	# sheet of colour. The glow tints toward white so it reads on any floor colour.
+	var dark := _color_material(Color(0.06, 0.065, 0.08), 0.9)
+	var glow := StandardMaterial3D.new()
+	var tc: Color = _theme_color(def).lerp(Color(1, 1, 1), 0.35)
+	glow.albedo_color = tc
+	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow.emission_enabled = true
+	glow.emission = tc
+	glow.emission_energy_multiplier = 1.6
 	var spacing := 6.5
+	var xs: Array[float] = []
+	var zs: Array[float] = []
 	var x := -fs.x * 0.5 + spacing
 	while x < fs.x * 0.5 - 1.0:
-		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.1, 0.016, fs.y - 1.4), mat)
+		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.16, 0.016, fs.y - 1.4), dark)
+		_seam_strip(Vector3(x, 0.013, 0), Vector3(0.045, 0.018, fs.y - 1.4), glow)
+		xs.append(x)
 		x += spacing
 	var z := -fs.y * 0.5 + spacing
 	while z < fs.y * 0.5 - 1.0:
-		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.1), mat)
+		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.16), dark)
+		_seam_strip(Vector3(0, 0.013, z), Vector3(fs.x - 1.4, 0.018, 0.045), glow)
+		zs.append(z)
 		z += spacing
+	# Brighter "data node" pips where the grid lines cross — a touch of polish
+	# that sells the lattice and catches the bloom.
+	var node := StandardMaterial3D.new()
+	node.albedo_color = tc
+	node.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	node.emission_enabled = true
+	node.emission = tc
+	node.emission_energy_multiplier = 3.2
+	for nx in xs:
+		for nz in zs:
+			_seam_strip(Vector3(nx, 0.015, nz), Vector3(0.22, 0.02, 0.22), node)
 
 func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	var mi := MeshInstance3D.new()
@@ -1246,22 +1286,18 @@ func _build_puddles(def: Dictionary) -> void:
 		return
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var count := int(maxf(fs.x, fs.y) / 7.0)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.02, 0.025, 0.035, 0.92)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.metallic = 0.85
-	mat.roughness = 0.04
-	mat.cull_mode = BaseMaterial3D.CULL_BACK
 	for i in count:
 		var p := MeshInstance3D.new()
 		var pm := PlaneMesh.new()
 		pm.size = Vector2(randf_range(1.6, 3.6), randf_range(1.2, 2.8))
-		pm.material = mat
 		p.mesh = pm
 		p.position = Vector3(randf_range(-fs.x * 0.42, fs.x * 0.42), 0.012, randf_range(-fs.y * 0.42, fs.y * 0.42))
 		p.rotation.y = randf() * TAU
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.add_to_group("puddle_meshes")
 		add_child(p)
+		if gs and gs.has_method("apply_puddle_material_to_node"):
+			gs.apply_puddle_material_to_node(p)
 
 ## Interior ceiling infrastructure: parallel dark conduit pipes running the
 ## length of the room with sparse glowing junction collars. Visual only.

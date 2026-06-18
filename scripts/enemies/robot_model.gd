@@ -28,7 +28,7 @@ var _anim: AnimationPlayer
 var _parent: EnemyBase
 var _prev_recoil: float = 0.0
 var _menace_light: OmniLight3D
-var _glow_mats: Array[BaseMaterial3D] = []
+var _glow_mats: Array[Material] = []
 var _blink_tween: Tween
 # Velocity-driven lean/bank applied to the imported mesh (composed under its
 # base flip/scale so it never fights EnemyBase's flinch on the Model node).
@@ -38,6 +38,7 @@ var _lean_pitch: float = 0.0
 var _lean_roll: float = 0.0
 
 func _ready() -> void:
+	add_to_group("robot_models")
 	_parent = get_parent() as EnemyBase
 	_anim = find_child("AnimationPlayer", true, false) as AnimationPlayer
 	_apply_materials()
@@ -67,26 +68,65 @@ func play_named(anim_name: String, blend: float = 0.2) -> void:
 	if _anim and _anim.has_animation(anim_name):
 		_anim.play(anim_name, blend)
 
+func update_advanced_materials() -> void:
+	_glow_mats.clear()
+	for mi in _collect_meshes(self):
+		mi.material_override = null
+		if mi.mesh != null:
+			for s in mi.mesh.get_surface_count():
+				mi.set_surface_override_material(s, null)
+	_apply_materials()
+
 func _apply_materials() -> void:
-	if texture == null and tint == Color.WHITE and menace_glow <= 0.0:
+	var use_triplanar := bool(GraphicsSettings.get("robot_triplanar_enabled"))
+	if texture == null and tint == Color.WHITE and menace_glow <= 0.0 and not use_triplanar:
 		return
+	
 	for mi in _collect_meshes(self):
 		if texture != null:
-			var mat := StandardMaterial3D.new()
-			mat.albedo_texture = texture
-			mat.albedo_color = tint
-			mat.metallic = 0.25
-			mat.roughness = 0.65
-			_add_menace_emission(mat, texture)
-			mi.material_override = mat
+			if use_triplanar:
+				var sm := ShaderMaterial.new()
+				sm.shader = preload("res://shaders/damaged_robot.gdshader")
+				sm.set_shader_parameter("albedo_color", tint)
+				sm.set_shader_parameter("albedo_tex", texture)
+				sm.set_shader_parameter("metallic", 0.25)
+				sm.set_shader_parameter("roughness", 0.65)
+				sm.set_shader_parameter("menace_color", menace_color)
+				sm.set_shader_parameter("menace_blink", 0.0)
+				_glow_mats.append(sm)
+				mi.material_override = sm
+			else:
+				var mat := StandardMaterial3D.new()
+				mat.albedo_texture = texture
+				mat.albedo_color = tint
+				mat.metallic = 0.25
+				mat.roughness = 0.65
+				_add_menace_emission(mat, texture)
+				mi.material_override = mat
 		elif mi.mesh != null:
 			for s in mi.mesh.get_surface_count():
 				var m := mi.mesh.surface_get_material(s)
 				if m is BaseMaterial3D:
-					var dup := m.duplicate() as BaseMaterial3D
-					dup.albedo_color = dup.albedo_color * tint
-					_add_menace_emission(dup, dup.albedo_texture)
-					mi.set_surface_override_material(s, dup)
+					if use_triplanar:
+						var sm := ShaderMaterial.new()
+						sm.shader = preload("res://shaders/damaged_robot.gdshader")
+						sm.set_shader_parameter("albedo_color", m.albedo_color * tint)
+						sm.set_shader_parameter("albedo_tex", m.albedo_texture)
+						sm.set_shader_parameter("metallic", m.metallic)
+						sm.set_shader_parameter("roughness", m.roughness)
+						if m.normal_enabled and m.normal_texture != null:
+							sm.set_shader_parameter("use_normal_map", true)
+							sm.set_shader_parameter("normal_tex", m.normal_texture)
+							sm.set_shader_parameter("normal_scale", m.normal_scale)
+						sm.set_shader_parameter("menace_color", menace_color)
+						sm.set_shader_parameter("menace_blink", 0.0)
+						_glow_mats.append(sm)
+						mi.set_surface_override_material(s, sm)
+					else:
+						var dup := m.duplicate() as BaseMaterial3D
+						dup.albedo_color = dup.albedo_color * tint
+						_add_menace_emission(dup, dup.albedo_texture)
+						mi.set_surface_override_material(s, dup)
 
 ## Robots read as neutral machines until hit: the red emission channel is
 ## prepared on every material here but stays dark — `damage_blink()` flares it.
@@ -126,13 +166,25 @@ func damage_blink() -> void:
 		return
 	if _blink_tween and _blink_tween.is_valid():
 		_blink_tween.kill()
+	
 	for m in _glow_mats:
-		m.emission_energy_multiplier = 2.4 * menace_glow
+		if m is ShaderMaterial:
+			m.set_shader_parameter("menace_blink", 2.4 * menace_glow)
+		else:
+			m.emission_energy_multiplier = 2.4 * menace_glow
+			
 	if _menace_light:
 		_menace_light.light_energy = 3.0 * menace_glow
+		
 	_blink_tween = create_tween().set_parallel(true)
 	for m in _glow_mats:
-		_blink_tween.tween_property(m, "emission_energy_multiplier", 0.0, 0.28)
+		if m is ShaderMaterial:
+			_blink_tween.tween_method(
+				func(v: float): m.set_shader_parameter("menace_blink", v),
+				2.4 * menace_glow, 0.0, 0.28)
+		else:
+			_blink_tween.tween_property(m, "emission_energy_multiplier", 0.0, 0.28)
+			
 	if _menace_light:
 		_blink_tween.tween_property(_menace_light, "light_energy", 0.0, 0.28)
 
@@ -142,7 +194,12 @@ func _extinguish() -> void:
 	if _menace_light:
 		create_tween().tween_property(_menace_light, "light_energy", 0.0, 0.7)
 	for m in _glow_mats:
-		create_tween().tween_property(m, "emission_energy_multiplier", 0.0, 0.9)
+		if m is ShaderMaterial:
+			create_tween().tween_method(
+				func(v: float): m.set_shader_parameter("menace_blink", v),
+				float(m.get_shader_parameter("menace_blink")), 0.0, 0.9)
+		else:
+			create_tween().tween_property(m, "emission_energy_multiplier", 0.0, 0.9)
 
 ## Bank/lean the chassis into its movement: tilt forward when advancing, roll
 ## into lateral motion. Flyers bank hard (aircraft), walkers lean subtly — sells
@@ -172,6 +229,12 @@ func _collect_meshes(n: Node) -> Array[MeshInstance3D]:
 func _physics_process(delta: float) -> void:
 	if _parent == null:
 		return
+	if _parent.hp:
+		var hr := clampf(_parent.hp.current_health / maxf(_parent.hp.max_health, 1.0), 0.0, 1.0)
+		for m in _glow_mats:
+			if m is ShaderMaterial:
+				m.set_shader_parameter("health_ratio", hr)
+				
 	if _parent.state == EnemyBase.State.DEAD:
 		if _anim:
 			_anim.pause()

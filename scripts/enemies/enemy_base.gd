@@ -16,6 +16,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var attack_range: float = 14.0
 @export var preferred_range: float = 10.0
 @export var attack_cooldown: float = 1.4
+@export var reaction_time: float = 0.45 ## Delay between first spotting the player and the first attack. Difficulty scales this (reaction_mult) so easy robots are slow on the trigger, hard ones snap to.
 @export var attack_lunge_speed: float = 0.0 ## >0: a melee striker that LEAPS at the target on attack instead of standing and tapping it.
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
@@ -45,7 +46,7 @@ const PICKUP_OVERDRIVE: PackedScene = preload("res://scenes/pickups/overdrive.ts
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 var _damaged_emitter: Node3D = null
-var _spark_emitter: CPUParticles3D = null
+var _spark_emitter: Node3D = null
 ## 0..1 battle-damage heat; rises as health falls. Subclasses add it to glow.
 var damage_heat: float = 0.0
 
@@ -209,6 +210,9 @@ func set_state(new_state: State) -> void:
 		_alerted = false
 	elif not _alerted and (new_state == State.CHASE or new_state == State.ALERT or new_state == State.ATTACK):
 		_alerted = true
+		# Reaction delay before it can open fire on first contact — the window
+		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
+		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
 		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
 	state_changed.emit(new_state)
@@ -677,20 +681,6 @@ func _spawn_oil_spray(source_pos: Vector3) -> void:
 	dir.y = 0.5 # bias upward so it fountains
 
 	# Oil: dark, heavy, gravity-pulled droplets.
-	var oil := CPUParticles3D.new()
-	oil.emitting = true
-	oil.one_shot = true
-	oil.explosiveness = 1.0
-	oil.amount = 10
-	oil.lifetime = 0.7
-	oil.local_coords = false
-	oil.direction = dir
-	oil.spread = 42.0
-	oil.initial_velocity_min = 2.0
-	oil.initial_velocity_max = 5.0
-	oil.gravity = Vector3(0, -14.0, 0)
-	oil.scale_amount_min = 0.4
-	oil.scale_amount_max = 1.0
 	var omesh := SphereMesh.new()
 	omesh.radius = 0.05
 	omesh.height = 0.1
@@ -701,25 +691,28 @@ func _spawn_oil_spray(source_pos: Vector3) -> void:
 	omat.metallic = 0.3
 	omat.roughness = 0.5
 	omesh.material = omat
-	oil.mesh = omesh
+	
+	var oil_amount := 10
+	if GraphicsSettings.gpu_particles_enabled:
+		oil_amount = 30
+		
+	var oil := GraphicsSettings.create_particles(
+		oil_amount,
+		0.7,
+		1.0,
+		dir,
+		42.0,
+		Vector3(0, -14.0, 0),
+		2.0,
+		5.0,
+		0.4,
+		1.0,
+		omesh
+	)
 	parent.add_child(oil)
 	oil.global_position = global_position + Vector3(0, body_h, 0)
 
 	# Sparks: bright, fast, emissive, short-lived.
-	var sparks := CPUParticles3D.new()
-	sparks.emitting = true
-	sparks.one_shot = true
-	sparks.explosiveness = 1.0
-	sparks.amount = 8
-	sparks.lifetime = 0.3
-	sparks.local_coords = false
-	sparks.direction = dir
-	sparks.spread = 55.0
-	sparks.initial_velocity_min = 4.0
-	sparks.initial_velocity_max = 9.0
-	sparks.gravity = Vector3(0, -18.0, 0)
-	sparks.scale_amount_min = 0.3
-	sparks.scale_amount_max = 0.8
 	var smesh := BoxMesh.new()
 	smesh.size = Vector3(0.025, 0.025, 0.1)
 	var smat := StandardMaterial3D.new()
@@ -729,7 +722,24 @@ func _spawn_oil_spray(source_pos: Vector3) -> void:
 	smat.emission = Color(1.0, 0.7, 0.25)
 	smat.emission_energy_multiplier = 5.0
 	smesh.material = smat
-	sparks.mesh = smesh
+	
+	var sparks_amount := 8
+	if GraphicsSettings.gpu_particles_enabled:
+		sparks_amount = 24
+		
+	var sparks := GraphicsSettings.create_particles(
+		sparks_amount,
+		0.3,
+		1.0,
+		dir,
+		55.0,
+		Vector3(0, -18.0, 0),
+		4.0,
+		9.0,
+		0.3,
+		0.8,
+		smesh
+	)
 	parent.add_child(sparks)
 	sparks.global_position = global_position + Vector3(0, body_h, 0)
 
@@ -762,19 +772,7 @@ func _update_damage_state() -> void:
 
 
 ## A small continuous shower of orange sparks for a critically damaged robot.
-func _make_damage_sparks() -> CPUParticles3D:
-	var p := CPUParticles3D.new()
-	p.amount = 10
-	p.lifetime = 0.5
-	p.randomness = 0.6
-	p.local_coords = false
-	p.direction = Vector3(0, 1, 0)
-	p.spread = 70.0
-	p.gravity = Vector3(0, -16, 0)
-	p.initial_velocity_min = 1.5
-	p.initial_velocity_max = 3.5
-	p.scale_amount_min = 0.15
-	p.scale_amount_max = 0.4
+func _make_damage_sparks() -> Node3D:
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.02, 0.02, 0.08)
 	var mat := StandardMaterial3D.new()
@@ -784,7 +782,28 @@ func _make_damage_sparks() -> CPUParticles3D:
 	mat.emission = Color(1, 0.7, 0.25)
 	mat.emission_energy_multiplier = 4.0
 	mesh.material = mat
-	p.mesh = mesh
+	
+	var amount := 10
+	if GraphicsSettings.gpu_particles_enabled:
+		amount = 30
+		
+	var p := GraphicsSettings.create_particles(
+		amount,
+		0.5,
+		0.0,
+		Vector3(0, 1, 0),
+		70.0,
+		Vector3(0, -16, 0),
+		1.5,
+		3.5,
+		0.15,
+		0.4,
+		mesh
+	)
+	if p is CPUParticles3D:
+		p.one_shot = false
+	elif p is GPUParticles3D:
+		p.one_shot = false
 	return p
 
 

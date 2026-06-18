@@ -899,6 +899,7 @@ static func _mistral() -> Dictionary:
 			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15},
 			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19},
+			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -923,15 +924,16 @@ static func _gpt() -> Dictionary:
 		"spawn": Vector3(-18, 0.6, -18),
 		"exit": Vector3(18, 1.5, 18),
 		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.4, 0.95, 0.55)},
-		# Polished foundry floor: green server glow reflects across the hall.
-		"floor_material": "res://assets/materials/vault_floor.tres",
+		# Dark foundry deck so the green tech-grid + server glow read as contrast
+		# instead of a flat bright sheet washed out by auto-exposure.
+		"floor_color": Color(0.05, 0.09, 0.06),
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.1, 0.32, 0.16),
-			"ambient": Color(0.5, 0.82, 0.6), "ambient_energy": 0.45,
-			"sky_contribution": 0.45, "glow": 0.85, "fog_density": 0.013,
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.08, 0.22, 0.12),
+			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.32,
+			"sky_contribution": 0.4, "glow": 0.85, "fog_density": 0.009,
 			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
-			"contrast": 1.16, "saturation": 1.12, "brightness": 0.82, "volumetric_density": 0.011,
+			"contrast": 1.16, "saturation": 1.02, "brightness": 0.82, "volumetric_density": 0.011,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
@@ -988,12 +990,16 @@ static func _gpt() -> Dictionary:
 			{"type": "android", "pos": Vector3(8, 0.5, -8)},
 			{"type": "drone", "pos": Vector3(10, 2.5, 2)},
 			{"type": "drone", "pos": Vector3(-4, 2.5, -10)},
+			# Spider intro: one in the opening fight (no trigger) so it's met early
+			# on every difficulty, plus a reinforcement pair below.
+			{"type": "spider", "pos": Vector3(-8, 0.5, -4)},
 			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 14},
 			{"type": "drone", "pos": Vector3(12, 2.5, -12)},
 			{"type": "android", "pos": Vector3(14, 0.5, 10), "trigger": 15},
 			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16},
 			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
 			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
+			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
 			{"type": "strider", "pos": Vector3(12, 0.5, 10), "trigger": 17},
 		],
@@ -1087,6 +1093,9 @@ static func _gemini() -> Dictionary:
 			{"type": "drone", "pos": Vector3(16, 3, 6), "trigger": 20},
 			{"type": "spider", "pos": Vector3(-6, 0.5, 10), "trigger": 16},
 			{"type": "spider", "pos": Vector3(12, 0.5, -10), "trigger": 18},
+			# Brute intro: slow, distant and shielded — closes in while you clear the
+			# front, teaching you to circle to its unshielded sides/back.
+			{"type": "brute", "pos": Vector3(0, 0.5, 18)},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 22},
 			{"type": "seeker", "pos": Vector3(14, 2.5, 14), "trigger": 20},
 			{"type": "seeker", "pos": Vector3(-14, 2.5, 6), "trigger": 22},

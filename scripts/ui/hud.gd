@@ -184,6 +184,38 @@ func _build_pause_audio() -> void:
 	sfx.value_changed.connect(func(v: float): AudioBus.set_sfx_volume(v))
 	var music := _audio_slider_row(vbox, "Music", AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
+	
+	# Advanced Graphics Toggles
+	var gpu_parts := CheckButton.new()
+	gpu_parts.text = tr("GPU Particles")
+	gpu_parts.button_pressed = GraphicsSettings.gpu_particles_enabled
+	gpu_parts.toggled.connect(func(p: bool): GraphicsSettings.set_gpu_particles_enabled(p))
+	vbox.add_child(gpu_parts)
+
+	var vol_noise := CheckButton.new()
+	vol_noise.text = tr("Volumetric Noise Shafts")
+	vol_noise.button_pressed = GraphicsSettings.volumetric_noise_enabled
+	vol_noise.toggled.connect(func(p: bool): GraphicsSettings.set_volumetric_noise_enabled(p))
+	vbox.add_child(vol_noise)
+
+	var tri_robots := CheckButton.new()
+	tri_robots.text = tr("Triplanar Damage Robots")
+	tri_robots.button_pressed = GraphicsSettings.robot_triplanar_enabled
+	tri_robots.toggled.connect(func(p: bool): GraphicsSettings.set_robot_triplanar_enabled(p))
+	vbox.add_child(tri_robots)
+
+	var puddles := CheckButton.new()
+	puddles.text = tr("Animated Puddle Ripples")
+	puddles.button_pressed = GraphicsSettings.puddle_ripples_enabled
+	puddles.toggled.connect(func(p: bool): GraphicsSettings.set_puddle_ripples_enabled(p))
+	vbox.add_child(puddles)
+
+	var post_proc := CheckButton.new()
+	post_proc.text = tr("Advanced Post-Process FX")
+	post_proc.button_pressed = GraphicsSettings.advanced_post_process_enabled
+	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
+	vbox.add_child(post_proc)
+	
 	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)

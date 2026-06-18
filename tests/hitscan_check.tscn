@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://d342dcqyadh4k"]
+[ext_resource type="Script" path="res://tests/hitscan_check.gd" id="1"]
+[node name="HitscanCheck" type="Node3D"]
+script = ExtResource("1")

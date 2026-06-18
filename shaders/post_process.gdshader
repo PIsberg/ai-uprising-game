@@ -11,6 +11,7 @@ uniform float grain_amount : hint_range(0.0, 0.2) = 0.035;
 uniform float sharpen : hint_range(0.0, 1.5) = 0.35;
 uniform float speed_warp : hint_range(0.0, 1.0) = 0.0; // sprint: radial streak + tunnel
 uniform float low_health : hint_range(0.0, 1.0) = 0.0; // critical: pulsing red rim + drained color
+uniform bool advanced_post_process_enabled = true;
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -23,6 +24,15 @@ void fragment() {
 	vec2 px = SCREEN_PIXEL_SIZE;
 	vec2 center = uv - 0.5;
 	float r2 = dot(center, center);
+
+	// Sprint speed-warp barrel distortion (fisheye warp)
+	if (advanced_post_process_enabled && speed_warp > 0.001) {
+		float dist = 0.15 * speed_warp;
+		uv = center * (1.0 + dist * r2) + 0.5;
+		// Re-evaluate center/r2 based on distorted uv
+		center = uv - 0.5;
+		r2 = dot(center, center);
+	}
 
 	// Chromatic aberration: shift R/B outward proportional to radius.
 	vec2 dir = center * r2 * aberration;
@@ -50,6 +60,27 @@ void fragment() {
 		+ texture(screen_tex, uv - vec2(0.0, px.y)).rgb;
 	blur *= 0.25;
 	col += (col - blur) * sharpen;
+
+	// Screen-space horizontal bloom lens flares (anamorphic streak on bright elements)
+	if (advanced_post_process_enabled) {
+		vec3 flare = vec3(0.0);
+		float flare_threshold = 0.82;
+		float streak_width = 0.04;
+		int samples = 8;
+		for (int i = -samples; i <= samples; i++) {
+			if (i == 0) continue;
+			float offset = float(i) / float(samples);
+			vec2 sample_uv = uv + vec2(offset * streak_width, 0.0);
+			sample_uv = clamp(sample_uv, vec2(0.001), vec2(0.999));
+			vec3 c = texture(screen_tex, sample_uv).rgb;
+			float brightness = dot(c, vec3(0.299, 0.587, 0.114));
+			if (brightness > flare_threshold) {
+				float weight = (1.0 - abs(offset)) * (brightness - flare_threshold) * 0.15;
+				flare += c * vec3(0.35, 0.65, 1.0) * weight; // Cinematic cyan/blue flare tint
+			}
+		}
+		col += flare;
+	}
 
 	// Vignette.
 	float vig = smoothstep(vignette_softness, vignette_softness - 0.5, r2 * 1.4);

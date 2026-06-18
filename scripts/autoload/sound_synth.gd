@@ -410,11 +410,11 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 	var dur := spb * total_beats
 	var n := int(dur * SR)
 	var bytes := _silence(n)
-	var kick_lvl: float = p.get("kick", 0.95)
-	var bass_lvl: float = p.get("bass", 0.2)
-	var arp_lvl: float = p.get("arp", 0.09)
-	var hat_lvl: float = p.get("hat", 0.1)
-	var pad_lvl: float = p.get("pad", 0.0)
+	var kick_lvl: float = p.get("kick", 0.82)
+	var bass_lvl: float = p.get("bass", 0.22)
+	var arp_lvl: float = p.get("arp", 0.2)
+	var hat_lvl: float = p.get("hat", 0.14)
+	var pad_lvl: float = p.get("pad", 0.05)
 	var drive: float = p.get("drive", 0.9)
 	var saw_bass: bool = p.get("saw_bass", true)
 	var arp_div: float = p.get("arp_div", 0.5) # 0.5 = eighths, 0.25 = sixteenths
@@ -436,11 +436,14 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		bass_phase += TAU * root / SR
 		var bass_wave := (fposmod(bass_phase, TAU) / TAU * 2.0 - 1.0) if saw_bass else sign_wave(bass_phase)
 		var bass := bass_wave * bass_lvl * exp(-half_t * 5.0)
-		# Square arp.
+		# Lead arp — a square plus an octave-up sine sparkle so the melody sits in
+		# the mids/highs and cuts through on any speaker (the old thin square at a
+		# low level vanished under the sub-bass kick on small speakers).
 		var step := int(t / (spb * arp_div)) % arp.size()
 		var arp_freq: float = arp[step]
 		arp_phase += TAU * arp_freq / SR
-		var arp_s := sign_wave(arp_phase) * arp_lvl * exp(-fmod(t, spb * arp_div) * 9.0)
+		var arp_env := exp(-fmod(t, spb * arp_div) * 8.0)
+		var arp_s := (sign_wave(arp_phase) * 0.7 + sin(arp_phase * 2.0) * 0.4) * arp_lvl * arp_env
 		# Soft sustained pad (root + fifth) for atmosphere.
 		var pad := 0.0
 		if pad_lvl > 0.0:
@@ -464,8 +467,8 @@ func _music_grok() -> AudioStreamWAV:
 		49.0, 49.0, 55.0, 58.27, 65.41, 61.74, 55.0, 49.0]
 	var arp := [110.0, 164.81, 220.0, 164.81, 130.81, 196.0, 261.63, 196.0]
 	return _music_track(142.0, roots, arp, {
-		"kick": 1.0, "bass": 0.26, "arp": 0.08, "hat": 0.12,
-		"drive": 1.15, "pad": 0.05, "arp_div": 0.25,
+		"kick": 0.85, "bass": 0.26, "arp": 0.18, "hat": 0.15,
+		"drive": 1.15, "pad": 0.06, "arp_div": 0.25,
 	})
 
 ## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
@@ -476,8 +479,8 @@ func _music_archon() -> AudioStreamWAV:
 		32.7, 32.7, 38.89, 43.65, 49.0, 43.65, 41.2, 36.71]
 	var arp := [146.83, 220.0, 293.66, 220.0, 174.61, 233.08, 293.66, 233.08]
 	return _music_track(96.0, roots, arp, {
-		"kick": 1.05, "bass": 0.3, "arp": 0.07, "hat": 0.1,
-		"drive": 1.2, "pad": 0.12, "arp_div": 0.25,
+		"kick": 0.9, "bass": 0.3, "arp": 0.15, "hat": 0.13,
+		"drive": 1.2, "pad": 0.13, "arp_div": 0.25,
 	})
 
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
@@ -486,8 +489,8 @@ func _music_gemini() -> AudioStreamWAV:
 		65.41, 65.41, 82.41, 110.0, 98.0, 87.31, 82.41, 73.42]
 	var arp := [261.63, 329.63, 392.0, 493.88, 392.0, 329.63, 440.0, 329.63]
 	return _music_track(122.0, roots, arp, {
-		"kick": 0.7, "bass": 0.16, "arp": 0.12, "hat": 0.06,
-		"drive": 0.8, "pad": 0.09, "saw_bass": false,
+		"kick": 0.68, "bass": 0.16, "arp": 0.22, "hat": 0.12,
+		"drive": 0.8, "pad": 0.1, "saw_bass": false,
 	})
 
 ## Brooding dusk-suburb theme: slow, sparse, heavy on the pad, light percussion.
@@ -496,8 +499,8 @@ func _music_suburb() -> AudioStreamWAV:
 		43.65, 43.65, 49.0, 55.0, 58.27, 55.0, 49.0, 43.65]
 	var arp := [196.0, 233.08, 293.66, 233.08, 174.61, 220.0, 293.66, 220.0]
 	return _music_track(104.0, roots, arp, {
-		"kick": 0.8, "bass": 0.18, "arp": 0.05, "hat": 0.04,
-		"drive": 0.85, "pad": 0.1,
+		"kick": 0.78, "bass": 0.18, "arp": 0.14, "hat": 0.08,
+		"drive": 0.85, "pad": 0.11,
 	})
 
 func _victory_sting(duration: float) -> AudioStreamWAV:

@@ -55,3 +55,4 @@ func _apply_difficulty(e: Node3D) -> void:
 	eb.max_health *= cfg.get("health_mult", 1.0)
 	eb.attack_cooldown *= cfg.get("cooldown_mult", 1.0)
 	eb.move_speed *= cfg.get("speed_mult", 1.0)
+	eb.reaction_time *= cfg.get("reaction_mult", 1.0)

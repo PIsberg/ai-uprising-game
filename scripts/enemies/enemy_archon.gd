@@ -71,7 +71,7 @@ var _bob: Node3D                     ## Holds the brain; bobbed without fighting
 var _shell_mat: StandardMaterial3D
 var _gyri_mat: StandardMaterial3D
 var _core_mat: StandardMaterial3D
-var _shield_mat: StandardMaterial3D
+var _shield_mat: Material
 var _shield: MeshInstance3D
 var _core_light: OmniLight3D
 var _rings: Array[Node3D] = []
@@ -80,6 +80,7 @@ var _rings: Array[Node3D] = []
 
 
 func _ready() -> void:
+	add_to_group("shield_enemies")
 	super._ready()
 	max_health = 2600.0
 	stagger_threshold = 1.0e9        # an AGI is never stunlocked
@@ -229,26 +230,66 @@ func _build_brain() -> void:
 	_bob.add_child(_core_light)
 
 	# Energy shield bubble: additive, double-sided, rim-lit. Present while shielded.
-	_shield_mat = StandardMaterial3D.new()
-	_shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_shield_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	_shield_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_shield_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_shield_mat.albedo_color = Color(COL_SHIELD.r, COL_SHIELD.g, COL_SHIELD.b, 0.18)
-	_shield_mat.emission_enabled = true
-	_shield_mat.emission = COL_SHIELD
-	_shield_mat.emission_energy_multiplier = 1.2
 	_shield = MeshInstance3D.new()
+	_shield.name = "ShieldBubble"
 	var shm := SphereMesh.new()
 	shm.radius = 3.5
 	shm.height = 7.0
 	shm.radial_segments = 32
 	shm.rings = 20
-	shm.material = _shield_mat
 	_shield.mesh = shm
 	_shield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_bob.add_child(_shield)
+	
+	_apply_shield_material()
 
+func _apply_shield_material() -> void:
+	if _shield == null:
+		return
+	
+	var use_shader := bool(GraphicsSettings.get("robot_triplanar_enabled"))
+	if use_shader:
+		var sm := ShaderMaterial.new()
+		sm.shader = preload("res://shaders/shield.gdshader")
+		sm.set_shader_parameter("shield_color", COL_SHIELD)
+		sm.set_shader_parameter("pattern_scale", 12.0)
+		sm.set_shader_parameter("fresnel_power", 2.2)
+		sm.set_shader_parameter("grid_intensity", 0.45)
+		_shield_mat = sm
+		_shield.material_override = sm
+	else:
+		var mat := StandardMaterial3D.new()
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.albedo_color = Color(COL_SHIELD.r, COL_SHIELD.g, COL_SHIELD.b, 0.18)
+		mat.emission_enabled = true
+		mat.emission = COL_SHIELD
+		mat.emission_energy_multiplier = 1.2
+		_shield_mat = mat
+		_shield.material_override = mat
+
+func update_shield_settings() -> void:
+	_apply_shield_material()
+	_set_color(COL_EXPOSED if _mode == Mode.EXPOSED else COL_SHIELD)
+
+var _next_ripple_idx := 0
+
+func notify_shield_hit(source: Node) -> void:
+	if _mode != Mode.SHIELDED or not (_shield_mat is ShaderMaterial):
+		return
+	if source is Node3D:
+		var dir: Vector3 = ((source as Node3D).global_position - global_position).normalized()
+		var local_pos: Vector3 = dir * 3.5
+		var param_pos := "hit_pos_" + str(_next_ripple_idx)
+		var param_time := "hit_time_" + str(_next_ripple_idx)
+		_shield_mat.set_shader_parameter(param_pos, local_pos)
+		_shield_mat.set_shader_parameter(param_time, Time.get_ticks_msec() / 1000.0)
+		_next_ripple_idx = (_next_ripple_idx + 1) % 3
+		
+		if has_node("/root/AudioBus"):
+			AudioBus.play_synth_at("impact_metal", global_position + dir * 3.5, -3.0, 1.25)
 
 # ---------- boot-up entrance ----------
 
@@ -406,7 +447,13 @@ func _expose() -> void:
 	if _shield:
 		var tw := create_tween()
 		tw.tween_property(_shield, "scale", Vector3.ONE * 1.5, 0.25).set_ease(Tween.EASE_OUT)
-		tw.parallel().tween_property(_shield_mat, "albedo_color:a", 0.0, 0.25)
+		# ShaderMaterial has no albedo_color — fade its grid out instead.
+		if _shield_mat is ShaderMaterial:
+			tw.parallel().tween_method(
+				func(v: float): _shield_mat.set_shader_parameter("grid_intensity", v),
+				0.45, 0.0, 0.25)
+		else:
+			tw.parallel().tween_property(_shield_mat, "albedo_color:a", 0.0, 0.25)
 		tw.tween_callback(func(): if is_instance_valid(_shield): _shield.visible = false)
 
 ## Window elapsed: re-arm the shield and unleash the next, nastier wave.
@@ -414,22 +461,29 @@ func _reshield() -> void:
 	if _shield:
 		_shield.visible = true
 		_shield.scale = Vector3.ZERO
-		_shield_mat.albedo_color.a = 0.18
+		if _shield_mat is ShaderMaterial:
+			_shield_mat.set_shader_parameter("grid_intensity", 0.45)
+		else:
+			_shield_mat.albedo_color.a = 0.18
 		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(_shield, "scale", Vector3.ONE, 0.35)
 	AudioBus.play_synth_at("drone_shot", global_position, 0.0, 0.6)
 	_start_wave()
 
 func _set_color(c: Color) -> void:
-	for mat in [_shell_mat, _gyri_mat, _core_mat, _shield_mat]:
+	for mat in [_shell_mat, _gyri_mat, _core_mat]:
 		if mat:
 			mat.emission = c
+	if _shield_mat:
+		if _shield_mat is ShaderMaterial:
+			_shield_mat.set_shader_parameter("shield_color", c)
+		else:
+			_shield_mat.emission = c
+			_shield_mat.albedo_color = Color(c.r, c.g, c.b, _shield_mat.albedo_color.a)
 	if _shell_mat:
 		_shell_mat.albedo_color = Color(c.r, c.g, c.b, 0.5)
 	if _gyri_mat:
 		_gyri_mat.albedo_color = c
-	if _shield_mat:
-		_shield_mat.albedo_color = Color(c.r, c.g, c.b, _shield_mat.albedo_color.a)
 	if _core_light:
 		_core_light.light_color = c
 

@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dkm3i63jpyiuq"]
+[ext_resource type="Script" path="res://tests/music_check.gd" id="1"]
+[node name="MusicCheck" type="Node3D"]
+script = ExtResource("1")
