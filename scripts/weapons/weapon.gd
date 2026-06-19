@@ -103,6 +103,8 @@ const REAL_MODELS := {
 	"nova":        {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.82, "tint": Color(0.62, 0.42, 0.28)},
 	"swarm":       {"glb": "res://assets/models/weapons/blaster-n.glb", "len": 0.74, "tint": Color(0.62, 0.4, 0.3)},
 	"omega":       {"glb": "res://assets/models/weapons/blaster-g.glb", "len": 1.0, "tint": Color(0.74, 0.58, 0.32)},
+	"sniper":      {"glb": "res://assets/models/weapons/blaster-h.glb", "len": 1.22, "tint": Color(0.4, 0.48, 0.62)},
+	"magnum":      {"glb": "res://assets/models/weapons/blaster-j.glb", "len": 0.42, "tint": Color(0.62, 0.5, 0.36)},
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:

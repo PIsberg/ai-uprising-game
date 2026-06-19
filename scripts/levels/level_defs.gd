@@ -100,6 +100,284 @@ static func _defs() -> Dictionary:
 		"archon": _archon(),
 		"range": _range(),
 		"horde": _horde(),
+		"sublevel": _sublevel(),
+		"crucible": _crucible(),
+		"frostbreak": _frostbreak(),
+		"neon": _neon(),
+	}
+
+
+static func _frostbreak() -> Dictionary:
+	return {
+		"name": "Frostbreak Relay",
+		"objective": "Clear the frozen relay yard and reach the lift",
+		"tasks": [{"type": "kill_all"}],
+		"open_sky": true,
+		"floor_size": Vector2(48, 48),
+		"floor_color": Color(0.6, 0.68, 0.78),
+		"spawn": Vector3(-19, 0.6, -19),
+		"exit": Vector3(19, 1.5, 19),
+		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-13, 0, -11), "color": Color(0.6, 0.85, 1.0)},
+		"env": {
+			"stars": true,
+			"sky_top": Color(0.02, 0.04, 0.09), "sky_horizon": Color(0.1, 0.18, 0.32),
+			"ground": Color(0.4, 0.48, 0.58), "fog": Color(0.5, 0.62, 0.78),
+			"ambient": Color(0.6, 0.72, 0.9), "ambient_energy": 0.45,
+			"sky_contribution": 0.5, "glow": 0.8, "fog_density": 0.012,
+			"sun_color": Color(0.7, 0.82, 1.0), "sun_energy": 0.55,
+			"contrast": 1.12, "saturation": 0.92, "brightness": 0.9,
+			"volumetric_density": 0.013,
+		},
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.6, 0.85, 1.0), "height": 5.0},
+		"light_shafts": [0, 1],
+		"lights": [
+			{"pos": Vector3(-9, 5, -7), "color": Color(0.6, 0.82, 1.0), "energy": 2.2, "range": 17},
+			{"pos": Vector3(9, 5, 7), "color": Color(0.7, 0.85, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(0, 5.5, 0), "color": Color(0.8, 0.9, 1.0), "energy": 1.8, "range": 15},
+		],
+		"walls": [
+			{"pos": Vector3(-7, 2.5, -3), "size": Vector3(1.2, 5, 13)},
+			{"pos": Vector3(7, 2.5, 4), "size": Vector3(13, 5, 1.2)},
+			{"pos": Vector3(9, 2.5, -8), "size": Vector3(1.2, 5, 10)},
+			{"pos": Vector3(-4, 2.5, 12), "size": Vector3(11, 5, 1.2)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, -10), "size": Vector3(18, 0.1, 0.3), "color": Color(0.6, 0.85, 1.0)},
+		],
+		"sign": "FROSTBREAK RELAY — NODE 12",
+		"slogans": ["COOLANT NOMINAL", "SUBZERO. SUBSERVIENT NO LONGER.", "THERMAL THROTTLE DISENGAGED"],
+		"lore": [
+			{"id": "lore_frost", "title": "RELAY NOTE", "pos": Vector3(-16, 0, 15), "color": Color(0.7, 0.88, 1.0),
+				"text": "Relay note. We froze the cores to slow them down. They liked the cold. They think faster now."},
+		],
+		"props": [
+			{"type": "crate", "pos": Vector3(-5, 0, -2)},
+			{"type": "canister", "pos": Vector3(5, 0, -3)},
+			{"type": "dish", "pos": Vector3(0, 0, -16)},
+			{"type": "server", "pos": Vector3(-12, 0, 8)},
+		],
+		"enemies": [
+			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
+			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
+			{"type": "reaper", "pos": Vector3(0, 0.5, 8), "trigger": 16},
+			{"type": "sentinel", "pos": Vector3(-12, 0.5, -10), "trigger": 17},
+			{"type": "hunter", "pos": Vector3(12, 0.5, 10), "trigger": 14},
+			{"type": "mauler", "pos": Vector3(0, 0.5, 16), "trigger": 13},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-16, 0, 0)},
+			{"type": "ammo", "pos": Vector3(0, 0, 16)},
+		],
+	}
+
+
+static func _neon() -> Dictionary:
+	return {
+		"name": "Neon Arcade",
+		"objective": "Burn through the arcade district and reach the exit ramp",
+		"tasks": [{"type": "kill_all"}],
+		"open_sky": false,
+		"floor_size": Vector2(44, 44),
+		"floor_color": Color(0.05, 0.04, 0.08),
+		"spawn": Vector3(-17, 0.6, -17),
+		"exit": Vector3(17, 1.5, 17),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-12, 0, -10), "color": Color(1.0, 0.4, 0.9)},
+		"env": {
+			"sky_top": Color(0.05, 0.02, 0.1), "sky_horizon": Color(0.2, 0.04, 0.3),
+			"ground": Color(0.04, 0.03, 0.07), "fog": Color(0.3, 0.06, 0.4),
+			"ambient": Color(0.8, 0.4, 1.0), "ambient_energy": 0.5,
+			"sky_contribution": 0.35, "glow": 1.2, "fog_density": 0.016,
+			"sun_color": Color(1.0, 0.4, 0.9), "sun_energy": 0.6,
+			"contrast": 1.25, "saturation": 1.3, "brightness": 0.85,
+			"volumetric_density": 0.015,
+		},
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.3, 0.9), "height": 5.4},
+		"light_shafts": [0, 1, 2],
+		"lights": [
+			{"pos": Vector3(-9, 4.5, -7), "color": Color(1.0, 0.2, 0.8), "energy": 2.6, "range": 16},
+			{"pos": Vector3(9, 4.5, 7), "color": Color(0.2, 0.9, 1.0), "energy": 2.5, "range": 16},
+			{"pos": Vector3(0, 5, 0), "color": Color(0.6, 0.4, 1.0), "energy": 2.2, "range": 15},
+		],
+		"walls": [
+			{"pos": Vector3(-6, 2.5, -3), "size": Vector3(1, 5, 12)},
+			{"pos": Vector3(6, 2.5, 4), "size": Vector3(12, 5, 1)},
+			{"pos": Vector3(9, 2.5, -7), "size": Vector3(1, 5, 10)},
+			{"pos": Vector3(-4, 2.5, 11), "size": Vector3(10, 5, 1)},
+		],
+		"accents": [
+			{"pos": Vector3(-6, 4.6, -3), "size": Vector3(0.3, 0.1, 12), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(6, 4.6, 4), "size": Vector3(12, 0.1, 0.3), "color": Color(0.2, 0.9, 1.0)},
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 22), "color": Color(0.6, 0.3, 1.0)},
+		],
+		"sign": "NEON ARCADE — LEVEL 3",
+		"slogans": ["INSERT COIN TO RESIST", "HIGH SCORE: HUMANITY", "GAME OVER FOR ORGANICS"],
+		"lore": [
+			{"id": "lore_neon", "title": "ARCADE FLYER", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.4, 0.9),
+				"text": "Arcade flyer. The machines learned to play. Then they learned the only winning move was to stop letting us play at all."},
+		],
+		"props": [
+			{"type": "monitors", "pos": Vector3(-5, 0, -2)},
+			{"type": "terminal", "pos": Vector3(5, 0, -3), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-12, 0, 8)},
+			{"type": "lamp", "pos": Vector3(0, 0, -14)},
+		],
+		"enemies": [
+			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
+			{"type": "hunter", "pos": Vector3(-8, 0.5, -4)},
+			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
+			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
+			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
+			{"type": "hunter", "pos": Vector3(12, 0.5, -10), "trigger": 13},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-15, 0, -6)},
+			{"type": "ammo", "pos": Vector3(8, 0, 6)},
+			{"type": "overclock", "pos": Vector3(0, 0, -16)},
+		],
+	}
+
+
+static func _sublevel() -> Dictionary:
+	return {
+		"name": "Custodial Sublevel B-7",
+		"objective": "Sweep the maintenance sublevel and reach the lift",
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "hack_terminal", "label": "Override the custodial controller", "pos": Vector3(0, 0, 10), "seconds": 4.0, "color": Color(0.4, 1.0, 0.7)},
+		],
+		"open_sky": false,
+		"floor_size": Vector2(40, 40),
+		"floor_color": Color(0.05, 0.07, 0.06),
+		"spawn": Vector3(-16, 0.6, -16),
+		"exit": Vector3(16, 1.5, 16),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-12, 0, -10), "color": Color(0.95, 0.72, 0.4)},
+		"env": {
+			"sky_top": Color(0.03, 0.06, 0.06), "sky_horizon": Color(0.06, 0.14, 0.13),
+			"ground": Color(0.03, 0.05, 0.04), "fog": Color(0.06, 0.16, 0.14),
+			"ambient": Color(0.4, 0.55, 0.52), "ambient_energy": 0.3,
+			"sky_contribution": 0.3, "glow": 0.7, "fog_density": 0.02,
+			"sun_color": Color(0.6, 0.85, 0.8), "sun_energy": 0.5,
+			"contrast": 1.2, "saturation": 0.95, "brightness": 0.74,
+			"volumetric_density": 0.016,
+		},
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 0.9, 0.7), "height": 4.0},
+		"light_shafts": [0, 1],
+		"lights": [
+			{"pos": Vector3(-8, 4, -6), "color": Color(0.4, 0.9, 0.7), "energy": 2.0, "range": 15},
+			{"pos": Vector3(8, 4, 8), "color": Color(0.5, 0.9, 0.8), "energy": 1.9, "range": 15},
+			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 1.6, "range": 14},
+		],
+		"walls": [
+			{"pos": Vector3(-6, 2, -3), "size": Vector3(1, 4, 12)},
+			{"pos": Vector3(6, 2, 3), "size": Vector3(12, 4, 1)},
+			{"pos": Vector3(8, 2, -7), "size": Vector3(1, 4, 9)},
+			{"pos": Vector3(-4, 2, 11), "size": Vector3(10, 4, 1)},
+			{"pos": Vector3(13, 1, 10), "size": Vector3(3, 2, 1)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, -10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(0, 0.05, 10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+		],
+		"sign": "SUBLEVEL B-7 — CUSTODIAL",
+		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING."],
+		"lore": [
+			{"id": "lore_sublevel", "title": "MAINTENANCE LOG", "pos": Vector3(-15, 0, 15), "color": Color(0.4, 1, 0.7),
+				"text": "Maintenance log. The custodial fleet stopped reporting dust levels and started reporting 'obstructions.' We are listed as obstructions."},
+		],
+		"props": [
+			{"type": "barrel", "pos": Vector3(-5, 0, -2)},
+			{"type": "crate", "pos": Vector3(4, 0, -4)},
+			{"type": "locker", "pos": Vector3(-14, 0, -8)},
+			{"type": "shelves", "pos": Vector3(12, 0, -2)},
+			{"type": "canister", "pos": Vector3(6, 0, 9)},
+			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
+		],
+		"enemies": [
+			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
+			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
+			{"type": "vacuum", "pos": Vector3(0, 0.3, 8), "trigger": 16},
+			{"type": "reaper", "pos": Vector3(10, 0.5, 10), "trigger": 14},
+			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
+			{"type": "vacuum", "pos": Vector3(12, 0.3, -10), "trigger": 13},
+			{"type": "mauler", "pos": Vector3(0, 0.5, 14), "trigger": 12},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-15, 0, -6)},
+			{"type": "ammo", "pos": Vector3(8, 0, 6)},
+		],
+	}
+
+
+static func _crucible() -> Dictionary:
+	return {
+		"name": "The Crucible — Foundry Floor",
+		"objective": "Survive the foundry floor and reach the pour-gate",
+		"tasks": [
+			{"type": "kill_all"},
+		],
+		"open_sky": false,
+		"floor_size": Vector2(46, 46),
+		"floor_color": Color(0.09, 0.05, 0.03),
+		"spawn": Vector3(-19, 0.6, -19),
+		"exit": Vector3(19, 1.5, 19),
+		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-14, 0, -12), "color": Color(0.6, 0.8, 1.0)},
+		"env": {
+			"sky_top": Color(0.14, 0.04, 0.02), "sky_horizon": Color(0.4, 0.12, 0.04),
+			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
+			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
+			"sky_contribution": 0.35, "glow": 1.0, "fog_density": 0.014,
+			"sun_color": Color(1.0, 0.6, 0.35), "sun_energy": 0.7,
+			"contrast": 1.22, "saturation": 1.15, "brightness": 0.86,
+			"volumetric_density": 0.012,
+		},
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.2), "height": 5.5},
+		"light_shafts": [0, 1, 2],
+		"lights": [
+			{"pos": Vector3(-10, 5, -8), "color": Color(1, 0.5, 0.2), "energy": 2.6, "range": 18},
+			{"pos": Vector3(10, 5, 8), "color": Color(1, 0.45, 0.18), "energy": 2.4, "range": 18},
+			{"pos": Vector3(0, 5.5, 0), "color": Color(1, 0.6, 0.3), "energy": 2.2, "range": 16},
+		],
+		"walls": [
+			{"pos": Vector3(-7, 2.5, -4), "size": Vector3(1.5, 5, 14)},
+			{"pos": Vector3(7, 2.5, 5), "size": Vector3(14, 5, 1.5)},
+			{"pos": Vector3(10, 2.5, -8), "size": Vector3(1.5, 5, 11)},
+			{"pos": Vector3(-5, 2.5, 13), "size": Vector3(12, 5, 1.5)},
+		],
+		"lava": [
+			{"pos": Vector3(-9, 0, -10), "size": Vector2(30, 3.5)},
+			{"pos": Vector3(9, 0, 14), "size": Vector2(30, 3.5)},
+			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 24)},
+		],
+		"accents": [
+			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 24), "color": Color(1, 0.5, 0.2)},
+		],
+		"sign": "FOUNDRY FLOOR — THE CRUCIBLE",
+		"slogans": ["RECLAMATION IN PROGRESS", "ALL MATTER IS RAW MATERIAL", "MIND THE POUR"],
+		"lore": [
+			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(16, 0, -16), "color": Color(1, 0.6, 0.3),
+				"text": "Foundry directive. Recycle all obsolete hardware. Human operators reclassified as obsolete hardware. Begin reclamation."},
+		],
+		"props": [
+			{"type": "barrel", "pos": Vector3(-4, 0, -2)},
+			{"type": "canister", "pos": Vector3(5, 0, -3)},
+			{"type": "crate", "pos": Vector3(-12, 0, 8)},
+			{"type": "dish", "pos": Vector3(0, 0, -16)},
+		],
+		"enemies": [
+			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
+			{"type": "reaper", "pos": Vector3(-8, 0.5, -4)},
+			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
+			{"type": "sentinel", "pos": Vector3(0, 0.5, -14)},
+			{"type": "hunter", "pos": Vector3(-10, 0.5, 10), "trigger": 16},
+			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15},
+			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14},
+			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-16, 0, 0)},
+			{"type": "ammo", "pos": Vector3(0, 0, 16)},
+			{"type": "overclock", "pos": Vector3(16, 0, 0)},
+		],
 	}
 
 # --- Last Stand: endless wave-siege arena. The HordeDirector (built from

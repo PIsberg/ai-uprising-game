@@ -28,6 +28,11 @@ const ENEMY_SCENES := {
 	"strider": preload("res://scenes/enemies/strider.tscn"),
 	"gunner": preload("res://scenes/enemies/gunner.tscn"),
 	"raptor": preload("res://scenes/enemies/raptor.tscn"),
+	"vacuum": preload("res://scenes/enemies/vacuum.tscn"),
+	"reaper": preload("res://scenes/enemies/reaper.tscn"),
+	"hunter": preload("res://scenes/enemies/hunter.tscn"),
+	"sentinel": preload("res://scenes/enemies/sentinel.tscn"),
+	"mauler": preload("res://scenes/enemies/mauler.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 

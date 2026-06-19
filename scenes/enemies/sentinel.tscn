@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0enemy0sentinl"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_sentinel.gd" id="1_sen"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule_col"]
+radius = 0.7
+height = 1.6
+
+[node name="Sentinel" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_sen")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("Capsule_col")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="EyeLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -0.5)
+light_color = Color(1, 0.28, 0.18, 1)
+light_energy = 1.8
+omni_range = 6.0
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -0.5)
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, -1.05)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 185.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.7
+height = 1.6
