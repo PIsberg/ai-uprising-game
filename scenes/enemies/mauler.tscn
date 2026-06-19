@@ -29,7 +29,7 @@ tint = Color(0.92, 0.7, 0.42, 1)
 menace_color = Color(1, 0.3, 0.08, 1)
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
-transform = Transform3D(-1.1, 0, 0, 0, 1.1, 0, 0, 0, -1.1, 0, 0, 0)
+transform = Transform3D(-0.72, 0, 0, 0, 0.72, 0, 0, 0, -0.72, 0, 0, 0)
 
 [node name="EyeLight" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, -0.3)
