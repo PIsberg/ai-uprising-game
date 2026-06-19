@@ -1,7 +1,7 @@
 class_name EnemyHunter
 extends EnemyBase
-## Sleek, fast skirmisher with twin shoulder cannons. Circle-strafes at mid range
-## and fires rapid bolt bursts. Procedural build.
+## Sleek, fast skirmisher with shoulder cannons. Circle-strafes at mid range and
+## fires rapid bolt bursts. Visuals from a real robot model in hunter.tscn.
 
 @export var proj_speed: float = 46.0
 @export var proj_damage: float = 7.0
@@ -11,7 +11,6 @@ const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 
 var _burst_left: int = 0
 var _burst_t: float = 0.0
-var _eye_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -26,74 +25,6 @@ func _ready() -> void:
 	score_value = 120
 	stagger_threshold = 45.0
 	super._ready()
-	_build_model()
-
-
-func _build_model() -> void:
-	var model: Node3D = get_node_or_null("Model")
-	if model == null:
-		model = Node3D.new()
-		model.name = "Model"
-		add_child(model)
-
-	var shell := StandardMaterial3D.new()
-	shell.albedo_color = Color(0.26, 0.3, 0.36)
-	shell.metallic = 0.7
-	shell.roughness = 0.3
-	var dark := StandardMaterial3D.new()
-	dark.albedo_color = Color(0.1, 0.11, 0.13)
-	dark.metallic = 0.8
-	dark.roughness = 0.4
-	_eye_mat = StandardMaterial3D.new()
-	_eye_mat.albedo_color = Color(1.0, 0.55, 0.1)
-	_eye_mat.emission_enabled = true
-	_eye_mat.emission = Color(1.0, 0.5, 0.05)
-	_eye_mat.emission_energy_multiplier = 2.8
-
-	var torso := MeshInstance3D.new()
-	var tm := BoxMesh.new()
-	tm.size = Vector3(0.5, 0.5, 0.32)
-	tm.material = shell
-	torso.mesh = tm
-	torso.position.y = 1.05
-	model.add_child(torso)
-
-	var head := MeshInstance3D.new()
-	var hm := BoxMesh.new()
-	hm.size = Vector3(0.3, 0.18, 0.3)
-	hm.material = dark
-	head.mesh = hm
-	head.position.y = 1.38
-	model.add_child(head)
-
-	var visor := MeshInstance3D.new()
-	var vm := BoxMesh.new()
-	vm.size = Vector3(0.26, 0.06, 0.05)
-	vm.material = _eye_mat
-	visor.mesh = vm
-	visor.position = Vector3(0, 1.38, -0.15)
-	model.add_child(visor)
-
-	# Reverse-jointed legs.
-	for sx in [-1.0, 1.0]:
-		var leg := MeshInstance3D.new()
-		var lm := BoxMesh.new()
-		lm.size = Vector3(0.12, 0.9, 0.12)
-		lm.material = dark
-		leg.mesh = lm
-		leg.position = Vector3(sx * 0.16, 0.45, 0.04)
-		leg.rotation = Vector3(deg_to_rad(8.0), 0, 0)
-		model.add_child(leg)
-
-	# Twin shoulder cannons (the muzzle node sits between them).
-	for sx in [-1.0, 1.0]:
-		var cannon := MeshInstance3D.new()
-		var cm := BoxMesh.new()
-		cm.size = Vector3(0.1, 0.12, 0.46)
-		cm.material = dark
-		cannon.mesh = cm
-		cannon.position = Vector3(sx * 0.32, 1.22, -0.12)
-		model.add_child(cannon)
 
 
 func _physics_process(delta: float) -> void:

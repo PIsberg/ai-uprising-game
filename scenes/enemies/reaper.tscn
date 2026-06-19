@@ -1,11 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://b0enemy0reaper1"]
+[gd_scene load_steps=6 format=3 uid="uid://b0enemy0reaper1"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_reaper.gd" id="1_rea"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://k64au6q6wdpc" path="res://assets/models/robots/quaternius_bot.glb" id="4_model"]
 
 [sub_resource type="CapsuleShape3D" id="Capsule_col"]
-radius = 0.35
-height = 1.6
+radius = 0.4
+height = 1.7
 
 [node name="Reaper" type="CharacterBody3D" groups=["enemy"]]
 collision_layer = 4
@@ -17,6 +19,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
 shape = SubResource("Capsule_col")
 
 [node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+anim_idle = "CharacterArmature|Idle"
+anim_walk = "CharacterArmature|Run"
+anim_attack = "CharacterArmature|Shoot"
+anim_stagger = ""
+walk_speed_scale = 1.7
+tint = Color(1, 0.42, 0.4, 1)
+menace_color = Color(1, 0.15, 0.1, 1)
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-1.6, 0, 0, 0, 1.6, 0, 0, 0, -1.6, 0, 0, 0)
 
 [node name="EyeLight" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.2)
