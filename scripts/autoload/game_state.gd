@@ -345,7 +345,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	intro_played = false
 	level_index = 0
 	max_level_reached = 0
-	go_to_level(CAMPAIGN[0], false)
+	go_to_level(campaign()[0], false)
 
 ## The opener is now a comic-panel flash instead of the old 3D story cutscene.
 const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
@@ -359,7 +359,7 @@ const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 ## The cutscene calls load_level() when it finishes/skips to enter the level.
 func go_to_level(path: String, reset: bool = false) -> void:
 	current_level_path = path
-	var found := CAMPAIGN.find(path)
+	var found := campaign().find(path)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -447,7 +447,7 @@ func _save_bestiary() -> void:
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
 	current_level_path = scene_path
-	var found := CAMPAIGN.find(scene_path)
+	var found := campaign().find(scene_path)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -514,16 +514,16 @@ func continue_campaign() -> void:
 		start_campaign()
 		return
 	intro_played = true # don't replay the opening broadcast on a resumed run
-	level_index = clampi(level_index, 0, CAMPAIGN.size() - 1)
-	load_level(CAMPAIGN[level_index], false)
+	level_index = clampi(level_index, 0, campaign().size() - 1)
+	load_level(campaign()[level_index], false)
 
 func has_next_level() -> bool:
-	return level_index + 1 < CAMPAIGN.size()
+	return level_index + 1 < campaign().size()
 
 ## Called by the level-complete "Continue" button.
 func advance_level() -> void:
 	if has_next_level():
-		go_to_level(CAMPAIGN[level_index + 1], false)
+		go_to_level(campaign()[level_index + 1], false)
 	else:
 		# Campaign finished — clear the checkpoint and return to the main menu.
 		clear_save()
@@ -709,9 +709,29 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 ## CLI boot) so LevelBuilder knows which .lvl file to build.
 var custom_level_path: String = ""
 
+## Campaign order override authored by the level editor (res://dev_levels/
+## campaign.json). When present it replaces the built-in CAMPAIGN. Read via
+## campaign().
+var _campaign_override: Array[String] = []
+
+## The active campaign level list (editor override if any, else the built-in).
+func campaign() -> Array:
+	return _campaign_override if not _campaign_override.is_empty() else CAMPAIGN
+
+func _load_campaign_override() -> void:
+	var p := "res://dev_levels/campaign.json"
+	if not FileAccess.file_exists(p):
+		return
+	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(p))
+	if v is Array:
+		_campaign_override.clear()
+		for e in v:
+			_campaign_override.append(str(e))
+
 func _ready() -> void:
 	_setup_gamepad_bindings()
 	_load_bestiary()
+	_load_campaign_override()
 	_handle_cli_boot()
 
 ## `AIUprising.exe --level res://dev_levels/foo.lvl` boots straight into that

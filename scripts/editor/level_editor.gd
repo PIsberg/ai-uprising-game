@@ -29,6 +29,7 @@ var _name_edit: LineEdit
 var _load_paths: Array = []       # parallel to _load_opt items
 var _sel_label: Label
 var _snap_btn: Button
+var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def change)
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
@@ -130,6 +131,22 @@ func _selftest() -> void:
 	var p2 := ok_place and ok_move and ok_dup and ok_del and ok_undo and ok_save
 	print("P2 place=", ok_place, " move=", ok_move, " dup=", ok_dup, " del=", ok_del, " undo=", ok_undo, " save=", ok_save)
 	print("PHASE2 ", "PASS" if p2 else "FAIL")
+	# Phase 3: settings + env + tasks + export.
+	def["name"] = "P3 Level"
+	def["objective"] = "test obj"
+	(def["env"] as Dictionary)["weather"] = "rain"
+	(def["tasks"] as Array).append(_default_task("destroy_core"))
+	var ok_tasks := (def["tasks"] as Array).size() >= 2
+	_export_gdscript()
+	var exp := CustomLevels.DIR + "_selftest_export.gd.txt"
+	var exp_ok := FileAccess.file_exists(exp)
+	var exp_txt := FileAccess.get_file_as_string(exp) if exp_ok else ""
+	var exp_valid := "static func _" in exp_txt and "return {" in exp_txt
+	_save_campaign(["res://scenes/levels/level_01.tscn", "res://dev_levels/_selftest.lvl"])
+	var camp_ok := FileAccess.file_exists(CustomLevels.DIR + "campaign.json")
+	var p3 := ok_tasks and exp_ok and exp_valid and camp_ok
+	print("P3 tasks=", ok_tasks, " export=", exp_ok, " valid=", exp_valid, " campaign=", camp_ok)
+	print("PHASE3 ", "PASS" if p3 else "FAIL")
 	get_tree().quit()
 
 # ---------- def lifecycle ----------
@@ -166,6 +183,7 @@ func set_def(d: Dictionary) -> void:
 		def["env"] = {}
 	_cam_target = Vector3(0, 0, 0)
 	rebuild_preview()
+	_refresh_inspector()
 	_set_status("Loaded '%s'" % def.get("name", "level"))
 
 # ---------- preview ----------
@@ -510,6 +528,25 @@ func _build_ui() -> void:
 	hb.add_child(_status)
 	_build_palette(layer)
 	_build_selection_panel(layer)
+	_build_inspector(layer)
+
+## Right-hand inspector: edits the selected entity, or (nothing selected) the
+## level settings + env + tasks. Rebuilt by _refresh_inspector().
+func _build_inspector(layer: CanvasLayer) -> void:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	panel.anchor_left = 1.0
+	panel.offset_left = -300.0
+	panel.offset_top = 44.0
+	panel.offset_bottom = -104.0
+	layer.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	_insp_vb = VBoxContainer.new()
+	_insp_vb.add_theme_constant_override("separation", 4)
+	_insp_vb.custom_minimum_size = Vector2(284, 0)
+	scroll.add_child(_insp_vb)
 
 ## Left-hand palette: category sections of placeable items. Clicking an item arms
 ## it for placement (click in the world to drop). "Select" disarms.
@@ -993,6 +1030,7 @@ func _set_selection(list: Array) -> void:
 		_set_status("Selected: %s" % _marker_label(_selection[0]["category"], _selection[0]["holder"]))
 	else:
 		_set_status("Selected: %d objects" % _selection.size())
+	_refresh_inspector()
 
 ## Re-select markers by their underlying entry dicts (after a rebuild relinks them).
 func _select_holders(holders: Array) -> void:
@@ -1035,6 +1073,366 @@ func _make_gizmo() -> Node3D:
 			"z": mi.rotation_degrees = Vector3(90, 0, 0); mi.position = Vector3(0, 0, 1.1)
 		root.add_child(mi)
 	return root
+
+# ---------- inspector / level settings / tasks (Phase 3) ----------
+
+var _editing := false # suppress inspector rebuild while typing in a field
+
+const ENV_COLORS := ["sky_top", "sky_horizon", "ground", "fog", "ambient", "sun_color", "building_tint"]
+const ENV_NUMS := {
+	"fog_density": [0.0, 0.05, 0.001], "ambient_energy": [0.0, 6.0, 0.1],
+	"sun_energy": [0.0, 6.0, 0.1], "glow": [0.0, 2.0, 0.05],
+	"brightness": [0.5, 1.5, 0.02], "contrast": [0.5, 1.8, 0.02],
+	"saturation": [0.0, 2.0, 0.02], "sky_energy": [0.0, 4.0, 0.1],
+}
+const TASK_TYPES := ["kill_all", "key", "destroy_core", "collect_shards",
+	"hack_terminal", "sabotage", "survive", "hold_zone"]
+
+func _refresh_inspector() -> void:
+	if _editing or _insp_vb == null:
+		return
+	for c in _insp_vb.get_children():
+		c.queue_free()
+	if _selection.size() == 1:
+		_inspect_entity(_selection[0])
+	elif _selection.size() > 1:
+		_insp_header("%d objects selected" % _selection.size())
+		_insp_btn("Delete all", _delete_selection)
+	else:
+		_inspect_level()
+
+func _insp_header(text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
+	l.add_theme_font_size_override("font_size", 15)
+	_insp_vb.add_child(l)
+
+func _insp_btn(text: String, cb: Callable) -> void:
+	var b := Button.new()
+	b.text = text
+	b.pressed.connect(cb)
+	_insp_vb.add_child(b)
+
+func _row(label: String) -> HBoxContainer:
+	var hb := HBoxContainer.new()
+	var l := Label.new()
+	l.text = label
+	l.custom_minimum_size = Vector2(96, 0)
+	l.add_theme_font_size_override("font_size", 12)
+	hb.add_child(l)
+	_insp_vb.add_child(hb)
+	return hb
+
+func _live() -> void:
+	# Rebuild markers to reflect an edit, keep the same selection, don't rebuild
+	# the inspector (so the widget being edited keeps focus).
+	var holders := _selection_holders()
+	_editing = true
+	rebuild_preview()
+	_select_holders(holders)
+	_editing = false
+
+func _f_text(holder: Dictionary, key: String, label: String) -> void:
+	var hb := _row(label)
+	var le := LineEdit.new()
+	le.text = str(holder.get(key, ""))
+	le.custom_minimum_size = Vector2(170, 0)
+	le.text_changed.connect(func(t): holder[key] = t)
+	hb.add_child(le)
+
+func _f_num(holder: Dictionary, key: String, label: String, mn: float, mx: float, step: float, do_live := false) -> void:
+	var hb := _row(label)
+	var sb := SpinBox.new()
+	sb.min_value = mn; sb.max_value = mx; sb.step = step
+	sb.value = float(holder.get(key, 0.0))
+	sb.custom_minimum_size = Vector2(120, 0)
+	sb.value_changed.connect(func(v):
+		holder[key] = v
+		if do_live: _live())
+	hb.add_child(sb)
+
+func _f_vec(holder: Dictionary, key: String, label: String, dims: int) -> void:
+	var hb := _row(label)
+	var cur = holder.get(key, Vector3.ZERO if dims == 3 else Vector2.ZERO)
+	for i in dims:
+		var sb := SpinBox.new()
+		sb.min_value = -300; sb.max_value = 300; sb.step = 0.5
+		sb.custom_minimum_size = Vector2(56, 0)
+		sb.value = cur[i]
+		var idx := i
+		sb.value_changed.connect(func(v):
+			var c = holder.get(key, Vector3.ZERO if dims == 3 else Vector2.ZERO)
+			c[idx] = v
+			holder[key] = c
+			_live())
+		hb.add_child(sb)
+
+func _f_color(holder: Dictionary, key: String, label: String) -> void:
+	var hb := _row(label)
+	var cp := ColorPickerButton.new()
+	cp.color = holder.get(key, Color.WHITE)
+	cp.custom_minimum_size = Vector2(120, 24)
+	cp.color_changed.connect(func(c): holder[key] = c)
+	hb.add_child(cp)
+
+func _f_bool(holder: Dictionary, key: String, label: String) -> void:
+	var hb := _row(label)
+	var cb := CheckBox.new()
+	cb.button_pressed = bool(holder.get(key, false))
+	cb.toggled.connect(func(p): holder[key] = p; _live())
+	hb.add_child(cb)
+
+func _f_enum(holder: Dictionary, key: String, label: String, options: Array) -> void:
+	var hb := _row(label)
+	var opt := OptionButton.new()
+	opt.custom_minimum_size = Vector2(170, 0)
+	var cur := str(holder.get(key, options[0] if not options.is_empty() else ""))
+	for i in options.size():
+		opt.add_item(str(options[i]).get_file().get_basename())
+		if str(options[i]) == cur:
+			opt.select(i)
+	opt.item_selected.connect(func(i):
+		holder[key] = options[i]
+		_live())
+	hb.add_child(opt)
+
+func _inspect_entity(m: Dictionary) -> void:
+	var cat: String = m["category"]
+	var h: Dictionary = m["holder"]
+	_insp_header(cat.to_upper())
+	_f_vec(h, m["key"], "pos", 3)
+	match cat:
+		"enemy", "boss":
+			_f_enum(h, "type", "type", LevelBuilder.ENEMY_SCENES.keys())
+			_f_num(h, "count", "count", 1, 30, 1)
+			_f_num(h, "trigger", "trigger r", 0, 60, 1)
+		"prop":
+			_f_enum(h, "type", "type", LevelBuilder.PROP_SCENES.keys())
+			_f_num(h, "yaw", "yaw", -180, 180, 5)
+		"pickup":
+			_f_enum(h, "kind", "kind", ["health", "ammo", "overclock", "overdrive"])
+		"weapon":
+			_f_enum(h, "scene", "weapon", _weapon_items())
+			_f_color(h, "color", "glow")
+		"light":
+			_f_color(h, "color", "color")
+			_f_num(h, "energy", "energy", 0, 8, 0.1)
+			_f_num(h, "range", "range", 2, 40, 1)
+			_f_bool(h, "flicker", "flicker")
+		"wall", "building", "platform":
+			_f_vec(h, "size", "size", 3)
+		"ramp":
+			_f_vec(h, "size", "size", 3)
+			_f_num(h, "pitch", "pitch", 0, 60, 2)
+			_f_num(h, "yaw", "yaw", -180, 180, 5)
+		"hologram":
+			_f_text(h, "text", "text")
+			_f_color(h, "color", "color")
+		"fire":
+			_f_num(h, "scale", "scale", 0.3, 3, 0.1)
+		"hero", "nexus":
+			_f_color(h, "color", "color")
+			_f_num(h, "height", "height", 3, 24, 0.5)
+	if cat not in ["spawn", "exit"]:
+		_insp_btn("Delete", _delete_selection)
+
+func _inspect_level() -> void:
+	_insp_header("LEVEL SETTINGS")
+	_f_text(def, "name", "name")
+	_f_text(def, "objective", "objective")
+	_f_text(def, "sign", "sign")
+	_f_bool(def, "open_sky", "open sky")
+	_f_vec(def, "floor_size", "floor size", 2)
+	_f_color(def, "floor_color", "floor col")
+	# Environment (full manual control).
+	_insp_header("ENVIRONMENT")
+	var env: Dictionary = def["env"]
+	for k in ENV_COLORS:
+		if not env.has(k): env[k] = Color(0.3, 0.3, 0.35)
+		_f_color(env, k, k)
+	for k in ENV_NUMS:
+		if not env.has(k): env[k] = 1.0
+		var spec: Array = ENV_NUMS[k]
+		_f_num(env, k, k, spec[0], spec[1], spec[2])
+	_f_enum(env, "weather", "weather", ["", "rain", "dust"])
+	_f_bool(env, "lightning", "lightning")
+	_f_bool(env, "stars", "stars")
+	_f_enum(env, "hdri", "hdri", ["", "res://assets/environments/hdri/industrial_sunset_puresky_2k.hdr",
+		"res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr"])
+	# Tasks.
+	_insp_header("OBJECTIVES / TASKS")
+	_build_tasks_editor()
+	# Tools.
+	_insp_header("TOOLS")
+	_insp_btn("Export to GDScript", _export_gdscript)
+	_insp_btn("Campaign manager…", _open_campaign)
+
+func _build_tasks_editor() -> void:
+	var tasks: Array = def.get("tasks", [])
+	for i in tasks.size():
+		var t: Dictionary = tasks[i]
+		var idx := i
+		var hb := _row("• %s" % t.get("type", "?"))
+		var opt := OptionButton.new()
+		for j in TASK_TYPES.size():
+			opt.add_item(TASK_TYPES[j])
+			if TASK_TYPES[j] == t.get("type", ""):
+				opt.select(j)
+		opt.item_selected.connect(func(j):
+			tasks[idx] = _default_task(TASK_TYPES[j])
+			_refresh_inspector())
+		hb.add_child(opt)
+		var rm := Button.new(); rm.text = "✕"
+		rm.pressed.connect(func(): tasks.remove_at(idx); _refresh_inspector())
+		hb.add_child(rm)
+		# Per-type fields.
+		match t.get("type", ""):
+			"key", "destroy_core", "hack_terminal", "sabotage", "hold_zone":
+				_f_vec(t, "pos", "  pos", 3)
+		match t.get("type", ""):
+			"destroy_core":
+				_f_num(t, "health", "  health", 100, 4000, 50)
+			"survive", "hack_terminal", "sabotage", "hold_zone":
+				_f_num(t, "seconds", "  seconds", 1, 120, 1)
+	_insp_btn("+ Add task", func(): (def["tasks"] as Array).append(_default_task("kill_all")); _refresh_inspector())
+
+func _default_task(type: String) -> Dictionary:
+	match type:
+		"key": return {"type": "key", "pos": Vector3.ZERO}
+		"destroy_core": return {"type": "destroy_core", "pos": Vector3.ZERO, "health": 600.0}
+		"collect_shards": return {"type": "collect_shards", "points": [Vector3.ZERO]}
+		"hack_terminal": return {"type": "hack_terminal", "pos": Vector3.ZERO, "seconds": 3.0}
+		"sabotage": return {"type": "sabotage", "pos": Vector3.ZERO, "seconds": 3.5}
+		"survive": return {"type": "survive", "seconds": 45.0}
+		"hold_zone": return {"type": "hold_zone", "pos": Vector3.ZERO, "seconds": 12.0}
+	return {"type": "kill_all"}
+
+# ---------- export to GDScript ----------
+
+func _export_gdscript() -> void:
+	var id := current_name.to_lower().replace(" ", "_")
+	var text := _gdscript_for(def, id)
+	var path := CustomLevels.DIR + id + "_export.gd.txt"
+	CustomLevels._ensure(CustomLevels.DIR)
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		path = CustomLevels.USER_DIR + id + "_export.gd.txt"
+		CustomLevels._ensure(CustomLevels.USER_DIR)
+		f = FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(text)
+		f.close()
+		_set_status("Exported GDScript -> %s" % path)
+	else:
+		_set_status("Export failed")
+
+## Render the def as a LevelDefs static-func body (final coords; world_scale 1.0
+## so paste-in matches editor placement — add to level_defs.gd & _defs()).
+func _gdscript_for(d: Dictionary, id: String) -> String:
+	var s := "## Paste into level_defs.gd and add \"%s\": _%s() to _defs().\n" % [id, id]
+	s += "static func _%s() -> Dictionary:\n\treturn {\n" % id
+	var keys := d.keys()
+	keys.sort()
+	for k in keys:
+		if k in ["world_scale", "format_version"]:
+			continue
+		s += "\t\t%s: %s,\n" % [var_to_str(k), _gd_value(d[k])]
+	s += "\t}\n"
+	return s
+
+func _gd_value(v) -> String:
+	# var_to_str already emits valid GDScript literals for our value types
+	# (Vector2/3, Color, Dictionary, Array, numbers, strings).
+	return var_to_str(v)
+
+# ---------- campaign manager ----------
+
+var _campaign_win: Window
+
+func _open_campaign() -> void:
+	if _campaign_win and is_instance_valid(_campaign_win):
+		_campaign_win.queue_free()
+	_campaign_win = Window.new()
+	_campaign_win.title = "Campaign Manager"
+	_campaign_win.size = Vector2i(520, 560)
+	_campaign_win.close_requested.connect(func(): _campaign_win.queue_free())
+	add_child(_campaign_win)
+	var sc := ScrollContainer.new()
+	sc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_campaign_win.add_child(sc)
+	var vb := VBoxContainer.new()
+	vb.custom_minimum_size = Vector2(500, 0)
+	sc.add_child(vb)
+	_render_campaign(vb)
+	_campaign_win.popup_centered()
+
+func _render_campaign(vb: VBoxContainer) -> void:
+	for c in vb.get_children():
+		c.queue_free()
+	var list := _campaign_list()
+	var lbl := Label.new()
+	lbl.text = "Campaign order (saved to dev_levels/campaign.json):"
+	vb.add_child(lbl)
+	for i in list.size():
+		var idx := i
+		var hb := HBoxContainer.new()
+		var name_lbl := Label.new()
+		name_lbl.text = "%d. %s" % [i + 1, str(list[i]).get_file()]
+		name_lbl.custom_minimum_size = Vector2(300, 0)
+		hb.add_child(name_lbl)
+		_mini_btn(hb, "↑", func(): _campaign_move(idx, -1, vb))
+		_mini_btn(hb, "↓", func(): _campaign_move(idx, 1, vb))
+		_mini_btn(hb, "✕", func(): _campaign_remove(idx, vb))
+		vb.add_child(hb)
+	# Add current custom levels.
+	var add_lbl := Label.new(); add_lbl.text = "Add a level:"; vb.add_child(add_lbl)
+	for p in CustomLevels.list_paths():
+		var path: String = p
+		_mini_full(vb, "+ %s" % CustomLevels.name_of(path), func(): _campaign_add(path, vb))
+	_mini_full(vb, "💾 Save campaign.json", func(): _save_campaign(_campaign_list()))
+
+func _mini_btn(parent: Node, text: String, cb: Callable) -> void:
+	var b := Button.new(); b.text = text; b.pressed.connect(cb); parent.add_child(b)
+
+func _mini_full(parent: Node, text: String, cb: Callable) -> void:
+	var b := Button.new(); b.text = text; b.pressed.connect(cb); parent.add_child(b)
+
+var _campaign_cache: Array = []
+
+func _campaign_list() -> Array:
+	if _campaign_cache.is_empty():
+		var p := CustomLevels.DIR + "campaign.json"
+		if FileAccess.file_exists(p):
+			var v = JSON.parse_string(FileAccess.get_file_as_string(p))
+			if v is Array:
+				_campaign_cache = v
+		if _campaign_cache.is_empty() and has_node("/root/GameState"):
+			_campaign_cache = (GameState.CAMPAIGN as Array).duplicate()
+	return _campaign_cache
+
+func _campaign_move(i: int, dir: int, vb: VBoxContainer) -> void:
+	var j := i + dir
+	if j < 0 or j >= _campaign_cache.size():
+		return
+	var tmp = _campaign_cache[i]; _campaign_cache[i] = _campaign_cache[j]; _campaign_cache[j] = tmp
+	_render_campaign(vb)
+
+func _campaign_remove(i: int, vb: VBoxContainer) -> void:
+	_campaign_cache.remove_at(i)
+	_render_campaign(vb)
+
+func _campaign_add(path: String, vb: VBoxContainer) -> void:
+	_campaign_cache.append(path)
+	_render_campaign(vb)
+
+func _save_campaign(list: Array) -> void:
+	CustomLevels._ensure(CustomLevels.DIR)
+	var f := FileAccess.open(CustomLevels.DIR + "campaign.json", FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(list, "\t"))
+		f.close()
+		_set_status("Saved campaign.json (%d levels)" % list.size())
 
 # ---------- accessors for tests / later phases ----------
 
