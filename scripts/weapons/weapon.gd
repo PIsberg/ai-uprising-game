@@ -403,6 +403,8 @@ func _do_shot() -> void:
 	_play_muzzle()
 	if data.damage_type == WeaponData.DamageType.PROJECTILE:
 		_energy_muzzle()
+		if data.splash_radius > 0.0:
+			_launch_flame()
 	_muzzle_sparks()
 	_muzzle_shockwave()
 	_eject_brass()
@@ -741,6 +743,40 @@ func _energy_muzzle() -> void:
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.13)
 	tw.tween_property(light, "light_energy", 0.0, 0.13)
 	tw.chain().tween_callback(orb.queue_free)
+
+## A brief gout of flame + smoke blooming off the muzzle when a heavy splash
+## round (the rocket) launches — the back-pressure of the firing tube. A short
+## additive flame cone down the barrel that flares then collapses.
+func _launch_flame() -> void:
+	if muzzle == null:
+		return
+	var flame := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.02
+	cm.bottom_radius = 0.18
+	cm.height = 0.7
+	cm.radial_segments = 10
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = Color(1.0, 0.75, 0.4, 0.9)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.6, 0.25)
+	mat.emission_energy_multiplier = 10.0
+	cm.material = mat
+	flame.mesh = cm
+	flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Lay the cone down the barrel (-Z), wide mouth out front.
+	flame.rotation_degrees = Vector3(-90, 0, 0)
+	flame.position = Vector3(0, 0, -0.35)
+	muzzle.add_child(flame)
+	var tw := flame.create_tween().set_parallel(true)
+	tw.tween_property(flame, "scale", Vector3(1.6, 1.1, 1.6), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.14)
+	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.14)
+	tw.chain().tween_callback(flame.queue_free)
 
 ## Eject a tumbling brass casing out the right of the weapon (projectile weapons
 ## like the rocket/plasma don't use cartridges, so skip them).

@@ -11,6 +11,9 @@ extends Area3D
 @export var homing_turn_rate: float = 0.0 ## Radians/sec the round can steer toward a locked target (0 = dumb-fire).
 @export var homing_range: float = 42.0 ## Max distance to acquire/keep a homing target.
 @export var direct_damage: bool = false ## Apply `damage` to the body it strikes (enemy rounds whose splash mask excludes the player). Off by default so splash weapons don't double-dip.
+@export var smoke_trail: bool = false ## Lay down a thick billowing smoke trail behind the round (rockets/missiles).
+@export var exhaust_flame: bool = false ## A flickering thruster flame burning off the round's tail (rockets/missiles).
+@export var big_detonation: bool = false ## On impact, throw a rising smoke column + extra shrapnel for a heavy-ordnance read.
 
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
@@ -24,6 +27,9 @@ var _age: float = 0.0
 var _dead: bool = false
 var _homing_target: Node3D = null
 var _reacquire: float = 0.0
+var _exhaust_mat: StandardMaterial3D
+var _exhaust: MeshInstance3D
+var _exhaust_t: float = 0.0
 
 func launch(velocity: Vector3, shooter: Node, damage: float, splash_radius: float, splash_damage: float) -> void:
 	_velocity = velocity
@@ -34,6 +40,10 @@ func launch(velocity: Vector3, shooter: Node, damage: float, splash_radius: floa
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
 	_make_trail()
+	if smoke_trail:
+		_make_smoke_trail()
+	if exhaust_flame:
+		_make_exhaust()
 
 ## A glowing world-space trail of embers streaming off the round.
 func _make_trail() -> void:
@@ -63,6 +73,75 @@ func _make_trail() -> void:
 	p.mesh = mesh
 	add_child(p)
 
+## A fat, slow-rising column of grey smoke streaming off the round — the
+## unmistakable read of a missile in flight. Lives in world space so it hangs in
+## the air as the rocket pulls away.
+func _make_smoke_trail() -> void:
+	var p := CPUParticles3D.new()
+	p.amount = 40
+	p.lifetime = 0.9
+	p.local_coords = false
+	p.spread = 8.0
+	p.initial_velocity_min = 0.0
+	p.initial_velocity_max = 0.6
+	p.gravity = Vector3(0, 0.8, 0) # buoyant — the trail drifts up and lingers
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.3
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.4)); curve.add_point(Vector2(0.3, 1.0)); curve.add_point(Vector2(1.0, 0.7))
+	p.scale_amount_curve = curve
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 0.2, 1.0])
+	grad.colors = PackedColorArray([
+		Color(0.9, 0.55, 0.25, 0.55), # hot at the nozzle
+		Color(0.4, 0.4, 0.42, 0.5),
+		Color(0.3, 0.3, 0.32, 0.0)])  # cools to grey, fades out
+	p.color_ramp = grad
+	var puff := SphereMesh.new()
+	puff.radius = 0.12; puff.height = 0.24; puff.radial_segments = 6; puff.rings = 3
+	var pmat := StandardMaterial3D.new()
+	pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pmat.vertex_color_use_as_albedo = true
+	puff.material = pmat
+	p.mesh = puff
+	add_child(p)
+
+## A short flickering additive flame cone burning off the round's tail (the
+## round travels +Z after look_at, so the flame trails toward -Z... i.e. local
+## +Z is forward, the exhaust hangs at the back along -forward).
+func _make_exhaust() -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.005
+	cm.bottom_radius = 0.07
+	cm.height = 0.5
+	cm.radial_segments = 8
+	_exhaust_mat = StandardMaterial3D.new()
+	_exhaust_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_exhaust_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_exhaust_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_exhaust_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_exhaust_mat.albedo_color = Color(1.0, 0.7, 0.3, 0.85)
+	_exhaust_mat.emission_enabled = true
+	_exhaust_mat.emission = Color(1.0, 0.6, 0.2)
+	_exhaust_mat.emission_energy_multiplier = 9.0
+	cm.material = _exhaust_mat
+	mi.mesh = cm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Cylinder axis is +Y; lay it along the round's local Z (its travel axis) with
+	# the wide mouth trailing behind the nose.
+	mi.rotation_degrees = Vector3(-90, 0, 0)
+	mi.position = Vector3(0, 0, -0.35)
+	_exhaust = mi
+	add_child(mi)
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.6, 0.25)
+	light.light_energy = 2.5
+	light.omni_range = 3.0
+	light.shadow_enabled = false
+	mi.add_child(light)
+
 func _physics_process(delta: float) -> void:
 	if _dead:
 		return
@@ -81,6 +160,12 @@ func _physics_process(delta: float) -> void:
 		var m := _energy_mesh()
 		if m:
 			m.scale = Vector3.ONE * (1.0 + 0.22 * sin(_age * 30.0))
+	if _exhaust:
+		# Flicker the thruster length/brightness so the flame guthers and pulses.
+		_exhaust_t += delta
+		var flick := 0.78 + 0.22 * sin(_exhaust_t * 50.0) + 0.1 * sin(_exhaust_t * 23.0)
+		_exhaust.scale = Vector3(flick, 1.0 + 0.3 * flick, flick)
+		_exhaust_mat.emission_energy_multiplier = 9.0 * flick
 
 ## Bend the round's velocity toward a locked enemy, re-acquiring the nearest
 ## valid target a few times a second so a swarm spreads across a pack.
@@ -212,9 +297,74 @@ func _explode(pos: Vector3) -> void:
 		var tw := flash.create_tween()
 		tw.tween_property(flash, "light_energy", 0.0, 0.3)
 		tw.tween_callback(flash.queue_free)
+		if big_detonation:
+			_heavy_detonation_fx(scene, pos)
 	if cluster_count > 0:
 		_spawn_cluster(pos)
 	queue_free()
+
+## Extra heavy-ordnance dressing on top of the blast scene: a billowing smoke
+## column that mushrooms up and lingers, plus a ring of fast shrapnel streaks.
+## Built on a detached node so it survives this projectile being freed.
+func _heavy_detonation_fx(scene: Node, pos: Vector3) -> void:
+	var root := Node3D.new()
+	scene.add_child(root)
+	root.global_position = pos
+	# Rising smoke column — the aftermath plume.
+	var smoke := CPUParticles3D.new()
+	smoke.one_shot = true
+	smoke.emitting = true
+	smoke.amount = 26
+	smoke.lifetime = 1.8
+	smoke.explosiveness = 0.6
+	smoke.spread = 40.0
+	smoke.direction = Vector3.UP
+	smoke.initial_velocity_min = 2.0
+	smoke.initial_velocity_max = 5.0
+	smoke.gravity = Vector3(0, 1.5, 0) # buoyant — mushrooms upward
+	smoke.scale_amount_min = 1.0
+	smoke.scale_amount_max = 2.2
+	var sc := Curve.new()
+	sc.add_point(Vector2(0.0, 0.3)); sc.add_point(Vector2(1.0, 1.0))
+	smoke.scale_amount_curve = sc
+	var sgrad := Gradient.new()
+	sgrad.offsets = PackedFloat32Array([0.0, 0.25, 1.0])
+	sgrad.colors = PackedColorArray([
+		Color(0.6, 0.35, 0.2, 0.6), Color(0.25, 0.24, 0.24, 0.55), Color(0.2, 0.2, 0.2, 0.0)])
+	smoke.color_ramp = sgrad
+	var puff := SphereMesh.new()
+	puff.radius = 0.6; puff.height = 1.2; puff.radial_segments = 6; puff.rings = 4
+	var smat := StandardMaterial3D.new()
+	smat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	smat.vertex_color_use_as_albedo = true
+	puff.material = smat
+	smoke.mesh = puff
+	root.add_child(smoke)
+	# Shrapnel: hot metal streaks hurled out low across the ground.
+	var shr := CPUParticles3D.new()
+	shr.one_shot = true
+	shr.emitting = true
+	shr.amount = 24
+	shr.lifetime = 0.7
+	shr.explosiveness = 1.0
+	shr.spread = 80.0
+	shr.direction = Vector3.UP
+	shr.initial_velocity_min = 9.0
+	shr.initial_velocity_max = 18.0
+	shr.gravity = Vector3(0, -24.0, 0)
+	var dart := BoxMesh.new()
+	dart.size = Vector3(0.05, 0.05, 0.22)
+	var dmat := StandardMaterial3D.new()
+	dmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dmat.albedo_color = Color(1.0, 0.7, 0.35)
+	dmat.emission_enabled = true
+	dmat.emission = trail_color
+	dmat.emission_energy_multiplier = 6.0
+	dart.material = dmat
+	shr.mesh = dart
+	root.add_child(shr)
+	scene.get_tree().create_timer(3.0).timeout.connect(root.queue_free)
 
 ## Carpet bombing: a ring of staggered secondary blasts around the impact, each
 ## doing its own splash — turns one hit into a wall of explosions that clears a
