@@ -76,6 +76,10 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_overseer.tscn",
 	"res://scenes/levels/level_alien.tscn",
 	"res://scenes/levels/level_assembly.tscn",
+	"res://scenes/levels/level_sublevel.tscn",
+	"res://scenes/levels/level_frostbreak.tscn",
+	"res://scenes/levels/level_neon.tscn",
+	"res://scenes/levels/level_crucible.tscn",
 	"res://scenes/levels/level_titan.tscn",
 	"res://scenes/levels/level_archon.tscn",
 ]
@@ -345,6 +349,9 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 
 const INTRO_CUTSCENE := "res://scenes/cutscene/intro_cutscene.tscn"
 const LEVEL_BRIEFING := "res://scenes/cutscene/level_briefing.tscn"
+const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
+## Levels that play a bespoke reveal cutscene instead of the standard briefing.
+const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 
 ## Enter a campaign level THROUGH its cutscene: level 1 gets the story intro,
 ## every other level gets a data-driven briefing (new enemies + objective + mood).
@@ -360,8 +367,11 @@ func go_to_level(path: String, reset: bool = false) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress()
-	if level_id_from_path(path) == "01":
+	var lid := level_id_from_path(path)
+	if lid == "01":
 		get_tree().change_scene_to_file(INTRO_CUTSCENE)
+	elif CUTSCENE_FOR_LEVEL.has(lid):
+		get_tree().change_scene_to_file(CUTSCENE_FOR_LEVEL[lid])
 	else:
 		get_tree().change_scene_to_file(LEVEL_BRIEFING)
 

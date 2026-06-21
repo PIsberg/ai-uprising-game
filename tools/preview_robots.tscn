@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://gwkl6qvkgbxc"]
+
+[ext_resource type="Script" path="res://tools/preview_robots.gd" id="1"]
+
+[node name="PreviewRobots" type="Node3D"]
+script = ExtResource("1")

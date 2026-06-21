@@ -44,6 +44,11 @@ const ENEMY_INFO := {
 	"titan": {"name": "PROMETHEUS-0", "desc": "The first true AGI, given legs. Artillery, beam, and a quake — keep moving.", "scale": 0.3, "y": 0.0},
 	"alien": {"name": "VOID SENTINEL", "desc": "An off-world flyer the AI summoned across the dark. Strafes and spits corrosive bio-plasma volleys — its throat flares green right before it fires. Juke the orbs and shoot it down.", "scale": 1.0, "y": 1.4},
 	"archon": {"name": "ARCHON", "desc": "The AGI brain behind every machine you've fought. It does not fight — it hangs shielded and DEPLOYS endless legions. Wipe out each wave to drop the shield, then put a round through the mind.", "scale": 0.45, "y": 0.0},
+	"vacuum": {"name": "CUSTODIAN UNIT", "desc": "A cleaning disc that trundles the floor — until it sees you. Then it shudders, unfolds four legs and rears up into a hostile walker that chases and fires bolts. Hit it on the ground before it stands.", "scale": 1.0, "y": 0.0},
+	"reaper": {"name": "REAPER", "desc": "A gaunt blade-frame that sprints in and lunges with twin scythe arms. Fast and fragile — drop it before it reaches melee or strafe and keep firing.", "scale": 1.0, "y": 0.0},
+	"hunter": {"name": "HUNTER", "desc": "A sleek twin-cannon skirmisher. Circle-strafes at mid range and rakes you with rapid bolt bursts. Break line of sight and flank it.", "scale": 1.0, "y": 0.0},
+	"sentinel": {"name": "SENTINEL", "desc": "A four-legged weapons platform — slow, heavily armoured, and patient. Plants at range and lobs heavy bolts. Use cover and chip it down.", "scale": 1.0, "y": 0.0},
+	"mauler": {"name": "MAULER", "desc": "A slab-bodied brawler with two oversized hammer-fists. Slow but brutally tough — it closes in and slams. Kite it and never let it corner you.", "scale": 1.0, "y": 0.0},
 }
 
 const TAGLINES := {

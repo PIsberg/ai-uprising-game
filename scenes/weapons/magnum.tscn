@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://c5iov1mgpv0xc"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
+[ext_resource type="Resource" path="res://assets/weapons/magnum_data.tres" id="2_data"]
+[ext_resource type="Material" uid="uid://b0mat0gunmetal0" path="res://assets/materials/polymer_gunmetal.tres" id="3_gm"]
+[ext_resource type="Material" uid="uid://b0mat0metaldark" path="res://assets/materials/metal_dark.tres" id="4_md"]
+[ext_resource type="Material" uid="uid://b0mat0polymer01" path="res://assets/materials/polymer_black.tres" id="5_pb"]
+[ext_resource type="Material" uid="uid://b0mat0glowamber0" path="res://assets/materials/glow_amber.tres" id="6_ga"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_frame"]
+size = Vector3(0.055, 0.07, 0.2)
+material = ExtResource("3_gm")
+
+[sub_resource type="BoxMesh" id="BoxMesh_barrel"]
+size = Vector3(0.045, 0.05, 0.24)
+material = ExtResource("4_md")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cyl"]
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.075
+material = ExtResource("4_md")
+
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.05, 0.13, 0.075)
+material = ExtResource("5_pb")
+
+[sub_resource type="BoxMesh" id="BoxMesh_sight"]
+size = Vector3(0.008, 0.012, 0.014)
+material = ExtResource("6_ga")
+
+[node name="Magnum" type="Node3D"]
+script = ExtResource("1_w")
+data = ExtResource("2_data")
+
+[node name="Viewmodel" type="Node3D" parent="."]
+
+[node name="Frame" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01, 0.0)
+mesh = SubResource("BoxMesh_frame")
+
+[node name="Barrel" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, -0.18)
+mesh = SubResource("BoxMesh_barrel")
+
+[node name="Slide" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, -0.01, -0.05)
+mesh = SubResource("CylinderMesh_cyl")
+
+[node name="Grip" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(0.96, 0, 0.28, 0, 1, 0, -0.28, 0, 0.96, 0, -0.1, 0.07)
+mesh = SubResource("BoxMesh_grip")
+
+[node name="FrontSight" type="MeshInstance3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, -0.28)
+mesh = SubResource("BoxMesh_sight")
+
+[node name="Muzzle" type="Node3D" parent="Viewmodel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, -0.31)

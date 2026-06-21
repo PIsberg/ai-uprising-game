@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b0player00001"]
+[gd_scene load_steps=15 format=3 uid="uid://b0player00001"]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" uid="uid://b0weap0rifle001" path="res://scenes/weapons/rifle.tscn" id="5_rifle"]
 [ext_resource type="PackedScene" uid="uid://b0weap0shotgun01" path="res://scenes/weapons/shotgun.tscn" id="6_shotgun"]
 [ext_resource type="PackedScene" uid="uid://b0weap0plasma01" path="res://scenes/weapons/plasma.tscn" id="7_plasma"]
+[ext_resource type="PackedScene" uid="uid://b0weap0sniper01" path="res://scenes/weapons/sniper.tscn" id="9_sniper"]
+[ext_resource type="PackedScene" uid="uid://b0weap0magnum01" path="res://scenes/weapons/magnum.tscn" id="10_magnum"]
 [ext_resource type="Shader" path="res://shaders/post_process.gdshader" id="8_post"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
@@ -59,7 +61,7 @@ attributes = SubResource("CamAttr_1")
 [node name="WeaponHolder" type="Node3D" parent="Head/Camera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, -0.22, -0.45)
 script = ExtResource("3_wm")
-weapon_scenes = Array[PackedScene]([ExtResource("4_pistol")])
+weapon_scenes = Array[PackedScene]([ExtResource("4_pistol"), ExtResource("9_sniper"), ExtResource("10_magnum")])
 start_index = 0
 
 [node name="Damageable" type="Node" parent="."]

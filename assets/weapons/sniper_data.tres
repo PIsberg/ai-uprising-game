@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
+[ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "MK-VII Longshot"
+fire_mode = 0
+damage_type = 0
+damage = 145.0
+fire_rate = 0.9
+range_m = 220.0
+spread_deg = 0.3
+aim_spread_mult = 0.04
+pellets = 1
+headshot_mult = 3.5
+pierce = 2
+recoil_pitch = 3.4
+recoil_yaw = 0.3
+recoil_recovery = 4.5
+mag_size = 5
+reserve_max = 35
+reload_time = 2.8
+muzzle_flash_scene = ExtResource("3_mf")
+impact_scene = ExtResource("4_imp")
+tracer_scene = ExtResource("2_tracer")
+tracer_color = Color(0.6, 0.85, 1.0, 1)
+sound_id = "gauss"
+slide_kick = 0.06
+viewmodel_color = Color(0.22, 0.24, 0.28, 1)
+ads_position_offset = Vector3(0.0, 0.02, 0.12)
+ads_fov = 20.0
