@@ -163,6 +163,9 @@ func _input(event: InputEvent) -> void:
 func _open_level_select() -> void:
 	if _levels_panel == null:
 		_build_level_select()
+	# The cheat is for testing/showing off — unlock the full bestiary too, so the
+	# Encyclopedia immediately shows every enemy (back out and open Enemy Codex).
+	GameState.discover_all_enemies()
 	_show_panel(_levels_panel)
 	AudioBus.play_synth_ui("pickup_health", -6.0, 1.5) # cheat-accepted chirp
 

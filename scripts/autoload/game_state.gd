@@ -410,6 +410,16 @@ func discover_enemy(t: String) -> void:
 	discovered_enemies[t] = true
 	_save_bestiary()
 
+## Unlock the WHOLE bestiary at once (the warp cheat shows off every enemy).
+func discover_all_enemies() -> void:
+	var changed := false
+	for t in EnemyCodex.ORDER:
+		if not discovered_enemies.has(t):
+			discovered_enemies[t] = true
+			changed = true
+	if changed:
+		_save_bestiary()
+
 ## Mark every hostile a campaign level fields as discovered — called the moment
 ## the player actually drops into the playable level (covers the comic-intro
 ## level 1 and every briefing-entered level alike).
