@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://c8sensprobe000012"]
+[gd_scene format=3 uid="uid://dc6v2wt06tlct"]
 [ext_resource type="Script" path="res://tests/sens_probe.gd" id="1"]
 [node name="SensProbe" type="Node"]
 script = ExtResource("1")

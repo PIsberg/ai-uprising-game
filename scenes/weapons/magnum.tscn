@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://b0weap0magnum01"]
+[gd_scene format=3 uid="uid://c5iov1mgpv0xc"]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="1_w"]
 [ext_resource type="Resource" path="res://assets/weapons/magnum_data.tres" id="2_data"]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://b0toolpreview01"]
+[gd_scene format=3 uid="uid://gwkl6qvkgbxc"]
 
 [ext_resource type="Script" path="res://tools/preview_robots.gd" id="1"]
 

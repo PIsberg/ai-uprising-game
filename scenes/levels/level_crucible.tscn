@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://b0lvl0crucible1"]
+[gd_scene format=3 uid="uid://enpfb1toqptu"]
 
 [ext_resource type="Script" path="res://scripts/levels/level_builder.gd" id="1_build"]
 [ext_resource type="PackedScene" uid="uid://b0player00001" path="res://scenes/player/player.tscn" id="2_player"]
