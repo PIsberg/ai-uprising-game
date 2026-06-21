@@ -35,9 +35,9 @@ const DIFFICULTY_CONFIG := {
 	# scaling is preserved.
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.5, "speed_mult": 0.72,
-		"enemy_count_mult": 0.4, "pickup_mult": 1.5, "aim_spread_deg": 11.0,
-		"reaction_mult": 2.0, # slow to wake up and open fire — gives you a beat
+		"health_mult": 0.5, "cooldown_mult": 1.9, "speed_mult": 0.62,
+		"enemy_count_mult": 0.3, "pickup_mult": 1.8, "aim_spread_deg": 16.0,
+		"reaction_mult": 3.0, # very slow to open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
