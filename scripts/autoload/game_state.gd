@@ -738,6 +738,12 @@ func _ready() -> void:
 ## custom level (the editor's Playtest shells out this way).
 func _handle_cli_boot() -> void:
 	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	# "--editor" boots straight into the level editor (the dev "separate program"
+	# entry — make a desktop shortcut to AIUprising.exe --editor).
+	if "--editor" in args:
+		set_state(State.MENU)
+		get_tree().change_scene_to_file.call_deferred("res://scenes/editor/level_editor.tscn")
+		return
 	var i := args.find("--level")
 	if i != -1 and i + 1 < args.size():
 		custom_level_path = args[i + 1]

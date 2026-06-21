@@ -147,6 +147,12 @@ func _selftest() -> void:
 	var p3 := ok_tasks and exp_ok and exp_valid and camp_ok
 	print("P3 tasks=", ok_tasks, " export=", exp_ok, " valid=", exp_valid, " campaign=", camp_ok)
 	print("PHASE3 ", "PASS" if p3 else "FAIL")
+	# Phase 4: validation + playtest save (don't actually change scene here).
+	var warns := validate()
+	var pt := CustomLevels.save_def(def, "_playtest")
+	var p4 := pt != "" and FileAccess.file_exists("res://dev_levels/_playtest.lvl")
+	print("P4 warns=", warns.size(), " playtest_save=", p4)
+	print("PHASE4 ", "PASS" if p4 else "FAIL")
 	get_tree().quit()
 
 # ---------- def lifecycle ----------
@@ -522,6 +528,9 @@ func _build_ui() -> void:
 	_add_btn(hb, "Load", _on_load)
 	_add_btn(hb, "View (Tab)", _toggle_view)
 	_snap_btn = _add_btn(hb, "Snap: ON", _toggle_snap)
+	_add_btn(hb, "Validate", _on_validate)
+	var pt := _add_btn(hb, "▶ Playtest", _on_playtest)
+	pt.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
 	var sep := VSeparator.new(); hb.add_child(sep)
 	_status = Label.new()
 	_status.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
@@ -1434,10 +1443,57 @@ func _save_campaign(list: Array) -> void:
 		f.close()
 		_set_status("Saved campaign.json (%d levels)" % list.size())
 
+# ---------- validation + playtest (Phase 4) ----------
+
+## Non-blocking sanity checks. Returns a list of human-readable warnings.
+func validate() -> Array:
+	var w: Array = []
+	if not def.has("spawn"):
+		w.append("no spawn point")
+	if not def.has("exit"):
+		w.append("no exit")
+	var enemies: Array = def.get("enemies", [])
+	var tasks: Array = def.get("tasks", [])
+	if not enemies.is_empty() and tasks.is_empty():
+		w.append("enemies but no objective")
+	for t in tasks:
+		var ty: String = t.get("type", "")
+		if ty in ["destroy_core", "hold_zone", "key", "hack_terminal", "sabotage"] and not t.has("pos"):
+			w.append("%s task missing pos" % ty)
+		if ty == "collect_shards" and (t.get("points", []) as Array).is_empty():
+			w.append("collect_shards has no points")
+	# Out-of-bounds spawn/exit.
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	for k in ["spawn", "exit"]:
+		var p: Vector3 = def.get(k, Vector3.ZERO)
+		if absf(p.x) > fs.x * 0.5 + 1.0 or absf(p.z) > fs.y * 0.5 + 1.0:
+			w.append("%s is outside the floor" % k)
+	return w
+
+func _on_validate() -> void:
+	var w := validate()
+	_set_status("✓ No issues" if w.is_empty() else "⚠ " + ", ".join(w))
+
+func _on_playtest() -> void:
+	var w := validate()
+	if not w.is_empty():
+		_set_status("⚠ " + ", ".join(w) + "  (playing anyway)")
+	var p := CustomLevels.save_def(def, "_playtest")
+	if p == "":
+		_set_status("Playtest failed: could not save")
+		return
+	if has_node("/root/GameState"):
+		GameState.custom_level_path = p
+		GameState.set_state(GameState.State.PLAYING)
+	get_tree().change_scene_to_file("res://scenes/levels/level_custom.tscn")
+
 # ---------- accessors for tests / later phases ----------
 
 func marker_count() -> int:
 	return _markers.size()
+
+func validate_count() -> int:
+	return validate().size()
 
 func selection_count() -> int:
 	return _selection.size()
