@@ -27,6 +27,39 @@ var _status: Label
 var _load_opt: OptionButton
 var _name_edit: LineEdit
 var _load_paths: Array = []       # parallel to _load_opt items
+var _sel_label: Label
+var _snap_btn: Button
+
+# ---------- placement / selection / transform (Phase 2) ----------
+var _armed_category := ""         # palette item armed for placement ("" = select mode)
+var _armed_item := ""
+var _selection: Array = []        # selected marker records (subset of _markers)
+var _gizmo: Node3D                 # visual axis cross at the selection
+
+# Modal transform (Blender-style G/R/S): "", "move", "rotate", "scale".
+var _mode := ""
+var _mode_axis := ""              # "", "x", "y", "z"
+var _mode_start := Vector3.ZERO   # cursor ground point at mode start
+var _mode_orig := []              # snapshot: original {pos,yaw,size} per selected
+var _dragging := false            # LMB free-drag move in progress
+
+# Undo (snapshot stack) + clipboard.
+var _undo: Array = []
+var _redo: Array = []
+var _clipboard: Array = []
+
+# Snapping.
+var _snap := true
+var _grid := 1.0
+var _angle_snap := 15.0
+
+## category -> which def array placed entries append to.
+const CAT_ARRAY := {
+	"enemy": "enemies", "boss": "enemies", "prop": "props", "pickup": "pickups",
+	"weapon": "extra_weapons", "light": "lights", "wall": "walls",
+	"building": "buildings", "ramp": "ramps", "platform": "platforms",
+	"hologram": "holograms", "fire": "fires",
+}
 
 # Category → marker tint.
 const CAT_COLOR := {
@@ -49,6 +82,9 @@ func _ready() -> void:
 	_build_ui()
 	_preview_root = Node3D.new()
 	add_child(_preview_root)
+	_gizmo = _make_gizmo()
+	add_child(_gizmo)
+	_gizmo.visible = false
 	set_def(blank_def())
 	_refresh_load_list()
 	set_process(true)
@@ -60,17 +96,40 @@ func _ready() -> void:
 ## into the preview, save it, assert markers built + file written.
 func _selftest() -> void:
 	await get_tree().process_frame
-	var d := LevelDefs.get_def("gpt")
-	d["world_scale"] = 1.0
+	# Phase 1: build a built-in preview.
+	var d := LevelDefs.get_def("gpt"); d["world_scale"] = 1.0
 	set_def(d)
 	await get_tree().process_frame
-	print("SELFTEST markers=", marker_count())
-	if _name_edit:
-		_name_edit.text = "_selftest"
+	var p1 := marker_count() > 0
+	print("PHASE1 ", "PASS" if p1 else "FAIL", " markers=", marker_count())
+	# Phase 2: place / move / duplicate / delete / undo / save on a blank level.
+	set_def(blank_def())
+	await get_tree().process_frame
+	var base := marker_count() # spawn + exit
+	_arm("enemy", "android")
+	_place_at(Vector3(6, 0, 6))
+	await get_tree().process_frame
+	var ok_place := marker_count() == base + 1 and selection_count() == 1
+	# Drag-move the placed enemy to (8,8).
+	_drag_orig = _selection_positions()
+	_drag_ref = _drag_orig[0]
+	_drag_moved = true
+	_drag_move_to(Vector3(8, 0, 8))
+	var mp: Vector3 = def["enemies"][0]["pos"]
+	var ok_move := is_equal_approx(mp.x, 8.0) and is_equal_approx(mp.z, 8.0)
+	_duplicate_selection(); await get_tree().process_frame
+	var ok_dup := (def["enemies"] as Array).size() == 2
+	_delete_selection(); await get_tree().process_frame
+	var ok_del := (def["enemies"] as Array).size() == 1
+	_undo_do(); await get_tree().process_frame
+	var ok_undo := (def["enemies"] as Array).size() == 2
+	if _name_edit: _name_edit.text = "_selftest"
 	_on_save()
 	var saved := CustomLevels.load_def("res://dev_levels/_selftest.lvl")
-	var ok := marker_count() > 0 and (saved.get("enemies", []) as Array).size() > 0
-	print("PHASE1 ", "PASS" if ok else "FAIL")
+	var ok_save := (saved.get("enemies", []) as Array).size() == 2
+	var p2 := ok_place and ok_move and ok_dup and ok_del and ok_undo and ok_save
+	print("P2 place=", ok_place, " move=", ok_move, " dup=", ok_dup, " del=", ok_del, " undo=", ok_undo, " save=", ok_save)
+	print("PHASE2 ", "PASS" if p2 else "FAIL")
 	get_tree().quit()
 
 # ---------- def lifecycle ----------
@@ -322,6 +381,11 @@ func _apply_camera() -> void:
 # ---------- input / camera control ----------
 
 func _process(delta: float) -> void:
+	if _mode != "":
+		_update_transform_mode()
+		return
+	if _dragging and not _selection.is_empty():
+		return # handled in mouse-motion
 	if _topdown:
 		var pan := Vector3.ZERO
 		if Input.is_key_pressed(KEY_W): pan.z -= 1
@@ -346,18 +410,14 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_TAB:
-			_toggle_view()
-			get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			if _topdown:
-				_cam_height = maxf(8.0, _cam_height - 3.0); _apply_camera()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			if _topdown:
-				_cam_height = minf(120.0, _cam_height + 3.0); _apply_camera()
+		_handle_key(event)
+		return
+	if event is InputEventMouseButton:
+		_handle_mouse_button(event)
 	elif event is InputEventMouseMotion:
-		# RMB drag rotates (fly look / top-down yaw).
+		if _mode != "":
+			return # transform mode reads the cursor in _process
+		# RMB drag rotates the camera (fly look / top-down yaw).
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 			if _topdown:
 				_cam_yaw += event.relative.x * 0.01
@@ -365,6 +425,50 @@ func _unhandled_input(event: InputEvent) -> void:
 				_fly_yaw -= event.relative.x * 0.005
 				_fly_pitch = clampf(_fly_pitch - event.relative.y * 0.005, -1.5, 1.5)
 			_apply_camera()
+		elif _dragging and not _selection.is_empty():
+			_drag_move_to(_cursor_world())
+
+func _handle_key(event: InputEventKey) -> void:
+	if event.ctrl_pressed:
+		match event.keycode:
+			KEY_Z: _undo_do()
+			KEY_Y: _redo_do()
+			KEY_D: _duplicate_selection()
+			KEY_C: _copy_selection()
+			KEY_V: _paste_clipboard()
+		return
+	match event.keycode:
+		KEY_TAB: _toggle_view()
+		KEY_ESCAPE: _cancel_mode()
+		KEY_DELETE, KEY_BACKSPACE: _delete_selection()
+		KEY_G: _begin_mode("move")
+		KEY_R: _begin_mode("rotate")
+		KEY_F: _begin_mode("scale") # S is camera-back; F = scale ("form")
+		KEY_X: _set_axis("x")
+		KEY_Y: _set_axis("y")
+		KEY_Z: _set_axis("z")
+
+func _handle_mouse_button(event: InputEventMouseButton) -> void:
+	if not event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT and _dragging:
+			_dragging = false
+		return
+	match event.button_index:
+		MOUSE_BUTTON_WHEEL_UP:
+			if _topdown: _cam_height = maxf(8.0, _cam_height - 3.0); _apply_camera()
+		MOUSE_BUTTON_WHEEL_DOWN:
+			if _topdown: _cam_height = minf(120.0, _cam_height + 3.0); _apply_camera()
+		MOUSE_BUTTON_LEFT:
+			if _mode != "":
+				_confirm_mode() # click confirms an active grab/rotate/scale
+				return
+			if _armed_category != "":
+				_place_at(_cursor_world())
+			else:
+				_click_select(event.shift_pressed)
+		MOUSE_BUTTON_RIGHT:
+			if _mode != "":
+				_cancel_mode()
 
 func _toggle_view() -> void:
 	_topdown = not _topdown
@@ -399,10 +503,97 @@ func _build_ui() -> void:
 	hb.add_child(_load_opt)
 	_add_btn(hb, "Load", _on_load)
 	_add_btn(hb, "View (Tab)", _toggle_view)
+	_snap_btn = _add_btn(hb, "Snap: ON", _toggle_snap)
 	var sep := VSeparator.new(); hb.add_child(sep)
 	_status = Label.new()
 	_status.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
 	hb.add_child(_status)
+	_build_palette(layer)
+	_build_selection_panel(layer)
+
+## Left-hand palette: category sections of placeable items. Clicking an item arms
+## it for placement (click in the world to drop). "Select" disarms.
+func _build_palette(layer: CanvasLayer) -> void:
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	panel.offset_top = 44.0
+	panel.offset_bottom = -10.0
+	panel.custom_minimum_size = Vector2(180, 0)
+	layer.add_child(panel)
+	var scroll := ScrollContainer.new()
+	panel.add_child(scroll)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 2)
+	scroll.add_child(vb)
+	var sel := Button.new()
+	sel.text = "▣ SELECT / MOVE"
+	sel.pressed.connect(func(): _arm("", ""))
+	vb.add_child(sel)
+	_palette_section(vb, "ENEMIES", "enemy", _enemy_items())
+	_palette_section(vb, "BOSSES", "boss", ["terminator", "colossus", "overseer", "titan", "archon"])
+	_palette_section(vb, "OBSTACLES", "prop", _prop_items())
+	_palette_section(vb, "STRUCTURES", "", [])
+	for s in ["wall", "building", "ramp", "platform"]:
+		_palette_item(vb, s.to_upper(), s, s)
+	_palette_section(vb, "WEAPONS", "weapon", _weapon_items())
+	_palette_section(vb, "POWERUPS", "pickup", ["health", "ammo", "overclock", "overdrive"])
+	_palette_section(vb, "LIGHTS / FX", "", [])
+	for fx in [["light", "POINT LIGHT"], ["fire", "FIRE"], ["hologram", "HOLOGRAM"],
+			["hero", "HERO MONOLITH"], ["nexus", "NEXUS TOWER"]]:
+		_palette_item(vb, fx[1], fx[0], fx[0])
+
+func _palette_section(vb: VBoxContainer, title: String, category: String, items: Array) -> void:
+	var h := Label.new()
+	h.text = "— %s —" % title
+	h.add_theme_color_override("font_color", Color(0.55, 0.7, 0.95))
+	h.add_theme_font_size_override("font_size", 12)
+	vb.add_child(h)
+	for it in items:
+		_palette_item(vb, str(it).get_file().get_basename().to_upper(), category, str(it))
+
+func _palette_item(vb: VBoxContainer, label: String, category: String, item: String) -> void:
+	var b := Button.new()
+	b.text = label
+	b.custom_minimum_size = Vector2(168, 26)
+	b.add_theme_font_size_override("font_size", 12)
+	b.pressed.connect(func(): _arm(category, item))
+	vb.add_child(b)
+
+func _enemy_items() -> Array:
+	var out: Array = []
+	for k in LevelBuilder.ENEMY_SCENES.keys():
+		if not _is_boss(k):
+			out.append(k)
+	out.sort()
+	return out
+
+func _prop_items() -> Array:
+	var out: Array = LevelBuilder.PROP_SCENES.keys()
+	out.sort()
+	return out
+
+func _weapon_items() -> Array:
+	return GameState.ALL_WEAPONS + ["res://scenes/weapons/sniper.tscn", "res://scenes/weapons/magnum.tscn"]
+
+## Bottom-right: what's selected + quick actions/help.
+func _build_selection_panel(layer: CanvasLayer) -> void:
+	var p := PanelContainer.new()
+	p.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	p.anchor_left = 1.0; p.anchor_top = 1.0
+	p.offset_left = -360.0; p.offset_top = -96.0
+	p.offset_right = -8.0; p.offset_bottom = -8.0
+	layer.add_child(p)
+	_sel_label = Label.new()
+	_sel_label.add_theme_font_size_override("font_size", 13)
+	_sel_label.text = _help_text()
+	p.add_child(_sel_label)
+
+func _help_text() -> String:
+	return "LMB place/select · drag move · G/R/S grab/rot/scale (X/Y/Z axis) · Del · Ctrl+D dup · Ctrl+C/V · Ctrl+Z/Y · Tab view"
+
+func _toggle_snap() -> void:
+	_snap = not _snap
+	if _snap_btn: _snap_btn.text = "Snap: %s" % ("ON" if _snap else "OFF")
 
 func _add_btn(parent: Node, text: String, cb: Callable) -> Button:
 	var b := Button.new()
@@ -464,7 +655,391 @@ func _on_load() -> void:
 		set_def(CustomLevels.load_def(sel["path"]))
 	if _name_edit: _name_edit.text = current_name
 
+# ---------- placement / selection / transform (Phase 2) ----------
+
+func _arm(category: String, item: String) -> void:
+	_armed_category = category
+	_armed_item = item
+	if category != "":
+		_set_selection([])
+	_set_status("Armed: %s %s" % [category, item] if category != "" else "Select / Move mode")
+
+func _ray() -> Array:
+	var mp := get_viewport().get_mouse_position()
+	return [_camera.project_ray_origin(mp), _camera.project_ray_normal(mp)]
+
+## Cursor projected onto the ground plane (y=0).
+func _cursor_world() -> Vector3:
+	var r := _ray()
+	var o: Vector3 = r[0]
+	var d: Vector3 = r[1]
+	if absf(d.y) < 1e-5:
+		return _cam_target
+	var t := -o.y / d.y
+	if t < 0.0:
+		return _cam_target
+	return o + d * t
+
+func _snap_pos(v: Vector3) -> Vector3:
+	if not _snap:
+		return v
+	return Vector3(round(v.x / _grid) * _grid, v.y, round(v.z / _grid) * _grid)
+
+func _snap_deg(a: float) -> float:
+	if not _snap:
+		return a
+	return round(a / _angle_snap) * _angle_snap
+
+func _pick_marker():
+	var r := _ray()
+	var o: Vector3 = r[0]
+	var d: Vector3 = r[1]
+	var best = null
+	var best_dist := 1e9
+	for m in _markers:
+		var p: Vector3 = m["node"].global_position + Vector3(0, 0.8, 0)
+		var t: float = (p - o).dot(d)
+		if t < 0.0:
+			continue
+		var dist: float = (o + d * t).distance_to(p)
+		if dist < maxf(1.5, t * 0.06) and dist < best_dist:
+			best_dist = dist
+			best = m
+	return best
+
+func _click_select(additive: bool) -> void:
+	var m = _pick_marker()
+	if m == null:
+		if not additive:
+			_set_selection([])
+		return
+	if additive:
+		if m in _selection:
+			_selection.erase(m)
+		else:
+			_selection.append(m)
+		_set_selection(_selection)
+	else:
+		_set_selection([m])
+		# Arm a drag-move; only commits to undo if the cursor actually moves.
+		_dragging = true
+		_pending_undo = def.duplicate(true)
+		_drag_ref = _cursor_world()
+		_drag_orig = _selection_positions()
+		_drag_moved = false
+
+var _pending_undo: Variant = null
+var _drag_ref := Vector3.ZERO
+var _drag_orig: Array = []
+var _drag_moved := false
+
+func _selection_positions() -> Array:
+	var out: Array = []
+	for m in _selection:
+		out.append((m["holder"] as Dictionary).get(m["key"], Vector3.ZERO))
+	return out
+
+func _drag_move_to(world: Vector3) -> void:
+	if _selection.is_empty():
+		return
+	if not _drag_moved:
+		if _pending_undo != null:
+			_undo.append(_pending_undo)
+			_redo.clear()
+		_drag_moved = true
+	var delta := world - _drag_ref
+	for i in _selection.size():
+		var m: Dictionary = _selection[i]
+		var np: Vector3 = _snap_pos((_drag_orig[i] as Vector3) + delta)
+		np.y = (_drag_orig[i] as Vector3).y
+		(m["holder"] as Dictionary)[m["key"]] = np
+		m["node"].global_position = np
+	_update_gizmo()
+
+# --- placement ---
+
+func _place_at(world: Vector3) -> void:
+	if _armed_category == "":
+		return
+	_push_undo()
+	var entry := _default_entry(_armed_category, _armed_item, _snap_pos(world))
+	if _armed_category in CAT_ARRAY:
+		(def[CAT_ARRAY[_armed_category]] as Array).append(entry)
+	elif _armed_category in ["hero", "nexus"]:
+		def[_armed_category] = entry
+	rebuild_preview()
+	_select_holders([entry])
+	_set_status("Placed %s" % _armed_item)
+
+func _default_entry(cat: String, item: String, pos: Vector3) -> Dictionary:
+	match cat:
+		"enemy", "boss": return {"type": item, "pos": pos}
+		"prop": return {"type": item, "pos": pos, "yaw": 0.0}
+		"pickup": return {"kind": item, "pos": pos}
+		"weapon": return {"scene": item, "pos": pos, "color": Color(0.5, 0.8, 1.0)}
+		"light": return {"pos": pos + Vector3(0, 5, 0), "color": Color(1, 0.9, 0.7), "energy": 2.0, "range": 14.0}
+		"wall": return {"pos": pos + Vector3(0, 1.5, 0), "size": Vector3(4, 3, 1)}
+		"building": return {"pos": pos + Vector3(0, 2.5, 0), "size": Vector3(8, 5, 8)}
+		"ramp": return {"pos": pos + Vector3(0, 1, 0), "size": Vector3(4, 0.5, 8), "pitch": 22.0, "yaw": 0.0}
+		"platform": return {"pos": pos + Vector3(0, 1.5, 0), "size": Vector3(6, 3, 6)}
+		"hologram": return {"pos": pos, "text": "OCCUPIED ZONE", "color": Color(0.4, 0.8, 1.0)}
+		"fire": return {"pos": pos, "scale": 1.0}
+		"hero": return {"pos": pos, "color": Color(0.6, 0.7, 1.0), "height": 5.0}
+		"nexus": return {"pos": pos, "height": 16.0, "color": Color(1.0, 0.16, 0.12)}
+	return {"pos": pos}
+
+# --- modal transform (G/R/F + X/Y/Z) ---
+
+var _mode_mouse_start := Vector2.ZERO
+
+func _begin_mode(mode: String) -> void:
+	if _selection.is_empty() or _armed_category != "":
+		return
+	_push_undo()
+	_mode = mode
+	_mode_axis = ""
+	_mode_start = _cursor_world()
+	_mode_mouse_start = get_viewport().get_mouse_position()
+	_mode_orig.clear()
+	for m in _selection:
+		var h: Dictionary = m["holder"]
+		_mode_orig.append({"pos": h.get(m["key"], Vector3.ZERO), "yaw": h.get("yaw", 0.0), "size": h.get("size", Vector3.ONE)})
+	_set_status("%s  (X/Y/Z axis · click confirm · Esc cancel)" % mode.to_upper())
+
+func _set_axis(a: String) -> void:
+	if _mode == "":
+		return
+	_mode_axis = "" if _mode_axis == a else a
+
+func _update_transform_mode() -> void:
+	match _mode:
+		"move":
+			var delta := _cursor_world() - _mode_start
+			if _mode_axis == "x": delta = Vector3(delta.x, 0, 0)
+			elif _mode_axis == "z": delta = Vector3(0, 0, delta.z)
+			elif _mode_axis == "y": delta = Vector3.ZERO # Y via inspector
+			for i in _selection.size():
+				var m: Dictionary = _selection[i]
+				var np: Vector3 = _snap_pos((_mode_orig[i]["pos"] as Vector3) + delta)
+				np.y = (_mode_orig[i]["pos"] as Vector3).y
+				(m["holder"] as Dictionary)[m["key"]] = np
+				m["node"].global_position = np
+		"rotate":
+			var dx := get_viewport().get_mouse_position().x - _mode_mouse_start.x
+			var yaw := _snap_deg((_mode_orig[0]["yaw"] as float) + dx * 0.5)
+			for i in _selection.size():
+				var m: Dictionary = _selection[i]
+				(m["holder"] as Dictionary)["yaw"] = yaw
+				m["node"].rotation.y = deg_to_rad(yaw)
+		"scale":
+			var dy := _mode_mouse_start.y - get_viewport().get_mouse_position().y
+			var f: float = clampf(1.0 + dy * 0.01, 0.2, 6.0)
+			for i in _selection.size():
+				var m: Dictionary = _selection[i]
+				if not (m["holder"] as Dictionary).has("size"):
+					continue
+				var sz: Vector3 = (_mode_orig[i]["size"] as Vector3) * f
+				if _snap:
+					sz = Vector3(round(sz.x * 2) / 2.0, round(sz.y * 2) / 2.0, round(sz.z * 2) / 2.0)
+				(m["holder"] as Dictionary)["size"] = sz
+			rebuild_preview() # size change rebuilds the box marker
+			_select_holders(_selection_holders())
+	_update_gizmo()
+
+func _confirm_mode() -> void:
+	_mode = ""
+	_mode_axis = ""
+	_set_status("OK")
+
+func _cancel_mode() -> void:
+	if _mode == "":
+		return
+	# Restore originals and discard the undo snapshot we pushed at begin.
+	for i in _selection.size():
+		var m: Dictionary = _selection[i]
+		var h: Dictionary = m["holder"]
+		h[m["key"]] = _mode_orig[i]["pos"]
+		h["yaw"] = _mode_orig[i]["yaw"]
+		if h.has("size"):
+			h["size"] = _mode_orig[i]["size"]
+	if not _undo.is_empty():
+		_undo.pop_back()
+	_mode = ""
+	_mode_axis = ""
+	rebuild_preview()
+	_select_holders(_selection_holders())
+	_set_status("Cancelled")
+
+# --- delete / duplicate / clipboard ---
+
+func _delete_selection() -> void:
+	if _selection.is_empty():
+		return
+	_push_undo()
+	for m in _selection:
+		_remove_holder(m["holder"], m["category"])
+	_set_selection([])
+	rebuild_preview()
+	_set_status("Deleted")
+
+func _remove_holder(holder: Dictionary, category: String) -> void:
+	if category in ["spawn", "exit"]:
+		return # required singletons — can't delete
+	for k in ["hero", "nexus", "weapon"]:
+		if def.get(k) is Dictionary and is_same(def[k], holder):
+			def.erase(k)
+			return
+	for arr in CAT_ARRAY.values():
+		var a: Array = def.get(arr, [])
+		for i in a.size():
+			if is_same(a[i], holder):
+				a.remove_at(i)
+				return
+
+func _duplicate_selection() -> void:
+	if _selection.is_empty():
+		return
+	_push_undo()
+	var made: Array = []
+	for m in _selection:
+		var cat: String = m["category"]
+		if cat in ["spawn", "exit", "hero", "nexus"]:
+			continue
+		var arr_name: String = CAT_ARRAY.get(cat, "")
+		if arr_name == "":
+			continue
+		var copy: Dictionary = (m["holder"] as Dictionary).duplicate(true)
+		copy["pos"] = (copy.get("pos", Vector3.ZERO) as Vector3) + Vector3(2, 0, 2)
+		(def[arr_name] as Array).append(copy)
+		made.append(copy)
+	rebuild_preview()
+	_select_holders(made)
+	_set_status("Duplicated %d" % made.size())
+
+func _copy_selection() -> void:
+	_clipboard.clear()
+	for m in _selection:
+		if m["category"] in ["spawn", "exit"]:
+			continue
+		_clipboard.append({"category": m["category"], "entry": (m["holder"] as Dictionary).duplicate(true)})
+	_set_status("Copied %d" % _clipboard.size())
+
+func _paste_clipboard() -> void:
+	if _clipboard.is_empty():
+		return
+	_push_undo()
+	var made: Array = []
+	for c in _clipboard:
+		var cat: String = c["category"]
+		var copy: Dictionary = (c["entry"] as Dictionary).duplicate(true)
+		copy["pos"] = (copy.get("pos", Vector3.ZERO) as Vector3) + Vector3(2, 0, 2)
+		if cat in CAT_ARRAY:
+			(def[CAT_ARRAY[cat]] as Array).append(copy)
+			made.append(copy)
+		elif cat in ["hero", "nexus"]:
+			def[cat] = copy
+			made.append(copy)
+	rebuild_preview()
+	_select_holders(made)
+	_set_status("Pasted %d" % made.size())
+
+# --- undo / redo ---
+
+func _push_undo() -> void:
+	_undo.append(def.duplicate(true))
+	if _undo.size() > 60:
+		_undo.pop_front()
+	_redo.clear()
+
+func _undo_do() -> void:
+	if _undo.is_empty():
+		return
+	_redo.append(def.duplicate(true))
+	def = _undo.pop_back()
+	_set_selection([])
+	rebuild_preview()
+	_set_status("Undo")
+
+func _redo_do() -> void:
+	if _redo.is_empty():
+		return
+	_undo.append(def.duplicate(true))
+	def = _redo.pop_back()
+	_set_selection([])
+	rebuild_preview()
+	_set_status("Redo")
+
+# --- selection state / gizmo ---
+
+func _selection_holders() -> Array:
+	var out: Array = []
+	for m in _selection:
+		out.append(m["holder"])
+	return out
+
+func _set_selection(list: Array) -> void:
+	_selection = list.duplicate()
+	# Highlight: brighten selected markers' labels.
+	for m in _markers:
+		var on: bool = m in _selection
+		for c in m["node"].get_children():
+			if c is Label3D:
+				(c as Label3D).outline_size = 16 if on else 8
+				(c as Label3D).modulate = Color(1, 1, 0.4) if on else CAT_COLOR.get(m["category"], Color.WHITE)
+	_update_gizmo()
+	if _selection.is_empty():
+		_set_status("—")
+	elif _selection.size() == 1:
+		_set_status("Selected: %s" % _marker_label(_selection[0]["category"], _selection[0]["holder"]))
+	else:
+		_set_status("Selected: %d objects" % _selection.size())
+
+## Re-select markers by their underlying entry dicts (after a rebuild relinks them).
+func _select_holders(holders: Array) -> void:
+	var found: Array = []
+	for m in _markers:
+		for h in holders:
+			if is_same(m["holder"], h):
+				found.append(m)
+				break
+	_set_selection(found)
+
+func _update_gizmo() -> void:
+	if _gizmo == null:
+		return
+	if _selection.is_empty():
+		_gizmo.visible = false
+		return
+	var c := Vector3.ZERO
+	for m in _selection:
+		c += m["node"].global_position
+	c /= _selection.size()
+	_gizmo.global_position = c + Vector3(0, 0.8, 0)
+	_gizmo.visible = true
+
+func _make_gizmo() -> Node3D:
+	var root := Node3D.new()
+	for spec in [["x", Color(1, 0.3, 0.3)], ["y", Color(0.3, 1, 0.3)], ["z", Color(0.45, 0.55, 1)]]:
+		var mi := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.05; cyl.bottom_radius = 0.05; cyl.height = 2.2
+		mi.mesh = cyl
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.albedo_color = spec[1]; m.emission_enabled = true; m.emission = spec[1]
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		match spec[0]:
+			"x": mi.rotation_degrees = Vector3(0, 0, -90); mi.position = Vector3(1.1, 0, 0)
+			"y": mi.position = Vector3(0, 1.1, 0)
+			"z": mi.rotation_degrees = Vector3(90, 0, 0); mi.position = Vector3(0, 0, 1.1)
+		root.add_child(mi)
+	return root
+
 # ---------- accessors for tests / later phases ----------
 
 func marker_count() -> int:
 	return _markers.size()
+
+func selection_count() -> int:
+	return _selection.size()

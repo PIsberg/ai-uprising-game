@@ -1,3 +1,4 @@
+class_name LevelBuilder
 extends Node3D
 ## Data-driven level constructor. Reads a definition from LevelDefs keyed by
 ## `level_id` and builds the whole playable space at runtime: themed sky/fog/
