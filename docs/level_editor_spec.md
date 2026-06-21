@@ -1,6 +1,9 @@
 # Level Editor — Plan & Spec (v2, decisions locked)
 
-Status: proposal / not yet implemented. Target branch: `feat/level-editor`.
+Status: **IMPLEMENTED** (Phases 0–4) on branch `feat/level-editor`. Run it from
+source with `godot --path . res://scenes/editor/level_editor.tscn`, or boot the
+game with `--editor`. Headless self-test: `res://scenes/editor/level_editor.tscn
+-- --editor-selftest` (PHASE1–4 PASS). See the implementation notes at the bottom.
 
 This revision reflects the design interview. **Decisions are locked** (Section 3);
 the rest of the doc is the build plan that follows from them.

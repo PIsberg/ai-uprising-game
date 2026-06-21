@@ -90,8 +90,24 @@ func _ready() -> void:
 	_refresh_load_list()
 	set_process(true)
 	set_process_unhandled_input(true)
-	if "--editor-selftest" in OS.get_cmdline_args() + OS.get_cmdline_user_args():
+	var _args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	if "--editor-selftest" in _args:
 		_selftest.call_deferred()
+	elif "--editor-shot" in _args:
+		_shot.call_deferred()
+
+## Windowed screenshot of the editor with a level loaded (dev verification).
+func _shot() -> void:
+	await get_tree().process_frame
+	var d := LevelDefs.get_def("gpt"); d["world_scale"] = 1.0
+	set_def(d)
+	_cam_height = 46.0
+	_apply_camera()
+	await get_tree().create_timer(0.6).timeout
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir() + "/editor_shot.png")
+	print("SHOT saved")
+	get_tree().quit()
 
 ## Headless smoke test (run: editor scene with --editor-selftest): load a built-in
 ## into the preview, save it, assert markers built + file written.
