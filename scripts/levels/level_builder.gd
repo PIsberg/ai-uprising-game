@@ -140,6 +140,7 @@ func _ready() -> void:
 	_build_platforms(def)
 	_build_props(def)
 	_build_hero(def)
+	_build_nexus(def)
 	_build_gi(def)
 	_build_accents(def)
 	_build_atmosphere(def)
@@ -730,6 +731,25 @@ func _build_buildings(def: Dictionary) -> void:
 			house.rotation.y = 0.0 if pos.z < 0.0 else PI
 		else:
 			house.rotation.y = PI * 0.5 if pos.x < 0.0 else -PI * 0.5
+		# Optional war-torn tint: multiply the (cheerful suburban) house albedo
+		# toward grim concrete so a ruined-city level doesn't read as suburbia.
+		if def.has("building_tint"):
+			_tint_meshes(house, def["building_tint"])
+
+## Multiply every mesh-surface albedo of `root` by `tint` (duplicating materials
+## so the shared source resources are untouched). Used to grime-down buildings.
+func _tint_meshes(root: Node3D, tint: Color) -> void:
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		for si in m.mesh.get_surface_count():
+			var src := m.mesh.surface_get_material(si)
+			if src is BaseMaterial3D:
+				var dup := (src as BaseMaterial3D).duplicate() as BaseMaterial3D
+				dup.albedo_color = dup.albedo_color * tint
+				dup.roughness = minf(1.0, dup.roughness + 0.2)
+				m.set_surface_override_material(si, dup)
 
 ## Merged local AABB of a scene's meshes (models have varied pivots).
 func _merged_aabb(root: Node3D) -> AABB:
@@ -907,6 +927,124 @@ func _build_hero(def: Dictionary) -> void:
 	tw.tween_property(em, "emission_energy_multiplier", 1.6, 2.0) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(em, "emission_energy_multiplier", 3.4, 2.0) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+# ---------- the Sector-45 nexus tower (opt-in via def "nexus") ----------
+
+## The campaign's first landmark and the silhouette from the intro comic: a tall
+## dark spire with glowing vertical core seams, a sensor "head" whose red eyes
+## watch from every side, a halo at its foot and a red key light. Built as a
+## solid collider BEFORE the navmesh bake so robots path around it and it reads
+## as real cover. def["nexus"] = {pos, height?, color?}.
+func _build_nexus(def: Dictionary) -> void:
+	var n: Dictionary = def.get("nexus", {})
+	if n.is_empty():
+		return
+	var pos: Vector3 = n.get("pos", Vector3.ZERO)
+	var col: Color = n.get("color", Color(1.0, 0.16, 0.12))
+	var height: float = n.get("height", 16.0)
+	const OFF := GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var root := Node3D.new()
+	root.position = pos
+	add_child(root)
+
+	# Shared pulsing emissive used by the core seams, eyes and halo.
+	var em := StandardMaterial3D.new()
+	em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	em.albedo_color = col
+	em.emission_enabled = true
+	em.emission = col
+	em.emission_energy_multiplier = 3.0
+
+	# Stepped machined base.
+	var base := MeshInstance3D.new()
+	var bc := CylinderMesh.new()
+	bc.top_radius = 2.6; bc.bottom_radius = 3.4; bc.height = 1.0; bc.radial_segments = 8
+	bc.material = MAT_PROP_B
+	base.mesh = bc; base.position = Vector3(0, 0.5, 0)
+	root.add_child(base)
+
+	# Tapered column.
+	var col_h := height * 0.72
+	var shaft := MeshInstance3D.new()
+	var sc := CylinderMesh.new()
+	sc.top_radius = 1.1; sc.bottom_radius = 1.9; sc.height = col_h; sc.radial_segments = 6
+	sc.material = MAT_TRIM
+	shaft.mesh = sc; shaft.position = Vector3(0, 1.0 + col_h * 0.5, 0)
+	root.add_child(shaft)
+
+	# Glowing vertical core seams running up every face of the column.
+	for ang in range(0, 360, 60):
+		var a := deg_to_rad(ang)
+		var seam := MeshInstance3D.new()
+		var sb := BoxMesh.new()
+		sb.size = Vector3(0.3, col_h * 0.86, 0.14); sb.material = em
+		seam.mesh = sb
+		seam.position = Vector3(sin(a) * 1.45, 1.0 + col_h * 0.5, cos(a) * 1.45)
+		seam.rotation.y = a
+		seam.cast_shadow = OFF
+		root.add_child(seam)
+
+	# Sensor head: a wide dark block near the crown.
+	var head_y := 1.0 + col_h + 1.3
+	var head := MeshInstance3D.new()
+	head.mesh = _beveled_box(Vector3(4.4, 2.8, 3.2))
+	head.mesh.material = MAT_PROP_B
+	head.position = Vector3(0, head_y, 0)
+	root.add_child(head)
+
+	# Red eyes that watch from all four faces (the menace reads from any angle).
+	for yaw in [0, 90, 180, 270]:
+		var a := deg_to_rad(yaw)
+		var fwd := Vector3(sin(a), 0, cos(a))
+		var rgt := Vector3(cos(a), 0, -sin(a))
+		for ex in [-1.0, 1.0]:
+			var eye := MeshInstance3D.new()
+			var es := SphereMesh.new()
+			es.radius = 0.52; es.height = 1.04; es.radial_segments = 10; es.rings = 6
+			es.material = em
+			eye.mesh = es
+			eye.position = Vector3(0, head_y + 0.25, 0) + fwd * 1.75 + rgt * ex
+			eye.cast_shadow = OFF
+			root.add_child(eye)
+
+	# Glowing halo ring at the foot.
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 2.9; tm.outer_radius = 3.4; tm.rings = 24; tm.ring_segments = 10
+	tm.material = em
+	ring.mesh = tm
+	ring.position = Vector3(0, 0.2, 0)
+	ring.cast_shadow = OFF
+	root.add_child(ring)
+
+	# Red key light from the crown — the scene's central glow.
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 4.5
+	light.omni_range = 24.0
+	light.position = Vector3(0, head_y, 0)
+	root.add_child(light)
+
+	# Solid collider (column footprint) so it blocks fire + the navmesh routes around it.
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	body.position = pos + Vector3(0, height * 0.5, 0)
+	body.add_to_group("surf_metal")
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 2.0; shape.height = height
+	cs.shape = shape
+	body.add_child(cs)
+	_nav_region.add_child(body)
+
+	# Slow ominous breathing pulse on the shared emissive.
+	var tw := create_tween().set_loops()
+	tw.tween_property(em, "emission_energy_multiplier", 1.7, 1.8) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(em, "emission_energy_multiplier", 3.6, 1.8) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 # ---------- volumetric light shafts (opt-in via def "light_shafts") ----------

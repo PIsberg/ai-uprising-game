@@ -85,6 +85,7 @@ static func _sv(v: Vector3, s: float) -> Vector3:
 
 static func _defs() -> Dictionary:
 	return {
+		"01": _nexus(),
 		"gpt": _gpt(),
 		"gemini": _gemini(),
 		"claude": _claude(),
@@ -104,6 +105,89 @@ static func _defs() -> Dictionary:
 		"crucible": _crucible(),
 		"frostbreak": _frostbreak(),
 		"neon": _neon(),
+	}
+
+
+## Level 1 — "Nexus Point, Sector 45". Built to match the intro comic: a ruined
+## open city under a grim red overcast, a rooftop vantage to drop in from, the
+## glowing-red nexus tower brooding at the centre, and the machines (spiders,
+## androids, drones, a mech) advancing across the rubble. Tutorial-gentle.
+static func _nexus() -> Dictionary:
+	return {
+		"name": "Nexus Point — Sector 45",
+		"objective": "Clear the Sector 45 perimeter and reach extraction",
+		"sign": "NEXUS POINT · SECTOR 45",
+		"tasks": [{"type": "kill_all"}],
+		"open_sky": true,
+		"floor_size": Vector2(48, 48),
+		"floor_color": Color(0.16, 0.14, 0.13),
+		"building_tint": Color(0.5, 0.52, 0.55),  # grime the suburban houses toward bombed concrete
+		"spawn": Vector3(-17, 4.4, -17),     # perched on a rooftop, like the comic
+		"exit": Vector3(16, 1.5, 18),
+		"nexus": {"pos": Vector3(5, 0, 10), "height": 18.0, "color": Color(1.0, 0.16, 0.12)},
+		# Overcast grey-blue daylight (like the comic) — readable, desaturated, with
+		# the nexus tower + machine eyes left as the only real reds. Ambient/sun are
+		# pushed high to counter the builder's dark-mood baseline cuts.
+		"env": {
+			"sky_top": Color(0.20, 0.22, 0.27),
+			"sky_horizon": Color(0.40, 0.36, 0.36),
+			"ground": Color(0.12, 0.11, 0.11),
+			"fog": Color(0.46, 0.45, 0.48),
+			"fog_density": 0.009,
+			"ambient": Color(0.52, 0.54, 0.6),
+			"ambient_energy": 3.2,
+			"sun_color": Color(0.96, 0.94, 0.92),
+			"sun_rot": Vector3(-32, -52, 0),
+			"sun_energy": 2.2,
+			"glow": 0.8,
+			"saturation": 0.94, "contrast": 1.08, "brightness": 1.02,
+		},
+		# Rooftop vantage + a stair of rubble slabs down into the street.
+		"platforms": [
+			{"pos": Vector3(-17, 1.8, -17), "size": Vector3(10, 3.6, 9)},
+			{"pos": Vector3(-11, 1.1, -11), "size": Vector3(5, 2.2, 5)},
+			{"pos": Vector3(-7, 0.5, -7), "size": Vector3(4.5, 1.0, 4.5)},
+		],
+		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
+		"buildings": [
+			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8)},
+			{"pos": Vector3(-10, 5.5, 18), "size": Vector3(9, 11, 8)},
+			{"pos": Vector3(12, 4.0, 18), "size": Vector3(8, 8, 8)},
+			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8)},
+			{"pos": Vector3(8, 4.5, -19), "size": Vector3(9, 9, 8)},
+			{"pos": Vector3(-20, 5.0, -8), "size": Vector3(8, 10, 8)},
+			{"pos": Vector3(20, 4.0, 12), "size": Vector3(8, 8, 8)},
+		],
+		"lights": [
+			{"pos": Vector3(0, 5, 6), "color": Color(1.0, 0.4, 0.25), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-8, 5, -4), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
+			{"pos": Vector3(11, 5, 12), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15},
+		],
+		# Wrecked street clutter / rubble.
+		"props": [
+			{"type": "car", "pos": Vector3(-4, 0, -2), "yaw": 18},
+			{"type": "car", "pos": Vector3(9, 0, 5), "yaw": -24},
+			{"type": "car", "pos": Vector3(14, 0, 8), "yaw": 60},
+			{"type": "barrel", "pos": Vector3(-6, 0, 3)},
+			{"type": "barrel", "pos": Vector3(7, 0, -4)},
+			{"type": "barrel", "pos": Vector3(4, 0, 12)},
+			{"type": "crate", "pos": Vector3(2, 0, -6)},
+			{"type": "crate", "pos": Vector3(-9, 0, 8)},
+			{"type": "fence", "pos": Vector3(-13, 0, -2), "yaw": 90},
+			{"type": "lamp", "pos": Vector3(12, 0, -10)},
+		],
+		# The machine line advancing from the nexus, like the comic.
+		"enemies": [
+			{"type": "spider", "pos": Vector3(0, 0, -1), "count": 3},
+			{"type": "android", "pos": Vector3(-3, 0, 5)},
+			{"type": "android", "pos": Vector3(6, 0, 3)},
+			{"type": "drone", "pos": Vector3(2, 0, 2)},
+			{"type": "drone", "pos": Vector3(9, 0, 9)},
+			{"type": "spider", "pos": Vector3(5, 0, 10), "count": 3, "trigger": 16},
+			{"type": "android", "pos": Vector3(10, 0, 14), "trigger": 16},
+			{"type": "mech", "pos": Vector3(4, 0, 13), "trigger": 18},
+		],
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8, 0, -4), "color": Color(0.4, 0.7, 1.0)},
 	}
 
 
