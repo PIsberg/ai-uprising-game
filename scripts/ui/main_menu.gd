@@ -225,6 +225,9 @@ func _on_settings_pressed() -> void:
 func _on_controls_pressed() -> void:
 	_show_panel(_controls)
 
+func _on_encyclopedia_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/encyclopedia.tscn")
+
 func _on_controls_back_pressed() -> void:
 	_show_panel(_main)
 

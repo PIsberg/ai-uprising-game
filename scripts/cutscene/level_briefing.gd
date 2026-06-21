@@ -79,7 +79,9 @@ func _build_set() -> void:
 
 	_build_stage(accent)
 	_build_lights(accent, sun_col)
-	_select_and_spawn_hostiles()
+	# Enemy showcase now lives in the Encyclopedia (main menu → Enemy Codex), so the
+	# briefing is a pure mood + objective beat: no hostile parade. With nothing in
+	# `_shown`, _shots() yields just the establishing and objective cards.
 
 func _build_stage(accent: Color) -> void:
 	var floor_mi := MeshInstance3D.new()

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwcodexprobe01"]
+
+[ext_resource type="Script" path="res://tests/codex_probe.gd" id="1_p"]
+
+[node name="CodexProbe" type="Node"]
+script = ExtResource("1_p")

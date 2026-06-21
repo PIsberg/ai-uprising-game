@@ -347,7 +347,8 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	max_level_reached = 0
 	go_to_level(CAMPAIGN[0], false)
 
-const INTRO_CUTSCENE := "res://scenes/cutscene/intro_cutscene.tscn"
+## The opener is now a comic-panel flash instead of the old 3D story cutscene.
+const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
 const LEVEL_BRIEFING := "res://scenes/cutscene/level_briefing.tscn"
 const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
 ## Levels that play a bespoke reveal cutscene instead of the standard briefing.
@@ -388,6 +389,50 @@ func has_seen_enemy(t: String) -> bool:
 func mark_enemy_seen(t: String) -> void:
 	seen_enemy_types[t] = true
 
+# ---------- bestiary discovery (persistent, survives new campaigns) ----------
+## Which enemy types the player has ever encountered in a real level. Unlocks the
+## Encyclopedia entry for that hostile. Stored in its OWN file so it persists
+## across runs and isn't wiped by reset_run() like the per-run seen tracking.
+
+const BESTIARY_PATH := "user://bestiary.cfg"
+var discovered_enemies: Dictionary = {}
+
+func is_enemy_discovered(t: String) -> bool:
+	return discovered_enemies.has(t)
+
+func discovered_enemy_count() -> int:
+	return discovered_enemies.size()
+
+## Record an encounter; persists immediately when something new is learned.
+func discover_enemy(t: String) -> void:
+	if t == "" or discovered_enemies.has(t):
+		return
+	discovered_enemies[t] = true
+	_save_bestiary()
+
+## Mark every hostile a campaign level fields as discovered — called the moment
+## the player actually drops into the playable level (covers the comic-intro
+## level 1 and every briefing-entered level alike).
+func _discover_level_enemies(path: String) -> void:
+	var lid := level_id_from_path(path)
+	var def := LevelDefs.get_def(lid)
+	for e in def.get("enemies", []):
+		var t: String = e.get("type", "")
+		if t != "" and EnemyCodex.has(t):
+			discover_enemy(t)
+
+func _load_bestiary() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(BESTIARY_PATH) != OK:
+		return
+	for t in cf.get_value("bestiary", "discovered", []):
+		discovered_enemies[str(t)] = true
+
+func _save_bestiary() -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("bestiary", "discovered", discovered_enemies.keys())
+	cf.save(BESTIARY_PATH)
+
 ## Load a specific level. `reset` wipes score/kills (used for replays); campaign
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
@@ -402,6 +447,7 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress() # checkpoint at the start of every campaign level
+		_discover_level_enemies(scene_path) # unlock these hostiles' codex entries
 	get_tree().change_scene_to_file(scene_path)
 
 # ---------- save / checkpoint ----------
@@ -651,6 +697,7 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 
 func _ready() -> void:
 	_setup_gamepad_bindings()
+	_load_bestiary()
 
 ## Add Xbox-style controller bindings to the existing input actions at runtime
 ## (keyboard/mouse bindings stay). Right-stick look is handled in player.gd.
