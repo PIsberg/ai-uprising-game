@@ -141,6 +141,8 @@ static func _nexus() -> Dictionary:
 			"sun_energy": 2.2,
 			"glow": 0.8,
 			"saturation": 0.94, "contrast": 1.08, "brightness": 1.02,
+			"weather": "rain",     # storm rolling over the ruined city
+			"lightning": true,
 		},
 		# Rooftop vantage + a stair of rubble slabs down into the street.
 		"platforms": [
@@ -1877,6 +1879,7 @@ static func _suburb_boss() -> Dictionary:
 		"exit": Vector3(36, 1.5, 36),
 		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -23), "color": Color(0.45, 0.85, 1)}, # in front of the corner house — (-31,-31) was inside it
 		"env": {
+			"hdri": "res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr", "sky_energy": 0.9,
 			"physical_sky": true, "turbidity": 10.0,
 			"sky_top": Color(0.12, 0.1, 0.22), "sky_horizon": Color(0.7, 0.3, 0.2),
 			"stars": true, "star_density": 0.04, "star_brightness": 1.0, "milkyway": 0.1, "moon_glow": 0.8,

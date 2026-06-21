@@ -156,6 +156,8 @@ func _ready() -> void:
 	_build_outdoor_detail(def)
 	_build_rubble(def)
 	_build_fires(def)
+	_build_weather(def)
+	_build_lightning(def)
 	_build_beacons(def)
 	_build_holograms(def)
 	_build_skyline(def)
@@ -383,8 +385,10 @@ func _build_environment(def: Dictionary) -> void:
 			probe.max_distance = maxf(fs2.x, fs2.y) * 1.2
 			add_child(probe)
 
-	# Atmospheric ambient bed: wind outdoors, industrial room tone indoors.
-	var amb := "ambience_wind" if def.get("open_sky", false) else "ambience_drone"
+	# Atmospheric ambient bed: rain in wet weather, wind outdoors, room tone indoors.
+	var amb := "ambience_drone"
+	if def.get("open_sky", false):
+		amb = "ambience_rain" if str(e.get("weather", "")) == "rain" else "ambience_wind"
 	AudioBus.play_ambience(amb, -22.0)
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
@@ -1862,6 +1866,105 @@ func _build_rubble(def: Dictionary) -> void:
 			chunk.position = base + Vector3(randf_range(-0.8, 0.8), bm.size.y * 0.3, randf_range(-0.8, 0.8))
 			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
 			add_child(chunk)
+
+## Weather (opt-in via env "weather": "rain" | "dust"). Rain falls in fast thin
+## streaks across the whole arena; dust drifts as a wind-blown haze. Density-gated.
+func _build_weather(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	var w := str(e.get("weather", ""))
+	if w == "":
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	if w == "rain":
+		var p := CPUParticles3D.new()
+		p.amount = int(320 * density)
+		p.lifetime = 1.0
+		p.preprocess = 1.0 # already raining on load
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 0.5, fs.y * 0.6)
+		p.direction = Vector3(0.05, -1, 0.0)
+		p.spread = 1.5
+		p.initial_velocity_min = 24.0
+		p.initial_velocity_max = 30.0
+		p.gravity = Vector3(0, -22.0, 0)
+		var streak := BoxMesh.new()
+		streak.size = Vector3(0.015, 0.55, 0.015) # thin vertical streak
+		var rm := StandardMaterial3D.new()
+		rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		rm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		rm.albedo_color = Color(0.6, 0.7, 0.85, 0.5)
+		streak.material = rm
+		p.mesh = streak
+		p.position = Vector3(0, 15.0, 0)
+		add_child(p)
+	elif w == "dust":
+		var p := CPUParticles3D.new()
+		p.amount = int(180 * density)
+		p.lifetime = 6.0
+		p.preprocess = 4.0
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 4.0, fs.y * 0.6)
+		p.direction = Vector3(1, 0.05, 0.3)
+		p.spread = 25.0
+		p.initial_velocity_min = 3.0
+		p.initial_velocity_max = 7.0
+		p.gravity = Vector3(0.6, -0.2, 0.2)
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.6
+		var puff := SphereMesh.new()
+		puff.radius = 0.25; puff.height = 0.5; puff.radial_segments = 5; puff.rings = 3
+		var dm := StandardMaterial3D.new()
+		dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		dm.albedo_color = Color(e.get("fog", Color(0.5, 0.45, 0.38)).r, e.get("fog", Color(0.5, 0.45, 0.38)).g, e.get("fog", Color(0.5, 0.45, 0.38)).b, 0.12)
+		puff.material = dm
+		p.mesh = puff
+		p.position = Vector3(0, 3.0, 0)
+		add_child(p)
+
+## Storm lightning (opt-in via env "lightning": true, or automatic in "rain"
+## weather): a hidden sky light periodically double-flashes the whole scene, with
+## a thunderclap rolling in a beat later. The "reactive world lighting" cue.
+func _build_lightning(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	if not (bool(e.get("lightning", false)) or str(e.get("weather", "")) in ["rain", "storm"]):
+		return
+	var flash := DirectionalLight3D.new()
+	flash.light_color = Color(0.82, 0.86, 1.0)
+	flash.light_energy = 0.0
+	flash.rotation_degrees = Vector3(-62, 35, 0)
+	flash.shadow_enabled = false
+	add_child(flash)
+	_schedule_lightning(flash)
+
+func _schedule_lightning(flash: DirectionalLight3D) -> void:
+	var t := get_tree().create_timer(randf_range(5.0, 13.0))
+	t.timeout.connect(func() -> void:
+		if not is_instance_valid(flash) or not is_inside_tree():
+			return
+		_lightning_strike(flash)
+		_schedule_lightning(flash))
+
+func _lightning_strike(flash: DirectionalLight3D) -> void:
+	# A quick double-flicker — the characteristic stutter of a real strike.
+	var tw := flash.create_tween()
+	tw.tween_property(flash, "light_energy", randf_range(3.0, 5.0), 0.04)
+	tw.tween_property(flash, "light_energy", 0.5, 0.06)
+	tw.tween_property(flash, "light_energy", randf_range(2.0, 4.0), 0.04)
+	tw.tween_property(flash, "light_energy", 0.0, 0.28)
+	# Thunder rolls in after the flash (sound is slower than light).
+	var d := get_tree().create_timer(randf_range(0.6, 1.8))
+	d.timeout.connect(func() -> void:
+		if has_node("/root/AudioBus"):
+			AudioBus.play_synth_ui("thunder", -3.0, randf_range(0.9, 1.1)))
 
 ## Burning wreck fires (opt-in via def "fires"): each is a flickering flame, a
 ## buoyant smoke column that rises and lingers, a spray of embers, and a

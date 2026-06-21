@@ -184,7 +184,7 @@ func _setup_broadcast_bus() -> void:
 const VOICE_POOL_SIZE := 4
 const VOICE_DIR := "res://assets/audio/voice/"
 ## Category -> clip count. Keys match the wav prefixes from gen_voices.ps1.
-const VOICE_CATEGORIES := {"spot": 8, "atk": 9, "hurt": 6, "die": 7, "taunt": 14}
+const VOICE_CATEGORIES := {"spot": 8, "atk": 9, "hurt": 6, "die": 16, "taunt": 14}
 
 var _voice_pool: Array[AudioStreamPlayer3D] = []
 var _voice_next: int = 0

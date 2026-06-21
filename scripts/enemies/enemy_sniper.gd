@@ -22,6 +22,7 @@ func _ready() -> void:
 	attack_range = 55.0
 	preferred_range = 34.0
 	attack_cooldown = 3.6
+	telegraph_time = 0.0 # the charged beam is its own (longer) tell — no generic wind-up
 	score_value = 220
 	super._ready()
 
