@@ -13,6 +13,7 @@ var _strike_accum: float = 0.0
 
 var _types: Array = []   # discovered codex types, in roster order
 var _index: int = 0
+var _reframe: int = 0    # frames left to re-fit the camera after a model settles
 
 # UI
 var _name_lbl: Label
@@ -69,20 +70,22 @@ func _build_lights() -> void:
 	add_child(key)
 	key.look_at(Vector3(0, 1.0, 0), Vector3.UP)
 	key.light_color = Color(1.0, 0.96, 0.92)
-	key.light_energy = 9.0
+	key.light_energy = 5.0 # toned down — 9.0 blew out emissive units (raptor)
 	key.spot_range = 24.0
 	key.spot_angle = 48.0
 	key.shadow_enabled = true
 	var fill := OmniLight3D.new()
 	fill.position = Vector3(-3.5, 3.0, 3.0)
-	fill.light_color = Color(0.4, 0.55, 0.9)
-	fill.light_energy = 3.5
+	fill.light_color = Color(0.45, 0.55, 0.8)
+	fill.light_energy = 2.0
 	fill.omni_range = 16.0
 	add_child(fill)
+	# Cool, gentle back-rim. (A hot red rim here reflected off the dais as a
+	# distracting "orange ring" on the floor — keep it dim and cool.)
 	var rim := OmniLight3D.new()
 	rim.position = Vector3(0, 2.6, -3.5)
-	rim.light_color = Color(1.0, 0.4, 0.35)
-	rim.light_energy = 5.0
+	rim.light_color = Color(0.5, 0.62, 0.9)
+	rim.light_energy = 1.6
 	rim.omni_range = 12.0
 	add_child(rim)
 
@@ -94,8 +97,9 @@ func _build_stage() -> void:
 	cm.radial_segments = 48
 	disc.mesh = cm
 	var dmat := StandardMaterial3D.new()
-	dmat.albedo_color = Color(0.06, 0.07, 0.09)
-	dmat.metallic = 0.7; dmat.roughness = 0.3
+	dmat.albedo_color = Color(0.07, 0.08, 0.1)
+	# Matte, not mirror — a glossy metallic disc threw a harsh specular ring.
+	dmat.metallic = 0.2; dmat.roughness = 0.85
 	disc.material_override = dmat
 	disc.position = Vector3(0, -0.06, 0)
 	add_child(disc)
@@ -287,6 +291,10 @@ func _spawn_model(entry: Dictionary) -> void:
 		bot.set_physics_process(false) # no AI; RobotModel still idles the clip
 	_bot = bot
 	_frame_model(bot)
+	# RobotModel finishes sizing the chassis over the next frame or two, so the
+	# AABB measured right now can be wrong (units ended up too big/small in frame).
+	# Re-frame for a few frames once it has settled.
+	_reframe = 5
 
 ## Distance the camera so the whole chassis fits, framed a little left of centre
 ## so the right-hand dossier panel doesn't cover it.
@@ -299,8 +307,8 @@ func _frame_model(bot: Node3D) -> void:
 	var cy := (bottom + top) * 0.5
 	var vfov := deg_to_rad(_camera.fov)
 	var hfov := 2.0 * atan(tan(vfov * 0.5) * 1.78)
-	var d_v := (h * 0.5 * 1.5) / tan(vfov * 0.5)
-	var d_h := (w * 0.5 * 1.3) / tan(hfov * 0.5)
+	var d_v := (h * 0.5 * 1.65) / tan(vfov * 0.5)
+	var d_h := (w * 0.5 * 1.5) / tan(hfov * 0.5)
 	var dist := maxf(maxf(d_v, d_h), 3.0)
 	# Aim a touch to the +X side of the model: that pushes the model to screen-left,
 	# clear of the dossier panel pinned on the right.
@@ -322,6 +330,9 @@ func _world_aabb(bot: Node3D) -> AABB:
 	return merged
 
 func _process(delta: float) -> void:
+	if _reframe > 0 and _bot and is_instance_valid(_bot):
+		_reframe -= 1
+		_frame_model(_bot) # re-fit while the chassis settles to its final size
 	if _turntable:
 		_turntable.rotation.y += delta * 0.5 # slow spin
 	# Periodically fire the unit's own attack clip (RobotModel reads `recoil`).

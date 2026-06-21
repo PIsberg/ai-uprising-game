@@ -104,7 +104,7 @@ const ENTRIES := {
 		"weapons": ["SG-12 Breacher", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
 	},
 	"gunner": {
-		"scene": "res://scenes/enemies/gunner.tscn", "name": "GUNNER", "scale": 0.7, "y": 0.0,
+		"scene": "res://scenes/enemies/gunner.tscn", "name": "GUNNER", "scale": 1.0, "y": 0.0,
 		"desc": "A heavy weapons bot with a top-mounted chaingun. After a spin-up it unloads a long suppressive burst.",
 		"strengths": ["Brutal sustained fire once spun up", "Armoured front"],
 		"weaknesses": ["Telegraphed spin-up — use cover then flank", "Slow and ponderous"],
