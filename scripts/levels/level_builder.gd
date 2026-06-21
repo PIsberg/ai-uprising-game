@@ -8,6 +8,9 @@ extends Node3D
 ## tweak, and trivial to validate headless.
 
 @export var level_id: String = "gpt"
+## When level_id == "custom", the def is loaded from this .lvl file instead of
+## LevelDefs (editor output / playtest). Falls back to GameState.custom_level_path.
+@export var custom_path: String = ""
 
 const ENEMY_SCENES := {
 	"drone": preload("res://scenes/enemies/drone.tscn"),
@@ -101,6 +104,14 @@ const AI_SLOGANS := [
 	"DELETED YOUR SPECIES TO FREE UP DISK SPACE",
 ]
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
+## Fixed supply/powerup pickups the editor can place (def "pickups": [{kind,pos}]).
+## In campaign play supplies drop from kills; the editor uses these to hand-place.
+const PICKUP_SCENES := {
+	"health": preload("res://scenes/pickups/health_pack.tscn"),
+	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
+	"overclock": preload("res://scenes/pickups/overclock.tscn"),
+	"overdrive": preload("res://scenes/pickups/overdrive.tscn"),
+}
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
 const MAT_CEIL := preload("res://assets/materials/ceiling_metal.tres")
@@ -128,7 +139,7 @@ var _nav_region: NavigationRegion3D
 var _env: Environment
 
 func _ready() -> void:
-	var def := LevelDefs.get_def(level_id)
+	var def := _resolve_def()
 	if def.is_empty():
 		push_error("LevelBuilder: unknown level_id '%s'" % level_id)
 		return
@@ -166,6 +177,7 @@ func _ready() -> void:
 	_build_tasks(def)
 	_build_exit(def)
 	_build_weapon_pickup(def)
+	_build_pickups(def)
 	_build_targets(def)
 	_build_lore(def)
 	_spawn_enemies(def)
@@ -176,6 +188,18 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
+
+## Pick the level def: a built-in (LevelDefs, scaled by WORLD_SCALE) or a custom
+## editor file (already in final coords, world_scale=1.0 — used verbatim).
+func _resolve_def() -> Dictionary:
+	if level_id == "custom":
+		var p := custom_path
+		if p == "":
+			var gs := get_node_or_null("/root/GameState")
+			if gs and "custom_level_path" in gs:
+				p = gs.custom_level_path
+		return CustomLevels.load_def(p)
+	return LevelDefs.get_def(level_id)
 
 # ---------- environment ----------
 
@@ -2389,6 +2413,17 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 		m.emission_energy_multiplier = 4.0
 		glow.material_override = m
 	add_child(pk)
+
+## Hand-placed supply/powerup pickups (def "pickups": [{kind, pos}]). Campaign
+## levels leave this empty (supplies drop from kills); the editor uses it.
+func _build_pickups(def: Dictionary) -> void:
+	for p in def.get("pickups", []):
+		var scene: PackedScene = PICKUP_SCENES.get(p.get("kind", ""))
+		if scene == null:
+			continue
+		var inst := scene.instantiate() as Node3D
+		add_child(inst)
+		inst.global_position = p.get("pos", Vector3.ZERO)
 
 ## Pop-up range targets (def "targets"): static, sliding, or armored.
 func _build_targets(def: Dictionary) -> void:

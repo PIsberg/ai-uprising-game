@@ -705,9 +705,24 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 
 # ---------- gamepad ----------
 
+## Set before loading level_custom.tscn (by the editor playtest or the --level
+## CLI boot) so LevelBuilder knows which .lvl file to build.
+var custom_level_path: String = ""
+
 func _ready() -> void:
 	_setup_gamepad_bindings()
 	_load_bestiary()
+	_handle_cli_boot()
+
+## `AIUprising.exe --level res://dev_levels/foo.lvl` boots straight into that
+## custom level (the editor's Playtest shells out this way).
+func _handle_cli_boot() -> void:
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	var i := args.find("--level")
+	if i != -1 and i + 1 < args.size():
+		custom_level_path = args[i + 1]
+		set_state(State.PLAYING)
+		get_tree().change_scene_to_file.call_deferred("res://scenes/levels/level_custom.tscn")
 
 ## Add Xbox-style controller bindings to the existing input actions at runtime
 ## (keyboard/mouse bindings stay). Right-stick look is handled in player.gd.
