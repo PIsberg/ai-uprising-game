@@ -135,10 +135,18 @@ func update_post_process_settings() -> void:
 		var enabled := bool(gs.get("advanced_post_process_enabled"))
 		(_post_overlay.material as ShaderMaterial).set_shader_parameter("advanced_post_process_enabled", enabled)
 
+var _hurt_cd: float = 0.0
+
 func _on_hp_damaged(amount: float, _source: Node) -> void:
 	# Every hit lands as a camera kick, scaled with the bite taken.
 	shake(clampf(0.3 + amount * 0.025, 0.3, 0.95))
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
+	# A grunt/impact on getting hit — throttled so rapid fire doesn't stack into
+	# a drone, and pitched down slightly the harder the hit.
+	if _hurt_cd <= 0.0 and hp and hp.current_health > 0.0:
+		_hurt_cd = 0.22
+		var pitch := clampf(1.12 - amount * 0.012, 0.82, 1.12) + randf_range(-0.04, 0.04)
+		AudioBus.play_synth_ui("player_hurt", -4.0, pitch)
 
 # ---------- low-health state: red pulse on screen + heavy breathing ----------
 
@@ -224,11 +232,19 @@ func _handle_dash(delta: float) -> void:
 		if _dash_time <= 0.0:
 			hp.invulnerable = false
 		return
-	if Input.is_action_just_pressed("dash") and _dash_cd <= 0.0 and not _sliding:
-		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-		var dir := transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
-		if dir.length() < 0.1:
-			dir = -transform.basis.z # dash forward when no stick/key input
+	# Track taps every frame so the double-tap window stays accurate; a quick
+	# double-tap of a movement key dodges in that direction (classic dodge feel,
+	# works without a spare button — the bound "dash" key/stick still works too).
+	var tap_dir := _double_tap_dir()
+	if _dash_cd > 0.0 or _sliding:
+		return
+	if Input.is_action_just_pressed("dash") or tap_dir != Vector3.ZERO:
+		var dir := tap_dir
+		if dir == Vector3.ZERO:
+			var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+			dir = transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
+			if dir.length() < 0.1:
+				dir = -transform.basis.z # dash forward when no stick/key input
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
@@ -237,6 +253,25 @@ func _handle_dash(delta: float) -> void:
 		_fov_kick = 9.0
 		shake(0.22)
 		AudioBus.play_synth_at("grenade_throw", global_position, -8.0, 1.5)
+
+## Returns a world-space dodge direction when a movement key is double-tapped
+## within the window, else Vector3.ZERO. Updates the tap tracker every call.
+const _DTAP_WINDOW := 0.28
+var _dtap_act: String = ""
+var _dtap_t: float = 0.0
+
+func _double_tap_dir() -> Vector3:
+	for p in [["move_forward", Vector3.FORWARD], ["move_back", Vector3.BACK],
+			["move_left", Vector3.LEFT], ["move_right", Vector3.RIGHT]]:
+		if Input.is_action_just_pressed(p[0]):
+			var now := float(Time.get_ticks_msec()) / 1000.0
+			if p[0] == _dtap_act and now - _dtap_t <= _DTAP_WINDOW:
+				_dtap_act = ""
+				return (transform.basis * (p[1] as Vector3)).normalized()
+			_dtap_act = p[0]
+			_dtap_t = now
+			break
+	return Vector3.ZERO
 
 ## Sprint + crouch while moving fast launches a low, gliding slide that bleeds
 ## speed; tapping jump cancels it into a slide-hop. Forces a crouched stance.

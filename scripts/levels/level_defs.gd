@@ -161,7 +161,13 @@ static func _nexus() -> Dictionary:
 		"lights": [
 			{"pos": Vector3(0, 5, 6), "color": Color(1.0, 0.4, 0.25), "energy": 2.0, "range": 18},
 			{"pos": Vector3(-8, 5, -4), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
-			{"pos": Vector3(11, 5, 12), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15},
+			{"pos": Vector3(11, 5, 12), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15, "flicker": true},
+		],
+		# Burning wrecks — smoke columns + embers like the comic's smouldering city.
+		"fires": [
+			{"pos": Vector3(-4, 0.3, -2), "scale": 1.1},
+			{"pos": Vector3(9, 0.3, 5), "scale": 1.0},
+			{"pos": Vector3(13, 0.3, -9), "scale": 0.85},
 		],
 		# Wrecked street clutter / rubble.
 		"props": [

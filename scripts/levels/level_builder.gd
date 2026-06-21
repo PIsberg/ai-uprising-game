@@ -155,6 +155,7 @@ func _ready() -> void:
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
 	_build_rubble(def)
+	_build_fires(def)
 	_build_beacons(def)
 	_build_holograms(def)
 	_build_skyline(def)
@@ -357,8 +358,9 @@ func _build_environment(def: Dictionary) -> void:
 		else:
 			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
-		# infrastructure failing, and motion in otherwise static lighting.
-		if li == def.get("lights", []).size() - 1:
+		# infrastructure failing, and motion in otherwise static lighting. Any
+		# light can opt in explicitly with "flicker": true.
+		if li == def.get("lights", []).size() - 1 or l.get("flicker", false):
 			_flicker_light(omni)
 		li += 1
 
@@ -1860,6 +1862,101 @@ func _build_rubble(def: Dictionary) -> void:
 			chunk.position = base + Vector3(randf_range(-0.8, 0.8), bm.size.y * 0.3, randf_range(-0.8, 0.8))
 			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
 			add_child(chunk)
+
+## Burning wreck fires (opt-in via def "fires"): each is a flickering flame, a
+## buoyant smoke column that rises and lingers, a spray of embers, and a
+## flickering warm light — the "warzone" read. def["fires"] = [{pos, scale?}].
+## Density-gated (skipped on LOW) like the other dressing.
+func _build_fires(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	for f in def.get("fires", []):
+		var pos: Vector3 = f["pos"]
+		var scl: float = f.get("scale", 1.0)
+		var root := Node3D.new()
+		add_child(root)
+		root.position = pos
+
+		# Flame: hot orange tongues licking upward.
+		var flame := CPUParticles3D.new()
+		flame.amount = int(30 * density)
+		flame.lifetime = 0.5
+		flame.preprocess = 0.5 # already lit on level load
+		flame.local_coords = false
+		flame.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		flame.emission_sphere_radius = 0.35 * scl
+		flame.direction = Vector3.UP
+		flame.spread = 16.0
+		flame.initial_velocity_min = 1.6 * scl
+		flame.initial_velocity_max = 3.4 * scl
+		flame.gravity = Vector3(0, 2.0, 0)
+		flame.scale_amount_min = 0.5 * scl
+		flame.scale_amount_max = 1.1 * scl
+		var fcurve := Curve.new()
+		fcurve.add_point(Vector2(0.0, 1.0)); fcurve.add_point(Vector2(1.0, 0.0))
+		flame.scale_amount_curve = fcurve
+		var fgrad := Gradient.new()
+		fgrad.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+		fgrad.colors = PackedColorArray([Color(1.0, 0.9, 0.4, 1.0), Color(1.0, 0.45, 0.12, 0.9), Color(0.5, 0.1, 0.05, 0.0)])
+		flame.color_ramp = fgrad
+		var fmesh := SphereMesh.new()
+		fmesh.radius = 0.18; fmesh.height = 0.36; fmesh.radial_segments = 6; fmesh.rings = 3
+		var fmat := StandardMaterial3D.new()
+		fmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		fmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		fmat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		fmat.vertex_color_use_as_albedo = true
+		fmesh.material = fmat
+		flame.mesh = fmesh
+		root.add_child(flame)
+
+		# Smoke column: buoyant grey billows that climb and fade.
+		var smoke := CPUParticles3D.new()
+		smoke.amount = int(18 * density)
+		smoke.lifetime = 2.6
+		smoke.preprocess = 2.4 # column already risen on level load
+		smoke.local_coords = false
+		smoke.direction = Vector3.UP
+		smoke.spread = 18.0
+		smoke.initial_velocity_min = 1.2 * scl
+		smoke.initial_velocity_max = 2.6 * scl
+		smoke.gravity = Vector3(0, 1.4, 0)
+		smoke.scale_amount_min = 0.8 * scl
+		smoke.scale_amount_max = 1.8 * scl
+		var scurve := Curve.new()
+		scurve.add_point(Vector2(0.0, 0.3)); scurve.add_point(Vector2(1.0, 1.0))
+		smoke.scale_amount_curve = scurve
+		var sgrad := Gradient.new()
+		sgrad.offsets = PackedFloat32Array([0.0, 0.2, 1.0])
+		sgrad.colors = PackedColorArray([Color(0.5, 0.32, 0.2, 0.5), Color(0.22, 0.22, 0.23, 0.45), Color(0.18, 0.18, 0.18, 0.0)])
+		smoke.color_ramp = sgrad
+		var smesh := SphereMesh.new()
+		smesh.radius = 0.5; smesh.height = 1.0; smesh.radial_segments = 6; smesh.rings = 4
+		var smat := StandardMaterial3D.new()
+		smat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		smat.vertex_color_use_as_albedo = true
+		smesh.material = smat
+		smoke.mesh = smesh
+		root.add_child(smoke)
+
+		# A flickering warm light cast by the flames.
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.55, 0.22)
+		light.omni_range = 8.0 * scl
+		light.shadow_enabled = false
+		light.position = Vector3(0, 1.0 * scl, 0)
+		root.add_child(light)
+		var base_e := 2.6 * scl
+		var ft := light.create_tween().set_loops()
+		ft.tween_callback(func() -> void:
+			if is_instance_valid(light):
+				light.light_energy = base_e * randf_range(0.6, 1.15))
+		ft.tween_interval(0.08)
 
 ## Floating holographic propaganda signs (HoloBillboard) projecting AI doctrine
 ## into the arena. Explicit placements come from def "holograms" (list of

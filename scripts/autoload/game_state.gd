@@ -724,6 +724,7 @@ func _setup_gamepad_bindings() -> void:
 	_bind_button("grenade", JOY_BUTTON_Y)
 	_bind_button("interact", JOY_BUTTON_X)
 	_bind_button("sprint", JOY_BUTTON_LEFT_STICK)
+	_bind_button("dash", JOY_BUTTON_RIGHT_STICK)
 	_bind_button("weapon_prev", JOY_BUTTON_LEFT_SHOULDER)
 	_bind_button("weapon_next", JOY_BUTTON_RIGHT_SHOULDER)
 	_bind_button("pause", JOY_BUTTON_START)

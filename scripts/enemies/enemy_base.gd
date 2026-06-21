@@ -614,6 +614,8 @@ func _clear_hit_flash() -> void:
 		if is_instance_valid(m):
 			m.material_overlay = null
 
+var _shed_stage: int = 0 ## How many armour panels have torn off (one per health threshold).
+
 func _on_damaged(_amount: float, source: Node) -> void:
 	if source and source is Node3D:
 		_last_known_target_pos = (source as Node3D).global_position
@@ -659,6 +661,21 @@ func _on_damaged(_amount: float, source: Node) -> void:
 	# rising `damage_heat` (0..1) that subclasses fold into their core/eye glow
 	# so the robot visibly overheats as it dies.
 	_update_damage_state()
+
+	# Visible dismemberment: each time it drops past a health threshold an armour
+	# panel tears off toward the impact, so the chassis degrades as you shoot it
+	# (the bigger break-apart happens on death via _spawn_part_debris).
+	if hp.max_health > 0.0:
+		var frac := hp.current_health / hp.max_health
+		var stage := 0
+		for thr in [0.66, 0.33]:
+			if frac <= thr:
+				stage += 1
+		if stage > _shed_stage:
+			_shed_stage = stage
+			var off := global_position - src_pos
+			off.y = 0.0
+			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
 
 
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
@@ -913,6 +930,45 @@ func _spawn_part_debris() -> void:
 		tw.tween_interval(randf_range(1.6, 2.4))
 		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(chunk.queue_free)
+
+## A single armour panel torn off the chassis at a damage threshold: a flat
+## metal plate with a faintly-hot torn edge, flung off toward the impact and
+## tumbling to the floor. The running fight's "losing parts" read; the full
+## break-apart is _spawn_part_debris on death.
+func _shed_panel(toward: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var chunk := RigidBody3D.new()
+	chunk.collision_layer = 0
+	chunk.collision_mask = 1 # bounce off the world, ghost through actors
+	chunk.mass = 0.6
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(randf_range(0.22, 0.34), randf_range(0.04, 0.07), randf_range(0.24, 0.4))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.21, 0.24) * randf_range(0.8, 1.2)
+	mat.metallic = 0.75
+	mat.roughness = 0.4
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.4, 0.15)
+	mat.emission_energy_multiplier = 0.7 # glowing torn edge
+	bm.material = mat
+	mi.mesh = bm
+	chunk.add_child(mi)
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = bm.size
+	cs.shape = shape
+	chunk.add_child(cs)
+	parent.add_child(chunk)
+	chunk.global_position = global_position + Vector3(0, randf_range(0.7, 1.2), 0) + toward * 0.3
+	chunk.linear_velocity = toward * randf_range(3.0, 6.0) + Vector3(0, randf_range(2.5, 4.5), 0)
+	chunk.angular_velocity = Vector3(randf_range(-14, 14), randf_range(-14, 14), randf_range(-14, 14))
+	var tw := chunk.create_tween()
+	tw.tween_interval(randf_range(2.2, 3.2))
+	tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(chunk.queue_free)
 
 ## Kills feed the push: supplies ONLY come from enemies — they sometimes leave
 ## a drop where they fell, anchors (score >= 250) always do — chasing resupply

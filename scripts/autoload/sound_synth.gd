@@ -41,6 +41,7 @@ func _ready() -> void:
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
 	streams["breathing"] = _breathing(4.0)
+	streams["player_hurt"] = _hurt(0.3)
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -266,6 +267,29 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 		lp = lerpf(lp, noise, clampf(brightness, 0.05, 0.95))
 		var s := lp * env * 0.9
 		_write(bytes, i, s)
+	return _to_stream(bytes)
+
+## A short muffled "oof" + body thump for when the player takes a hit: a
+## vocal-ish tone gliding down in pitch over a low-passed impact thump.
+func _hurt(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var frac := t / duration
+		var env := exp(-t * 9.0)
+		# Vocal-ish body: pitch glides down, with a second formant.
+		var hz := lerpf(235.0, 105.0, clampf(frac * 1.4, 0.0, 1.0))
+		ph += TAU * hz / SR
+		var tone := sin(ph) * 0.6 + sin(ph * 2.01) * 0.25
+		tone = clampf(tone * 1.4, -1.0, 1.0) # soft growl
+		# Impact thump: low-passed noise that dies almost instantly.
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.12)
+		var thump := lp * exp(-t * 30.0) * 0.8
+		_write(bytes, i, (tone * env * 0.55 + thump * 0.6) * 0.8)
 	return _to_stream(bytes)
 
 func _drone_hum(duration: float) -> AudioStreamWAV:
