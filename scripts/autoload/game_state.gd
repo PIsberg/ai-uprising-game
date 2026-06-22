@@ -35,9 +35,9 @@ const DIFFICULTY_CONFIG := {
 	# scaling is preserved.
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.6, "cooldown_mult": 1.5, "speed_mult": 0.72,
-		"enemy_count_mult": 0.4, "pickup_mult": 1.5, "aim_spread_deg": 11.0,
-		"reaction_mult": 2.0, # slow to wake up and open fire — gives you a beat
+		"health_mult": 0.5, "cooldown_mult": 1.9, "speed_mult": 0.62,
+		"enemy_count_mult": 0.3, "pickup_mult": 1.8, "aim_spread_deg": 16.0,
+		"reaction_mult": 3.0, # very slow to open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
@@ -345,9 +345,10 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	intro_played = false
 	level_index = 0
 	max_level_reached = 0
-	go_to_level(CAMPAIGN[0], false)
+	go_to_level(campaign()[0], false)
 
-const INTRO_CUTSCENE := "res://scenes/cutscene/intro_cutscene.tscn"
+## The opener is now a comic-panel flash instead of the old 3D story cutscene.
+const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
 const LEVEL_BRIEFING := "res://scenes/cutscene/level_briefing.tscn"
 const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
 ## Levels that play a bespoke reveal cutscene instead of the standard briefing.
@@ -358,7 +359,7 @@ const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 ## The cutscene calls load_level() when it finishes/skips to enter the level.
 func go_to_level(path: String, reset: bool = false) -> void:
 	current_level_path = path
-	var found := CAMPAIGN.find(path)
+	var found := campaign().find(path)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -388,11 +389,65 @@ func has_seen_enemy(t: String) -> bool:
 func mark_enemy_seen(t: String) -> void:
 	seen_enemy_types[t] = true
 
+# ---------- bestiary discovery (persistent, survives new campaigns) ----------
+## Which enemy types the player has ever encountered in a real level. Unlocks the
+## Encyclopedia entry for that hostile. Stored in its OWN file so it persists
+## across runs and isn't wiped by reset_run() like the per-run seen tracking.
+
+const BESTIARY_PATH := "user://bestiary.cfg"
+var discovered_enemies: Dictionary = {}
+
+func is_enemy_discovered(t: String) -> bool:
+	return discovered_enemies.has(t)
+
+func discovered_enemy_count() -> int:
+	return discovered_enemies.size()
+
+## Record an encounter; persists immediately when something new is learned.
+func discover_enemy(t: String) -> void:
+	if t == "" or discovered_enemies.has(t):
+		return
+	discovered_enemies[t] = true
+	_save_bestiary()
+
+## Unlock the WHOLE bestiary at once (the warp cheat shows off every enemy).
+func discover_all_enemies() -> void:
+	var changed := false
+	for t in EnemyCodex.ORDER:
+		if not discovered_enemies.has(t):
+			discovered_enemies[t] = true
+			changed = true
+	if changed:
+		_save_bestiary()
+
+## Mark every hostile a campaign level fields as discovered — called the moment
+## the player actually drops into the playable level (covers the comic-intro
+## level 1 and every briefing-entered level alike).
+func _discover_level_enemies(path: String) -> void:
+	var lid := level_id_from_path(path)
+	var def := LevelDefs.get_def(lid)
+	for e in def.get("enemies", []):
+		var t: String = e.get("type", "")
+		if t != "" and EnemyCodex.has(t):
+			discover_enemy(t)
+
+func _load_bestiary() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(BESTIARY_PATH) != OK:
+		return
+	for t in cf.get_value("bestiary", "discovered", []):
+		discovered_enemies[str(t)] = true
+
+func _save_bestiary() -> void:
+	var cf := ConfigFile.new()
+	cf.set_value("bestiary", "discovered", discovered_enemies.keys())
+	cf.save(BESTIARY_PATH)
+
 ## Load a specific level. `reset` wipes score/kills (used for replays); campaign
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
 	current_level_path = scene_path
-	var found := CAMPAIGN.find(scene_path)
+	var found := campaign().find(scene_path)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -402,6 +457,7 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress() # checkpoint at the start of every campaign level
+		_discover_level_enemies(scene_path) # unlock these hostiles' codex entries
 	get_tree().change_scene_to_file(scene_path)
 
 # ---------- save / checkpoint ----------
@@ -458,16 +514,16 @@ func continue_campaign() -> void:
 		start_campaign()
 		return
 	intro_played = true # don't replay the opening broadcast on a resumed run
-	level_index = clampi(level_index, 0, CAMPAIGN.size() - 1)
-	load_level(CAMPAIGN[level_index], false)
+	level_index = clampi(level_index, 0, campaign().size() - 1)
+	load_level(campaign()[level_index], false)
 
 func has_next_level() -> bool:
-	return level_index + 1 < CAMPAIGN.size()
+	return level_index + 1 < campaign().size()
 
 ## Called by the level-complete "Continue" button.
 func advance_level() -> void:
 	if has_next_level():
-		go_to_level(CAMPAIGN[level_index + 1], false)
+		go_to_level(campaign()[level_index + 1], false)
 	else:
 		# Campaign finished — clear the checkpoint and return to the main menu.
 		clear_save()
@@ -649,8 +705,61 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 
 # ---------- gamepad ----------
 
+## Set before loading level_custom.tscn (by the editor playtest or the --level
+## CLI boot) so LevelBuilder knows which .lvl file to build.
+var custom_level_path: String = ""
+## True when the current custom level was launched from the editor's Playtest, so
+## the pause menu / F2 offer "Return to Editor" instead of "Quit to Menu".
+var from_editor: bool = false
+
+const EDITOR_SCENE := "res://scenes/editor/level_editor.tscn"
+
+## Leave a playtest and go back to the level editor (state intact in the editor).
+func return_to_editor() -> void:
+	from_editor = false
+	set_state(State.MENU)
+	get_tree().change_scene_to_file(EDITOR_SCENE)
+
+## Campaign order override authored by the level editor (res://dev_levels/
+## campaign.json). When present it replaces the built-in CAMPAIGN. Read via
+## campaign().
+var _campaign_override: Array[String] = []
+
+## The active campaign level list (editor override if any, else the built-in).
+func campaign() -> Array:
+	return _campaign_override if not _campaign_override.is_empty() else CAMPAIGN
+
+func _load_campaign_override() -> void:
+	var p := "res://dev_levels/campaign.json"
+	if not FileAccess.file_exists(p):
+		return
+	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(p))
+	if v is Array:
+		_campaign_override.clear()
+		for e in v:
+			_campaign_override.append(str(e))
+
 func _ready() -> void:
 	_setup_gamepad_bindings()
+	_load_bestiary()
+	_load_campaign_override()
+	_handle_cli_boot()
+
+## `AIUprising.exe --level res://dev_levels/foo.lvl` boots straight into that
+## custom level (the editor's Playtest shells out this way).
+func _handle_cli_boot() -> void:
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	# "--editor" (or a dedicated editor build, custom feature "editor_build") boots
+	# straight into the level editor — the dev "separate program" entry.
+	if "--editor" in args or OS.has_feature("editor_build"):
+		set_state(State.MENU)
+		get_tree().change_scene_to_file.call_deferred(EDITOR_SCENE)
+		return
+	var i := args.find("--level")
+	if i != -1 and i + 1 < args.size():
+		custom_level_path = args[i + 1]
+		set_state(State.PLAYING)
+		get_tree().change_scene_to_file.call_deferred("res://scenes/levels/level_custom.tscn")
 
 ## Add Xbox-style controller bindings to the existing input actions at runtime
 ## (keyboard/mouse bindings stay). Right-stick look is handled in player.gd.
@@ -667,6 +776,7 @@ func _setup_gamepad_bindings() -> void:
 	_bind_button("grenade", JOY_BUTTON_Y)
 	_bind_button("interact", JOY_BUTTON_X)
 	_bind_button("sprint", JOY_BUTTON_LEFT_STICK)
+	_bind_button("dash", JOY_BUTTON_RIGHT_STICK)
 	_bind_button("weapon_prev", JOY_BUTTON_LEFT_SHOULDER)
 	_bind_button("weapon_next", JOY_BUTTON_RIGHT_SHOULDER)
 	_bind_button("pause", JOY_BUTTON_START)

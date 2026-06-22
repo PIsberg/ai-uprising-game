@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/props/simple_prop.gd" id="1_sp"]
+
+[node name="Prop" type="Node3D"]
+script = ExtResource("1_sp")
+kind = "log"

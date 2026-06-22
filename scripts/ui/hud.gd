@@ -171,7 +171,25 @@ func _ready() -> void:
 	_build_streak_label()
 	_build_overlord_label()
 	_build_pause_audio()
+	_build_editor_return()
 	_render_objective()
+
+## During an editor playtest, add a "Return to Editor" button to the pause menu
+## (just under Resume) and show the F2 hint. Normal play is unaffected.
+func _build_editor_return() -> void:
+	if not GameState.from_editor:
+		return
+	var vbox := pause_menu.get_node_or_null("VBox")
+	if vbox == null:
+		return
+	var b := Button.new()
+	b.text = "◂ Return to Editor (F2)"
+	b.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	b.pressed.connect(func(): GameState.return_to_editor())
+	vbox.add_child(b)
+	var resume := vbox.get_node_or_null("Resume")
+	if resume:
+		vbox.move_child(b, resume.get_index() + 1)
 
 ## Adds SFX + Music sliders to the pause menu (the master slider already exists),
 ## built at runtime so no scene edit is needed. Keeps Quit at the bottom.
@@ -551,6 +569,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if k and k.pressed and not k.echo and k.keycode == KEY_SPACE:
 			get_viewport().set_input_as_handled()
 			_on_restart_pressed()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 \
+			and GameState.from_editor:
+		GameState.return_to_editor() # quick exit from a playtest
 		return
 	if event.is_action_pressed("pause"):
 		if GameState.current_state == GameState.State.PLAYING:

@@ -28,6 +28,9 @@ script = ExtResource("1_proj")
 lifetime = 5.0
 gravity_scale = 0.0
 trail_color = Color(1, 0.55, 0.2, 1)
+smoke_trail = true
+exhaust_flame = true
+big_detonation = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)

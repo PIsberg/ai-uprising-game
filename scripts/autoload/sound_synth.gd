@@ -41,6 +41,10 @@ func _ready() -> void:
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
 	streams["breathing"] = _breathing(4.0)
+	streams["player_hurt"] = _hurt(0.3)
+	streams["charge"] = _charge_up(0.32)
+	streams["ambience_rain"] = _rain(4.0)
+	streams["thunder"] = _thunder(1.8)
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -266,6 +270,72 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 		lp = lerpf(lp, noise, clampf(brightness, 0.05, 0.95))
 		var s := lp * env * 0.9
 		_write(bytes, i, s)
+	return _to_stream(bytes)
+
+## A short muffled "oof" + body thump for when the player takes a hit: a
+## vocal-ish tone gliding down in pitch over a low-passed impact thump.
+func _hurt(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var frac := t / duration
+		var env := exp(-t * 9.0)
+		# Vocal-ish body: pitch glides down, with a second formant.
+		var hz := lerpf(235.0, 105.0, clampf(frac * 1.4, 0.0, 1.0))
+		ph += TAU * hz / SR
+		var tone := sin(ph) * 0.6 + sin(ph * 2.01) * 0.25
+		tone = clampf(tone * 1.4, -1.0, 1.0) # soft growl
+		# Impact thump: low-passed noise that dies almost instantly.
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.12)
+		var thump := lp * exp(-t * 30.0) * 0.8
+		_write(bytes, i, (tone * env * 0.55 + thump * 0.6) * 0.8)
+	return _to_stream(bytes)
+
+## A steady rain hiss with patter on top — looped weather bed.
+func _rain(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	for i in n:
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.5) # soft hiss
+		_write(bytes, i, (lp * 0.5 + (randf() * 2.0 - 1.0) * 0.12) * 0.5)
+	return _to_stream(bytes, true) # looped
+
+## A thunderclap: a sharp crack rolling into a low rumble that swells and fades.
+func _thunder(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var frac := t / duration
+		var crack := exp(-t * 16.0)
+		var roll := sin(PI * frac) * (0.6 + 0.4 * sin(t * 7.0))
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.06)  # deep rumble
+		lp2 = lerpf(lp2, noise, 0.3) # crack body
+		_write(bytes, i, clampf(lp * roll * 0.9 + lp2 * crack * 0.5, -1.0, 1.0) * 0.7)
+	return _to_stream(bytes)
+
+## A rising whine that swells in and out — an enemy charging an attack (the
+## audio half of the attack telegraph).
+func _charge_up(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var frac := t / duration
+		var env := sin(PI * frac) # swell up then taper as the shot releases
+		var hz := lerpf(300.0, 1500.0, frac * frac)
+		ph += TAU * hz / SR
+		_write(bytes, i, (sin(ph) * 0.6 + sin(ph * 1.5) * 0.2) * env * 0.5)
 	return _to_stream(bytes)
 
 func _drone_hum(duration: float) -> AudioStreamWAV:

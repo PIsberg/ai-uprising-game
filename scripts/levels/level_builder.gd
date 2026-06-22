@@ -1,3 +1,4 @@
+class_name LevelBuilder
 extends Node3D
 ## Data-driven level constructor. Reads a definition from LevelDefs keyed by
 ## `level_id` and builds the whole playable space at runtime: themed sky/fog/
@@ -8,6 +9,9 @@ extends Node3D
 ## tweak, and trivial to validate headless.
 
 @export var level_id: String = "gpt"
+## When level_id == "custom", the def is loaded from this .lvl file instead of
+## LevelDefs (editor output / playtest). Falls back to GameState.custom_level_path.
+@export var custom_path: String = ""
 
 const ENEMY_SCENES := {
 	"drone": preload("res://scenes/enemies/drone.tscn"),
@@ -52,6 +56,32 @@ const PROP_SCENES := {
 	"dish": preload("res://scenes/props/satellite_dish.tscn"),
 	"tree": preload("res://scenes/props/tree.tscn"),
 	"tree_small": preload("res://scenes/props/tree_small.tscn"),
+	# Procedural nature / water / obstacle props (SimpleProp) for the editor.
+	"pine": preload("res://scenes/props/pine.tscn"),
+	"dead_tree": preload("res://scenes/props/dead_tree.tscn"),
+	"bush": preload("res://scenes/props/bush.tscn"),
+	"grass": preload("res://scenes/props/grass.tscn"),
+	"flowers": preload("res://scenes/props/flowers.tscn"),
+	"reeds": preload("res://scenes/props/reeds.tscn"),
+	"fern": preload("res://scenes/props/fern.tscn"),
+	"mushroom": preload("res://scenes/props/mushroom.tscn"),
+	"log": preload("res://scenes/props/log.tscn"),
+	"stump": preload("res://scenes/props/stump.tscn"),
+	"rock": preload("res://scenes/props/rock.tscn"),
+	"boulder": preload("res://scenes/props/boulder.tscn"),
+	"rubble": preload("res://scenes/props/rubble.tscn"),
+	"river": preload("res://scenes/props/river.tscn"),
+	"pond": preload("res://scenes/props/pond.tscn"),
+	"barrier": preload("res://scenes/props/barrier.tscn"),
+	"sandbags": preload("res://scenes/props/sandbags.tscn"),
+	"planter": preload("res://scenes/props/planter.tscn"),
+	"hydrant": preload("res://scenes/props/hydrant.tscn"),
+	"dumpster": preload("res://scenes/props/dumpster.tscn"),
+	"cone": preload("res://scenes/props/cone.tscn"),
+	"bench": preload("res://scenes/props/bench.tscn"),
+	"pillar": preload("res://scenes/props/pillar.tscn"),
+	"statue": preload("res://scenes/props/statue.tscn"),
+	"crate_stack": preload("res://scenes/props/crate_stack.tscn"),
 }
 ## Shared AI-doctrine graffiti, sprayed on any wall a level doesn't fill with
 ## its own slogans — machine-uprising flavor built from real AI terminology.
@@ -101,6 +131,14 @@ const AI_SLOGANS := [
 	"DELETED YOUR SPECIES TO FREE UP DISK SPACE",
 ]
 const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
+## Fixed supply/powerup pickups the editor can place (def "pickups": [{kind,pos}]).
+## In campaign play supplies drop from kills; the editor uses these to hand-place.
+const PICKUP_SCENES := {
+	"health": preload("res://scenes/pickups/health_pack.tscn"),
+	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
+	"overclock": preload("res://scenes/pickups/overclock.tscn"),
+	"overdrive": preload("res://scenes/pickups/overdrive.tscn"),
+}
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
 const MAT_CEIL := preload("res://assets/materials/ceiling_metal.tres")
@@ -128,7 +166,7 @@ var _nav_region: NavigationRegion3D
 var _env: Environment
 
 func _ready() -> void:
-	var def := LevelDefs.get_def(level_id)
+	var def := _resolve_def()
 	if def.is_empty():
 		push_error("LevelBuilder: unknown level_id '%s'" % level_id)
 		return
@@ -140,6 +178,7 @@ func _ready() -> void:
 	_build_platforms(def)
 	_build_props(def)
 	_build_hero(def)
+	_build_nexus(def)
 	_build_gi(def)
 	_build_accents(def)
 	_build_atmosphere(def)
@@ -154,6 +193,9 @@ func _ready() -> void:
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
 	_build_rubble(def)
+	_build_fires(def)
+	_build_weather(def)
+	_build_lightning(def)
 	_build_beacons(def)
 	_build_holograms(def)
 	_build_skyline(def)
@@ -162,6 +204,7 @@ func _ready() -> void:
 	_build_tasks(def)
 	_build_exit(def)
 	_build_weapon_pickup(def)
+	_build_pickups(def)
 	_build_targets(def)
 	_build_lore(def)
 	_spawn_enemies(def)
@@ -172,6 +215,27 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
+
+## Pick the level def: a built-in (LevelDefs, scaled by WORLD_SCALE) or a custom
+## editor file (already in final coords, world_scale=1.0 — used verbatim).
+func _resolve_def() -> Dictionary:
+	if level_id == "custom":
+		var p := custom_path
+		if p == "":
+			var gs := get_node_or_null("/root/GameState")
+			if gs and "custom_level_path" in gs:
+				p = gs.custom_level_path
+		# No path supplied (e.g. running level_custom.tscn directly): fall back to
+		# the last playtested level so the scene is always runnable.
+		if p == "":
+			p = CustomLevels.DIR + "_playtest" + CustomLevels.EXT
+		var d := CustomLevels.load_def(p)
+		if d.is_empty():
+			push_warning("LevelBuilder: no custom level at '%s' — loading default '01'" % p)
+			d = LevelDefs.get_def("01")
+			d["world_scale"] = 1.0
+		return d
+	return LevelDefs.get_def(level_id)
 
 # ---------- environment ----------
 
@@ -356,8 +420,9 @@ func _build_environment(def: Dictionary) -> void:
 		else:
 			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
-		# infrastructure failing, and motion in otherwise static lighting.
-		if li == def.get("lights", []).size() - 1:
+		# infrastructure failing, and motion in otherwise static lighting. Any
+		# light can opt in explicitly with "flicker": true.
+		if li == def.get("lights", []).size() - 1 or l.get("flicker", false):
 			_flicker_light(omni)
 		li += 1
 
@@ -380,8 +445,10 @@ func _build_environment(def: Dictionary) -> void:
 			probe.max_distance = maxf(fs2.x, fs2.y) * 1.2
 			add_child(probe)
 
-	# Atmospheric ambient bed: wind outdoors, industrial room tone indoors.
-	var amb := "ambience_wind" if def.get("open_sky", false) else "ambience_drone"
+	# Atmospheric ambient bed: rain in wet weather, wind outdoors, room tone indoors.
+	var amb := "ambience_drone"
+	if def.get("open_sky", false):
+		amb = "ambience_rain" if str(e.get("weather", "")) == "rain" else "ambience_wind"
 	AudioBus.play_ambience(amb, -22.0)
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
@@ -730,6 +797,25 @@ func _build_buildings(def: Dictionary) -> void:
 			house.rotation.y = 0.0 if pos.z < 0.0 else PI
 		else:
 			house.rotation.y = PI * 0.5 if pos.x < 0.0 else -PI * 0.5
+		# Optional war-torn tint: multiply the (cheerful suburban) house albedo
+		# toward grim concrete so a ruined-city level doesn't read as suburbia.
+		if def.has("building_tint"):
+			_tint_meshes(house, def["building_tint"])
+
+## Multiply every mesh-surface albedo of `root` by `tint` (duplicating materials
+## so the shared source resources are untouched). Used to grime-down buildings.
+func _tint_meshes(root: Node3D, tint: Color) -> void:
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		for si in m.mesh.get_surface_count():
+			var src := m.mesh.surface_get_material(si)
+			if src is BaseMaterial3D:
+				var dup := (src as BaseMaterial3D).duplicate() as BaseMaterial3D
+				dup.albedo_color = dup.albedo_color * tint
+				dup.roughness = minf(1.0, dup.roughness + 0.2)
+				m.set_surface_override_material(si, dup)
 
 ## Merged local AABB of a scene's meshes (models have varied pivots).
 func _merged_aabb(root: Node3D) -> AABB:
@@ -907,6 +993,124 @@ func _build_hero(def: Dictionary) -> void:
 	tw.tween_property(em, "emission_energy_multiplier", 1.6, 2.0) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(em, "emission_energy_multiplier", 3.4, 2.0) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+# ---------- the Sector-45 nexus tower (opt-in via def "nexus") ----------
+
+## The campaign's first landmark and the silhouette from the intro comic: a tall
+## dark spire with glowing vertical core seams, a sensor "head" whose red eyes
+## watch from every side, a halo at its foot and a red key light. Built as a
+## solid collider BEFORE the navmesh bake so robots path around it and it reads
+## as real cover. def["nexus"] = {pos, height?, color?}.
+func _build_nexus(def: Dictionary) -> void:
+	var n: Dictionary = def.get("nexus", {})
+	if n.is_empty():
+		return
+	var pos: Vector3 = n.get("pos", Vector3.ZERO)
+	var col: Color = n.get("color", Color(1.0, 0.16, 0.12))
+	var height: float = n.get("height", 16.0)
+	const OFF := GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var root := Node3D.new()
+	root.position = pos
+	add_child(root)
+
+	# Shared pulsing emissive used by the core seams, eyes and halo.
+	var em := StandardMaterial3D.new()
+	em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	em.albedo_color = col
+	em.emission_enabled = true
+	em.emission = col
+	em.emission_energy_multiplier = 3.0
+
+	# Stepped machined base.
+	var base := MeshInstance3D.new()
+	var bc := CylinderMesh.new()
+	bc.top_radius = 2.6; bc.bottom_radius = 3.4; bc.height = 1.0; bc.radial_segments = 8
+	bc.material = MAT_PROP_B
+	base.mesh = bc; base.position = Vector3(0, 0.5, 0)
+	root.add_child(base)
+
+	# Tapered column.
+	var col_h := height * 0.72
+	var shaft := MeshInstance3D.new()
+	var sc := CylinderMesh.new()
+	sc.top_radius = 1.1; sc.bottom_radius = 1.9; sc.height = col_h; sc.radial_segments = 6
+	sc.material = MAT_TRIM
+	shaft.mesh = sc; shaft.position = Vector3(0, 1.0 + col_h * 0.5, 0)
+	root.add_child(shaft)
+
+	# Glowing vertical core seams running up every face of the column.
+	for ang in range(0, 360, 60):
+		var a := deg_to_rad(ang)
+		var seam := MeshInstance3D.new()
+		var sb := BoxMesh.new()
+		sb.size = Vector3(0.3, col_h * 0.86, 0.14); sb.material = em
+		seam.mesh = sb
+		seam.position = Vector3(sin(a) * 1.45, 1.0 + col_h * 0.5, cos(a) * 1.45)
+		seam.rotation.y = a
+		seam.cast_shadow = OFF
+		root.add_child(seam)
+
+	# Sensor head: a wide dark block near the crown.
+	var head_y := 1.0 + col_h + 1.3
+	var head := MeshInstance3D.new()
+	head.mesh = _beveled_box(Vector3(4.4, 2.8, 3.2))
+	head.mesh.material = MAT_PROP_B
+	head.position = Vector3(0, head_y, 0)
+	root.add_child(head)
+
+	# Red eyes that watch from all four faces (the menace reads from any angle).
+	for yaw in [0, 90, 180, 270]:
+		var a := deg_to_rad(yaw)
+		var fwd := Vector3(sin(a), 0, cos(a))
+		var rgt := Vector3(cos(a), 0, -sin(a))
+		for ex in [-1.0, 1.0]:
+			var eye := MeshInstance3D.new()
+			var es := SphereMesh.new()
+			es.radius = 0.52; es.height = 1.04; es.radial_segments = 10; es.rings = 6
+			es.material = em
+			eye.mesh = es
+			eye.position = Vector3(0, head_y + 0.25, 0) + fwd * 1.75 + rgt * ex
+			eye.cast_shadow = OFF
+			root.add_child(eye)
+
+	# Glowing halo ring at the foot.
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 2.9; tm.outer_radius = 3.4; tm.rings = 24; tm.ring_segments = 10
+	tm.material = em
+	ring.mesh = tm
+	ring.position = Vector3(0, 0.2, 0)
+	ring.cast_shadow = OFF
+	root.add_child(ring)
+
+	# Red key light from the crown — the scene's central glow.
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 4.5
+	light.omni_range = 24.0
+	light.position = Vector3(0, head_y, 0)
+	root.add_child(light)
+
+	# Solid collider (column footprint) so it blocks fire + the navmesh routes around it.
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	body.position = pos + Vector3(0, height * 0.5, 0)
+	body.add_to_group("surf_metal")
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 2.0; shape.height = height
+	cs.shape = shape
+	body.add_child(cs)
+	_nav_region.add_child(body)
+
+	# Slow ominous breathing pulse on the shared emissive.
+	var tw := create_tween().set_loops()
+	tw.tween_property(em, "emission_energy_multiplier", 1.7, 1.8) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(em, "emission_energy_multiplier", 3.6, 1.8) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 # ---------- volumetric light shafts (opt-in via def "light_shafts") ----------
@@ -1723,6 +1927,200 @@ func _build_rubble(def: Dictionary) -> void:
 			chunk.rotation = Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3))
 			add_child(chunk)
 
+## Weather (opt-in via env "weather": "rain" | "dust"). Rain falls in fast thin
+## streaks across the whole arena; dust drifts as a wind-blown haze. Density-gated.
+func _build_weather(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	var w := str(e.get("weather", ""))
+	if w == "":
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	if w == "rain":
+		var p := CPUParticles3D.new()
+		p.amount = int(320 * density)
+		p.lifetime = 1.0
+		p.preprocess = 1.0 # already raining on load
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 0.5, fs.y * 0.6)
+		p.direction = Vector3(0.05, -1, 0.0)
+		p.spread = 1.5
+		p.initial_velocity_min = 24.0
+		p.initial_velocity_max = 30.0
+		p.gravity = Vector3(0, -22.0, 0)
+		var streak := BoxMesh.new()
+		streak.size = Vector3(0.015, 0.55, 0.015) # thin vertical streak
+		var rm := StandardMaterial3D.new()
+		rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		rm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		rm.albedo_color = Color(0.6, 0.7, 0.85, 0.5)
+		streak.material = rm
+		p.mesh = streak
+		p.position = Vector3(0, 15.0, 0)
+		add_child(p)
+	elif w == "dust":
+		var p := CPUParticles3D.new()
+		p.amount = int(180 * density)
+		p.lifetime = 6.0
+		p.preprocess = 4.0
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 4.0, fs.y * 0.6)
+		p.direction = Vector3(1, 0.05, 0.3)
+		p.spread = 25.0
+		p.initial_velocity_min = 3.0
+		p.initial_velocity_max = 7.0
+		p.gravity = Vector3(0.6, -0.2, 0.2)
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.6
+		var puff := SphereMesh.new()
+		puff.radius = 0.25; puff.height = 0.5; puff.radial_segments = 5; puff.rings = 3
+		var dm := StandardMaterial3D.new()
+		dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		dm.albedo_color = Color(e.get("fog", Color(0.5, 0.45, 0.38)).r, e.get("fog", Color(0.5, 0.45, 0.38)).g, e.get("fog", Color(0.5, 0.45, 0.38)).b, 0.12)
+		puff.material = dm
+		p.mesh = puff
+		p.position = Vector3(0, 3.0, 0)
+		add_child(p)
+
+## Storm lightning (opt-in via env "lightning": true, or automatic in "rain"
+## weather): a hidden sky light periodically double-flashes the whole scene, with
+## a thunderclap rolling in a beat later. The "reactive world lighting" cue.
+func _build_lightning(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	if not (bool(e.get("lightning", false)) or str(e.get("weather", "")) in ["rain", "storm"]):
+		return
+	var flash := DirectionalLight3D.new()
+	flash.light_color = Color(0.82, 0.86, 1.0)
+	flash.light_energy = 0.0
+	flash.rotation_degrees = Vector3(-62, 35, 0)
+	flash.shadow_enabled = false
+	add_child(flash)
+	_schedule_lightning(flash)
+
+func _schedule_lightning(flash: DirectionalLight3D) -> void:
+	var t := get_tree().create_timer(randf_range(5.0, 13.0))
+	t.timeout.connect(func() -> void:
+		if not is_instance_valid(flash) or not is_inside_tree():
+			return
+		_lightning_strike(flash)
+		_schedule_lightning(flash))
+
+func _lightning_strike(flash: DirectionalLight3D) -> void:
+	# A quick double-flicker — the characteristic stutter of a real strike.
+	var tw := flash.create_tween()
+	tw.tween_property(flash, "light_energy", randf_range(3.0, 5.0), 0.04)
+	tw.tween_property(flash, "light_energy", 0.5, 0.06)
+	tw.tween_property(flash, "light_energy", randf_range(2.0, 4.0), 0.04)
+	tw.tween_property(flash, "light_energy", 0.0, 0.28)
+	# Thunder rolls in after the flash (sound is slower than light).
+	var d := get_tree().create_timer(randf_range(0.6, 1.8))
+	d.timeout.connect(func() -> void:
+		if has_node("/root/AudioBus"):
+			AudioBus.play_synth_ui("thunder", -3.0, randf_range(0.9, 1.1)))
+
+## Burning wreck fires (opt-in via def "fires"): each is a flickering flame, a
+## buoyant smoke column that rises and lingers, a spray of embers, and a
+## flickering warm light — the "warzone" read. def["fires"] = [{pos, scale?}].
+## Density-gated (skipped on LOW) like the other dressing.
+func _build_fires(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	for f in def.get("fires", []):
+		var pos: Vector3 = f["pos"]
+		var scl: float = f.get("scale", 1.0)
+		var root := Node3D.new()
+		add_child(root)
+		root.position = pos
+
+		# Flame: hot orange tongues licking upward.
+		var flame := CPUParticles3D.new()
+		flame.amount = int(30 * density)
+		flame.lifetime = 0.5
+		flame.preprocess = 0.5 # already lit on level load
+		flame.local_coords = false
+		flame.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+		flame.emission_sphere_radius = 0.35 * scl
+		flame.direction = Vector3.UP
+		flame.spread = 16.0
+		flame.initial_velocity_min = 1.6 * scl
+		flame.initial_velocity_max = 3.4 * scl
+		flame.gravity = Vector3(0, 2.0, 0)
+		flame.scale_amount_min = 0.5 * scl
+		flame.scale_amount_max = 1.1 * scl
+		var fcurve := Curve.new()
+		fcurve.add_point(Vector2(0.0, 1.0)); fcurve.add_point(Vector2(1.0, 0.0))
+		flame.scale_amount_curve = fcurve
+		var fgrad := Gradient.new()
+		fgrad.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
+		fgrad.colors = PackedColorArray([Color(1.0, 0.9, 0.4, 1.0), Color(1.0, 0.45, 0.12, 0.9), Color(0.5, 0.1, 0.05, 0.0)])
+		flame.color_ramp = fgrad
+		var fmesh := SphereMesh.new()
+		fmesh.radius = 0.18; fmesh.height = 0.36; fmesh.radial_segments = 6; fmesh.rings = 3
+		var fmat := StandardMaterial3D.new()
+		fmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		fmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		fmat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		fmat.vertex_color_use_as_albedo = true
+		fmesh.material = fmat
+		flame.mesh = fmesh
+		root.add_child(flame)
+
+		# Smoke column: buoyant grey billows that climb and fade.
+		var smoke := CPUParticles3D.new()
+		smoke.amount = int(18 * density)
+		smoke.lifetime = 2.6
+		smoke.preprocess = 2.4 # column already risen on level load
+		smoke.local_coords = false
+		smoke.direction = Vector3.UP
+		smoke.spread = 18.0
+		smoke.initial_velocity_min = 1.2 * scl
+		smoke.initial_velocity_max = 2.6 * scl
+		smoke.gravity = Vector3(0, 1.4, 0)
+		smoke.scale_amount_min = 0.8 * scl
+		smoke.scale_amount_max = 1.8 * scl
+		var scurve := Curve.new()
+		scurve.add_point(Vector2(0.0, 0.3)); scurve.add_point(Vector2(1.0, 1.0))
+		smoke.scale_amount_curve = scurve
+		var sgrad := Gradient.new()
+		sgrad.offsets = PackedFloat32Array([0.0, 0.2, 1.0])
+		sgrad.colors = PackedColorArray([Color(0.5, 0.32, 0.2, 0.5), Color(0.22, 0.22, 0.23, 0.45), Color(0.18, 0.18, 0.18, 0.0)])
+		smoke.color_ramp = sgrad
+		var smesh := SphereMesh.new()
+		smesh.radius = 0.5; smesh.height = 1.0; smesh.radial_segments = 6; smesh.rings = 4
+		var smat := StandardMaterial3D.new()
+		smat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		smat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		smat.vertex_color_use_as_albedo = true
+		smesh.material = smat
+		smoke.mesh = smesh
+		root.add_child(smoke)
+
+		# A flickering warm light cast by the flames.
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.55, 0.22)
+		light.omni_range = 8.0 * scl
+		light.shadow_enabled = false
+		light.position = Vector3(0, 1.0 * scl, 0)
+		root.add_child(light)
+		var base_e := 2.6 * scl
+		var ft := light.create_tween().set_loops()
+		ft.tween_callback(func() -> void:
+			if is_instance_valid(light):
+				light.light_energy = base_e * randf_range(0.6, 1.15))
+		ft.tween_interval(0.08)
+
 ## Floating holographic propaganda signs (HoloBillboard) projecting AI doctrine
 ## into the arena. Explicit placements come from def "holograms" (list of
 ## {pos, text?, color?, size?, height?}); otherwise two are auto-flanked into any
@@ -2051,6 +2449,17 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 		m.emission_energy_multiplier = 4.0
 		glow.material_override = m
 	add_child(pk)
+
+## Hand-placed supply/powerup pickups (def "pickups": [{kind, pos}]). Campaign
+## levels leave this empty (supplies drop from kills); the editor uses it.
+func _build_pickups(def: Dictionary) -> void:
+	for p in def.get("pickups", []):
+		var scene: PackedScene = PICKUP_SCENES.get(p.get("kind", ""))
+		if scene == null:
+			continue
+		var inst := scene.instantiate() as Node3D
+		add_child(inst)
+		inst.global_position = p.get("pos", Vector3.ZERO)
 
 ## Pop-up range targets (def "targets"): static, sliding, or armored.
 func _build_targets(def: Dictionary) -> void:

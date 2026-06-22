@@ -184,7 +184,7 @@ func _setup_broadcast_bus() -> void:
 const VOICE_POOL_SIZE := 4
 const VOICE_DIR := "res://assets/audio/voice/"
 ## Category -> clip count. Keys match the wav prefixes from gen_voices.ps1.
-const VOICE_CATEGORIES := {"spot": 8, "atk": 9, "hurt": 6, "die": 7, "taunt": 14}
+const VOICE_CATEGORIES := {"spot": 8, "atk": 9, "hurt": 6, "die": 16, "taunt": 14}
 
 var _voice_pool: Array[AudioStreamPlayer3D] = []
 var _voice_next: int = 0
@@ -277,6 +277,7 @@ func play_lore(id: String) -> void:
 	_lore_player.play()
 
 var _current_music_id: String = ""
+var _music_enabled := true   # editor disables the looping theme; re-enabled on exit
 
 # Adaptive intensity: the score swells (louder + a touch faster) while the
 # player is actively in combat, and settles back when things go quiet.
@@ -297,16 +298,30 @@ func _process(delta: float) -> void:
 		_music.pitch_scale = lerpf(1.0, 1.06, _combat)
 
 func _start_music() -> void:
+	if not _music_enabled:
+		return
 	play_music("music_techno")
 	# If the synth wasn't ready yet (stream unresolved), play_music is a no-op and
 	# _current_music_id stays empty — retry next frame so launch is never silent.
 	if _current_music_id == "":
 		_start_music.call_deferred()
 
+## Turn the looping music on/off (the level editor mutes it while editing, then
+## restores it on exit/playtest). Disabling stops the player and clears the
+## current track so re-enabling restarts the theme cleanly.
+func set_music_enabled(on: bool) -> void:
+	_music_enabled = on
+	if on:
+		_start_music()
+	else:
+		if _music:
+			_music.stop()
+		_current_music_id = ""
+
 ## Switch the looping music to a themed track (e.g. per level). No-op if that
 ## track is already playing, so re-entering a level doesn't restart the loop.
 func play_music(id: String) -> void:
-	if _music == null or id == _current_music_id:
+	if _music == null or not _music_enabled or id == _current_music_id:
 		return
 	var stream := synth(id)
 	if stream == null:

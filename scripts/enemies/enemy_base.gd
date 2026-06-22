@@ -18,6 +18,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var attack_cooldown: float = 1.4
 @export var reaction_time: float = 0.45 ## Delay between first spotting the player and the first attack. Difficulty scales this (reaction_mult) so easy robots are slow on the trigger, hard ones snap to.
 @export var attack_lunge_speed: float = 0.0 ## >0: a melee striker that LEAPS at the target on attack instead of standing and tapping it.
+@export var telegraph_time: float = 0.35 ## Wind-up before each attack: the unit charges (eye flare + charge whine) for this long so the player can read the shot and dodge it. 0 = no tell (units that telegraph their own way, e.g. the sniper's charged beam).
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
 
@@ -55,6 +56,8 @@ var state: State = State.IDLE
 var target: Node3D
 var recoil: float = 0.0 ## 0..1, spikes to 1 on firing; subclasses read it for weapon kick.
 var _attack_timer: float = 0.0
+var _telegraphing: bool = false ## True during an attack wind-up (see telegraph_time).
+var _tele_timer: float = 0.0
 var _lunge_time: float = 0.0 ## While >0, a melee leap is in flight; movement logic lets the surge ride.
 var _state_timer: float = 0.0
 var _last_known_target_pos: Vector3
@@ -202,6 +205,10 @@ func _can_see(t: Node3D) -> bool:
 func set_state(new_state: State) -> void:
 	if state == new_state:
 		return
+	# Leaving the attack state (staggered, lost sight, died) cancels any wind-up
+	# in progress so the next attack re-telegraphs cleanly.
+	if state == State.ATTACK and new_state != State.ATTACK:
+		_telegraphing = false
 	state = new_state
 	_state_timer = 0.0
 	# First contact: announce it with an alert blip + an eye-flare so engagements
@@ -389,7 +396,24 @@ func _state_attack(delta: float) -> void:
 		_combat_strafe(delta) # circle-strafe at range instead of standing still
 	else:
 		_decelerate()
+	# Wind-up telegraph: charge for telegraph_time (eye flare + whine) so the shot
+	# is readable and dodgeable, THEN fire. Units with telegraph_time 0 fire
+	# instantly (or telegraph their own way, like the sniper's charged beam).
+	if _telegraphing:
+		_tele_timer -= delta
+		_decelerate() # plant and charge
+		if _tele_timer <= 0.0:
+			_telegraphing = false
+			_perform_attack()
+			_attack_timer = attack_cooldown
+			_speak("taunt" if randf() < 0.35 else "atk", 0.08)
+		return
 	if _attack_timer <= 0.0:
+		if telegraph_time > 0.0:
+			_telegraphing = true
+			_tele_timer = telegraph_time
+			_begin_telegraph(telegraph_time)
+			return
 		_perform_attack()
 		_attack_timer = attack_cooldown
 		# Occasional combat bark mid-fight (cooldown-gated globally).
@@ -614,6 +638,8 @@ func _clear_hit_flash() -> void:
 		if is_instance_valid(m):
 			m.material_overlay = null
 
+var _shed_stage: int = 0 ## How many armour panels have torn off (one per health threshold).
+
 func _on_damaged(_amount: float, source: Node) -> void:
 	if source and source is Node3D:
 		_last_known_target_pos = (source as Node3D).global_position
@@ -660,6 +686,60 @@ func _on_damaged(_amount: float, source: Node) -> void:
 	# so the robot visibly overheats as it dies.
 	_update_damage_state()
 
+	# Visible dismemberment: each time it drops past a health threshold an armour
+	# panel tears off toward the impact, so the chassis degrades as you shoot it
+	# (the bigger break-apart happens on death via _spawn_part_debris).
+	if hp.max_health > 0.0:
+		var frac := hp.current_health / hp.max_health
+		var stage := 0
+		for thr in [0.66, 0.33]:
+			if frac <= thr:
+				stage += 1
+		if stage > _shed_stage:
+			_shed_stage = stage
+			var off := global_position - src_pos
+			off.y = 0.0
+			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
+
+
+## The attack wind-up made visible + audible: a charging energy orb that swells
+## at the muzzle/eye over `dur` then pops as the shot releases, plus a rising
+## whine. This is the player's cue to dodge (pairs with the dash).
+func _begin_telegraph(dur: float) -> void:
+	var src: Node3D = muzzle if muzzle != null else (eye if eye != null else self)
+	if has_node("/root/AudioBus"):
+		var ab: Node = get_node("/root/AudioBus")
+		if ab.has_method("play_synth_at"):
+			ab.play_synth_at("charge", src.global_position, -7.0, randf_range(0.95, 1.08))
+	var col := Color(1.0, 0.32, 0.18)
+	var orb := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.1; sm.height = 0.2; sm.radial_segments = 8; sm.rings = 5
+	orb.mesh = sm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 4.0
+	orb.material_override = mat
+	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	src.add_child(orb)
+	orb.scale = Vector3.ONE * 0.3
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 0.0
+	light.omni_range = 3.5
+	orb.add_child(light)
+	var tw := orb.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(orb, "scale", Vector3.ONE * 1.5, dur).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_property(light, "light_energy", 4.5, dur)
+	tw.tween_property(mat, "emission_energy_multiplier", 9.0, dur)
+	tw.set_parallel(false)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.12)
+	tw.tween_callback(orb.queue_free)
 
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
 ## in-progress actions (a charging shot, a slam wind-up, …).
@@ -913,6 +993,45 @@ func _spawn_part_debris() -> void:
 		tw.tween_interval(randf_range(1.6, 2.4))
 		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(chunk.queue_free)
+
+## A single armour panel torn off the chassis at a damage threshold: a flat
+## metal plate with a faintly-hot torn edge, flung off toward the impact and
+## tumbling to the floor. The running fight's "losing parts" read; the full
+## break-apart is _spawn_part_debris on death.
+func _shed_panel(toward: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var chunk := RigidBody3D.new()
+	chunk.collision_layer = 0
+	chunk.collision_mask = 1 # bounce off the world, ghost through actors
+	chunk.mass = 0.6
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(randf_range(0.22, 0.34), randf_range(0.04, 0.07), randf_range(0.24, 0.4))
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.21, 0.24) * randf_range(0.8, 1.2)
+	mat.metallic = 0.75
+	mat.roughness = 0.4
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.4, 0.15)
+	mat.emission_energy_multiplier = 0.7 # glowing torn edge
+	bm.material = mat
+	mi.mesh = bm
+	chunk.add_child(mi)
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = bm.size
+	cs.shape = shape
+	chunk.add_child(cs)
+	parent.add_child(chunk)
+	chunk.global_position = global_position + Vector3(0, randf_range(0.7, 1.2), 0) + toward * 0.3
+	chunk.linear_velocity = toward * randf_range(3.0, 6.0) + Vector3(0, randf_range(2.5, 4.5), 0)
+	chunk.angular_velocity = Vector3(randf_range(-14, 14), randf_range(-14, 14), randf_range(-14, 14))
+	var tw := chunk.create_tween()
+	tw.tween_interval(randf_range(2.2, 3.2))
+	tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(chunk.queue_free)
 
 ## Kills feed the push: supplies ONLY come from enemies — they sometimes leave
 ## a drop where they fell, anchors (score >= 250) always do — chasing resupply

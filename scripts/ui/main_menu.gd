@@ -163,6 +163,9 @@ func _input(event: InputEvent) -> void:
 func _open_level_select() -> void:
 	if _levels_panel == null:
 		_build_level_select()
+	# The cheat is for testing/showing off — unlock the full bestiary too, so the
+	# Encyclopedia immediately shows every enemy (back out and open Enemy Codex).
+	GameState.discover_all_enemies()
 	_show_panel(_levels_panel)
 	AudioBus.play_synth_ui("pickup_health", -6.0, 1.5) # cheat-accepted chirp
 
@@ -177,8 +180,23 @@ func _build_level_select() -> void:
 	prompt.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_levels_panel.add_child(prompt)
-	for i in GameState.CAMPAIGN.size():
-		var path: String = GameState.CAMPAIGN[i]
+	# Back sits at the TOP so it's always on-screen — the campaign list is long
+	# enough to overflow the viewport, which would otherwise bury a bottom Back.
+	var back := Button.new()
+	back.custom_minimum_size = Vector2(420, 40)
+	back.text = "Back to Menu"
+	back.pressed.connect(func(): _show_panel(_main))
+	_levels_panel.add_child(back)
+	# Scroll the (18-level) list so every entry — and the Back button — stays
+	# reachable on any screen height.
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(440, 560)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	for i in GameState.campaign().size():
+		var path: String = GameState.campaign()[i]
 		var id := GameState.level_id_from_path(path)
 		var def: Dictionary = LevelDefs.get_def(id)
 		var btn := Button.new()
@@ -189,12 +207,8 @@ func _build_level_select() -> void:
 		btn.pressed.connect(func():
 			GameState.unlock_all_weapons()
 			GameState.go_to_level(path))
-		_levels_panel.add_child(btn)
-	var back := Button.new()
-	back.custom_minimum_size = Vector2(420, 40)
-	back.text = "Back"
-	back.pressed.connect(func(): _show_panel(_main))
-	_levels_panel.add_child(back)
+		list.add_child(btn)
+	_levels_panel.add_child(scroll)
 	$Center/VBox.add_child(_levels_panel)
 
 func _refresh_graphics_label() -> void:
@@ -224,6 +238,9 @@ func _on_settings_pressed() -> void:
 
 func _on_controls_pressed() -> void:
 	_show_panel(_controls)
+
+func _on_encyclopedia_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/encyclopedia.tscn")
 
 func _on_controls_back_pressed() -> void:
 	_show_panel(_main)
