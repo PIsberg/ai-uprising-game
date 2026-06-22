@@ -34,6 +34,8 @@ var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def chang
 var _use_models := true       # render real game models in the preview (off = fast markers)
 var _show_labels := true      # show the floating name labels over markers
 var _labels_btn: Button
+var _nav_globe: Control       # top-right navigation gizmo (drag-orbit / zoom / pan)
+var _nav_needle: Control      # compass needle inside the globe, points to camera yaw
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
@@ -330,6 +332,15 @@ func _selftest() -> void:
 	var shown_ok: bool = int(count_labels.call()) == vis0 and _show_labels and vis0 > 0
 	print("P10 vis0=", vis0, " hidden=", hidden_ok, " shown=", shown_ok)
 	print("PHASE10 ", "PASS" if (hidden_ok and shown_ok) else "FAIL")
+	# Phase 11: nav gizmo built; its pan + zoom helpers drive the camera.
+	var nav_ok := _nav_globe != null and is_instance_valid(_nav_globe) and _nav_needle != null
+	_topdown = true; _cam_target = Vector3.ZERO; _cam_height = 40.0; _apply_camera()
+	_pan_view(Vector2(60, 0))
+	var pan_ok := _cam_target.length() > 0.01
+	var h0 := _cam_height; _zoom_step(true)
+	var zoom_ok := _cam_height < h0
+	print("P11 nav=", nav_ok, " pan=", pan_ok, " zoom=", zoom_ok)
+	print("PHASE11 ", "PASS" if (nav_ok and pan_ok and zoom_ok) else "FAIL")
 	await _teardown()
 	get_tree().quit()
 
@@ -727,6 +738,13 @@ func _apply_camera() -> void:
 	else:
 		var b := Basis.from_euler(Vector3(_fly_pitch, _fly_yaw, 0))
 		_camera.global_transform = Transform3D(b, _fly_pos)
+	_update_nav()
+
+## Spin the nav-gizmo needle to match the current view yaw (visual feedback).
+func _update_nav() -> void:
+	if _nav_needle == null or not is_instance_valid(_nav_needle):
+		return
+	_nav_needle.rotation = (_cam_yaw if _topdown else _fly_yaw)
 
 ## Turn the view by a mouse swipe (top-down: orbit yaw; free-fly: look around).
 func _orbit(rel: Vector2) -> void:
@@ -735,6 +753,26 @@ func _orbit(rel: Vector2) -> void:
 	else:
 		_fly_yaw -= rel.x * 0.005
 		_fly_pitch = clampf(_fly_pitch - rel.y * 0.005, -1.5, 1.5)
+	_apply_camera()
+
+## Zoom one proportional step: drop/raise the top-down camera, or dolly the
+## free-fly camera along its view axis. Shared by the scroll wheel and the nav gizmo.
+func _zoom_step(inward: bool) -> void:
+	if _topdown:
+		_cam_height = clampf(_cam_height * (0.88 if inward else 1.136), 5.0, 200.0)
+	else:
+		_fly_pos += _camera.global_transform.basis.z * (-4.0 if inward else 4.0)
+	_apply_camera()
+	_update_nav()
+
+## Pan ("span") the view by a screen-space drag delta — slides the top-down pan
+## target, or strafes the free-fly camera. Used by the nav gizmo's pan pad.
+func _pan_view(rel: Vector2) -> void:
+	if _topdown:
+		var d := Basis(Vector3.UP, _cam_yaw) * Vector3(-rel.x, 0.0, -rel.y)
+		_cam_target += d * (_cam_height * 0.0022)
+	else:
+		_fly_pos += _camera.global_transform.basis * Vector3(-rel.x, rel.y, 0.0) * 0.06
 	_apply_camera()
 
 ## Recenter (and reframe) the view on the selection, or the whole level if nothing
@@ -922,17 +960,9 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 		return
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP:
-			# Zoom in: drop the top-down camera, or dolly the free-fly camera
-			# forward along its view axis. Proportional steps stay smooth across
-			# the whole range (fine when close, fast when far out).
-			if _topdown: _cam_height = maxf(5.0, _cam_height * 0.88)
-			else: _fly_pos -= _camera.global_transform.basis.z * 4.0
-			_apply_camera()
+			_zoom_step(true)
 		MOUSE_BUTTON_WHEEL_DOWN:
-			# Zoom out (inverse of the step above).
-			if _topdown: _cam_height = minf(200.0, _cam_height * 1.136)
-			else: _fly_pos += _camera.global_transform.basis.z * 4.0
-			_apply_camera()
+			_zoom_step(false)
 		MOUSE_BUTTON_LEFT:
 			if _mode != "":
 				_confirm_mode() # click confirms an active grab/rotate/scale
@@ -1018,6 +1048,96 @@ func _build_ui() -> void:
 	_box_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_box_panel.modulate = Color(0.5, 0.8, 1.0, 0.5)
 	layer.add_child(_box_panel)
+	_build_nav_gizmo(layer)
+
+## Blender-style navigation gizmo, top-right of the viewport (just left of the
+## inspector): a "globe" you drag to orbit (and scroll to zoom), with pan and
+## zoom buttons below. Gives mouse-only navigation without learning the hotkeys.
+func _build_nav_gizmo(layer: CanvasLayer) -> void:
+	var nav := VBoxContainer.new()
+	nav.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	nav.anchor_left = 1.0; nav.anchor_right = 1.0
+	nav.offset_left = -416.0; nav.offset_right = -312.0 # sit left of the 300px inspector
+	nav.offset_top = 50.0
+	nav.add_theme_constant_override("separation", 4)
+	layer.add_child(nav)
+	# --- the globe: a circular pad, drag to orbit / scroll to zoom ---
+	var globe := Control.new()
+	globe.custom_minimum_size = Vector2(96, 96)
+	globe.tooltip_text = "Drag: rotate · Scroll: zoom"
+	nav.add_child(globe)
+	_nav_globe = globe
+	var disc := Panel.new()
+	disc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.13, 0.3, 0.52)
+	sb.set_corner_radius_all(48)
+	sb.border_color = Color(0.45, 0.72, 1.0); sb.set_border_width_all(2)
+	sb.shadow_color = Color(0, 0, 0, 0.5); sb.shadow_size = 4
+	disc.add_theme_stylebox_override("panel", sb)
+	globe.add_child(disc)
+	# Equator + meridian hairlines so it reads as a globe.
+	for r in [Vector2(96, 1), Vector2(1, 96)]:
+		var line := ColorRect.new()
+		line.color = Color(0.45, 0.72, 1.0, 0.35)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.set_anchors_preset(Control.PRESET_CENTER)
+		line.custom_minimum_size = r; line.size = r
+		line.position = Vector2(48, 48) - r * 0.5
+		globe.add_child(line)
+	# Rotating compass needle (pivots at the globe centre, points to view yaw).
+	var needle := Control.new()
+	needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	needle.position = Vector2(48, 48)
+	globe.add_child(needle)
+	_nav_needle = needle
+	var tip := ColorRect.new()
+	tip.color = Color(1.0, 0.45, 0.4)
+	tip.size = Vector2(4, 34); tip.position = Vector2(-2, -36)
+	needle.add_child(tip)
+	var nlabel := Label.new()
+	nlabel.text = "N"; nlabel.position = Vector2(-6, -52)
+	nlabel.add_theme_font_size_override("font_size", 12)
+	needle.add_child(nlabel)
+	globe.gui_input.connect(_on_globe_input)
+	# --- zoom / pan row ---
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 4)
+	nav.add_child(row)
+	_nav_btn(row, "−", "Zoom out", func(): _zoom_step(false))
+	_nav_pan_pad(row)
+	_nav_btn(row, "+", "Zoom in", func(): _zoom_step(true))
+	_update_nav()
+
+func _nav_btn(parent: Node, text: String, tip: String, cb: Callable) -> void:
+	var b := Button.new()
+	b.text = text
+	b.tooltip_text = tip
+	b.custom_minimum_size = Vector2(30, 26)
+	b.pressed.connect(cb)
+	parent.add_child(b)
+
+## A small "✥" pad in the nav gizmo: drag it to pan ("span") the board.
+func _nav_pan_pad(parent: Node) -> void:
+	var pad := Button.new()
+	pad.text = "✥"
+	pad.tooltip_text = "Drag to pan the board"
+	pad.custom_minimum_size = Vector2(30, 26)
+	pad.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion and (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			_pan_view(e.relative))
+	parent.add_child(pad)
+
+func _on_globe_input(e: InputEvent) -> void:
+	if e is InputEventMouseMotion and (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+		_orbit(e.relative)
+	elif e is InputEventMouseButton and e.pressed:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_step(true)
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_step(false)
 
 ## Right-hand inspector: edits the selected entity, or (nothing selected) the
 ## level settings + env + tasks. Rebuilt by _refresh_inspector().
