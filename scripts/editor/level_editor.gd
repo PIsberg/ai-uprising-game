@@ -66,6 +66,7 @@ const CAT_ARRAY := {
 	"weapon": "extra_weapons", "light": "lights", "wall": "walls",
 	"building": "buildings", "ramp": "ramps", "platform": "platforms",
 	"hologram": "holograms", "fire": "fires",
+	"accent": "accents", "target": "targets", "lore": "lore", "lava": "lava",
 }
 
 # Category → marker tint.
@@ -78,6 +79,9 @@ const CAT_COLOR := {
 	"hologram": Color(0.4, 0.8, 1.0), "fire": Color(1.0, 0.5, 0.2),
 	"spawn": Color(0.3, 1.0, 0.4), "exit": Color(0.3, 0.8, 1.0),
 	"hero": Color(0.6, 0.7, 1.0), "nexus": Color(1.0, 0.2, 0.15),
+	"accent": Color(0.6, 0.6, 0.65), "target": Color(1.0, 0.7, 0.3),
+	"lore": Color(0.5, 0.9, 1.0), "lava": Color(1.0, 0.35, 0.1),
+	"set_piece": Color(1.0, 0.25, 0.2),
 }
 
 func _ready() -> void:
@@ -102,6 +106,28 @@ func _ready() -> void:
 		_selftest.call_deferred()
 	elif "--editor-shot" in _args:
 		_shot.call_deferred()
+	elif "--editor-loadall" in _args:
+		_loadall.call_deferred()
+
+## Headless: load EVERY built-in level into the editor and report marker counts.
+## Fails if any level produces no markers (i.e. didn't load).
+func _loadall() -> void:
+	await get_tree().process_frame
+	var fails: Array = []
+	for id in _builtin_ids():
+		var d := LevelDefs.get_def(id)
+		if d.is_empty():
+			fails.append("%s(empty)" % id)
+			continue
+		d["world_scale"] = 1.0
+		set_def(d)
+		await get_tree().process_frame
+		var n := marker_count()
+		print("  %-12s %d markers" % [id, n])
+		if n < 2: # every level has at least spawn + exit
+			fails.append("%s(%d)" % [id, n])
+	print("LOADALL ", "PASS" if fails.is_empty() else "FAIL " + ", ".join(fails))
+	get_tree().quit()
 
 ## Windowed screenshot of the editor with a level loaded (dev verification).
 func _shot() -> void:
@@ -264,6 +290,16 @@ func rebuild_preview() -> void:
 		_add_marker("hologram", e, "pos")
 	for e in def.get("fires", []):
 		_add_marker("fire", e, "pos")
+	for e in def.get("accents", []):
+		_add_marker("accent", e, "pos")
+	for e in def.get("targets", []):
+		_add_marker("target", e, "pos")
+	for e in def.get("lore", []):
+		_add_marker("lore", e, "pos")
+	for e in def.get("lava", []):
+		_add_marker("lava", e, "pos")
+	if def.get("set_piece") is Dictionary and not (def["set_piece"] as Dictionary).is_empty():
+		_add_marker("set_piece", def["set_piece"], "pos")
 	# Weapons (single + extra).
 	if def.get("weapon") is Dictionary and not (def["weapon"] as Dictionary).is_empty():
 		_add_marker("weapon", def["weapon"], "pos")
@@ -335,12 +371,20 @@ func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	var col: Color = CAT_COLOR.get(category, Color.WHITE)
 	match category:
-		"wall", "building", "ramp", "platform":
+		"wall", "building", "ramp", "platform", "accent":
 			# Box sized to the entry's `size`.
 			var size: Vector3 = holder.get("size", Vector3(2, 3, 2))
 			var mi := MeshInstance3D.new()
 			var bm := BoxMesh.new(); bm.size = size; mi.mesh = bm
 			mi.material_override = _flat(col, 0.35)
+			root.add_child(mi)
+		"lava":
+			# Lava `size` is a Vector2 (x,z) footprint — draw a flat slab.
+			var sz = holder.get("size", Vector2(8, 3))
+			var foot := Vector3(sz.x, 0.2, sz.y) if sz is Vector2 else Vector3(8, 0.2, 3)
+			var mi := MeshInstance3D.new()
+			var bm := BoxMesh.new(); bm.size = foot; mi.mesh = bm
+			mi.material_override = _emis(col)
 			root.add_child(mi)
 		"spawn", "exit":
 			var mi := MeshInstance3D.new()
@@ -715,10 +759,10 @@ func _refresh_load_list() -> void:
 		_load_paths.append({"path": p})
 
 func _builtin_ids() -> Array:
-	# Mirror LevelDefs._defs() keys (campaign + sandbox), minus none.
+	# Every key in LevelDefs._defs() (campaign + sandbox).
 	return ["01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss",
 		"mistral", "overseer", "alien", "uplink", "assembly", "titan", "archon",
-		"crucible", "frostbreak", "neon"]
+		"range", "horde", "sublevel", "crucible", "frostbreak", "neon"]
 
 # ---------- file ops ----------
 
@@ -979,7 +1023,7 @@ func _delete_selection() -> void:
 func _remove_holder(holder: Dictionary, category: String) -> void:
 	if category in ["spawn", "exit"]:
 		return # required singletons — can't delete
-	for k in ["hero", "nexus", "weapon"]:
+	for k in ["hero", "nexus", "weapon", "set_piece"]:
 		if def.get(k) is Dictionary and is_same(def[k], holder):
 			def.erase(k)
 			return
