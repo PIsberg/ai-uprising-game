@@ -32,6 +32,8 @@ var _snap_btn: Button
 var _models_btn: Button
 var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def change)
 var _use_models := true       # render real game models in the preview (off = fast markers)
+var _show_labels := true      # show the floating name labels over markers
+var _labels_btn: Button
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
@@ -102,6 +104,7 @@ func _ready() -> void:
 		GameState.from_editor = false
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(false) # no music while editing; restored on exit/playtest
+		AudioBus.suppress_world_sfx = true # preview enemies stay silent (also avoids leaked playbacks)
 	_build_environment()
 	_build_camera()
 	_build_ui()
@@ -126,6 +129,9 @@ func _ready() -> void:
 ## Fails if any level produces no markers (i.e. didn't load).
 func _loadall() -> void:
 	await get_tree().process_frame
+	# Marker counts don't depend on real models, and instancing 20 levels' worth of
+	# bosses just to count them spawns stray boot timers — use fast markers here.
+	_use_models = false
 	var fails: Array = []
 	for id in _builtin_ids():
 		var d := LevelDefs.get_def(id)
@@ -140,7 +146,17 @@ func _loadall() -> void:
 		if n < 2: # every level has at least spawn + exit
 			fails.append("%s(%d)" % [id, n])
 	print("LOADALL ", "PASS" if fails.is_empty() else "FAIL " + ", ".join(fails))
+	await _teardown()
 	get_tree().quit()
+
+## Free the preview before a headless quit so instanced game scenes (and their
+## audio/timers) don't get reported as leaked when we tear down mid-flight.
+func _teardown() -> void:
+	for c in _preview_root.get_children():
+		c.queue_free()
+	_markers.clear()
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 ## Windowed screenshot of the editor with a level loaded (dev verification).
 func _shot() -> void:
@@ -153,6 +169,7 @@ func _shot() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir() + "/editor_shot.png")
 	print("SHOT saved")
+	await _teardown()
 	get_tree().quit()
 
 ## Headless smoke test (run: editor scene with --editor-selftest): load a built-in
@@ -297,6 +314,23 @@ func _selftest() -> void:
 	var p9 := clean0 and dirty_after_edit and focus_ok and grid_ok and box_ok and clean_after_save
 	print("P9 clean0=", clean0, " dirty=", dirty_after_edit, " focus=", focus_ok, " grid=", grid_ok, " box=", box_ok, " saved_clean=", clean_after_save)
 	print("PHASE9 ", "PASS" if p9 else "FAIL")
+	# Phase 10: label visibility toggle.
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("prop", LevelBuilder.PROP_SCENES.keys()[0]); _place_at(Vector3(0, 0, 0)); await get_tree().process_frame
+	var count_labels := func() -> int:
+		var n := 0
+		for m in _markers:
+			for c in m["node"].get_children():
+				if c is Label3D and c.visible: n += 1
+		return n
+	var vis0: int = count_labels.call()
+	_toggle_labels()
+	var hidden_ok: bool = int(count_labels.call()) == 0 and not _show_labels
+	_toggle_labels()
+	var shown_ok: bool = int(count_labels.call()) == vis0 and _show_labels and vis0 > 0
+	print("P10 vis0=", vis0, " hidden=", hidden_ok, " shown=", shown_ok)
+	print("PHASE10 ", "PASS" if (hidden_ok and shown_ok) else "FAIL")
+	await _teardown()
 	get_tree().quit()
 
 ## Test helper: drive the scroll-wheel zoom path without a live input device.
@@ -477,6 +511,12 @@ func _freeze_preview(n: Node) -> void:
 		elif c is RigidBody3D:
 			(c as RigidBody3D).freeze = true
 			c.set_physics_process(false)
+		# Game scenes auto-play idle/spawn SFX in _ready — silence them (no audio
+		# blaring while editing) and drop the stream ref so it can't leak at exit.
+		if c is AudioStreamPlayer or c is AudioStreamPlayer3D or c is AudioStreamPlayer2D:
+			if c.playing: c.stop()
+			c.autoplay = false
+			c.stream = null
 		_freeze_preview(c)
 
 func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
@@ -533,6 +573,7 @@ func _add_label(root: Node3D, category: String, holder: Dictionary, col: Color) 
 	lbl.position.y = 2.4
 	lbl.modulate = col
 	lbl.outline_size = 8
+	lbl.visible = _show_labels
 	root.add_child(lbl)
 
 ## Build the real game visual for an entity, or null to fall back to a marker.
@@ -815,6 +856,7 @@ func _process(delta: float) -> void:
 		if Input.is_key_pressed(KEY_D): pan.x += 1
 		if pan != Vector3.ZERO:
 			var sp := _cam_height * 0.6 * delta
+			if Input.is_key_pressed(KEY_SHIFT): sp *= 3.0 # hold Shift to sprint
 			_cam_target += (Basis(Vector3.UP, _cam_yaw) * pan).normalized() * sp
 			_apply_camera()
 	else:
@@ -826,7 +868,8 @@ func _process(delta: float) -> void:
 		if Input.is_key_pressed(KEY_E): dir.y += 1
 		if Input.is_key_pressed(KEY_Q): dir.y -= 1
 		if dir != Vector3.ZERO:
-			_fly_pos += _camera.global_transform.basis * dir.normalized() * 20.0 * delta
+			var sp := 60.0 if Input.is_key_pressed(KEY_SHIFT) else 20.0 # Shift = sprint
+			_fly_pos += _camera.global_transform.basis * dir.normalized() * sp * delta
 			_apply_camera()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -956,6 +999,7 @@ func _build_ui() -> void:
 	_snap_btn = _add_btn(hb, "Snap: ON", _toggle_snap)
 	_grid_btn = _add_btn(hb, "Grid: 1.0", _cycle_grid)
 	_models_btn = _add_btn(hb, "Models: ON", _toggle_models)
+	_labels_btn = _add_btn(hb, "Labels: ON", _toggle_labels)
 	_add_btn(hb, "Validate", _on_validate)
 	var pt := _add_btn(hb, "▶ Playtest", _on_playtest)
 	pt.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
@@ -1071,7 +1115,7 @@ func _build_selection_panel(layer: CanvasLayer) -> void:
 	p.add_child(_sel_label)
 
 func _help_text() -> String:
-	return "LMB place/select · dbl-click: focus · drag empty ground: box-select (Shift adds) · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · RMB: turn · scroll: zoom"
+	return "LMB place/select · dbl-click: focus · drag empty ground: box-select (Shift adds) · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · WASD move (Shift sprint) · RMB: turn · scroll: zoom"
 
 func _toggle_snap() -> void:
 	_snap = not _snap
@@ -1084,6 +1128,16 @@ func _toggle_models() -> void:
 	var keep := _selection_holders()
 	rebuild_preview()
 	_select_holders(keep)
+
+## Show/hide the floating name labels (they clutter dense levels). Toggles the
+## existing labels live; new markers honour the flag via _add_label.
+func _toggle_labels() -> void:
+	_show_labels = not _show_labels
+	if _labels_btn: _labels_btn.text = "Labels: %s" % ("ON" if _show_labels else "OFF")
+	for m in _markers:
+		for c in m["node"].get_children():
+			if c is Label3D:
+				c.visible = _show_labels
 
 func _add_btn(parent: Node, text: String, cb: Callable) -> Button:
 	var b := Button.new()
@@ -1122,6 +1176,7 @@ func _builtin_ids() -> Array:
 func _on_exit() -> void:
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(true)
+		AudioBus.suppress_world_sfx = false
 	if has_node("/root/GameState"):
 		GameState.from_editor = false
 	if ResourceLoader.exists("res://scenes/ui/main_menu.tscn"):
@@ -2100,6 +2155,7 @@ func _on_playtest() -> void:
 		return
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(true) # restore music for the playtest session
+		AudioBus.suppress_world_sfx = false
 	if has_node("/root/GameState"):
 		GameState.custom_level_path = p
 		GameState.from_editor = true
