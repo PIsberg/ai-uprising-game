@@ -320,6 +320,9 @@ func _build_floor_and_walls() -> void:
 	var fmat := StandardMaterial3D.new()
 	fmat.albedo_color = def.get("floor_color", Color(0.18, 0.18, 0.2))
 	floor_mi.material_override = fmat
+	# Drop the floor a hair below 0 so structure/prop bases (authored at y=0) are
+	# never coplanar with it — coplanar faces z-fight and read as "blinking".
+	floor_mi.position.y = -0.05
 	_preview_root.add_child(floor_mi)
 	# Thin perimeter walls (visual bounds).
 	var hx := fs.x * 0.5
@@ -579,7 +582,10 @@ func _build_environment() -> void:
 func _build_camera() -> void:
 	_camera = Camera3D.new()
 	_camera.current = true
-	_camera.far = 2000.0
+	# A tight near/far keeps the depth buffer precise — a 2000:0.05 ratio used to
+	# z-fight (buildings flickering against the floor at grazing angles).
+	_camera.near = 0.2
+	_camera.far = 600.0
 	add_child(_camera)
 	_apply_camera()
 
@@ -683,14 +689,16 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 		return
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP:
-			# Scroll elevates the view: lower the top-down camera (zoom in) or
-			# raise the free-fly camera.
-			if _topdown: _cam_height = maxf(8.0, _cam_height - 3.0)
-			else: _fly_pos.y += 2.0
+			# Zoom in: drop the top-down camera, or dolly the free-fly camera
+			# forward along its view axis. Proportional steps stay smooth across
+			# the whole range (fine when close, fast when far out).
+			if _topdown: _cam_height = maxf(5.0, _cam_height * 0.88)
+			else: _fly_pos -= _camera.global_transform.basis.z * 4.0
 			_apply_camera()
 		MOUSE_BUTTON_WHEEL_DOWN:
-			if _topdown: _cam_height = minf(120.0, _cam_height + 3.0)
-			else: _fly_pos.y -= 2.0
+			# Zoom out (inverse of the step above).
+			if _topdown: _cam_height = minf(200.0, _cam_height * 1.136)
+			else: _fly_pos += _camera.global_transform.basis.z * 4.0
 			_apply_camera()
 		MOUSE_BUTTON_LEFT:
 			if _mode != "":
