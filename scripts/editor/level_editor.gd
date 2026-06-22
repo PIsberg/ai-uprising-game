@@ -35,7 +35,13 @@ var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def chang
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
 var _armed_item := ""
 var _selection: Array = []        # selected marker records (subset of _markers)
-var _gizmo: Node3D                 # visual axis cross at the selection
+var _gizmo: Node3D                 # transform gizmo at the selection centroid
+var _handles: Array = []           # [{gtype, axis, dir, off}] draggable gizmo handles
+var _hdrag: Dictionary = {}        # active handle drag ({} = none)
+var _hdrag_center := Vector3.ZERO
+var _hdrag_idx := 0                # axis index 0/1/2 for x/y/z
+var _hdrag_s0 := 0.0              # start param along the axis (move/scale)
+var _hdrag_a0 := 0.0             # start ground angle (rotate)
 
 # Modal transform (Blender-style G/R/S): "", "move", "rotate", "scale".
 var _mode := ""
@@ -78,6 +84,7 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if has_node("/root/GameState"):
 		GameState.set_state(GameState.State.MENU)
+		GameState.from_editor = false
 	_build_environment()
 	_build_camera()
 	_build_ui()
@@ -169,6 +176,20 @@ func _selftest() -> void:
 	var p4 := pt != "" and FileAccess.file_exists("res://dev_levels/_playtest.lvl")
 	print("P4 warns=", warns.size(), " playtest_save=", p4)
 	print("PHASE4 ", "PASS" if p4 else "FAIL")
+	# Phase 5: draggable gizmo handles (build + Y-move axis targeting + no-crash).
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("building", "building"); _place_at(Vector3(0, 0, 0)); await get_tree().process_frame
+	var handles_ok := _handles.size() == 7 # 3 move + 3 scale + 1 rotate
+	_begin_handle_drag({"gtype": "move", "axis": "y", "dir": Vector3.UP, "off": Vector3.UP * 1.7})
+	var y_axis_ok := _hdrag_idx == 1 # Y move targets pos.y (the gizmo can't via plane-drag)
+	_update_handle_drag(); _hdrag = {}
+	_begin_handle_drag({"gtype": "scale", "axis": "x", "dir": Vector3.RIGHT, "off": Vector3.RIGHT * 2.3})
+	_update_handle_drag(); _hdrag = {}
+	_begin_handle_drag({"gtype": "rotate", "axis": "y", "dir": Vector3.UP, "off": Vector3(0.9, 0, 0.9)})
+	_update_handle_drag(); _hdrag = {}
+	var p5 := handles_ok and y_axis_ok and (def["buildings"] as Array).size() == 1
+	print("P5 handles=", _handles.size(), " y_axis=", y_axis_ok)
+	print("PHASE5 ", "PASS" if p5 else "FAIL")
 	get_tree().quit()
 
 # ---------- def lifecycle ----------
@@ -421,6 +442,9 @@ func _apply_camera() -> void:
 # ---------- input / camera control ----------
 
 func _process(delta: float) -> void:
+	if not _hdrag.is_empty():
+		_update_handle_drag()
+		return
 	if _mode != "":
 		_update_transform_mode()
 		return
@@ -490,7 +514,10 @@ func _handle_key(event: InputEventKey) -> void:
 
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	if not event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT and _dragging:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if not _hdrag.is_empty():
+				_hdrag = {}
+				_set_status("OK")
 			_dragging = false
 		return
 	match event.button_index:
@@ -504,6 +531,11 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 				return
 			if _armed_category != "":
 				_place_at(_cursor_world())
+				return
+			# Grab a gizmo handle if the cursor is over one; else select.
+			var h = _pick_handle()
+			if h != null:
+				_begin_handle_drag(h)
 			else:
 				_click_select(event.shift_pressed)
 		MOUSE_BUTTON_RIGHT:
@@ -651,7 +683,7 @@ func _build_selection_panel(layer: CanvasLayer) -> void:
 	p.add_child(_sel_label)
 
 func _help_text() -> String:
-	return "LMB place/select · drag move · G/R/S grab/rot/scale (X/Y/Z axis) · Del · Ctrl+D dup · Ctrl+C/V · Ctrl+Z/Y · Tab view"
+	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view"
 
 func _toggle_snap() -> void:
 	_snap = not _snap
@@ -1080,24 +1112,167 @@ func _update_gizmo() -> void:
 	_gizmo.global_position = c + Vector3(0, 0.8, 0)
 	_gizmo.visible = true
 
+# --- draggable gizmo handles ---
+
+func _snapshot_sel() -> void:
+	_mode_orig.clear()
+	for m in _selection:
+		var h: Dictionary = m["holder"]
+		_mode_orig.append({"pos": h.get(m["key"], Vector3.ZERO), "yaw": h.get("yaw", 0.0), "size": h.get("size", Vector3.ONE)})
+
+## Nearest gizmo handle under the cursor (or null). Only when something's selected.
+func _pick_handle():
+	if _selection.is_empty() or _gizmo == null or not _gizmo.visible:
+		return null
+	var r := _ray()
+	var o: Vector3 = r[0]
+	var d: Vector3 = r[1]
+	var best = null
+	var best_dist := 1e9
+	for h in _handles:
+		var p: Vector3 = _gizmo.global_position + (h["off"] as Vector3)
+		var t: float = (p - o).dot(d)
+		if t < 0.0:
+			continue
+		var dist: float = (o + d * t).distance_to(p)
+		if dist < maxf(0.4, t * 0.05) and dist < best_dist:
+			best_dist = dist
+			best = h
+	return best
+
+func _begin_handle_drag(h: Dictionary) -> void:
+	_push_undo()
+	_snapshot_sel()
+	_hdrag = h
+	_hdrag_center = _gizmo.global_position
+	_hdrag_idx = "xyz".find(h["axis"])
+	if h["gtype"] == "rotate":
+		_hdrag_a0 = _ground_angle(_hdrag_center)
+	else:
+		_hdrag_s0 = _axis_param(_hdrag_center, h["dir"])
+	_set_status("%s %s" % [String(h["gtype"]).to_upper(), String(h["axis"]).to_upper()])
+
+func _update_handle_drag() -> void:
+	var dir: Vector3 = _hdrag["dir"]
+	match _hdrag["gtype"]:
+		"move":
+			var moved := _axis_param(_hdrag_center, dir) - _hdrag_s0
+			if _snap:
+				moved = round(moved / _grid) * _grid
+			for i in _selection.size():
+				var m: Dictionary = _selection[i]
+				var np: Vector3 = _mode_orig[i]["pos"]
+				np[_hdrag_idx] += moved
+				(m["holder"] as Dictionary)[m["key"]] = np
+				m["node"].global_position = np
+		"scale":
+			var delta := _axis_param(_hdrag_center, dir) - _hdrag_s0
+			if _snap:
+				delta = round(delta * 2.0) / 2.0
+			for i in _selection.size():
+				var m: Dictionary = _selection[i]
+				if not (m["holder"] as Dictionary).has("size"):
+					continue
+				var sz: Vector3 = _mode_orig[i]["size"]
+				sz[_hdrag_idx] = maxf(0.3, sz[_hdrag_idx] + delta)
+				(m["holder"] as Dictionary)["size"] = sz
+			_live() # rebuild box markers at the new size
+		"rotate":
+			var yaw := _snap_deg((_mode_orig[0]["yaw"] as float) + rad_to_deg(_ground_angle(_hdrag_center) - _hdrag_a0))
+			for m in _selection:
+				(m["holder"] as Dictionary)["yaw"] = yaw
+				m["node"].rotation.y = deg_to_rad(yaw)
+	_update_gizmo()
+
+## Parameter s along the line (center + dir*s) nearest the mouse ray.
+func _axis_param(center: Vector3, dir: Vector3) -> float:
+	var r := _ray()
+	var o: Vector3 = r[0]
+	var u: Vector3 = r[1]
+	var w0 := o - center
+	var b := u.dot(dir)
+	var denom := 1.0 - b * b
+	if absf(denom) < 1e-4:
+		return dir.dot(w0)
+	return (dir.dot(w0) - b * u.dot(w0)) / denom
+
+func _ground_angle(center: Vector3) -> float:
+	var c := _cursor_world()
+	return atan2(c.x - center.x, c.z - center.z)
+
+## Build the transform gizmo with DRAGGABLE handles: 3 move arrows (x/y/z),
+## 3 scale cubes (x/y/z, beyond the arrows), and a yaw rotate handle. Each is
+## registered in _handles with its grab type, axis, world direction and the local
+## offset used to ray-pick it.
 func _make_gizmo() -> Node3D:
 	var root := Node3D.new()
-	for spec in [["x", Color(1, 0.3, 0.3)], ["y", Color(0.3, 1, 0.3)], ["z", Color(0.45, 0.55, 1)]]:
-		var mi := MeshInstance3D.new()
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.05; cyl.bottom_radius = 0.05; cyl.height = 2.2
-		mi.mesh = cyl
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.albedo_color = spec[1]; m.emission_enabled = true; m.emission = spec[1]
-		mi.material_override = m
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		match spec[0]:
-			"x": mi.rotation_degrees = Vector3(0, 0, -90); mi.position = Vector3(1.1, 0, 0)
-			"y": mi.position = Vector3(0, 1.1, 0)
-			"z": mi.rotation_degrees = Vector3(90, 0, 0); mi.position = Vector3(0, 0, 1.1)
-		root.add_child(mi)
+	_handles.clear()
+	var dirs := {"x": Vector3.RIGHT, "y": Vector3.UP, "z": Vector3.BACK}
+	var cols := {"x": Color(1, 0.3, 0.3), "y": Color(0.3, 1, 0.3), "z": Color(0.45, 0.55, 1)}
+	for ax in dirs:
+		var dir: Vector3 = dirs[ax]
+		var col: Color = cols[ax]
+		# Move arrow (shaft).
+		var shaft := MeshInstance3D.new()
+		var cyl := CylinderMesh.new(); cyl.top_radius = 0.045; cyl.bottom_radius = 0.045; cyl.height = 1.6
+		shaft.mesh = cyl
+		shaft.material_override = _emis_unshaded(col)
+		shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_orient_along(shaft, dir, dir * 0.8)
+		root.add_child(shaft)
+		# Arrow tip (pickable point for move).
+		var tip := MeshInstance3D.new()
+		var cone := CylinderMesh.new(); cone.top_radius = 0.0; cone.bottom_radius = 0.16; cone.height = 0.34
+		tip.mesh = cone
+		tip.material_override = _emis_unshaded(col)
+		tip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_orient_along(tip, dir, dir * 1.7)
+		root.add_child(tip)
+		_handles.append({"gtype": "move", "axis": ax, "dir": dir, "off": dir * 1.7})
+		# Scale cube (further out).
+		var cube := MeshInstance3D.new()
+		var bm := BoxMesh.new(); bm.size = Vector3(0.26, 0.26, 0.26)
+		cube.mesh = bm
+		cube.material_override = _emis_unshaded(col.darkened(0.25))
+		cube.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		cube.position = dir * 2.3
+		root.add_child(cube)
+		_handles.append({"gtype": "scale", "axis": ax, "dir": dir, "off": dir * 2.3})
+	# Yaw rotate handle (a ring + a pickable knob on the X/Z diagonal).
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new(); tm.inner_radius = 1.25; tm.outer_radius = 1.35; tm.rings = 32; tm.ring_segments = 8
+	ring.mesh = tm
+	ring.material_override = _emis_unshaded(Color(1, 0.85, 0.3))
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(ring)
+	var knob := MeshInstance3D.new()
+	var sm := SphereMesh.new(); sm.radius = 0.18; sm.height = 0.36
+	knob.mesh = sm
+	knob.material_override = _emis_unshaded(Color(1, 0.85, 0.3))
+	knob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var diag := (Vector3.RIGHT + Vector3.BACK).normalized() * 1.3
+	knob.position = diag
+	root.add_child(knob)
+	_handles.append({"gtype": "rotate", "axis": "y", "dir": Vector3.UP, "off": diag})
 	return root
+
+func _emis_unshaded(c: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = c
+	m.emission_enabled = true
+	m.emission = c
+	m.emission_energy_multiplier = 1.4
+	return m
+
+## Orient a +Y mesh (cylinder/cone) to point along `dir`, centred at `pos`.
+func _orient_along(mi: MeshInstance3D, dir: Vector3, pos: Vector3) -> void:
+	if dir.is_equal_approx(Vector3.UP):
+		mi.position = pos
+	elif dir.is_equal_approx(Vector3.RIGHT):
+		mi.rotation_degrees = Vector3(0, 0, -90); mi.position = pos
+	else: # BACK
+		mi.rotation_degrees = Vector3(90, 0, 0); mi.position = pos
 
 # ---------- inspector / level settings / tasks (Phase 3) ----------
 
@@ -1500,6 +1675,7 @@ func _on_playtest() -> void:
 		return
 	if has_node("/root/GameState"):
 		GameState.custom_level_path = p
+		GameState.from_editor = true
 		GameState.set_state(GameState.State.PLAYING)
 	get_tree().change_scene_to_file("res://scenes/levels/level_custom.tscn")
 

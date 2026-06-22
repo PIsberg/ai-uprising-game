@@ -708,6 +708,17 @@ func _clone_spawner(src: EnemySpawner, idx: int) -> void:
 ## Set before loading level_custom.tscn (by the editor playtest or the --level
 ## CLI boot) so LevelBuilder knows which .lvl file to build.
 var custom_level_path: String = ""
+## True when the current custom level was launched from the editor's Playtest, so
+## the pause menu / F2 offer "Return to Editor" instead of "Quit to Menu".
+var from_editor: bool = false
+
+const EDITOR_SCENE := "res://scenes/editor/level_editor.tscn"
+
+## Leave a playtest and go back to the level editor (state intact in the editor).
+func return_to_editor() -> void:
+	from_editor = false
+	set_state(State.MENU)
+	get_tree().change_scene_to_file(EDITOR_SCENE)
 
 ## Campaign order override authored by the level editor (res://dev_levels/
 ## campaign.json). When present it replaces the built-in CAMPAIGN. Read via
@@ -738,11 +749,11 @@ func _ready() -> void:
 ## custom level (the editor's Playtest shells out this way).
 func _handle_cli_boot() -> void:
 	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
-	# "--editor" boots straight into the level editor (the dev "separate program"
-	# entry — make a desktop shortcut to AIUprising.exe --editor).
-	if "--editor" in args:
+	# "--editor" (or a dedicated editor build, custom feature "editor_build") boots
+	# straight into the level editor — the dev "separate program" entry.
+	if "--editor" in args or OS.has_feature("editor_build"):
 		set_state(State.MENU)
-		get_tree().change_scene_to_file.call_deferred("res://scenes/editor/level_editor.tscn")
+		get_tree().change_scene_to_file.call_deferred(EDITOR_SCENE)
 		return
 	var i := args.find("--level")
 	if i != -1 and i + 1 < args.size():
