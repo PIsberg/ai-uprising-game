@@ -249,6 +249,15 @@ func _selftest() -> void:
 	var fog_ok := float(env7.get("fog_density", 1.0)) <= 0.05
 	print("P7 fog_density=", env7.get("fog_density"), " ok=", fog_ok)
 	print("PHASE7 ", "PASS" if fog_ok else "FAIL")
+	# Phase 8: weapons + powerups place onto a fresh level. extra_weapons isn't in
+	# blank_def, so this used to no-op (append on a missing-key null).
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("weapon", GameState.ALL_WEAPONS[0]); _place_at(Vector3(4, 0, 0)); await get_tree().process_frame
+	var wpn_ok := (def.get("extra_weapons", []) as Array).size() == 1
+	_arm("pickup", "health"); _place_at(Vector3(-4, 0, 0)); await get_tree().process_frame
+	var pwr_ok := (def.get("pickups", []) as Array).size() == 1
+	print("P8 weapon=", wpn_ok, " powerup=", pwr_ok)
+	print("PHASE8 ", "PASS" if (wpn_ok and pwr_ok) else "FAIL")
 	get_tree().quit()
 
 ## Test helper: drive the scroll-wheel zoom path without a live input device.
@@ -283,11 +292,15 @@ static func blank_def() -> Dictionary:
 
 func set_def(d: Dictionary) -> void:
 	def = d.duplicate(true)
-	# Guarantee the arrays exist so placement code can append without checks.
-	for k in ["enemies", "props", "buildings", "walls", "ramps", "platforms",
-			"lights", "pickups", "holograms", "fires", "tasks"]:
+	# Guarantee every array a category can append to exists, so placement/paste
+	# can append without per-call null checks. Sourced from CAT_ARRAY so adding a
+	# new placeable category can't silently miss its backing array (weapons used to
+	# fail this way: extra_weapons wasn't seeded, so placing one did nothing).
+	for k in CAT_ARRAY.values():
 		if not (def.get(k) is Array):
 			def[k] = []
+	if not (def.get("tasks") is Array):
+		def["tasks"] = []
 	if not (def.get("env") is Dictionary):
 		def["env"] = {}
 	_cam_target = Vector3(0, 0, 0)
