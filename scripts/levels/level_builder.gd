@@ -225,7 +225,16 @@ func _resolve_def() -> Dictionary:
 			var gs := get_node_or_null("/root/GameState")
 			if gs and "custom_level_path" in gs:
 				p = gs.custom_level_path
-		return CustomLevels.load_def(p)
+		# No path supplied (e.g. running level_custom.tscn directly): fall back to
+		# the last playtested level so the scene is always runnable.
+		if p == "":
+			p = CustomLevels.DIR + "_playtest" + CustomLevels.EXT
+		var d := CustomLevels.load_def(p)
+		if d.is_empty():
+			push_warning("LevelBuilder: no custom level at '%s' — loading default '01'" % p)
+			d = LevelDefs.get_def("01")
+			d["world_scale"] = 1.0
+		return d
 	return LevelDefs.get_def(level_id)
 
 # ---------- environment ----------
