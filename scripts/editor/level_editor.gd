@@ -38,6 +38,7 @@ var _armed_category := ""         # palette item armed for placement ("" = selec
 var _armed_item := ""
 var _selection: Array = []        # selected marker records (subset of _markers)
 var _gizmo: Node3D                 # transform gizmo at the selection centroid
+var _gizmo_scale := 1.0            # gizmo drawn at this scale (tracks camera distance)
 var _handles: Array = []           # [{gtype, axis, dir, off}] draggable gizmo handles
 var _hdrag: Dictionary = {}        # active handle drag ({} = none)
 var _hdrag_center := Vector3.ZERO
@@ -221,7 +222,31 @@ func _selftest() -> void:
 	var p5 := handles_ok and y_axis_ok and (def["buildings"] as Array).size() == 1
 	print("P5 handles=", _handles.size(), " y_axis=", y_axis_ok)
 	print("PHASE5 ", "PASS" if p5 else "FAIL")
+	# Phase 6: camera zoom (proportional, bounded) + gizmo scales with distance.
+	_topdown = true
+	_cam_height = 38.0
+	_wheel(MOUSE_BUTTON_WHEEL_UP)   # zoom in once
+	var zoomed_in := _cam_height < 38.0
+	for _i in 40: _wheel(MOUSE_BUTTON_WHEEL_UP)   # spam in — must clamp, not crash
+	var clamp_lo := _cam_height >= 5.0
+	for _i in 80: _wheel(MOUSE_BUTTON_WHEEL_DOWN)  # spam out — must clamp at the top
+	var clamp_hi := _cam_height <= 200.0
+	# Gizmo tracks camera distance: closer view → smaller gizmo than a far view.
+	_cam_height = 12.0; _apply_camera(); _update_gizmo()
+	var near_scale := _gizmo_scale
+	_cam_height = 160.0; _apply_camera(); _update_gizmo()
+	var giz_ok := _gizmo_scale > near_scale
+	var p6 := zoomed_in and clamp_lo and clamp_hi and giz_ok
+	print("P6 zoom_in=", zoomed_in, " clamp_lo=", clamp_lo, " clamp_hi=", clamp_hi, " gizmo=", giz_ok)
+	print("PHASE6 ", "PASS" if p6 else "FAIL")
 	get_tree().quit()
+
+## Test helper: drive the scroll-wheel zoom path without a live input device.
+func _wheel(button: int) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	ev.pressed = true
+	_handle_mouse_button(ev)
 
 # ---------- def lifecycle ----------
 
@@ -865,7 +890,7 @@ func _build_selection_panel(layer: CanvasLayer) -> void:
 	p.add_child(_sel_label)
 
 func _help_text() -> String:
-	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · drag empty ground / RMB: turn · scroll: elevate"
+	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · drag empty ground / RMB: turn · scroll: zoom"
 
 func _toggle_snap() -> void:
 	_snap = not _snap
@@ -1311,6 +1336,13 @@ func _update_gizmo() -> void:
 		c += m["node"].global_position
 	c /= _selection.size()
 	_gizmo.global_position = c + Vector3(0, 0.8, 0)
+	# Keep the gizmo a roughly constant on-screen size across the zoom range —
+	# otherwise it shrinks to an ungrabbable dot when zoomed out and bloats when
+	# zoomed in. Handle picking reads the same factor (_gizmo_scale).
+	if _camera != null:
+		var dist := _camera.global_position.distance_to(_gizmo.global_position)
+		_gizmo_scale = clampf(dist * 0.03, 0.5, 8.0)
+		_gizmo.scale = Vector3.ONE * _gizmo_scale
 	_gizmo.visible = true
 
 # --- draggable gizmo handles ---
@@ -1331,12 +1363,14 @@ func _pick_handle():
 	var best = null
 	var best_dist := 1e9
 	for h in _handles:
-		var p: Vector3 = _gizmo.global_position + (h["off"] as Vector3)
+		# Offsets are authored at unit scale; the gizmo is drawn at _gizmo_scale,
+		# so pick against the scaled offset (and widen the grab radius to match).
+		var p: Vector3 = _gizmo.global_position + (h["off"] as Vector3) * _gizmo_scale
 		var t: float = (p - o).dot(d)
 		if t < 0.0:
 			continue
 		var dist: float = (o + d * t).distance_to(p)
-		if dist < maxf(0.4, t * 0.05) and dist < best_dist:
+		if dist < maxf(0.4, t * 0.05) * _gizmo_scale and dist < best_dist:
 			best_dist = dist
 			best = h
 	return best
