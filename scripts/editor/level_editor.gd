@@ -239,6 +239,16 @@ func _selftest() -> void:
 	var p6 := zoomed_in and clamp_lo and clamp_hi and giz_ok
 	print("P6 zoom_in=", zoomed_in, " clamp_lo=", clamp_lo, " clamp_hi=", clamp_hi, " gizmo=", giz_ok)
 	print("PHASE6 ", "PASS" if p6 else "FAIL")
+	# Phase 7: opening the level inspector must not inject out-of-range env defaults
+	# (a blanket 1.0 used to bake fog_density 100x over its 0.05 ceiling).
+	var dd := blank_def(); dd["env"] = {}
+	set_def(dd); await get_tree().process_frame
+	_set_selection([])
+	_inspect_level()
+	var env7: Dictionary = def["env"]
+	var fog_ok := float(env7.get("fog_density", 1.0)) <= 0.05
+	print("P7 fog_density=", env7.get("fog_density"), " ok=", fog_ok)
+	print("PHASE7 ", "PASS" if fog_ok else "FAIL")
 	get_tree().quit()
 
 ## Test helper: drive the scroll-wheel zoom path without a live input device.
@@ -1514,11 +1524,14 @@ func _orient_along(mi: MeshInstance3D, dir: Vector3, pos: Vector3) -> void:
 var _editing := false # suppress inspector rebuild while typing in a field
 
 const ENV_COLORS := ["sky_top", "sky_horizon", "ground", "fog", "ambient", "sun_color", "building_tint"]
+## key -> [min, max, step, default]. The default matters: it's what gets written
+## when a level lacks the key and the inspector materialises the field. A blanket
+## 1.0 used to fog levels solid (fog_density's max is 0.05) — hence per-key values.
 const ENV_NUMS := {
-	"fog_density": [0.0, 0.05, 0.001], "ambient_energy": [0.0, 6.0, 0.1],
-	"sun_energy": [0.0, 6.0, 0.1], "glow": [0.0, 2.0, 0.05],
-	"brightness": [0.5, 1.5, 0.02], "contrast": [0.5, 1.8, 0.02],
-	"saturation": [0.0, 2.0, 0.02], "sky_energy": [0.0, 4.0, 0.1],
+	"fog_density": [0.0, 0.05, 0.001, 0.01], "ambient_energy": [0.0, 6.0, 0.1, 1.5],
+	"sun_energy": [0.0, 6.0, 0.1, 1.4], "glow": [0.0, 2.0, 0.05, 0.5],
+	"brightness": [0.5, 1.5, 0.02, 1.0], "contrast": [0.5, 1.8, 0.02, 1.0],
+	"saturation": [0.0, 2.0, 0.02, 1.0], "sky_energy": [0.0, 4.0, 0.1, 1.0],
 }
 const TASK_TYPES := ["kill_all", "key", "destroy_core", "collect_shards",
 	"hack_terminal", "sabotage", "survive", "hold_zone"]
@@ -1687,8 +1700,8 @@ func _inspect_level() -> void:
 		if not env.has(k): env[k] = Color(0.3, 0.3, 0.35)
 		_f_color(env, k, k)
 	for k in ENV_NUMS:
-		if not env.has(k): env[k] = 1.0
 		var spec: Array = ENV_NUMS[k]
+		if not env.has(k): env[k] = spec[3]
 		_f_num(env, k, k, spec[0], spec[1], spec[2])
 	_f_enum(env, "weather", "weather", ["", "rain", "dust"])
 	_f_bool(env, "lightning", "lightning")
