@@ -195,8 +195,8 @@ func _build_level_select() -> void:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 8)
 	scroll.add_child(list)
-	for i in GameState.CAMPAIGN.size():
-		var path: String = GameState.CAMPAIGN[i]
+	for i in GameState.campaign().size():
+		var path: String = GameState.campaign()[i]
 		var id := GameState.level_id_from_path(path)
 		var def: Dictionary = LevelDefs.get_def(id)
 		var btn := Button.new()

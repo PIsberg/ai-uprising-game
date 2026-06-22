@@ -17,9 +17,20 @@ const COL_NOW := Color(0.35, 0.85, 1.0)
 const COL_LOCK := Color(0.30, 0.34, 0.40)
 const COL_BOSS := Color(1.0, 0.32, 0.26)
 
-var _nodes: Array = []        # [{idx, id, path, title, boss, pos: Vector2, btn: Button}]
+var _nodes: Array = []        # [{idx, id, path, title, boss, chapter, pos, btn}]
 var _frontier: int = 0        # furthest unlocked campaign index
 var _time: float = 0.0
+var _act_labels: Array = []   # one header Label per chapter
+
+## Per-act accent colours for the route bands + act headers.
+const ACT_COLORS := [Color(0.45, 0.8, 1.0), Color(0.7, 0.95, 0.45),
+	Color(1.0, 0.72, 0.4), Color(1.0, 0.4, 0.55), Color(0.7, 0.6, 1.0)]
+
+func _act_color(ci: int) -> Color:
+	return ACT_COLORS[ci % ACT_COLORS.size()] if ci >= 0 else Color(0.4, 0.5, 0.6)
+
+func _campaign() -> Array:
+	return GameState.campaign()
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -28,7 +39,7 @@ func _ready() -> void:
 	# continues that run (arsenal, score, upgrades intact).
 	if GameState.has_save():
 		GameState.load_progress()
-	_frontier = clampi(GameState.max_level_reached, 0, GameState.CAMPAIGN.size() - 1)
+	_frontier = clampi(GameState.max_level_reached, 0, _campaign().size() - 1)
 	_build()
 	resized.connect(_relayout)
 	_relayout.call_deferred()
@@ -48,13 +59,14 @@ func _build() -> void:
 	add_child(sub)
 
 	# One node per campaign level.
-	for i in GameState.CAMPAIGN.size():
-		var path: String = GameState.CAMPAIGN[i]
+	for i in _campaign().size():
+		var path: String = _campaign()[i]
 		var id := GameState.level_id_from_path(path)
 		var d := {
 			"idx": i, "id": id, "path": path,
 			"title": LevelDefs.level_title(id),
 			"boss": LevelDefs.level_is_boss(id),
+			"chapter": LevelDefs.chapter_index_of(id),
 			"pos": Vector2.ZERO, "btn": null,
 		}
 		var btn := Button.new()
@@ -70,6 +82,16 @@ func _build() -> void:
 		btn.set_meta("label", lbl)
 		add_child(lbl)
 		_nodes.append(d)
+
+	# Act / chapter header labels (positioned in _relayout above each act's start).
+	for ci in LevelDefs.CHAPTERS.size():
+		var al := Label.new()
+		al.text = LevelDefs.chapter_name(ci)
+		al.add_theme_font_size_override("font_size", 16)
+		al.add_theme_color_override("font_color", _act_color(ci))
+		al.visible = false
+		add_child(al)
+		_act_labels.append(al)
 
 	# Back button.
 	var back := Button.new()
@@ -120,7 +142,24 @@ func _relayout() -> void:
 		lbl.text = name_txt
 		lbl.add_theme_color_override("font_color",
 			COL_BOSS if d["boss"] else (COL_LOCK if locked else Color(0.82, 0.92, 1.0)))
+	_layout_act_headers()
 	queue_redraw()
+
+## Place each act header above the first node of that act.
+func _layout_act_headers() -> void:
+	for ci in _act_labels.size():
+		var al: Label = _act_labels[ci]
+		var first = null
+		for d in _nodes:
+			if d["chapter"] == ci:
+				first = d
+				break
+		if first == null:
+			al.visible = false
+			continue
+		al.visible = true
+		al.size = Vector2(260, 24)
+		al.position = (first["pos"] as Vector2) + Vector2(-40, -NODE_R - 30.0)
 
 ## Colour a node's button by progress state.
 func _style_node(d: Dictionary) -> void:
@@ -177,8 +216,10 @@ func _draw() -> void:
 		var a: Vector2 = _nodes[i - 1]["pos"]
 		var b: Vector2 = _nodes[i]["pos"]
 		var reached: bool = i <= _frontier
-		var col := COL_DONE if reached else COL_LOCK
-		col.a = 0.85 if reached else 0.35
+		# Route is banded by act colour (so chapters read at a glance), dimmed when
+		# the sector is still locked.
+		var col := _act_color(_nodes[i]["chapter"])
+		col.a = 0.85 if reached else 0.3
 		# Glow underlay + crisp line; reached segments flow with a dashed pulse.
 		draw_line(a, b, Color(col.r, col.g, col.b, col.a * 0.25), 9.0)
 		draw_line(a, b, col, 3.0)
@@ -198,7 +239,7 @@ func _on_node_pressed(i: int) -> void:
 		AudioBus.play_synth_ui("ui_deny", -6.0)
 		return
 	AudioBus.play_synth_ui("pickup_health", -6.0, 1.4)
-	GameState.go_to_level(GameState.CAMPAIGN[i])
+	GameState.go_to_level(_campaign()[i])
 
 func _on_back() -> void:
 	AudioBus.play_synth_ui("ui_back", -8.0)

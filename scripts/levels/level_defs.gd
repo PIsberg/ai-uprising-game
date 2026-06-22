@@ -32,6 +32,26 @@ static func level_title(id: String) -> String:
 	var def := get_def(id)
 	return String(def.get("name", id.to_upper()))
 
+## Campaign chapters (acts). The level ids are listed in campaign order, and each
+## act DELIBERATELY ends on a boss: I→GOLIATH-IX, II→OVERSEER (TERMINATOR mid-act),
+## III→PROMETHEUS, IV→ARCHON (finale). Used to draw act sections on the map.
+const CHAPTERS := [
+	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
+	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "neon", "crucible", "titan"]},
+	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
+]
+
+## Chapter index a level belongs to, or -1 (e.g. sandbox levels / custom order).
+static func chapter_index_of(id: String) -> int:
+	for i in CHAPTERS.size():
+		if id in (CHAPTERS[i]["ids"] as Array):
+			return i
+	return -1
+
+static func chapter_name(i: int) -> String:
+	return String(CHAPTERS[i]["name"]) if i >= 0 and i < CHAPTERS.size() else ""
+
 static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	if is_equal_approx(s, 1.0):
 		return def
