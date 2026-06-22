@@ -29,7 +29,9 @@ var _name_edit: LineEdit
 var _load_paths: Array = []       # parallel to _load_opt items
 var _sel_label: Label
 var _snap_btn: Button
+var _models_btn: Button
 var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def change)
+var _use_models := true       # render real game models in the preview (off = fast markers)
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
@@ -49,6 +51,7 @@ var _mode_axis := ""              # "", "x", "y", "z"
 var _mode_start := Vector3.ZERO   # cursor ground point at mode start
 var _mode_orig := []              # snapshot: original {pos,yaw,size} per selected
 var _dragging := false            # LMB free-drag move in progress
+var _cam_drag := false            # LMB swipe on empty ground orbits/turns the view
 
 # Undo (snapshot stack) + clipboard.
 var _undo: Array = []
@@ -89,6 +92,8 @@ func _ready() -> void:
 	if has_node("/root/GameState"):
 		GameState.set_state(GameState.State.MENU)
 		GameState.from_editor = false
+	if has_node("/root/AudioBus"):
+		AudioBus.set_music_enabled(false) # no music while editing; restored on exit/playtest
 	_build_environment()
 	_build_camera()
 	_build_ui()
@@ -362,14 +367,37 @@ func _add_marker(category: String, holder: Dictionary, key: String) -> void:
 	var node := _make_marker_visual(category, holder)
 	_preview_root.add_child(node)
 	node.global_position = pos
+	# Any enemy scene we instanced enters the tree (and runs _ready) here — kill
+	# its AI/physics now so it stands still as a pure visual.
+	_freeze_preview(node)
 	node.set_meta("category", category)
 	node.set_meta("holder", holder)
 	node.set_meta("key", key)
 	_markers.append({"node": node, "category": category, "holder": holder, "key": key})
 
+## Neutralise any physics body in a freshly-added preview node so it can't run
+## AI, pathfind, fall, or shoot — it just poses for the editor.
+func _freeze_preview(n: Node) -> void:
+	for c in n.get_children():
+		if c is CharacterBody3D:
+			(c as CharacterBody3D).velocity = Vector3.ZERO
+			c.set_physics_process(false)
+			c.set_process(false)
+		elif c is RigidBody3D:
+			(c as RigidBody3D).freeze = true
+			c.set_physics_process(false)
+		_freeze_preview(c)
+
 func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	var col: Color = CAT_COLOR.get(category, Color.WHITE)
+	# Real game model first (when enabled); fall back to the cheap marker below.
+	if _use_models:
+		var real: Node3D = _real_visual(category, holder)
+		if real != null:
+			root.add_child(real)
+			_add_label(root, category, holder, col)
+			return root
 	match category:
 		"wall", "building", "ramp", "platform", "accent":
 			# Box sized to the entry's `size`.
@@ -402,7 +430,10 @@ func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
 			mi.material_override = _emis(col)
 			mi.position.y = 0.8
 			root.add_child(mi)
-	# Label.
+	_add_label(root, category, holder, col)
+	return root
+
+func _add_label(root: Node3D, category: String, holder: Dictionary, col: Color) -> void:
 	var lbl := Label3D.new()
 	lbl.text = _marker_label(category, holder)
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -412,7 +443,86 @@ func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
 	lbl.modulate = col
 	lbl.outline_size = 8
 	root.add_child(lbl)
-	return root
+
+## Build the real game visual for an entity, or null to fall back to a marker.
+## Enemies/props are instanced from the same scenes LevelBuilder uses; structures
+## reuse the builder's beveled mesh + materials; weapons load their real GLB.
+func _real_visual(category: String, holder: Dictionary):
+	match category:
+		"enemy", "boss":
+			var scn: PackedScene = LevelBuilder.ENEMY_SCENES.get(String(holder.get("type", "")))
+			if scn == null:
+				return null
+			var bot: Node3D = scn.instantiate()
+			if "preview" in bot:
+				bot.preview = true   # bosses skip their boot/wave logic in preview
+			bot.set_physics_process(false)
+			if holder.has("yaw"):
+				bot.rotation.y = deg_to_rad(holder["yaw"])
+			return bot
+		"prop":
+			var scn: PackedScene = LevelBuilder.PROP_SCENES.get(String(holder.get("type", "")))
+			if scn == null:
+				return null
+			var p: Node3D = scn.instantiate()
+			if holder.has("yaw"):
+				p.rotation.y = deg_to_rad(holder["yaw"])
+			return p
+		"weapon":
+			return _weapon_visual(holder)
+		"wall", "building", "ramp", "platform", "accent":
+			return _structure_visual(category, holder)
+	return null
+
+## Beveled box with the builder's real material (matches the in-game look).
+func _structure_visual(category: String, holder: Dictionary) -> Node3D:
+	var size: Vector3 = holder.get("size", Vector3(2, 3, 2))
+	var mi := MeshInstance3D.new()
+	var bm := BeveledBoxMesh.new()
+	bm.size = size
+	mi.mesh = bm
+	var mat: Material
+	match category:
+		"wall": mat = LevelBuilder.MAT_WALL
+		"building": mat = LevelBuilder.MAT_WALL_OUT
+		"ramp", "platform": mat = LevelBuilder.MAT_PROP
+		_: mat = LevelBuilder.MAT_TRIM
+	if holder.has("color"):
+		mat = _flat(holder["color"])
+	mi.material_override = mat
+	# Ramps carry pitch/yaw; orient the slab like the builder does.
+	if category == "ramp":
+		mi.rotation = Vector3(deg_to_rad(holder.get("pitch", 0.0)), deg_to_rad(holder.get("yaw", 0.0)), 0.0)
+	return mi
+
+## Load a weapon's real GLB (Weapon.REAL_MODELS), scaled to its barrel length and
+## tinted gunmetal, floating like a pickup.
+func _weapon_visual(holder: Dictionary):
+	var key := String(holder.get("scene", "")).get_file().get_basename()
+	var cfg: Dictionary = Weapon.REAL_MODELS.get(key, {})
+	if cfg.is_empty() or not ResourceLoader.exists(cfg["glb"]):
+		return null
+	var model: Node3D = load(cfg["glb"]).instantiate()
+	var aabb := _merged_aabb(model)
+	if aabb.size.z > 0.0:
+		model.scale = Vector3.ONE * (float(cfg["len"]) / aabb.size.z)
+	var holder_node := Node3D.new()
+	model.position.y = 1.0   # float at chest height
+	model.rotation.y = PI * 0.25
+	holder_node.add_child(model)
+	return holder_node
+
+## Merged local AABB across a node's MeshInstance3D descendants (for fitting).
+func _merged_aabb(n: Node) -> AABB:
+	var out := AABB()
+	var first := true
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		var a: AABB = (mi as MeshInstance3D).get_aabb()
+		if first:
+			out = a; first = false
+		else:
+			out = out.merge(a)
+	return out
 
 func _marker_label(category: String, holder: Dictionary) -> String:
 	match category:
@@ -483,6 +593,15 @@ func _apply_camera() -> void:
 		var b := Basis.from_euler(Vector3(_fly_pitch, _fly_yaw, 0))
 		_camera.global_transform = Transform3D(b, _fly_pos)
 
+## Turn the view by a mouse swipe (top-down: orbit yaw; free-fly: look around).
+func _orbit(rel: Vector2) -> void:
+	if _topdown:
+		_cam_yaw += rel.x * 0.01
+	else:
+		_fly_yaw -= rel.x * 0.005
+		_fly_pitch = clampf(_fly_pitch - rel.y * 0.005, -1.5, 1.5)
+	_apply_camera()
+
 # ---------- input / camera control ----------
 
 func _process(delta: float) -> void:
@@ -525,14 +644,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if _mode != "":
 			return # transform mode reads the cursor in _process
-		# RMB drag rotates the camera (fly look / top-down yaw).
+		# RMB drag — or a LMB swipe on empty ground — turns the camera.
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-			if _topdown:
-				_cam_yaw += event.relative.x * 0.01
-			else:
-				_fly_yaw -= event.relative.x * 0.005
-				_fly_pitch = clampf(_fly_pitch - event.relative.y * 0.005, -1.5, 1.5)
-			_apply_camera()
+			_orbit(event.relative)
+		elif _cam_drag and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			_orbit(event.relative)
 		elif _dragging and not _selection.is_empty():
 			_drag_move_to(_cursor_world())
 
@@ -563,12 +679,19 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 				_hdrag = {}
 				_set_status("OK")
 			_dragging = false
+			_cam_drag = false
 		return
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP:
-			if _topdown: _cam_height = maxf(8.0, _cam_height - 3.0); _apply_camera()
+			# Scroll elevates the view: lower the top-down camera (zoom in) or
+			# raise the free-fly camera.
+			if _topdown: _cam_height = maxf(8.0, _cam_height - 3.0)
+			else: _fly_pos.y += 2.0
+			_apply_camera()
 		MOUSE_BUTTON_WHEEL_DOWN:
-			if _topdown: _cam_height = minf(120.0, _cam_height + 3.0); _apply_camera()
+			if _topdown: _cam_height = minf(120.0, _cam_height + 3.0)
+			else: _fly_pos.y -= 2.0
+			_apply_camera()
 		MOUSE_BUTTON_LEFT:
 			if _mode != "":
 				_confirm_mode() # click confirms an active grab/rotate/scale
@@ -576,12 +699,16 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 			if _armed_category != "":
 				_place_at(_cursor_world())
 				return
-			# Grab a gizmo handle if the cursor is over one; else select.
+			# Grab a gizmo handle if the cursor is over one; a marker to select it;
+			# else an empty-ground swipe turns the view.
 			var h = _pick_handle()
 			if h != null:
 				_begin_handle_drag(h)
-			else:
+			elif _pick_marker() != null or event.shift_pressed:
 				_click_select(event.shift_pressed)
+			else:
+				_set_selection([])
+				_cam_drag = true
 		MOUSE_BUTTON_RIGHT:
 			if _mode != "":
 				_cancel_mode()
@@ -620,9 +747,12 @@ func _build_ui() -> void:
 	_add_btn(hb, "Load", _on_load)
 	_add_btn(hb, "View (Tab)", _toggle_view)
 	_snap_btn = _add_btn(hb, "Snap: ON", _toggle_snap)
+	_models_btn = _add_btn(hb, "Models: ON", _toggle_models)
 	_add_btn(hb, "Validate", _on_validate)
 	var pt := _add_btn(hb, "▶ Playtest", _on_playtest)
 	pt.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+	var ex := _add_btn(hb, "✕ Exit", _on_exit)
+	ex.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))
 	var sep := VSeparator.new(); hb.add_child(sep)
 	_status = Label.new()
 	_status.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
@@ -727,11 +857,19 @@ func _build_selection_panel(layer: CanvasLayer) -> void:
 	p.add_child(_sel_label)
 
 func _help_text() -> String:
-	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view"
+	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · drag empty ground / RMB: turn · scroll: elevate"
 
 func _toggle_snap() -> void:
 	_snap = not _snap
 	if _snap_btn: _snap_btn.text = "Snap: %s" % ("ON" if _snap else "OFF")
+
+## Toggle real game models vs. cheap markers (markers are faster on big levels).
+func _toggle_models() -> void:
+	_use_models = not _use_models
+	if _models_btn: _models_btn.text = "Models: %s" % ("ON" if _use_models else "OFF")
+	var keep := _selection_holders()
+	rebuild_preview()
+	_select_holders(keep)
 
 func _add_btn(parent: Node, text: String, cb: Callable) -> Button:
 	var b := Button.new()
@@ -765,6 +903,17 @@ func _builtin_ids() -> Array:
 		"range", "horde", "sublevel", "crucible", "frostbreak", "neon"]
 
 # ---------- file ops ----------
+
+## Leave the editor: back to the main menu if it exists, else quit the app.
+func _on_exit() -> void:
+	if has_node("/root/AudioBus"):
+		AudioBus.set_music_enabled(true)
+	if has_node("/root/GameState"):
+		GameState.from_editor = false
+	if ResourceLoader.exists("res://scenes/ui/main_menu.tscn"):
+		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+	else:
+		get_tree().quit()
 
 func _on_new() -> void:
 	current_name = "untitled"
@@ -1717,6 +1866,8 @@ func _on_playtest() -> void:
 	if p == "":
 		_set_status("Playtest failed: could not save")
 		return
+	if has_node("/root/AudioBus"):
+		AudioBus.set_music_enabled(true) # restore music for the playtest session
 	if has_node("/root/GameState"):
 		GameState.custom_level_path = p
 		GameState.from_editor = true
