@@ -35,7 +35,8 @@ var _use_models := true       # render real game models in the preview (off = fa
 var _show_labels := true      # show the floating name labels over markers
 var _labels_btn: Button
 var _nav_globe: Control       # top-right navigation gizmo (drag-orbit / zoom / pan)
-var _nav_needle: Control      # compass needle inside the globe, points to camera yaw
+var _nav_sub: SubViewport     # offscreen 3D render of the globe
+var _nav_rig: Node3D          # the globe sphere+axes; tumbles to match the view
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
@@ -157,6 +158,9 @@ func _teardown() -> void:
 	for c in _preview_root.get_children():
 		c.queue_free()
 	_markers.clear()
+	if _nav_sub and is_instance_valid(_nav_sub): # stop the offscreen render + free its RIDs
+		_nav_sub.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		_nav_sub.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -333,7 +337,7 @@ func _selftest() -> void:
 	print("P10 vis0=", vis0, " hidden=", hidden_ok, " shown=", shown_ok)
 	print("PHASE10 ", "PASS" if (hidden_ok and shown_ok) else "FAIL")
 	# Phase 11: nav gizmo built; its pan + zoom helpers drive the camera.
-	var nav_ok := _nav_globe != null and is_instance_valid(_nav_globe) and _nav_needle != null
+	var nav_ok := _nav_globe != null and is_instance_valid(_nav_globe) and _nav_rig != null
 	_topdown = true; _cam_target = Vector3.ZERO; _cam_height = 40.0; _apply_camera()
 	_pan_view(Vector2(60, 0))
 	var pan_ok := _cam_target.length() > 0.01
@@ -740,11 +744,13 @@ func _apply_camera() -> void:
 		_camera.global_transform = Transform3D(b, _fly_pos)
 	_update_nav()
 
-## Spin the nav-gizmo needle to match the current view yaw (visual feedback).
+## Tumble the 3D nav globe to match the current view orientation (yaw + tilt).
 func _update_nav() -> void:
-	if _nav_needle == null or not is_instance_valid(_nav_needle):
+	if _nav_rig == null or not is_instance_valid(_nav_rig):
 		return
-	_nav_needle.rotation = (_cam_yaw if _topdown else _fly_yaw)
+	var yaw := _cam_yaw if _topdown else _fly_yaw
+	var pitch := 1.05 if _topdown else (-_fly_pitch) # top-down looks steeply down
+	_nav_rig.rotation = Vector3(pitch, yaw, 0.0)
 
 ## Turn the view by a mouse swipe (top-down: orbit yaw; free-fly: look around).
 func _orbit(rel: Vector2) -> void:
@@ -1051,8 +1057,9 @@ func _build_ui() -> void:
 	_build_nav_gizmo(layer)
 
 ## Blender-style navigation gizmo, top-right of the viewport (just left of the
-## inspector): a "globe" you drag to orbit (and scroll to zoom), with pan and
-## zoom buttons below. Gives mouse-only navigation without learning the hotkeys.
+## inspector): an actual 3D globe (rendered in an offscreen SubViewport) that you
+## drag to orbit and scroll to zoom, with pan and zoom buttons below. The globe
+## tumbles to reflect the camera orientation. Mouse-only nav, no hotkeys needed.
 func _build_nav_gizmo(layer: CanvasLayer) -> void:
 	var nav := VBoxContainer.new()
 	nav.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -1061,45 +1068,40 @@ func _build_nav_gizmo(layer: CanvasLayer) -> void:
 	nav.offset_top = 50.0
 	nav.add_theme_constant_override("separation", 4)
 	layer.add_child(nav)
-	# --- the globe: a circular pad, drag to orbit / scroll to zoom ---
-	var globe := Control.new()
+	# --- offscreen 3D render of the globe ---
+	_nav_sub = SubViewport.new()
+	_nav_sub.size = Vector2i(112, 112)
+	_nav_sub.transparent_bg = true
+	_nav_sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_nav_sub.msaa_3d = Viewport.MSAA_4X
+	add_child(_nav_sub)
+	var ge := WorldEnvironment.new()
+	var genv := Environment.new()
+	genv.background_mode = Environment.BG_CLEAR_COLOR
+	genv.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	genv.ambient_light_color = Color(0.5, 0.6, 0.8)
+	genv.ambient_light_energy = 1.2
+	ge.environment = genv
+	_nav_sub.add_child(ge)
+	var gcam := Camera3D.new()
+	gcam.position = Vector3(0, 0, 3.0)
+	gcam.fov = 40.0
+	_nav_sub.add_child(gcam)
+	var glight := DirectionalLight3D.new()
+	glight.rotation_degrees = Vector3(-40, -35, 0)
+	glight.light_energy = 1.3
+	_nav_sub.add_child(glight)
+	_nav_rig = Node3D.new()
+	_nav_sub.add_child(_nav_rig)
+	_build_globe_mesh(_nav_rig)
+	# --- the globe display: a TextureRect fed by the SubViewport, drag/scroll on it ---
+	var globe := TextureRect.new()
+	globe.texture = _nav_sub.get_texture()
 	globe.custom_minimum_size = Vector2(96, 96)
+	globe.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	globe.tooltip_text = "Drag: rotate · Scroll: zoom"
 	nav.add_child(globe)
 	_nav_globe = globe
-	var disc := Panel.new()
-	disc.set_anchors_preset(Control.PRESET_FULL_RECT)
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.13, 0.3, 0.52)
-	sb.set_corner_radius_all(48)
-	sb.border_color = Color(0.45, 0.72, 1.0); sb.set_border_width_all(2)
-	sb.shadow_color = Color(0, 0, 0, 0.5); sb.shadow_size = 4
-	disc.add_theme_stylebox_override("panel", sb)
-	globe.add_child(disc)
-	# Equator + meridian hairlines so it reads as a globe.
-	for r in [Vector2(96, 1), Vector2(1, 96)]:
-		var line := ColorRect.new()
-		line.color = Color(0.45, 0.72, 1.0, 0.35)
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		line.set_anchors_preset(Control.PRESET_CENTER)
-		line.custom_minimum_size = r; line.size = r
-		line.position = Vector2(48, 48) - r * 0.5
-		globe.add_child(line)
-	# Rotating compass needle (pivots at the globe centre, points to view yaw).
-	var needle := Control.new()
-	needle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	needle.position = Vector2(48, 48)
-	globe.add_child(needle)
-	_nav_needle = needle
-	var tip := ColorRect.new()
-	tip.color = Color(1.0, 0.45, 0.4)
-	tip.size = Vector2(4, 34); tip.position = Vector2(-2, -36)
-	needle.add_child(tip)
-	var nlabel := Label.new()
-	nlabel.text = "N"; nlabel.position = Vector2(-6, -52)
-	nlabel.add_theme_font_size_override("font_size", 12)
-	needle.add_child(nlabel)
 	globe.gui_input.connect(_on_globe_input)
 	# --- zoom / pan row ---
 	var row := HBoxContainer.new()
@@ -1138,6 +1140,40 @@ func _on_globe_input(e: InputEvent) -> void:
 			_zoom_step(true)
 		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_step(false)
+
+## Build the globe: a core sphere, glowing equator + meridian rings, and coloured
+## axis nubs (+X red, +Y green, +Z blue) so the view orientation is readable.
+func _build_globe_mesh(rig: Node3D) -> void:
+	var core := MeshInstance3D.new()
+	var sm := SphereMesh.new(); sm.radius = 0.9; sm.height = 1.8; sm.radial_segments = 32; sm.rings = 16
+	core.mesh = sm
+	var cmat := StandardMaterial3D.new()
+	cmat.albedo_color = Color(0.15, 0.34, 0.6)
+	cmat.metallic = 0.2; cmat.roughness = 0.5
+	cmat.emission_enabled = true; cmat.emission = Color(0.1, 0.22, 0.42); cmat.emission_energy_multiplier = 0.4
+	core.material_override = cmat
+	rig.add_child(core)
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = Color(0.5, 0.8, 1.0)
+	ring_mat.emission_enabled = true; ring_mat.emission = Color(0.45, 0.75, 1.0); ring_mat.emission_energy_multiplier = 1.3
+	for rot in [Vector3.ZERO, Vector3(0, 0, PI * 0.5), Vector3(PI * 0.5, 0, 0)]:
+		var ring := MeshInstance3D.new()
+		var tm := TorusMesh.new(); tm.inner_radius = 0.88; tm.outer_radius = 0.95; tm.rings = 40; tm.ring_segments = 8
+		ring.mesh = tm
+		ring.material_override = ring_mat
+		ring.rotation = rot
+		rig.add_child(ring)
+	var axes := {Vector3.RIGHT: Color(1, 0.32, 0.3), Vector3.UP: Color(0.4, 1, 0.45), Vector3.BACK: Color(0.45, 0.62, 1)}
+	for dir in axes:
+		var nub := MeshInstance3D.new()
+		var ns := SphereMesh.new(); ns.radius = 0.15; ns.height = 0.3
+		nub.mesh = ns
+		var nm := StandardMaterial3D.new()
+		nm.albedo_color = axes[dir]
+		nm.emission_enabled = true; nm.emission = axes[dir]; nm.emission_energy_multiplier = 0.8
+		nub.material_override = nm
+		nub.position = dir * 0.98
+		rig.add_child(nub)
 
 ## Right-hand inspector: edits the selected entity, or (nothing selected) the
 ## level settings + env + tasks. Rebuilt by _refresh_inspector().
