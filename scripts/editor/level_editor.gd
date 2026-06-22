@@ -32,12 +32,18 @@ var _snap_btn: Button
 var _models_btn: Button
 var _insp_vb: VBoxContainer   # inspector body (rebuilt on selection / def change)
 var _use_models := true       # render real game models in the preview (off = fast markers)
+var _show_labels := true      # show the floating name labels over markers
+var _labels_btn: Button
+var _nav_globe: Control       # top-right navigation gizmo (drag-orbit / zoom / pan)
+var _nav_sub: SubViewport     # offscreen 3D render of the globe
+var _nav_rig: Node3D          # the globe sphere+axes; tumbles to match the view
 
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
 var _armed_item := ""
 var _selection: Array = []        # selected marker records (subset of _markers)
 var _gizmo: Node3D                 # transform gizmo at the selection centroid
+var _gizmo_scale := 1.0            # gizmo drawn at this scale (tracks camera distance)
 var _handles: Array = []           # [{gtype, axis, dir, off}] draggable gizmo handles
 var _hdrag: Dictionary = {}        # active handle drag ({} = none)
 var _hdrag_center := Vector3.ZERO
@@ -51,7 +57,14 @@ var _mode_axis := ""              # "", "x", "y", "z"
 var _mode_start := Vector3.ZERO   # cursor ground point at mode start
 var _mode_orig := []              # snapshot: original {pos,yaw,size} per selected
 var _dragging := false            # LMB free-drag move in progress
-var _cam_drag := false            # LMB swipe on empty ground orbits/turns the view
+var _box_select := false          # LMB rubber-band select on empty ground
+var _box_start := Vector2.ZERO    # screen-space anchor of the rubber band
+var _box_panel: Panel             # the rubber-band overlay (in the UI layer)
+
+# Unsaved-changes tracking.
+var _dirty := false               # true once the def is edited since last save/load
+var _save_btn: Button
+var _grid_btn: Button
 
 # Undo (snapshot stack) + clipboard.
 var _undo: Array = []
@@ -94,6 +107,7 @@ func _ready() -> void:
 		GameState.from_editor = false
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(false) # no music while editing; restored on exit/playtest
+		AudioBus.suppress_world_sfx = true # preview enemies stay silent (also avoids leaked playbacks)
 	_build_environment()
 	_build_camera()
 	_build_ui()
@@ -118,6 +132,9 @@ func _ready() -> void:
 ## Fails if any level produces no markers (i.e. didn't load).
 func _loadall() -> void:
 	await get_tree().process_frame
+	# Marker counts don't depend on real models, and instancing 20 levels' worth of
+	# bosses just to count them spawns stray boot timers — use fast markers here.
+	_use_models = false
 	var fails: Array = []
 	for id in _builtin_ids():
 		var d := LevelDefs.get_def(id)
@@ -132,7 +149,20 @@ func _loadall() -> void:
 		if n < 2: # every level has at least spawn + exit
 			fails.append("%s(%d)" % [id, n])
 	print("LOADALL ", "PASS" if fails.is_empty() else "FAIL " + ", ".join(fails))
+	await _teardown()
 	get_tree().quit()
+
+## Free the preview before a headless quit so instanced game scenes (and their
+## audio/timers) don't get reported as leaked when we tear down mid-flight.
+func _teardown() -> void:
+	for c in _preview_root.get_children():
+		c.queue_free()
+	_markers.clear()
+	if _nav_sub and is_instance_valid(_nav_sub): # stop the offscreen render + free its RIDs
+		_nav_sub.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		_nav_sub.queue_free()
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 ## Windowed screenshot of the editor with a level loaded (dev verification).
 func _shot() -> void:
@@ -145,6 +175,7 @@ func _shot() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir() + "/editor_shot.png")
 	print("SHOT saved")
+	await _teardown()
 	get_tree().quit()
 
 ## Headless smoke test (run: editor scene with --editor-selftest): load a built-in
@@ -221,7 +252,108 @@ func _selftest() -> void:
 	var p5 := handles_ok and y_axis_ok and (def["buildings"] as Array).size() == 1
 	print("P5 handles=", _handles.size(), " y_axis=", y_axis_ok)
 	print("PHASE5 ", "PASS" if p5 else "FAIL")
+	# Phase 6: camera zoom (proportional, bounded) + gizmo scales with distance.
+	_topdown = true
+	_cam_height = 38.0
+	_wheel(MOUSE_BUTTON_WHEEL_UP)   # zoom in once
+	var zoomed_in := _cam_height < 38.0
+	for _i in 40: _wheel(MOUSE_BUTTON_WHEEL_UP)   # spam in — must clamp, not crash
+	var clamp_lo := _cam_height >= 5.0
+	for _i in 80: _wheel(MOUSE_BUTTON_WHEEL_DOWN)  # spam out — must clamp at the top
+	var clamp_hi := _cam_height <= 200.0
+	# Gizmo tracks camera distance: closer view → smaller gizmo than a far view.
+	_cam_height = 12.0; _apply_camera(); _update_gizmo()
+	var near_scale := _gizmo_scale
+	_cam_height = 160.0; _apply_camera(); _update_gizmo()
+	var giz_ok := _gizmo_scale > near_scale
+	var p6 := zoomed_in and clamp_lo and clamp_hi and giz_ok
+	print("P6 zoom_in=", zoomed_in, " clamp_lo=", clamp_lo, " clamp_hi=", clamp_hi, " gizmo=", giz_ok)
+	print("PHASE6 ", "PASS" if p6 else "FAIL")
+	# Phase 7: opening the level inspector must not inject out-of-range env defaults
+	# (a blanket 1.0 used to bake fog_density 100x over its 0.05 ceiling).
+	var dd := blank_def(); dd["env"] = {}
+	set_def(dd); await get_tree().process_frame
+	_set_selection([])
+	_inspect_level()
+	var env7: Dictionary = def["env"]
+	var fog_ok := float(env7.get("fog_density", 1.0)) <= 0.05
+	print("P7 fog_density=", env7.get("fog_density"), " ok=", fog_ok)
+	print("PHASE7 ", "PASS" if fog_ok else "FAIL")
+	# Phase 8: weapons + powerups place onto a fresh level. extra_weapons isn't in
+	# blank_def, so this used to no-op (append on a missing-key null).
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("weapon", GameState.ALL_WEAPONS[0]); _place_at(Vector3(4, 0, 0)); await get_tree().process_frame
+	var wpn_ok := (def.get("extra_weapons", []) as Array).size() == 1
+	_arm("pickup", "health"); _place_at(Vector3(-4, 0, 0)); await get_tree().process_frame
+	var pwr_ok := (def.get("pickups", []) as Array).size() == 1
+	print("P8 weapon=", wpn_ok, " powerup=", pwr_ok)
+	print("PHASE8 ", "PASS" if (wpn_ok and pwr_ok) else "FAIL")
+	# Phase 9: focus framing, grid cycle, dirty flag, box-select.
+	set_def(blank_def()); await get_tree().process_frame
+	var clean0 := not _dirty            # fresh load = clean
+	_arm("enemy", "android"); _place_at(Vector3(10, 0, 10)); await get_tree().process_frame
+	_arm("enemy", "android"); _place_at(Vector3(14, 0, 10)); await get_tree().process_frame
+	var dirty_after_edit := _dirty
+	# Focus on the selected (2nd) enemy → pan target lands on it.
+	_topdown = true; _cam_target = Vector3.ZERO; _cam_height = 38.0; _apply_camera()
+	_focus_selection()
+	var focus_ok := absf(_cam_target.x - 14.0) < 1.0 and absf(_cam_target.z - 10.0) < 1.0
+	# Grid cycle changes the snap step.
+	var g0 := _grid; _cycle_grid()
+	var grid_ok := _grid != g0
+	# Box-select: frame both enemies, build a rect over their projections.
+	_cam_target = Vector3(12, 0, 10); _cam_height = 40.0; _apply_camera()
+	await get_tree().process_frame
+	var pts: Array = []
+	for m in _markers:
+		if m["category"] == "enemy":
+			pts.append(_camera.unproject_position(m["node"].global_position + Vector3(0, 0.8, 0)))
+	var box_ok := false
+	if pts.size() == 2:
+		var mn := Vector2(minf(pts[0].x, pts[1].x), minf(pts[0].y, pts[1].y)) - Vector2(24, 24)
+		var mx := Vector2(maxf(pts[0].x, pts[1].x), maxf(pts[0].y, pts[1].y)) + Vector2(24, 24)
+		box_ok = _markers_in_rect(Rect2(mn, mx - mn)).size() >= 2
+	# Saving clears the dirty flag.
+	if _name_edit: _name_edit.text = "_selftest"
+	_on_save()
+	var clean_after_save := not _dirty
+	var p9 := clean0 and dirty_after_edit and focus_ok and grid_ok and box_ok and clean_after_save
+	print("P9 clean0=", clean0, " dirty=", dirty_after_edit, " focus=", focus_ok, " grid=", grid_ok, " box=", box_ok, " saved_clean=", clean_after_save)
+	print("PHASE9 ", "PASS" if p9 else "FAIL")
+	# Phase 10: label visibility toggle.
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("prop", LevelBuilder.PROP_SCENES.keys()[0]); _place_at(Vector3(0, 0, 0)); await get_tree().process_frame
+	var count_labels := func() -> int:
+		var n := 0
+		for m in _markers:
+			for c in m["node"].get_children():
+				if c is Label3D and c.visible: n += 1
+		return n
+	var vis0: int = count_labels.call()
+	_toggle_labels()
+	var hidden_ok: bool = int(count_labels.call()) == 0 and not _show_labels
+	_toggle_labels()
+	var shown_ok: bool = int(count_labels.call()) == vis0 and _show_labels and vis0 > 0
+	print("P10 vis0=", vis0, " hidden=", hidden_ok, " shown=", shown_ok)
+	print("PHASE10 ", "PASS" if (hidden_ok and shown_ok) else "FAIL")
+	# Phase 11: nav gizmo built; its pan + zoom helpers drive the camera.
+	var nav_ok := _nav_globe != null and is_instance_valid(_nav_globe) and _nav_rig != null
+	_topdown = true; _cam_target = Vector3.ZERO; _cam_height = 40.0; _apply_camera()
+	_pan_view(Vector2(60, 0))
+	var pan_ok := _cam_target.length() > 0.01
+	var h0 := _cam_height; _zoom_step(true)
+	var zoom_ok := _cam_height < h0
+	print("P11 nav=", nav_ok, " pan=", pan_ok, " zoom=", zoom_ok)
+	print("PHASE11 ", "PASS" if (nav_ok and pan_ok and zoom_ok) else "FAIL")
+	await _teardown()
 	get_tree().quit()
+
+## Test helper: drive the scroll-wheel zoom path without a live input device.
+func _wheel(button: int) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	ev.pressed = true
+	_handle_mouse_button(ev)
 
 # ---------- def lifecycle ----------
 
@@ -248,16 +380,21 @@ static func blank_def() -> Dictionary:
 
 func set_def(d: Dictionary) -> void:
 	def = d.duplicate(true)
-	# Guarantee the arrays exist so placement code can append without checks.
-	for k in ["enemies", "props", "buildings", "walls", "ramps", "platforms",
-			"lights", "pickups", "holograms", "fires", "tasks"]:
+	# Guarantee every array a category can append to exists, so placement/paste
+	# can append without per-call null checks. Sourced from CAT_ARRAY so adding a
+	# new placeable category can't silently miss its backing array (weapons used to
+	# fail this way: extra_weapons wasn't seeded, so placing one did nothing).
+	for k in CAT_ARRAY.values():
 		if not (def.get(k) is Array):
 			def[k] = []
+	if not (def.get("tasks") is Array):
+		def["tasks"] = []
 	if not (def.get("env") is Dictionary):
 		def["env"] = {}
 	_cam_target = Vector3(0, 0, 0)
 	rebuild_preview()
 	_refresh_inspector()
+	_clean() # a freshly loaded/blanked def has no unsaved edits
 	_set_status("Loaded '%s'" % def.get("name", "level"))
 
 # ---------- preview ----------
@@ -320,6 +457,9 @@ func _build_floor_and_walls() -> void:
 	var fmat := StandardMaterial3D.new()
 	fmat.albedo_color = def.get("floor_color", Color(0.18, 0.18, 0.2))
 	floor_mi.material_override = fmat
+	# Drop the floor a hair below 0 so structure/prop bases (authored at y=0) are
+	# never coplanar with it — coplanar faces z-fight and read as "blinking".
+	floor_mi.position.y = -0.05
 	_preview_root.add_child(floor_mi)
 	# Thin perimeter walls (visual bounds).
 	var hx := fs.x * 0.5
@@ -386,6 +526,12 @@ func _freeze_preview(n: Node) -> void:
 		elif c is RigidBody3D:
 			(c as RigidBody3D).freeze = true
 			c.set_physics_process(false)
+		# Game scenes auto-play idle/spawn SFX in _ready — silence them (no audio
+		# blaring while editing) and drop the stream ref so it can't leak at exit.
+		if c is AudioStreamPlayer or c is AudioStreamPlayer3D or c is AudioStreamPlayer2D:
+			if c.playing: c.stop()
+			c.autoplay = false
+			c.stream = null
 		_freeze_preview(c)
 
 func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
@@ -442,6 +588,7 @@ func _add_label(root: Node3D, category: String, holder: Dictionary, col: Color) 
 	lbl.position.y = 2.4
 	lbl.modulate = col
 	lbl.outline_size = 8
+	lbl.visible = _show_labels
 	root.add_child(lbl)
 
 ## Build the real game visual for an entity, or null to fall back to a marker.
@@ -579,7 +726,10 @@ func _build_environment() -> void:
 func _build_camera() -> void:
 	_camera = Camera3D.new()
 	_camera.current = true
-	_camera.far = 2000.0
+	# A tight near/far keeps the depth buffer precise — a 2000:0.05 ratio used to
+	# z-fight (buildings flickering against the floor at grazing angles).
+	_camera.near = 0.2
+	_camera.far = 600.0
 	add_child(_camera)
 	_apply_camera()
 
@@ -592,6 +742,15 @@ func _apply_camera() -> void:
 	else:
 		var b := Basis.from_euler(Vector3(_fly_pitch, _fly_yaw, 0))
 		_camera.global_transform = Transform3D(b, _fly_pos)
+	_update_nav()
+
+## Tumble the 3D nav globe to match the current view orientation (yaw + tilt).
+func _update_nav() -> void:
+	if _nav_rig == null or not is_instance_valid(_nav_rig):
+		return
+	var yaw := _cam_yaw if _topdown else _fly_yaw
+	var pitch := 1.05 if _topdown else (-_fly_pitch) # top-down looks steeply down
+	_nav_rig.rotation = Vector3(pitch, yaw, 0.0)
 
 ## Turn the view by a mouse swipe (top-down: orbit yaw; free-fly: look around).
 func _orbit(rel: Vector2) -> void:
@@ -601,6 +760,126 @@ func _orbit(rel: Vector2) -> void:
 		_fly_yaw -= rel.x * 0.005
 		_fly_pitch = clampf(_fly_pitch - rel.y * 0.005, -1.5, 1.5)
 	_apply_camera()
+
+## Zoom one proportional step: drop/raise the top-down camera, or dolly the
+## free-fly camera along its view axis. Shared by the scroll wheel and the nav gizmo.
+func _zoom_step(inward: bool) -> void:
+	if _topdown:
+		_cam_height = clampf(_cam_height * (0.88 if inward else 1.136), 5.0, 200.0)
+	else:
+		_fly_pos += _camera.global_transform.basis.z * (-4.0 if inward else 4.0)
+	_apply_camera()
+	_update_nav()
+
+## Pan ("span") the view by a screen-space drag delta — slides the top-down pan
+## target, or strafes the free-fly camera. Used by the nav gizmo's pan pad.
+func _pan_view(rel: Vector2) -> void:
+	if _topdown:
+		var d := Basis(Vector3.UP, _cam_yaw) * Vector3(-rel.x, 0.0, -rel.y)
+		_cam_target += d * (_cam_height * 0.0022)
+	else:
+		_fly_pos += _camera.global_transform.basis * Vector3(-rel.x, rel.y, 0.0) * 0.06
+	_apply_camera()
+
+## Recenter (and reframe) the view on the selection, or the whole level if nothing
+## is selected. Top-down moves the pan target + fits the height; free-fly drops the
+## camera back to look at the centroid. Panning is WASD-only, so this is the quick
+## way to reach a far corner of a big level.
+func _focus_selection() -> void:
+	var center := Vector3.ZERO
+	var radius := 8.0
+	if _selection.is_empty():
+		var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+		radius = maxf(fs.x, fs.y) * 0.5
+	else:
+		for m in _selection:
+			center += m["node"].global_position
+		center /= _selection.size()
+		radius = 6.0
+		for m in _selection:
+			radius = maxf(radius, m["node"].global_position.distance_to(center) + 4.0)
+	if _topdown:
+		_cam_target = Vector3(center.x, 0.0, center.z)
+		_cam_height = clampf(radius * 2.2, 5.0, 200.0)
+	else:
+		_fly_pos = center + Vector3(0, radius * 0.8, radius * 1.6)
+		_fly_yaw = 0.0
+		_fly_pitch = -0.5
+	_apply_camera()
+	_set_status("Focused")
+
+## Cycle the placement/snap grid through a few useful steps.
+func _cycle_grid() -> void:
+	var steps := [0.5, 1.0, 2.0, 5.0]
+	var i := steps.find(_grid)
+	_grid = steps[(i + 1) % steps.size()]
+	if _grid_btn: _grid_btn.text = "Grid: %s" % _grid
+
+# ---------- rubber-band (box) select ----------
+
+func _update_box_panel() -> void:
+	var cur := get_viewport().get_mouse_position()
+	_box_panel.position = Vector2(minf(_box_start.x, cur.x), minf(_box_start.y, cur.y))
+	_box_panel.size = (cur - _box_start).abs()
+
+## Select every marker whose screen projection falls inside the rubber band. A
+## negligible drag (a plain click) just clears the selection. Shift keeps the
+## existing selection and adds to it.
+func _finish_box_select() -> void:
+	_box_select = false
+	_box_panel.visible = false
+	var cur := get_viewport().get_mouse_position()
+	var rect := Rect2(Vector2(minf(_box_start.x, cur.x), minf(_box_start.y, cur.y)), (cur - _box_start).abs())
+	if rect.size.length() < 6.0:
+		if not Input.is_key_pressed(KEY_SHIFT):
+			_set_selection([])
+		return
+	var hits := _markers_in_rect(rect)
+	if Input.is_key_pressed(KEY_SHIFT):
+		for m in _selection:
+			if m not in hits:
+				hits.append(m)
+	_set_selection(hits)
+	_set_status("Box-selected %d" % hits.size())
+
+## Markers whose world position projects to a screen point inside `rect`.
+func _markers_in_rect(rect: Rect2) -> Array:
+	var out: Array = []
+	for m in _markers:
+		var wp: Vector3 = m["node"].global_position + Vector3(0, 0.8, 0)
+		if _camera.is_position_behind(wp):
+			continue
+		if rect.has_point(_camera.unproject_position(wp)):
+			out.append(m)
+	return out
+
+# ---------- unsaved-changes guard ----------
+
+## Mark the def edited since the last save/load and reflect it on the Save button.
+func _mark_dirty() -> void:
+	if _dirty:
+		return
+	_dirty = true
+	if _save_btn: _save_btn.text = "Save *"
+
+func _clean() -> void:
+	_dirty = false
+	if _save_btn: _save_btn.text = "Save"
+
+## Run `action`, but if there are unsaved edits, confirm first so work isn't lost.
+func _guard(action: Callable) -> void:
+	if not _dirty:
+		action.call()
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.dialog_text = "Discard unsaved changes?"
+	dlg.ok_button_text = "Discard"
+	dlg.confirmed.connect(func():
+		action.call()
+		dlg.queue_free())
+	dlg.canceled.connect(func(): dlg.queue_free())
+	add_child(dlg)
+	dlg.popup_centered()
 
 # ---------- input / camera control ----------
 
@@ -621,6 +900,7 @@ func _process(delta: float) -> void:
 		if Input.is_key_pressed(KEY_D): pan.x += 1
 		if pan != Vector3.ZERO:
 			var sp := _cam_height * 0.6 * delta
+			if Input.is_key_pressed(KEY_SHIFT): sp *= 3.0 # hold Shift to sprint
 			_cam_target += (Basis(Vector3.UP, _cam_yaw) * pan).normalized() * sp
 			_apply_camera()
 	else:
@@ -632,7 +912,8 @@ func _process(delta: float) -> void:
 		if Input.is_key_pressed(KEY_E): dir.y += 1
 		if Input.is_key_pressed(KEY_Q): dir.y -= 1
 		if dir != Vector3.ZERO:
-			_fly_pos += _camera.global_transform.basis * dir.normalized() * 20.0 * delta
+			var sp := 60.0 if Input.is_key_pressed(KEY_SHIFT) else 20.0 # Shift = sprint
+			_fly_pos += _camera.global_transform.basis * dir.normalized() * sp * delta
 			_apply_camera()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -644,11 +925,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if _mode != "":
 			return # transform mode reads the cursor in _process
-		# RMB drag — or a LMB swipe on empty ground — turns the camera.
+		# RMB drag turns the camera; LMB drag either resizes the rubber band or
+		# moves the selection.
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 			_orbit(event.relative)
-		elif _cam_drag and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			_orbit(event.relative)
+		elif _box_select:
+			_update_box_panel()
 		elif _dragging and not _selection.is_empty():
 			_drag_move_to(_cursor_world())
 
@@ -678,20 +960,15 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 			if not _hdrag.is_empty():
 				_hdrag = {}
 				_set_status("OK")
+			if _box_select:
+				_finish_box_select()
 			_dragging = false
-			_cam_drag = false
 		return
 	match event.button_index:
 		MOUSE_BUTTON_WHEEL_UP:
-			# Scroll elevates the view: lower the top-down camera (zoom in) or
-			# raise the free-fly camera.
-			if _topdown: _cam_height = maxf(8.0, _cam_height - 3.0)
-			else: _fly_pos.y += 2.0
-			_apply_camera()
+			_zoom_step(true)
 		MOUSE_BUTTON_WHEEL_DOWN:
-			if _topdown: _cam_height = minf(120.0, _cam_height + 3.0)
-			else: _fly_pos.y -= 2.0
-			_apply_camera()
+			_zoom_step(false)
 		MOUSE_BUTTON_LEFT:
 			if _mode != "":
 				_confirm_mode() # click confirms an active grab/rotate/scale
@@ -699,16 +976,24 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 			if _armed_category != "":
 				_place_at(_cursor_world())
 				return
+			# Double-click a marker → frame the camera on it.
+			if event.double_click and _pick_marker() != null:
+				_click_select(false)
+				_focus_selection()
+				return
 			# Grab a gizmo handle if the cursor is over one; a marker to select it;
-			# else an empty-ground swipe turns the view.
+			# else start a rubber-band box select on empty ground.
 			var h = _pick_handle()
 			if h != null:
 				_begin_handle_drag(h)
 			elif _pick_marker() != null or event.shift_pressed:
 				_click_select(event.shift_pressed)
 			else:
-				_set_selection([])
-				_cam_drag = true
+				_box_select = true
+				_box_start = get_viewport().get_mouse_position()
+				_box_panel.position = _box_start
+				_box_panel.size = Vector2.ZERO
+				_box_panel.visible = true
 		MOUSE_BUTTON_RIGHT:
 			if _mode != "":
 				_cancel_mode()
@@ -734,24 +1019,27 @@ func _build_ui() -> void:
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 8)
 	bar.add_child(hb)
-	_add_btn(hb, "New", _on_new)
+	_add_btn(hb, "New", func(): _guard(_on_new))
 	_name_edit = LineEdit.new()
 	_name_edit.custom_minimum_size = Vector2(160, 0)
 	_name_edit.placeholder_text = "level name"
 	_name_edit.text = current_name
 	hb.add_child(_name_edit)
-	_add_btn(hb, "Save", _on_save)
+	_save_btn = _add_btn(hb, "Save", _on_save)
 	_load_opt = OptionButton.new()
 	_load_opt.custom_minimum_size = Vector2(220, 0)
 	hb.add_child(_load_opt)
-	_add_btn(hb, "Load", _on_load)
+	_add_btn(hb, "Load", func(): _guard(_on_load))
 	_add_btn(hb, "View (Tab)", _toggle_view)
+	_add_btn(hb, "⊙ Focus", _focus_selection)
 	_snap_btn = _add_btn(hb, "Snap: ON", _toggle_snap)
+	_grid_btn = _add_btn(hb, "Grid: 1.0", _cycle_grid)
 	_models_btn = _add_btn(hb, "Models: ON", _toggle_models)
+	_labels_btn = _add_btn(hb, "Labels: ON", _toggle_labels)
 	_add_btn(hb, "Validate", _on_validate)
 	var pt := _add_btn(hb, "▶ Playtest", _on_playtest)
 	pt.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
-	var ex := _add_btn(hb, "✕ Exit", _on_exit)
+	var ex := _add_btn(hb, "✕ Exit", func(): _guard(_on_exit))
 	ex.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))
 	var sep := VSeparator.new(); hb.add_child(sep)
 	_status = Label.new()
@@ -760,6 +1048,132 @@ func _build_ui() -> void:
 	_build_palette(layer)
 	_build_selection_panel(layer)
 	_build_inspector(layer)
+	# Rubber-band selection overlay (drawn over the world, hidden until dragging).
+	_box_panel = Panel.new()
+	_box_panel.visible = false
+	_box_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_box_panel.modulate = Color(0.5, 0.8, 1.0, 0.5)
+	layer.add_child(_box_panel)
+	_build_nav_gizmo(layer)
+
+## Blender-style navigation gizmo, top-right of the viewport (just left of the
+## inspector): an actual 3D globe (rendered in an offscreen SubViewport) that you
+## drag to orbit and scroll to zoom, with pan and zoom buttons below. The globe
+## tumbles to reflect the camera orientation. Mouse-only nav, no hotkeys needed.
+func _build_nav_gizmo(layer: CanvasLayer) -> void:
+	var nav := VBoxContainer.new()
+	nav.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	nav.anchor_left = 1.0; nav.anchor_right = 1.0
+	nav.offset_left = -416.0; nav.offset_right = -312.0 # sit left of the 300px inspector
+	nav.offset_top = 50.0
+	nav.add_theme_constant_override("separation", 4)
+	layer.add_child(nav)
+	# --- offscreen 3D render of the globe ---
+	_nav_sub = SubViewport.new()
+	_nav_sub.size = Vector2i(112, 112)
+	_nav_sub.transparent_bg = true
+	_nav_sub.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_nav_sub.msaa_3d = Viewport.MSAA_4X
+	add_child(_nav_sub)
+	var ge := WorldEnvironment.new()
+	var genv := Environment.new()
+	genv.background_mode = Environment.BG_CLEAR_COLOR
+	genv.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	genv.ambient_light_color = Color(0.5, 0.6, 0.8)
+	genv.ambient_light_energy = 1.2
+	ge.environment = genv
+	_nav_sub.add_child(ge)
+	var gcam := Camera3D.new()
+	gcam.position = Vector3(0, 0, 3.0)
+	gcam.fov = 40.0
+	_nav_sub.add_child(gcam)
+	var glight := DirectionalLight3D.new()
+	glight.rotation_degrees = Vector3(-40, -35, 0)
+	glight.light_energy = 1.3
+	_nav_sub.add_child(glight)
+	_nav_rig = Node3D.new()
+	_nav_sub.add_child(_nav_rig)
+	_build_globe_mesh(_nav_rig)
+	# --- the globe display: a TextureRect fed by the SubViewport, drag/scroll on it ---
+	var globe := TextureRect.new()
+	globe.texture = _nav_sub.get_texture()
+	globe.custom_minimum_size = Vector2(96, 96)
+	globe.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	globe.tooltip_text = "Drag: rotate · Scroll: zoom"
+	nav.add_child(globe)
+	_nav_globe = globe
+	globe.gui_input.connect(_on_globe_input)
+	# --- zoom / pan row ---
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 4)
+	nav.add_child(row)
+	_nav_btn(row, "−", "Zoom out", func(): _zoom_step(false))
+	_nav_pan_pad(row)
+	_nav_btn(row, "+", "Zoom in", func(): _zoom_step(true))
+	_update_nav()
+
+func _nav_btn(parent: Node, text: String, tip: String, cb: Callable) -> void:
+	var b := Button.new()
+	b.text = text
+	b.tooltip_text = tip
+	b.custom_minimum_size = Vector2(30, 26)
+	b.pressed.connect(cb)
+	parent.add_child(b)
+
+## A small "✥" pad in the nav gizmo: drag it to pan ("span") the board.
+func _nav_pan_pad(parent: Node) -> void:
+	var pad := Button.new()
+	pad.text = "✥"
+	pad.tooltip_text = "Drag to pan the board"
+	pad.custom_minimum_size = Vector2(30, 26)
+	pad.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseMotion and (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			_pan_view(e.relative))
+	parent.add_child(pad)
+
+func _on_globe_input(e: InputEvent) -> void:
+	if e is InputEventMouseMotion and (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+		_orbit(e.relative)
+	elif e is InputEventMouseButton and e.pressed:
+		if e.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_step(true)
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_step(false)
+
+## Build the globe: a core sphere, glowing equator + meridian rings, and coloured
+## axis nubs (+X red, +Y green, +Z blue) so the view orientation is readable.
+func _build_globe_mesh(rig: Node3D) -> void:
+	var core := MeshInstance3D.new()
+	var sm := SphereMesh.new(); sm.radius = 0.9; sm.height = 1.8; sm.radial_segments = 32; sm.rings = 16
+	core.mesh = sm
+	var cmat := StandardMaterial3D.new()
+	cmat.albedo_color = Color(0.15, 0.34, 0.6)
+	cmat.metallic = 0.2; cmat.roughness = 0.5
+	cmat.emission_enabled = true; cmat.emission = Color(0.1, 0.22, 0.42); cmat.emission_energy_multiplier = 0.4
+	core.material_override = cmat
+	rig.add_child(core)
+	var ring_mat := StandardMaterial3D.new()
+	ring_mat.albedo_color = Color(0.5, 0.8, 1.0)
+	ring_mat.emission_enabled = true; ring_mat.emission = Color(0.45, 0.75, 1.0); ring_mat.emission_energy_multiplier = 1.3
+	for rot in [Vector3.ZERO, Vector3(0, 0, PI * 0.5), Vector3(PI * 0.5, 0, 0)]:
+		var ring := MeshInstance3D.new()
+		var tm := TorusMesh.new(); tm.inner_radius = 0.88; tm.outer_radius = 0.95; tm.rings = 40; tm.ring_segments = 8
+		ring.mesh = tm
+		ring.material_override = ring_mat
+		ring.rotation = rot
+		rig.add_child(ring)
+	var axes := {Vector3.RIGHT: Color(1, 0.32, 0.3), Vector3.UP: Color(0.4, 1, 0.45), Vector3.BACK: Color(0.45, 0.62, 1)}
+	for dir in axes:
+		var nub := MeshInstance3D.new()
+		var ns := SphereMesh.new(); ns.radius = 0.15; ns.height = 0.3
+		nub.mesh = ns
+		var nm := StandardMaterial3D.new()
+		nm.albedo_color = axes[dir]
+		nm.emission_enabled = true; nm.emission = axes[dir]; nm.emission_energy_multiplier = 0.8
+		nub.material_override = nm
+		nub.position = dir * 0.98
+		rig.add_child(nub)
 
 ## Right-hand inspector: edits the selected entity, or (nothing selected) the
 ## level settings + env + tasks. Rebuilt by _refresh_inspector().
@@ -857,7 +1271,7 @@ func _build_selection_panel(layer: CanvasLayer) -> void:
 	p.add_child(_sel_label)
 
 func _help_text() -> String:
-	return "LMB place/select · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · drag empty ground / RMB: turn · scroll: elevate"
+	return "LMB place/select · dbl-click: focus · drag empty ground: box-select (Shift adds) · drag gizmo handles: ↑arrows move (incl. Y), cubes scale, ring rotate · or G/R/F keys (X/Y/Z) · Del · Ctrl+D/C/V/Z/Y · Tab view · WASD move (Shift sprint) · RMB: turn · scroll: zoom"
 
 func _toggle_snap() -> void:
 	_snap = not _snap
@@ -870,6 +1284,16 @@ func _toggle_models() -> void:
 	var keep := _selection_holders()
 	rebuild_preview()
 	_select_holders(keep)
+
+## Show/hide the floating name labels (they clutter dense levels). Toggles the
+## existing labels live; new markers honour the flag via _add_label.
+func _toggle_labels() -> void:
+	_show_labels = not _show_labels
+	if _labels_btn: _labels_btn.text = "Labels: %s" % ("ON" if _show_labels else "OFF")
+	for m in _markers:
+		for c in m["node"].get_children():
+			if c is Label3D:
+				c.visible = _show_labels
 
 func _add_btn(parent: Node, text: String, cb: Callable) -> Button:
 	var b := Button.new()
@@ -908,6 +1332,7 @@ func _builtin_ids() -> Array:
 func _on_exit() -> void:
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(true)
+		AudioBus.suppress_world_sfx = false
 	if has_node("/root/GameState"):
 		GameState.from_editor = false
 	if ResourceLoader.exists("res://scenes/ui/main_menu.tscn"):
@@ -926,6 +1351,7 @@ func _on_save() -> void:
 	def["name"] = def.get("name", current_name)
 	var p := CustomLevels.save_def(def, current_name)
 	_refresh_load_list()
+	if p != "": _clean()
 	_set_status("Saved %s" % p if p != "" else "SAVE FAILED")
 
 func _on_load() -> void:
@@ -1034,6 +1460,7 @@ func _drag_move_to(world: Vector3) -> void:
 			_undo.append(_pending_undo)
 			_redo.clear()
 		_drag_moved = true
+		_mark_dirty()
 	var delta := world - _drag_ref
 	for i in _selection.size():
 		var m: Dictionary = _selection[i]
@@ -1237,6 +1664,7 @@ func _push_undo() -> void:
 	if _undo.size() > 60:
 		_undo.pop_front()
 	_redo.clear()
+	_mark_dirty()
 
 func _undo_do() -> void:
 	if _undo.is_empty():
@@ -1303,6 +1731,13 @@ func _update_gizmo() -> void:
 		c += m["node"].global_position
 	c /= _selection.size()
 	_gizmo.global_position = c + Vector3(0, 0.8, 0)
+	# Keep the gizmo a roughly constant on-screen size across the zoom range —
+	# otherwise it shrinks to an ungrabbable dot when zoomed out and bloats when
+	# zoomed in. Handle picking reads the same factor (_gizmo_scale).
+	if _camera != null:
+		var dist := _camera.global_position.distance_to(_gizmo.global_position)
+		_gizmo_scale = clampf(dist * 0.03, 0.5, 8.0)
+		_gizmo.scale = Vector3.ONE * _gizmo_scale
 	_gizmo.visible = true
 
 # --- draggable gizmo handles ---
@@ -1323,12 +1758,14 @@ func _pick_handle():
 	var best = null
 	var best_dist := 1e9
 	for h in _handles:
-		var p: Vector3 = _gizmo.global_position + (h["off"] as Vector3)
+		# Offsets are authored at unit scale; the gizmo is drawn at _gizmo_scale,
+		# so pick against the scaled offset (and widen the grab radius to match).
+		var p: Vector3 = _gizmo.global_position + (h["off"] as Vector3) * _gizmo_scale
 		var t: float = (p - o).dot(d)
 		if t < 0.0:
 			continue
 		var dist: float = (o + d * t).distance_to(p)
-		if dist < maxf(0.4, t * 0.05) and dist < best_dist:
+		if dist < maxf(0.4, t * 0.05) * _gizmo_scale and dist < best_dist:
 			best_dist = dist
 			best = h
 	return best
@@ -1472,11 +1909,14 @@ func _orient_along(mi: MeshInstance3D, dir: Vector3, pos: Vector3) -> void:
 var _editing := false # suppress inspector rebuild while typing in a field
 
 const ENV_COLORS := ["sky_top", "sky_horizon", "ground", "fog", "ambient", "sun_color", "building_tint"]
+## key -> [min, max, step, default]. The default matters: it's what gets written
+## when a level lacks the key and the inspector materialises the field. A blanket
+## 1.0 used to fog levels solid (fog_density's max is 0.05) — hence per-key values.
 const ENV_NUMS := {
-	"fog_density": [0.0, 0.05, 0.001], "ambient_energy": [0.0, 6.0, 0.1],
-	"sun_energy": [0.0, 6.0, 0.1], "glow": [0.0, 2.0, 0.05],
-	"brightness": [0.5, 1.5, 0.02], "contrast": [0.5, 1.8, 0.02],
-	"saturation": [0.0, 2.0, 0.02], "sky_energy": [0.0, 4.0, 0.1],
+	"fog_density": [0.0, 0.05, 0.001, 0.01], "ambient_energy": [0.0, 6.0, 0.1, 1.5],
+	"sun_energy": [0.0, 6.0, 0.1, 1.4], "glow": [0.0, 2.0, 0.05, 0.5],
+	"brightness": [0.5, 1.5, 0.02, 1.0], "contrast": [0.5, 1.8, 0.02, 1.0],
+	"saturation": [0.0, 2.0, 0.02, 1.0], "sky_energy": [0.0, 4.0, 0.1, 1.0],
 }
 const TASK_TYPES := ["kill_all", "key", "destroy_core", "collect_shards",
 	"hack_terminal", "sabotage", "survive", "hold_zone"]
@@ -1531,7 +1971,7 @@ func _f_text(holder: Dictionary, key: String, label: String) -> void:
 	var le := LineEdit.new()
 	le.text = str(holder.get(key, ""))
 	le.custom_minimum_size = Vector2(170, 0)
-	le.text_changed.connect(func(t): holder[key] = t)
+	le.text_changed.connect(func(t): holder[key] = t; _mark_dirty())
 	hb.add_child(le)
 
 func _f_num(holder: Dictionary, key: String, label: String, mn: float, mx: float, step: float, do_live := false) -> void:
@@ -1542,6 +1982,7 @@ func _f_num(holder: Dictionary, key: String, label: String, mn: float, mx: float
 	sb.custom_minimum_size = Vector2(120, 0)
 	sb.value_changed.connect(func(v):
 		holder[key] = v
+		_mark_dirty()
 		if do_live: _live())
 	hb.add_child(sb)
 
@@ -1558,6 +1999,7 @@ func _f_vec(holder: Dictionary, key: String, label: String, dims: int) -> void:
 			var c = holder.get(key, Vector3.ZERO if dims == 3 else Vector2.ZERO)
 			c[idx] = v
 			holder[key] = c
+			_mark_dirty()
 			_live())
 		hb.add_child(sb)
 
@@ -1566,14 +2008,14 @@ func _f_color(holder: Dictionary, key: String, label: String) -> void:
 	var cp := ColorPickerButton.new()
 	cp.color = holder.get(key, Color.WHITE)
 	cp.custom_minimum_size = Vector2(120, 24)
-	cp.color_changed.connect(func(c): holder[key] = c)
+	cp.color_changed.connect(func(c): holder[key] = c; _mark_dirty())
 	hb.add_child(cp)
 
 func _f_bool(holder: Dictionary, key: String, label: String) -> void:
 	var hb := _row(label)
 	var cb := CheckBox.new()
 	cb.button_pressed = bool(holder.get(key, false))
-	cb.toggled.connect(func(p): holder[key] = p; _live())
+	cb.toggled.connect(func(p): holder[key] = p; _mark_dirty(); _live())
 	hb.add_child(cb)
 
 func _f_enum(holder: Dictionary, key: String, label: String, options: Array) -> void:
@@ -1587,6 +2029,7 @@ func _f_enum(holder: Dictionary, key: String, label: String, options: Array) -> 
 			opt.select(i)
 	opt.item_selected.connect(func(i):
 		holder[key] = options[i]
+		_mark_dirty()
 		_live())
 	hb.add_child(opt)
 
@@ -1645,8 +2088,8 @@ func _inspect_level() -> void:
 		if not env.has(k): env[k] = Color(0.3, 0.3, 0.35)
 		_f_color(env, k, k)
 	for k in ENV_NUMS:
-		if not env.has(k): env[k] = 1.0
 		var spec: Array = ENV_NUMS[k]
+		if not env.has(k): env[k] = spec[3]
 		_f_num(env, k, k, spec[0], spec[1], spec[2])
 	_f_enum(env, "weather", "weather", ["", "rain", "dust"])
 	_f_bool(env, "lightning", "lightning")
@@ -1868,6 +2311,7 @@ func _on_playtest() -> void:
 		return
 	if has_node("/root/AudioBus"):
 		AudioBus.set_music_enabled(true) # restore music for the playtest session
+		AudioBus.suppress_world_sfx = false
 	if has_node("/root/GameState"):
 		GameState.custom_level_path = p
 		GameState.from_editor = true

@@ -4,6 +4,11 @@ const POOL_SIZE := 16
 
 var _pool: Array[AudioStreamPlayer3D] = []
 var _next: int = 0
+
+## When true, positional world SFX (play_at / play_voice_at / play_synth_at) are
+## dropped. The level editor sets this so preview-instanced enemies stay silent —
+## which also stops their in-flight playbacks leaking when the tool quits.
+var suppress_world_sfx := false
 var _synth: Node
 var _music: AudioStreamPlayer
 var _ui: AudioStreamPlayer
@@ -233,7 +238,7 @@ func _index_voice_clips() -> void:
 ## "sometimes"; the global cooldown then keeps overlapping squads coherent.
 ## Death lines bypass the cooldown — a kill should always get its payoff.
 func play_voice_at(category: String, position: Vector3, chance: float = 1.0, volume_db: float = 2.0) -> bool:
-	if randf() > chance:
+	if suppress_world_sfx or randf() > chance:
 		return false
 	var clips: Array = _voice_clips.get(category, [])
 	if clips.is_empty():
@@ -344,7 +349,7 @@ func play_synth_ui(id: String, volume_db: float = 0.0, pitch_scale: float = 1.0)
 	_ui.play()
 
 func play_at(stream: AudioStream, position: Vector3, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
-	if stream == null:
+	if stream == null or suppress_world_sfx:
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % POOL_SIZE
