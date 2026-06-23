@@ -355,6 +355,10 @@ const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
 ## `custom_level_path`). Campaign entries / paths ending in `.lvl` route here
 ## instead of being change_scene'd directly (a .lvl is JSON data, not a scene).
 const LEVEL_CUSTOM := "res://scenes/levels/level_custom.tscn"
+## Lightweight scene shown while a heavy level builds, so the main-thread build
+## stall sits on a loading frame instead of a grey window. Reads `pending_scene`.
+const LOADING_SCREEN := "res://scenes/ui/loading_screen.tscn"
+var pending_scene: String = ""
 ## Levels that play a bespoke reveal cutscene instead of the standard briefing.
 const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 
@@ -465,11 +469,19 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	# A custom editor level is JSON data (.lvl), not a scene — build it through
 	# level_custom.tscn (same mechanism as the editor playtest / --level boot),
 	# otherwise change_scene_to_file fails on the data file and leaves a black screen.
+	# Both routes go via the loading screen: the level's procedural build stalls
+	# the main thread, and the loading frame is what stays on screen during it.
 	if scene_path.get_extension() == "lvl":
 		custom_level_path = scene_path
-		get_tree().change_scene_to_file(LEVEL_CUSTOM)
+		_enter_level_scene(LEVEL_CUSTOM)
 	else:
-		get_tree().change_scene_to_file(scene_path)
+		_enter_level_scene(scene_path)
+
+## Switch to the loading screen, which paints a frame and then changes to
+## `target` (the heavy level scene). Keeps the grey-window stall off-screen.
+func _enter_level_scene(target: String) -> void:
+	pending_scene = target
+	get_tree().change_scene_to_file(LOADING_SCREEN)
 
 # ---------- save / checkpoint ----------
 
