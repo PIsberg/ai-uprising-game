@@ -183,6 +183,7 @@ func _ready() -> void:
 	_build_accents(def)
 	_build_atmosphere(def)
 	_build_light_shafts(def)
+	_build_hero_lights(def)
 	_build_accent_strips(def)
 	_build_signage(def)
 	_build_floor_seams(def)
@@ -1211,6 +1212,41 @@ func _build_light_shafts(def: Dictionary) -> void:
 		mi.add_to_group("light_shaft_meshes")
 		mi.set_meta("light_color", col)
 		add_child(mi)
+
+# ---------- hero area lights (opt-in via def "hero_lights") ----------
+
+## Dramatic rectangular AreaLight3D key/rim lights for boss arenas and showcase
+## beats — the big-panel-of-light look 4.7's AreaLight3D unlocks. Purely
+## additive on top of the level's normal lighting, gated to HIGH/ULTRA (same as
+## interior area lights). Author per level as:
+##   "hero_lights": [
+##     {"pos": Vector3(0, 9, -14), "size": Vector2(10, 5),
+##      "color": Color(0.5, 0.7, 1.0), "energy": 6.0,
+##      "rot": Vector3(-25, 0, 0), "shadow": true},  # rot/shadow optional
+##   ]
+## "rot" defaults to facing straight down; "shadow" defaults to false (a big
+## soft fill rarely needs to pay for shadows).
+func _build_hero_lights(def: Dictionary) -> void:
+	var specs = def.get("hero_lights", null)
+	if specs == null or not (specs is Array):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if not (gs and gs.has_method("use_area_lights") and gs.use_area_lights()):
+		return
+	for s in specs:
+		var area := AreaLight3D.new()
+		area.area_size = s.get("size", Vector2(8, 4))
+		area.area_normalize_energy = true
+		area.light_color = s.get("color", Color(1, 1, 1))
+		area.light_energy = s.get("energy", 5.0)
+		area.area_range = s.get("range", 60.0)
+		area.light_specular = 0.5
+		area.shadow_enabled = bool(s.get("shadow", false))
+		area.shadow_bias = 0.05
+		area.shadow_blur = 1.5
+		area.position = s["pos"]
+		area.rotation_degrees = s.get("rot", Vector3(-90, 0, 0))
+		add_child(area)
 
 # ---------- boss horizon set-piece ----------
 
