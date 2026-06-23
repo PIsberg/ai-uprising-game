@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "VK-7 Tesla Projector"
+sound_id = "plasma"
 fire_mode = 3
 damage_type = 0
 damage = 26.0
