@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_hunter.gd" id="1_hun"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" uid="uid://cynjfahdp6i0m" path="res://assets/models/robots/quaternius_gunner.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://b5ewlgwc31fh0" path="res://assets/models/robots/quaternius_gunner_bladed.glb" id="4_model"]
 
 [sub_resource type="CapsuleShape3D" id="Capsule_col"]
 radius = 0.45

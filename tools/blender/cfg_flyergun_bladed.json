@@ -1,0 +1,17 @@
+{
+  "in":  "assets/models/robots/quaternius_flyergun.glb",
+  "out": "assets/models/robots/quaternius_flyergun_bladed.glb",
+  "render": "tools/blender/preview_flyergun.png",
+  "rig": "skin",
+  "parts": [
+    {"type":"blade","name":"WingL","loc":[0.45,0.18,0.40],"rot":[0,0,-18],"size":[0.5,0.05,0.16],"bone":"Shoulder.L"},
+    {"type":"blade","name":"WingR","loc":[-0.45,0.18,0.40],"rot":[0,0,18],"size":[0.5,0.05,0.16],"bone":"Shoulder.R"},
+    {"type":"spike","name":"WingTipL","loc":[0.70,0.30,0.40],"rot":[-90,0,0],"len":0.34,"r":0.045,"bone":"Shoulder.L"},
+    {"type":"spike","name":"WingTipR","loc":[-0.70,0.30,0.40],"rot":[-90,0,0],"len":0.34,"r":0.045,"bone":"Shoulder.R"},
+    {"type":"spike","name":"BayonetL","loc":[0.92,-0.16,0.37],"rot":[90,0,0],"len":0.42,"r":0.04,"bone":"Hand.L"},
+    {"type":"spike","name":"BayonetR","loc":[-0.92,-0.16,0.37],"rot":[90,0,0],"len":0.42,"r":0.04,"bone":"Hand.R"},
+    {"type":"spike","name":"Nose","loc":[0.0,-0.30,0.30],"rot":[90,0,0],"len":0.34,"r":0.05,"bone":"Head"},
+    {"type":"spike","name":"CrownL","loc":[0.10,0.05,0.62],"rot":[-20,0,12],"len":0.32,"r":0.04,"bone":"Gun"},
+    {"type":"spike","name":"CrownR","loc":[-0.10,0.05,0.62],"rot":[-20,0,-12],"len":0.32,"r":0.04,"bone":"Gun"}
+  ]
+}

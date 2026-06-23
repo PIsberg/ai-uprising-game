@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_raptor.gd" id="1_rp"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" uid="uid://c1saf84nw04v7" path="res://assets/models/robots/quaternius_flyergun.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://babrg3a5us0ug" path="res://assets/models/robots/quaternius_flyergun_bladed.glb" id="4_model"]
 
 [sub_resource type="SphereShape3D" id="Sph_col"]
 radius = 0.7

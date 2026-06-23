@@ -351,6 +351,10 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
 const LEVEL_BRIEFING := "res://scenes/cutscene/level_briefing.tscn"
 const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
+## Scene that builds a custom editor level from a .lvl data file (via
+## `custom_level_path`). Campaign entries / paths ending in `.lvl` route here
+## instead of being change_scene'd directly (a .lvl is JSON data, not a scene).
+const LEVEL_CUSTOM := "res://scenes/levels/level_custom.tscn"
 ## Levels that play a bespoke reveal cutscene instead of the standard briefing.
 const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 
@@ -458,7 +462,14 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	if found != -1:
 		save_progress() # checkpoint at the start of every campaign level
 		_discover_level_enemies(scene_path) # unlock these hostiles' codex entries
-	get_tree().change_scene_to_file(scene_path)
+	# A custom editor level is JSON data (.lvl), not a scene — build it through
+	# level_custom.tscn (same mechanism as the editor playtest / --level boot),
+	# otherwise change_scene_to_file fails on the data file and leaves a black screen.
+	if scene_path.get_extension() == "lvl":
+		custom_level_path = scene_path
+		get_tree().change_scene_to_file(LEVEL_CUSTOM)
+	else:
+		get_tree().change_scene_to_file(scene_path)
 
 # ---------- save / checkpoint ----------
 
@@ -759,7 +770,7 @@ func _handle_cli_boot() -> void:
 	if i != -1 and i + 1 < args.size():
 		custom_level_path = args[i + 1]
 		set_state(State.PLAYING)
-		get_tree().change_scene_to_file.call_deferred("res://scenes/levels/level_custom.tscn")
+		get_tree().change_scene_to_file.call_deferred(LEVEL_CUSTOM)
 
 ## Add Xbox-style controller bindings to the existing input actions at runtime
 ## (keyboard/mouse bindings stay). Right-stick look is handled in player.gd.
