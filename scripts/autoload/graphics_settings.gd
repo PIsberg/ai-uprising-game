@@ -30,6 +30,10 @@ var volumetric_noise_enabled: bool = true
 var robot_triplanar_enabled: bool = true
 var puddle_ripples_enabled: bool = true
 var advanced_post_process_enabled: bool = true
+## Interior ceiling luminaires emit from real rectangular AreaLight3D sources
+## (Godot 4.7) instead of a point light, for soft directional pools + correct
+## soft shadows. Pricier than an omni, so it only kicks in on HIGH/ULTRA.
+var area_lights_enabled: bool = true
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -107,6 +111,16 @@ func is_low() -> bool:
 func tier() -> int:
 	return quality
 
+## Build interior lights as AreaLight3D rather than OmniLight3D. Gated to
+## HIGH/ULTRA — area lights cost more and the lower tiers want the headroom.
+func use_area_lights() -> bool:
+	return area_lights_enabled and int(quality) >= Quality.HIGH
+
+## Whether interior area lights may cast shadows (still bounded by the per-tier
+## shadowed-light budget at the build site).
+func area_light_shadows() -> bool:
+	return int(quality) >= Quality.HIGH
+
 func set_quality(q: int) -> void:
 	quality = clampi(q, 0, Quality.size() - 1) as Quality
 	_apply_viewport()
@@ -137,6 +151,11 @@ func set_puddle_ripples_enabled(v: bool) -> void:
 func set_advanced_post_process_enabled(v: bool) -> void:
 	advanced_post_process_enabled = v
 	_apply_to_live_post_process()
+	_save_settings()
+
+## Takes effect on the next level load (lights are built at level construction).
+func set_area_lights_enabled(v: bool) -> void:
+	area_lights_enabled = v
 	_save_settings()
 
 func _apply_to_live_robots() -> void:
@@ -444,6 +463,7 @@ func _load_settings() -> void:
 		robot_triplanar_enabled = bool(cf.get_value("graphics_adv", "robot_triplanar", true))
 		puddle_ripples_enabled = bool(cf.get_value("graphics_adv", "puddle_ripples", true))
 		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
+		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -461,5 +481,6 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "robot_triplanar", robot_triplanar_enabled)
 	cf.set_value("graphics_adv", "puddle_ripples", puddle_ripples_enabled)
 	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
-	
+	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
+
 	cf.save(SETTINGS_PATH)

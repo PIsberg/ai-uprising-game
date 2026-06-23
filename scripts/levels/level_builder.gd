@@ -399,23 +399,34 @@ func _build_environment(def: Dictionary) -> void:
 	var shadow_budget := 99
 	if gs and gs.has_method("tier"):
 		shadow_budget = [0, 2, 99, 99][gs.tier()]
+	# 4.7: interior luminaires can emit from a real rectangular AreaLight3D (soft
+	# pool + true soft shadows) instead of a point light. Gated to HIGH/ULTRA.
+	var use_area: bool = gs and gs.has_method("use_area_lights") and gs.use_area_lights()
+	var area_shadows: bool = gs and gs.has_method("area_light_shadows") and gs.area_light_shadows()
 	var li := 0
 	for l in def.get("lights", []):
-		var omni := OmniLight3D.new()
-		omni.position = l["pos"]
-		omni.light_color = l.get("color", Color(1, 1, 1))
-		# Slightly hotter than authored: with the ambient cut, these are the
-		# scene's primary illumination and their pools must read.
-		omni.light_energy = l.get("energy", 2.0) * 1.2
-		omni.omni_range = l.get("range", 16.0)
-		omni.shadow_enabled = li < shadow_budget
-		omni.shadow_bias = 0.03
-		omni.shadow_blur = 1.5
-		omni.light_specular = 0.6
-		add_child(omni)
+		var indoor: bool = not def.get("open_sky", false)
+		var shadowed: bool = li < shadow_budget
+		var light: Light3D
+		if indoor and use_area:
+			light = _make_interior_area_light(l, shadowed and area_shadows)
+		else:
+			var omni := OmniLight3D.new()
+			omni.position = l["pos"]
+			omni.light_color = l.get("color", Color(1, 1, 1))
+			# Slightly hotter than authored: with the ambient cut, these are the
+			# scene's primary illumination and their pools must read.
+			omni.light_energy = l.get("energy", 2.0) * 1.2
+			omni.omni_range = l.get("range", 16.0)
+			omni.shadow_enabled = shadowed
+			omni.shadow_bias = 0.03
+			omni.shadow_blur = 1.5
+			omni.light_specular = 0.6
+			light = omni
+		add_child(light)
 		# Every light gets a visible SOURCE instead of hanging disembodied:
 		# ceiling luminaires indoors, slim floodlight pylons outdoors.
-		if not def.get("open_sky", false):
+		if indoor:
 			_add_light_fixture(l["pos"], l.get("color", Color(1, 1, 1)))
 		else:
 			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
@@ -423,7 +434,7 @@ func _build_environment(def: Dictionary) -> void:
 		# infrastructure failing, and motion in otherwise static lighting. Any
 		# light can opt in explicitly with "flicker": true.
 		if li == def.get("lights", []).size() - 1 or l.get("flicker", false):
-			_flicker_light(omni)
+			_flicker_light(light)
 		li += 1
 
 	# One parallax-boxed reflection probe fitted to the room (interiors only):
@@ -453,6 +464,32 @@ func _build_environment(def: Dictionary) -> void:
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
 	AudioBus.play_music(music_id)
+
+# AreaLight3D mapping for an interior ceiling luminaire (Godot 4.7). The
+# rectangular emitter sits flush under the ceiling diffuser and radiates
+# straight down, giving a soft directional pool and true soft shadows instead
+# of a point light's hard radial falloff. SIZE/ENERGY/RANGE are the tuning
+# knobs — bump them here if HIGH/ULTRA interiors read too dim or too bright.
+const AREA_LIGHT_SIZE := 1.8          # emitter rectangle in m (panel is ~1.0; larger = softer)
+const AREA_LIGHT_ENERGY_MULT := 1.5   # vs authored "energy" (omni path uses 1.2)
+const AREA_LIGHT_RANGE_MULT := 1.5    # area lights fade with distance — give them reach
+
+func _make_interior_area_light(l: Dictionary, shadowed: bool) -> AreaLight3D:
+	var pos: Vector3 = l["pos"]
+	var area := AreaLight3D.new()
+	area.area_size = Vector2(AREA_LIGHT_SIZE, AREA_LIGHT_SIZE)
+	area.area_normalize_energy = true  # perceived brightness independent of emitter size
+	area.light_color = l.get("color", Color(1, 1, 1))
+	area.light_energy = l.get("energy", 2.0) * AREA_LIGHT_ENERGY_MULT
+	area.area_range = l.get("range", 16.0) * AREA_LIGHT_RANGE_MULT
+	area.light_specular = 0.6
+	area.shadow_enabled = shadowed
+	area.shadow_bias = 0.04
+	area.shadow_blur = 1.5
+	# Flush under the ceiling diffuser, face pointing straight down (local -Z).
+	area.position = Vector3(pos.x, WALL_HEIGHT - 0.2, pos.z)
+	area.rotation_degrees = Vector3(-90, 0, 0)
+	return area
 
 ## A recessed ceiling luminaire: dark housing + emissive diffuser panel in the
 ## light's own color, mounted on the ceiling directly above the omni position.
@@ -521,7 +558,7 @@ func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
 
 ## Faulty-wiring flicker: mostly steady, with brief random dips and the odd
 ## near-blackout. A pre-baked randomized loop is cheap and reads as organic.
-func _flicker_light(light: OmniLight3D) -> void:
+func _flicker_light(light: Light3D) -> void:
 	var base := light.light_energy
 	var tw := light.create_tween().set_loops()
 	for i in 6:
