@@ -353,6 +353,8 @@ func _begin_slam() -> void:
 	_slam_cd = slam_cooldown
 	recoil = 1.0
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.45)
+	# Paint the kill zone on the ground so the slam is dodgeable, not a surprise.
+	spawn_ground_warning(global_position, slam_radius, _slam_windup)
 
 func _do_slam() -> void:
 	AudioBus.play_synth_at("explosion", global_position, 4.0, 0.55)
