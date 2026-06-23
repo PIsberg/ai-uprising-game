@@ -34,6 +34,11 @@ var advanced_post_process_enabled: bool = true
 ## (Godot 4.7) instead of a point light, for soft directional pools + correct
 ## soft shadows. Pricier than an omni, so it only kicks in on HIGH/ULTRA.
 var area_lights_enabled: bool = true
+## Request HDR display output (Godot 4.7). The renderer already works in HDR
+## internally; this lets the swap-chain hand that wider range to an HDR monitor
+## instead of clamping to SDR. Off by default — harmless no-op where the
+## platform/display can't honor it, but only beneficial on real HDR displays.
+var hdr_output_enabled: bool = false
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -55,6 +60,7 @@ func _ready() -> void:
 	_load_settings()
 	TranslationServer.set_locale(language)
 	_apply_viewport.call_deferred()
+	_apply_hdr_output.call_deferred()
 	Engine.max_fps = max_fps
 
 ## Switch UI language live and persist it. Controls re-translate automatically;
@@ -157,6 +163,27 @@ func set_advanced_post_process_enabled(v: bool) -> void:
 func set_area_lights_enabled(v: bool) -> void:
 	area_lights_enabled = v
 	_save_settings()
+
+## Applies immediately (the swap-chain re-requests HDR live).
+func set_hdr_output_enabled(v: bool) -> void:
+	hdr_output_enabled = v
+	_apply_hdr_output()
+	_save_settings()
+
+## Ask the OS/swap-chain for HDR output and let 2D composite in HDR so the UI
+## doesn't clip the brighter range. No-op on platforms/displays that decline.
+func _apply_hdr_output() -> void:
+	# Godot 4.7 properties (parse-checked against the pinned engine): the window
+	# asks the OS swap-chain for HDR; the viewport composites 2D/UI in HDR so the
+	# brighter range isn't clipped before output. The window honors the request
+	# only on capable platforms/displays, otherwise it's a silent no-op.
+	var w := get_window()
+	if w == null:
+		return
+	w.hdr_output_requested = hdr_output_enabled
+	var vp := get_viewport()
+	if vp:
+		vp.use_hdr_2d = hdr_output_enabled
 
 func _apply_to_live_robots() -> void:
 	if not is_inside_tree():
@@ -464,6 +491,7 @@ func _load_settings() -> void:
 		puddle_ripples_enabled = bool(cf.get_value("graphics_adv", "puddle_ripples", true))
 		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
 		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
+		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -482,5 +510,6 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "puddle_ripples", puddle_ripples_enabled)
 	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
 	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
+	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
 
 	cf.save(SETTINGS_PATH)
