@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cfierceprobe01"]
+
+[ext_resource type="Script" path="res://tests/fierce_probe.gd" id="1_fp"]
+
+[node name="FierceProbe" type="Node3D"]
+script = ExtResource("1_fp")

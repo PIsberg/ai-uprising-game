@@ -60,6 +60,9 @@ var _heat_glow: MeshInstance3D = null
 var _heat_mat: StandardMaterial3D = null
 var _heat_light: OmniLight3D = null
 
+# Shared worn-metal roughness map for every real gun model — built once, reused.
+static var _metal_rough_tex: NoiseTexture2D = null
+
 func _ready() -> void:
 	if viewmodel == null:
 		viewmodel = get_node_or_null("Viewmodel")
@@ -142,7 +145,7 @@ func _apply_real_model() -> bool:
 	# Barrel tip = front face of the fitted model, slightly proud of it.
 	if muzzle:
 		muzzle.position.z = 0.18 - cfg["len"] - 0.03
-	# Gunmetal/energy tint over the kit's flat plastic albedo.
+	# Realistic worn-gunmetal skin over the kit's flat plastic albedo.
 	var tint: Color = cfg["tint"]
 	for n in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
@@ -150,13 +153,48 @@ func _apply_real_model() -> bool:
 			continue
 		for i in mi.mesh.get_surface_count():
 			var m := mi.mesh.surface_get_material(i)
-			if m is BaseMaterial3D:
-				var dup := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
-				dup.albedo_color = dup.albedo_color * tint
-				dup.metallic = 0.55
-				dup.roughness = 0.45
-				mi.set_surface_override_material(i, dup)
+			mi.set_surface_override_material(i, _gunmetal_material(m as BaseMaterial3D, tint))
 	return true
+
+## A procedural worn-gunmetal PBR material. The Kenney kit ships flat white plastic
+## with a single albedo per surface; multiplying by the weapon's `tint` and dropping
+## the value gives dark machined metal, while a triplanar noise roughness map breaks
+## the low-poly facets into brushed/worn micro-variation. Clearcoat adds an oiled
+## sheen and the fresnel rim catches edge light so the silhouette reads as metal, not
+## a toy. Each gun keeps its tint as the metal's hue identity.
+func _gunmetal_material(src: BaseMaterial3D, tint: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	var base := (src.albedo_color if src != null else Color.WHITE)
+	mat.albedo_color = (base * tint).darkened(0.4)
+	mat.metallic = 0.92
+	mat.metallic_specular = 0.6
+	mat.roughness = 0.55                                  # noise scales this down -> worn 0..0.55
+	mat.roughness_texture = _gunmetal_rough()
+	mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	mat.uv1_triplanar = true                              # map noise without relying on kit UVs
+	mat.uv1_scale = Vector3(2.2, 2.2, 2.2)
+	mat.clearcoat_enabled = true
+	mat.clearcoat = 0.4
+	mat.clearcoat_roughness = 0.2
+	mat.rim_enabled = true
+	mat.rim = 0.35
+	mat.rim_tint = 0.4
+	return mat
+
+## Lazily build (once) the shared FastNoiseLite roughness texture for gun metal.
+func _gunmetal_rough() -> NoiseTexture2D:
+	if _metal_rough_tex == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.frequency = 0.045
+		noise.fractal_octaves = 4
+		var tex := NoiseTexture2D.new()
+		tex.width = 256
+		tex.height = 256
+		tex.seamless = true
+		tex.noise = noise
+		_metal_rough_tex = tex
+	return _metal_rough_tex
 
 func _merged_aabb(root: Node3D) -> AABB:
 	var merged := AABB()

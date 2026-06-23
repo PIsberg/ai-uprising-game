@@ -1,0 +1,17 @@
+{
+  "in":  "assets/models/robots/quaternius_gunner.glb",
+  "out": "assets/models/robots/quaternius_gunner_bladed.glb",
+  "render": "tools/blender/preview_gunner.png",
+  "rig": "skin",
+  "parts": [
+    {"type":"spike","name":"AntL","loc":[0.16,-0.40,1.18],"rot":[0,0,0],"len":0.5,"r":0.035,"bone":"Gun"},
+    {"type":"spike","name":"AntR","loc":[-0.16,-0.40,1.18],"rot":[0,0,0],"len":0.5,"r":0.035,"bone":"Gun"},
+    {"type":"spike","name":"TuskL","loc":[0.22,-0.78,0.95],"rot":[90,0,0],"len":0.42,"r":0.045,"bone":"Gun"},
+    {"type":"spike","name":"TuskR","loc":[-0.22,-0.78,0.95],"rot":[90,0,0],"len":0.42,"r":0.045,"bone":"Gun"},
+    {"type":"blade","name":"FinBack","loc":[0.0,0.0,0.78],"rot":[0,0,0],"size":[0.05,0.16,0.42],"bone":"Body"},
+    {"type":"blade","name":"WingL","loc":[0.42,-0.30,0.55],"rot":[0,0,-28],"size":[0.34,0.06,0.16],"bone":"Body"},
+    {"type":"blade","name":"WingR","loc":[-0.42,-0.30,0.55],"rot":[0,0,28],"size":[0.34,0.06,0.16],"bone":"Body"},
+    {"type":"spike","name":"BrowL","loc":[0.13,-0.62,0.62],"rot":[110,0,0],"len":0.24,"r":0.04,"bone":"Body"},
+    {"type":"spike","name":"BrowR","loc":[-0.13,-0.62,0.62],"rot":[110,0,0],"len":0.24,"r":0.04,"bone":"Body"}
+  ]
+}
