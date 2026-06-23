@@ -17,6 +17,8 @@ func notify_pickup(text: String) -> void:
 @export var air_acceleration: float = 6.0
 @export var friction: float = 14.0
 @export var jump_velocity: float = 7.5
+@export var coyote_time: float = 0.1 ## Grace to still jump just after stepping off a ledge.
+@export var jump_buffer_time: float = 0.12 ## Grace for a jump pressed just before landing.
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
@@ -205,7 +207,7 @@ func _physics_process(delta: float) -> void:
 	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_slide(delta)
-	_handle_jump()
+	_handle_jump(delta)
 	_handle_grenade(delta)
 	_handle_stance(delta)
 	_handle_movement(delta)
@@ -380,9 +382,25 @@ func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 
-func _handle_jump() -> void:
-	if is_on_floor() and Input.is_action_just_pressed("jump") and not _is_crouching:
+var _coyote: float = 0.0
+var _jump_buffer: float = 0.0
+
+## Coyote time + jump buffering so jumps land when the player MEANT them: you can
+## still jump a hair after walking off a ledge, and a jump pressed just before
+## touchdown fires on landing instead of being eaten.
+func _handle_jump(delta: float) -> void:
+	if is_on_floor():
+		_coyote = coyote_time
+	else:
+		_coyote = maxf(0.0, _coyote - delta)
+	if Input.is_action_just_pressed("jump"):
+		_jump_buffer = jump_buffer_time
+	else:
+		_jump_buffer = maxf(0.0, _jump_buffer - delta)
+	if _jump_buffer > 0.0 and _coyote > 0.0 and not _is_crouching:
 		velocity.y = jump_velocity
+		_jump_buffer = 0.0
+		_coyote = 0.0
 
 func _handle_stance(delta: float) -> void:
 	var wants_crouch := Input.is_action_pressed("crouch") or _sliding
