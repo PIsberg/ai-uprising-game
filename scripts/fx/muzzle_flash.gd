@@ -36,19 +36,6 @@ func _process(delta: float) -> void:
 ## Hot spark darts spat from the bore — the detail that separates a flat
 ## "flash card" from a gunshot. One burst per shot, dies with the node.
 func _spawn_sparks() -> void:
-	var p := CPUParticles3D.new()
-	p.one_shot = true
-	p.emitting = true
-	p.amount = 10
-	p.lifetime = 0.22
-	p.explosiveness = 1.0
-	p.direction = Vector3(0, 0, -1) # out of the bore
-	p.spread = 13.0
-	p.initial_velocity_min = 7.0
-	p.initial_velocity_max = 14.0
-	p.gravity = Vector3(0, -14.0, 0)
-	p.scale_amount_min = 0.5
-	p.scale_amount_max = 1.0
 	var dart := BoxMesh.new()
 	dart.size = Vector3(0.012, 0.012, 0.07) # stretched, reads as a streak
 	var m := StandardMaterial3D.new()
@@ -58,5 +45,55 @@ func _spawn_sparks() -> void:
 	m.emission = Color(1.0, 0.6, 0.2)
 	m.emission_energy_multiplier = 7.0
 	dart.material = m
-	p.mesh = dart
-	add_child(p)
+
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var use_gpu: bool = gs == null or bool(gs.get("gpu_particles_enabled"))
+	if use_gpu:
+		# GPU path showcases 4.7's scale-over-velocity: the spark is a long hot
+		# streak while it's screaming out of the bore, shrinking to a tumbling
+		# ember as it slows — instead of a uniform dash.
+		var p := GPUParticles3D.new()
+		p.one_shot = true
+		p.emitting = true
+		p.amount = 12
+		p.lifetime = 0.22
+		p.explosiveness = 1.0
+		p.draw_pass_1 = dart
+		var pm := ParticleProcessMaterial.new()
+		pm.direction = Vector3(0, 0, -1) # out of the bore
+		pm.spread = 13.0
+		pm.initial_velocity_min = 7.0
+		pm.initial_velocity_max = 16.0
+		pm.gravity = Vector3(0, -14.0, 0)
+		pm.scale_min = 0.5
+		pm.scale_max = 1.0
+		pm.scale_over_velocity_min = 5.0
+		pm.scale_over_velocity_max = 16.0
+		var sv := Curve.new()
+		sv.add_point(Vector2(0.0, 0.45)) # slow -> short ember
+		sv.add_point(Vector2(1.0, 2.4))  # fast -> long streak
+		var svt := CurveTexture.new(); svt.curve = sv
+		pm.scale_over_velocity_curve = svt
+		# Tumble the dying embers.
+		pm.angle_min = -180.0; pm.angle_max = 180.0
+		pm.angular_velocity_min = -600.0; pm.angular_velocity_max = 600.0
+		p.process_material = pm
+		add_child(p)
+	else:
+		var p := CPUParticles3D.new()
+		p.one_shot = true
+		p.emitting = true
+		p.amount = 10
+		p.lifetime = 0.22
+		p.explosiveness = 1.0
+		p.direction = Vector3(0, 0, -1) # out of the bore
+		p.spread = 13.0
+		p.initial_velocity_min = 7.0
+		p.initial_velocity_max = 14.0
+		p.gravity = Vector3(0, -14.0, 0)
+		p.scale_amount_min = 0.5
+		p.scale_amount_max = 1.0
+		p.angle_min = -180.0; p.angle_max = 180.0
+		p.angular_velocity_min = -600.0; p.angular_velocity_max = 600.0
+		p.mesh = dart
+		add_child(p)
