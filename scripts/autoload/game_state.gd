@@ -752,15 +752,34 @@ var _campaign_override: Array[String] = []
 func campaign() -> Array:
 	return _campaign_override if not _campaign_override.is_empty() else CAMPAIGN
 
+## Load an optional editor-authored campaign order from dev_levels/campaign.json.
+## STRICTLY validated: a malformed, empty, or partly-broken file is REJECTED
+## (we keep the built-in campaign) instead of silently hijacking/truncating the
+## game. This is the safety net for "I saved something in the editor and it
+## broke the game" — a bad save can no longer take the campaign down with it.
 func _load_campaign_override() -> void:
 	var p := "res://dev_levels/campaign.json"
 	if not FileAccess.file_exists(p):
 		return
 	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(p))
-	if v is Array:
-		_campaign_override.clear()
-		for e in v:
-			_campaign_override.append(str(e))
+	if not (v is Array) or (v as Array).is_empty():
+		push_warning("campaign.json ignored (not a non-empty JSON array) — using built-in campaign.")
+		return
+	var valid: Array[String] = []
+	for e in v:
+		var lvl := str(e)
+		# Built-in levels are res:// scenes; editor levels are .lvl data files.
+		if ResourceLoader.exists(lvl) or FileAccess.file_exists(lvl):
+			valid.append(lvl)
+		else:
+			push_warning("campaign.json references a missing level: '%s'" % lvl)
+	# Apply ONLY if every listed level resolves. A single bad/typo'd entry rejects
+	# the whole override so play always falls back to the known-good campaign.
+	if valid.size() == (v as Array).size():
+		_campaign_override = valid
+		print("[GameState] campaign.json override active: %d levels." % valid.size())
+	else:
+		push_warning("campaign.json REJECTED (%d of %d levels valid) — using built-in campaign. Fix or delete dev_levels/campaign.json." % [valid.size(), (v as Array).size()])
 
 func _ready() -> void:
 	_setup_gamepad_bindings()
