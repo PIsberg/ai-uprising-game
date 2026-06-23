@@ -79,8 +79,12 @@ func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool 
 	scene.add_child(lbl)
 	# Scatter so stacked hits don't overlap into an unreadable blob.
 	lbl.global_position = pos + Vector3(randf_range(-0.3, 0.3), randf_range(-0.1, 0.2), randf_range(-0.3, 0.3))
+	# Spawn with a quick scale-punch so the hit lands with pop — biggest on a crit.
+	var punch := 1.6 if crit else (1.35 if killed else 1.18)
+	lbl.scale = Vector3.ONE * punch
 	var tw := lbl.create_tween()
-	tw.tween_property(lbl, "global_position:y", lbl.global_position.y + 0.9, 0.65).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "scale", Vector3.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(lbl, "global_position:y", lbl.global_position.y + 0.9, 0.65).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.65).set_delay(0.15)
 	tw.tween_callback(lbl.queue_free)
 
