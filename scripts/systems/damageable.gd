@@ -48,9 +48,13 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 		died.emit(source)
 
 
-## Floating world-space damage number that drifts up and fades. Headshots read
-## as a distinct, bigger gold "crit" (with a !) so precision is visibly rewarded.
+## Floating world-space damage number that drifts up and fades — anchored at the
+## hit point in 3D so it tracks as you move. Heavier hits read bigger; headshots
+## are a distinct gold "crit" (with a !) so precision is visibly rewarded. This
+## is the single damage-number system (the HUD no longer spawns a second one).
 func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool = false) -> void:
+	if amount < 1.0:
+		return
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -61,17 +65,20 @@ func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool 
 	lbl.fixed_size = true
 	lbl.pixel_size = 0.0028
 	lbl.outline_size = 12 if crit else 10
+	# Heavier hits read bigger; gold crit > red kill > white->hot-orange by bite.
+	var heavy := clampf(amount / 80.0, 0.0, 1.0)
 	if crit:
-		lbl.modulate = Color(1.0, 0.95, 0.35) # hot gold crit
+		lbl.modulate = Color(1.0, 0.95, 0.35)
 		lbl.font_size = 76
 	elif killed:
 		lbl.modulate = Color(1.0, 0.3, 0.2)
-		lbl.font_size = 64
+		lbl.font_size = 56 + int(heavy * 18.0)
 	else:
-		lbl.modulate = Color(1.0, 0.88, 0.4)
-		lbl.font_size = 44
+		lbl.modulate = Color(1.0, 0.95, 0.9).lerp(Color(1.0, 0.55, 0.3), heavy)
+		lbl.font_size = 40 + int(heavy * 22.0)
 	scene.add_child(lbl)
-	lbl.global_position = pos + Vector3(randf_range(-0.25, 0.25), 0.0, randf_range(-0.25, 0.25))
+	# Scatter so stacked hits don't overlap into an unreadable blob.
+	lbl.global_position = pos + Vector3(randf_range(-0.3, 0.3), randf_range(-0.1, 0.2), randf_range(-0.3, 0.3))
 	var tw := lbl.create_tween()
 	tw.tween_property(lbl, "global_position:y", lbl.global_position.y + 0.9, 0.65).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.65).set_delay(0.15)
