@@ -14,7 +14,7 @@ var current_health: float
 func _ready() -> void:
 	current_health = max_health
 
-func apply_damage(amount: float, source = null) -> void:
+func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	# A stored shooter (a projectile/explosion's source) can be freed before its
 	# hit lands. Passing a freed object to a typed `Node` param crashes Godot at
 	# the call itself, so we take `source` untyped and null out a dead reference
@@ -43,25 +43,33 @@ func apply_damage(amount: float, source = null) -> void:
 			and not owner_node.is_in_group("player"):
 		var pos: Vector3 = (owner_node as Node3D).global_position + Vector3.UP * 1.5
 		GameState.report_player_hit(mitigated, pos, killed)
-		_spawn_damage_number(mitigated, pos, killed)
+		_spawn_damage_number(mitigated, pos, killed, crit)
 	if killed:
 		died.emit(source)
 
 
-## Floating world-space damage number that drifts up and fades.
-func _spawn_damage_number(amount: float, pos: Vector3, killed: bool) -> void:
+## Floating world-space damage number that drifts up and fades. Headshots read
+## as a distinct, bigger gold "crit" (with a !) so precision is visibly rewarded.
+func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool = false) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
 	var lbl := Label3D.new()
-	lbl.text = str(roundi(amount))
+	lbl.text = (str(roundi(amount)) + "!") if crit else str(roundi(amount))
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.no_depth_test = true
 	lbl.fixed_size = true
 	lbl.pixel_size = 0.0028
-	lbl.outline_size = 10
-	lbl.modulate = Color(1.0, 0.3, 0.2) if killed else Color(1.0, 0.88, 0.4)
-	lbl.font_size = 64 if killed else 44
+	lbl.outline_size = 12 if crit else 10
+	if crit:
+		lbl.modulate = Color(1.0, 0.95, 0.35) # hot gold crit
+		lbl.font_size = 76
+	elif killed:
+		lbl.modulate = Color(1.0, 0.3, 0.2)
+		lbl.font_size = 64
+	else:
+		lbl.modulate = Color(1.0, 0.88, 0.4)
+		lbl.font_size = 44
 	scene.add_child(lbl)
 	lbl.global_position = pos + Vector3(randf_range(-0.25, 0.25), 0.0, randf_range(-0.25, 0.25))
 	var tw := lbl.create_tween()
