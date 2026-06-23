@@ -38,7 +38,7 @@ func setup(from: Vector3, to: Vector3, color: Color = Color(1.0, 0.85, 0.5)) -> 
 	_mat.albedo_color = color
 	_mat.emission_enabled = true
 	_mat.emission = color
-	_mat.emission_energy_multiplier = 7.0
+	_mat.emission_energy_multiplier = 10.0 # HDR-hot bolt — blooms hard, sears on HDR
 	mesh.material_override = _mat
 	_light = OmniLight3D.new()
 	_light.light_color = color
@@ -77,4 +77,4 @@ func _process(delta: float) -> void:
 	var a := 1.0 - (_age / lifetime)
 	if _mat:
 		_mat.albedo_color.a = a
-		_mat.emission_energy_multiplier = 7.0 * a
+		_mat.emission_energy_multiplier = 10.0 * a

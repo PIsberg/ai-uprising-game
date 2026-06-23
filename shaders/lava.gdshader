@@ -9,7 +9,7 @@ uniform vec3 hot_color : source_color = vec3(1.6, 0.55, 0.08);
 uniform vec3 cool_color : source_color = vec3(0.85, 0.10, 0.02);
 uniform vec3 crust_color : source_color = vec3(0.05, 0.03, 0.03);
 uniform float flow_speed = 0.06;
-uniform float emission_strength = 3.2;
+uniform float emission_strength = 4.6; // HDR-hot molten glow (sears on HDR output)
 uniform float crust_amount = 0.55; // higher = more dark crust, thinner veins
 
 float hash(vec2 p) {
