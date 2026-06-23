@@ -20,6 +20,13 @@ func announce_boss(boss: Node) -> void:
 func report_player_hit(amount: float, world_pos: Vector3, killed: bool) -> void:
 	register_hit()
 	player_dealt_damage.emit(amount, world_pos, killed)
+	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
+	# the punch that separates a good-feeling shooter from a flat one. A kill
+	# snaps harder than a heavy hit; rate-limited so a fast horde can't slideshow.
+	if killed:
+		combat_hitstop(0.05, 0.05)
+	elif amount >= 40.0:
+		combat_hitstop(0.2, 0.03)
 
 enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
@@ -327,13 +334,35 @@ func reset_run() -> void:
 	kills = 0
 	seen_enemy_types.clear()
 
-## Brief slow-motion payoff (e.g. boss death). Uses a real-time timer so it
-## always restores even though the game clock is slowed.
+## Brief slow-motion payoff (e.g. boss death, area clear) AND the primitive
+## behind the per-hit combat punch. A guard token means overlapping freezes
+## don't restore early — the most recent freeze owns the restore — so a kill's
+## micro-freeze can't cut a cinematic beat short, and vice versa. Real-time
+## timer so it always restores even though the game clock is slowed.
+var _hitstop_token: int = 0
+var _last_punch_ms: int = 0
+
 func hit_stop(scale: float = 0.3, duration: float = 0.4) -> void:
-	Engine.time_scale = clampf(scale, 0.05, 1.0)
+	Engine.time_scale = clampf(scale, 0.04, 1.0)
+	_hitstop_token += 1
+	var mine := _hitstop_token
 	# create_timer(sec, process_always, process_in_physics, ignore_time_scale)
 	var t := get_tree().create_timer(duration, true, false, true)
-	t.timeout.connect(func(): Engine.time_scale = 1.0)
+	t.timeout.connect(func() -> void:
+		if mine == _hitstop_token:
+			Engine.time_scale = 1.0)
+
+## Rapid-fire combat hit-stop (per kill / heavy hit). Wall-clock rate-limited
+## (real ms, immune to the freeze itself) so a horde of kills can't stutter the
+## game into a slideshow. Only while actually playing.
+func combat_hitstop(scale: float, duration: float) -> void:
+	if current_state != State.PLAYING:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_punch_ms < 90:
+		return
+	_last_punch_ms = now
+	hit_stop(scale, duration)
 
 ## Start a fresh campaign run from the first level at the chosen difficulty.
 func start_campaign(diff: int = Difficulty.NORMAL) -> void:
