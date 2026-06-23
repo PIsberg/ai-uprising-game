@@ -23,6 +23,11 @@ func notify_pickup(text: String) -> void:
 @export var pad_look_speed: float = 3.2 ## Right-stick look speed (rad/s).
 @export var pad_look_deadzone: float = 0.15
 @export var look_clamp_deg: float = 89.0
+@export_subgroup("Aim Assist (gamepad)")
+@export var aim_assist_enabled: bool = true
+@export var aim_assist_angle_deg: float = 7.0 ## Cone around the crosshair that engages friction.
+@export var aim_assist_range: float = 60.0
+@export var aim_assist_min: float = 0.45 ## Look-speed multiplier when the reticle sits on a target.
 
 @export_group("Stance")
 @export var stand_height: float = 1.8
@@ -316,9 +321,35 @@ func _handle_gamepad_look(delta: float) -> void:
 		return
 	lx = signf(lx) * pow(absf(lx), 1.5)
 	ly = signf(ly) * pow(absf(ly), 1.5)
-	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult)
-	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign)
+	# Aim friction: ease the look speed down when the reticle is near a hostile,
+	# so tracking a target on a stick feels sticky-good (not auto-aim). Gamepad
+	# only — mouse aim stays untouched.
+	var fr := _aim_friction()
+	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult * fr)
+	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign * fr)
 	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+
+## Look-speed multiplier in [aim_assist_min, 1.0]: drops toward the minimum as
+## the camera-forward ray closes on the nearest live hostile within the cone.
+func _aim_friction() -> float:
+	if not aim_assist_enabled:
+		return 1.0
+	var fwd := -camera.global_transform.basis.z
+	var origin := camera.global_position
+	var best := 1.0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not (e is Node3D):
+			continue
+		if e is EnemyBase and (e as EnemyBase).hp != null and not (e as EnemyBase).hp.is_alive():
+			continue
+		var to: Vector3 = (e as Node3D).global_position + Vector3(0, 1.0, 0) - origin
+		var dist := to.length()
+		if dist < 1.0 or dist > aim_assist_range:
+			continue
+		var ang := rad_to_deg(fwd.angle_to(to))
+		if ang <= aim_assist_angle_deg:
+			best = minf(best, lerpf(aim_assist_min, 1.0, ang / aim_assist_angle_deg))
+	return best
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
