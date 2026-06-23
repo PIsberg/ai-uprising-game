@@ -7,10 +7,45 @@ extends Control
 @export var objective_color: Color = Color(0.4, 1.0, 0.55)
 
 var _player: Node3D
+var _sweep_mat: ShaderMaterial
+var _sweep_angle: float = 0.0
 
-func _process(_delta: float) -> void:
+func _ready() -> void:
+	_build_sweep()
+
+## A rotating conic-gradient beam (4.7 GradientTexture2D FILL_CONIC) sweeping the
+## dish, masked to the circle by shaders/radar_sweep.gdshader.
+func _build_sweep() -> void:
+	var grad := Gradient.new()
+	grad.offsets = PackedFloat32Array([0.0, 0.12, 0.4, 1.0])
+	grad.colors = PackedColorArray([
+		Color(0.5, 1.0, 1.0, 0.0),   # just behind the beam: clear
+		Color(0.45, 1.0, 1.0, 0.55), # bright leading edge
+		Color(0.3, 0.85, 1.0, 0.12), # trailing afterglow
+		Color(0.3, 0.85, 1.0, 0.0),  # faded out
+	])
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_CONIC
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 128
+	tex.height = 128
+	_sweep_mat = ShaderMaterial.new()
+	_sweep_mat.shader = preload("res://shaders/radar_sweep.gdshader")
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.material = _sweep_mat
+	tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(tr)
+
+func _process(delta: float) -> void:
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player")
+	if _sweep_mat:
+		_sweep_angle = fmod(_sweep_angle + delta * 1.8, TAU) # ~3.5s per revolution
+		_sweep_mat.set_shader_parameter("angle", _sweep_angle)
 	queue_redraw()
 
 func _draw() -> void:
