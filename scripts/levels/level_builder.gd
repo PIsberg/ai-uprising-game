@@ -2056,6 +2056,9 @@ func _build_weather(def: Dictionary) -> void:
 		p.gravity = Vector3(0.6, -0.2, 0.2)
 		p.scale_amount_min = 0.6
 		p.scale_amount_max = 1.6
+		# Slow drift-spin so the wind-blown haze churns instead of sliding rigidly.
+		p.angle_min = -180.0; p.angle_max = 180.0
+		p.angular_velocity_min = -25.0; p.angular_velocity_max = 25.0
 		var puff := SphereMesh.new()
 		puff.radius = 0.25; puff.height = 0.5; puff.radial_segments = 5; puff.rings = 3
 		var dm := StandardMaterial3D.new()
@@ -2136,6 +2139,10 @@ func _build_fires(def: Dictionary) -> void:
 		flame.gravity = Vector3(0, 2.0, 0)
 		flame.scale_amount_min = 0.5 * scl
 		flame.scale_amount_max = 1.1 * scl
+		# 4.7 per-particle rotation: random start angle + flicker spin so the
+		# tongues writhe instead of rising as identical blobs.
+		flame.angle_min = -180.0; flame.angle_max = 180.0
+		flame.angular_velocity_min = -120.0; flame.angular_velocity_max = 120.0
 		var fcurve := Curve.new()
 		fcurve.add_point(Vector2(0.0, 1.0)); fcurve.add_point(Vector2(1.0, 0.0))
 		flame.scale_amount_curve = fcurve
@@ -2167,6 +2174,9 @@ func _build_fires(def: Dictionary) -> void:
 		smoke.gravity = Vector3(0, 1.4, 0)
 		smoke.scale_amount_min = 0.8 * scl
 		smoke.scale_amount_max = 1.8 * scl
+		# Slow tumble so the column reads as turbulent billows, not stacked balls.
+		smoke.angle_min = -180.0; smoke.angle_max = 180.0
+		smoke.angular_velocity_min = -45.0; smoke.angular_velocity_max = 45.0
 		var scurve := Curve.new()
 		scurve.add_point(Vector2(0.0, 0.3)); scurve.add_point(Vector2(1.0, 1.0))
 		smoke.scale_amount_curve = scurve

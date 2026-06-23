@@ -18,6 +18,7 @@ var _vig_time: float = 0.0
 var _cross_spread: float = 0.0
 var _player_ref: Node3D
 var _mag: int = 1
+var _prev_mag: int = 1
 var _mag_size: int = 1
 var _reticle_base: Color = Color(1, 1, 1)
 var _cross_time: float = 0.0
@@ -788,6 +789,10 @@ func _refresh_ammo_visual(reserve: int) -> void:
 		_segs[i].color = col if i < lit else Color(1, 1, 1, 0.13)
 
 func _on_ammo_changed(mag: int, reserve: int) -> void:
+	# A fresh magazine (count jumped up) punches the big number — reload juice.
+	if mag > _prev_mag:
+		_juice_pop(_ammo_big, 1.4)
+	_prev_mag = mag
 	_mag = mag
 	_refresh_ammo_visual(reserve)
 
@@ -798,6 +803,36 @@ func _on_weapon_changed(w: Weapon) -> void:
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)
 		_refresh_ammo_visual(w.reserve)
+
+## ---------- 4.7 juicy-HUD helpers (Control offset transforms) ----------
+## offset_transform_* visually translates/scales/rotates a Control WITHOUT the
+## container relaying it or shoving its siblings — so HUD elements can pop,
+## shake and slide even while parked inside VBox/HBox layouts.
+
+## Overshoot scale-pop around the element's own centre.
+func _juice_pop(c: Control, s: float = 1.35) -> void:
+	if c == null:
+		return
+	c.offset_transform_enabled = true
+	c.offset_transform_visual_only = true
+	c.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	c.offset_transform_scale = Vector2(s, s)
+	var t := c.create_tween()
+	t.tween_property(c, "offset_transform_scale", Vector2.ONE, 0.22) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## A short positional shake that settles back to rest.
+func _juice_shake(c: Control, amt: float = 7.0) -> void:
+	if c == null:
+		return
+	c.offset_transform_enabled = true
+	c.offset_transform_visual_only = true
+	var t := c.create_tween()
+	for i in 4:
+		t.tween_property(c, "offset_transform_position",
+			Vector2(randf_range(-amt, amt), randf_range(-amt, amt)), 0.04)
+	t.tween_property(c, "offset_transform_position", Vector2.ZERO, 0.07) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 ## Distinct light tint per weapon so each reticle reads differently.
 func _reticle_hue(name: String) -> Color:
@@ -841,6 +876,9 @@ func _on_grenades_changed(count: int) -> void:
 
 func _on_player_damaged(_amount: float, src: Node) -> void:
 	_damage_alpha = 0.55
+	# Rattle the health readout so a hit is felt on the HUD, not just the screen.
+	_juice_shake(health_bar, 6.0)
+	_juice_shake(health_label, 6.0)
 	# Point an edge wedge toward the attacker; it tracks the world position as the
 	# player turns (handled inside the DamageIndicator).
 	if src is Node3D and _dmg_indicator:
@@ -898,6 +936,18 @@ func _on_enemy_killed(score: int, label: String) -> void:
 	_kill_feed.add_child(lbl)
 	while _kill_feed.get_child_count() > 5:
 		_kill_feed.get_child(0).free()
+	# Punch the new entry in: slide from the right + overshoot scale, visual-only
+	# so the rest of the feed doesn't jitter as it lands (4.7 offset transform).
+	lbl.offset_transform_enabled = true
+	lbl.offset_transform_visual_only = true
+	lbl.offset_transform_pivot_ratio = Vector2(1.0, 0.5)
+	lbl.offset_transform_position = Vector2(70, 0)
+	lbl.offset_transform_scale = Vector2(0.6, 0.6)
+	var pin := create_tween().set_parallel(true)
+	pin.tween_property(lbl, "offset_transform_position", Vector2.ZERO, 0.34) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pin.tween_property(lbl, "offset_transform_scale", Vector2.ONE, 0.34) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var tw := create_tween()
 	tw.tween_interval(2.0)
 	tw.tween_property(lbl, "modulate:a", 0.0, 0.6)
