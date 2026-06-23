@@ -41,6 +41,7 @@ var _damage_alpha: float = 0.0
 var _toast_time: float = 0.0
 var _hit_flash: float = 0.0
 var _hit_kill: bool = false
+var _hit_crit: bool = false ## Last hit was a headshot — flashes the marker gold.
 var _crosshair_base_scale: Vector2 = Vector2.ONE
 var _objective_base: String = "" ## Flavour objective text, shown when no task checklist is active.
 var _combo_label: Label = null
@@ -512,12 +513,13 @@ func _process(delta: float) -> void:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5
 		crosshair.scale = _crosshair_base_scale * pop
-		# Kills flash red; normal hits flash bright white, easing back to neutral.
-		var hit_col := Color(1.0, 0.25, 0.2) if _hit_kill else Color(1.0, 1.0, 1.0)
+		# Headshots flash GOLD (precision read, priority); kills red; hits white.
+		var hit_col := Color(1.0, 0.85, 0.25) if _hit_crit else (Color(1.0, 0.25, 0.2) if _hit_kill else Color(1.0, 1.0, 1.0))
 		crosshair.modulate = Color(1, 1, 1).lerp(hit_col, _hit_flash)
 		# Snap-in hit ✕: punches out from the crosshair on contact.
 		if _hit_x:
-			_hit_x.modulate = Color(1.0, 0.4, 0.35, _hit_flash) if _hit_kill else Color(1, 1, 1, _hit_flash)
+			var x_col := Color(1.0, 0.82, 0.2) if _hit_crit else (Color(1.0, 0.4, 0.35) if _hit_kill else Color(1, 1, 1))
+			_hit_x.modulate = Color(x_col.r, x_col.g, x_col.b, _hit_flash)
 			_hit_x.scale = Vector2.ONE * (1.25 - _hit_flash * 0.35)
 	if _kill_flash > 0.0:
 		_kill_flash = maxf(0.0, _kill_flash - delta * 3.2)
@@ -890,9 +892,10 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 		if r <= 0.3 and _overlord_time <= 0.0 and randf() < 0.35:
 			_overlord_say(OVERLORD_LOWHP[randi() % OVERLORD_LOWHP.size()])
 
-func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
+func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	_hit_flash = 1.0
 	_hit_kill = killed
+	_hit_crit = crit
 	if killed:
 		_kill_flash = 1.0
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.

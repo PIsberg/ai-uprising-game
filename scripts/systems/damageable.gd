@@ -42,7 +42,7 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	if source and source.is_in_group("player") and owner_node is Node3D \
 			and not owner_node.is_in_group("player"):
 		var pos: Vector3 = (owner_node as Node3D).global_position + Vector3.UP * 1.5
-		GameState.report_player_hit(mitigated, pos, killed)
+		GameState.report_player_hit(mitigated, pos, killed, crit)
 		_spawn_damage_number(mitigated, pos, killed, crit)
 	if killed:
 		died.emit(source)

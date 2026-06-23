@@ -4,7 +4,7 @@ signal player_died
 signal level_completed
 signal score_changed(new_score: int)
 signal boss_spawned(boss: Node) ## A boss enemy appeared — HUD shows its health bar.
-signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) ## Player landed a hit — drives hit markers + damage numbers.
+signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit: bool) ## Player landed a hit — drives hit markers + damage numbers (crit = headshot).
 signal enemy_killed(score: int, label: String) ## An enemy was destroyed — drives the HUD kill feed.
 signal objective_blocked(text: String) ## Player reached a locked portal — HUD posts why.
 signal objective_unlocked(text: String) ## Objective met, portal opened — HUD updates the goal line.
@@ -17,9 +17,9 @@ func announce_boss(boss: Node) -> void:
 	boss_spawned.emit(boss)
 
 ## Called by Damageable when the player damages something. Drives combat feedback.
-func report_player_hit(amount: float, world_pos: Vector3, killed: bool) -> void:
+func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	register_hit()
-	player_dealt_damage.emit(amount, world_pos, killed)
+	player_dealt_damage.emit(amount, world_pos, killed, crit)
 	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
 	# the punch that separates a good-feeling shooter from a flat one. A kill
 	# snaps harder than a heavy hit; rate-limited so a fast horde can't slideshow.
