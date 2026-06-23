@@ -224,7 +224,9 @@ func create_particles(
 	scale_max: float,
 	mesh: Mesh,
 	color_ramp: Gradient = null,
-	scale_curve: Curve = null
+	scale_curve: Curve = null,
+	angle_max: float = 0.0,
+	angular_velocity_max: float = 0.0
 ) -> Node3D:
 	if gpu_particles_enabled:
 		var p := GPUParticles3D.new()
@@ -259,7 +261,14 @@ func create_particles(
 			var curve_tex := CurveTexture.new()
 			curve_tex.curve = scale_curve
 			pm.scale_curve = curve_tex
-			
+		# Optional spin — 4.7's richer per-particle rotation makes tumbling debris read.
+		if angle_max > 0.0:
+			pm.angle_min = -angle_max
+			pm.angle_max = angle_max
+		if angular_velocity_max > 0.0:
+			pm.angular_velocity_min = -angular_velocity_max
+			pm.angular_velocity_max = angular_velocity_max
+
 		p.process_material = pm
 		return p
 	else:
@@ -283,6 +292,12 @@ func create_particles(
 			p.color_ramp = color_ramp
 		if scale_curve:
 			p.scale_amount_curve = scale_curve
+		if angle_max > 0.0:
+			p.angle_min = -angle_max
+			p.angle_max = angle_max
+		if angular_velocity_max > 0.0:
+			p.angular_velocity_min = -angular_velocity_max
+			p.angular_velocity_max = angular_velocity_max
 		return p
 
 ## Re-tier the environment of the level that's running RIGHT NOW, so picking a

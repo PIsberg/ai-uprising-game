@@ -52,6 +52,13 @@ static func _embers(root: Node3D, size: float, color: Color) -> void:
 	p.gravity = Vector3(0, -16.0, 0)
 	p.scale_amount_min = 0.6
 	p.scale_amount_max = 1.4
+	# Tumble the shrapnel and burn it down to a streak — 4.7's richer per-particle
+	# scale/rotation makes the darts read as spinning sparks, not sliding dashes.
+	p.angle_min = -180.0
+	p.angle_max = 180.0
+	p.angular_velocity_min = -900.0
+	p.angular_velocity_max = 900.0
+	p.scale_amount_curve = _ember_taper_curve()
 	var dart := BoxMesh.new()
 	dart.size = Vector3(0.05, 0.05, 0.16) # stretched -> reads as a streak
 	var m := StandardMaterial3D.new()
@@ -99,6 +106,14 @@ static func _ramp_up_curve() -> Curve:
 	var c := Curve.new()
 	c.add_point(Vector2(0.0, 0.3))
 	c.add_point(Vector2(1.0, 1.0))
+	return c
+
+## Embers pop to full size then shrink to a dying spark over their lifetime.
+static func _ember_taper_curve() -> Curve:
+	var c := Curve.new()
+	c.add_point(Vector2(0.0, 1.0))
+	c.add_point(Vector2(0.65, 0.7))
+	c.add_point(Vector2(1.0, 0.0))
 	return c
 
 ## A white-hot core that balloons out and burns off in a tenth of a second —
