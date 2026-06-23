@@ -472,14 +472,18 @@ func _build_environment(def: Dictionary) -> void:
 # of a point light's hard radial falloff. SIZE/ENERGY/RANGE are the tuning
 # knobs — bump them here if HIGH/ULTRA interiors read too dim or too bright.
 const AREA_LIGHT_SIZE := 1.8          # emitter rectangle in m (panel is ~1.0; larger = softer)
-const AREA_LIGHT_ENERGY_MULT := 1.5   # vs authored "energy" (omni path uses 1.2)
+const AREA_LIGHT_ENERGY_MULT := 2.5   # vs authored "energy"; calibrated against the old
+                                      # OmniLight floor-pool at the 6 m WALL_HEIGHT drop
 const AREA_LIGHT_RANGE_MULT := 1.5    # area lights fade with distance — give them reach
 
 func _make_interior_area_light(l: Dictionary, shadowed: bool) -> AreaLight3D:
 	var pos: Vector3 = l["pos"]
 	var area := AreaLight3D.new()
 	area.area_size = Vector2(AREA_LIGHT_SIZE, AREA_LIGHT_SIZE)
-	area.area_normalize_energy = true  # perceived brightness independent of emitter size
+	# Raw (non-normalized) energy: normalize_energy divides intensity by emitter
+	# area, which at a 6 m ceiling drop read noticeably dimmer than the omnis it
+	# replaces. Raw energy matched the old floor-pool brightness in side-by-side.
+	area.area_normalize_energy = false
 	area.light_color = l.get("color", Color(1, 1, 1))
 	area.light_energy = l.get("energy", 2.0) * AREA_LIGHT_ENERGY_MULT
 	area.area_range = l.get("range", 16.0) * AREA_LIGHT_RANGE_MULT
