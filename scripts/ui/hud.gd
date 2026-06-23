@@ -386,14 +386,15 @@ func _update_combat_music(delta: float) -> void:
 	if _combat_poll > 0.0:
 		return
 	_combat_poll = 0.4
-	var fighting := false
+	# Count actively-engaged hostiles so the music reacts to the SCALE of the
+	# fight, not just on/off — a swarm hits peak intensity, a lone straggler doesn't.
+	var fighting := 0
 	if GameState.current_state == GameState.State.PLAYING:
 		for e in get_tree().get_nodes_in_group("enemy"):
 			if e is EnemyBase and (e.state == EnemyBase.State.CHASE or e.state == EnemyBase.State.ATTACK):
 				if e.hp != null and e.hp.is_alive():
-					fighting = true
-					break
-	AudioBus.set_combat(fighting)
+					fighting += 1
+	AudioBus.set_combat_heat(clampf(float(fighting) / 6.0, 0.0, 1.0))
 
 ## Objective cleared: rewrite the goal line and cheer it on the toast.
 func _on_objective_unlocked(text: String) -> void:
