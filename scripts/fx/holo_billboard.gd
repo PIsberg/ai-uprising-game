@@ -15,7 +15,7 @@ const HOLO_SHADER := preload("res://shaders/hologram.gdshader")
 var _panel_root: Node3D
 var _label: Label3D
 var _mat: ShaderMaterial
-var _light: OmniLight3D
+var _light: AreaLight3D
 var _t: float = 0.0
 var _glitch_cd: float = 0.0
 var _base_alpha: float = 0.55
@@ -108,13 +108,18 @@ func _build_panel() -> void:
 	_label.position = Vector3(0, 0, 0.02)
 	_panel_root.add_child(_label)
 
-	# Cyan glow light cast by the projection.
-	_light = OmniLight3D.new()
+	# Glow cast by the projection — a rect AreaLight3D (4.7) shaped to the panel
+	# so the light reads as spilling FROM the sign, not from a point behind it.
+	# Emits along -Z, so face it forward (+Z, toward whoever's reading it).
+	_light = AreaLight3D.new()
 	_light.light_color = color
 	_light.light_energy = 2.0
-	_light.omni_range = panel_size.x * 2.5
+	_light.area_size = panel_size * 0.85
+	_light.area_normalize_energy = false
+	_light.area_range = panel_size.x * 2.5
 	_light.shadow_enabled = false
-	_light.position = Vector3(0, 0, 0.4)
+	_light.position = Vector3(0, 0, 0.1)
+	_light.rotation_degrees = Vector3(0, 180, 0)
 	_panel_root.add_child(_light)
 
 func _process(delta: float) -> void:
