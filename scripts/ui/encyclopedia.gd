@@ -317,6 +317,30 @@ func _frame_model(bot: Node3D) -> void:
 	_camera.look_at(Vector3(shift, cy, 0), Vector3.UP)
 
 func _world_aabb(bot: Node3D) -> AABB:
+	# Skinned meshes render via their Skeleton3D bones, NOT the MeshInstance3D's
+	# own transform. Several re-exported (Blender-forked) models bake a huge
+	# scale into the mesh instance that the skin cancels out, so
+	# `global_transform * mesh.get_aabb()` reports a bogus 600-unit box and the
+	# framer backs the camera off until the bot is a speck. When a skeleton is
+	# present, measure the real posed extent from its bone positions instead.
+	var skels := bot.find_children("*", "Skeleton3D", true, false)
+	if not skels.is_empty():
+		var skel := skels[0] as Skeleton3D
+		if skel.get_bone_count() > 0:
+			var b := AABB()
+			var bfirst := true
+			for i in skel.get_bone_count():
+				var p: Vector3 = (skel.global_transform * skel.get_bone_global_pose(i)).origin
+				if bfirst:
+					b = AABB(p, Vector3.ZERO); bfirst = false
+				else:
+					b = b.expand(p)
+			# Bones mark joints, not the skin surface — pad so heads/limbs/blades
+			# aren't cropped, and floor the bottom at the dais.
+			b = b.grow(0.4)
+			b.position.y = maxf(b.position.y, 0.0)
+			return b
+
 	var merged := AABB()
 	var first := true
 	for mi in bot.find_children("*", "MeshInstance3D", true, false):
