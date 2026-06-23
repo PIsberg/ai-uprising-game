@@ -42,6 +42,12 @@ func notify_pickup(text: String) -> void:
 @export var land_kick: float = 0.18
 @export var strafe_tilt_deg: float = 1.4 ## Camera roll when strafing, for weight.
 @export var max_shake_roll_deg: float = 2.6 ## Peak rotational kick at full trauma.
+@export_subgroup("Weapon Sway")
+@export var sway_pos: float = 0.00009 ## Viewmodel positional lag per look-pixel.
+@export var sway_pos_max: float = 0.022 ## Clamp on positional sway (m).
+@export var sway_rot: float = 0.00006 ## Viewmodel rotational lag per look-pixel (rad).
+@export var sway_rot_max: float = 0.03 ## Clamp on rotational sway (rad).
+@export var sway_return: float = 11.0 ## How fast the viewmodel eases back to home.
 
 @export_group("Dash & Slide")
 @export var dash_speed: float = 20.0
@@ -74,6 +80,11 @@ var _camera_base_y: float = 0.0
 var _land_offset: float = 0.0
 var _shake_amount: float = 0.0
 var _cam_roll: float = 0.0
+var _wh_base: Vector3 = Vector3.ZERO
+var _wh_base_rot: Vector3 = Vector3.ZERO
+var _sway: Vector3 = Vector3.ZERO
+var _sway_rot_cur: Vector3 = Vector3.ZERO
+var _look_accum: Vector2 = Vector2.ZERO
 
 ## External camera shake (e.g. a boss entrance). 0..~1.
 func shake(amount: float) -> void:
@@ -101,6 +112,9 @@ const STEP_INTERVAL_CROUCH := 1.6
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_camera_base_y = camera.position.y
+	if weapon_holder:
+		_wh_base = weapon_holder.position
+		_wh_base_rot = weapon_holder.rotation
 	_apply_user_settings()
 	_fov_base = camera.fov
 	_register_dash_action()
@@ -191,6 +205,7 @@ func _input(event: InputEvent) -> void:
 		var m := event as InputEventMouseMotion
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
 		head.rotate_x(-m.relative.y * mouse_sensitivity * _look_sens_mult * _look_y_sign)
+		_look_accum += m.relative
 		head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
 
 func _physics_process(delta: float) -> void:
@@ -212,9 +227,30 @@ func _physics_process(delta: float) -> void:
 	_handle_stance(delta)
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
+	_update_weapon_sway(delta)
 	move_and_slide()
 	_check_landing()
 	_handle_footsteps(delta)
+
+## Viewmodel sway: the weapon lags a touch behind a fast turn, then settles —
+## inertia that makes the gun feel like a held object, not welded to the camera.
+## Rides on weapon_holder; the per-shot recoil kick lives on the child viewmodel,
+## so the two compose without fighting.
+func _update_weapon_sway(delta: float) -> void:
+	if weapon_holder == null:
+		return
+	var k := clampf(sway_return * delta, 0.0, 1.0)
+	var pos_tgt := Vector3(
+		clampf(-_look_accum.x * sway_pos, -sway_pos_max, sway_pos_max),
+		clampf(_look_accum.y * sway_pos, -sway_pos_max, sway_pos_max), 0.0)
+	_sway = _sway.lerp(pos_tgt, k)
+	weapon_holder.position = _wh_base + _sway
+	var rot_tgt := Vector3(
+		clampf(_look_accum.y * sway_rot, -sway_rot_max, sway_rot_max),
+		clampf(-_look_accum.x * sway_rot, -sway_rot_max, sway_rot_max), 0.0)
+	_sway_rot_cur = _sway_rot_cur.lerp(rot_tgt, k)
+	weapon_holder.rotation = _wh_base_rot + _sway_rot_cur
+	_look_accum = Vector2.ZERO
 
 ## Registers the dash action (Q) at runtime so it works without editing the
 ## project input map. Gamepad users dash with the right-stick click is taken;
@@ -330,6 +366,7 @@ func _handle_gamepad_look(delta: float) -> void:
 	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult * fr)
 	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign * fr)
 	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+	_look_accum += Vector2(lx, ly) * pad_look_speed * delta * 70.0 # mouse-pixel-equivalent for sway
 
 ## Look-speed multiplier in [aim_assist_min, 1.0]: drops toward the minimum as
 ## the camera-forward ray closes on the nearest live hostile within the cone.
