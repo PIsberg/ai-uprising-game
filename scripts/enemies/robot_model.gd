@@ -101,6 +101,7 @@ func _apply_materials() -> void:
 				mat.albedo_color = tint
 				mat.metallic = 0.25
 				mat.roughness = 0.65
+				_add_readability_rim(mat)
 				_add_menace_emission(mat, texture)
 				mi.material_override = mat
 		elif mi.mesh != null:
@@ -125,6 +126,7 @@ func _apply_materials() -> void:
 					else:
 						var dup := m.duplicate() as BaseMaterial3D
 						dup.albedo_color = dup.albedo_color * tint
+						_add_readability_rim(dup)
 						_add_menace_emission(dup, dup.albedo_texture)
 						mi.set_surface_override_material(s, dup)
 
@@ -132,6 +134,14 @@ func _apply_materials() -> void:
 ## prepared on every material here but stays dark — `damage_blink()` flares it.
 ## The albedo doubles as the emission mask, so panel highlights flare while
 ## recesses stay dark instead of the whole body glowing like a toy.
+## A subtle physical rim so an enemy's silhouette catches scene light and reads
+## as a threat against any background (the StandardMaterial3D tiers; the triplanar
+## shader does the same via RIM). Neutral — it's edge readability, not a glow.
+func _add_readability_rim(mat: BaseMaterial3D) -> void:
+	mat.rim_enabled = true
+	mat.rim = 0.32
+	mat.rim_tint = 0.25
+
 func _add_menace_emission(mat: BaseMaterial3D, mask: Texture2D) -> void:
 	if menace_glow <= 0.0:
 		return
