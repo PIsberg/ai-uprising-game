@@ -85,6 +85,7 @@ func _exit_tree() -> void:
 func _setup_buses() -> void:
 	_ensure_bus("Music")
 	_ensure_bus("SFX")
+	_ensure_master_limiter()
 	# Start the looping theme once, unconditionally — NOT as a side effect of a
 	# bus being freshly created (which silently skipped music whenever the buses
 	# already existed). Deferred so SoundSynth's _ready has built its streams.
@@ -97,6 +98,20 @@ func _ensure_bus(bus_name: String) -> void:
 	AudioServer.add_bus(idx)
 	AudioServer.set_bus_name(idx, bus_name)
 	AudioServer.set_bus_send(idx, "Master")
+
+## Transparent brick-wall limiter on Master so a peak moment — stacked
+## explosions + gunfire + a full horde + the music swell — can't sum past 0 dB
+## into harsh digital clipping right when the action is loudest. Idempotent.
+func _ensure_master_limiter() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	if master < 0:
+		return
+	for i in AudioServer.get_bus_effect_count(master):
+		if AudioServer.get_bus_effect(master, i) is AudioEffectHardLimiter:
+			return
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -1.0
+	AudioServer.add_bus_effect(master, lim)
 
 # ---------- per-bus volume (persisted to user://settings.cfg) ----------
 
