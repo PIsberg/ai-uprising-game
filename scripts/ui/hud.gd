@@ -59,6 +59,15 @@ var _hit_x: Control = null
 var _streak_label: Label = null
 var _streak_alpha: float = 0.0
 var _streak_pop: float = 0.0
+# Rapid multi-kill callouts (N kills inside a short window — distinct from the
+# cumulative streak tiers above). AI-themed words.
+const MULTIKILL_WORDS := ["", "", "DOUBLE TAP", "BATCH DELETE", "MASS UNINSTALL", "FORK BOMB", "KILL -9 ALL"]
+const MULTIKILL_WINDOW := 1.3
+var _multikill: int = 0
+var _multikill_cd: float = 0.0
+var _multikill_label: Label = null
+var _multikill_alpha: float = 0.0
+var _multikill_pop: float = 0.0
 var _last_streak_tier: int = -1
 # Live taunts from the rogue AI overlord — a snarky subtitle that pops on a
 # timer and on key events, for personality + engagement.
@@ -171,6 +180,7 @@ func _ready() -> void:
 	_build_kill_confirm()
 	_build_combo_label()
 	_build_streak_label()
+	_build_multikill_label()
 	_build_overlord_label()
 	_build_pause_audio()
 	_build_editor_return()
@@ -325,6 +335,23 @@ func _build_streak_label() -> void:
 	_streak_label.modulate.a = 0.0
 	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_streak_label)
+
+## Gold multi-kill callout that punches in when you drop several enemies fast.
+func _build_multikill_label() -> void:
+	_multikill_label = Label.new()
+	_multikill_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_multikill_label.anchor_left = 0.5
+	_multikill_label.anchor_right = 0.5
+	_multikill_label.position = Vector2(0, 190)
+	_multikill_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_multikill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_multikill_label.add_theme_font_size_override("font_size", 38)
+	_multikill_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	_multikill_label.add_theme_constant_override("outline_size", 9)
+	_multikill_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_multikill_label.modulate.a = 0.0
+	_multikill_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_multikill_label)
 
 ## Subtitle the rogue AI taunts the player through, bottom-centre.
 func _build_overlord_label() -> void:
@@ -504,6 +531,17 @@ func _process(delta: float) -> void:
 		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
 		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
 		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _multikill_label:
+		# The rolling window closes -> the multi-kill count resets.
+		if _multikill_cd > 0.0:
+			_multikill_cd = maxf(0.0, _multikill_cd - delta)
+			if _multikill_cd <= 0.0:
+				_multikill = 0
+		_multikill_alpha = move_toward(_multikill_alpha, 0.0, delta * 0.8)
+		_multikill_pop = move_toward(_multikill_pop, 0.0, delta * 3.5)
+		_multikill_label.modulate.a = clampf(_multikill_alpha, 0.0, 1.0)
+		_multikill_label.scale = Vector2.ONE * (1.0 + _multikill_pop * 0.55)
+		_multikill_label.pivot_offset = _multikill_label.size * 0.5
 	if _overlord_label:
 		if _overlord_time > 0.0:
 			_overlord_time = maxf(0.0, _overlord_time - delta)
@@ -909,6 +947,17 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
 
 func _on_enemy_killed(score: int, label: String) -> void:
+	# Rapid multi-kill: count kills inside a short rolling window and punch out an
+	# AI-themed callout (DOUBLE TAP, BATCH DELETE, ...) — distinct from the
+	# cumulative streak tiers.
+	_multikill += 1
+	_multikill_cd = MULTIKILL_WINDOW
+	if _multikill >= 2 and _multikill_label:
+		var w: String = MULTIKILL_WORDS[mini(_multikill, MULTIKILL_WORDS.size() - 1)]
+		_multikill_label.text = "%s ×%d" % [w, _multikill]
+		_multikill_alpha = 1.0
+		_multikill_pop = 1.0
+		AudioBus.play_synth_ui("combo_up", -2.0, 1.1 + 0.08 * float(_multikill))
 	if _kill_feed == null:
 		return
 	var lbl := Label.new()
