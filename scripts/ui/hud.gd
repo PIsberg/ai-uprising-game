@@ -149,6 +149,8 @@ func _ready() -> void:
 		_on_health_changed(player.hp.current_health, player.hp.max_health)
 		var wm: WeaponManager = player.get_node_or_null("Head/Camera3D/WeaponHolder")
 		if wm:
+			_wm = wm
+			_build_weapon_carousel()
 			wm.weapon_changed.connect(_on_weapon_changed)
 			wm.ammo_changed.connect(_on_ammo_changed)
 			wm.weapon_added.connect(_on_weapon_added)
@@ -855,6 +857,8 @@ func _on_weapon_changed(w: Weapon) -> void:
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)
 		_refresh_ammo_visual(w.reserve)
+	_update_carousel_highlight()
+	_flash_carousel()
 
 ## ---------- 4.7 juicy-HUD helpers (Control offset transforms) ----------
 ## offset_transform_* visually translates/scales/rotates a Control WITHOUT the
@@ -894,6 +898,116 @@ func _reticle_hue(name: String) -> Color:
 func _on_weapon_added(w: Weapon) -> void:
 	if w and w.data:
 		_show_toast(tr("WEAPON ACQUIRED — ") + w.data.display_name)
+	_refresh_carousel() # a new slot joined the rack — rebuild the strip
+	_flash_carousel()
+
+# ---------- weapon carousel: a compact bottom-centre hotbar ----------
+# A horizontal strip of every weapon in the rack, weakest→strongest (the same
+# order as keys 1-9). Each cell shows its slot number + the weapon's short code;
+# the armed one lights up in the weapon's energy colour. The strip rides bright
+# for a beat on every switch/pickup, then settles to a dim glance-able rest.
+
+var _wm: WeaponManager
+var _carousel: HBoxContainer
+var _carousel_cells: Array[Dictionary] = []
+var _carousel_fade: Tween
+
+func _build_weapon_carousel() -> void:
+	var bar := CenterContainer.new()
+	bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bar.offset_top = -156
+	bar.offset_bottom = -104
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bar)
+	_carousel = HBoxContainer.new()
+	_carousel.add_theme_constant_override("separation", 6)
+	_carousel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(_carousel)
+	_refresh_carousel()
+
+## Rebuild every cell from the (already power-sorted) weapon rack. Cheap and only
+## called when the rack itself changes (build / pickup), not on every switch.
+func _refresh_carousel() -> void:
+	if _carousel == null or _wm == null:
+		return
+	for c in _carousel.get_children():
+		c.queue_free()
+	_carousel_cells.clear()
+	for i in _wm.weapons.size():
+		var w: Weapon = _wm.weapons[i]
+		var col: Color = w.data.tracer_color if w.data else Color(0.7, 0.8, 1.0)
+		var panel := PanelContainer.new()
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var style := StyleBoxFlat.new()
+		panel.add_theme_stylebox_override("panel", style)
+		var vb := VBoxContainer.new()
+		vb.add_theme_constant_override("separation", -2)
+		vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(vb)
+		var num := Label.new()
+		num.text = str(i + 1) if i < 9 else "•" # only 1-9 are bound to number keys
+		num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		num.add_theme_font_size_override("font_size", 11)
+		num.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		num.add_theme_constant_override("outline_size", 4)
+		vb.add_child(num)
+		var code := Label.new()
+		code.text = w.data.display_name.split(" ")[0] if w.data else "?"
+		code.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		code.custom_minimum_size = Vector2(48, 0)
+		code.add_theme_font_size_override("font_size", 14)
+		code.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		code.add_theme_constant_override("outline_size", 4)
+		vb.add_child(code)
+		_carousel.add_child(panel)
+		panel.pivot_offset = panel.size * 0.5
+		_carousel_cells.append({"panel": panel, "num": num, "code": code, "style": style, "color": col})
+	_update_carousel_highlight()
+
+## Re-tint cells for the current armed slot. Called on every switch (no rebuild).
+func _update_carousel_highlight() -> void:
+	if _wm == null:
+		return
+	var cur := _wm.current_index
+	for i in _carousel_cells.size():
+		var cell := _carousel_cells[i]
+		var style: StyleBoxFlat = cell["style"]
+		var col: Color = cell["color"]
+		var num: Label = cell["num"]
+		var code: Label = cell["code"]
+		style.set_corner_radius_all(4)
+		style.content_margin_left = 6
+		style.content_margin_right = 6
+		style.content_margin_top = 3
+		style.content_margin_bottom = 3
+		if i == cur:
+			style.bg_color = Color(col.r, col.g, col.b, 0.32)
+			style.set_border_width_all(2)
+			style.border_color = Color(col.r, col.g, col.b, 0.95)
+			num.modulate = Color(1, 1, 1, 1)
+			code.add_theme_color_override("font_color", col.lightened(0.45))
+			code.modulate = Color(1, 1, 1, 1)
+		else:
+			style.bg_color = Color(0.05, 0.06, 0.09, 0.5)
+			style.set_border_width_all(1)
+			style.border_color = Color(0.45, 0.5, 0.6, 0.4)
+			num.modulate = Color(1, 1, 1, 0.45)
+			code.add_theme_color_override("font_color", Color(0.82, 0.86, 0.92))
+			code.modulate = Color(1, 1, 1, 0.6)
+	if cur >= 0 and cur < _carousel_cells.size():
+		_juice_pop(_carousel_cells[cur]["panel"], 1.18)
+
+## Pop the whole strip to full brightness, then ease it back to a dim resting
+## glow so it stays glance-able without dominating the screen.
+func _flash_carousel() -> void:
+	if _carousel == null:
+		return
+	if _carousel_fade and _carousel_fade.is_valid():
+		_carousel_fade.kill()
+	_carousel.modulate.a = 1.0
+	_carousel_fade = _carousel.create_tween()
+	_carousel_fade.tween_interval(2.2)
+	_carousel_fade.tween_property(_carousel, "modulate:a", 0.5, 0.6)
 
 func _on_boss_spawned(boss: Node) -> void:
 	if boss == null or not is_instance_valid(boss):

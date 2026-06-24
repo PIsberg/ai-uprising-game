@@ -28,6 +28,26 @@ func eff_mag_size() -> int:
 func eff_reload_time() -> float:
 	return data.reload_time * GameState.upgrade_reload_mult()
 
+## Damage scale for a target at `dist` metres, from this weapon's range identity.
+## 1.0 inside the optimal band; ramps to close_mult below opt_min and to far_mult
+## beyond opt_max. Range-agnostic weapons (range_falloff off) always return 1.0.
+func _range_mult(dist: float) -> float:
+	if data == null or not data.range_falloff:
+		return 1.0
+	if dist <= data.opt_min:
+		var t := 1.0 if data.opt_min <= 0.0 else clampf(dist / data.opt_min, 0.0, 1.0)
+		return lerpf(data.close_mult, 1.0, t)
+	if dist >= data.opt_max:
+		var span := maxf(0.001, data.range_m - data.opt_max)
+		var t := clampf((dist - data.opt_max) / span, 0.0, 1.0)
+		return lerpf(1.0, data.far_mult, t)
+	return 1.0
+
+## True when the weapon is bone dry — no mag, no reserve, not mid-reload — so the
+## manager can quick-draw a loaded backup instead of letting you click on empty.
+func is_fully_dry() -> bool:
+	return mag <= 0 and reserve <= 0 and not _reloading
+
 var mag: int = 0
 var reserve: int = 0
 var _cooldown: float = 0.0
@@ -491,7 +511,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 		if dmg_node == null:
 			_spawn_bullet_hole(hpos, hit.normal)
 		if dmg_node:
-			var final_damage := eff_damage()
+			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos))
 			var is_head := false
 			if col.has_method("is_headshot"):
 				is_head = col.is_headshot(hpos.y)
@@ -517,7 +537,12 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			break
 	# Draw the visible round from the muzzle (not the eye) to where it landed, so
 	# it reads as leaving the rifle and striking the target.
-	_spawn_tracer(muzzle.global_position if muzzle else origin, end_point)
+	var beam_from := muzzle.global_position if muzzle else origin
+	_spawn_tracer(beam_from, end_point)
+	# Energy weapons (railguns/lasers/arc guns) get a fat glowing bolt + end blooms
+	# on top of the tracer — and arc guns get a jagged lightning overlay.
+	if data.energy_beam_fx or data.arc_fx:
+		_energy_beam_flash(beam_from, end_point)
 
 ## A bright expanding flash + light when a shot connects with an enemy, plus a
 ## burst of metal embers/debris that scales with how hard the hit landed.
@@ -707,7 +732,7 @@ func _update_beam(delta: float) -> void:
 		var col := hit.collider as Node
 		var dmg_node: Node = _find_damageable(col) if col else null
 		if dmg_node:
-			dmg_node.apply_damage(eff_damage(), _active_shooter)
+			dmg_node.apply_damage(eff_damage() * _range_mult(origin.distance_to(hit.position)), _active_shooter)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.
 			if _beam_pop % 4 == 0:
 				_enemy_hit_pop(hit.position, false, eff_damage() * 2.0)
@@ -782,6 +807,109 @@ func _energy_muzzle() -> void:
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.13)
 	tw.tween_property(light, "light_energy", 0.0, 0.13)
 	tw.chain().tween_callback(orb.queue_free)
+
+## ---------- energy / laser / arc beam flash (hitscan cosmetic) ----------
+
+## A thick, short-lived laser bolt from the muzzle to the hit point for energy
+## hitscan weapons: a fat additive glow tube wrapping a searing white-hot core,
+## emissive blooms with lights at both ends, and (for arc weapons) a jagged
+## lightning overlay. Purely cosmetic — damage is the instant hitscan above.
+func _energy_beam_flash(from: Vector3, to: Vector3) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var col := data.tracer_color
+	var root := Node3D.new()
+	scene.add_child(root)
+	root.add_child(_beam_tube(from, to, 0.07, Color(col.r, col.g, col.b, 0.5), col, 5.0))
+	root.add_child(_beam_tube(from, to, 0.022, Color(1, 1, 1, 0.95), col.lerp(Color.WHITE, 0.6), 11.0))
+	# End blooms — an emissive orb + a light at the muzzle and at the impact.
+	for end_pt in [from, to]:
+		var orb := _glow_orb(col, 0.12)
+		root.add_child(orb)
+		orb.global_position = end_pt
+		var l := OmniLight3D.new()
+		l.light_color = col
+		l.light_energy = 4.0
+		l.omni_range = 3.5
+		orb.add_child(l)
+	if data.arc_fx:
+		_spawn_arc_overlay(root, from, to, col)
+	# Fade the whole flash out fast (a snap, not a lingering beam).
+	var tw := root.create_tween().set_parallel(true)
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := (mi as MeshInstance3D).material_override as StandardMaterial3D
+		if m:
+			tw.tween_property(m, "emission_energy_multiplier", 0.0, 0.14)
+			tw.tween_property(m, "albedo_color:a", 0.0, 0.14)
+	for li in root.find_children("*", "OmniLight3D", true, false):
+		tw.tween_property(li, "light_energy", 0.0, 0.14)
+	tw.chain().tween_callback(root.queue_free)
+
+## A unit additive glow cylinder spanning exactly a→b (cylinder axis is +Y).
+func _beam_tube(a: Vector3, b: Vector3, radius: float, albedo: Color, emission: Color, energy: float) -> MeshInstance3D:
+	var d := b - a
+	var l := maxf(0.001, d.length())
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = l
+	cm.radial_segments = 8
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = albedo
+	mat.emission_enabled = true
+	mat.emission = emission
+	mat.emission_energy_multiplier = energy
+	var mi := MeshInstance3D.new()
+	mi.mesh = cm
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var dn := d / l
+	var up := Vector3.UP if absf(dn.y) < 0.99 else Vector3.RIGHT
+	var basis := Basis.looking_at(dn, up) * Basis(Vector3.RIGHT, PI * 0.5)
+	mi.transform = Transform3D(basis, (a + b) * 0.5)
+	return mi
+
+## A small unshaded additive glow sphere (for the muzzle/impact blooms).
+func _glow_orb(col: Color, r: float) -> MeshInstance3D:
+	var sm := SphereMesh.new()
+	sm.radius = r
+	sm.height = r * 2.0
+	sm.radial_segments = 10
+	sm.rings = 6
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 9.0
+	var mi := MeshInstance3D.new()
+	mi.mesh = sm
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+## A one-shot jagged lightning polyline jittered off the muzzle→hit axis, sagging
+## widest mid-beam — the electric snap for arc weapons. Fades with the rest.
+func _spawn_arc_overlay(root: Node3D, from: Vector3, to: Vector3, col: Color) -> void:
+	var d := to - from
+	var dist := maxf(0.001, d.length())
+	var dir := d / dist
+	var segs := 7
+	var prev := from
+	for i in segs:
+		var t := float(i + 1) / float(segs)
+		var p := from + dir * (dist * t)
+		if i < segs - 1:
+			var amp := 0.16 * sin(PI * t) * minf(dist * 0.2, 1.0)
+			p += Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 2.0 * amp
+		root.add_child(_beam_tube(prev, p, 0.014, Color(1, 1, 1, 0.9), col.lerp(Color.WHITE, 0.4), 9.0))
+		prev = p
 
 ## A brief gout of flame + smoke blooming off the muzzle when a heavy splash
 ## round (the rocket) launches — the back-pressure of the firing tube. A short
@@ -1057,6 +1185,13 @@ func add_ammo(amount: int) -> void:
 func on_equip() -> void:
 	visible = true
 	ammo_changed.emit(mag, reserve)
+	# Quick-draw: the weapon snaps up from below into its home pose (the manager
+	# blocks firing for the same beat, so the raise reads as the draw time).
+	if viewmodel:
+		viewmodel.position = _viewmodel_home + Vector3(0.04, -0.14, 0.05)
+		var tw := create_tween()
+		tw.tween_property(viewmodel, "position", _viewmodel_home, 0.34) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func on_unequip() -> void:
 	visible = false
@@ -1065,3 +1200,8 @@ func on_unequip() -> void:
 	_beam_wanted = false
 	if _beam:
 		_beam.deactivate()
+	# Holster reload: top the mag back up in the background while it's stowed, over
+	# the normal reload time. Coming back to a backup and swapping out again can't
+	# hand you a fresh mag instantly — the reload has to actually finish first.
+	if not _reloading and reserve > 0 and mag < eff_mag_size():
+		start_reload()
