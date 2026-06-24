@@ -139,6 +139,11 @@ func _relayout() -> void:
 		var name_txt: String = "█ CLASSIFIED" if locked else "%d. %s" % [i + 1, d["title"]]
 		if d["boss"]:
 			name_txt += "\n☠ BOSS"
+		# Show your best rank on cleared sectors — the S-rank chase, visible.
+		if not locked:
+			var best: String = str(GameState.level_bests.get(d["id"], ""))
+			if best != "":
+				name_txt += "   ★ %s" % best
 		lbl.text = name_txt
 		lbl.add_theme_color_override("font_color",
 			COL_BOSS if d["boss"] else (COL_LOCK if locked else Color(0.82, 0.92, 1.0)))
