@@ -14,6 +14,9 @@ extends Area3D
 @export var smoke_trail: bool = false ## Lay down a thick billowing smoke trail behind the round (rockets/missiles).
 @export var exhaust_flame: bool = false ## A flickering thruster flame burning off the round's tail (rockets/missiles).
 @export var big_detonation: bool = false ## On impact, throw a rising smoke column + extra shrapnel for a heavy-ordnance read.
+@export var chain_count: int = 0 ## On detonation, lightning arcs from robot to robot — this many hops — for a cluster-clearing zap.
+@export var chain_range: float = 9.0 ## Max gap each lightning hop can bridge to the next robot.
+@export var chain_damage: float = 0.0 ## Damage per chained robot (0 = half the splash damage).
 
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
@@ -301,7 +304,140 @@ func _explode(pos: Vector3) -> void:
 			_heavy_detonation_fx(scene, pos)
 	if cluster_count > 0:
 		_spawn_cluster(pos)
+	if chain_count > 0:
+		_chain_lightning(pos)
 	queue_free()
+
+## Chain lightning: hop from the nearest robot to the next-nearest, up to
+## chain_count times, zapping each — the wall-clearing payoff of an energy round
+## that arcs through a whole pack. Each link draws a jagged bolt that fades out.
+func _chain_lightning(origin: Vector3) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var space := get_world_3d().direct_space_state
+	var dmg := chain_damage if chain_damage > 0.0 else _splash_damage * 0.5
+	var from := origin
+	var hit := {}
+	for i in chain_count:
+		var q := PhysicsShapeQueryParameters3D.new()
+		var sh := SphereShape3D.new()
+		sh.radius = chain_range
+		q.shape = sh
+		q.transform = Transform3D(Basis(), from)
+		q.collision_mask = 0b0000100 # enemies only
+		var best: Node = null
+		var best_d := 1e9
+		var best_pos := from
+		for h in space.intersect_shape(q, 24):
+			var col = h["collider"]
+			var d = _damageable_of(col)
+			if d == null or hit.has(d) or not (col is Node3D):
+				continue
+			var cp: Vector3 = (col as Node3D).global_position + Vector3.UP * 0.8
+			var gap := from.distance_to(cp)
+			if gap < best_d:
+				best_d = gap; best = d; best_pos = cp
+		if best == null:
+			break
+		hit[best] = true
+		best.apply_damage(dmg, _shooter)
+		_spawn_lightning_arc(scene, from, best_pos)
+		_spawn_zap_flash(scene, best_pos)   # a bright burst on each robot the bolt hits
+		from = best_pos
+
+## Walk up from a collider to the nearest Damageable component (enemies nest it).
+func _damageable_of(col: Node):
+	var node := col as Node
+	while node != null:
+		var d = node.get_node_or_null("Damageable")
+		if d:
+			return d
+		node = node.get_parent()
+	return null
+
+## A jagged emissive bolt between two points, detached into the scene so it
+## survives the projectile freeing, then fades and self-frees.
+func _spawn_lightning_arc(scene: Node, a: Vector3, b: Vector3) -> void:
+	var root := Node3D.new()
+	scene.add_child(root)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	# Bolt core reads near-white-hot, glowing out to the round's energy colour.
+	mat.albedo_color = trail_color.lerp(Color.WHITE, 0.6)
+	mat.emission_enabled = true
+	mat.emission = trail_color
+	mat.emission_energy_multiplier = 16.0
+	var segs := 5
+	var prev := a
+	for s in range(1, segs + 1):
+		var t := float(s) / float(segs)
+		var point := a.lerp(b, t)
+		if s < segs:
+			# Jitter perpendicular to the run for that forked-lightning look.
+			point += Vector3(randf_range(-0.5, 0.5), randf_range(-0.4, 0.4), randf_range(-0.5, 0.5))
+		var mi := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.07; cyl.bottom_radius = 0.07
+		cyl.height = prev.distance_to(point); cyl.radial_segments = 6
+		cyl.material = mat
+		mi.mesh = cyl
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(mi)
+		_stand_between(mi, prev, point)
+		prev = point
+	var flash := OmniLight3D.new()
+	flash.light_color = trail_color
+	flash.light_energy = 3.5
+	flash.omni_range = 4.0
+	root.add_child(flash)
+	flash.global_position = b
+	var tw := root.create_tween()
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.parallel().tween_property(flash, "light_energy", 0.0, 0.18)
+	tw.tween_callback(root.queue_free)
+
+## A bright burst where the chain strikes a robot — sells each link of the zap.
+func _spawn_zap_flash(scene: Node, at: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var s := SphereMesh.new(); s.radius = 0.25; s.height = 0.5; s.radial_segments = 8; s.rings = 5
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = trail_color.lerp(Color.WHITE, 0.5)
+	m.emission_enabled = true; m.emission = trail_color; m.emission_energy_multiplier = 14.0
+	s.material = m
+	mi.mesh = s
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = trail_color; light.light_energy = 4.0; light.omni_range = 4.0
+	mi.add_child(light)
+	scene.add_child(mi)
+	mi.global_position = at
+	var tw := mi.create_tween()
+	tw.tween_property(mi, "scale", Vector3.ONE * 2.2, 0.18).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(m, "albedo_color:a", 0.0, 0.18)
+	tw.parallel().tween_property(light, "light_energy", 0.0, 0.18)
+	tw.tween_callback(mi.queue_free)
+
+## Orient + position a cylinder mesh (local +Y axis) to span from a to b. NOTE:
+## must assign the whole global_transform — `mi.global_transform.basis = x` writes
+## to a value-copy and is silently a no-op (the bug that left arcs un-oriented).
+func _stand_between(mi: MeshInstance3D, a: Vector3, b: Vector3) -> void:
+	var mid := (a + b) * 0.5
+	var dir := b - a
+	if dir.length() < 0.001:
+		mi.global_position = mid
+		return
+	var up := dir.normalized()
+	# Build an orthonormal basis whose Y axis runs along the bolt.
+	var arbitrary := Vector3.RIGHT if absf(up.dot(Vector3.RIGHT)) < 0.9 else Vector3.FORWARD
+	var x := arbitrary.cross(up).normalized()
+	var z := x.cross(up).normalized()
+	mi.global_transform = Transform3D(Basis(x, up, z), mid)
 
 ## Extra heavy-ordnance dressing on top of the blast scene: a billowing smoke
 ## column that mushrooms up and lingers, plus a ring of fast shrapnel streaks.

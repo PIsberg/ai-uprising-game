@@ -339,7 +339,7 @@ func _on_finished() -> void:
 			GameState.mark_enemy_seen(t)
 	# Stop at the armory on the way in — but only when the player can actually
 	# afford something; otherwise it's a pointless interstitial.
-	if GameState.can_buy_any_upgrade():
+	if GameState.can_buy_anything():
 		var shop := Armory.new()
 		add_child(shop)
 		shop.deployed.connect(func(): GameState.load_level(GameState.current_level_path, false))

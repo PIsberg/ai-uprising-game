@@ -127,6 +127,7 @@ const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/twinrail.tscn",
 	"res://scenes/weapons/swarm.tscn",
 	"res://scenes/weapons/devastator.tscn",
+	"res://scenes/weapons/tempest.tscn",
 	"res://scenes/weapons/singularity.tscn",
 	"res://scenes/weapons/omega.tscn",
 ]
@@ -147,6 +148,42 @@ const UPGRADE_DEFS := {
 }
 const UPGRADE_MAX := 5
 var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0}
+
+## One-shot "field supplies" bought in the Armory — banked here, then applied
+## (and cleared) by the player at the next deploy. Repeatable, uncapped, cheap.
+const SUPPLY_DEFS := {
+	"ammo":     {"label": "AMMO CRATE",   "amount": 60, "cost": 450},
+	"grenades": {"label": "GRENADE PACK", "amount": 1,  "cost": 600},
+	"health":   {"label": "MED-KIT",      "amount": 40, "cost": 750},
+}
+var supply_ammo: int = 0        # bonus reserve added to every weapon next deploy
+var supply_grenades: int = 0    # bonus frag grenades carried in next deploy
+var supply_health: float = 0.0  # bonus max+current HP next deploy
+
+## Buy a field supply, banking its amount for the next deploy. False if too poor.
+func buy_supply(k: String) -> bool:
+	if not SUPPLY_DEFS.has(k):
+		return false
+	var cost := int(SUPPLY_DEFS[k]["cost"])
+	if score < cost:
+		return false
+	score -= cost
+	var amt = SUPPLY_DEFS[k]["amount"]
+	match k:
+		"ammo": supply_ammo += int(amt)
+		"grenades": supply_grenades += int(amt)
+		"health": supply_health += float(amt)
+	save_progress()
+	return true
+
+## True if any upgrade OR supply is affordable right now (gates the armory popup).
+func can_buy_anything() -> bool:
+	if can_buy_any_upgrade():
+		return true
+	for k in SUPPLY_DEFS:
+		if score >= int(SUPPLY_DEFS[k]["cost"]):
+			return true
+	return false
 
 func upgrade_level(k: String) -> int:
 	return int(upgrades.get(k, 0))
@@ -369,6 +406,9 @@ func reset_run() -> void:
 	score = 0
 	kills = 0
 	seen_enemy_types.clear()
+	supply_ammo = 0
+	supply_grenades = 0
+	supply_health = 0.0
 
 ## Brief slow-motion payoff (e.g. boss death, area clear) AND the primitive
 ## behind the per-hit combat punch. A guard token means overlapping freezes

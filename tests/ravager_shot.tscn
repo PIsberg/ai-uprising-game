@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cravagershot01"]
+
+[ext_resource type="Script" path="res://tests/ravager_shot.gd" id="1_rs"]
+
+[node name="RavagerShot" type="Node3D"]
+script = ExtResource("1_rs")

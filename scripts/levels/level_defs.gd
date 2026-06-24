@@ -629,21 +629,25 @@ static func _range() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -12), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 			{"pos": Vector3(0, 0.05, -22), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 		],
-		# The whole arsenal racked along the firing line.
+		# The WHOLE arsenal racked along the firing line — all 15 of GameState.
+		# ALL_WEAPONS, evenly spaced across the proven span (incl. the Tempest Coil
+		# and the OMEGA-X). Keep this in sync when a weapon is added.
 		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-13.5, 0, 21), "color": Color(0.8, 0.85, 0.9)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.5, 0, 21), "color": Color(0.6, 0.7, 0.85)},
-			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-7.5, 0, 21), "color": Color(0.45, 0.65, 1)},
-			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-4.5, 0, 21), "color": Color(1, 0.6, 0.3)},
-			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-1.5, 0, 21), "color": Color(0.4, 1, 0.55)},
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(1.5, 0, 21), "color": Color(0.55, 0.8, 1)},
-			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(0.45, 0.9, 1)},
-			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(7.5, 0, 21), "color": Color(1, 0.75, 0.35)},
-			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(10.5, 0, 21), "color": Color(0.5, 0.6, 1)},
-			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(16.5, 0, 21), "color": Color(0.7, 0.35, 1)},
-			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(19.5, 0, 21), "color": Color(1, 0.55, 0.2)},
-			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.9, 0, 21), "color": Color(0.6, 0.7, 0.85)},
+			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8.4, 0, 21), "color": Color(0.45, 0.65, 1)},
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-3.2, 0, 21), "color": Color(0.4, 1, 0.55)},
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-0.6, 0, 21), "color": Color(0.55, 0.8, 1)},
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(1.9, 0, 21), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(1, 0.75, 0.35)},
+			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(7.1, 0, 21), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(9.6, 0, 21), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(12.2, 0, 21), "color": Color(0.45, 0.85, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(14.8, 0, 21), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(17.4, 0, 21), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(19.9, 0, 21), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.8, 0.35)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
@@ -936,6 +940,20 @@ static func _titan() -> Dictionary:
 			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
 			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
+			# Late-game density: pour skitter swarms in from every edge so the new
+			# crowd-clearing arsenal (Tempest chain, Vortex grenade, Omega) gets a
+			# stage, with Ravagers as the fierce alphas leaping over the pack.
+			{"type": "skitter", "pos": Vector3(-22, 0.5, 0), "count": 8, "trigger": 22},
+			{"type": "skitter", "pos": Vector3(22, 0.5, -4), "count": 8, "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -22), "count": 7, "trigger": 20},
+			{"type": "spider", "pos": Vector3(-18, 0.5, -16), "trigger": 24},
+			{"type": "spider", "pos": Vector3(18, 0.5, 18), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(24, 0.5, 6), "trigger": 30},
+			{"type": "seeker", "pos": Vector3(-16, 2.5, -8), "trigger": 24},
+			{"type": "ravager", "pos": Vector3(-10, 0.5, 20), "trigger": 28},
+			{"type": "ravager", "pos": Vector3(12, 0.5, 22), "trigger": 30},
+			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26},
+			{"type": "warmech", "pos": Vector3(26, 0.5, -24), "trigger": 40},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-26, 0, -20)},
@@ -1045,6 +1063,13 @@ static func _archon() -> Dictionary:
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
 			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
+			# Heavier seed garrison before the ARCHON brain itself starts manufacturing
+			# waves — gives the finale arsenal a crowd to carve through on entry.
+			{"type": "skitter", "pos": Vector3(8, 0.5, -6), "count": 7, "trigger": 30},
+			{"type": "spider", "pos": Vector3(-10, 0.5, -8), "trigger": 28},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 32},
+			{"type": "ravager", "pos": Vector3(10, 0.5, 8), "trigger": 30},
+			{"type": "warmech", "pos": Vector3(-16, 0.5, -14), "trigger": 38},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
 		],
 	}

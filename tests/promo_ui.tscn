@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://cpromoui000001"]
+[ext_resource type="Script" path="res://tests/promo_ui.gd" id="1"]
+[node name="C" type="Control"]
+script = ExtResource("1")

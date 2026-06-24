@@ -14,7 +14,7 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
-	"gunner", "raptor", "mender", "sentinel", "mauler", "alien",
+	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "alien",
 	"terminator", "overseer", "colossus", "titan", "archon",
 ]
 
@@ -137,6 +137,20 @@ const ENTRIES := {
 		"strengths": ["Enormous health pool", "One slam can end you"],
 		"weaknesses": ["Slow — kite it endlessly", "Never let it corner you"],
 		"weapons": ["GRK-X Devastator", "VOID-9 Singularity Cannon", "SG-12 Breacher"],
+	},
+	"ravager": {
+		"scene": "res://scenes/enemies/ravager.tscn", "name": "RAVAGER", "scale": 0.7, "y": 0.0,
+		"desc": "The fierce alpha of the swarm: an armoured bruiser that lumbers, then bounds the length of the arena in a high arc and ground-slams on landing. Punishes standing still.",
+		"strengths": ["Heavy armour, near-impossible to stagger", "Leap covers huge distance", "Slam hits a whole radius"],
+		"weaknesses": ["The windup before each leap is a clear tell", "Ponderous between bounds — reposition and burn it down"],
+		"weapons": ["TPX-9 Tempest Coil", "VOID-9 Singularity Cannon", "OMEGA-X Annihilator"],
+	},
+	"warmech": {
+		"scene": "res://scenes/enemies/warmech.tscn", "name": "WARMECH", "scale": 0.55, "y": 0.0,
+		"desc": "A bipedal siege walker with twin shoulder cannons. Enormously armoured and slow; it plants at long range and lobs salvos of heavy plasma shells you have to dodge. The late-game area-denial anchor — break line of sight or flank it.",
+		"strengths": ["Colossal armour pool", "Long-range salvos pin you down", "Shrugs off small-arms fire"],
+		"weaknesses": ["Slow to turn and reposition", "Telegraphed charge before each salvo", "Flank it while it's committed to a shot"],
+		"weapons": ["TPX-9 Tempest Coil", "GRK-X Devastator", "OMEGA-X Annihilator"],
 	},
 	"alien": {
 		"scene": "res://scenes/enemies/alien.tscn", "name": "VOID SENTINEL", "scale": 1.0, "y": 1.4,

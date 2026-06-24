@@ -24,6 +24,7 @@ var _fly_pitch := -0.4
 
 # UI
 var _status: Label
+var _readout: Label                # live cursor coords / transform delta (right of status)
 var _load_opt: OptionButton
 var _name_edit: LineEdit
 var _load_paths: Array = []       # parallel to _load_opt items
@@ -41,6 +42,8 @@ var _nav_rig: Node3D          # the globe sphere+axes; tumbles to match the view
 # ---------- placement / selection / transform (Phase 2) ----------
 var _armed_category := ""         # palette item armed for placement ("" = select mode)
 var _armed_item := ""
+var _ghost: Node3D                 # translucent preview of the armed item at the cursor
+var _ghost_key := ""               # category:item the live ghost was built for (rebuild on change)
 var _selection: Array = []        # selected marker records (subset of _markers)
 var _gizmo: Node3D                 # transform gizmo at the selection centroid
 var _gizmo_scale := 1.0            # gizmo drawn at this scale (tracks camera distance)
@@ -171,6 +174,12 @@ func _shot() -> void:
 	set_def(d)
 	_cam_height = 46.0
 	_apply_camera()
+	# Showcase the placement ghost + live readout for the verification shot.
+	_arm("building", "building")
+	_update_ghost()
+	if is_instance_valid(_ghost):
+		_ghost.global_position = Vector3(0, 2.5, 0)
+	_update_readout()
 	await get_tree().create_timer(0.6).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir() + "/editor_shot.png")
@@ -182,6 +191,10 @@ func _shot() -> void:
 ## into the preview, save it, assert markers built + file written.
 func _selftest() -> void:
 	await get_tree().process_frame
+	# The campaign test below writes the real campaign.json (the game reads it at
+	# boot). Snapshot it now so we can restore it and not hijack the dev's campaign.
+	var camp_path := CustomLevels.DIR + "campaign.json"
+	var camp_before: Variant = FileAccess.get_file_as_string(camp_path) if FileAccess.file_exists(camp_path) else null
 	# Phase 1: build a built-in preview.
 	var d := LevelDefs.get_def("gpt"); d["world_scale"] = 1.0
 	set_def(d)
@@ -345,6 +358,38 @@ func _selftest() -> void:
 	var zoom_ok := _cam_height < h0
 	print("P11 nav=", nav_ok, " pan=", pan_ok, " zoom=", zoom_ok)
 	print("PHASE11 ", "PASS" if (nav_ok and pan_ok and zoom_ok) else "FAIL")
+	# Phase 12: placement ghost preview + live readout.
+	set_def(blank_def()); await get_tree().process_frame
+	_arm("enemy", "android")
+	_update_ghost()                      # arming builds a translucent ghost
+	var ghost_on := is_instance_valid(_ghost) and _ghost.get_parent() == _preview_root
+	_update_readout()                    # placement mode → readout shows the armed item
+	var readout_armed := _readout != null and _readout.text.begins_with("▶")
+	var ghost_not_counted := marker_count() == 2   # spawn+exit only; ghost is no marker
+	# Changing the armed item rebuilds the ghost (new key).
+	_arm("prop", LevelBuilder.PROP_SCENES.keys()[0]); _update_ghost()
+	var ghost_rekeyed := _ghost_key.begins_with("prop:")
+	# Disarming clears the ghost.
+	_arm("", ""); _update_ghost()
+	var ghost_off := not is_instance_valid(_ghost)
+	# Move-mode readout reports a non-empty delta string.
+	_arm("enemy", "android"); _place_at(Vector3(6, 0, 6)); await get_tree().process_frame
+	_arm("", "")                         # back to select so _begin_mode is allowed
+	_begin_mode("move"); _mode_start = Vector3.ZERO
+	_update_readout()
+	var move_readout := _readout.text.begins_with("MOVE")
+	_cancel_mode()
+	var p12 := ghost_on and readout_armed and ghost_not_counted and ghost_rekeyed and ghost_off and move_readout
+	print("P12 ghost_on=", ghost_on, " readout=", readout_armed, " no_count=", ghost_not_counted, " rekey=", ghost_rekeyed, " ghost_off=", ghost_off, " move=", move_readout)
+	print("PHASE12 ", "PASS" if p12 else "FAIL")
+	# Restore campaign.json: the test wrote a throwaway override — leaving it behind
+	# would make the game boot into a 2-level test campaign. Remove if none existed.
+	if camp_before == null:
+		DirAccess.remove_absolute(camp_path)
+		DirAccess.remove_absolute(camp_path + ".bak")
+	else:
+		var rf := FileAccess.open(camp_path, FileAccess.WRITE)
+		if rf: rf.store_string(camp_before); rf.close()
 	await _teardown()
 	get_tree().quit()
 
@@ -884,6 +929,8 @@ func _guard(action: Callable) -> void:
 # ---------- input / camera control ----------
 
 func _process(delta: float) -> void:
+	_update_ghost()
+	_update_readout()
 	if not _hdrag.is_empty():
 		_update_handle_drag()
 		return
@@ -1045,6 +1092,10 @@ func _build_ui() -> void:
 	_status = Label.new()
 	_status.add_theme_color_override("font_color", Color(0.7, 0.9, 0.7))
 	hb.add_child(_status)
+	_readout = Label.new()
+	_readout.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	_readout.add_theme_font_size_override("font_size", 13)
+	hb.add_child(_readout)
 	_build_palette(layer)
 	_build_selection_panel(layer)
 	_build_inspector(layer)
@@ -1375,7 +1426,92 @@ func _arm(category: String, item: String) -> void:
 	_armed_item = item
 	if category != "":
 		_set_selection([])
+	else:
+		_clear_ghost()   # leaving placement mode drops the preview
 	_set_status("Armed: %s %s" % [category, item] if category != "" else "Select / Move mode")
+
+func _clear_ghost() -> void:
+	if is_instance_valid(_ghost):
+		_ghost.queue_free()
+	_ghost = null
+	_ghost_key = ""
+
+## Keep a translucent preview of the armed item parked at the snapped cursor so
+## placement is no longer blind: you see exactly what, and where, before clicking.
+## Rebuilt only when the armed item changes (or a preview rebuild freed it); every
+## other frame it just re-snaps to the cursor.
+func _update_ghost() -> void:
+	if _armed_category == "" or _camera == null:
+		_clear_ghost()
+		return
+	var holder := _default_entry(_armed_category, _armed_item, _snap_pos(_cursor_world()))
+	var key := "%s:%s" % [_armed_category, _armed_item]
+	if not is_instance_valid(_ghost) or _ghost_key != key:
+		_clear_ghost()
+		_ghost = _make_marker_visual(_armed_category, holder)
+		_preview_root.add_child(_ghost)
+		_freeze_preview(_ghost)            # silence any instanced scene's AI/audio
+		_ghost_key = key
+		# Translucent + non-selectable: a ghost, not a real marker.
+		for gi in _ghost.find_children("*", "GeometryInstance3D", true, false):
+			(gi as GeometryInstance3D).transparency = 0.5
+			(gi as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for lbl in _ghost.find_children("*", "Label3D", true, false):
+			(lbl as Label3D).visible = false
+	_ghost.global_position = holder.get("pos", Vector3.ZERO)
+	if holder.has("yaw"):
+		_ghost.rotation.y = deg_to_rad(holder["yaw"])
+
+## Live numeric feedback (top bar, right of status): the snapped cursor coords
+## while placing, and the running delta/angle/scale during a G/R/F transform — so
+## you can author to exact measurements instead of eyeballing.
+func _update_readout() -> void:
+	if _readout == null:
+		return
+	var txt := ""
+	if _mode == "move":
+		var d := _cursor_world() - _mode_start
+		if _mode_axis == "x": d = Vector3(d.x, 0, 0)
+		elif _mode_axis == "z": d = Vector3(0, 0, d.z)
+		elif _mode_axis == "y": d = Vector3.ZERO
+		var s := _snap_pos(d)
+		txt = "MOVE  Δ %s m%s" % [_xz(s), (" · %s" % _mode_axis.to_upper()) if _mode_axis != "" else ""]
+	elif _mode == "rotate":
+		var dx := get_viewport().get_mouse_position().x - _mode_mouse_start.x
+		txt = "ROTATE  %.0f°" % _snap_deg(float(_mode_orig[0]["yaw"]) + dx * 0.5)
+	elif _mode == "scale":
+		var dy := _mode_mouse_start.y - get_viewport().get_mouse_position().y
+		txt = "SCALE  ×%.2f" % clampf(1.0 + dy * 0.01, 0.2, 6.0)
+	elif _dragging and _drag_moved and not _selection.is_empty():
+		txt = "@ %s m" % _xz(_selection_positions()[0])
+	elif _armed_category != "":
+		txt = "▶ %s  @ %s m" % [_armed_item, _xz(_snap_pos(_cursor_world()))]
+	elif _selection.size() == 1:
+		var h: Dictionary = _selection[0]["holder"]
+		var p: Vector3 = h.get(_selection[0]["key"], Vector3.ZERO)
+		txt = "@ %s m" % _xz(p)
+		if h.has("size") and h["size"] is Vector3:
+			txt += "  · size %s" % _xyz(h["size"])
+	_readout.text = txt
+
+func _xz(v: Vector3) -> String:
+	return "%.1f, %.1f" % [v.x, v.z]
+
+func _xyz(v: Vector3) -> String:
+	return "%.1f×%.1f×%.1f" % [v.x, v.y, v.z]
+
+## 4.7 offset_transform pop (visual-only, no container relayout) — the same juice
+## the in-game HUD uses, reused here so placement/confirm gives a tactile blip.
+func _pop(c: Control, s: float = 1.4) -> void:
+	if c == null:
+		return
+	c.offset_transform_enabled = true
+	c.offset_transform_visual_only = true
+	c.offset_transform_pivot_ratio = Vector2(0.0, 0.5)
+	c.offset_transform_scale = Vector2(s, s)
+	var t := c.create_tween()
+	t.tween_property(c, "offset_transform_scale", Vector2.ONE, 0.22) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _ray() -> Array:
 	var mp := get_viewport().get_mouse_position()
@@ -1484,6 +1620,7 @@ func _place_at(world: Vector3) -> void:
 	rebuild_preview()
 	_select_holders([entry])
 	_set_status("Placed %s" % _armed_item)
+	_pop(_readout)
 
 func _default_entry(cat: String, item: String, pos: Vector3) -> Dictionary:
 	match cat:
@@ -1564,6 +1701,7 @@ func _confirm_mode() -> void:
 	_mode = ""
 	_mode_axis = ""
 	_set_status("OK")
+	_pop(_readout)
 
 func _cancel_mode() -> void:
 	if _mode == "":

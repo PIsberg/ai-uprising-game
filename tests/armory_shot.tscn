@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://carmoryshot001"]
+
+[ext_resource type="Script" path="res://tests/armory_shot.gd" id="1_as"]
+
+[node name="ArmoryShot" type="Node"]
+script = ExtResource("1_as")

@@ -8,6 +8,16 @@ export.cfg
 # Local export output
 build/
 
+# Level-editor scratch artifacts. The real dev levels in dev_levels/*.lvl are
+# tracked; these are regenerated on demand by the editor:
+#   _selftest.lvl / _playtest.lvl — headless self-test + Playtest temp levels
+#   *_export.gd.txt               — GDScript-export copy/paste assist (not source)
+#   *.bak                         — automatic campaign.json backups
+dev_levels/_selftest.lvl
+dev_levels/_playtest.lvl
+dev_levels/*_export.gd.txt
+dev_levels/*.bak
+
 # Imported translations
 *.translation
 

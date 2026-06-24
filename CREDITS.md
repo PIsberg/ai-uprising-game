@@ -34,6 +34,9 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
 - **Robot Enemy Large Gun** (`quaternius_gunner.glb` — the GUNNER heavy) and
   **Robot Enemy Flying Gun** (`quaternius_flyergun.glb`) by **Quaternius**
   (https://quaternius.com), via Poly Pizza, released under **CC0 1.0**.
+- **Mech** (`quaternius_mech.glb` — the WARMECH siege walker) by **Quaternius**
+  (https://quaternius.com), via Poly Pizza (https://poly.pizza/m/o3Ps8z8ByP),
+  released under **CC0 1.0**.
 
 All Quaternius packs/models are released under **CC0 1.0** (public domain)
 — no attribution required, credited here as courtesy.

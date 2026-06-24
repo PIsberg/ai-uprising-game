@@ -55,7 +55,17 @@ func notify_pickup(text: String) -> void:
 @export var max_grenades: int = 3
 @export var grenade_cooldown: float = 0.7
 const GRENADE_SCENE := preload("res://scenes/weapons/grenade.tscn")
-var grenades: int = 3
+const VORTEX_SCENE := preload("res://scenes/weapons/grenade_vortex.tscn")
+enum GrenadeType { FRAG, VORTEX }
+## Per-type loadout. FRAG is the workhorse; VORTEX is the rare "herd-then-delete"
+## special — fewer carried, picked up later. Cycle with the grenade-cycle key.
+var grenade_kinds := [
+	{"type": GrenadeType.FRAG, "scene": GRENADE_SCENE, "name": "FRAG", "color": Color(1.0, 0.72, 0.2), "max": 3},
+	{"type": GrenadeType.VORTEX, "scene": VORTEX_SCENE, "name": "VORTEX", "color": Color(0.66, 0.4, 1.0), "max": 2},
+]
+var grenade_type: int = 0                  # index into grenade_kinds
+var grenade_counts := [3, 1]               # current count per kind (parallel to grenade_kinds)
+var grenades: int = 3                       # mirror of the selected kind's count (HUD + back-compat)
 var _grenade_cd: float = 0.0
 
 @onready var head: Node3D = $Head
@@ -105,9 +115,30 @@ func _ready() -> void:
 	_fov_base = camera.fov
 	_register_dash_action()
 	grenades = max_grenades
+	# Field supplies bought in the Armory — applied once on deploy, then cleared.
+	if GameState.supply_health > 0.0:
+		hp.max_health += GameState.supply_health
+		GameState.supply_health = 0.0
+	hp.current_health = hp.max_health
+	if GameState.supply_grenades > 0:
+		grenade_counts[GrenadeType.FRAG] += GameState.supply_grenades
+		GameState.supply_grenades = 0
+	_sync_grenades()
+	_apply_supply_ammo.call_deferred()  # after the WeaponManager has built the arsenal
 	hp.health_changed.connect(_on_health_changed)
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_hp_damaged)
+
+## Pour any bought ammo crates into every weapon's reserve.
+func _apply_supply_ammo() -> void:
+	if GameState.supply_ammo <= 0:
+		return
+	var wm := get_node_or_null("Head/Camera3D/WeaponHolder")
+	if wm and "weapons" in wm:
+		for w in wm.weapons:
+			if w and w.has_method("add_ammo"):
+				w.add_ammo(GameState.supply_ammo)
+	GameState.supply_ammo = 0
 
 ## Sprint speed-warp: feed the post shader a 0..1 value that radial-streaks the
 ## screen edges the faster you run.
@@ -357,15 +388,29 @@ func _aim_friction() -> float:
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
+	if Input.is_action_just_pressed("grenade_cycle"):
+		_cycle_grenade()
 	if Input.is_action_just_pressed("grenade"):
 		_throw_grenade()
 
+## Switch the armed grenade type (FRAG ⇄ VORTEX). Toggles unconditionally so an
+## empty kind is still selectable — you can see you've unlocked it before resupply.
+func _cycle_grenade() -> void:
+	grenade_type = (grenade_type + 1) % grenade_kinds.size()
+	_sync_grenades()
+	AudioBus.play_synth_at("broadcast_blip", global_position, -8.0, 1.4)
+	pickup_message.emit("%s GRENADE" % grenade_kinds[grenade_type]["name"])
+
+func _sync_grenades() -> void:
+	grenades = grenade_counts[grenade_type]
+	grenades_changed.emit(grenades)
+
 func _throw_grenade() -> void:
-	if grenades <= 0 or _grenade_cd > 0.0:
+	if grenade_counts[grenade_type] <= 0 or _grenade_cd > 0.0:
 		return
-	grenades -= 1
+	grenade_counts[grenade_type] -= 1
 	_grenade_cd = grenade_cooldown
-	var g := GRENADE_SCENE.instantiate()
+	var g: Node = (grenade_kinds[grenade_type]["scene"] as PackedScene).instantiate()
 	get_tree().current_scene.add_child(g)
 	var dir := -camera.global_transform.basis.z
 	g.global_position = camera.global_position + dir * 0.7
@@ -374,11 +419,12 @@ func _throw_grenade() -> void:
 	if g.has_method("throw_grenade"):
 		g.throw_grenade(throw_vel, self)
 	AudioBus.play_synth_at("grenade_throw", global_position, -3.0, randf_range(0.95, 1.1))
-	grenades_changed.emit(grenades)
+	_sync_grenades()
 
-func add_grenade(amount: int = 1) -> void:
-	grenades = mini(max_grenades, grenades + amount)
-	grenades_changed.emit(grenades)
+## Frag pickups top up FRAG; pass a kind index for special resupply.
+func add_grenade(amount: int = 1, kind: int = GrenadeType.FRAG) -> void:
+	grenade_counts[kind] = mini(int(grenade_kinds[kind]["max"]), grenade_counts[kind] + amount)
+	_sync_grenades()
 
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
