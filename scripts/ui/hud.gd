@@ -242,7 +242,13 @@ func _build_pause_audio() -> void:
 	post_proc.button_pressed = GraphicsSettings.advanced_post_process_enabled
 	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
 	vbox.add_child(post_proc)
-	
+
+	var aim_assist := CheckButton.new()
+	aim_assist.text = tr("Aim Assist (Gamepad)")
+	aim_assist.button_pressed = GraphicsSettings.aim_assist
+	aim_assist.toggled.connect(func(p: bool): GraphicsSettings.set_aim_assist(p))
+	vbox.add_child(aim_assist)
+
 	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)

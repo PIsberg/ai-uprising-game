@@ -134,6 +134,8 @@ func _apply_user_settings() -> void:
 		_look_sens_mult = gs.sensitivity
 	if "invert_y" in gs:
 		_look_y_sign = -1.0 if gs.invert_y else 1.0
+	if "aim_assist" in gs:
+		aim_assist_enabled = gs.aim_assist
 	update_post_process_settings()
 
 func update_post_process_settings() -> void:

@@ -39,6 +39,9 @@ var area_lights_enabled: bool = true
 ## instead of clamping to SDR. Off by default — harmless no-op where the
 ## platform/display can't honor it, but only beneficial on real HDR displays.
 var hdr_output_enabled: bool = false
+## Gamepad aim friction (eases look speed near a target). On by default; some
+## players prefer raw stick aim, so it's toggleable. Mouse aim is never affected.
+var aim_assist: bool = true
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -162,6 +165,14 @@ func set_advanced_post_process_enabled(v: bool) -> void:
 ## Takes effect on the next level load (lights are built at level construction).
 func set_area_lights_enabled(v: bool) -> void:
 	area_lights_enabled = v
+	_save_settings()
+
+## Applies to the live player immediately and persists.
+func set_aim_assist(v: bool) -> void:
+	aim_assist = v
+	var p := get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+	if p and "aim_assist_enabled" in p:
+		p.aim_assist_enabled = v
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -491,6 +502,7 @@ func _load_settings() -> void:
 		puddle_ripples_enabled = bool(cf.get_value("graphics_adv", "puddle_ripples", true))
 		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
 		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
+		aim_assist = bool(cf.get_value("input", "aim_assist", true))
 		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 
 func _save_settings() -> void:
@@ -510,6 +522,7 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "puddle_ripples", puddle_ripples_enabled)
 	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
 	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
+	cf.set_value("input", "aim_assist", aim_assist)
 	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
 
 	cf.save(SETTINGS_PATH)
