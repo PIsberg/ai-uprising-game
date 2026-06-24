@@ -93,6 +93,7 @@ Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, 
 | Aim (ADS) | `RMB` | LT |
 | Reload | `R` | X |
 | Grenade | `G` | Y |
+| Cycle grenade type | `H` | — |
 | Switch weapon | `1`–`4` / wheel | LB / RB |
 | Interact / pick up | `E` | X |
 | Pause | `Esc` | Start |
@@ -104,12 +105,13 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 ## What's in it
 
 - **18-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command), each opening with a **cinematic briefing** and gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault) behind an animated **portal**.
-- **9 wieldable weapons** — pistol, SMG, rifle, shotgun, twin-rail, arc-coil, plasma, rocket *Devastator*, and the piercing *Gauss Lance* — plus grenades. Hitscan & projectile, ADS, recoil, per-weapon viewmodels, and a piercing mechanic.
-- **10 enemy types** including 3 bosses: recon **drone**, infantry **android**, leaping **spider**, heavy **mech**, **sniper** sentry (charged beam), kamikaze **seeker**, shielded **bulwark brute** (flank it), and the **terminator**, **colossus**, and hovering **overseer** bosses.
+- **15 wieldable weapons** — the starter pistol, SMG, rifle and shotgun, then a heavy/energy tier: *Tesla* beam, *Arc-Coil* burst, *Plasma*, *Nova* scatter, piercing *Gauss Lance*, *Twin-Rail*, homing *Swarm Launcher*, rocket *Devastator*, chain-lightning *Tempest Coil*, *Singularity Cannon*, and the *OMEGA-X Annihilator*. Hitscan & projectile, ADS, recoil, charge/volley/slug alt-fires, per-weapon viewmodels, and piercing / splash / cluster / homing / chain-lightning mechanics — plus **two throwable grenades** (a frag and a *Singularity* gravity-well grenade that herds a pack into one knot; cycle with `H`).
+- **25 enemy types** including **5 bosses** — the recon **drone**, infantry **android**, leaping **spider**, hopping **skitter** swarms, heavy **mech**, suppressing **gunner**, **sniper** sentry (charged beam), kamikaze **seeker**, flying **raptor**, shielded **bulwark brute**, healer **mender**, and the new fierce pair: the **Ravager** (a leaping ground-slammer) and the **Warmech** (a long-range siege walker) — up to the **Terminator**, sky-dropping **Colossus**, hovering **Overseer**, **Titan**, and **Archon** bosses. Every hostile has a discoverable **bestiary** entry.
 - **Game feel** — trauma camera shake, dynamic FOV, dash/slide, recoil, tracers, muzzle flash & smoke, ejected casings, surface-aware impacts, **bullet-hole + scorch decals**, debris, oil/spark sprays on robots, hit-stop, enemy flinch/stagger/last-stand, death topples.
-- **Premium Graphics Upgrades (Forward+)** — GPU-accelerated sparks and debris with rigid body collision physics, volumetric noise-animated light shafts (god-rays), triplanar metal shell shading on robots displaying exposed glowing electrical damage grids, dynamic hexagonal-grid energy shields with real-time hit ripple distortion on the Brute and Archon boss, procedural wind waves & concentric rain drip puddles, and anamorphic blue/cyan lens flares combined with fisheye speed-warp barrel distortion during high-velocity dashes/sprints.
+- **Premium Graphics Upgrades (Forward+)** — GPU-accelerated sparks and debris with rigid body collision physics, volumetric noise-animated light shafts (god-rays), triplanar metal shell shading on robots displaying exposed glowing electrical damage grids, dynamic hexagonal-grid energy shields with real-time hit ripple distortion on the Brute and Archon boss, procedural wind waves & concentric rain drip puddles, and anamorphic blue/cyan lens flares combined with fisheye speed-warp barrel distortion during high-velocity dashes/sprints. **Godot 4.7** adds soft **AreaLight3D** ceiling luminaires, HDR-punch emissives, improved clearcoat metal, and velocity-stretched GPU particles.
 - **Mood** — themed per-level lighting + fog, cinematic post (vignette / chromatic aberration / film grain / sharpen), AgX tonemap, glow, SSAO/SSIL/SSR, soft shadows, ambient dust, **adaptive combat music** (the score swells in a fight), and an "area cleared" slow-mo.
-- **Cutscenes** — a hand-staged story intro (peaceful green-eyed helper robots → the signal → they arm and turn red) and a reusable, choreographed cutscene system used for the per-level briefings.
+- **Cutscenes** — a **comic-panel story intro** (peaceful green-eyed helper robots → the signal → they arm and turn red) and a reusable, choreographed cutscene system used for the per-level briefings, which preview each level's *new* hostiles before you drop in.
+- **Meta & tools** — an interactive holographic **campaign map** (serpentine route, per-sector intel panel listing each level's hostiles + objective, boss markers, mouse *and* keyboard/controller navigation); a turning-3D **enemy codex** unlocked as you meet each hostile (strengths, weaknesses, counter-weapons); a between-levels **Armory** shop where run score buys permanent weapon upgrades *and* consumable field supplies (ammo / grenades / health applied on your next deploy); a **Gun Range** + **Horde** survival sandbox; and a built-in **level editor** (`--editor`) that authors levels as plain data with a live marker preview, full gizmos, and one-click playtest.
 - **Systems** — EASY/NORMAL/HARD scaling, save/checkpoint + Continue, score combos & end-of-level grade, kill feed, radar, objective waypoint, boss bar, directional damage indicator, 4-tier graphics (LOW/MEDIUM/HIGH/ULTRA) that actually change render scale/AA/shadows/effects, and full keyboard-mouse **and** gamepad support.
 
 ---
@@ -120,7 +122,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 |---|---|
 | **Engine** | Godot 4.7, Forward+ renderer |
 | **Language** | GDScript (statically typed; the project compiles with warnings-as-errors) |
-| **Art** | Primitive meshes assembled + tinted in code/scenes; a few CC0 PBR textures and one CC-BY boss model (see `CREDITS.md`) |
+| **Art** | Primitive meshes assembled + tinted in code/scenes, plus **CC0 low-poly models** (Quaternius robots, Kenney blaster kit) and CC0/CC-BY PBR textures — all listed in `CREDITS.md` |
 | **Audio** | 100% procedural — `SoundSynth` generates every sound (guns, impacts, music, ambience, UI) as `AudioStreamWAV` at startup; real samples can override them |
 | **Design philosophy** | Data-driven & code-built: levels are dictionaries, enemies/weapons/FX/cutscenes are built at runtime, so content is compact text and headless-testable |
 
@@ -136,6 +138,9 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 
 ### Level pipeline (data-driven)
 A campaign level scene (`scenes/levels/level_<id>.tscn`) is just three nodes: a **`LevelBuilder`** (`scripts/levels/level_builder.gd`), a **Player**, and a **HUD**. The builder reads a single dictionary for that level from **`LevelDefs`** (`scripts/levels/level_defs.gd`) and constructs everything at runtime: themed sky/fog/lighting + post, floor/walls/cover, buildings/ramps/platforms, **breakable props**, accent strips, ambient dust, pickups & weapons, enemy **spawners** (immediate or proximity-triggered), the gated exit **Portal**, and the level **tasks** — then bakes a `NavigationMesh` so ground enemies can path. Adding a level = a new dict entry + a 3-node scene + one line in `GameState.CAMPAIGN`.
+
+### Level editor
+Because levels are just data, a built-in **level editor** (`scripts/editor/level_editor.gd`, launched with `--editor`) is a visual front-end for it: place enemies / props / structures / lights with click-drag **gizmos** and Blender-style `G`/`R`/`F` keys against a live **marker preview** (with a translucent placement ghost and a live coordinate readout), tune the whole environment, manage the campaign order, and **one-click playtest** in the real game. It saves `.lvl` files and can export a level straight back to a `LevelDefs` entry. A headless self-test (`--editor-selftest`) covers it end to end.
 
 ### Objectives & the portal
 Each level registers a **task checklist** with `GameState` (`kill_all`, `key`, `destroy_core`, `collect_shards`, `hack_terminal`, `sabotage`, `survive`). The exit **`Portal`** (`scripts/systems/portal.gd`) stays sealed (and shoves the player back with a message) until every task is done, then unlocks; the HUD shows the checklist live and an "area cleared" slow-mo fires on the final kill.
@@ -162,23 +167,25 @@ Because content is code/data, it's validated **headlessly**: scenes are import-c
 ```
 project.godot          # engine config: input map, render, physics layers, autoloads
 scenes/
-  ui/                  # main_menu, hud, broadcast_intro
+  ui/                  # main_menu, hud, campaign_map, encyclopedia (bestiary)
+  editor/              # built-in level editor
   player/              # player + viewmodel
-  weapons/             # 9 weapons + projectiles + grenade
-  enemies/             # 10 enemy/boss scenes
+  weapons/             # 15 weapons + projectiles + grenades
+  enemies/             # 25 enemy/boss scenes
   levels/              # level_<id>.tscn (LevelBuilder + Player + HUD)
-  cutscene/            # intro_cutscene, level_briefing
+  cutscene/            # comic_intro, level_briefing (+ Armory shop)
   props/ pickups/ fx/  # breakable props, pickups, impact/explosion/tracer FX
 scripts/
   autoload/            # GameState, AudioBus, SoundSynth, GraphicsSettings
   player/ weapons/     # player controller, weapon + weapon_data + manager
   enemies/             # enemy_base + one script per archetype
-  systems/             # damageable, portal, objective devices, pickups, spawner, destructible
+  systems/             # damageable, portal, objective devices, pickups, spawner, enemy_codex
   levels/              # level_builder, level_defs
-  cutscene/ ui/ fx/    # cutscene player + briefings, HUD/radar/waypoint, FX
-shaders/               # post_process.gdshader
+  editor/              # level editor (data + gizmos + .lvl save/playtest)
+  cutscene/ ui/ fx/    # cutscene player + briefings, HUD/map/codex/armory, FX
+shaders/               # post_process, crt_screen, night_sky, radar_sweep, …
 assets/                # materials, PBR textures, audio (sample-override dir), models, environments
-docs/                  # DESIGN, SETUP, ASSETS, AAA_ROADMAP
+docs/                  # design docs, level_editor_spec, screenshots/ (README gallery)
 ```
 
 **Physics layers:** 1 `world` · 2 `player` · 3 `enemy` · 4 `player_projectile` · 5 `enemy_projectile` · 6 `pickup` · 7 `trigger`.
@@ -189,8 +196,8 @@ docs/                  # DESIGN, SETUP, ASSETS, AAA_ROADMAP
 
 - **Real SFX/music** — drop `assets/audio/samples/<sound_id>.{ogg,wav,mp3}`; it transparently overrides the synth.
 - **New weapon** — author a `WeaponData` `.tres` + a viewmodel scene; place it via a level's `weapon` / `extra_weapons` pickup.
-- **New enemy** — subclass `EnemyBase`, build a minimal scene (CharacterBody3D + `Damageable` + `NavigationAgent3D`), register it in `LevelBuilder.ENEMY_SCENES` (and the briefing dossier).
-- **New level** — add a dict to `LevelDefs`, a 3-node `level_<id>.tscn`, and a line in `GameState.CAMPAIGN`.
+- **New enemy** — subclass `EnemyBase`, build a minimal scene (CharacterBody3D + `Damageable` + `NavigationAgent3D`), register it in `LevelBuilder.ENEMY_SCENES` and add a bestiary entry in `EnemyCodex`.
+- **New level** — use the built-in **level editor** (`--editor`) to place everything visually and save a `.lvl`, *or* hand-author a dict in `LevelDefs` + a 3-node `level_<id>.tscn` + a line in `GameState.CAMPAIGN`.
 - **New cutscene** — subclass `CutscenePlayer`, override `_build_set()` / `_shots()` / `_on_finished()`.
 
 ---
