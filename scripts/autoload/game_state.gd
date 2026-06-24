@@ -326,13 +326,44 @@ func grade_level() -> Dictionary:
 	elif score_pts >= 75.0: grade = "A"
 	elif score_pts >= 55.0: grade = "B"
 	elif score_pts >= 35.0: grade = "C"
+	var lid := level_id_from_path(current_level_path)
+	var new_best := record_level_grade(lid, grade)
 	var stats := {
 		"accuracy": accuracy, "max_combo": max_combo,
 		"damage_taken": stat_damage_taken, "time": elapsed,
 		"kills": kills, "score": score, "difficulty": difficulty_label(),
+		"new_best": new_best, "best_grade": level_bests.get(lid, grade),
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
+
+# ---------- per-level best grade (replay incentive, persisted) ----------
+const RECORDS_PATH := "user://records.cfg"
+const GRADE_RANK := ["D", "C", "B", "A", "S"] ## index = quality, higher is better
+var level_bests: Dictionary = {} ## level_id -> best grade letter
+
+func _load_level_bests() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(RECORDS_PATH) != OK or not cf.has_section("campaign"):
+		return
+	for k in cf.get_section_keys("campaign"):
+		level_bests[k] = str(cf.get_value("campaign", k, "D"))
+
+## Store `grade` as this level's best if it beats the previous; returns true on a
+## new record (drives the "NEW BEST" flourish on the win screen).
+func record_level_grade(lid: String, grade: String) -> bool:
+	if lid == "":
+		return false
+	var prev_rank := GRADE_RANK.find(str(level_bests.get(lid, "")))
+	var new_rank := GRADE_RANK.find(grade)
+	if new_rank <= prev_rank:
+		return false
+	level_bests[lid] = grade
+	var cf := ConfigFile.new()
+	cf.load(RECORDS_PATH) # preserve the horde section
+	cf.set_value("campaign", lid, grade)
+	cf.save(RECORDS_PATH)
+	return true
 
 func reset_run() -> void:
 	score = 0
@@ -818,6 +849,7 @@ func _load_campaign_override() -> void:
 func _ready() -> void:
 	_setup_gamepad_bindings()
 	_load_bestiary()
+	_load_level_bests()
 	_load_campaign_override()
 	_handle_cli_boot()
 
