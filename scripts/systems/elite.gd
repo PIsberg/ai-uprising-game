@@ -46,18 +46,21 @@ static func apply(enemy: Node3D, kind: String) -> void:
 		return # must be applied pre-add so _ready reads the boosted exports
 	eb.elite = kind
 	eb.score_value *= 2
+	# Health boosts stack a multiplier (applied after the subclass sets its base),
+	# NOT max_health directly — a subclass's `max_health = N` in _ready would
+	# otherwise wipe the boost.
 	match kind:
 		"shielded":
-			eb.max_health *= 1.7
+			eb._health_mult *= 1.7
 		"volatile":
-			eb.max_health *= 1.15
+			eb._health_mult *= 1.15
 		"swift":
 			eb.move_speed *= 1.35
 			eb.attack_cooldown *= 0.85
 		"warden":
 			# Unstaggerable: poise can never be broken, so suppression won't
 			# interrupt it — it walks through your fire and attacks on schedule.
-			eb.max_health *= 1.4
+			eb._health_mult *= 1.4
 			eb.stagger_threshold = 1.0e9
 			eb.move_speed *= 0.92 # relentless, not fast
 	# Recolor the imported model: tint is read by RobotModel._ready, so setting

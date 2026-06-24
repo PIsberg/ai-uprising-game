@@ -88,6 +88,12 @@ var _flash_tween: Tween
 func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
+	# Subclasses set their REAL base max_health AFTER this super._ready() call, and
+	# elite/difficulty stack a _health_mult before _ready — so re-apply the mult
+	# onto the authored base once the subclass body has run (deferred). Without
+	# this, a subclass's `max_health = N` in _ready silently wiped those mults,
+	# making elite and difficulty health scaling no-ops.
+	_sync_health.call_deferred()
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_damaged)
 	# Mark this type as encountered when it spawns in an actual level (fixes
@@ -115,6 +121,19 @@ func _ready() -> void:
 	# Red damage blink (robots are neutral-toned until hit).
 	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
 	set_state(State.IDLE)
+
+## Accumulated health multiplier from elite affixes + campaign difficulty. They
+## stack this (not max_health directly) so the subclass's authored base survives.
+var _health_mult: float = 1.0
+
+## Re-applies _health_mult onto the subclass's authored max_health. Runs deferred
+## from _ready so it lands AFTER the subclass body sets its real base value.
+func _sync_health() -> void:
+	if hp == null or not is_instance_valid(hp):
+		return
+	var was_full := hp.current_health >= hp.max_health - 0.01
+	hp.max_health = max_health * _health_mult
+	hp.current_health = hp.max_health if was_full else minf(hp.current_health, hp.max_health)
 
 func _collect_meshes(n: Node) -> void:
 	for c in n.get_children():
