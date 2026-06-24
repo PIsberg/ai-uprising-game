@@ -958,6 +958,10 @@ func _on_enemy_killed(score: int, label: String) -> void:
 		_multikill_alpha = 1.0
 		_multikill_pop = 1.0
 		AudioBus.play_synth_ui("combo_up", -2.0, 1.1 + 0.08 * float(_multikill))
+		# The overlord notices a real spree — it can't help but react (once, at the
+		# 4-kill mark, and only if it isn't already mid-taunt).
+		if _multikill == 4 and _overlord_time <= 0.0:
+			_overlord_say(OVERLORD_RATTLED[randi() % OVERLORD_RATTLED.size()])
 	if _kill_feed == null:
 		return
 	var lbl := Label.new()
