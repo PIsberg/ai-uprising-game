@@ -191,9 +191,13 @@ func _apply_hdr_output() -> void:
 	var w := get_window()
 	if w == null:
 		return
-	w.hdr_output_requested = hdr_output_enabled
+	# Guard the property writes: these are 4.7-only. Probing with `in` keeps an
+	# older engine (or a headless CI still on 4.6) from hard-erroring on boot
+	# instead of degrading to a no-op.
+	if "hdr_output_requested" in w:
+		w.hdr_output_requested = hdr_output_enabled
 	var vp := get_viewport()
-	if vp:
+	if vp and "use_hdr_2d" in vp:
 		vp.use_hdr_2d = hdr_output_enabled
 
 func _apply_to_live_robots() -> void:
