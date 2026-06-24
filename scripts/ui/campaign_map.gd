@@ -21,7 +21,8 @@ var _nodes: Array = []        # [{idx, id, path, title, boss, chapter, pos, btn}
 var _frontier: int = 0        # furthest unlocked campaign index
 var _time: float = 0.0
 var _act_labels: Array = []   # one header Label per chapter
-var _hover_idx: int = -1      # node the cursor is over (-1 = none), drives the intel panel
+var _hover_idx: int = -1      # node the mouse is over (-1 = none)
+var _sel: int = 0             # keyboard/controller cursor (persistent)
 var _ping_t: float = 0.0      # 0..1 expanding-ring animation when a node is hovered
 var _intel: PanelContainer    # right-hand "sector intel" readout
 var _intel_title: Label
@@ -49,6 +50,9 @@ func _ready() -> void:
 	_build()
 	resized.connect(_relayout)
 	_relayout.call_deferred()
+	# Start the keyboard cursor on the current objective and brief it.
+	_sel = _frontier
+	_set_intel.call_deferred(_sel)
 
 func _build() -> void:
 	# Title.
@@ -59,7 +63,7 @@ func _build() -> void:
 	title.position = Vector2(60, 36)
 	add_child(title)
 	var sub := Label.new()
-	sub.text = "Trace the uprising to its source. Red sectors are guarded by a boss."
+	sub.text = "Trace the uprising to its source. Red sectors are guarded by a boss.   ◂ ▸ / D-pad: select · Enter / A: deploy · Esc: back"
 	sub.add_theme_color_override("font_color", Color(0.55, 0.7, 0.8))
 	sub.position = Vector2(62, 80)
 	add_child(sub)
@@ -105,6 +109,7 @@ func _build() -> void:
 	var back := Button.new()
 	back.text = "◀  BACK"
 	back.custom_minimum_size = Vector2(160, 44)
+	back.focus_mode = Control.FOCUS_NONE  # never swallow Enter from the cursor deploy
 	back.pressed.connect(_on_back)
 	back.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	back.position = Vector2(60, -64)
@@ -306,17 +311,26 @@ func _draw() -> void:
 		for q in 4:
 			var b0 := _time * 1.4 + q * (TAU / 4.0)
 			draw_arc(fp, fr, b0 + 0.12, b0 + 0.62, 8, Color(0.45, 0.95, 1.0, 0.85), 3.0)
-	# Expanding ping ring on the hovered sector.
-	if _hover_idx >= 0 and _hover_idx < _nodes.size():
-		var hp: Vector2 = _nodes[_hover_idx]["pos"]
+	# Expanding ping ring + intel connector on the ACTIVE sector (mouse or cursor).
+	var act := _active()
+	if act >= 0 and act < _nodes.size():
+		var hp: Vector2 = _nodes[act]["pos"]
 		var hr := lerpf(NODE_R * 1.1, NODE_R * 2.7, _ping_t)
 		draw_arc(hp, hr, 0.0, TAU, 36, Color(0.55, 0.92, 1.0, (1.0 - _ping_t) * 0.6), 2.0)
-		# A connector line from the hovered node to the intel panel edge.
 		if _intel and _intel.visible:
 			draw_line(hp, Vector2(_intel.position.x, hp.y), Color(0.4, 0.8, 0.95, 0.25), 1.5)
+	# Steady selection reticle (corner brackets) on the keyboard/controller cursor.
+	if _sel >= 0 and _sel < _nodes.size():
+		var sp: Vector2 = _nodes[_sel]["pos"]
+		var sr := NODE_R * (1.35 if _nodes[_sel]["boss"] else 1.0) + 9.0
+		var col := Color(0.95, 1.0, 1.0, 0.9)
+		for q in 4:
+			var c0 := q * (TAU / 4.0) + PI / 4.0
+			draw_arc(sp, sr, c0 - 0.32, c0 + 0.32, 8, col, 2.5)
 
 func _hover_node(i: int) -> void:
 	_hover_idx = i
+	_sel = i                 # keep the keyboard cursor in step with the mouse
 	_ping_t = 0.0
 	_set_intel(i)
 	AudioBus.play_synth_ui("broadcast_blip", -17.0, 1.7)  # faint sonar tick on hover
@@ -324,7 +338,36 @@ func _hover_node(i: int) -> void:
 func _unhover_node(i: int) -> void:
 	if _hover_idx == i:
 		_hover_idx = -1
-		_set_intel(-1)
+		_set_intel(_sel)     # fall back to the keyboard selection, not blank
+
+## The sector currently driving the intel/ping — mouse hover wins, else the cursor.
+func _active() -> int:
+	return _hover_idx if _hover_idx >= 0 else _sel
+
+## Keyboard + controller navigation: arrows / D-pad move the cursor along the
+## strike route, Enter / A deploys, Esc / B backs out.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept"):
+		_on_node_pressed(_sel)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+		_move_sel(1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+		_move_sel(-1)
+		get_viewport().set_input_as_handled()
+
+func _move_sel(d: int) -> void:
+	if _nodes.is_empty():
+		return
+	_sel = clampi(_sel + d, 0, _nodes.size() - 1)
+	_hover_idx = -1          # keyboard takes the wheel from the mouse
+	_ping_t = 0.0
+	_set_intel(_sel)
+	AudioBus.play_synth_ui("broadcast_blip", -14.0, 1.5)
 
 ## Fill the intel panel for sector i (or the idle prompt when i == -1).
 func _set_intel(i: int) -> void:
