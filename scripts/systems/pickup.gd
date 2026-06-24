@@ -129,4 +129,32 @@ func _on_body_entered(body: Node) -> void:
 				body.notify_pickup("🗲 OVERDRIVE — RAPID FIRE + SPEED")
 			AudioBus.play_synth_ui("combo_up", -6.0, 1.2)
 	_taken = true
+	_collect_pop(_light.light_color if _light else Color(0.6, 0.9, 1.0))
 	queue_free()
+
+## A quick expanding ring at the grab point so collecting reads as an event, not
+## just a silent vanish. Parented to the level (not the pickup) so it outlives
+## the queue_free; tinted to the pickup's own glow.
+func _collect_pop(col: Color) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.18; tm.outer_radius = 0.3; tm.rings = 18; tm.ring_segments = 6
+	ring.mesh = tm
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(col.r, col.g, col.b, 0.85)
+	m.emission_enabled = true; m.emission = col; m.emission_energy_multiplier = 3.0
+	ring.material_override = m
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(ring)
+	ring.global_position = global_position
+	ring.rotation.x = PI * 0.5
+	var tw := ring.create_tween().set_parallel(true)
+	tw.tween_property(ring, "scale", Vector3.ONE * 3.2, 0.3).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(m, "albedo_color:a", 0.0, 0.3)
+	tw.chain().tween_callback(ring.queue_free)

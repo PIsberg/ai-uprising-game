@@ -88,6 +88,12 @@ var _flash_tween: Tween
 func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
+	# Subclasses set their REAL base max_health AFTER this super._ready() call, and
+	# elite/difficulty stack a _health_mult before _ready — so re-apply the mult
+	# onto the authored base once the subclass body has run (deferred). Without
+	# this, a subclass's `max_health = N` in _ready silently wiped those mults,
+	# making elite and difficulty health scaling no-ops.
+	_sync_stats.call_deferred()
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_damaged)
 	# Mark this type as encountered when it spawns in an actual level (fixes
@@ -115,6 +121,26 @@ func _ready() -> void:
 	# Red damage blink (robots are neutral-toned until hit).
 	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
 	set_state(State.IDLE)
+
+## Stat multipliers from elite affixes + campaign difficulty. They stack these
+## (not the stats directly) because EVERY enemy subclass hardcodes its base
+## health/speed/cadence in its own _ready AFTER super._ready() — writing the
+## stats pre-_ready would just get clobbered. Applied in the deferred sync below.
+var _health_mult: float = 1.0
+var _speed_mult: float = 1.0
+var _cooldown_mult: float = 1.0
+
+## Re-applies the accumulated multipliers onto the subclass's authored base
+## stats. Runs deferred from _ready so it lands AFTER the subclass body sets its
+## real values. Without this, elite/difficulty scaling of health, speed and
+## attack cadence were all silently wiped.
+func _sync_stats() -> void:
+	move_speed *= _speed_mult
+	attack_cooldown *= _cooldown_mult
+	if hp != null and is_instance_valid(hp):
+		var was_full := hp.current_health >= hp.max_health - 0.01
+		hp.max_health = max_health * _health_mult
+		hp.current_health = hp.max_health if was_full else minf(hp.current_health, hp.max_health)
 
 func _collect_meshes(n: Node) -> void:
 	for c in n.get_children():
@@ -740,6 +766,54 @@ func _begin_telegraph(dur: float) -> void:
 	tw.set_parallel(false)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.12)
 	tw.tween_callback(orb.queue_free)
+
+## Flat ground danger-ring telegraph for AoE / slam attacks: a red disc fills in
+## while a bright rim expands to the blast radius over `dur`, then flashes on
+## impact — so the player can SEE the kill zone and step out before it lands.
+## Lives in world space (parented to the scene) so it stays put if the attacker
+## moves or dies mid-wind-up. Call it when an AoE wind-up begins.
+func spawn_ground_warning(center: Vector3, radius: float, dur: float, col: Color = Color(1.0, 0.22, 0.15)) -> void:
+	var parent := get_tree().current_scene
+	if parent == null:
+		return
+	var root := Node3D.new()
+	parent.add_child(root)
+	root.global_position = Vector3(center.x, 0.06, center.z)
+	# Filling disc.
+	var disc := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius; cm.bottom_radius = radius; cm.height = 0.02; cm.radial_segments = 40
+	disc.mesh = cm
+	var dm := StandardMaterial3D.new()
+	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	dm.albedo_color = Color(col.r, col.g, col.b, 0.0)
+	disc.material_override = dm
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(disc)
+	# Rim that expands out to the full radius as the strike charges.
+	var rim := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = radius * 0.9; tm.outer_radius = radius; tm.rings = 40; tm.ring_segments = 6
+	rim.mesh = tm
+	var rmat := StandardMaterial3D.new()
+	rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rmat.emission_enabled = true
+	rmat.albedo_color = col; rmat.emission = col; rmat.emission_energy_multiplier = 3.5
+	rim.material_override = rmat
+	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	rim.position = Vector3(0, 0.02, 0)
+	rim.scale = Vector3(0.06, 1.0, 0.06)
+	root.add_child(rim)
+	var tw := root.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(dm, "albedo_color:a", 0.34, dur)
+	tw.tween_property(rim, "scale", Vector3.ONE, dur * 0.92).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.set_parallel(false)
+	tw.tween_property(dm, "albedo_color:a", 0.7, 0.06) # impact flash
+	tw.tween_property(dm, "albedo_color:a", 0.0, 0.12)
+	tw.tween_callback(root.queue_free)
 
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
 ## in-progress actions (a charging shot, a slam wind-up, …).

@@ -73,6 +73,20 @@ func _build_extra_settings() -> void:
 	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
 	_settings.add_child(post_proc)
 
+	var area_lights := CheckButton.new()
+	area_lights.text = tr("Soft Area Lights (HIGH/ULTRA)")
+	area_lights.custom_minimum_size = Vector2(360, 44)
+	area_lights.button_pressed = GraphicsSettings.area_lights_enabled
+	area_lights.toggled.connect(func(p: bool): GraphicsSettings.set_area_lights_enabled(p))
+	_settings.add_child(area_lights)
+
+	var hdr := CheckButton.new()
+	hdr.text = tr("HDR Display Output")
+	hdr.custom_minimum_size = Vector2(360, 44)
+	hdr.button_pressed = GraphicsSettings.hdr_output_enabled
+	hdr.toggled.connect(func(p: bool): GraphicsSettings.set_hdr_output_enabled(p))
+	_settings.add_child(hdr)
+
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()

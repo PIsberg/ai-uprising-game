@@ -10,7 +10,7 @@ func _run() -> void:
 	get_tree().root.add_child(enc)
 	await get_tree().create_timer(0.4).timeout
 	for t in TARGETS:
-		var idx := enc._types.find(t)
+		var idx: int = enc._types.find(t)
 		if idx < 0:
 			continue
 		enc._index = idx

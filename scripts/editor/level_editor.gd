@@ -2264,11 +2264,35 @@ func _campaign_add(path: String, vb: VBoxContainer) -> void:
 
 func _save_campaign(list: Array) -> void:
 	CustomLevels._ensure(CustomLevels.DIR)
-	var f := FileAccess.open(CustomLevels.DIR + "campaign.json", FileAccess.WRITE)
+	# This file overrides the game's whole campaign at boot, so refuse to write a
+	# list that would break it: no empties, and every level must resolve.
+	if list.is_empty():
+		_set_status("NOT saved — campaign list is empty")
+		return
+	var bad: Array = []
+	for e in list:
+		var lvl := str(e)
+		if not (ResourceLoader.exists(lvl) or FileAccess.file_exists(lvl)):
+			bad.append(lvl)
+	if not bad.is_empty():
+		_set_status("NOT saved — %d missing level(s): %s" % [bad.size(), ", ".join(bad)])
+		return
+	var p := CustomLevels.DIR + "campaign.json"
+	# Back up the previous campaign.json before overwriting, so a bad edit is
+	# one rename away from recovery.
+	if FileAccess.file_exists(p):
+		var prev := FileAccess.get_file_as_string(p)
+		var bf := FileAccess.open(p + ".bak", FileAccess.WRITE)
+		if bf:
+			bf.store_string(prev)
+			bf.close()
+	var f := FileAccess.open(p, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(list, "\t"))
 		f.close()
 		_set_status("Saved campaign.json (%d levels)" % list.size())
+	else:
+		_set_status("SAVE FAILED — could not open campaign.json for writing")
 
 # ---------- validation + playtest (Phase 4) ----------
 

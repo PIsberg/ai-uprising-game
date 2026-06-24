@@ -52,7 +52,10 @@ func _apply_difficulty(e: Node3D) -> void:
 		return
 	var cfg: Dictionary = gs.difficulty_config()
 	var eb := e as EnemyBase
-	eb.max_health *= cfg.get("health_mult", 1.0)
-	eb.attack_cooldown *= cfg.get("cooldown_mult", 1.0)
-	eb.move_speed *= cfg.get("speed_mult", 1.0)
-	eb.reaction_time *= cfg.get("reaction_mult", 1.0)
+	# Health/speed/cadence via the _*_mult fields (applied after the subclass
+	# _ready sets its base), so difficulty scaling isn't wiped by the subclass's
+	# own `max_health = N` / `move_speed = N` / `attack_cooldown = N`.
+	eb._health_mult *= cfg.get("health_mult", 1.0)
+	eb._cooldown_mult *= cfg.get("cooldown_mult", 1.0)
+	eb._speed_mult *= cfg.get("speed_mult", 1.0)
+	eb.reaction_time *= cfg.get("reaction_mult", 1.0) # not clobbered (no subclass sets it)

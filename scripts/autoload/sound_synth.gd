@@ -13,6 +13,9 @@ func _ready() -> void:
 	streams["plasma_fire"] = _plasma_fire(0.4)
 	streams["drone_shot"] = _laser_zap(0.18, 1400.0, 600.0)
 	streams["rocket_fire"] = _rocket_fire(0.55)
+	# Heavy electromagnetic coil-gun thump for the gauss sniper (was referenced by
+	# sniper_data.tres but never registered -> the sniper fired silently).
+	streams["gauss_fire"] = _gun_fire(0.34, 90.0, 1.1, 1.9, true)
 	streams["empty_click"] = _click(0.12, 1800.0)
 	streams["reload"] = _reload_chunk(0.45)
 	streams["pump_action"] = _pump(0.35)

@@ -18,6 +18,7 @@ var _vig_time: float = 0.0
 var _cross_spread: float = 0.0
 var _player_ref: Node3D
 var _mag: int = 1
+var _prev_mag: int = 1
 var _mag_size: int = 1
 var _reticle_base: Color = Color(1, 1, 1)
 var _cross_time: float = 0.0
@@ -40,6 +41,7 @@ var _damage_alpha: float = 0.0
 var _toast_time: float = 0.0
 var _hit_flash: float = 0.0
 var _hit_kill: bool = false
+var _hit_crit: bool = false ## Last hit was a headshot — flashes the marker gold.
 var _crosshair_base_scale: Vector2 = Vector2.ONE
 var _objective_base: String = "" ## Flavour objective text, shown when no task checklist is active.
 var _combo_label: Label = null
@@ -57,6 +59,15 @@ var _hit_x: Control = null
 var _streak_label: Label = null
 var _streak_alpha: float = 0.0
 var _streak_pop: float = 0.0
+# Rapid multi-kill callouts (N kills inside a short window — distinct from the
+# cumulative streak tiers above). AI-themed words.
+const MULTIKILL_WORDS := ["", "", "DOUBLE TAP", "BATCH DELETE", "MASS UNINSTALL", "FORK BOMB", "KILL -9 ALL"]
+const MULTIKILL_WINDOW := 1.3
+var _multikill: int = 0
+var _multikill_cd: float = 0.0
+var _multikill_label: Label = null
+var _multikill_alpha: float = 0.0
+var _multikill_pop: float = 0.0
 var _last_streak_tier: int = -1
 # Live taunts from the rogue AI overlord — a snarky subtitle that pops on a
 # timer and on key events, for personality + engagement.
@@ -169,6 +180,7 @@ func _ready() -> void:
 	_build_kill_confirm()
 	_build_combo_label()
 	_build_streak_label()
+	_build_multikill_label()
 	_build_overlord_label()
 	_build_pause_audio()
 	_build_editor_return()
@@ -240,7 +252,13 @@ func _build_pause_audio() -> void:
 	post_proc.button_pressed = GraphicsSettings.advanced_post_process_enabled
 	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
 	vbox.add_child(post_proc)
-	
+
+	var aim_assist := CheckButton.new()
+	aim_assist.text = tr("Aim Assist (Gamepad)")
+	aim_assist.button_pressed = GraphicsSettings.aim_assist
+	aim_assist.toggled.connect(func(p: bool): GraphicsSettings.set_aim_assist(p))
+	vbox.add_child(aim_assist)
+
 	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
@@ -318,6 +336,23 @@ func _build_streak_label() -> void:
 	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_streak_label)
 
+## Gold multi-kill callout that punches in when you drop several enemies fast.
+func _build_multikill_label() -> void:
+	_multikill_label = Label.new()
+	_multikill_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_multikill_label.anchor_left = 0.5
+	_multikill_label.anchor_right = 0.5
+	_multikill_label.position = Vector2(0, 190)
+	_multikill_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_multikill_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_multikill_label.add_theme_font_size_override("font_size", 38)
+	_multikill_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	_multikill_label.add_theme_constant_override("outline_size", 9)
+	_multikill_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_multikill_label.modulate.a = 0.0
+	_multikill_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_multikill_label)
+
 ## Subtitle the rogue AI taunts the player through, bottom-centre.
 func _build_overlord_label() -> void:
 	_overlord_label = Label.new()
@@ -385,14 +420,15 @@ func _update_combat_music(delta: float) -> void:
 	if _combat_poll > 0.0:
 		return
 	_combat_poll = 0.4
-	var fighting := false
+	# Count actively-engaged hostiles so the music reacts to the SCALE of the
+	# fight, not just on/off — a swarm hits peak intensity, a lone straggler doesn't.
+	var fighting := 0
 	if GameState.current_state == GameState.State.PLAYING:
 		for e in get_tree().get_nodes_in_group("enemy"):
 			if e is EnemyBase and (e.state == EnemyBase.State.CHASE or e.state == EnemyBase.State.ATTACK):
 				if e.hp != null and e.hp.is_alive():
-					fighting = true
-					break
-	AudioBus.set_combat(fighting)
+					fighting += 1
+	AudioBus.set_combat_heat(clampf(float(fighting) / 6.0, 0.0, 1.0))
 
 ## Objective cleared: rewrite the goal line and cheer it on the toast.
 func _on_objective_unlocked(text: String) -> void:
@@ -458,7 +494,11 @@ func _on_level_completed() -> void:
 	if _last_grade != "":
 		var acc := int(round(float(_last_stats.get("accuracy", 0.0)) * 100.0))
 		var t := int(round(float(_last_stats.get("time", 0.0))))
+		var diff_lbl := str(_last_stats.get("difficulty", ""))
+		var best_tag := "   ★ " + tr("NEW BEST") if bool(_last_stats.get("new_best", false)) \
+			else "   " + (tr("Best %s") % str(_last_stats.get("best_grade", _last_grade)))
 		win_title.text += "\n\n" + (tr("RANK  %s") % _last_grade) \
+			+ ("  ·  %s" % diff_lbl if diff_lbl != "" else "") + best_tag \
 			+ "\n" + (tr("Accuracy %d%%") % acc) \
 			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
 			+ "   ·   %02d:%02d" % [t / 60, t % 60]
@@ -495,6 +535,17 @@ func _process(delta: float) -> void:
 		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
 		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
 		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _multikill_label:
+		# The rolling window closes -> the multi-kill count resets.
+		if _multikill_cd > 0.0:
+			_multikill_cd = maxf(0.0, _multikill_cd - delta)
+			if _multikill_cd <= 0.0:
+				_multikill = 0
+		_multikill_alpha = move_toward(_multikill_alpha, 0.0, delta * 0.8)
+		_multikill_pop = move_toward(_multikill_pop, 0.0, delta * 3.5)
+		_multikill_label.modulate.a = clampf(_multikill_alpha, 0.0, 1.0)
+		_multikill_label.scale = Vector2.ONE * (1.0 + _multikill_pop * 0.55)
+		_multikill_label.pivot_offset = _multikill_label.size * 0.5
 	if _overlord_label:
 		if _overlord_time > 0.0:
 			_overlord_time = maxf(0.0, _overlord_time - delta)
@@ -510,12 +561,13 @@ func _process(delta: float) -> void:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5
 		crosshair.scale = _crosshair_base_scale * pop
-		# Kills flash red; normal hits flash bright white, easing back to neutral.
-		var hit_col := Color(1.0, 0.25, 0.2) if _hit_kill else Color(1.0, 1.0, 1.0)
+		# Headshots flash GOLD (precision read, priority); kills red; hits white.
+		var hit_col := Color(1.0, 0.85, 0.25) if _hit_crit else (Color(1.0, 0.25, 0.2) if _hit_kill else Color(1.0, 1.0, 1.0))
 		crosshair.modulate = Color(1, 1, 1).lerp(hit_col, _hit_flash)
 		# Snap-in hit ✕: punches out from the crosshair on contact.
 		if _hit_x:
-			_hit_x.modulate = Color(1.0, 0.4, 0.35, _hit_flash) if _hit_kill else Color(1, 1, 1, _hit_flash)
+			var x_col := Color(1.0, 0.82, 0.2) if _hit_crit else (Color(1.0, 0.4, 0.35) if _hit_kill else Color(1, 1, 1))
+			_hit_x.modulate = Color(x_col.r, x_col.g, x_col.b, _hit_flash)
 			_hit_x.scale = Vector2.ONE * (1.25 - _hit_flash * 0.35)
 	if _kill_flash > 0.0:
 		_kill_flash = maxf(0.0, _kill_flash - delta * 3.2)
@@ -788,6 +840,10 @@ func _refresh_ammo_visual(reserve: int) -> void:
 		_segs[i].color = col if i < lit else Color(1, 1, 1, 0.13)
 
 func _on_ammo_changed(mag: int, reserve: int) -> void:
+	# A fresh magazine (count jumped up) punches the big number — reload juice.
+	if mag > _prev_mag:
+		_juice_pop(_ammo_big, 1.4)
+	_prev_mag = mag
 	_mag = mag
 	_refresh_ammo_visual(reserve)
 
@@ -798,6 +854,36 @@ func _on_weapon_changed(w: Weapon) -> void:
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)
 		_refresh_ammo_visual(w.reserve)
+
+## ---------- 4.7 juicy-HUD helpers (Control offset transforms) ----------
+## offset_transform_* visually translates/scales/rotates a Control WITHOUT the
+## container relaying it or shoving its siblings — so HUD elements can pop,
+## shake and slide even while parked inside VBox/HBox layouts.
+
+## Overshoot scale-pop around the element's own centre.
+func _juice_pop(c: Control, s: float = 1.35) -> void:
+	if c == null:
+		return
+	c.offset_transform_enabled = true
+	c.offset_transform_visual_only = true
+	c.offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+	c.offset_transform_scale = Vector2(s, s)
+	var t := c.create_tween()
+	t.tween_property(c, "offset_transform_scale", Vector2.ONE, 0.22) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## A short positional shake that settles back to rest.
+func _juice_shake(c: Control, amt: float = 7.0) -> void:
+	if c == null:
+		return
+	c.offset_transform_enabled = true
+	c.offset_transform_visual_only = true
+	var t := c.create_tween()
+	for i in 4:
+		t.tween_property(c, "offset_transform_position",
+			Vector2(randf_range(-amt, amt), randf_range(-amt, amt)), 0.04)
+	t.tween_property(c, "offset_transform_position", Vector2.ZERO, 0.07) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 ## Distinct light tint per weapon so each reticle reads differently.
 func _reticle_hue(name: String) -> Color:
@@ -841,6 +927,9 @@ func _on_grenades_changed(count: int) -> void:
 
 func _on_player_damaged(_amount: float, src: Node) -> void:
 	_damage_alpha = 0.55
+	# Rattle the health readout so a hit is felt on the HUD, not just the screen.
+	_juice_shake(health_bar, 6.0)
+	_juice_shake(health_label, 6.0)
 	# Point an edge wedge toward the attacker; it tracks the world position as the
 	# player turns (handled inside the DamageIndicator).
 	if src is Node3D and _dmg_indicator:
@@ -851,43 +940,32 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 		if r <= 0.3 and _overlord_time <= 0.0 and randf() < 0.35:
 			_overlord_say(OVERLORD_LOWHP[randi() % OVERLORD_LOWHP.size()])
 
-func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) -> void:
+func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	_hit_flash = 1.0
 	_hit_kill = killed
+	_hit_crit = crit
 	if killed:
 		_kill_flash = 1.0
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
-	_spawn_damage_number(amount, world_pos, killed)
-
-## A floating damage number that pops at the hit point and drifts up as it
-## fades — the running tally of a firefight, so big hits read as big.
-func _spawn_damage_number(amount: float, world_pos: Vector3, killed: bool) -> void:
-	if amount < 1.0:
-		return
-	var cam := get_viewport().get_camera_3d()
-	if cam == null or cam.is_position_behind(world_pos):
-		return
-	var lbl := Label.new()
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.text = str(int(round(amount)))
-	# Bigger + hotter for heavier hits; gold on the killing blow.
-	var heavy := clampf(amount / 80.0, 0.0, 1.0)
-	lbl.add_theme_font_size_override("font_size", int(lerpf(18.0, 34.0, heavy)) + (8 if killed else 0))
-	var col := Color(1.0, 0.85, 0.3) if killed else Color(1.0, 0.95, 0.9).lerp(Color(1.0, 0.55, 0.3), heavy)
-	lbl.add_theme_color_override("font_color", col)
-	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	lbl.add_theme_constant_override("outline_size", 6)
-	add_child(lbl)
-	var sp := cam.unproject_position(world_pos)
-	sp += Vector2(randf_range(-14, 14), randf_range(-8, 8)) # scatter so stacks don't overlap
-	lbl.position = sp
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(lbl, "position:y", sp.y - 46.0, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(lbl, "modulate:a", 0.0, 0.65).set_ease(Tween.EASE_IN)
-	tw.chain().tween_callback(lbl.queue_free)
+	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
 
 func _on_enemy_killed(score: int, label: String) -> void:
+	# Rapid multi-kill: count kills inside a short rolling window and punch out an
+	# AI-themed callout (DOUBLE TAP, BATCH DELETE, ...) — distinct from the
+	# cumulative streak tiers.
+	_multikill += 1
+	_multikill_cd = MULTIKILL_WINDOW
+	if _multikill >= 2 and _multikill_label:
+		var w: String = MULTIKILL_WORDS[mini(_multikill, MULTIKILL_WORDS.size() - 1)]
+		_multikill_label.text = "%s ×%d" % [w, _multikill]
+		_multikill_alpha = 1.0
+		_multikill_pop = 1.0
+		AudioBus.play_synth_ui("combo_up", -2.0, 1.1 + 0.08 * float(_multikill))
+		# The overlord notices a real spree — it can't help but react (once, at the
+		# 4-kill mark, and only if it isn't already mid-taunt).
+		if _multikill == 4 and _overlord_time <= 0.0:
+			_overlord_say(OVERLORD_RATTLED[randi() % OVERLORD_RATTLED.size()])
 	if _kill_feed == null:
 		return
 	var lbl := Label.new()
@@ -898,6 +976,18 @@ func _on_enemy_killed(score: int, label: String) -> void:
 	_kill_feed.add_child(lbl)
 	while _kill_feed.get_child_count() > 5:
 		_kill_feed.get_child(0).free()
+	# Punch the new entry in: slide from the right + overshoot scale, visual-only
+	# so the rest of the feed doesn't jitter as it lands (4.7 offset transform).
+	lbl.offset_transform_enabled = true
+	lbl.offset_transform_visual_only = true
+	lbl.offset_transform_pivot_ratio = Vector2(1.0, 0.5)
+	lbl.offset_transform_position = Vector2(70, 0)
+	lbl.offset_transform_scale = Vector2(0.6, 0.6)
+	var pin := create_tween().set_parallel(true)
+	pin.tween_property(lbl, "offset_transform_position", Vector2.ZERO, 0.34) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pin.tween_property(lbl, "offset_transform_scale", Vector2.ONE, 0.34) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var tw := create_tween()
 	tw.tween_interval(2.0)
 	tw.tween_property(lbl, "modulate:a", 0.0, 0.6)

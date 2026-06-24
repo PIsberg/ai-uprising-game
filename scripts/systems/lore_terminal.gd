@@ -88,6 +88,16 @@ func _build_visual() -> void:
 	screen.position = Vector3(0, 0.22, 0.04)
 	monitor.add_child(screen)
 
+	# The screen spills its teal light into the room (4.7 AreaLight3D, HIGH+).
+	var glow := ScreenGlow.new()
+	glow.glow_color = accent
+	glow.glow_energy = 2.2
+	glow.glow_size = Vector2(0.56, 0.4)
+	glow.glow_range = 4.0
+	glow.position = Vector3(0, 0.22, 0.06)
+	glow.rotation_degrees = Vector3(0, 180, 0)
+	monitor.add_child(glow)
+
 	# Slowly pulsing holo-cube hovering above: "data here".
 	var cube := MeshInstance3D.new()
 	var cm := BoxMesh.new()

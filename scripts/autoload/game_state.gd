@@ -4,7 +4,7 @@ signal player_died
 signal level_completed
 signal score_changed(new_score: int)
 signal boss_spawned(boss: Node) ## A boss enemy appeared — HUD shows its health bar.
-signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool) ## Player landed a hit — drives hit markers + damage numbers.
+signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit: bool) ## Player landed a hit — drives hit markers + damage numbers (crit = headshot).
 signal enemy_killed(score: int, label: String) ## An enemy was destroyed — drives the HUD kill feed.
 signal objective_blocked(text: String) ## Player reached a locked portal — HUD posts why.
 signal objective_unlocked(text: String) ## Objective met, portal opened — HUD updates the goal line.
@@ -17,9 +17,16 @@ func announce_boss(boss: Node) -> void:
 	boss_spawned.emit(boss)
 
 ## Called by Damageable when the player damages something. Drives combat feedback.
-func report_player_hit(amount: float, world_pos: Vector3, killed: bool) -> void:
+func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	register_hit()
-	player_dealt_damage.emit(amount, world_pos, killed)
+	player_dealt_damage.emit(amount, world_pos, killed, crit)
+	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
+	# the punch that separates a good-feeling shooter from a flat one. A kill
+	# snaps harder than a heavy hit; rate-limited so a fast horde can't slideshow.
+	if killed:
+		combat_hitstop(0.05, 0.05)
+	elif amount >= 40.0:
+		combat_hitstop(0.2, 0.03)
 
 enum State { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE }
 
@@ -309,31 +316,89 @@ func grade_level() -> Dictionary:
 	var score_pts := accuracy * 45.0
 	score_pts += clampf(max_combo / 10.0, 0.0, 1.0) * 30.0
 	score_pts += clampf(1.0 - stat_damage_taken / 250.0, 0.0, 1.0) * 25.0
+	# Reward the difficulty you cleared on: now that difficulty genuinely changes
+	# enemy toughness/speed/cadence, the same play ranks higher on HARD and lower
+	# on EASY — so an S means more on HARD than it does on a cakewalk.
+	var diff_mult: float = [0.9, 1.0, 1.15][clampi(difficulty, 0, 2)]
+	score_pts = clampf(score_pts * diff_mult, 0.0, 100.0)
 	var grade := "D"
 	if score_pts >= 90.0: grade = "S"
 	elif score_pts >= 75.0: grade = "A"
 	elif score_pts >= 55.0: grade = "B"
 	elif score_pts >= 35.0: grade = "C"
+	var lid := level_id_from_path(current_level_path)
+	var new_best := record_level_grade(lid, grade)
 	var stats := {
 		"accuracy": accuracy, "max_combo": max_combo,
 		"damage_taken": stat_damage_taken, "time": elapsed,
-		"kills": kills, "score": score,
+		"kills": kills, "score": score, "difficulty": difficulty_label(),
+		"new_best": new_best, "best_grade": level_bests.get(lid, grade),
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
+
+# ---------- per-level best grade (replay incentive, persisted) ----------
+const RECORDS_PATH := "user://records.cfg"
+const GRADE_RANK := ["D", "C", "B", "A", "S"] ## index = quality, higher is better
+var level_bests: Dictionary = {} ## level_id -> best grade letter
+
+func _load_level_bests() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(RECORDS_PATH) != OK or not cf.has_section("campaign"):
+		return
+	for k in cf.get_section_keys("campaign"):
+		level_bests[k] = str(cf.get_value("campaign", k, "D"))
+
+## Store `grade` as this level's best if it beats the previous; returns true on a
+## new record (drives the "NEW BEST" flourish on the win screen).
+func record_level_grade(lid: String, grade: String) -> bool:
+	if lid == "":
+		return false
+	var prev_rank := GRADE_RANK.find(str(level_bests.get(lid, "")))
+	var new_rank := GRADE_RANK.find(grade)
+	if new_rank <= prev_rank:
+		return false
+	level_bests[lid] = grade
+	var cf := ConfigFile.new()
+	cf.load(RECORDS_PATH) # preserve the horde section
+	cf.set_value("campaign", lid, grade)
+	cf.save(RECORDS_PATH)
+	return true
 
 func reset_run() -> void:
 	score = 0
 	kills = 0
 	seen_enemy_types.clear()
 
-## Brief slow-motion payoff (e.g. boss death). Uses a real-time timer so it
-## always restores even though the game clock is slowed.
+## Brief slow-motion payoff (e.g. boss death, area clear) AND the primitive
+## behind the per-hit combat punch. A guard token means overlapping freezes
+## don't restore early — the most recent freeze owns the restore — so a kill's
+## micro-freeze can't cut a cinematic beat short, and vice versa. Real-time
+## timer so it always restores even though the game clock is slowed.
+var _hitstop_token: int = 0
+var _last_punch_ms: int = 0
+
 func hit_stop(scale: float = 0.3, duration: float = 0.4) -> void:
-	Engine.time_scale = clampf(scale, 0.05, 1.0)
+	Engine.time_scale = clampf(scale, 0.04, 1.0)
+	_hitstop_token += 1
+	var mine := _hitstop_token
 	# create_timer(sec, process_always, process_in_physics, ignore_time_scale)
 	var t := get_tree().create_timer(duration, true, false, true)
-	t.timeout.connect(func(): Engine.time_scale = 1.0)
+	t.timeout.connect(func() -> void:
+		if mine == _hitstop_token:
+			Engine.time_scale = 1.0)
+
+## Rapid-fire combat hit-stop (per kill / heavy hit). Wall-clock rate-limited
+## (real ms, immune to the freeze itself) so a horde of kills can't stutter the
+## game into a slideshow. Only while actually playing.
+func combat_hitstop(scale: float, duration: float) -> void:
+	if current_state != State.PLAYING:
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_punch_ms < 90:
+		return
+	_last_punch_ms = now
+	hit_stop(scale, duration)
 
 ## Start a fresh campaign run from the first level at the chosen difficulty.
 func start_campaign(diff: int = Difficulty.NORMAL) -> void:
@@ -355,6 +420,10 @@ const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
 ## `custom_level_path`). Campaign entries / paths ending in `.lvl` route here
 ## instead of being change_scene'd directly (a .lvl is JSON data, not a scene).
 const LEVEL_CUSTOM := "res://scenes/levels/level_custom.tscn"
+## Lightweight scene shown while a heavy level builds, so the main-thread build
+## stall sits on a loading frame instead of a grey window. Reads `pending_scene`.
+const LOADING_SCREEN := "res://scenes/ui/loading_screen.tscn"
+var pending_scene: String = ""
 ## Levels that play a bespoke reveal cutscene instead of the standard briefing.
 const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 
@@ -465,11 +534,19 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	# A custom editor level is JSON data (.lvl), not a scene — build it through
 	# level_custom.tscn (same mechanism as the editor playtest / --level boot),
 	# otherwise change_scene_to_file fails on the data file and leaves a black screen.
+	# Both routes go via the loading screen: the level's procedural build stalls
+	# the main thread, and the loading frame is what stays on screen during it.
 	if scene_path.get_extension() == "lvl":
 		custom_level_path = scene_path
-		get_tree().change_scene_to_file(LEVEL_CUSTOM)
+		_enter_level_scene(LEVEL_CUSTOM)
 	else:
-		get_tree().change_scene_to_file(scene_path)
+		_enter_level_scene(scene_path)
+
+## Switch to the loading screen, which paints a frame and then changes to
+## `target` (the heavy level scene). Keeps the grey-window stall off-screen.
+func _enter_level_scene(target: String) -> void:
+	pending_scene = target
+	get_tree().change_scene_to_file(LOADING_SCREEN)
 
 # ---------- save / checkpoint ----------
 
@@ -740,19 +817,39 @@ var _campaign_override: Array[String] = []
 func campaign() -> Array:
 	return _campaign_override if not _campaign_override.is_empty() else CAMPAIGN
 
+## Load an optional editor-authored campaign order from dev_levels/campaign.json.
+## STRICTLY validated: a malformed, empty, or partly-broken file is REJECTED
+## (we keep the built-in campaign) instead of silently hijacking/truncating the
+## game. This is the safety net for "I saved something in the editor and it
+## broke the game" — a bad save can no longer take the campaign down with it.
 func _load_campaign_override() -> void:
 	var p := "res://dev_levels/campaign.json"
 	if not FileAccess.file_exists(p):
 		return
 	var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(p))
-	if v is Array:
-		_campaign_override.clear()
-		for e in v:
-			_campaign_override.append(str(e))
+	if not (v is Array) or (v as Array).is_empty():
+		push_warning("campaign.json ignored (not a non-empty JSON array) — using built-in campaign.")
+		return
+	var valid: Array[String] = []
+	for e in v:
+		var lvl := str(e)
+		# Built-in levels are res:// scenes; editor levels are .lvl data files.
+		if ResourceLoader.exists(lvl) or FileAccess.file_exists(lvl):
+			valid.append(lvl)
+		else:
+			push_warning("campaign.json references a missing level: '%s'" % lvl)
+	# Apply ONLY if every listed level resolves. A single bad/typo'd entry rejects
+	# the whole override so play always falls back to the known-good campaign.
+	if valid.size() == (v as Array).size():
+		_campaign_override = valid
+		print("[GameState] campaign.json override active: %d levels." % valid.size())
+	else:
+		push_warning("campaign.json REJECTED (%d of %d levels valid) — using built-in campaign. Fix or delete dev_levels/campaign.json." % [valid.size(), (v as Array).size()])
 
 func _ready() -> void:
 	_setup_gamepad_bindings()
 	_load_bestiary()
+	_load_level_bests()
 	_load_campaign_override()
 	_handle_cli_boot()
 

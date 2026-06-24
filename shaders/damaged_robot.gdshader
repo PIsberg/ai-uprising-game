@@ -10,6 +10,12 @@ uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform bool use_normal_map = false; // only sample normal_tex when the model actually has one
 
+// Lacquered-armor clearcoat. 4.7 reworked the clearcoat BRDF (energy
+// conserving + reads sky reflections), so a thin coat now gives the chassis a
+// wet, expensive sheen instead of a flat metal read.
+uniform float clearcoat_amount : hint_range(0.0, 1.0) = 0.45;
+uniform float clearcoat_gloss : hint_range(0.0, 1.0) = 0.85;
+
 // Dynamic damage parameters
 uniform float health_ratio : hint_range(0.0, 1.0) = 1.0;
 uniform float menace_blink : hint_range(0.0, 10.0) = 0.0;
@@ -74,6 +80,15 @@ void fragment() {
 	ALBEDO = mix(ALBEDO, vec3(0.08, 0.08, 0.09), core_mask * 0.85);
 	ROUGHNESS = mix(ROUGHNESS, 0.95, core_mask);
 	METALLIC = mix(METALLIC, 0.1, core_mask);
+
+	// Lacquered coat over intact plating; burns off where the armor melts open.
+	CLEARCOAT = clearcoat_amount * (1.0 - core_mask);
+	CLEARCOAT_ROUGHNESS = clamp(1.0 - clearcoat_gloss, 0.0, 1.0);
+
+	// Subtle physical rim so the chassis silhouette catches scene light and reads
+	// as a threat against any background — readability, not a coloured glow.
+	RIM = 0.32;
+	RIM_TINT = 0.25;
 	
 	// Emission: Blend menace blink/glow + electrical sparks + exposed melting core
 	vec3 emission_glow = menace_color * menace_blink;

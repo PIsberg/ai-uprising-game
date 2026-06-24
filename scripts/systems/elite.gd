@@ -5,19 +5,29 @@ extends Object
 ##   SHIELDED — heavier plating: more health + flat armor, icy-blue tint
 ##   VOLATILE — detonates on death (hurts anything near, including its pack)
 ##   SWIFT    — faster mover/attacker, teal tint
+##   WARDEN   — unstaggerable: heavy fire can't flinch-lock it, so you have to
+##              DODGE its attacks instead of suppressing it. Violet-iron tint.
+##   SPLITTER — forks into two skitters on death, so you can't just nuke a
+##              cluster without watching the spawn. Acid-green tint.
 ## Call `maybe_apply` on a freshly instantiated enemy BEFORE add_child: export
 ## tweaks land before _ready wiring, visuals/death-hooks attach on ready.
 
-const KINDS := ["shielded", "volatile", "swift"]
+const SKITTER := preload("res://scenes/enemies/skitter.tscn")
+
+const KINDS := ["shielded", "volatile", "swift", "warden", "splitter"]
 const TINTS := {
 	"shielded": Color(0.55, 0.75, 1.45),
 	"volatile": Color(1.5, 0.65, 0.35),
 	"swift": Color(0.5, 1.4, 1.05),
+	"warden": Color(0.85, 0.6, 1.35),
+	"splitter": Color(0.55, 1.35, 0.45),
 }
 const LIGHTS := {
 	"shielded": Color(0.4, 0.65, 1.0),
 	"volatile": Color(1.0, 0.5, 0.15),
 	"swift": Color(0.3, 1.0, 0.8),
+	"warden": Color(0.7, 0.4, 1.0),
+	"splitter": Color(0.4, 1.0, 0.3),
 }
 
 ## Per-difficulty elite share (EASY, NORMAL, HARD).
@@ -42,14 +52,25 @@ static func apply(enemy: Node3D, kind: String) -> void:
 		return # must be applied pre-add so _ready reads the boosted exports
 	eb.elite = kind
 	eb.score_value *= 2
+	# Health boosts stack a multiplier (applied after the subclass sets its base),
+	# NOT max_health directly — a subclass's `max_health = N` in _ready would
+	# otherwise wipe the boost.
 	match kind:
 		"shielded":
-			eb.max_health *= 1.7
+			eb._health_mult *= 1.7
 		"volatile":
-			eb.max_health *= 1.15
+			eb._health_mult *= 1.15
 		"swift":
-			eb.move_speed *= 1.35
-			eb.attack_cooldown *= 0.85
+			eb._speed_mult *= 1.35
+			eb._cooldown_mult *= 0.85
+		"warden":
+			# Unstaggerable: poise can never be broken, so suppression won't
+			# interrupt it — it walks through your fire and attacks on schedule.
+			eb._health_mult *= 1.4
+			eb.stagger_threshold = 1.0e9
+			eb._speed_mult *= 0.92 # relentless, not fast
+		"splitter":
+			eb._health_mult *= 1.2 # the death-fork is the twist (see _finalize)
 	# Recolor the imported model: tint is read by RobotModel._ready, so setting
 	# the export now (pre-add) is enough.
 	var model := eb.get_node_or_null("Model")
@@ -63,6 +84,8 @@ static func _finalize(eb: EnemyBase, kind: String) -> void:
 		eb.hp.armor += 4.0
 	if kind == "volatile" and eb.hp:
 		eb.hp.died.connect(func(_src: Node): _detonate(eb))
+	if kind == "splitter" and eb.hp:
+		eb.hp.died.connect(func(_src: Node): _split(eb))
 	# Identity glow so an elite reads at a distance.
 	var light := OmniLight3D.new()
 	light.light_color = LIGHTS.get(kind, Color.WHITE)
@@ -75,6 +98,20 @@ static func _finalize(eb: EnemyBase, kind: String) -> void:
 	var model := eb.get_node_or_null("Model") as Node3D
 	if model:
 		model.scale *= 1.12
+
+## Splitter death: the wreck forks into two skitters that scuttle out of the
+## debris — so wiping a clustered pack can briefly make MORE targets, not fewer.
+## Spawned directly (small, weak adds); deferred add so it's safe during `died`.
+static func _split(eb: EnemyBase) -> void:
+	var parent := eb.get_parent()
+	if parent == null or not parent.is_inside_tree():
+		return
+	var pos := eb.global_position
+	for i in 2:
+		var sk := SKITTER.instantiate() as Node3D
+		sk.position = pos + Vector3(cos(i * PI), 0.0, sin(i * PI)) * 1.1 + Vector3(0, 0.3, 0)
+		parent.add_child.call_deferred(sk)
+	AudioBus.play_synth_at("explosion", pos, -6.0, 1.6) # a small wet pop
 
 ## Volatile death: a real AoE at the wreck, on top of the standard death FX.
 ## Friendly to no one — it damages player AND nearby robots, so baiting a

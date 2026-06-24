@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/systems/blinker.gd" id="3_blink"]
 [ext_resource type="Script" path="res://scripts/meshes/beveled_box_mesh.gd" id="4_bevel"]
 [ext_resource type="Shader" path="res://shaders/crt_screen.gdshader" id="5_crt"]
+[ext_resource type="Script" path="res://scripts/fx/screen_glow.gd" id="6_glow"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_cabinet"]
 albedo_color = Color(0.1, 0.11, 0.13, 1)
@@ -88,6 +89,14 @@ mesh = SubResource("Mesh_face")
 [node name="Screen" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0.435)
 mesh = SubResource("Mesh_screen")
+
+[node name="ScreenGlow" type="AreaLight3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 1.55, 0.46)
+script = ExtResource("6_glow")
+glow_color = Color(0.3, 0.85, 1, 1)
+glow_energy = 3.4
+glow_size = Vector2(0.5, 0.34)
+glow_range = 6.0
 
 [node name="Led1" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.2, 0.44)

@@ -981,6 +981,13 @@ static func _archon() -> Dictionary:
 		},
 		# A cathedral god-ray pours straight down onto the suspended brain.
 		"light_shafts": [0],
+		# 4.7 hero AreaLight3D: a vast soft "cathedral skylight" high overhead that
+		# washes the whole arena in cold cathedral blue — the big-panel-of-light
+		# look only a rect area light gives. Energy kept low to preserve the dark,
+		# weak-key mood; nudge "energy"/"size" if it reads too dim/bright on HIGH+.
+		"hero_lights": [
+			{"pos": Vector3(0, 20, 0), "size": Vector2(16, 16), "color": Color(0.42, 0.62, 1.0), "energy": 2.6, "range": 70},
+		],
 		"lights": [
 			{"pos": Vector3(0, 9, 0), "color": Color(0.4, 0.75, 1.0), "energy": 3.2, "range": 40},
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 24},

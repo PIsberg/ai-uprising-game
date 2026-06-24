@@ -30,6 +30,18 @@ var volumetric_noise_enabled: bool = true
 var robot_triplanar_enabled: bool = true
 var puddle_ripples_enabled: bool = true
 var advanced_post_process_enabled: bool = true
+## Interior ceiling luminaires emit from real rectangular AreaLight3D sources
+## (Godot 4.7) instead of a point light, for soft directional pools + correct
+## soft shadows. Pricier than an omni, so it only kicks in on HIGH/ULTRA.
+var area_lights_enabled: bool = true
+## Request HDR display output (Godot 4.7). The renderer already works in HDR
+## internally; this lets the swap-chain hand that wider range to an HDR monitor
+## instead of clamping to SDR. Off by default — harmless no-op where the
+## platform/display can't honor it, but only beneficial on real HDR displays.
+var hdr_output_enabled: bool = false
+## Gamepad aim friction (eases look speed near a target). On by default; some
+## players prefer raw stick aim, so it's toggleable. Mouse aim is never affected.
+var aim_assist: bool = true
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -51,6 +63,7 @@ func _ready() -> void:
 	_load_settings()
 	TranslationServer.set_locale(language)
 	_apply_viewport.call_deferred()
+	_apply_hdr_output.call_deferred()
 	Engine.max_fps = max_fps
 
 ## Switch UI language live and persist it. Controls re-translate automatically;
@@ -107,6 +120,16 @@ func is_low() -> bool:
 func tier() -> int:
 	return quality
 
+## Build interior lights as AreaLight3D rather than OmniLight3D. Gated to
+## HIGH/ULTRA — area lights cost more and the lower tiers want the headroom.
+func use_area_lights() -> bool:
+	return area_lights_enabled and int(quality) >= Quality.HIGH
+
+## Whether interior area lights may cast shadows (still bounded by the per-tier
+## shadowed-light budget at the build site).
+func area_light_shadows() -> bool:
+	return int(quality) >= Quality.HIGH
+
 func set_quality(q: int) -> void:
 	quality = clampi(q, 0, Quality.size() - 1) as Quality
 	_apply_viewport()
@@ -138,6 +161,44 @@ func set_advanced_post_process_enabled(v: bool) -> void:
 	advanced_post_process_enabled = v
 	_apply_to_live_post_process()
 	_save_settings()
+
+## Takes effect on the next level load (lights are built at level construction).
+func set_area_lights_enabled(v: bool) -> void:
+	area_lights_enabled = v
+	_save_settings()
+
+## Applies to the live player immediately and persists.
+func set_aim_assist(v: bool) -> void:
+	aim_assist = v
+	var p := get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+	if p and "aim_assist_enabled" in p:
+		p.aim_assist_enabled = v
+	_save_settings()
+
+## Applies immediately (the swap-chain re-requests HDR live).
+func set_hdr_output_enabled(v: bool) -> void:
+	hdr_output_enabled = v
+	_apply_hdr_output()
+	_save_settings()
+
+## Ask the OS/swap-chain for HDR output and let 2D composite in HDR so the UI
+## doesn't clip the brighter range. No-op on platforms/displays that decline.
+func _apply_hdr_output() -> void:
+	# Godot 4.7 properties (parse-checked against the pinned engine): the window
+	# asks the OS swap-chain for HDR; the viewport composites 2D/UI in HDR so the
+	# brighter range isn't clipped before output. The window honors the request
+	# only on capable platforms/displays, otherwise it's a silent no-op.
+	var w := get_window()
+	if w == null:
+		return
+	# Guard the property writes: these are 4.7-only. Probing with `in` keeps an
+	# older engine (or a headless CI still on 4.6) from hard-erroring on boot
+	# instead of degrading to a no-op.
+	if "hdr_output_requested" in w:
+		w.hdr_output_requested = hdr_output_enabled
+	var vp := get_viewport()
+	if vp and "use_hdr_2d" in vp:
+		vp.use_hdr_2d = hdr_output_enabled
 
 func _apply_to_live_robots() -> void:
 	if not is_inside_tree():
@@ -224,7 +285,9 @@ func create_particles(
 	scale_max: float,
 	mesh: Mesh,
 	color_ramp: Gradient = null,
-	scale_curve: Curve = null
+	scale_curve: Curve = null,
+	angle_max: float = 0.0,
+	angular_velocity_max: float = 0.0
 ) -> Node3D:
 	if gpu_particles_enabled:
 		var p := GPUParticles3D.new()
@@ -259,7 +322,14 @@ func create_particles(
 			var curve_tex := CurveTexture.new()
 			curve_tex.curve = scale_curve
 			pm.scale_curve = curve_tex
-			
+		# Optional spin — 4.7's richer per-particle rotation makes tumbling debris read.
+		if angle_max > 0.0:
+			pm.angle_min = -angle_max
+			pm.angle_max = angle_max
+		if angular_velocity_max > 0.0:
+			pm.angular_velocity_min = -angular_velocity_max
+			pm.angular_velocity_max = angular_velocity_max
+
 		p.process_material = pm
 		return p
 	else:
@@ -283,6 +353,12 @@ func create_particles(
 			p.color_ramp = color_ramp
 		if scale_curve:
 			p.scale_amount_curve = scale_curve
+		if angle_max > 0.0:
+			p.angle_min = -angle_max
+			p.angle_max = angle_max
+		if angular_velocity_max > 0.0:
+			p.angular_velocity_min = -angular_velocity_max
+			p.angular_velocity_max = angular_velocity_max
 		return p
 
 ## Re-tier the environment of the level that's running RIGHT NOW, so picking a
@@ -429,6 +505,9 @@ func _load_settings() -> void:
 		robot_triplanar_enabled = bool(cf.get_value("graphics_adv", "robot_triplanar", true))
 		puddle_ripples_enabled = bool(cf.get_value("graphics_adv", "puddle_ripples", true))
 		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
+		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
+		aim_assist = bool(cf.get_value("input", "aim_assist", true))
+		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -446,5 +525,8 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "robot_triplanar", robot_triplanar_enabled)
 	cf.set_value("graphics_adv", "puddle_ripples", puddle_ripples_enabled)
 	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
-	
+	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
+	cf.set_value("input", "aim_assist", aim_assist)
+	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
+
 	cf.save(SETTINGS_PATH)

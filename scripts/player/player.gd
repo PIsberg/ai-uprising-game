@@ -17,12 +17,19 @@ func notify_pickup(text: String) -> void:
 @export var air_acceleration: float = 6.0
 @export var friction: float = 14.0
 @export var jump_velocity: float = 7.5
+@export var coyote_time: float = 0.1 ## Grace to still jump just after stepping off a ledge.
+@export var jump_buffer_time: float = 0.12 ## Grace for a jump pressed just before landing.
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
 @export var pad_look_speed: float = 3.2 ## Right-stick look speed (rad/s).
 @export var pad_look_deadzone: float = 0.15
 @export var look_clamp_deg: float = 89.0
+@export_subgroup("Aim Assist (gamepad)")
+@export var aim_assist_enabled: bool = true
+@export var aim_assist_angle_deg: float = 7.0 ## Cone around the crosshair that engages friction.
+@export var aim_assist_range: float = 60.0
+@export var aim_assist_min: float = 0.45 ## Look-speed multiplier when the reticle sits on a target.
 
 @export_group("Stance")
 @export var stand_height: float = 1.8
@@ -127,6 +134,8 @@ func _apply_user_settings() -> void:
 		_look_sens_mult = gs.sensitivity
 	if "invert_y" in gs:
 		_look_y_sign = -1.0 if gs.invert_y else 1.0
+	if "aim_assist" in gs:
+		aim_assist_enabled = gs.aim_assist
 	update_post_process_settings()
 
 func update_post_process_settings() -> void:
@@ -200,7 +209,7 @@ func _physics_process(delta: float) -> void:
 	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_slide(delta)
-	_handle_jump()
+	_handle_jump(delta)
 	_handle_grenade(delta)
 	_handle_stance(delta)
 	_handle_movement(delta)
@@ -316,9 +325,35 @@ func _handle_gamepad_look(delta: float) -> void:
 		return
 	lx = signf(lx) * pow(absf(lx), 1.5)
 	ly = signf(ly) * pow(absf(ly), 1.5)
-	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult)
-	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign)
+	# Aim friction: ease the look speed down when the reticle is near a hostile,
+	# so tracking a target on a stick feels sticky-good (not auto-aim). Gamepad
+	# only — mouse aim stays untouched.
+	var fr := _aim_friction()
+	rotate_y(-lx * pad_look_speed * delta * _look_sens_mult * fr)
+	head.rotate_x(-ly * pad_look_speed * delta * _look_sens_mult * _look_y_sign * fr)
 	head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+
+## Look-speed multiplier in [aim_assist_min, 1.0]: drops toward the minimum as
+## the camera-forward ray closes on the nearest live hostile within the cone.
+func _aim_friction() -> float:
+	if not aim_assist_enabled:
+		return 1.0
+	var fwd := -camera.global_transform.basis.z
+	var origin := camera.global_position
+	var best := 1.0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not (e is Node3D):
+			continue
+		if e is EnemyBase and (e as EnemyBase).hp != null and not (e as EnemyBase).hp.is_alive():
+			continue
+		var to: Vector3 = (e as Node3D).global_position + Vector3(0, 1.0, 0) - origin
+		var dist := to.length()
+		if dist < 1.0 or dist > aim_assist_range:
+			continue
+		var ang := rad_to_deg(fwd.angle_to(to))
+		if ang <= aim_assist_angle_deg:
+			best = minf(best, lerpf(aim_assist_min, 1.0, ang / aim_assist_angle_deg))
+	return best
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
@@ -349,9 +384,25 @@ func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 
-func _handle_jump() -> void:
-	if is_on_floor() and Input.is_action_just_pressed("jump") and not _is_crouching:
+var _coyote: float = 0.0
+var _jump_buffer: float = 0.0
+
+## Coyote time + jump buffering so jumps land when the player MEANT them: you can
+## still jump a hair after walking off a ledge, and a jump pressed just before
+## touchdown fires on landing instead of being eaten.
+func _handle_jump(delta: float) -> void:
+	if is_on_floor():
+		_coyote = coyote_time
+	else:
+		_coyote = maxf(0.0, _coyote - delta)
+	if Input.is_action_just_pressed("jump"):
+		_jump_buffer = jump_buffer_time
+	else:
+		_jump_buffer = maxf(0.0, _jump_buffer - delta)
+	if _jump_buffer > 0.0 and _coyote > 0.0 and not _is_crouching:
 		velocity.y = jump_velocity
+		_jump_buffer = 0.0
+		_coyote = 0.0
 
 func _handle_stance(delta: float) -> void:
 	var wants_crouch := Input.is_action_pressed("crouch") or _sliding

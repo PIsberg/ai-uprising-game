@@ -26,7 +26,10 @@ static func _flash(root: Node3D, size: float) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(1, 1, 0.95, 1)
+	# HDR-bright additive sear (>1): on an HDR display this is genuine peak
+	# brightness, and everywhere it punches well past the glow threshold so the
+	# detonation frame blooms hard instead of just reading as plain white.
+	mat.albedo_color = Color(3.0, 3.0, 2.8, 1)
 	sm.material = mat
 	fl.mesh = sm
 	fl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -52,6 +55,13 @@ static func _embers(root: Node3D, size: float, color: Color) -> void:
 	p.gravity = Vector3(0, -16.0, 0)
 	p.scale_amount_min = 0.6
 	p.scale_amount_max = 1.4
+	# Tumble the shrapnel and burn it down to a streak — 4.7's richer per-particle
+	# scale/rotation makes the darts read as spinning sparks, not sliding dashes.
+	p.angle_min = -180.0
+	p.angle_max = 180.0
+	p.angular_velocity_min = -900.0
+	p.angular_velocity_max = 900.0
+	p.scale_amount_curve = _ember_taper_curve()
 	var dart := BoxMesh.new()
 	dart.size = Vector3(0.05, 0.05, 0.16) # stretched -> reads as a streak
 	var m := StandardMaterial3D.new()
@@ -101,6 +111,14 @@ static func _ramp_up_curve() -> Curve:
 	c.add_point(Vector2(1.0, 1.0))
 	return c
 
+## Embers pop to full size then shrink to a dying spark over their lifetime.
+static func _ember_taper_curve() -> Curve:
+	var c := Curve.new()
+	c.add_point(Vector2(0.0, 1.0))
+	c.add_point(Vector2(0.65, 0.7))
+	c.add_point(Vector2(1.0, 0.0))
+	return c
+
 ## A white-hot core that balloons out and burns off in a tenth of a second —
 ## the single biggest "explosion, not particle puff" cue.
 static func _fireball(root: Node3D, size: float, color: Color) -> void:
@@ -117,7 +135,7 @@ static func _fireball(root: Node3D, size: float, color: Color) -> void:
 	mat.albedo_color = Color(1.0, 0.95, 0.8, 0.95) # white-hot at birth
 	mat.emission_enabled = true
 	mat.emission = color
-	mat.emission_energy_multiplier = 7.0
+	mat.emission_energy_multiplier = 13.0 # HDR-hot core: blooms hard, sears on HDR
 	sm.material = mat
 	ball.mesh = sm
 	ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

@@ -85,6 +85,7 @@ func _exit_tree() -> void:
 func _setup_buses() -> void:
 	_ensure_bus("Music")
 	_ensure_bus("SFX")
+	_ensure_master_limiter()
 	# Start the looping theme once, unconditionally — NOT as a side effect of a
 	# bus being freshly created (which silently skipped music whenever the buses
 	# already existed). Deferred so SoundSynth's _ready has built its streams.
@@ -97,6 +98,20 @@ func _ensure_bus(bus_name: String) -> void:
 	AudioServer.add_bus(idx)
 	AudioServer.set_bus_name(idx, bus_name)
 	AudioServer.set_bus_send(idx, "Master")
+
+## Transparent brick-wall limiter on Master so a peak moment — stacked
+## explosions + gunfire + a full horde + the music swell — can't sum past 0 dB
+## into harsh digital clipping right when the action is loudest. Idempotent.
+func _ensure_master_limiter() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	if master < 0:
+		return
+	for i in AudioServer.get_bus_effect_count(master):
+		if AudioServer.get_bus_effect(master, i) is AudioEffectHardLimiter:
+			return
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -1.0
+	AudioServer.add_bus_effect(master, lim)
 
 # ---------- per-bus volume (persisted to user://settings.cfg) ----------
 
@@ -284,23 +299,35 @@ func play_lore(id: String) -> void:
 var _current_music_id: String = ""
 var _music_enabled := true   # editor disables the looping theme; re-enabled on exit
 
-# Adaptive intensity: the score swells (louder + a touch faster) while the
-# player is actively in combat, and settles back when things go quiet.
-var _combat: float = 0.0
+# Adaptive intensity: the score reacts to how HOT the fight is — louder and a
+# touch brighter as more hostiles engage — swelling fast when a fight kicks off
+# and settling slowly when it clears.
+var _combat: float = 0.0       ## smoothed heat 0..1
 var _combat_target: float = 0.0
 const MUSIC_CALM_DB := -12.0
 const MUSIC_COMBAT_DB := -6.0
+const MUSIC_HOT_DB := -3.0     ## peak-battle bump
 
+## Back-compat binary entry point (maps to full / no heat).
 func set_combat(active: bool) -> void:
-	_combat_target = 1.0 if active else 0.0
+	set_combat_heat(1.0 if active else 0.0)
+
+## Reactive intensity. heat 0 = calm exploration, 1 = peak battle (a swarm of
+## active hostiles). The HUD feeds this from the live enemy count.
+func set_combat_heat(heat: float) -> void:
+	_combat_target = clampf(heat, 0.0, 1.0)
 
 func _process(delta: float) -> void:
 	if _music == null:
 		return
 	if not is_equal_approx(_combat, _combat_target):
-		_combat = move_toward(_combat, _combat_target, delta * 0.8)
-		_music.volume_db = lerpf(MUSIC_CALM_DB, MUSIC_COMBAT_DB, _combat)
-		_music.pitch_scale = lerpf(1.0, 1.06, _combat)
+		# Swell fast on engagement, settle slowly when it clears.
+		var rate := 2.2 if _combat_target > _combat else 0.45
+		_combat = move_toward(_combat, _combat_target, delta * rate)
+		# Any engagement lifts CALM->COMBAT quickly; a big fight pushes toward HOT.
+		var base := lerpf(MUSIC_CALM_DB, MUSIC_COMBAT_DB, clampf(_combat * 2.0, 0.0, 1.0))
+		_music.volume_db = lerpf(base, MUSIC_HOT_DB, smoothstep(0.5, 1.0, _combat))
+		_music.pitch_scale = lerpf(1.0, 1.09, _combat)
 
 func _start_music() -> void:
 	if not _music_enabled:
