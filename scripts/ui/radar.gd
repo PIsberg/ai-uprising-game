@@ -4,6 +4,7 @@ extends Control
 
 @export var world_range: float = 45.0  ## metres mapped to the radar edge
 @export var enemy_color: Color = Color(1.0, 0.3, 0.25)
+@export var elite_color: Color = Color(1.0, 0.82, 0.2) ## Elites: a bigger gold blip.
 @export var objective_color: Color = Color(0.4, 1.0, 0.55)
 
 var _player: Node3D
@@ -71,7 +72,11 @@ func _draw() -> void:
 		if e is EnemyBase and not (e as EnemyBase).hp.is_alive():
 			continue
 		if e is Node3D:
-			_blip(e as Node3D, pp, right, fwd, scale, c, r, enemy_color, 3.5)
+			# Elites read as a bigger gold blip so a priority threat is spottable
+			# on the radar, not just by its in-world glow.
+			var is_elite: bool = e is EnemyBase and (e as EnemyBase).elite != ""
+			var col := elite_color if is_elite else enemy_color
+			_blip(e as Node3D, pp, right, fwd, scale, c, r, col, 4.5 if is_elite else 3.5)
 
 	# Player marker (triangle pointing up = forward).
 	draw_colored_polygon(PackedVector2Array([
