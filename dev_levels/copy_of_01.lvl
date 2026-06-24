@@ -1,0 +1,174 @@
+{
+"building_tint": Color(0.5, 0.52, 0.55, 1),
+"buildings": [{
+"pos": Vector3(-27, 4.5, 6),
+"size": Vector3(8, 9, 8)
+}, {
+"pos": Vector3(-14, 5.5, 25.2),
+"size": Vector3(9, 11, 8)
+}, {
+"pos": Vector3(16.8, 4, 25.2),
+"size": Vector3(8, 8, 8)
+}, {
+"pos": Vector3(28, 6, -2.8),
+"size": Vector3(8, 12, 8)
+}, {
+"pos": Vector3(11.2, 4.5, -26.6),
+"size": Vector3(9, 9, 8)
+}, {
+"pos": Vector3(-28, 5, -11.2),
+"size": Vector3(8, 10, 8)
+}, {
+"pos": Vector3(28, 4, 16.8),
+"size": Vector3(8, 8, 8)
+}],
+"enemies": [{
+"count": 3,
+"pos": Vector3(0, 0, -1.4),
+"type": "spider"
+}, {
+"pos": Vector3(-4.2, 0, 7),
+"type": "android"
+}, {
+"pos": Vector3(8.4, 0, 4.2),
+"type": "android"
+}, {
+"pos": Vector3(2.8, 0, 2.8),
+"type": "drone"
+}, {
+"pos": Vector3(12.6, 0, 12.6),
+"type": "drone"
+}, {
+"count": 3,
+"pos": Vector3(7, 0, 14),
+"trigger": 22.4,
+"type": "spider"
+}, {
+"pos": Vector3(14, 0, 19.6),
+"trigger": 22.4,
+"type": "android"
+}, {
+"pos": Vector3(5.6, 0, 18.2),
+"trigger": 25.2,
+"type": "mech"
+}],
+"env": {
+"ambient": Color(0.52, 0.54, 0.6, 1),
+"ambient_energy": 3.2,
+"brightness": 1.02,
+"building_tint": Color(0.3, 0.3, 0.35, 1),
+"contrast": 1.08,
+"fog": Color(0.46, 0.45, 0.48, 1),
+"fog_density": 0.009,
+"glow": 0.8,
+"ground": Color(0.12, 0.11, 0.11, 1),
+"lightning": true,
+"saturation": 0.94,
+"sky_energy": 1.0,
+"sky_horizon": Color(0.4, 0.36, 0.36, 1),
+"sky_top": Color(0.2, 0.22, 0.27, 1),
+"sun_color": Color(0.96, 0.94, 0.92, 1),
+"sun_energy": 2.2,
+"sun_rot": Vector3(-32, -52, 0),
+"weather": "rain"
+},
+"exit": Vector3(22.4, 1.5, 25.2),
+"fires": [{
+"pos": Vector3(-4, 0.3, -2),
+"scale": 1.1
+}, {
+"pos": Vector3(9, 0.3, 5),
+"scale": 1.0
+}, {
+"pos": Vector3(13, 0.3, -9),
+"scale": 0.85
+}],
+"floor_color": Color(0.16, 0.14, 0.13, 1),
+"floor_size": Vector2(67.2, 67.2),
+"format_version": 1,
+"holograms": [],
+"lights": [{
+"color": Color(1, 0.4, 0.25, 1),
+"energy": 2.0,
+"pos": Vector3(0, 5, 8.4),
+"range": 25.2
+}, {
+"color": Color(1, 0.6, 0.4, 1),
+"energy": 1.6,
+"pos": Vector3(-11.2, 5, -5.6),
+"range": 21.0
+}, {
+"color": Color(1, 0.5, 0.3, 1),
+"energy": 1.6,
+"flicker": true,
+"pos": Vector3(15.4, 5, 16.8),
+"range": 21.0
+}],
+"name": "Nexus Point — Sector 45",
+"nexus": {
+"color": Color(1, 0.16, 0.12, 1),
+"height": 18.0,
+"pos": Vector3(5, 0, 10)
+},
+"objective": "Clear the Sector 45 perimeter and reach extraction",
+"open_sky": true,
+"pickups": [],
+"platforms": [{
+"pos": Vector3(-23.8, 1.8, -23.8),
+"size": Vector3(14, 3.6, 12.6)
+}, {
+"pos": Vector3(-15.4, 1.1, -15.4),
+"size": Vector3(7, 2.2, 7)
+}, {
+"pos": Vector3(-9.8, 0.5, -9.8),
+"size": Vector3(6.3, 1, 6.3)
+}],
+"props": [{
+"pos": Vector3(-5.6, 0, -2.8),
+"type": "car",
+"yaw": 18
+}, {
+"pos": Vector3(12.6, 0, 7),
+"type": "car",
+"yaw": -24
+}, {
+"pos": Vector3(19.6, 0, 11.2),
+"type": "car",
+"yaw": 60
+}, {
+"pos": Vector3(-8.4, 0, 4.2),
+"type": "barrel"
+}, {
+"pos": Vector3(9.8, 0, -5.6),
+"type": "barrel"
+}, {
+"pos": Vector3(5.6, 0, 16.8),
+"type": "barrel"
+}, {
+"pos": Vector3(2.8, 0, -8.4),
+"type": "crate"
+}, {
+"pos": Vector3(-12.6, 0, 11.2),
+"type": "crate"
+}, {
+"pos": Vector3(-18.2, 0, -2.8),
+"type": "fence",
+"yaw": 90
+}, {
+"pos": Vector3(16.8, 0, -14),
+"type": "lamp"
+}],
+"ramps": [],
+"sign": "NEXUS POINT · SECTOR 45",
+"spawn": Vector3(-23.8, 4.4, -23.8),
+"tasks": [{
+"type": "kill_all"
+}],
+"walls": [],
+"weapon": {
+"color": Color(0.4, 0.7, 1, 1),
+"pos": Vector3(-11.2, 0, -5.6),
+"scene": "res://scenes/weapons/rifle.tscn"
+},
+"world_scale": 1.0
+}
