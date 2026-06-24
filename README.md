@@ -1,19 +1,32 @@
 # AI Uprising
 
-A 3D first-person shooter built in **Godot 4.6** (Forward+). The machines we trusted turned on us — fight back through a 9-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, and towering bosses, narrated by cinematic cutscenes and scored by adaptive synth music.
+A 3D first-person shooter built in **Godot 4.7** (Forward+). The machines we trusted turned on us — fight back through an 18-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, leaping skitters, siege mechs, and towering bosses, narrated by cinematic cutscenes and scored by adaptive synth music.
 
 Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cutscenes — is **generated in code or from compact data**, so the whole project is tiny, fully version-controllable as text, and trivial to validate headlessly.
+
+---
+
+## Gallery
+
+|  |  |
+|:--:|:--:|
+| ![Firing range — the full arsenal](docs/screenshots/firing_range.png) | ![Fierce hostiles](docs/screenshots/enemies.png) |
+| **Gun Range** — free-fire the whole arsenal | **Fierce hostiles** — Ravager, Warmech siege mech & skitter swarm |
+| ![Live combat](docs/screenshots/combat.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
+| **Live combat** — a Warmech salvo arcing across the arena | **Singularity grenade** — a gravity well imploding a pack |
+| ![Campaign map](docs/screenshots/campaign_map.png) | ![Armory shop](docs/screenshots/armory.png) |
+| **Campaign map** — interactive sector intel & route | **Armory** — between-levels upgrades & field supplies |
 
 ---
 
 ## Running the game
 
 **Requirements**
-- [Godot Engine 4.6+](https://godotengine.org/download) — *Standard* build (GDScript; not the .NET/C# build)
+- [Godot Engine 4.7+](https://godotengine.org/download) — *Standard* build (GDScript; not the .NET/C# build)
 - A GPU that supports the **Forward+** renderer
 
 **Play**
-1. Install Godot 4.6+.
+1. Install Godot 4.7+.
 2. Launch Godot → **Import** → select this repo's `project.godot` → **Import & Edit**.
 3. Press **F5**. The main scene (`scenes/ui/main_menu.tscn`) opens → **Begin Operation** → pick a difficulty.
    - The mouse is captured on play; press **Esc** to pause / release it.
@@ -34,9 +47,9 @@ godot --headless --path . res://scenes/levels/level_gpt.tscn --quit-after 120
 
 To play **without the Godot editor**, export the project to a self-contained executable. The repo already ships export presets (`export_presets.cfg`) for **Windows Desktop** and **Linux**; both embed the game data (PCK) into a single file and exclude the `tests/` probes.
 
-**One-time setup — export templates** (the engine code that gets bundled into your build). They must match your Godot version (4.6.x):
+**One-time setup — export templates** (the engine code that gets bundled into your build). They must match your Godot version (4.7.x):
 - In the editor: **Editor → Manage Export Templates → Download and Install**, *or*
-- CLI: `godot --headless --install-export-templates` (4.6+), or download the `.tpz` from the Godot site and install it.
+- CLI: `godot --headless --install-export-templates` (4.7+), or download the `.tpz` from the Godot site and install it.
 
 **Export from the terminal** (headless — no editor window):
 ```bash
@@ -82,7 +95,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 
 ## What's in it
 
-- **9-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command), each opening with a **cinematic briefing** and gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault) behind an animated **portal**.
+- **18-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command), each opening with a **cinematic briefing** and gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault) behind an animated **portal**.
 - **9 wieldable weapons** — pistol, SMG, rifle, shotgun, twin-rail, arc-coil, plasma, rocket *Devastator*, and the piercing *Gauss Lance* — plus grenades. Hitscan & projectile, ADS, recoil, per-weapon viewmodels, and a piercing mechanic.
 - **10 enemy types** including 3 bosses: recon **drone**, infantry **android**, leaping **spider**, heavy **mech**, **sniper** sentry (charged beam), kamikaze **seeker**, shielded **bulwark brute** (flank it), and the **terminator**, **colossus**, and hovering **overseer** bosses.
 - **Game feel** — trauma camera shake, dynamic FOV, dash/slide, recoil, tracers, muzzle flash & smoke, ejected casings, surface-aware impacts, **bullet-hole + scorch decals**, debris, oil/spark sprays on robots, hit-stop, enemy flinch/stagger/last-stand, death topples.
@@ -97,7 +110,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 
 | | |
 |---|---|
-| **Engine** | Godot 4.6, Forward+ renderer |
+| **Engine** | Godot 4.7, Forward+ renderer |
 | **Language** | GDScript (statically typed; the project compiles with warnings-as-errors) |
 | **Art** | Primitive meshes assembled + tinted in code/scenes; a few CC0 PBR textures and one CC-BY boss model (see `CREDITS.md`) |
 | **Audio** | 100% procedural — `SoundSynth` generates every sound (guns, impacts, music, ambience, UI) as `AudioStreamWAV` at startup; real samples can override them |
