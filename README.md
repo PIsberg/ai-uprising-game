@@ -10,12 +10,18 @@ Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cut
 
 |  |  |
 |:--:|:--:|
+| ![Combat in the Titan arena](docs/screenshots/ingame_combat.png) | ![Combat in the suburbs](docs/screenshots/ingame_suburb.png) |
+| **In action** — a firefight under the boss arena's night sky | **In action** — repelling hostiles through Maple Grove |
 | ![Firing range — the full arsenal](docs/screenshots/firing_range.png) | ![Fierce hostiles](docs/screenshots/enemies.png) |
-| **Gun Range** — free-fire the whole arsenal | **Fierce hostiles** — Ravager, Warmech siege mech & skitter swarm |
-| ![Live combat](docs/screenshots/combat.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
-| **Live combat** — a Warmech salvo arcing across the arena | **Singularity grenade** — a gravity well imploding a pack |
+| **Gun Range** — free-fire the whole arsenal | **Fierce hostiles** — Ravager, Warmech & skitter swarm |
+| ![Enemy codex — Warmech](docs/screenshots/codex_warmech.png) | ![Enemy codex — Ravager](docs/screenshots/codex_ravager.png) |
+| **Enemy Codex** — the WARMECH siege walker | **Enemy Codex** — the RAVAGER leaper |
+| ![Enemy codex — Titan boss](docs/screenshots/codex_titan.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
+| **Enemy Codex** — PROMETHEUS‑0, the Titan boss | **Singularity grenade** — a gravity well imploding a pack |
 | ![Campaign map](docs/screenshots/campaign_map.png) | ![Armory shop](docs/screenshots/armory.png) |
 | **Campaign map** — interactive sector intel & route | **Armory** — between-levels upgrades & field supplies |
+
+> The bestiary turns slowly in 3D and lists every hostile's strengths, weaknesses, and the weapons that counter it — discovered as you meet them.
 
 ---
 
