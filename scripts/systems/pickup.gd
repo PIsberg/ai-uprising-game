@@ -103,11 +103,19 @@ func _on_body_entered(body: Node) -> void:
 					if w and w.has_method("add_ammo"):
 						w.add_ammo(amount)
 			var got_grenade := false
+			var got_vortex := false
 			if body.has_method("add_grenade"):
-				body.add_grenade(1)
+				body.add_grenade(1, 0)   # 0 = Player.GrenadeType.FRAG (plain int avoids a class-load cycle)
 				got_grenade = true
+				# A vortex charge turns up now and then — rare enough to stay a treat.
+				if randf() < 0.3:
+					body.add_grenade(1, 1)   # 1 = Player.GrenadeType.VORTEX
+					got_vortex = true
 			if body.has_method("notify_pickup"):
-				body.notify_pickup("+%d AMMO" % amount + (" · +1 GRENADE" if got_grenade else ""))
+				var extra := ""
+				if got_vortex: extra = " · +1 VORTEX"
+				elif got_grenade: extra = " · +1 GRENADE"
+				body.notify_pickup("+%d AMMO" % amount + extra)
 			AudioBus.play_synth_at("pickup_ammo", global_position, -2.0)
 		Kind.WEAPON:
 			if weapon_scene == null:

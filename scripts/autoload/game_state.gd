@@ -127,6 +127,7 @@ const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/twinrail.tscn",
 	"res://scenes/weapons/swarm.tscn",
 	"res://scenes/weapons/devastator.tscn",
+	"res://scenes/weapons/tempest.tscn",
 	"res://scenes/weapons/singularity.tscn",
 	"res://scenes/weapons/omega.tscn",
 ]

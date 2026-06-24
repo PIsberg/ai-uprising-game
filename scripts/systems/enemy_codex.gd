@@ -14,7 +14,7 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
-	"gunner", "raptor", "mender", "sentinel", "mauler", "alien",
+	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "alien",
 	"terminator", "overseer", "colossus", "titan", "archon",
 ]
 
@@ -137,6 +137,13 @@ const ENTRIES := {
 		"strengths": ["Enormous health pool", "One slam can end you"],
 		"weaknesses": ["Slow — kite it endlessly", "Never let it corner you"],
 		"weapons": ["GRK-X Devastator", "VOID-9 Singularity Cannon", "SG-12 Breacher"],
+	},
+	"ravager": {
+		"scene": "res://scenes/enemies/ravager.tscn", "name": "RAVAGER", "scale": 0.7, "y": 0.0,
+		"desc": "The fierce alpha of the swarm: an armoured bruiser that lumbers, then bounds the length of the arena in a high arc and ground-slams on landing. Punishes standing still.",
+		"strengths": ["Heavy armour, near-impossible to stagger", "Leap covers huge distance", "Slam hits a whole radius"],
+		"weaknesses": ["The windup before each leap is a clear tell", "Ponderous between bounds — reposition and burn it down"],
+		"weapons": ["TPX-9 Tempest Coil", "VOID-9 Singularity Cannon", "OMEGA-X Annihilator"],
 	},
 	"alien": {
 		"scene": "res://scenes/enemies/alien.tscn", "name": "VOID SENTINEL", "scale": 1.0, "y": 1.4,

@@ -759,6 +759,7 @@ var _ammo_big: Label
 var _ammo_small: Label
 var _segs: Array[ColorRect] = []
 var _pips: Array[ColorRect] = []
+var _glabel: Label
 
 ## Replaces the plain "14 / 84" text with a glanceable block: the weapon name
 ## small on top, the magazine count BIG (tinted by the weapon, amber when low,
@@ -808,11 +809,11 @@ func _build_ammo_block() -> void:
 	pips.alignment = BoxContainer.ALIGNMENT_END
 	pips.add_theme_constant_override("separation", 5)
 	box.add_child(pips)
-	var glabel := Label.new()
-	glabel.text = "G "
-	glabel.add_theme_font_size_override("font_size", 12)
-	glabel.modulate = Color(1, 1, 1, 0.5)
-	pips.add_child(glabel)
+	_glabel = Label.new()
+	_glabel.text = "G "
+	_glabel.add_theme_font_size_override("font_size", 12)
+	_glabel.modulate = Color(1, 1, 1, 0.5)
+	pips.add_child(_glabel)
 	for i in 3:
 		var pip := ColorRect.new()
 		pip.custom_minimum_size = Vector2(9, 9)
@@ -921,9 +922,18 @@ func _on_boss_died(_src: Node) -> void:
 	_show_toast(boss_name_label.text + tr(" DESTROYED"))
 
 func _on_grenades_changed(count: int) -> void:
+	# Reflect the armed grenade kind: the label shows its name + the pips take its
+	# colour (gold frag vs violet vortex), so a glance reads type AND remaining.
+	var kind := {"name": "FRAG", "color": Color(1.0, 0.72, 0.2)}
+	if _player_ref and "grenade_kinds" in _player_ref:
+		kind = _player_ref.grenade_kinds[_player_ref.grenade_type]
+	var lit: Color = kind["color"]
+	if _glabel:
+		_glabel.text = "%s " % str(kind["name"]).left(4)
+		_glabel.modulate = Color(lit.r, lit.g, lit.b, 0.65)
 	grenade_label.text = tr("Grenades (G): %d") % count # hidden node; kept in sync anyway
 	for i in _pips.size():
-		_pips[i].color = Color(1.0, 0.72, 0.2) if i < count else Color(1, 1, 1, 0.14)
+		_pips[i].color = lit if i < count else Color(1, 1, 1, 0.14)
 
 func _on_player_damaged(_amount: float, src: Node) -> void:
 	_damage_alpha = 0.55

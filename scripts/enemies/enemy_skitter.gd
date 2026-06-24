@@ -10,12 +10,14 @@ extends EnemyBase
 @export var lunge_speed: float = 12.0
 
 @export_group("Pounce")
-@export var leap_windup: float = 0.4 ## Telegraph: it stops and coils before springing — your window to shoot.
-@export var leap_cooldown: float = 1.3
-@export var leap_min: float = 3.0 ## Won't pounce closer than this…
-@export var leap_max: float = 11.0 ## …or further than this (scuttles in first).
-@export var leap_h_speed: float = 12.0
-@export var leap_up: float = 5.0
+@export var leap_windup: float = 0.16 ## Telegraph: a quick coil before it springs — a short window to shoot.
+@export var leap_cooldown: float = 0.35 ## Short — these things hop almost constantly, so they read as bouncy bugs not chargers.
+@export var leap_min: float = 1.3 ## Hops even when fairly close (keeps them skittish and jumpy)…
+@export var leap_max: float = 15.0 ## …and can spring from a good way out.
+@export var leap_h_speed: float = 11.0
+@export var leap_up: float = 5.2
+@export var hop_speed_var: float = 0.35 ## ± randomisation on each hop's reach, for organic, unpredictable bouncing.
+@export var hop_side: float = 3.2 ## Sideways jink baked into each hop so a swarm scatters and flanks instead of marching in a line.
 
 var _leaping: bool = false
 var _leap_time: float = 0.0
@@ -87,9 +89,13 @@ func _launch_leap() -> void:
 	var dir := target.global_position - global_position
 	dir.y = 0.0
 	dir = dir.normalized()
-	velocity.x = dir.x * leap_h_speed
-	velocity.z = dir.z * leap_h_speed
-	velocity.y = leap_up
+	# Organic hop: vary the reach and add a sideways jink so the swarm scatters and
+	# arcs in from odd angles instead of converging in a tidy, easy-to-mow line.
+	var reach := leap_h_speed * (1.0 + randf_range(-hop_speed_var, hop_speed_var))
+	var side := Vector3(-dir.z, 0.0, dir.x) * randf_range(-hop_side, hop_side)
+	velocity.x = dir.x * reach + side.x
+	velocity.z = dir.z * reach + side.z
+	velocity.y = leap_up * randf_range(0.85, 1.2)
 	recoil = 1.0 # plays the Attack clip
 	if randf() < 0.5:
 		AudioBus.play_synth_at("impact_metal", global_position, -7.0, 2.1)

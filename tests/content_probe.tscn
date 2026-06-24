@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwcontentprobe1"]
+
+[ext_resource type="Script" path="res://tests/content_probe.gd" id="1_cp"]
+
+[node name="ContentProbe" type="Node3D"]
+script = ExtResource("1_cp")

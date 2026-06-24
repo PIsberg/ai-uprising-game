@@ -936,6 +936,19 @@ static func _titan() -> Dictionary:
 			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
 			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
+			# Late-game density: pour skitter swarms in from every edge so the new
+			# crowd-clearing arsenal (Tempest chain, Vortex grenade, Omega) gets a
+			# stage, with Ravagers as the fierce alphas leaping over the pack.
+			{"type": "skitter", "pos": Vector3(-22, 0.5, 0), "count": 8, "trigger": 22},
+			{"type": "skitter", "pos": Vector3(22, 0.5, -4), "count": 8, "trigger": 24},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -22), "count": 7, "trigger": 20},
+			{"type": "spider", "pos": Vector3(-18, 0.5, -16), "trigger": 24},
+			{"type": "spider", "pos": Vector3(18, 0.5, 18), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(24, 0.5, 6), "trigger": 30},
+			{"type": "seeker", "pos": Vector3(-16, 2.5, -8), "trigger": 24},
+			{"type": "ravager", "pos": Vector3(-10, 0.5, 20), "trigger": 28},
+			{"type": "ravager", "pos": Vector3(12, 0.5, 22), "trigger": 30},
+			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-26, 0, -20)},
@@ -1045,6 +1058,12 @@ static func _archon() -> Dictionary:
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
 			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
+			# Heavier seed garrison before the ARCHON brain itself starts manufacturing
+			# waves — gives the finale arsenal a crowd to carve through on entry.
+			{"type": "skitter", "pos": Vector3(8, 0.5, -6), "count": 7, "trigger": 30},
+			{"type": "spider", "pos": Vector3(-10, 0.5, -8), "trigger": 28},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 32},
+			{"type": "ravager", "pos": Vector3(10, 0.5, 8), "trigger": 30},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
 		],
 	}
