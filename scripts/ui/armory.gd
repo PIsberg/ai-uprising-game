@@ -14,8 +14,16 @@ const META := {
 	"mag":    {"icon": "▤", "desc": "Bigger magazines", "color": Color(0.45, 0.75, 1.0)},
 	"reload": {"icon": "↻", "desc": "Faster reloads", "color": Color(0.5, 0.95, 0.6)},
 }
+## Consumable field supplies (banked, applied on next deploy). Hotkeys 4/5/6.
+const SKEYS := ["ammo", "grenades", "health"]
+const SUPPLY_META := {
+	"ammo":     {"icon": "▮", "desc": "+%d reserve / weapon", "color": Color(1.0, 0.75, 0.3)},
+	"grenades": {"icon": "✸", "desc": "+%d grenade carried", "color": Color(0.7, 0.6, 1.0)},
+	"health":   {"icon": "✚", "desc": "+%d max HP on deploy", "color": Color(1.0, 0.4, 0.45)},
+}
 
-var _cards: Dictionary = {}   # key -> {segs:[ColorRect], cost:Label, buy:Button, box:StyleBoxFlat, accent}
+var _cards: Dictionary = {}        # upgrade key -> {segs, cost, buy, box, accent}
+var _supply_cards: Dictionary = {} # supply key -> {cost, buy, box, accent, queued}
 var _score_lbl: Label
 var _scan: ColorRect
 
@@ -77,16 +85,25 @@ func _ready() -> void:
 	_score_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	chip.add_child(_score_lbl)
 
-	var sep := HSeparator.new()
-	vbox.add_child(sep)
+	vbox.add_child(HSeparator.new())
 
-	# --- the three upgrade cards, side by side ---
+	# --- permanent upgrade cards ---
+	vbox.add_child(_section_label("PERMANENT UPGRADES"))
 	var rack := HBoxContainer.new()
-	rack.add_theme_constant_override("separation", 18)
+	rack.add_theme_constant_override("separation", 16)
 	rack.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(rack)
 	for i in KEYS.size():
 		_make_card(rack, KEYS[i], i)
+
+	# --- consumable field supplies (applied at next deploy) ---
+	vbox.add_child(_section_label("FIELD SUPPLIES  ·  applied on your next deploy"))
+	var srack := HBoxContainer.new()
+	srack.add_theme_constant_override("separation", 16)
+	srack.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(srack)
+	for i in SKEYS.size():
+		_make_supply_card(srack, SKEYS[i], i)
 
 	# --- footer: hint + deploy ---
 	var footer := HBoxContainer.new()
@@ -94,7 +111,7 @@ func _ready() -> void:
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(footer)
 	var hint := Label.new()
-	hint.text = "1 / 2 / 3 or click BUY"
+	hint.text = "1–6 or click a card to BUY"
 	hint.add_theme_color_override("font_color", Color(0.65, 0.72, 0.8))
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(hint)
@@ -133,23 +150,23 @@ func _make_card(rack: HBoxContainer, k: String, idx: int) -> void:
 	var accent: Color = m["color"]
 	var defn: Dictionary = GameState.UPGRADE_DEFS[k]
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(230, 320)
+	card.custom_minimum_size = Vector2(212, 252)
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.06, 0.1, 0.13, 0.96)
 	box.set_corner_radius_all(12)
 	box.set_border_width_all(2)
 	box.border_color = accent
-	box.set_content_margin_all(16)
+	box.set_content_margin_all(13)
 	card.add_theme_stylebox_override("panel", box)
 	rack.add_child(card)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
+	vb.add_theme_constant_override("separation", 6)
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	card.add_child(vb)
 
 	var icon := Label.new()
 	icon.text = m["icon"]
-	icon.add_theme_font_size_override("font_size", 56)
+	icon.add_theme_font_size_override("font_size", 42)
 	icon.add_theme_color_override("font_color", accent)
 	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(icon)
@@ -200,6 +217,62 @@ func _make_card(rack: HBoxContainer, k: String, idx: int) -> void:
 
 	_cards[k] = {"segs": segs, "cost": cost, "buy": buy, "box": box, "accent": accent}
 
+func _section_label(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 14)
+	l.add_theme_color_override("font_color", Color(0.5, 0.7, 0.8))
+	return l
+
+## A consumable supply card — flat amount, repeatable, shows how many are queued.
+func _make_supply_card(rack: HBoxContainer, k: String, idx: int) -> void:
+	var m: Dictionary = SUPPLY_META[k]
+	var accent: Color = m["color"]
+	var defn: Dictionary = GameState.SUPPLY_DEFS[k]
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(212, 150)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.07, 0.09, 0.11, 0.96)
+	box.set_corner_radius_all(12)
+	box.set_border_width_all(2)
+	box.border_color = accent
+	box.set_content_margin_all(12)
+	card.add_theme_stylebox_override("panel", box)
+	rack.add_child(card)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	card.add_child(hb)
+	var icon := Label.new()
+	icon.text = m["icon"]
+	icon.add_theme_font_size_override("font_size", 40)
+	icon.add_theme_color_override("font_color", accent)
+	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(icon)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(vb)
+	var name := Label.new()
+	name.text = "[%d]  %s" % [idx + 4, defn["label"]]
+	name.add_theme_font_size_override("font_size", 16)
+	name.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0))
+	vb.add_child(name)
+	var desc := Label.new()
+	desc.text = String(m["desc"]) % int(defn["amount"])
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", Color(0.6, 0.7, 0.76))
+	vb.add_child(desc)
+	var queued := Label.new()
+	queued.add_theme_font_size_override("font_size", 13)
+	queued.add_theme_color_override("font_color", accent)
+	vb.add_child(queued)
+	var buy := Button.new()
+	buy.focus_mode = Control.FOCUS_NONE
+	buy.custom_minimum_size = Vector2(0, 34)
+	buy.pressed.connect(_buy_supply.bind(k))
+	vb.add_child(buy)
+	_supply_cards[k] = {"cost": null, "buy": buy, "box": box, "accent": accent, "queued": queued}
+
 func _refresh() -> void:
 	_score_lbl.text = "CREDITS  %d" % GameState.score
 	for k in KEYS:
@@ -228,6 +301,26 @@ func _refresh() -> void:
 			buy.text = "BUY" if afford else "NEED %d" % price
 			# Affordable cards glow brighter; unaffordable dim.
 			box.border_color = accent if afford else Color(accent.r, accent.g, accent.b, 0.35)
+	# Field supplies.
+	for k in SKEYS:
+		var sc: Dictionary = _supply_cards[k]
+		var sa: Color = sc["accent"]
+		var price := int(GameState.SUPPLY_DEFS[k]["cost"])
+		var amt = GameState.SUPPLY_DEFS[k]["amount"]
+		var afford := GameState.score >= price
+		var count := int(_supply_banked(k) / float(amt)) if float(amt) != 0.0 else 0
+		(sc["queued"] as Label).text = ("✓ QUEUED ×%d" % count) if count > 0 else ""
+		var sbuy: Button = sc["buy"]
+		sbuy.disabled = not afford
+		sbuy.text = "BUY  %d cr" % price if afford else "NEED %d cr" % price
+		(sc["box"] as StyleBoxFlat).border_color = sa if afford else Color(sa.r, sa.g, sa.b, 0.35)
+
+func _supply_banked(k: String) -> float:
+	match k:
+		"ammo": return float(GameState.supply_ammo)
+		"grenades": return float(GameState.supply_grenades)
+		"health": return GameState.supply_health
+	return 0.0
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
@@ -236,6 +329,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_1, KEY_KP_1: _buy("damage")
 		KEY_2, KEY_KP_2: _buy("mag")
 		KEY_3, KEY_KP_3: _buy("reload")
+		KEY_4, KEY_KP_4: _buy_supply("ammo")
+		KEY_5, KEY_KP_5: _buy_supply("grenades")
+		KEY_6, KEY_KP_6: _buy_supply("health")
 		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
 			get_viewport().set_input_as_handled()
 			_deploy()
@@ -248,17 +344,28 @@ func _buy(k: String) -> void:
 	get_viewport().set_input_as_handled()
 	if GameState.buy_upgrade(k):
 		AudioBus.play_synth_ui("pickup_clink", -4.0, 1.2)
-		_pop_card(k)
+		_pop_button(_cards[k]["buy"])
 	else:
 		AudioBus.play_synth_ui("empty_click", -8.0, 0.8)
 	_refresh()
 
-## A quick scale-pop on the card just bought, for tactile feedback.
-func _pop_card(k: String) -> void:
-	var buy: Button = _cards[k]["buy"]
-	var card := buy.get_parent().get_parent() as Control  # vb → card
-	if card == null:
+func _buy_supply(k: String) -> void:
+	get_viewport().set_input_as_handled()
+	if GameState.buy_supply(k):
+		AudioBus.play_synth_ui("pickup_clink", -4.0, 1.0)
+		_pop_button(_supply_cards[k]["buy"])
+	else:
+		AudioBus.play_synth_ui("empty_click", -8.0, 0.8)
+	_refresh()
+
+## A quick scale-pop on the card a button belongs to, for tactile feedback.
+func _pop_button(buy: Button) -> void:
+	var n: Node = buy.get_parent()
+	while n != null and not (n is PanelContainer):
+		n = n.get_parent()
+	if n == null:
 		return
+	var card := n as Control
 	card.pivot_offset = card.size * 0.5
 	card.scale = Vector2(1.06, 1.06)
 	var tw := card.create_tween()

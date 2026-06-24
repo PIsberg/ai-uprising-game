@@ -1,8 +1,11 @@
 extends Node
-## Windowed probe: render the Armory shop in mixed states. godot --path . res://tests/armory_shot.tscn
+## Windowed probe: render the Armory shop (upgrades + field supplies). godot --path . res://tests/armory_shot.tscn
 func _ready() -> void:
 	GameState.score = 5200
 	GameState.upgrades = {"damage": 2, "mag": 0, "reload": 5}  # partial / empty / MAXED
+	GameState.supply_ammo = 120   # 2 crates queued
+	GameState.supply_grenades = 0
+	GameState.supply_health = 40.0
 	var a := Armory.new()
 	add_child(a)
 	for i in 34:
