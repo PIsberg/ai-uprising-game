@@ -164,6 +164,7 @@ func _show_panel(which: Control) -> void:
 const CHEAT_WORD := "warp"
 var _cheat_buf := ""
 var _levels_panel: VBoxContainer
+var _diff_btns: Array[Button] = []
 
 func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
@@ -194,6 +195,10 @@ func _build_level_select() -> void:
 	prompt.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_levels_panel.add_child(prompt)
+	# Difficulty picker — a campaign normally locks the tier at "Begin Operation",
+	# but warp is for testing, so let the tester choose what tier the warped-in
+	# level runs at. The pick persists into the run via GameState.difficulty.
+	_levels_panel.add_child(_build_difficulty_row())
 	# Back sits at the TOP so it's always on-screen — the campaign list is long
 	# enough to overflow the viewport, which would otherwise bury a bottom Back.
 	var back := Button.new()
@@ -237,6 +242,36 @@ func _build_level_select() -> void:
 		list.add_child(sbtn)
 	_levels_panel.add_child(scroll)
 	$Center/VBox.add_child(_levels_panel)
+
+## A row of EASY / NORMAL / HARD toggles for the warp panel. Sets
+## GameState.difficulty directly; the active tier shows as the pressed button.
+func _build_difficulty_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	var lbl := Label.new()
+	lbl.text = "DIFFICULTY:"
+	lbl.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
+	row.add_child(lbl)
+	_diff_btns.clear()
+	for tier in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(110, 40)
+		b.text = GameState.DIFFICULTY_CONFIG[tier].get("label", "")
+		b.pressed.connect(func():
+			GameState.difficulty = tier
+			_refresh_difficulty_row()
+			AudioBus.play_synth_ui("pickup_health", -8.0, 1.2))
+		row.add_child(b)
+		_diff_btns.append(b)
+	_refresh_difficulty_row()
+	return row
+
+func _refresh_difficulty_row() -> void:
+	var tiers := [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]
+	for i in _diff_btns.size():
+		_diff_btns[i].button_pressed = GameState.difficulty == tiers[i]
 
 func _refresh_graphics_label() -> void:
 	_graphics_btn.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
