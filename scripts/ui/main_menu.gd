@@ -222,6 +222,19 @@ func _build_level_select() -> void:
 			GameState.unlock_all_weapons()
 			GameState.go_to_level(path))
 		list.add_child(btn)
+	# Standalone scenarios (not part of the campaign route) — warp can reach these
+	# too, so every level in the game is one click away for testing/showing off.
+	for sc in [["res://scenes/levels/level_range.tscn", "★  GUN RANGE (sandbox)"],
+			["res://scenes/levels/level_horde.tscn", "★  HORDE (survival)"]]:
+		var spath: String = sc[0]
+		var sbtn := Button.new()
+		sbtn.custom_minimum_size = Vector2(420, 44)
+		sbtn.text = sc[1]
+		sbtn.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
+		sbtn.pressed.connect(func():
+			GameState.unlock_all_weapons()
+			GameState.load_level(spath))
+		list.add_child(sbtn)
 	_levels_panel.add_child(scroll)
 	$Center/VBox.add_child(_levels_panel)
 
