@@ -55,14 +55,14 @@ static func apply(enemy: Node3D, kind: String) -> void:
 		"volatile":
 			eb._health_mult *= 1.15
 		"swift":
-			eb.move_speed *= 1.35
-			eb.attack_cooldown *= 0.85
+			eb._speed_mult *= 1.35
+			eb._cooldown_mult *= 0.85
 		"warden":
 			# Unstaggerable: poise can never be broken, so suppression won't
 			# interrupt it — it walks through your fire and attacks on schedule.
 			eb._health_mult *= 1.4
 			eb.stagger_threshold = 1.0e9
-			eb.move_speed *= 0.92 # relentless, not fast
+			eb._speed_mult *= 0.92 # relentless, not fast
 	# Recolor the imported model: tint is read by RobotModel._ready, so setting
 	# the export now (pre-add) is enough.
 	var model := eb.get_node_or_null("Model")

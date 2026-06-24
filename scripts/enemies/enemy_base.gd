@@ -93,7 +93,7 @@ func _ready() -> void:
 	# onto the authored base once the subclass body has run (deferred). Without
 	# this, a subclass's `max_health = N` in _ready silently wiped those mults,
 	# making elite and difficulty health scaling no-ops.
-	_sync_health.call_deferred()
+	_sync_stats.call_deferred()
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_damaged)
 	# Mark this type as encountered when it spawns in an actual level (fixes
@@ -122,18 +122,25 @@ func _ready() -> void:
 	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
 	set_state(State.IDLE)
 
-## Accumulated health multiplier from elite affixes + campaign difficulty. They
-## stack this (not max_health directly) so the subclass's authored base survives.
+## Stat multipliers from elite affixes + campaign difficulty. They stack these
+## (not the stats directly) because EVERY enemy subclass hardcodes its base
+## health/speed/cadence in its own _ready AFTER super._ready() — writing the
+## stats pre-_ready would just get clobbered. Applied in the deferred sync below.
 var _health_mult: float = 1.0
+var _speed_mult: float = 1.0
+var _cooldown_mult: float = 1.0
 
-## Re-applies _health_mult onto the subclass's authored max_health. Runs deferred
-## from _ready so it lands AFTER the subclass body sets its real base value.
-func _sync_health() -> void:
-	if hp == null or not is_instance_valid(hp):
-		return
-	var was_full := hp.current_health >= hp.max_health - 0.01
-	hp.max_health = max_health * _health_mult
-	hp.current_health = hp.max_health if was_full else minf(hp.current_health, hp.max_health)
+## Re-applies the accumulated multipliers onto the subclass's authored base
+## stats. Runs deferred from _ready so it lands AFTER the subclass body sets its
+## real values. Without this, elite/difficulty scaling of health, speed and
+## attack cadence were all silently wiped.
+func _sync_stats() -> void:
+	move_speed *= _speed_mult
+	attack_cooldown *= _cooldown_mult
+	if hp != null and is_instance_valid(hp):
+		var was_full := hp.current_health >= hp.max_health - 0.01
+		hp.max_health = max_health * _health_mult
+		hp.current_health = hp.max_health if was_full else minf(hp.current_health, hp.max_health)
 
 func _collect_meshes(n: Node) -> void:
 	for c in n.get_children():
