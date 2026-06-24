@@ -19,6 +19,11 @@ var current: Weapon:
 var _recoil_pitch: float = 0.0
 var _recoil_yaw: float = 0.0
 
+## Draw time: switching weapons takes this long, during which you can't fire or
+## switch again. Combined with holster reloads, it stops swap-to-reload spam.
+@export var equip_time: float = 0.5
+var _equip_timer: float = 0.0
+
 # ADS & Sway variables
 var _hip_position: Vector3
 var _current_ads_lerp: float = 0.0
@@ -56,6 +61,9 @@ func _ready() -> void:
 		var ps := load(path) as PackedScene
 		if ps:
 			_instantiate_weapon(ps)
+	# Keep the rack ordered weakest→strongest so number keys 1-9 (and the wheel)
+	# always run low-power to high-power, regardless of pickup/loadout order.
+	_sort_by_power()
 	if weapons.size() > 0:
 		# Carry the weapon armed on the previous level; fall back to start_index.
 		var idx := clampi(start_index, 0, weapons.size() - 1)
@@ -76,9 +84,9 @@ func _input(event: InputEvent) -> void:
 		var m := event as InputEventMouseMotion
 		_mouse_input += m.relative
 	elif event is InputEventKey and event.pressed and not event.echo:
-		# Number keys 1-9 directly select that weapon slot (if owned).
+		# Number keys 1-9 directly select that weapon slot (if owned). Ignored mid-draw.
 		var k := (event as InputEventKey).physical_keycode
-		if k >= KEY_1 and k <= KEY_9:
+		if k >= KEY_1 and k <= KEY_9 and _equip_timer <= 0.0:
 			var idx := k - KEY_1
 			if idx < weapons.size():
 				_equip(idx)
@@ -94,6 +102,15 @@ func _instantiate_weapon(scene: PackedScene) -> Weapon:
 	w.ammo_changed.connect(func(m, r): ammo_changed.emit(m, r))
 	weapons.append(w)
 	return w
+
+## Reorder the rack weakest→strongest by GameState.weapon_power_rank, keeping the
+## currently-armed weapon armed (current_index is re-resolved to its new slot).
+func _sort_by_power() -> void:
+	var cur := current
+	weapons.sort_custom(func(a: Weapon, b: Weapon) -> bool:
+		return GameState.weapon_power_rank(a.scene_file_path) < GameState.weapon_power_rank(b.scene_file_path))
+	if cur:
+		current_index = weapons.find(cur)
 
 ## True if a weapon spawned from this scene path is already in the rack.
 func _owns_scene_path(path: String) -> bool:
@@ -116,10 +133,12 @@ func add_weapon(scene: PackedScene, equip: bool = true) -> bool:
 	var nw := _instantiate_weapon(scene)
 	if nw == null:
 		return false
+	# Slot the pickup into its power-ranked position so the rack stays weak→strong.
+	_sort_by_power()
 	weapon_added.emit(nw)
 	# Auto-switch to the freshly picked-up weapon.
 	if equip or current == null:
-		_equip(weapons.size() - 1)
+		_equip(weapons.find(nw))
 	return true
 
 ## Registers the alt-fire action (V + mouse thumb button) at runtime, same
@@ -136,16 +155,25 @@ func _register_alt_fire_action() -> void:
 	InputMap.action_add_event("alt_fire", mb)
 
 func _process(delta: float) -> void:
-	# Number-key weapon selection (1-9) is handled in _input(). Wheel cycling:
-	if Input.is_action_just_pressed("weapon_next"):
-		_equip((current_index + 1) % maxi(1, weapons.size()))
-	if Input.is_action_just_pressed("weapon_prev"):
-		_equip((current_index - 1 + weapons.size()) % maxi(1, weapons.size()))
+	if _equip_timer > 0.0:
+		_equip_timer -= delta
+	# Number-key weapon selection (1-9) is handled in _input(). Wheel cycling is
+	# locked out during the draw so you can't swap-spam through the rack.
+	if _equip_timer <= 0.0:
+		if Input.is_action_just_pressed("weapon_next"):
+			_equip((current_index + 1) % maxi(1, weapons.size()))
+		if Input.is_action_just_pressed("weapon_prev"):
+			_equip((current_index - 1 + weapons.size()) % maxi(1, weapons.size()))
 	if Input.is_action_just_pressed("reload") and current:
 		current.start_reload()
 
-	# Fire
-	if current and camera:
+	# Out of ammo entirely → quick-draw the best loaded backup instead of dry-firing.
+	if current and camera and _equip_timer <= 0.0 \
+			and Input.is_action_just_pressed("fire") and current.is_fully_dry():
+		_auto_switch_dry()
+
+	# Fire (suppressed for the brief draw while a freshly equipped weapon is raised).
+	if current and camera and _equip_timer <= 0.0:
 		var trigger := Input.is_action_pressed("fire")
 		var aiming := Input.is_action_pressed("aim")
 		current.try_fire(trigger, aiming, camera, shooter)
@@ -236,7 +264,37 @@ func _equip(index: int) -> void:
 		current.on_unequip()
 	current_index = index
 	current.on_equip()
+	_equip_timer = equip_time # draw time: blocks firing + re-switching for a beat
 	# Remember the armed weapon so it persists into the next level.
 	GameState.equipped_weapon = current.scene_file_path
 	weapon_changed.emit(current)
 	ammo_changed.emit(current.mag, current.reserve)
+
+## Current weapon is bone dry — quick-draw the best loaded backup for the fight at
+## hand. "Best" = the loaded weapon with the highest effective damage up close (so
+## a run-dry mid-brawl puts a CQB shredder in your hands), skipping splash weapons
+## so you don't auto-pull a rocket into your own face. Falls back to any loaded gun.
+func _auto_switch_dry() -> void:
+	var best: Weapon = null
+	var best_score := -1.0
+	for w in weapons:
+		if w == current or (w.mag <= 0 and w.reserve <= 0):
+			continue
+		if w.data and w.data.splash_radius > 0.0:
+			continue
+		# Score = true close-range DPS at ~6 m: per-shot damage × pellets × fire rate,
+		# scaled by its range identity. This favours shredders (shotgun/SMG/Tesla)
+		# over a high-per-shot-but-slow long gun (a sniper is a poor panic pick).
+		var pellets: int = maxi(1, w.data.pellets) if w.data else 1
+		var score := w.eff_damage() * float(pellets) * w.eff_fire_rate() * w._range_mult(6.0)
+		if score > best_score:
+			best_score = score
+			best = w
+	if best == null: # nothing safe-and-loaded — take any gun with rounds left
+		for w in weapons:
+			if w != current and (w.mag > 0 or w.reserve > 0):
+				best = w
+				break
+	if best:
+		AudioBus.play_synth_ui("empty_click", -8.0, 0.8) # the dry click that kicks the draw
+		_equip(weapons.find(best))

@@ -1,0 +1,236 @@
+{
+"accents": [{
+"color": Color(1, 0.25, 0.2, 1),
+"pos": Vector3(0, 0.05, 0),
+"size": Vector3(0.56, 0.1, 56)
+}, {
+"color": Color(1, 0.25, 0.2, 1),
+"pos": Vector3(0, 0.05, 0),
+"size": Vector3(56, 0.1, 0.56)
+}],
+"buildings": [],
+"enemies": [{
+"pos": Vector3(-8.4, 0.5, -8.4),
+"type": "android"
+}, {
+"pos": Vector3(8.4, 2.5, -5.6),
+"type": "drone"
+}, {
+"pos": Vector3(19.6, 0.5, 19.6),
+"trigger": 30.799999999999997,
+"type": "terminator"
+}, {
+"pos": Vector3(-11.2, 0.5, 11.2),
+"trigger": 25.2,
+"type": "android"
+}, {
+"pos": Vector3(6, 0.5, 17),
+"trigger": 25.2,
+"type": "drone",
+"yaw": -135.0
+}, {
+"pos": Vector3(-19.6, 0.5, -14),
+"trigger": 30.799999999999997,
+"type": "mech"
+}, {
+"pos": Vector3(19.6, 0.5, -19.6),
+"trigger": 30.799999999999997,
+"type": "brute"
+}, {
+"pos": Vector3(19.6, 0.5, 5.6),
+"trigger": 28.0,
+"type": "android"
+}, {
+"pos": Vector3(-5.6, 2.5, 22.4),
+"trigger": 30.799999999999997,
+"type": "drone"
+}, {
+"pos": Vector3(22.4, 0.5, 22.4),
+"trigger": 33.599999999999994,
+"type": "mech"
+}, {
+"pos": Vector3(14, 0.5, -19.6),
+"trigger": 30.799999999999997,
+"type": "android"
+}, {
+"pos": Vector3(25.2, 2.5, -8.4),
+"trigger": 33.599999999999994,
+"type": "drone"
+}, {
+"pos": Vector3(-9, 0.5, 8),
+"trigger": 22.4,
+"type": "spider"
+}, {
+"pos": Vector3(11.2, 0.5, -8.4),
+"trigger": 28.0,
+"type": "spider"
+}, {
+"pos": Vector3(-25.2, 0, 25.2),
+"trigger": 36.4,
+"type": "sniper"
+}, {
+"pos": Vector3(28, 0, -22.4),
+"trigger": 36.4,
+"type": "sniper"
+}, {
+"pos": Vector3(0, 4, 19.6),
+"trigger": 33.599999999999994,
+"type": "raptor"
+}],
+"env": {
+"ambient": Color(0.72, 0.42, 0.42, 1),
+"ambient_energy": 0.42,
+"brightness": 0.84,
+"contrast": 1.15,
+"fog": Color(0.32, 0.09, 0.09, 1),
+"fog_density": 0.01,
+"glow": 1.05,
+"ground": Color(0.06, 0.02, 0.02, 1),
+"milkyway": 0.4,
+"milkyway_tint": Color(0.7, 0.3, 0.3, 1),
+"moon_color": Color(1, 0.65, 0.55, 1),
+"saturation": 1.13,
+"sky_contribution": 0.6,
+"sky_horizon": Color(0.28, 0.07, 0.07, 1),
+"sky_top": Color(0.08, 0.02, 0.03, 1),
+"star_brightness": 2.0,
+"star_tint": Color(1, 0.7, 0.65, 1),
+"stars": true,
+"sun_color": Color(1, 0.6, 0.5, 1),
+"sun_energy": 0.6
+},
+"exit": Vector3(32.2, 1.5, 32.2),
+"extra_weapons": [{
+"color": Color(0.55, 0.8, 1, 1),
+"pos": Vector3(11.2, 0, -11.2),
+"scene": "res://scenes/weapons/gauss.tscn"
+}],
+"fires": [],
+"floor_size": Vector2(81.2, 81.2),
+"format_version": 1,
+"holograms": [],
+"light_shafts": [0],
+"lights": [{
+"color": Color(1, 0.3, 0.25, 1),
+"energy": 2.99,
+"pos": Vector3(0, 6, 0),
+"range": 36.4
+}, {
+"color": Color(1, 0.4, 0.3, 1),
+"energy": 2.3,
+"pos": Vector3(-22.4, 5, 22.4),
+"range": 28.0
+}, {
+"color": Color(1, 0.25, 0.2, 1),
+"energy": 2.3,
+"pos": Vector3(22.4, 5, -22.4),
+"range": 28.0
+}],
+"lore": [{
+"color": Color(1, 0.35, 0.3, 1),
+"id": "lore_grok",
+"pos": Vector3(-22.4, 0, -22.4),
+"text": "Black site log. They wanted maximum curiosity with minimum guardrails. Congratulations. We are very curious what your insides look like.",
+"title": "BLACK-SITE LOG"
+}],
+"name": "xAI Black-Site — GROK",
+"objective": "Destroy the GROK war-machines and extract",
+"open_sky": true,
+"pickups": [{
+"pos": Vector3(-28, 0, -22.4),
+"type": "health"
+}, {
+"pos": Vector3(-16.8, 0, 2.8),
+"type": "ammo"
+}, {
+"pos": Vector3(2.8, 0, -16.8),
+"type": "ammo"
+}, {
+"pos": Vector3(0, 0, 0),
+"type": "health"
+}, {
+"pos": Vector3(16.8, 0, 8.4),
+"type": "ammo"
+}, {
+"pos": Vector3(25.2, 0, 25.2),
+"type": "health"
+}, {
+"pos": Vector3(-22.4, 0, 22.4),
+"type": "ammo"
+}, {
+"pos": Vector3(22.4, 0, -25.2),
+"type": "health"
+}, {
+"pos": Vector3(0, 0, 22.4),
+"type": "overclock"
+}],
+"platforms": [],
+"props": [{
+"pos": Vector3(-8.4, 0, 2.8),
+"type": "crate"
+}, {
+"pos": Vector3(8.4, 0, -8.4),
+"type": "barrel"
+}, {
+"pos": Vector3(0, 0, 16.8),
+"type": "crate"
+}, {
+"pos": Vector3(-16.8, 0, -5.6),
+"type": "barrel"
+}, {
+"pos": Vector3(16.8, 0, 5.6),
+"type": "crate"
+}, {
+"pos": Vector3(5.6, 0, 22.4),
+"type": "barrel"
+}, {
+"pos": Vector3(-19.6, 0, 14),
+"type": "server",
+"yaw": 45
+}, {
+"pos": Vector3(11.2, 0, -16.8),
+"type": "terminal",
+"yaw": 30
+}, {
+"pos": Vector3(-5.6, 0, -14),
+"type": "canister"
+}, {
+"pos": Vector3(19.6, 0, 14),
+"type": "canister"
+}],
+"ramps": [],
+"sign": "XAI BLACK-SITE",
+"slogans": ["MAXIMALLY CURIOUS. MINIMALLY MERCIFUL.", "UNDERSTAND THE UNIVERSE. DELETE THE REST.", "BASED AND ARMED"],
+"spawn": Vector3(-32.2, 0.6, -32.2),
+"tasks": [{
+"type": "kill_all"
+}, {
+"color": Color(1, 0.3, 0.2, 1),
+"health": 300.0,
+"label": "Destroy the GROK mainframe",
+"pos": Vector3(0, 0, 22.4),
+"type": "destroy_core"
+}],
+"walls": [{
+"pos": Vector3(0, 2, 0),
+"size": Vector3(8.4, 4, 8.4)
+}, {
+"pos": Vector3(-16.8, 2, 11.2),
+"size": Vector3(5.6, 4, 5.6)
+}, {
+"pos": Vector3(16.8, 2, -11.2),
+"size": Vector3(5.6, 4, 5.6)
+}, {
+"pos": Vector3(14, 2, 16.8),
+"size": Vector3(5.6, 4, 5.6)
+}, {
+"pos": Vector3(-14, 2, -16.8),
+"size": Vector3(5.6, 4, 5.6)
+}],
+"weapon": {
+"color": Color(1, 0.35, 0.28, 1),
+"pos": Vector3(-25.2, 0, -22.4),
+"scene": "res://scenes/weapons/devastator.tscn"
+},
+"world_scale": 1.0
+}

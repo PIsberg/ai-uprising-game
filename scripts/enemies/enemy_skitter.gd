@@ -7,15 +7,15 @@ extends EnemyBase
 ## hostile red (RobotModel on $Model drives the Run/Attack clips).
 
 @export var bite_damage: float = 6.0
-@export var lunge_speed: float = 12.0
+@export var lunge_speed: float = 7.0
 
 @export_group("Pounce")
 @export var leap_windup: float = 0.16 ## Telegraph: a quick coil before it springs — a short window to shoot.
-@export var leap_cooldown: float = 0.35 ## Short — these things hop almost constantly, so they read as bouncy bugs not chargers.
+@export var leap_cooldown: float = 1.1 ## A measured beat between hops — they still bounce, but no longer blur across the floor.
 @export var leap_min: float = 1.3 ## Hops even when fairly close (keeps them skittish and jumpy)…
 @export var leap_max: float = 15.0 ## …and can spring from a good way out.
-@export var leap_h_speed: float = 11.0
-@export var leap_up: float = 5.2
+@export var leap_h_speed: float = 5.5 ## Drastically slower spring (was 11.0) — readable, trackable hops instead of teleport-fast pounces.
+@export var leap_up: float = 4.2
 @export var hop_speed_var: float = 0.35 ## ± randomisation on each hop's reach, for organic, unpredictable bouncing.
 @export var hop_side: float = 3.2 ## Sideways jink baked into each hop so a swarm scatters and flanks instead of marching in a line.
 
@@ -29,7 +29,7 @@ var _leap_cd: float = 0.0
 func _ready() -> void:
 	super._ready()
 	max_health = 16.0
-	move_speed = 8.5           # scuttles in, then pounces (was a flat 12.5 charge)
+	move_speed = 5.0           # scuttles in, then pounces — slowed (was 8.5) so the swarm reads as trackable, not a blur
 	turn_speed = 16.0
 	sight_range = 38.0
 	sight_angle_deg = 330.0    # near-omnidirectional; the swarm always finds you
