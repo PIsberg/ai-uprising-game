@@ -494,7 +494,9 @@ func _on_level_completed() -> void:
 	if _last_grade != "":
 		var acc := int(round(float(_last_stats.get("accuracy", 0.0)) * 100.0))
 		var t := int(round(float(_last_stats.get("time", 0.0))))
+		var diff_lbl := str(_last_stats.get("difficulty", ""))
 		win_title.text += "\n\n" + (tr("RANK  %s") % _last_grade) \
+			+ ("  ·  %s" % diff_lbl if diff_lbl != "" else "") \
 			+ "\n" + (tr("Accuracy %d%%") % acc) \
 			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
 			+ "   ·   %02d:%02d" % [t / 60, t % 60]

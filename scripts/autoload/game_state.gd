@@ -316,6 +316,11 @@ func grade_level() -> Dictionary:
 	var score_pts := accuracy * 45.0
 	score_pts += clampf(max_combo / 10.0, 0.0, 1.0) * 30.0
 	score_pts += clampf(1.0 - stat_damage_taken / 250.0, 0.0, 1.0) * 25.0
+	# Reward the difficulty you cleared on: now that difficulty genuinely changes
+	# enemy toughness/speed/cadence, the same play ranks higher on HARD and lower
+	# on EASY — so an S means more on HARD than it does on a cakewalk.
+	var diff_mult: float = [0.9, 1.0, 1.15][clampi(difficulty, 0, 2)]
+	score_pts = clampf(score_pts * diff_mult, 0.0, 100.0)
 	var grade := "D"
 	if score_pts >= 90.0: grade = "S"
 	elif score_pts >= 75.0: grade = "A"
@@ -324,7 +329,7 @@ func grade_level() -> Dictionary:
 	var stats := {
 		"accuracy": accuracy, "max_combo": max_combo,
 		"damage_taken": stat_damage_taken, "time": elapsed,
-		"kills": kills, "score": score,
+		"kills": kills, "score": score, "difficulty": difficulty_label(),
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
