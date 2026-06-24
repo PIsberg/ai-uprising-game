@@ -70,8 +70,11 @@ Expect `PHASE1 … PHASE5 PASS`.
 
 ### Place objects
 1. Click an item in the **Palette** (it arms placement; the status shows what's armed).
+   A translucent **ghost** of the item now follows the cursor so you can see what
+   and where you're about to drop — and the toolbar **readout** (right of the
+   status, cyan) shows the live snapped coords, e.g. `▶ building  @ 8.0, 6.0 m`.
 2. **Left-click** on the ground to drop it (snapped to the grid).
-3. Click **▣ SELECT / MOVE** (top of the palette) to stop placing.
+3. Click **▣ SELECT / MOVE** (top of the palette) to stop placing (clears the ghost).
 
 Categories: **Enemies**, **Bosses**, **Obstacles** (props), **Structures**
 (wall / building / ramp / platform), **Weapons**, **Powerups**
@@ -90,6 +93,11 @@ select and move them (they can't be deleted).
 - **Keyboard transform** (Blender-style): `G` move, `R` rotate, `F` scale, then
   optional `X`/`Y`/`Z` to lock an axis; **click** confirms, **Esc**/`RMB` cancels.
 - **Snap** toggles in the toolbar (grid **1 m**, angle **15°**).
+
+During a `G`/`R`/`F` transform the toolbar **readout** shows the running figure —
+`MOVE  Δ 4.0, 2.0 m · X`, `ROTATE  45°`, `SCALE  ×1.40` — so you can drag to an
+exact measurement. With one object selected it shows that object's position (and
+size, for structures).
 
 ### Edit exact values
 Select one object → the **Inspector** shows its fields (type, count, trigger
