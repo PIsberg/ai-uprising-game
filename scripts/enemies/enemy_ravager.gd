@@ -7,7 +7,7 @@ extends EnemyBase
 ## that punishes standing still. Tanky and hard to stagger; the windup before
 ## each leap is your window. Real model: the bladed fierce chassis, scaled up.
 
-@export var slam_damage: float = 26.0
+@export var slam_damage: float = 20.0
 @export var slam_radius: float = 4.2 ## Landing shockwave — clips you even if the leap overshoots.
 
 @export_group("Leap")
@@ -97,11 +97,59 @@ func _slam() -> void:
 	AudioBus.play_synth_at("impact_metal", global_position, -1.0, 0.6)
 	if _eye_light:
 		_eye_light.light_energy = 5.0
+	_slam_fx()
 	if target and is_instance_valid(target):
 		if global_position.distance_to(target.global_position) <= slam_radius:
 			var d = target.get_node_or_null("Damageable")
 			if d:
 				d.apply_damage(slam_damage, self)
+
+## Landing shockwave: an expanding emissive ground ring + dust kick that reads the
+## slam's reach at a glance (so the AoE is fair) and lands with weight. Detached
+## into the scene so it outlives the Ravager moving on.
+func _slam_fx() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.3; torus.outer_radius = 0.6
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(1.0, 0.45, 0.2, 0.85)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.4, 0.15)
+	mat.emission_energy_multiplier = 7.0
+	torus.material = mat
+	ring.mesh = torus
+	ring.rotation_degrees = Vector3(90, 0, 0)
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	scene.add_child(ring)
+	ring.global_position = global_position + Vector3(0, 0.15, 0)
+	var tw := ring.create_tween()
+	tw.tween_property(ring, "scale", Vector3.ONE * (slam_radius / 0.6), 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.32)
+	tw.tween_callback(ring.queue_free)
+	# A low dust kick around the impact.
+	var dust := CPUParticles3D.new()
+	dust.one_shot = true; dust.emitting = true
+	dust.amount = 20; dust.lifetime = 0.5; dust.explosiveness = 0.9
+	dust.direction = Vector3.UP; dust.spread = 75.0
+	dust.initial_velocity_min = 2.0; dust.initial_velocity_max = 5.0
+	dust.gravity = Vector3(0, -9.0, 0)
+	dust.scale_amount_min = 0.4; dust.scale_amount_max = 0.9
+	var puff := SphereMesh.new(); puff.radius = 0.18; puff.height = 0.36; puff.radial_segments = 6; puff.rings = 3
+	var dmat := StandardMaterial3D.new()
+	dmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dmat.albedo_color = Color(0.5, 0.35, 0.3, 0.5)
+	puff.material = dmat
+	dust.mesh = puff
+	scene.add_child(dust)
+	dust.global_position = global_position
+	scene.get_tree().create_timer(1.2).timeout.connect(dust.queue_free)
 
 func _process(_delta: float) -> void:
 	if state == State.DEAD:

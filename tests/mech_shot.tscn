@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cmechshot0001"]
+
+[ext_resource type="Script" path="res://tests/mech_shot.gd" id="1_ms"]
+
+[node name="MechShot" type="Node3D"]
+script = ExtResource("1_ms")

@@ -105,6 +105,19 @@ func _ready() -> void:
 		"ravager" in LevelBuilder.ENEMY_SCENES, "PASS" if ravager_ok else "FAIL"])
 	ok_all = ok_all and ravager_ok
 
+	# --- WARMECH: new fierce siege mech builds, registered, fires its shell. ---
+	var wm := preload("res://scenes/enemies/warmech.tscn").instantiate()
+	add_child(wm)
+	await get_tree().physics_frame
+	var warmech_ok: bool = is_instance_valid(wm) and wm.has_method("_fire_shell") \
+		and wm.max_health >= 400.0 and wm.salvo_count >= 2 \
+		and "warmech" in LevelBuilder.ENEMY_SCENES and EnemyCodex.has("warmech") \
+		and ResourceLoader.exists("res://scenes/weapons/projectile_warmech.tscn")
+	print("WARMECH hp=%.0f salvo=%d registered=%s  %s" % [
+		wm.max_health, wm.salvo_count,
+		"warmech" in LevelBuilder.ENEMY_SCENES, "PASS" if warmech_ok else "FAIL"])
+	ok_all = ok_all and warmech_ok
+
 	# --- WEAPON: TEMPEST data wired to its chaining projectile. ---
 	var weapon_ok: bool = TEMPEST_DATA.projectile_scene != null and TEMPEST_DATA.damage > 0.0 \
 		and "res://scenes/weapons/tempest.tscn" in GameState.ALL_WEAPONS

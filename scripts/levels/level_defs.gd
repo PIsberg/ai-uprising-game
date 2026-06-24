@@ -949,6 +949,7 @@ static func _titan() -> Dictionary:
 			{"type": "ravager", "pos": Vector3(-10, 0.5, 20), "trigger": 28},
 			{"type": "ravager", "pos": Vector3(12, 0.5, 22), "trigger": 30},
 			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26},
+			{"type": "warmech", "pos": Vector3(26, 0.5, -24), "trigger": 40},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-26, 0, -20)},
@@ -1064,6 +1065,7 @@ static func _archon() -> Dictionary:
 			{"type": "spider", "pos": Vector3(-10, 0.5, -8), "trigger": 28},
 			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 32},
 			{"type": "ravager", "pos": Vector3(10, 0.5, 8), "trigger": 30},
+			{"type": "warmech", "pos": Vector3(-16, 0.5, -14), "trigger": 38},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
 		],
 	}

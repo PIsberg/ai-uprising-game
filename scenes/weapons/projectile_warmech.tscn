@@ -1,0 +1,39 @@
+[gd_scene load_steps=5 format=3 uid="uid://bwarmech0proj01"]
+
+[ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_shell"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.5, 0.16, 1)
+emission_energy_multiplier = 11.0
+albedo_color = Color(1, 0.55, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="Sphere_shell"]
+radius = 0.19
+height = 0.38
+material = SubResource("Mat_shell")
+
+[sub_resource type="SphereShape3D" id="Shape_shell"]
+radius = 0.19
+
+[node name="ProjectileWarmech" type="Area3D"]
+collision_layer = 16
+collision_mask = 3
+script = ExtResource("1_proj")
+trail_color = Color(1, 0.55, 0.2, 1)
+energy_pulse = true
+lifetime = 4.0
+direct_damage = true
+big_detonation = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Sphere_shell")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_shell")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.55, 0.2, 1)
+light_energy = 3.5
+omni_range = 5.0
