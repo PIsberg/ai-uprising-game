@@ -629,21 +629,25 @@ static func _range() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -12), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 			{"pos": Vector3(0, 0.05, -22), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 		],
-		# The whole arsenal racked along the firing line.
+		# The WHOLE arsenal racked along the firing line — all 15 of GameState.
+		# ALL_WEAPONS, evenly spaced across the proven span (incl. the Tempest Coil
+		# and the OMEGA-X). Keep this in sync when a weapon is added.
 		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-13.5, 0, 21), "color": Color(0.8, 0.85, 0.9)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.5, 0, 21), "color": Color(0.6, 0.7, 0.85)},
-			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-7.5, 0, 21), "color": Color(0.45, 0.65, 1)},
-			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-4.5, 0, 21), "color": Color(1, 0.6, 0.3)},
-			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-1.5, 0, 21), "color": Color(0.4, 1, 0.55)},
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(1.5, 0, 21), "color": Color(0.55, 0.8, 1)},
-			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(0.45, 0.9, 1)},
-			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(7.5, 0, 21), "color": Color(1, 0.75, 0.35)},
-			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(10.5, 0, 21), "color": Color(0.5, 0.6, 1)},
-			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(13.5, 0, 21), "color": Color(1, 0.4, 0.35)},
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(16.5, 0, 21), "color": Color(0.7, 0.35, 1)},
-			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(19.5, 0, 21), "color": Color(1, 0.55, 0.2)},
-			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.9, 0, 21), "color": Color(0.6, 0.7, 0.85)},
+			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8.4, 0, 21), "color": Color(0.45, 0.65, 1)},
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-3.2, 0, 21), "color": Color(0.4, 1, 0.55)},
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-0.6, 0, 21), "color": Color(0.55, 0.8, 1)},
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(1.9, 0, 21), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(1, 0.75, 0.35)},
+			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(7.1, 0, 21), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(9.6, 0, 21), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(12.2, 0, 21), "color": Color(0.45, 0.85, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(14.8, 0, 21), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(17.4, 0, 21), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(19.9, 0, 21), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.8, 0.35)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
