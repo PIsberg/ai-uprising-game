@@ -343,6 +343,7 @@ func _chain_lightning(origin: Vector3) -> void:
 		hit[best] = true
 		best.apply_damage(dmg, _shooter)
 		_spawn_lightning_arc(scene, from, best_pos)
+		_spawn_zap_flash(scene, best_pos)   # a bright burst on each robot the bolt hits
 		from = best_pos
 
 ## Walk up from a collider to the nearest Damageable component (enemies nest it).
@@ -364,10 +365,11 @@ func _spawn_lightning_arc(scene: Node, a: Vector3, b: Vector3) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = trail_color
+	# Bolt core reads near-white-hot, glowing out to the round's energy colour.
+	mat.albedo_color = trail_color.lerp(Color.WHITE, 0.6)
 	mat.emission_enabled = true
 	mat.emission = trail_color
-	mat.emission_energy_multiplier = 9.0
+	mat.emission_energy_multiplier = 16.0
 	var segs := 5
 	var prev := a
 	for s in range(1, segs + 1):
@@ -378,8 +380,8 @@ func _spawn_lightning_arc(scene: Node, a: Vector3, b: Vector3) -> void:
 			point += Vector3(randf_range(-0.5, 0.5), randf_range(-0.4, 0.4), randf_range(-0.5, 0.5))
 		var mi := MeshInstance3D.new()
 		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.045; cyl.bottom_radius = 0.045
-		cyl.height = prev.distance_to(point); cyl.radial_segments = 5
+		cyl.top_radius = 0.07; cyl.bottom_radius = 0.07
+		cyl.height = prev.distance_to(point); cyl.radial_segments = 6
 		cyl.material = mat
 		mi.mesh = cyl
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -397,18 +399,45 @@ func _spawn_lightning_arc(scene: Node, a: Vector3, b: Vector3) -> void:
 	tw.parallel().tween_property(flash, "light_energy", 0.0, 0.18)
 	tw.tween_callback(root.queue_free)
 
-## Orient + position a cylinder mesh (local +Y axis) to span from a to b.
+## A bright burst where the chain strikes a robot — sells each link of the zap.
+func _spawn_zap_flash(scene: Node, at: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var s := SphereMesh.new(); s.radius = 0.25; s.height = 0.5; s.radial_segments = 8; s.rings = 5
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = trail_color.lerp(Color.WHITE, 0.5)
+	m.emission_enabled = true; m.emission = trail_color; m.emission_energy_multiplier = 14.0
+	s.material = m
+	mi.mesh = s
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var light := OmniLight3D.new()
+	light.light_color = trail_color; light.light_energy = 4.0; light.omni_range = 4.0
+	mi.add_child(light)
+	scene.add_child(mi)
+	mi.global_position = at
+	var tw := mi.create_tween()
+	tw.tween_property(mi, "scale", Vector3.ONE * 2.2, 0.18).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(m, "albedo_color:a", 0.0, 0.18)
+	tw.parallel().tween_property(light, "light_energy", 0.0, 0.18)
+	tw.tween_callback(mi.queue_free)
+
+## Orient + position a cylinder mesh (local +Y axis) to span from a to b. NOTE:
+## must assign the whole global_transform — `mi.global_transform.basis = x` writes
+## to a value-copy and is silently a no-op (the bug that left arcs un-oriented).
 func _stand_between(mi: MeshInstance3D, a: Vector3, b: Vector3) -> void:
 	var mid := (a + b) * 0.5
 	var dir := b - a
-	mi.global_position = mid
-	if dir.length() > 0.001:
-		var up := dir.normalized()
-		var axis := Vector3.UP.cross(up)
-		if axis.length() > 0.001:
-			mi.global_transform.basis = Basis(axis.normalized(), Vector3.UP.angle_to(up))
-		else:
-			mi.global_transform.basis = Basis()
+	if dir.length() < 0.001:
+		mi.global_position = mid
+		return
+	var up := dir.normalized()
+	# Build an orthonormal basis whose Y axis runs along the bolt.
+	var arbitrary := Vector3.RIGHT if absf(up.dot(Vector3.RIGHT)) < 0.9 else Vector3.FORWARD
+	var x := arbitrary.cross(up).normalized()
+	var z := x.cross(up).normalized()
+	mi.global_transform = Transform3D(Basis(x, up, z), mid)
 
 ## Extra heavy-ordnance dressing on top of the blast scene: a billowing smoke
 ## column that mushrooms up and lingers, plus a ring of fast shrapnel streaks.

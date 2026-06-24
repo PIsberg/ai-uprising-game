@@ -159,7 +159,8 @@ func _spawn_vortex_fx() -> void:
 	rmat.emission_energy_multiplier = 6.0
 	torus.material = rmat
 	ring.mesh = torus
-	ring.rotation_degrees = Vector3(90, 0, 0)
+	# TorusMesh already lies flat in XZ (hole up the Y axis) — leave it flat so it
+	# reads as an accretion disk on the ground, spun by _vortex.rotation.y.
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_vortex.add_child(ring)
 	# Motes spiralling inward (emit on a wide disc, pulled toward the centre).

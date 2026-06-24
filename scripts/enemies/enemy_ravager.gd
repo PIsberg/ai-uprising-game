@@ -124,7 +124,7 @@ func _slam_fx() -> void:
 	mat.emission_energy_multiplier = 7.0
 	torus.material = mat
 	ring.mesh = torus
-	ring.rotation_degrees = Vector3(90, 0, 0)
+	# Flat on the ground (TorusMesh is already XZ) — a shockwave ring, not a hoop.
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	scene.add_child(ring)
 	ring.global_position = global_position + Vector3(0, 0.15, 0)
