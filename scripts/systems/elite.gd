@@ -5,19 +5,23 @@ extends Object
 ##   SHIELDED — heavier plating: more health + flat armor, icy-blue tint
 ##   VOLATILE — detonates on death (hurts anything near, including its pack)
 ##   SWIFT    — faster mover/attacker, teal tint
+##   WARDEN   — unstaggerable: heavy fire can't flinch-lock it, so you have to
+##              DODGE its attacks instead of suppressing it. Violet-iron tint.
 ## Call `maybe_apply` on a freshly instantiated enemy BEFORE add_child: export
 ## tweaks land before _ready wiring, visuals/death-hooks attach on ready.
 
-const KINDS := ["shielded", "volatile", "swift"]
+const KINDS := ["shielded", "volatile", "swift", "warden"]
 const TINTS := {
 	"shielded": Color(0.55, 0.75, 1.45),
 	"volatile": Color(1.5, 0.65, 0.35),
 	"swift": Color(0.5, 1.4, 1.05),
+	"warden": Color(0.85, 0.6, 1.35),
 }
 const LIGHTS := {
 	"shielded": Color(0.4, 0.65, 1.0),
 	"volatile": Color(1.0, 0.5, 0.15),
 	"swift": Color(0.3, 1.0, 0.8),
+	"warden": Color(0.7, 0.4, 1.0),
 }
 
 ## Per-difficulty elite share (EASY, NORMAL, HARD).
@@ -50,6 +54,12 @@ static func apply(enemy: Node3D, kind: String) -> void:
 		"swift":
 			eb.move_speed *= 1.35
 			eb.attack_cooldown *= 0.85
+		"warden":
+			# Unstaggerable: poise can never be broken, so suppression won't
+			# interrupt it — it walks through your fire and attacks on schedule.
+			eb.max_health *= 1.4
+			eb.stagger_threshold = 1.0e9
+			eb.move_speed *= 0.92 # relentless, not fast
 	# Recolor the imported model: tint is read by RobotModel._ready, so setting
 	# the export now (pre-add) is enough.
 	var model := eb.get_node_or_null("Model")
