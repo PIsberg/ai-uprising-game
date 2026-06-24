@@ -112,8 +112,39 @@ func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
 		unlocked_weapons.append(scene_path)
 
-## Every weapon scene in the game, in roughly ascending power. The warp cheat
-## hands the player the whole arsenal so any level can be played with everything.
+## The single source of truth for weapon power, weakest → strongest. EVERY weapon
+## in the game appears here exactly once (incl. the sniper/magnum that aren't part
+## of the warp arsenal). The WeaponManager sorts the player's rack by this order so
+## number keys 1-9 always run weak→strong, and the HUD carousel reads it for slots.
+const WEAPON_ORDER: Array[String] = [
+	"res://scenes/weapons/pistol.tscn",      # M9 Sidearm — starter
+	"res://scenes/weapons/smg.tscn",         # TKN-9 Spitter
+	"res://scenes/weapons/rifle.tscn",       # AR-7 Pulse Rifle
+	"res://scenes/weapons/shotgun.tscn",     # SG-12 Breacher
+	"res://scenes/weapons/magnum.tscn",      # .50 Maelstrom
+	"res://scenes/weapons/tesla.tscn",       # VK-7 Tesla Projector (electric beam)
+	"res://scenes/weapons/arccoil.tscn",     # CL-3 Arc Coil (electric burst)
+	"res://scenes/weapons/sniper.tscn",      # MK-VII Longshot
+	"res://scenes/weapons/plasma.tscn",      # PL-1 Plasma Launcher
+	"res://scenes/weapons/twinrail.tscn",    # GEM-2 Twin Rail (laser)
+	"res://scenes/weapons/nova.tscn",        # NV-X Nova Scatter
+	"res://scenes/weapons/gauss.tscn",       # ARC-9 Gauss Lance (laser)
+	"res://scenes/weapons/swarm.tscn",       # SW-7 Swarm Launcher
+	"res://scenes/weapons/tempest.tscn",     # TPX-9 Tempest Coil (chain lightning)
+	"res://scenes/weapons/singularity.tscn", # VOID-9 Singularity Cannon
+	"res://scenes/weapons/devastator.tscn",  # GRK-X Devastator
+	"res://scenes/weapons/omega.tscn",       # OMEGA-X Annihilator — ultimate
+]
+
+## Power rank of a weapon by its scene path (lower = weaker). Unknown weapons sort
+## to the end. Used to keep the rack ordered weak→strong everywhere.
+func weapon_power_rank(scene_path: String) -> int:
+	var i := WEAPON_ORDER.find(scene_path)
+	return i if i >= 0 else 999
+
+## Every weapon the warp cheat hands over (the campaign arsenal — sniper/magnum are
+## starter sidearms, granted by the loadout, so they're not duplicated here). Listed
+## weakest → strongest, the same order the rack uses.
 const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/pistol.tscn",
 	"res://scenes/weapons/smg.tscn",
@@ -122,13 +153,13 @@ const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/tesla.tscn",
 	"res://scenes/weapons/arccoil.tscn",
 	"res://scenes/weapons/plasma.tscn",
+	"res://scenes/weapons/twinrail.tscn",
 	"res://scenes/weapons/nova.tscn",
 	"res://scenes/weapons/gauss.tscn",
-	"res://scenes/weapons/twinrail.tscn",
 	"res://scenes/weapons/swarm.tscn",
-	"res://scenes/weapons/devastator.tscn",
 	"res://scenes/weapons/tempest.tscn",
 	"res://scenes/weapons/singularity.tscn",
+	"res://scenes/weapons/devastator.tscn",
 	"res://scenes/weapons/omega.tscn",
 ]
 

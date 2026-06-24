@@ -24,6 +24,18 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var headshot_mult: float = 2.0
 @export var pierce: int = 0 ## Hitscan only: extra enemies the shot punches through (0 = stops at first).
 
+@export_group("Effective Range")
+## Per-weapon range identity — the heart of "use the right tool for the range".
+## Inside [opt_min, opt_max] the weapon does full damage; closer than opt_min it
+## scales toward close_mult (0 m), farther than opt_max it scales toward far_mult
+## (at range_m). Close shredders set a low far_mult; long-range guns set a low
+## close_mult. Heavy/AoE weapons leave range_falloff off and stay range-agnostic.
+@export var range_falloff: bool = false ## When false the weapon does flat damage at any range (AoE/heavy).
+@export var opt_min: float = 0.0   ## Closest distance still at full damage.
+@export var opt_max: float = 60.0  ## Farthest distance still at full damage.
+@export var close_mult: float = 1.0 ## Damage multiplier at point-blank (<1 = penalized up close).
+@export var far_mult: float = 1.0   ## Damage multiplier out at range_m (<1 = penalized at distance).
+
 @export_group("Recoil")
 @export var recoil_pitch: float = 0.9
 @export var recoil_yaw: float = 0.3
@@ -45,6 +57,8 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var impact_scene: PackedScene
 @export var tracer_scene: PackedScene
 @export var tracer_color: Color = Color(1.0, 0.85, 0.5) ## Tint + glow of the round's tracer.
+@export var energy_beam_fx: bool = false ## Hitscan only: draw a thick lingering laser beam (muzzle→hit) with end blooms, on top of the tracer. For lasers/railguns.
+@export var arc_fx: bool = false ## Adds jagged electric arcs to the energy beam (Tesla/Arc weapons). Implies an energy beam.
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
 @export var empty_sound: AudioStream

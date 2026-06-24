@@ -6,7 +6,9 @@ extends Node3D
 ## `update_beam(from, to, hit)` every frame while firing and `deactivate()`
 ## when the trigger releases.
 
-const SEGMENTS := 8
+const SEGMENTS := 12       # denser polyline → more jagged, more electric
+const NUM_FORKS := 4       # branch tendrils that split off the bolt
+const FORK_SEGS := 3       # links per fork
 
 var color: Color = Color(0.45, 0.85, 1.0)
 
@@ -14,6 +16,9 @@ var _core: MeshInstance3D
 var _core_mesh: CylinderMesh
 var _arcs: Array[MeshInstance3D] = []
 var _arc_mesh: BoxMesh
+var _forks: Array[MeshInstance3D] = []
+var _glow: MeshInstance3D
+var _glow_mat: StandardMaterial3D
 var _impact_light: OmniLight3D
 var _muzzle_light: OmniLight3D
 var _sparks: CPUParticles3D
@@ -64,6 +69,26 @@ func _ready() -> void:
 	# Glow geometry must never render into shadow maps — it's light, not matter.
 	_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_core)
+	# Wide, faint outer halo so the whole bolt blooms with a thick atmospheric glow.
+	_glow_mat = StandardMaterial3D.new()
+	_glow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_glow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_glow_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_glow_mat.albedo_color = Color(color.r, color.g, color.b, 0.12)
+	_glow_mat.emission_enabled = true
+	_glow_mat.emission = color
+	_glow_mat.emission_energy_multiplier = 1.6
+	var glow_mesh := CylinderMesh.new()
+	glow_mesh.top_radius = 0.09
+	glow_mesh.bottom_radius = 0.11
+	glow_mesh.height = 1.0
+	glow_mesh.radial_segments = 10
+	glow_mesh.material = _glow_mat
+	_glow = MeshInstance3D.new()
+	_glow.mesh = glow_mesh
+	_glow.visible = false
+	_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_glow)
 	# White-hot inner filament: a razor-thin near-white core that overdrives the
 	# colour so the centre of the beam reads as searing energy, not just a glow.
 	_hot_mat = StandardMaterial3D.new()
@@ -95,6 +120,15 @@ func _ready() -> void:
 		seg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(seg)
 		_arcs.append(seg)
+	# Branch tendrils that split off the bolt and flicker in/out each frame — the
+	# detail that sells a high-voltage arc rather than a tidy laser line.
+	for _f in NUM_FORKS * FORK_SEGS:
+		var fk := MeshInstance3D.new()
+		fk.mesh = _arc_mesh
+		fk.visible = false
+		fk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(fk)
+		_forks.append(fk)
 	_impact_light = OmniLight3D.new()
 	_impact_light.light_color = color
 	_impact_light.light_energy = 0.0
@@ -193,6 +227,10 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 	_stretch_between(_core, from, to)
 	_core.visible = true
 	_core_mat.emission_energy_multiplier = 3.0 * throb
+	# Fat outer halo runs the whole bolt and breathes with the throb.
+	_stretch_between(_glow, from, to)
+	_glow.visible = true
+	_glow_mat.emission_energy_multiplier = 1.6 * throb
 	# White-hot inner filament runs the full beam, slightly proud of the core.
 	_stretch_between(_hot_core, from, to)
 	_hot_core.visible = true
@@ -210,6 +248,22 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 		_stretch_between(_arcs[i], prev, p)
 		_arcs[i].visible = true
 		prev = p
+	# Branch forks: short jagged tendrils anchored along the bolt, splaying off in
+	# a random perpendicular direction and blinking each frame so the arc crackles.
+	var fi := 0
+	for k in NUM_FORKS:
+		var at := 0.18 + 0.64 * (float(k) + randf() * 0.6) / float(NUM_FORKS)
+		var anchor := from + dir * (dist * at)
+		var perp := dir.cross(Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5)).normalized()
+		var blen := randf_range(0.15, 0.5) * minf(dist * 0.25, 1.0)
+		var fp := anchor
+		var lit := randf() < 0.7 # the whole fork blinks in or out together
+		for s in FORK_SEGS:
+			var np := fp + perp * (blen / FORK_SEGS) + Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 0.12
+			_stretch_between(_forks[fi], fp, np)
+			_forks[fi].visible = lit
+			fp = np
+			fi += 1
 	# Lights flicker slightly so nearby surfaces dance.
 	_muzzle_light.global_position = from
 	_muzzle_light.light_energy = randf_range(1.2, 2.0)
@@ -249,8 +303,12 @@ func _burn_scorch(at: Vector3, dir: Vector3) -> void:
 func deactivate() -> void:
 	_core.visible = false
 	_hot_core.visible = false
+	if _glow:
+		_glow.visible = false
 	for seg in _arcs:
 		seg.visible = false
+	for fk in _forks:
+		fk.visible = false
 	_impact_light.light_energy = 0.0
 	_muzzle_light.light_energy = 0.0
 	_sparks.emitting = false
@@ -286,6 +344,9 @@ func set_color(c: Color) -> void:
 		_core_mat.emission = c
 		_impact_light.light_color = c
 		_muzzle_light.light_color = c
+	if _glow_mat:
+		_glow_mat.albedo_color = Color(c.r, c.g, c.b, 0.12)
+		_glow_mat.emission = c
 	if _hot_mat:
 		_hot_mat.emission = _hot_tint()
 	if _muzzle_flare_mat:

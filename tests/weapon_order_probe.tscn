@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0probe0weaponorder"]
+
+[ext_resource type="Script" path="res://tests/weapon_order_probe.gd" id="1_p"]
+
+[node name="WeaponOrderProbe" type="Node"]
+script = ExtResource("1_p")
