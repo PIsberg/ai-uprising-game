@@ -10,18 +10,20 @@ Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cut
 
 |  |  |
 |:--:|:--:|
-| ![Combat in the Titan arena](docs/screenshots/ingame_combat.png) | ![Combat in the suburbs](docs/screenshots/ingame_suburb.png) |
-| **In action** — a firefight under the boss arena's night sky | **In action** — repelling hostiles through Maple Grove |
-| ![Firing range — the full arsenal](docs/screenshots/firing_range.png) | ![Fierce hostiles](docs/screenshots/enemies.png) |
-| **Gun Range** — free-fire the whole arsenal | **Fierce hostiles** — Ravager, Warmech & skitter swarm |
+| ![GOLIATH-IX sky-drop](docs/screenshots/sky_boss.png) | ![Combat in the Titan arena](docs/screenshots/ingame_combat.png) |
+| **First boss** — GOLIATH‑IX makes planetfall on its retro‑rockets | **In action** — a firefight under the boss arena's night sky |
+| ![Combat in the suburbs](docs/screenshots/ingame_suburb.png) | ![Firing range — the full arsenal](docs/screenshots/firing_range.png) |
+| **In action** — repelling hostiles through Maple Grove | **Gun Range** — free‑fire the whole arsenal |
+| ![Fierce hostiles](docs/screenshots/enemies.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
+| **Fierce hostiles** — Ravager, Warmech & skitter swarm | **Singularity grenade** — a gravity well imploding a pack |
 | ![Enemy codex — Warmech](docs/screenshots/codex_warmech.png) | ![Enemy codex — Ravager](docs/screenshots/codex_ravager.png) |
 | **Enemy Codex** — the WARMECH siege walker | **Enemy Codex** — the RAVAGER leaper |
-| ![Enemy codex — Titan boss](docs/screenshots/codex_titan.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
-| **Enemy Codex** — PROMETHEUS‑0, the Titan boss | **Singularity grenade** — a gravity well imploding a pack |
-| ![Campaign map](docs/screenshots/campaign_map.png) | ![Armory shop](docs/screenshots/armory.png) |
-| **Campaign map** — interactive sector intel & route | **Armory** — between-levels upgrades & field supplies |
+| ![Enemy codex — Titan boss](docs/screenshots/codex_titan.png) | ![Campaign map](docs/screenshots/campaign_map.png) |
+| **Enemy Codex** — PROMETHEUS‑0, the Titan boss | **Campaign map** — interactive sector intel & route |
+| ![Armory shop](docs/screenshots/armory.png) | ![Level editor](docs/screenshots/level_editor.png) |
+| **Armory** — between‑levels upgrades & field supplies | **Level editor** — build levels with live marker preview & playtest |
 
-> The bestiary turns slowly in 3D and lists every hostile's strengths, weaknesses, and the weapons that counter it — discovered as you meet them.
+> The built-in **level editor** (`--editor`) authors levels as plain data with a live marker preview, full gizmos, and one-click playtest. The **bestiary** turns slowly in 3D and lists every hostile's strengths, weaknesses, and counter-weapons — discovered as you meet them.
 
 ---
 
