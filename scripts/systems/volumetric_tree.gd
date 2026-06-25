@@ -80,6 +80,42 @@ static func _voxel(p: Vector3) -> Color:
 		return Color(0.1 + 0.14 * n, g, 0.05 + 0.08 * n, clamp(a, 0.0, 1.0))
 	return Color(0, 0, 0, 0)
 
+static var _shadow_tex: Texture2D = null
+
+## A soft round dark texture for a ground-contact shadow blob (grounds the
+## billboard trees, which cast no real shadow). Built once.
+static func ground_shadow_tex() -> Texture2D:
+	if _shadow_tex != null:
+		return _shadow_tex
+	var sz := 64
+	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
+	var c := Vector2(sz * 0.5, sz * 0.5)
+	for y in sz:
+		for x in sz:
+			var d: float = Vector2(x + 0.5, y + 0.5).distance_to(c) / (sz * 0.5)
+			var a := clampf(1.0 - d, 0.0, 1.0)
+			a = pow(a, 1.8) * 0.55  # soft falloff, max ~55% darken
+			img.set_pixel(x, y, Color(0, 0, 0, a))
+	_shadow_tex = ImageTexture.create_from_image(img)
+	return _shadow_tex
+
+## A flat ground-shadow quad to sit just under a tree of the given size.
+static func ground_shadow(particle_size: float) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	var r := particle_size * 0.7
+	pm.size = Vector2(r, r)
+	var mat := StandardMaterial3D.new()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(0, 0, 0, 1)
+	mat.albedo_texture = ground_shadow_tex()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	pm.material = mat
+	mi.mesh = pm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
 ## A ShaderMaterial wired to the shared volume, sized for one tree.
 static func material(particle_size: float) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()

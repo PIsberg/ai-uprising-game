@@ -2044,6 +2044,10 @@ func _build_trees(def: Dictionary) -> void:
 		var tree := VolumetricTree.make(size)
 		tree.position = Vector3(x, size * 0.5, z)
 		add_child(tree)
+		# Soft contact-shadow blob so the billboard tree reads as grounded.
+		var shadow := VolumetricTree.ground_shadow(size)
+		shadow.position = Vector3(x, 0.03, z)
+		add_child(shadow)
 		placed += 1
 
 ## Street dressing for road/suburb levels (def "streets": true): painted lane
