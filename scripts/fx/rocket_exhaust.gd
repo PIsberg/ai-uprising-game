@@ -12,18 +12,24 @@ extends Node3D
 var intensity: float = 1.0
 
 var _t: float = 0.0
-var _flame_mat: StandardMaterial3D
+var _flame_mat: ShaderMaterial    ## scrolling-noise flame (shaders/flame.gdshader)
 var _core_mat: StandardMaterial3D
 var _flame: MeshInstance3D
 var _core: MeshInstance3D
 var _light: OmniLight3D
 var _particles: GPUParticles3D
 
+const FLAME_ENERGY := 5.0
+
 func _ready() -> void:
+	# Outer plume: the eroding scrolling-noise flame, hot-white core into the
+	# thruster colour at the edges, panning fast downward so it reads as fire.
 	_flame = _make_cone(flame_radius, flame_length, color, 7.0)
-	_flame_mat = _flame.mesh.material
+	var fm := FlameMaterial.make(Color(1.0, 0.82, 0.4), color, FLAME_ENERGY, Vector2(0.0, -9.0), 0.5, 0.24)
+	_flame.mesh.material = fm
+	_flame_mat = fm
 	add_child(_flame)
-	_core = _make_cone(flame_radius * 0.45, flame_length * 0.7, Color(1.0, 0.95, 0.82), 13.0)
+	_core = _make_cone(flame_radius * 0.4, flame_length * 0.62, Color(1.0, 0.97, 0.88), 7.0)
 	_core_mat = _core.mesh.material
 	add_child(_core)
 	_light = OmniLight3D.new()
@@ -94,9 +100,9 @@ func _process(delta: float) -> void:
 	var flick := 0.82 + 0.18 * sin(_t * 45.0) + 0.08 * sin(_t * 17.0)
 	var k := flick * intensity
 	if _flame_mat:
-		_flame_mat.emission_energy_multiplier = 7.0 * k
+		_flame_mat.set_shader_parameter("emission_energy", FLAME_ENERGY * k)
 	if _core_mat:
-		_core_mat.emission_energy_multiplier = 13.0 * k
+		_core_mat.emission_energy_multiplier = 7.0 * k
 	if _light:
 		_light.light_energy = 9.0 * k
 	if _flame:
