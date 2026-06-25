@@ -96,8 +96,8 @@ func _ready() -> void:
 	for i in KEYS.size():
 		_make_card(rack, KEYS[i], i)
 
-	# --- consumable field supplies (applied at next deploy) ---
-	vbox.add_child(_section_label("FIELD SUPPLIES  ·  applied on your next deploy"))
+	# --- field supplies (permanent for the run — they follow you) ---
+	vbox.add_child(_section_label("FIELD SUPPLIES  ·  permanent for the rest of the run"))
 	var srack := HBoxContainer.new()
 	srack.add_theme_constant_override("separation", 16)
 	srack.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -309,7 +309,7 @@ func _refresh() -> void:
 		var amt = GameState.SUPPLY_DEFS[k]["amount"]
 		var afford := GameState.score >= price
 		var count := int(_supply_banked(k) / float(amt)) if float(amt) != 0.0 else 0
-		(sc["queued"] as Label).text = ("✓ QUEUED ×%d" % count) if count > 0 else ""
+		(sc["queued"] as Label).text = ("✓ OWNED ×%d" % count) if count > 0 else ""
 		var sbuy: Button = sc["buy"]
 		sbuy.disabled = not afford
 		sbuy.text = "BUY  %d cr" % price if afford else "NEED %d cr" % price

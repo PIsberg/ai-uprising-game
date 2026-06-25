@@ -117,21 +117,22 @@ func _ready() -> void:
 	_fov_base = camera.fov
 	_register_dash_action()
 	grenades = max_grenades
-	# Field supplies bought in the Armory — applied once on deploy, then cleared.
+	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
+	# on every deploy (a fresh player each level, so no compounding) and are only
+	# cleared by reset_run() on a new campaign — what you buy follows you.
 	if GameState.supply_health > 0.0:
 		hp.max_health += GameState.supply_health
-		GameState.supply_health = 0.0
 	hp.current_health = hp.max_health
 	if GameState.supply_grenades > 0:
 		grenade_counts[GrenadeType.FRAG] += GameState.supply_grenades
-		GameState.supply_grenades = 0
 	_sync_grenades()
 	_apply_supply_ammo.call_deferred()  # after the WeaponManager has built the arsenal
 	hp.health_changed.connect(_on_health_changed)
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_hp_damaged)
 
-## Pour any bought ammo crates into every weapon's reserve.
+## Pour any bought ammo crates into every weapon's reserve. Persistent for the
+## run — re-applied each deploy (not cleared), so the reserve bonus carries on.
 func _apply_supply_ammo() -> void:
 	if GameState.supply_ammo <= 0:
 		return
@@ -140,7 +141,6 @@ func _apply_supply_ammo() -> void:
 		for w in wm.weapons:
 			if w and w.has_method("add_ammo"):
 				w.add_ammo(GameState.supply_ammo)
-	GameState.supply_ammo = 0
 
 ## Optional cinematic depth-of-field: a fullscreen quad under the camera running
 ## shaders/dof.gdshader. Built once and hidden until enabled in settings.
