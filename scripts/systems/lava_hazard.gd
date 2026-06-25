@@ -50,6 +50,10 @@ func _build_surface() -> void:
 	mesh.size = size
 	_mat = ShaderMaterial.new()
 	_mat.shader = preload("res://shaders/lava.gdshader")
+	# Seamless noise the flow shader warps; bed size keeps the molten cells a
+	# consistent scale regardless of how big the stream is.
+	_mat.set_shader_parameter("noise_texture", FlameMaterial.noise())
+	_mat.set_shader_parameter("plane_size", size)
 	mesh.material = _mat
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
