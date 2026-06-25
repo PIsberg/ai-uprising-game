@@ -1535,8 +1535,10 @@ func _build_cover_trim(def: Dictionary) -> void:
 			mi.position = edge[0]
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(mi)
-		# Machined detailing for blocky cover; skip slabs too thin to host it.
-		if density > 0.0 and minf(size.x, size.z) >= 1.0:
+		# Machined detailing for compact, roughly-cubic cover crates only — long
+		# barriers and tall maze dividers keep just the rim (a big grille/pip row
+		# would read wrong on a 7-14 m wall).
+		if density > 0.0 and size.y <= 4.5 and maxf(size.x, size.z) <= 4.0 and minf(size.x, size.z) >= 1.0:
 			_dress_cover_box(pos, size, col)
 
 ## Turns a bare cover block into a piece of machinery: four dark corner posts (a
