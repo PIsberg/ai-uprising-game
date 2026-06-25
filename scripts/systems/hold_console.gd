@@ -16,7 +16,8 @@ const EXPLOSION := preload("res://scenes/fx/grenade_explosion.tscn")
 var _done: bool = false
 var _inside: int = 0
 var _t: float = 0.0
-var _panel_mat: StandardMaterial3D
+var _panel_mat: StandardMaterial3D  ## the pulsing accent frame around the screen
+var _matrix_mat: ShaderMaterial     ## the matrix-rain screen itself
 var _light: OmniLight3D
 var _holo: MeshInstance3D
 var _holo_mat: StandardMaterial3D
@@ -43,21 +44,41 @@ func _build_visual() -> void:
 	base.position = Vector3(0, 0.55, 0)
 	add_child(base)
 
-	# Angled glowing screen.
+	# Angled mainframe monitor: a matrix-rain screen inside a pulsing accent frame.
+	var monitor := Node3D.new()
+	monitor.position = Vector3(0, 1.22, 0.0)
+	monitor.rotation_degrees = Vector3(-28, 0, 0)
+	add_child(monitor)
+	var sw := 1.12
+	var sh := 0.82
+	# The screen — digital rain in the level's accent, nudged toward matrix-green.
 	var panel := MeshInstance3D.new()
 	var pm := BoxMesh.new()
-	pm.size = Vector3(0.9, 0.6, 0.06)
+	pm.size = Vector3(sw, sh, 0.05)
 	panel.mesh = pm
+	_matrix_mat = MatrixScreen.material(accent.lerp(Color(0.25, 1.0, 0.4), 0.4), 2.8)
+	panel.material_override = _matrix_mat
+	monitor.add_child(panel)
+	# A glowing bezel of four bars (this is what the pulse drives now).
 	_panel_mat = StandardMaterial3D.new()
 	_panel_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_panel_mat.albedo_color = accent
 	_panel_mat.emission_enabled = true
 	_panel_mat.emission = accent
 	_panel_mat.emission_energy_multiplier = 2.5
-	panel.material_override = _panel_mat
-	panel.position = Vector3(0, 1.15, 0.0)
-	panel.rotation_degrees = Vector3(-30, 0, 0)
-	add_child(panel)
+	var ft := 0.06
+	for bar in [
+			[Vector3(0, sh * 0.5 + ft * 0.5, 0), Vector3(sw + ft * 2.0, ft, 0.07)],
+			[Vector3(0, -sh * 0.5 - ft * 0.5, 0), Vector3(sw + ft * 2.0, ft, 0.07)],
+			[Vector3(-sw * 0.5 - ft * 0.5, 0, 0), Vector3(ft, sh, 0.07)],
+			[Vector3(sw * 0.5 + ft * 0.5, 0, 0), Vector3(ft, sh, 0.07)]]:
+		var fb := MeshInstance3D.new()
+		var fbm := BoxMesh.new()
+		fbm.size = bar[1]
+		fb.mesh = fbm
+		fb.material_override = _panel_mat
+		fb.position = bar[0]
+		monitor.add_child(fb)
 
 	# A holographic data prism projected above the console — clearly an active
 	# terminal beaming something, not just a lit box.
@@ -106,6 +127,9 @@ func _process(delta: float) -> void:
 	var rate := 9.0 if _inside > 0 and not _done else 3.0
 	if _panel_mat:
 		_panel_mat.emission_energy_multiplier = 2.5 + sin(_t * rate) * 1.2
+	if _matrix_mat and not _done:
+		# Code rains harder/brighter while the terminal is being worked.
+		_matrix_mat.set_shader_parameter("emission_energy", 4.4 if _inside > 0 else 2.8)
 	if _light:
 		_light.light_energy = 2.0 + sin(_t * rate) * 0.8
 	if _holo:
@@ -135,6 +159,9 @@ func _on_complete() -> void:
 			p.shake(0.6)
 		queue_free()
 	else:
-		# Hacked terminal goes dim/green and inert.
+		# Hacked terminal goes dim/green and inert — the code rain fades out.
 		if _panel_mat:
 			_panel_mat.emission = Color(0.3, 1.0, 0.4)
+		if _matrix_mat:
+			_matrix_mat.set_shader_parameter("rain_color", Vector3(0.2, 0.7, 0.3))
+			_matrix_mat.set_shader_parameter("emission_energy", 0.7)
