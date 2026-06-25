@@ -16,6 +16,12 @@ extends Node3D
 @export var tint: Color = Color.WHITE ## Multiplies the model's albedo (variant recolor).
 @export var menace_glow: float = 1.0 ## Scales the red damage-blink flare (0 disables).
 @export var menace_color: Color = Color(1.0, 0.16, 0.1)
+## Always-on glowing optic: a bright emissive iris mounted at each EyeLight, so
+## the robot reads as a live, hostile machine in normal play (not just when hit).
+## Scan-pulses gently and fades on death. 0 disables.
+@export var eye_glow: float = 1.0
+@export var eye_energy: float = 5.5 ## Base emission of the optic iris.
+@export var eye_radius: float = 0.0 ## Iris radius; 0 = auto from model size.
 @export var anim_idle: String = "Idle"
 @export var anim_walk: String = "Walk" ## Empty for hovering enemies with no gait.
 @export var anim_attack: String = "" ## Played as a one-shot on each weapon discharge.
@@ -30,6 +36,8 @@ var _prev_recoil: float = 0.0
 var _menace_light: OmniLight3D
 var _glow_mats: Array[Material] = []
 var _blink_tween: Tween
+var _eye_mats: Array[StandardMaterial3D] = [] ## Always-on optic irises (scan-pulse, death-fade).
+var _eye_tween: Tween
 # Velocity-driven lean/bank applied to the imported mesh (composed under its
 # base flip/scale so it never fights EnemyBase's flinch on the Model node).
 var _mesh: Node3D
@@ -43,6 +51,7 @@ func _ready() -> void:
 	_anim = find_child("AnimationPlayer", true, false) as AnimationPlayer
 	_apply_materials()
 	_build_menace_glow()
+	_build_eye_optics()
 	# The imported model node we lean/bank (the direct child holding the rig).
 	for c in get_children():
 		if c is Node3D and not (c is AnimationPlayer):
@@ -169,6 +178,63 @@ func _build_menace_glow() -> void:
 	_menace_light.position = Vector3(0, clampf(top * 0.55, 0.8, 3.2), 0)
 	add_child(_menace_light)
 
+## Mounts a bright emissive iris at every EyeLight so the optic visibly glows in
+## normal play (the EyeLight only lit the surroundings before). Colour follows
+## the light, so each enemy keeps its identity (red sentries, green mender). The
+## irises scan-pulse in sync and drain on death via _extinguish().
+func _build_eye_optics() -> void:
+	if eye_glow <= 0.0:
+		return
+	var root := get_parent()
+	if root == null:
+		return
+	var r := eye_radius
+	if r <= 0.0:
+		var span := 0.6
+		for mi in _collect_meshes(self):
+			if mi.mesh:
+				var ab: AABB = mi.mesh.get_aabb()
+				span = maxf(span, maxf(ab.size.x, ab.size.y))
+		r = clampf(span * 0.06, 0.05, 0.16)
+	for light in _find_eye_lights(root):
+		var col: Color = light.light_color
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = col
+		mat.emission_enabled = true
+		mat.emission = col
+		mat.emission_energy_multiplier = eye_energy * eye_glow
+		var iris := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = r
+		sm.height = r * 2.0
+		sm.radial_segments = 12
+		sm.rings = 6
+		sm.material = mat
+		iris.mesh = sm
+		iris.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		light.add_child(iris) # rides the eye-light node, so it tracks the optic
+		_eye_mats.append(mat)
+	if _eye_mats.is_empty():
+		return
+	_eye_tween = create_tween().set_loops()
+	_eye_tween.tween_method(_set_eye_pulse, 0.78, 1.12, 1.3) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_eye_tween.tween_method(_set_eye_pulse, 1.12, 0.78, 1.3) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _set_eye_pulse(f: float) -> void:
+	for m in _eye_mats:
+		m.emission_energy_multiplier = eye_energy * eye_glow * f
+
+func _find_eye_lights(n: Node) -> Array[OmniLight3D]:
+	var out: Array[OmniLight3D] = []
+	for c in n.get_children():
+		if c is OmniLight3D and c.name == "EyeLight":
+			out.append(c)
+		out.append_array(_find_eye_lights(c))
+	return out
+
 ## Red damage blink: the ember sheen and core light flare up on a hit and die
 ## back down — pain you can read at a glance, without a constant red tint.
 func damage_blink() -> void:
@@ -201,6 +267,10 @@ func damage_blink() -> void:
 ## Power-down on death: the core light dies and the ember sheen drains so the
 ## topple reads as a dark wreck, not a still-live machine.
 func _extinguish() -> void:
+	if _eye_tween and _eye_tween.is_valid():
+		_eye_tween.kill()
+	for em in _eye_mats:
+		create_tween().tween_property(em, "emission_energy_multiplier", 0.0, 0.8)
 	if _menace_light:
 		create_tween().tween_property(_menace_light, "light_energy", 0.0, 0.7)
 	for m in _glow_mats:
