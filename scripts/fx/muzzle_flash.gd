@@ -1,17 +1,34 @@
 extends Node3D
 
 @export var lifetime: float = 0.06
+## Set by the weapon before add_child: a per-weapon flash tint + overall size, so
+## a pistol pops a small white flash while an energy cannon belches a big blue one.
+@export var tint_color: Color = Color(1.0, 0.78, 0.38)
+@export var size_mult: float = 1.0
 var _age: float = 0.0
 var _size: float = 1.0
 
 func _ready() -> void:
 	# No two flashes alike: random roll around the bore + per-shot size jitter.
 	rotation.z = randf() * TAU
-	_size = randf_range(0.8, 1.35)
+	_size = randf_range(0.8, 1.35) * size_mult
+	# Tint the burst to the weapon's colour (kept hot — lerped toward white) so
+	# different guns read as different muzzle blasts, not one orange star.
+	var hot := tint_color.lerp(Color(1, 1, 1), 0.45)
 	for c in get_children():
 		if c is MeshInstance3D:
-			# A flash is light — it must not draw into shadow maps.
-			(c as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var mi := c as MeshInstance3D
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF # flashes don't shadow
+			var m := StandardMaterial3D.new()
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.albedo_color = hot
+			m.emission_enabled = true
+			m.emission = tint_color
+			m.emission_energy_multiplier = 8.0
+			mi.material_override = m
+	for c in get_children():
+		if c is OmniLight3D:
+			(c as OmniLight3D).light_color = tint_color
 	_spawn_sparks()
 
 func _process(delta: float) -> void:

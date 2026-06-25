@@ -34,6 +34,7 @@ impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
 tracer_color = Color(0.6, 0.9, 1.0, 1)
 energy_beam_fx = true
+muzzle_scale = 1.3
 sound_id = "plasma"
 slide_kick = 0.06
 viewmodel_color = Color(0.55, 0.8, 1.0, 1)

@@ -775,6 +775,10 @@ func _play_muzzle() -> void:
 	if data.muzzle_flash_scene == null or muzzle == null:
 		return
 	var m := data.muzzle_flash_scene.instantiate()
+	# Per-weapon flash colour + size so each gun blasts distinctly.
+	if "tint_color" in m:
+		m.tint_color = data.tracer_color
+		m.size_mult = data.muzzle_scale
 	muzzle.add_child(m)
 
 ## A bright expanding energy bloom at the muzzle for plasma/energy weapons.
