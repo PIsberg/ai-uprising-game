@@ -16,8 +16,9 @@ const EXPLOSION := preload("res://scenes/fx/grenade_explosion.tscn")
 var _done: bool = false
 var _inside: int = 0
 var _t: float = 0.0
-var _panel_mat: StandardMaterial3D  ## the pulsing accent frame around the screen
-var _matrix_mat: ShaderMaterial     ## the matrix-rain screen itself
+var _panel_mat: StandardMaterial3D  ## pulsing accent frame (terminal) / detonator beacon (bomb)
+var _matrix_mat: ShaderMaterial     ## the matrix-rain screen itself (terminal only)
+var _charge_label: Label3D          ## bomb arm-countdown readout (detonate only)
 var _light: OmniLight3D
 var _holo: MeshInstance3D
 var _holo_mat: StandardMaterial3D
@@ -32,6 +33,28 @@ func _ready() -> void:
 	_build_visual()
 
 func _build_visual() -> void:
+	if detonate:
+		_build_bomb()
+	else:
+		_build_terminal()
+
+	# Trigger zone (a slab the player stands in/at) — shared.
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(2.4, 2.0, 2.4)
+	cs.shape = bs
+	cs.position = Vector3(0, 1.0, 0)
+	add_child(cs)
+
+	_light = OmniLight3D.new()
+	_light.light_color = Color(1.0, 0.2, 0.12) if detonate else accent
+	_light.light_energy = 2.0
+	_light.omni_range = 5.0
+	_light.position = Vector3(0, 1.2, 0)
+	add_child(_light)
+
+## The hack/terminal "mainframe": matrix-rain screen in a pulsing accent bezel.
+func _build_terminal() -> void:
 	var base := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = Vector3(1.0, 1.1, 0.6)
@@ -98,20 +121,73 @@ func _build_visual() -> void:
 	_holo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_holo)
 
-	# Trigger zone (a slab the player stands in/at).
-	var cs := CollisionShape3D.new()
-	var bs := BoxShape3D.new()
-	bs.size = Vector3(2.4, 2.0, 2.4)
-	cs.shape = bs
-	cs.position = Vector3(0, 1.0, 0)
-	add_child(cs)
-
-	_light = OmniLight3D.new()
-	_light.light_color = accent
-	_light.light_energy = 2.0
-	_light.omni_range = 5.0
-	_light.position = Vector3(0, 1.2, 0)
-	add_child(_light)
+## The sabotage "plant the bomb" device: a hazard-striped demolition charge with
+## a blinking red detonator beacon and a live arm-time countdown readout.
+func _build_bomb() -> void:
+	var det := Color(1.0, 0.22, 0.12)
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.1, 0.1, 0.12)
+	dark.metallic = 0.5
+	dark.roughness = 0.5
+	# Charge body.
+	var body := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(1.15, 0.7, 0.78)
+	body.mesh = bm
+	body.material_override = dark
+	body.position = Vector3(0, 0.5, 0)
+	add_child(body)
+	# Yellow/black hazard bands wrapping the charge.
+	var haz := StandardMaterial3D.new()
+	haz.albedo_color = Color(0.95, 0.72, 0.05)
+	haz.emission_enabled = true
+	haz.emission = Color(0.9, 0.6, 0.0)
+	haz.emission_energy_multiplier = 0.4
+	for hy in [0.33, 0.67]:
+		var band := MeshInstance3D.new()
+		var hbm := BoxMesh.new()
+		hbm.size = Vector3(1.17, 0.12, 0.8)
+		band.mesh = hbm
+		band.material_override = haz
+		band.position = Vector3(0, hy, 0)
+		add_child(band)
+	# Detonator beacon dome on top (this is what the pulse blinks → _panel_mat).
+	_panel_mat = StandardMaterial3D.new()
+	_panel_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_panel_mat.albedo_color = det
+	_panel_mat.emission_enabled = true
+	_panel_mat.emission = det
+	_panel_mat.emission_energy_multiplier = 3.0
+	var beacon := MeshInstance3D.new()
+	var sp := SphereMesh.new()
+	sp.radius = 0.12
+	sp.height = 0.24
+	beacon.mesh = sp
+	beacon.material_override = _panel_mat
+	beacon.position = Vector3(0, 0.95, 0)
+	add_child(beacon)
+	# Stub antenna.
+	var ant := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.012
+	cyl.bottom_radius = 0.012
+	cyl.height = 0.4
+	ant.mesh = cyl
+	ant.material_override = dark
+	ant.position = Vector3(0.42, 1.05, 0)
+	add_child(ant)
+	# Floating arm-time countdown (billboarded so it always faces the player).
+	_charge_label = Label3D.new()
+	_charge_label.text = "%0.1f" % hold_seconds
+	_charge_label.font_size = 110
+	_charge_label.pixel_size = 0.004
+	_charge_label.modulate = det
+	_charge_label.outline_size = 14
+	_charge_label.outline_modulate = Color(0, 0, 0, 0.9)
+	_charge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_charge_label.position = Vector3(0, 1.45, 0)
+	add_child(_charge_label)
+	_holo = null # no data prism on the bomb
 
 func _process(delta: float) -> void:
 	_t += delta
@@ -123,6 +199,21 @@ func _process(delta: float) -> void:
 				_on_complete()
 		elif prog > 0.0:
 			GameState.set_task_progress(task_id, maxf(0.0, prog - delta * 0.5))
+	# Bomb: blink the detonator faster + tick the arm-countdown down as it's planted.
+	if detonate:
+		if _done:
+			return
+		var remaining: float = maxf(0.0, hold_seconds * (1.0 - prog))
+		var urgency: float = 1.0 - clampf(remaining / maxf(hold_seconds, 0.01), 0.0, 1.0)
+		var blink: float = 0.5 + 0.5 * signf(sin(_t * (4.0 + urgency * 18.0)))
+		if _panel_mat:
+			_panel_mat.emission_energy_multiplier = 0.8 + blink * (2.5 + urgency * 4.5)
+		if _light:
+			_light.light_energy = 0.7 + blink * (2.0 + urgency * 3.0)
+		if _charge_label:
+			_charge_label.text = "%0.1f" % remaining
+			_charge_label.modulate = Color(1.0, 0.28, 0.12).lerp(Color(1, 1, 1), blink * urgency * 0.6)
+		return
 	# Faster pulse while actively being worked.
 	var rate := 9.0 if _inside > 0 and not _done else 3.0
 	if _panel_mat:
