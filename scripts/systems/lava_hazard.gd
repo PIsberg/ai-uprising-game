@@ -23,10 +23,11 @@ var _mat: ShaderMaterial
 var _light: OmniLight3D
 
 func _ready() -> void:
-	# Detect the player (layer 2) and enemies (layer 4); the lava itself is on a
-	# spare layer so nothing collides with it physically.
+	# Burns the PLAYER only (layer 2). Enemies route around the bed via the navmesh
+	# carve below — they must never cook to death in it, so they are not monitored
+	# here at all. The lava itself is on no layer, so nothing collides with it.
 	collision_layer = 0
-	collision_mask = PLAYER_LAYER | ENEMY_LAYER
+	collision_mask = PLAYER_LAYER
 	monitoring = true
 	add_to_group("hazard")
 

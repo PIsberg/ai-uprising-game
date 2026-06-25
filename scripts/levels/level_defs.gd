@@ -74,6 +74,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["pos"] = _sv(e["pos"], s)
 			if e.has("size"):
 				e["size"] = _sv(e["size"], s)
+	# Lava beds are part of the layout too — they MUST scale with the arena, or the
+	# objectives/gaps (which do scale) drift into them (a hack terminal authored in
+	# a safe gap ends up sitting in a stream). size is a Vector2 footprint (x by z).
+	for e in def.get("lava", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms"]:
