@@ -45,6 +45,10 @@ var aim_assist: bool = true
 ## Show a live FPS counter in the HUD's top-left corner. Off by default; the HUD
 ## reads this each frame and shows/hides its counter accordingly.
 var show_fps: bool = false
+## Cinematic depth-of-field: blurs whatever the player isn't looking at. Off by
+## default — full-screen blur can hurt target readability in a shooter; the
+## player's DoF overlay polls this each frame.
+var dof_enabled: bool = false
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -181,6 +185,11 @@ func set_aim_assist(v: bool) -> void:
 ## Show/hide the HUD FPS counter (the HUD polls show_fps each frame).
 func set_show_fps(v: bool) -> void:
 	show_fps = v
+	_save_settings()
+
+## Toggle cinematic depth-of-field (the player's DoF overlay polls dof_enabled).
+func set_dof_enabled(v: bool) -> void:
+	dof_enabled = v
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -517,6 +526,7 @@ func _load_settings() -> void:
 		aim_assist = bool(cf.get_value("input", "aim_assist", true))
 		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 		show_fps = bool(cf.get_value("graphics_adv", "show_fps", false))
+		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -538,5 +548,6 @@ func _save_settings() -> void:
 	cf.set_value("input", "aim_assist", aim_assist)
 	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
 	cf.set_value("graphics_adv", "show_fps", show_fps)
+	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
 
 	cf.save(SETTINGS_PATH)

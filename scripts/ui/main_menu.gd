@@ -94,6 +94,13 @@ func _build_extra_settings() -> void:
 	show_fps.toggled.connect(func(p: bool): GraphicsSettings.set_show_fps(p))
 	_settings.add_child(show_fps)
 
+	var dof := CheckButton.new()
+	dof.text = tr("Depth of Field")
+	dof.custom_minimum_size = Vector2(360, 44)
+	dof.button_pressed = GraphicsSettings.dof_enabled
+	dof.toggled.connect(func(p: bool): GraphicsSettings.set_dof_enabled(p))
+	_settings.add_child(dof)
+
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()
