@@ -195,6 +195,7 @@ func _ready() -> void:
 	_build_pipes(def)
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
+	_build_streets(def)
 	_build_rubble(def)
 	_build_fires(def)
 	_build_weather(def)
@@ -602,6 +603,11 @@ func _build_geometry(def: Dictionary) -> void:
 		# Showcase override: a hand-authored textured material (e.g. the polished
 		# vault plate) instead of the shared concrete or a flat tint.
 		floor_mat = load(def["floor_material"])
+	elif def.get("streets", false):
+		# Street levels get textured tarmac (grit + grain) instead of a flat tint,
+		# so the road markings/parking/signs below sit on real-looking asphalt.
+		floor_mat = _asphalt_material()
+		floor_surf = "surf_dirt"
 	elif def.has("floor_color"):
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
@@ -792,6 +798,45 @@ func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3
 	m.albedo_color = color
 	m.roughness = roughness
 	m.metallic = 0.0
+	return m
+
+static var _asphalt_mat: StandardMaterial3D = null
+
+## Procedural tarmac for street levels: dark, rough, with a noisy albedo speckle
+## (aggregate grit) and a fine normal grain, triplanar-mapped so it tiles across
+## any floor size. Built once and shared.
+func _asphalt_material() -> StandardMaterial3D:
+	if _asphalt_mat != null:
+		return _asphalt_mat
+	var grit := FastNoiseLite.new()
+	grit.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	grit.frequency = 0.9
+	var alb := NoiseTexture2D.new()
+	alb.width = 256
+	alb.height = 256
+	alb.seamless = true
+	alb.noise = grit
+	var grain := FastNoiseLite.new()
+	grain.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	grain.frequency = 1.8
+	var nrm := NoiseTexture2D.new()
+	nrm.width = 256
+	nrm.height = 256
+	nrm.seamless = true
+	nrm.as_normal_map = true
+	nrm.bump_strength = 0.7
+	nrm.noise = grain
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.1, 0.1, 0.11)
+	m.albedo_texture = alb            # dark base × grey speckle reads as aggregate
+	m.roughness = 0.94
+	m.metallic = 0.0
+	m.normal_enabled = true
+	m.normal_scale = 0.8
+	m.normal_texture = nrm
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(0.12, 0.12, 0.12)
+	_asphalt_mat = m
 	return m
 
 ## Real suburban houses (Kenney City Kit Suburban, CC0): one model per def
@@ -1941,6 +1986,156 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission_enabled = true
 	m.emission = color
 	m.emission_energy_multiplier = energy
+	return m
+
+## Street dressing for road/suburb levels (def "streets": true): painted lane
+## lines + a crossroads through the centre, a crosswalk on each approach, a marked
+## parking lot off to one side, and a few traffic signs. All flat paint (y≈0.02)
+## or thin visual-only posts — no colliders, so the navmesh/gameplay are untouched.
+func _build_streets(def: Dictionary) -> void:
+	if not def.get("streets", false):
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(60, 60))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var white := _road_paint(Color(0.86, 0.86, 0.8))
+	var yellow := _road_paint(Color(0.92, 0.74, 0.12))
+	var half_road := 5.0  # road half-width (each carriageway ~5 m)
+
+	# Crossroads through the origin: a dashed centre line + solid edge lines on
+	# both the N-S and E-W roads.
+	for axis in [0, 1]: # 0 = road runs along Z (x fixed), 1 = along X
+		var along_len: float = (hz if axis == 0 else hx) * 2.0 - 2.0
+		var yaw := 0.0 if axis == 0 else PI * 0.5
+		# Dashed yellow centre line.
+		var dash := 1.6
+		var gap := 1.4
+		var n := int(along_len / (dash + gap))
+		for i in n:
+			var t: float = -along_len * 0.5 + (dash + gap) * (float(i) + 0.5)
+			# Leave the intersection box itself unpainted.
+			if absf(t) < half_road + 1.0:
+				continue
+			var c: Vector3 = Vector3(0, 0.02, t) if axis == 0 else Vector3(t, 0.02, 0)
+			_paint_stripe(c, Vector2(0.2, dash), yaw, yellow)
+		# Solid white edge lines.
+		for side in [-1.0, 1.0]:
+			var off: float = side * half_road
+			var c2: Vector3 = Vector3(off, 0.02, 0) if axis == 0 else Vector3(0, 0.02, off)
+			_paint_stripe(c2, Vector2(0.16, along_len), yaw, white)
+
+	# Crosswalk zebra stripes on each of the four approaches to the intersection.
+	var approaches := [Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(-1, 0, 0)]
+	for app in approaches.size():
+		var dir: Vector3 = approaches[app]
+		var base: Vector3 = dir * (half_road + 1.6)
+		var perp := Vector3(dir.z, 0, dir.x)
+		for s in range(-3, 4):
+			var c: Vector3 = base + perp * (float(s) * 0.8) + Vector3(0, 0.02, 0)
+			var sz: Vector2 = Vector2(0.45, 2.2) if absf(dir.z) > 0.5 else Vector2(2.2, 0.45)
+			_paint_stripe(c, sz, 0.0, white)
+
+	_build_parking_lot(Vector3(hx * 0.5, 0, -hz * 0.5), white)
+	_build_traffic_signs(def, hx, hz)
+
+## A marked parking lot: a row of stalls (back line + dividers) on the tarmac.
+func _build_parking_lot(center: Vector3, paint: Material) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	var stalls := int(round(6 * clampf(density, 0.4, 1.2)))
+	var stall_w := 2.6
+	var depth := 5.0
+	var span := stall_w * stalls
+	# Back line.
+	_paint_stripe(center + Vector3(0, 0.02, -depth * 0.5), Vector2(span + 0.2, 0.16), 0.0, paint)
+	# Stall dividers.
+	for i in stalls + 1:
+		var x := center.x - span * 0.5 + stall_w * i
+		_paint_stripe(Vector3(x, 0.02, center.z), Vector2(0.14, depth), 0.0, paint)
+
+## A handful of roadside traffic signs (stop / warning / parking) on thin poles,
+## set back from the carriageways near the corners. Visual only.
+func _build_traffic_signs(def: Dictionary, hx: float, hz: float) -> void:
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	# (pos, kind) — set on the verges by the intersection and out by the lot/corners.
+	# kinds: "stop" red, "warn" yellow diamond, "info" blue.
+	var signs := [
+		[Vector3(7.0, 0, 7.0), "stop"],
+		[Vector3(-7.0, 0, 7.0), "warn"],
+		[Vector3(hx * 0.5 - 4.0, 0, -hz * 0.5 + 4.0), "info"],
+		[Vector3(-hx * 0.55, 0, hz * 0.3), "warn"],
+	]
+	for entry in signs:
+		var pos: Vector3 = entry[0]
+		if Vector2(pos.x - spawn.x, pos.z - spawn.z).length() < 5.0: continue
+		if Vector2(pos.x - exitp.x, pos.z - exitp.z).length() < 5.0: continue
+		_road_sign(pos, String(entry[1]))
+
+func _road_sign(pos: Vector3, kind: String) -> void:
+	var pole := CylinderMesh.new()
+	pole.top_radius = 0.05; pole.bottom_radius = 0.06; pole.height = 2.2; pole.radial_segments = 6
+	pole.material = MAT_TRIM
+	var pm := MeshInstance3D.new()
+	pm.mesh = pole
+	pm.position = pos + Vector3(0, 1.1, 0)
+	pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(pm)
+	var col := Color(0.85, 0.12, 0.1)
+	var face := Color(0.95, 0.95, 0.95)
+	match kind:
+		"warn": col = Color(0.95, 0.78, 0.05); face = Color(0.1, 0.1, 0.1)
+		"info": col = Color(0.1, 0.35, 0.8); face = Color(0.95, 0.95, 0.95)
+	var board := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.7, 0.7, 0.06)
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = col
+	bmat.roughness = 0.5
+	bmat.emission_enabled = true
+	bmat.emission = col
+	bmat.emission_energy_multiplier = 0.25 # reads at night without glowing
+	bm.material = bmat
+	board.mesh = bm
+	board.position = pos + Vector3(0, 2.2, 0)
+	if kind == "warn":
+		board.rotation.z = PI * 0.25 # diamond
+	board.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(board)
+	# A small painted glyph bar so the sign isn't a blank plate.
+	var glyph := MeshInstance3D.new()
+	var gm := BoxMesh.new()
+	gm.size = Vector3(0.42, 0.1, 0.02)
+	gm.material = _emissive_material(face, 0.2)
+	glyph.mesh = gm
+	glyph.position = pos + Vector3(0, 2.2, 0.04)
+	glyph.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(glyph)
+
+## A flat painted road marking: a thin slab laid on the tarmac. size is (x, z).
+func _paint_stripe(center: Vector3, size_xz: Vector2, yaw: float, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(size_xz.x, 0.04, size_xz.y)
+	bm.material = mat
+	mi.mesh = bm
+	mi.position = center
+	mi.rotation.y = yaw
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+## Road-paint material: matte white/yellow with a faint emission so the lines
+## still read on a dark night street.
+func _road_paint(color: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.8
+	m.metallic = 0.0
+	m.emission_enabled = true
+	m.emission = color
+	m.emission_energy_multiplier = 0.12
 	return m
 
 ## Open-air dressing for outdoor levels: utility poles strung with sagging power
