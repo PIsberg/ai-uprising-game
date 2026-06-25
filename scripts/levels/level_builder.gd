@@ -172,6 +172,7 @@ func _ready() -> void:
 	if def.is_empty():
 		push_error("LevelBuilder: unknown level_id '%s'" % level_id)
 		return
+	_strip_lava_overlaps(def)
 	_build_environment(def)
 	_build_geometry(def)
 	_build_wall_details(def)
@@ -1317,6 +1318,35 @@ func _build_set_piece(def: Dictionary) -> void:
 ## — turning a straight run to the exit into a longer path. Each entry:
 ##   {"pos": Vector3, "size": Vector2(x,z), "dmg": float (optional), "yaw": deg (optional)}
 ## Placed under _nav_region BEFORE the deferred bake so the static carve takes.
+## Rule: nothing sits inside a lava bed. Drop any placed clutter (cover, props,
+## buildings, rubble, pickups, spare weapons) whose footprint overlaps a bed —
+## it would be unreachable and read as a bug. Ramps/platforms are left alone (a
+## platform CAN bridge lava on purpose), as are lights and the level's core
+## hero/nexus singletons. The editor enforces the same rule on placement.
+func _strip_lava_overlaps(def: Dictionary) -> void:
+	var beds: Array = def.get("lava", [])
+	if beds.is_empty():
+		return
+	for key in ["walls", "props", "buildings", "rubble", "pickups", "extra_weapons"]:
+		var arr: Array = def.get(key, [])
+		if arr.is_empty():
+			continue
+		var kept := []
+		for e in arr:
+			if e is Dictionary and e.has("pos") and _pos_in_lava(e["pos"], beds, 0.6):
+				continue # inside a bed → drop it
+			kept.append(e)
+		def[key] = kept
+
+## True if a world point's footprint falls within any lava bed (+margin).
+func _pos_in_lava(pos: Vector3, beds: Array, margin: float = 0.6) -> bool:
+	for b in beds:
+		var bp: Vector3 = b.get("pos", Vector3.ZERO)
+		var bs: Vector2 = b.get("size", Vector2(8.0, 3.0))
+		if absf(pos.x - bp.x) <= bs.x * 0.5 + margin and absf(pos.z - bp.z) <= bs.y * 0.5 + margin:
+			return true
+	return false
+
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
 		var lava := LavaHazard.new()

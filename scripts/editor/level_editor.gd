@@ -1608,11 +1608,21 @@ func _drag_move_to(world: Vector3) -> void:
 
 # --- placement ---
 
+## Object categories that may NOT be placed inside lava (the runtime builder
+## enforces the same rule). Lights, ramps/platforms (bridges) and lava itself
+## are exempt; mobile enemies are allowed (they path out).
+const LAVA_FORBIDDEN := ["prop", "pickup", "weapon", "wall", "building",
+	"hologram", "fire", "accent", "target", "lore", "hero", "nexus"]
+
 func _place_at(world: Vector3) -> void:
 	if _armed_category == "":
 		return
+	var snapped := _snap_pos(world)
+	if _armed_category in LAVA_FORBIDDEN and _point_in_lava(snapped):
+		_set_status("⛔ Objects can't be placed inside lava")
+		return
 	_push_undo()
-	var entry := _default_entry(_armed_category, _armed_item, _snap_pos(world))
+	var entry := _default_entry(_armed_category, _armed_item, snapped)
 	if _armed_category in CAT_ARRAY:
 		(def[CAT_ARRAY[_armed_category]] as Array).append(entry)
 	elif _armed_category in ["hero", "nexus"]:
@@ -1621,6 +1631,17 @@ func _place_at(world: Vector3) -> void:
 	_select_holders([entry])
 	_set_status("Placed %s" % _armed_item)
 	_pop(_readout)
+
+## True if a point falls within any lava bed the level currently has (+margin).
+func _point_in_lava(pos: Vector3, margin: float = 0.6) -> bool:
+	for b in def.get("lava", []):
+		if not (b is Dictionary):
+			continue
+		var bp: Vector3 = b.get("pos", Vector3.ZERO)
+		var bs: Vector2 = b.get("size", Vector2(8.0, 3.0))
+		if absf(pos.x - bp.x) <= bs.x * 0.5 + margin and absf(pos.z - bp.z) <= bs.y * 0.5 + margin:
+			return true
+	return false
 
 func _default_entry(cat: String, item: String, pos: Vector3) -> Dictionary:
 	match cat:
