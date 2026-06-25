@@ -1516,6 +1516,19 @@ func _build_cover_trim(def: Dictionary) -> void:
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	if gs and gs.has_method("detail_scale"):
 		density = gs.detail_scale()
+	# One shared accent material for every cover crate, breathing in sync like the
+	# wall strips — the cover reads as powered, not painted. Built once, animated once.
+	var accent_mat := StandardMaterial3D.new()
+	accent_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	accent_mat.albedo_color = col
+	accent_mat.emission_enabled = true
+	accent_mat.emission = col
+	accent_mat.emission_energy_multiplier = 0.8
+	var atw := create_tween().set_loops()
+	atw.tween_property(accent_mat, "emission_energy_multiplier", 0.4, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	atw.tween_property(accent_mat, "emission_energy_multiplier", 1.0, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	for w in def.get("walls", []):
 		var pos: Vector3 = w["pos"]
 		var size: Vector3 = w["size"]
@@ -1539,13 +1552,13 @@ func _build_cover_trim(def: Dictionary) -> void:
 		# barriers and tall maze dividers keep just the rim (a big grille/pip row
 		# would read wrong on a 7-14 m wall).
 		if density > 0.0 and size.y <= 4.5 and maxf(size.x, size.z) <= 4.0 and minf(size.x, size.z) >= 1.0:
-			_dress_cover_box(pos, size, col)
+			_dress_cover_box(pos, size, col, accent_mat)
 
 ## Turns a bare cover block into a piece of machinery: four dark corner posts (a
 ## framed-cabinet read), a recessed vent grille on the face toward the arena
 ## centre, a near-flush theme-coloured accent groove around the body, and a row
 ## of bright status pips beside the grille. All visual-only (no colliders).
-func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color) -> void:
+func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color, accent: Material) -> void:
 	var half := size * 0.5
 	# Front = the face toward the arena centre (origin) — what the player approaches.
 	var to_origin := Vector3(0, pos.y, 0) - pos
@@ -1582,12 +1595,7 @@ func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color) -> void:
 		_add_detail_mesh(slat, face_center + Vector3(0, sy, 0) + face_n * 0.02, face_yaw)
 
 	# 3) Theme accent groove around all four faces, at mid-body, near flush.
-	var accent := StandardMaterial3D.new()
-	accent.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	accent.albedo_color = theme
-	accent.emission_enabled = true
-	accent.emission = theme
-	accent.emission_energy_multiplier = 0.8
+	#    Uses the shared breathing material so all cover pulses in sync.
 	var band_dy := half.y * 0.3
 	for nrm in [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]:
 		var nx := absf(nrm.x) > 0.5
