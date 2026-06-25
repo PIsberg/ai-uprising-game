@@ -33,11 +33,31 @@ func _ready() -> void:
 	# heavy load — its main-thread build will sit on THIS frame, not on grey.
 	_go.call_deferred()
 
+const BG_IMAGE := "res://assets/textures/ui/menu_background.png"
+
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.03, 0.04, 0.06)
 	add_child(bg)
+
+	# Actual loading artwork behind the text — the menu key-art, dimmed so the
+	# title/spinner stay readable. (Falls back to the flat colour if missing.)
+	if ResourceLoader.exists(BG_IMAGE):
+		var art := TextureRect.new()
+		art.texture = load(BG_IMAGE)
+		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		art.modulate = Color(1, 1, 1, 0.45)
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(art)
+		# A dark scrim over the art so the centred text reads cleanly.
+		var scrim := ColorRect.new()
+		scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		scrim.color = Color(0.02, 0.03, 0.05, 0.45)
+		scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(scrim)
 
 	# Centered block: level name, animated spinner, LOADING + dots, a tip.
 	var box := VBoxContainer.new()
