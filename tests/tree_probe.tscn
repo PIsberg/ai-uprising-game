@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0probe0treevol1"]
+[gd_scene format=3 uid="uid://cva08104wnayy"]
 
 [ext_resource type="Script" path="res://tests/tree_probe.gd" id="1_p"]
 
