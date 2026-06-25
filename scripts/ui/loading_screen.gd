@@ -24,6 +24,9 @@ var _spinner: Control
 var _dots_lbl: Label
 var _t: float = 0.0
 var _started: bool = false
+var _path: String = ""        ## scene being threaded-loaded
+var _loading: bool = false    ## a threaded load is in flight
+var _progress: float = 0.0    ## 0..1, smoothed, drives the ring + percent
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -117,26 +120,62 @@ func _build_ui() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _loading:
+		_poll_load()
 	if _spinner:
 		_spinner.queue_redraw()
 	if _dots_lbl:
-		var n := int(_t * 3.0) % 4
-		_dots_lbl.text = "LOADING" + ".".repeat(n)
+		# The ring shows the real fraction; the label shows the percent.
+		_dots_lbl.text = "LOADING  %d%%" % int(clampf(_progress, 0.0, 1.0) * 100.0)
+
+## Read threaded-load progress; swap to the scene once it's fully loaded.
+func _poll_load() -> void:
+	var prog: Array = []
+	var status := ResourceLoader.load_threaded_get_status(_path, prog)
+	if prog.size() > 0:
+		# Ease toward the reported value so the ring fills smoothly, never backwards.
+		_progress = maxf(_progress, lerpf(_progress, float(prog[0]), 0.35))
+	match status:
+		ResourceLoader.THREAD_LOAD_LOADED:
+			_loading = false
+			_progress = 1.0
+			var packed := ResourceLoader.load_threaded_get(_path) as PackedScene
+			if packed:
+				get_tree().change_scene_to_packed(packed)
+			else:
+				get_tree().change_scene_to_file(_path)
+		ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			_loading = false
+			get_tree().change_scene_to_file(_path) # last-ditch fallback
 
 func _draw_spinner() -> void:
 	var c := _spinner.size * 0.5
 	var r := 26.0
-	# A bright arc chasing around a dim ring.
-	_spinner.draw_arc(c, r, 0, TAU, 48, Color(0.2, 0.3, 0.45), 4.0, true)
-	var a := _t * 4.0
-	_spinner.draw_arc(c, r, a, a + TAU * 0.28, 24, Color(0.4, 0.75, 1.0), 5.0, true)
+	# Dim full ring + a bright arc filled to the real load fraction (from 12 o'clock).
+	_spinner.draw_arc(c, r, 0, TAU, 64, Color(0.2, 0.3, 0.45), 4.0, true)
+	var start := -PI * 0.5
+	var sweep := clampf(_progress, 0.0, 1.0) * TAU
+	if sweep > 0.001:
+		_spinner.draw_arc(c, r, start, start + sweep, 64, Color(0.4, 0.75, 1.0), 5.0, true)
+	# A small leading dot so it still reads as "alive" even at 0%.
+	var head := start + sweep
+	_spinner.draw_circle(c + Vector2(cos(head), sin(head)) * r, 3.5, Color(0.7, 0.9, 1.0))
 
 func _go() -> void:
 	if _started:
 		return
 	_started = true
-	# A few frames guarantees the screen has actually been presented before the
-	# blocking build begins.
+	# A few frames so this screen is actually presented first.
 	for i in 4:
 		await get_tree().process_frame
-	get_tree().change_scene_to_file(GameState.pending_scene)
+	# Threaded load so the heavy scene + its asset deps load on a background thread
+	# while we keep ticking the progress ring (a blocking change_scene couldn't
+	# report progress). _poll_load() swaps in the scene when it's ready.
+	_path = GameState.pending_scene
+	if _path == "" or not ResourceLoader.exists(_path):
+		get_tree().change_scene_to_file(_path)
+		return
+	if ResourceLoader.load_threaded_request(_path) == OK:
+		_loading = true
+	else:
+		get_tree().change_scene_to_file(_path) # fallback if the request was refused
