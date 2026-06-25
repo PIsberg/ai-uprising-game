@@ -87,6 +87,20 @@ func _build_extra_settings() -> void:
 	hdr.toggled.connect(func(p: bool): GraphicsSettings.set_hdr_output_enabled(p))
 	_settings.add_child(hdr)
 
+	var show_fps := CheckButton.new()
+	show_fps.text = tr("Show FPS Counter")
+	show_fps.custom_minimum_size = Vector2(360, 44)
+	show_fps.button_pressed = GraphicsSettings.show_fps
+	show_fps.toggled.connect(func(p: bool): GraphicsSettings.set_show_fps(p))
+	_settings.add_child(show_fps)
+
+	var dof := CheckButton.new()
+	dof.text = tr("Depth of Field")
+	dof.custom_minimum_size = Vector2(360, 44)
+	dof.button_pressed = GraphicsSettings.dof_enabled
+	dof.toggled.connect(func(p: bool): GraphicsSettings.set_dof_enabled(p))
+	_settings.add_child(dof)
+
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()
@@ -168,7 +182,16 @@ var _diff_btns: Array[Button] = []
 
 func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo or k.unicode == 0:
+	if k == null or not k.pressed or k.echo:
+		return
+	# ESC backs out of any sub-panel (settings / difficulty / controls / levels)
+	# to the main menu — these panels can overflow and bury their Back button.
+	if k.physical_keycode == KEY_ESCAPE:
+		if _main and not _main.visible:
+			_show_panel(_main)
+			accept_event()
+		return
+	if k.unicode == 0:
 		return
 	_cheat_buf = (_cheat_buf + char(k.unicode).to_lower()).right(CHEAT_WORD.length())
 	if _cheat_buf == CHEAT_WORD:

@@ -180,16 +180,18 @@ const UPGRADE_DEFS := {
 const UPGRADE_MAX := 5
 var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0}
 
-## One-shot "field supplies" bought in the Armory — banked here, then applied
-## (and cleared) by the player at the next deploy. Repeatable, uncapped, cheap.
+## "Field supplies" bought in the Armory — banked here and PERMANENT for the run:
+## the player re-applies them on every deploy (never cleared until reset_run on a
+## new campaign), so a med-kit's max-HP / an ammo crate / a grenade pack follows
+## you the rest of the game. Repeatable, uncapped, cheap.
 const SUPPLY_DEFS := {
 	"ammo":     {"label": "AMMO CRATE",   "amount": 60, "cost": 450},
 	"grenades": {"label": "GRENADE PACK", "amount": 1,  "cost": 600},
 	"health":   {"label": "MED-KIT",      "amount": 40, "cost": 750},
 }
-var supply_ammo: int = 0        # bonus reserve added to every weapon next deploy
-var supply_grenades: int = 0    # bonus frag grenades carried in next deploy
-var supply_health: float = 0.0  # bonus max+current HP next deploy
+var supply_ammo: int = 0        # permanent bonus reserve added to every weapon each deploy
+var supply_grenades: int = 0    # permanent bonus frag grenades carried each deploy
+var supply_health: float = 0.0  # permanent bonus max+current HP each deploy
 
 ## Buy a field supply, banking its amount for the next deploy. False if too poor.
 func buy_supply(k: String) -> bool:

@@ -75,6 +75,7 @@ var _grenade_cd: float = 0.0
 @onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
 @onready var hp: Damageable = $Damageable
 @onready var _post_overlay: ColorRect = $PostFX/Overlay
+var _dof_overlay: MeshInstance3D ## Optional depth-of-field fullscreen quad (built in code).
 var _speed_warp: float = 0.0
 
 var _dead: bool = false
@@ -112,24 +113,26 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_camera_base_y = camera.position.y
 	_apply_user_settings()
+	_build_dof_overlay()
 	_fov_base = camera.fov
 	_register_dash_action()
 	grenades = max_grenades
-	# Field supplies bought in the Armory — applied once on deploy, then cleared.
+	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
+	# on every deploy (a fresh player each level, so no compounding) and are only
+	# cleared by reset_run() on a new campaign — what you buy follows you.
 	if GameState.supply_health > 0.0:
 		hp.max_health += GameState.supply_health
-		GameState.supply_health = 0.0
 	hp.current_health = hp.max_health
 	if GameState.supply_grenades > 0:
 		grenade_counts[GrenadeType.FRAG] += GameState.supply_grenades
-		GameState.supply_grenades = 0
 	_sync_grenades()
 	_apply_supply_ammo.call_deferred()  # after the WeaponManager has built the arsenal
 	hp.health_changed.connect(_on_health_changed)
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_hp_damaged)
 
-## Pour any bought ammo crates into every weapon's reserve.
+## Pour any bought ammo crates into every weapon's reserve. Persistent for the
+## run — re-applied each deploy (not cleared), so the reserve bonus carries on.
 func _apply_supply_ammo() -> void:
 	if GameState.supply_ammo <= 0:
 		return
@@ -138,7 +141,45 @@ func _apply_supply_ammo() -> void:
 		for w in wm.weapons:
 			if w and w.has_method("add_ammo"):
 				w.add_ammo(GameState.supply_ammo)
-	GameState.supply_ammo = 0
+
+## Optional cinematic depth-of-field: a fullscreen quad under the camera running
+## shaders/dof.gdshader. Built once and hidden until enabled in settings.
+func _build_dof_overlay() -> void:
+	var mi := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(2, 2)
+	mi.mesh = q
+	var sm := ShaderMaterial.new()
+	sm.shader = preload("res://shaders/dof.gdshader")
+	mi.set_surface_override_material(0, sm)
+	mi.extra_cull_margin = 16384.0 # fullscreen quad: never frustum-cull it
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.visible = false
+	camera.add_child(mi)
+	_dof_overlay = mi
+
+## Feed the DoF shader the focus point: raycast straight ahead and focus on
+## whatever the camera looks at (so the player's target stays sharp). Polls the
+## setting so it can be toggled live; hidden + skipped when off.
+func _update_dof() -> void:
+	if _dof_overlay == null:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var on: bool = gs != null and bool(gs.get("dof_enabled"))
+	if _dof_overlay.visible != on:
+		_dof_overlay.visible = on
+	if not on:
+		return
+	var origin := camera.global_position
+	var endp := origin - camera.global_transform.basis.z * 250.0
+	var params := PhysicsRayQueryParameters3D.create(origin, endp, 1)
+	params.exclude = [get_rid()]
+	var ray := get_world_3d().direct_space_state.intersect_ray(params)
+	if not ray.is_empty():
+		endp = ray["position"]
+	var sm := _dof_overlay.get_surface_override_material(0) as ShaderMaterial
+	if sm:
+		sm.set_shader_parameter("ray_position", endp)
 
 ## Sprint speed-warp: feed the post shader a 0..1 value that radial-streaks the
 ## screen edges the faster you run.
@@ -246,6 +287,7 @@ func _physics_process(delta: float) -> void:
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
 	move_and_slide()
+	_update_dof()
 	_check_landing()
 	_handle_footsteps(delta)
 

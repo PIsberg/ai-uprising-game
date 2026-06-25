@@ -1,6 +1,6 @@
 extends Control
-## Campaign opener as a motion-comic: the three panels of the intro page flash in
-## one at a time (white pop → reveal → hold) with animated FX layered over the
+## Campaign opener as a motion-comic: the three panels of the intro page slide in
+## one at a time (page-turn → reveal → hold) with animated FX layered over the
 ## art — glowing muzzle fire, enemy laser beams, pulsing red eyes / hologram
 ## glow — then we drop into level 1. Any key/click/button skips.
 ##
@@ -54,7 +54,6 @@ var _atlas: AtlasTexture
 var _panel_root: Control
 var _img: TextureRect
 var _fx_layer: Control
-var _flash: ColorRect
 var _fade: ColorRect
 var _add_mat: CanvasItemMaterial
 var _fx: Array = []        # live FX node records for the current panel
@@ -99,12 +98,6 @@ func _ready() -> void:
 	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel_root.add_child(_fx_layer)
 
-	_flash = ColorRect.new()
-	_flash.color = Color(1, 1, 1, 0)
-	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_flash)
-
 	var hint := Label.new()
 	hint.text = "Skip  ▸"
 	hint.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -134,12 +127,17 @@ func _run() -> void:
 		if _done:
 			break
 		_show_panel(i)
+		# Page-turn: the new panel slides in from the right while fading up — no
+		# white flash, no switch blip. Reads like turning to the next comic page.
+		var target: Vector2 = _panel_root.position
+		var slide := get_viewport_rect().size.x * 0.32
+		_panel_root.position = target + Vector2(slide, 0.0)
 		_panel_root.modulate.a = 0.0
-		_flash_panel()
-		var rev := create_tween()
-		rev.tween_property(_panel_root, "modulate:a", 1.0, 0.22)
-		if has_node("/root/AudioBus"):
-			AudioBus.play_synth_ui("broadcast_blip", -4.0, 0.8 + 0.2 * i)
+		var rev := create_tween().set_parallel(true)
+		rev.tween_property(_panel_root, "position", target, 0.5) \
+			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		rev.tween_property(_panel_root, "modulate:a", 1.0, 0.35) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		await _wait(PANEL_HOLD)
 	_finish()
 
@@ -247,12 +245,6 @@ func _process(delta: float) -> void:
 		node.modulate.a = clampf(k, 0.2, 1.3)
 		var sc := 1.0 + (0.18 if f["muzzle"] else 0.07) * (k - 0.7)
 		node.scale = Vector2(sc, sc)
-
-## A white impact pop that fades out — the "flash" of each panel snapping in.
-func _flash_panel() -> void:
-	_flash.color.a = 0.95
-	var t := create_tween()
-	t.tween_property(_flash, "color:a", 0.0, 0.38)
 
 ## Wait `sec` real seconds, returning early the instant the player skips.
 func _wait(sec: float) -> void:

@@ -29,6 +29,7 @@ reload_time = 1.2
 muzzle_flash_scene = ExtResource("3_mf")
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
+muzzle_scale = 0.85
 sound_id = "pistol"
 slide_kick = 0.03
 viewmodel_color = Color(0.25, 0.27, 0.3, 1)

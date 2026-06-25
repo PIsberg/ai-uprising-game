@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cva08104wnayy"]
+
+[ext_resource type="Script" path="res://tests/tree_probe.gd" id="1_p"]
+
+[node name="TreeProbe" type="Node3D"]
+script = ExtResource("1_p")

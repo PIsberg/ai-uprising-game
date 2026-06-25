@@ -11,7 +11,7 @@ extends EnemyBase
 const ANIM_IDLE := "RobotArmature|Robot_Idle"
 const ANIM_WALK := "RobotArmature|Robot_Walking"
 
-@export var hitscan_damage: float = 12.0
+@export var hitscan_damage: float = 9.0
 @export var burst_count: int = 6
 @export var burst_interval: float = 0.08
 @export var burst_spread_deg: float = 1.4
@@ -36,9 +36,9 @@ const BEAM_WINDUP := 0.6        ## eye charges green before firing
 const BEAM_DURATION := 2.6      ## seconds the beam stays live
 const BEAM_RANGE := 60.0
 const BEAM_TICK := 0.18         ## damage cadence while it's on you
-const BEAM_DAMAGE := 15.0
+const BEAM_DAMAGE := 10.0
 const BEAM_TURN := 1.5          ## rad/s sweep speed (ramps up when wounded)
-const BEAM_COOLDOWN := 5.5
+const BEAM_COOLDOWN := 7.5
 const BEAM_COLOR := Color(0.3, 1.0, 0.35)
 
 @onready var _model: Node3D = $Model
@@ -71,15 +71,15 @@ var _beam_charge: float = 0.0               ## 0..1, drives the eye turning gree
 
 func _ready() -> void:
 	super._ready()
-	max_health = 700.0
-	stagger_threshold = 220.0 # heavy boss: only big/sustained hits stagger it
+	max_health = 560.0  # toned down from 700 — APEX read a little too strong
+	stagger_threshold = 200.0 # heavy boss: only big/sustained hits stagger it
 	move_speed = 6.8
 	turn_speed = 9.0
 	sight_range = 40.0
 	sight_angle_deg = 280.0 # relentless — sees you almost anywhere
 	attack_range = 26.0
 	preferred_range = 16.0
-	attack_cooldown = 1.8
+	attack_cooldown = 2.1  # slower burst cadence
 	score_value = 1000
 	hp.max_health = max_health
 	hp.current_health = max_health

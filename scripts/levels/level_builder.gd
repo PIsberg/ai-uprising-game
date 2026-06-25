@@ -172,6 +172,7 @@ func _ready() -> void:
 	if def.is_empty():
 		push_error("LevelBuilder: unknown level_id '%s'" % level_id)
 		return
+	_strip_lava_overlaps(def)
 	_build_environment(def)
 	_build_geometry(def)
 	_build_wall_details(def)
@@ -195,6 +196,8 @@ func _ready() -> void:
 	_build_pipes(def)
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
+	_build_streets(def)
+	_build_trees(def)
 	_build_rubble(def)
 	_build_fires(def)
 	_build_weather(def)
@@ -602,6 +605,11 @@ func _build_geometry(def: Dictionary) -> void:
 		# Showcase override: a hand-authored textured material (e.g. the polished
 		# vault plate) instead of the shared concrete or a flat tint.
 		floor_mat = load(def["floor_material"])
+	elif def.get("streets", false):
+		# Street levels get textured tarmac (grit + grain) instead of a flat tint,
+		# so the road markings/parking/signs below sit on real-looking asphalt.
+		floor_mat = _asphalt_material()
+		floor_surf = "surf_dirt"
 	elif def.has("floor_color"):
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
@@ -792,6 +800,45 @@ func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3
 	m.albedo_color = color
 	m.roughness = roughness
 	m.metallic = 0.0
+	return m
+
+static var _asphalt_mat: StandardMaterial3D = null
+
+## Procedural tarmac for street levels: dark, rough, with a noisy albedo speckle
+## (aggregate grit) and a fine normal grain, triplanar-mapped so it tiles across
+## any floor size. Built once and shared.
+func _asphalt_material() -> StandardMaterial3D:
+	if _asphalt_mat != null:
+		return _asphalt_mat
+	var grit := FastNoiseLite.new()
+	grit.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	grit.frequency = 0.9
+	var alb := NoiseTexture2D.new()
+	alb.width = 256
+	alb.height = 256
+	alb.seamless = true
+	alb.noise = grit
+	var grain := FastNoiseLite.new()
+	grain.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	grain.frequency = 1.8
+	var nrm := NoiseTexture2D.new()
+	nrm.width = 256
+	nrm.height = 256
+	nrm.seamless = true
+	nrm.as_normal_map = true
+	nrm.bump_strength = 0.7
+	nrm.noise = grain
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.1, 0.1, 0.11)
+	m.albedo_texture = alb            # dark base × grey speckle reads as aggregate
+	m.roughness = 0.94
+	m.metallic = 0.0
+	m.normal_enabled = true
+	m.normal_scale = 0.8
+	m.normal_texture = nrm
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(0.12, 0.12, 0.12)
+	_asphalt_mat = m
 	return m
 
 ## Real suburban houses (Kenney City Kit Suburban, CC0): one model per def
@@ -1271,6 +1318,35 @@ func _build_set_piece(def: Dictionary) -> void:
 ## — turning a straight run to the exit into a longer path. Each entry:
 ##   {"pos": Vector3, "size": Vector2(x,z), "dmg": float (optional), "yaw": deg (optional)}
 ## Placed under _nav_region BEFORE the deferred bake so the static carve takes.
+## Rule: nothing sits inside a lava bed. Drop any placed clutter (cover, props,
+## buildings, rubble, pickups, spare weapons) whose footprint overlaps a bed —
+## it would be unreachable and read as a bug. Ramps/platforms are left alone (a
+## platform CAN bridge lava on purpose), as are lights and the level's core
+## hero/nexus singletons. The editor enforces the same rule on placement.
+func _strip_lava_overlaps(def: Dictionary) -> void:
+	var beds: Array = def.get("lava", [])
+	if beds.is_empty():
+		return
+	for key in ["walls", "props", "buildings", "rubble", "pickups", "extra_weapons"]:
+		var arr: Array = def.get(key, [])
+		if arr.is_empty():
+			continue
+		var kept := []
+		for e in arr:
+			if e is Dictionary and e.has("pos") and _pos_in_lava(e["pos"], beds, 0.6):
+				continue # inside a bed → drop it
+			kept.append(e)
+		def[key] = kept
+
+## True if a world point's footprint falls within any lava bed (+margin).
+func _pos_in_lava(pos: Vector3, beds: Array, margin: float = 0.6) -> bool:
+	for b in beds:
+		var bp: Vector3 = b.get("pos", Vector3.ZERO)
+		var bs: Vector2 = b.get("size", Vector2(8.0, 3.0))
+		if absf(pos.x - bp.x) <= bs.x * 0.5 + margin and absf(pos.z - bp.z) <= bs.y * 0.5 + margin:
+			return true
+	return false
+
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
 		var lava := LavaHazard.new()
@@ -1509,6 +1585,26 @@ func _build_cover_trim(def: Dictionary) -> void:
 	m.emission_enabled = true
 	m.emission = col
 	m.emission_energy_multiplier = 0.9 # subtle — outline, not signage
+	# Greebles (corner posts, vent grille, accent groove, status pips) follow the
+	# detail tier like the wall trim: they turn the bare cover blocks into machined
+	# consoles. LOW tier skips them; the cheap top-rim outline below always runs.
+	var density := 1.0
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	# One shared accent material for every cover crate, breathing in sync like the
+	# wall strips — the cover reads as powered, not painted. Built once, animated once.
+	var accent_mat := StandardMaterial3D.new()
+	accent_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	accent_mat.albedo_color = col
+	accent_mat.emission_enabled = true
+	accent_mat.emission = col
+	accent_mat.emission_energy_multiplier = 0.8
+	var atw := create_tween().set_loops()
+	atw.tween_property(accent_mat, "emission_energy_multiplier", 0.4, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	atw.tween_property(accent_mat, "emission_energy_multiplier", 1.0, 2.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	for w in def.get("walls", []):
 		var pos: Vector3 = w["pos"]
 		var size: Vector3 = w["size"]
@@ -1528,6 +1624,77 @@ func _build_cover_trim(def: Dictionary) -> void:
 			mi.position = edge[0]
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(mi)
+		# Machined detailing for compact, roughly-cubic cover crates only — long
+		# barriers and tall maze dividers keep just the rim (a big grille/pip row
+		# would read wrong on a 7-14 m wall).
+		if density > 0.0 and size.y <= 4.5 and maxf(size.x, size.z) <= 4.0 and minf(size.x, size.z) >= 1.0:
+			_dress_cover_box(pos, size, col, accent_mat)
+
+## Turns a bare cover block into a piece of machinery: four dark corner posts (a
+## framed-cabinet read), a recessed vent grille on the face toward the arena
+## centre, a near-flush theme-coloured accent groove around the body, and a row
+## of bright status pips beside the grille. All visual-only (no colliders).
+func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color, accent: Material) -> void:
+	var half := size * 0.5
+	# Front = the face toward the arena centre (origin) — what the player approaches.
+	var to_origin := Vector3(0, pos.y, 0) - pos
+	var on_x := absf(to_origin.x) > absf(to_origin.z)
+	var face_n: Vector3 = (Vector3(signf(to_origin.x), 0, 0) if on_x else Vector3(0, 0, signf(to_origin.z)))
+	if face_n.length() < 0.5:
+		face_n = Vector3(0, 0, 1)
+		on_x = false
+	var depth := half.x if on_x else half.z
+	var width := half.z if on_x else half.x # in-plane horizontal half-extent
+	var face_yaw := 0.0 if on_x else PI * 0.5
+	var face_center := pos + face_n * (depth + 0.01)
+
+	# 1) Four vertical corner posts.
+	var post_w := 0.16
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			var post := _beveled_box(Vector3(post_w, size.y, post_w))
+			post.material = MAT_TRIM
+			_add_detail_mesh(post, Vector3(pos.x + sx * (half.x - post_w * 0.4), pos.y, pos.z + sz * (half.z - post_w * 0.4)), 0.0)
+
+	# 2) Recessed vent grille (dark backplate + horizontal slats) on the front face.
+	var grille_w := minf(width * 1.4, width * 2.0 - 0.5)
+	var back := BoxMesh.new()
+	back.size = Vector3(grille_w, size.y * 0.5, 0.04)
+	back.material = MAT_SEAM
+	_add_detail_mesh(back, face_center + Vector3(0, -size.y * 0.05, 0), face_yaw)
+	var n_slats := 5
+	for i in n_slats:
+		var sy := -size.y * 0.05 + (float(i) / float(n_slats - 1) - 0.5) * size.y * 0.42
+		var slat := BoxMesh.new()
+		slat.size = Vector3(grille_w - 0.1, 0.05, 0.07)
+		slat.material = MAT_TRIM
+		_add_detail_mesh(slat, face_center + Vector3(0, sy, 0) + face_n * 0.02, face_yaw)
+
+	# 3) Theme accent groove around all four faces, at mid-body, near flush.
+	#    Uses the shared breathing material so all cover pulses in sync.
+	var band_dy := half.y * 0.3
+	for nrm in [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]:
+		var nx := absf(nrm.x) > 0.5
+		var bd := half.x if nx else half.z
+		var bw := (half.z if nx else half.x) * 2.0 - post_w * 2.2
+		var band := BoxMesh.new()
+		band.size = Vector3(bw, 0.05, 0.015)
+		band.material = accent
+		_add_detail_mesh(band, pos + nrm * (bd + 0.006) + Vector3(0, band_dy, 0), 0.0 if nx else PI * 0.5)
+
+	# 4) Status pips: a short row of bright theme-coloured lights by the grille top.
+	var pip := StandardMaterial3D.new()
+	pip.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pip.albedo_color = theme
+	pip.emission_enabled = true
+	pip.emission = theme
+	pip.emission_energy_multiplier = 4.0
+	var tangent := Vector3(0, 0, 1) if on_x else Vector3(1, 0, 0)
+	for i in 3:
+		var dot := BoxMesh.new()
+		dot.size = Vector3(0.12, 0.12, 0.05)
+		dot.material = pip
+		_add_detail_mesh(dot, face_center + tangent * (width - 0.35 - float(i) * 0.28) + Vector3(0, half.y - 0.3, 0) + face_n * 0.02, face_yaw)
 
 ## Panel seams ruled across interior floors: thin recess-dark strips every few
 ## metres in both axes. Breaks the monotony of a large single-material slab and
@@ -1850,6 +2017,217 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission_enabled = true
 	m.emission = color
 	m.emission_energy_multiplier = energy
+	return m
+
+## Scatter volumetric-billboard trees across an outdoor level (def "trees": N).
+## Trees are visual-only (no collider — the navmesh is already baked) and avoid
+## the spawn/exit, the road corridors on street levels, and building/cover
+## footprints so they don't sprout through a house. Count scales with detail tier.
+func _build_trees(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return
+	var count := int(def.get("trees", 0))
+	if count <= 0:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	count = int(round(count * clampf(density, 0.4, 1.2)))
+	var fs: Vector2 = def.get("floor_size", Vector2(60, 60))
+	var hx := fs.x * 0.5 - 2.0
+	var hz := fs.y * 0.5 - 2.0
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	var streets: bool = def.get("streets", false)
+	var blockers: Array = []
+	for key in ["buildings", "walls"]:
+		for e in def.get(key, []):
+			if e.has("pos") and e.has("size"):
+				blockers.append([e["pos"], e["size"]])
+	var placed := 0
+	var attempts := 0
+	while placed < count and attempts < count * 10:
+		attempts += 1
+		var x := randf_range(-hx, hx)
+		var z := randf_range(-hz, hz)
+		var p := Vector3(x, 0, z)
+		if Vector2(x - spawn.x, z - spawn.z).length() < 7.0:
+			continue
+		if Vector2(x - exitp.x, z - exitp.z).length() < 7.0:
+			continue
+		# Keep off the carriageways/intersection on street levels.
+		if streets and (absf(x) < 7.0 or absf(z) < 7.0):
+			continue
+		var blocked := false
+		for b in blockers:
+			var bp: Vector3 = b[0]
+			var bs: Vector3 = b[1]
+			if absf(x - bp.x) < bs.x * 0.5 + 1.5 and absf(z - bp.z) < bs.z * 0.5 + 1.5:
+				blocked = true
+				break
+		if blocked:
+			continue
+		var size := randf_range(3.2, 5.8)
+		var tree := VolumetricTree.make(size)
+		tree.position = Vector3(x, size * 0.5, z)
+		add_child(tree)
+		# Soft contact-shadow blob so the billboard tree reads as grounded.
+		var shadow := VolumetricTree.ground_shadow(size)
+		shadow.position = Vector3(x, 0.03, z)
+		add_child(shadow)
+		placed += 1
+
+## Street dressing for road/suburb levels (def "streets": true): painted lane
+## lines + a crossroads through the centre, a crosswalk on each approach, a marked
+## parking lot off to one side, and a few traffic signs. All flat paint (y≈0.02)
+## or thin visual-only posts — no colliders, so the navmesh/gameplay are untouched.
+func _build_streets(def: Dictionary) -> void:
+	if not def.get("streets", false):
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(60, 60))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var white := _road_paint(Color(0.86, 0.86, 0.8))
+	var yellow := _road_paint(Color(0.92, 0.74, 0.12))
+	var half_road := 5.0  # road half-width (each carriageway ~5 m)
+
+	# Crossroads through the origin: a dashed centre line + solid edge lines on
+	# both the N-S and E-W roads.
+	for axis in [0, 1]: # 0 = road runs along Z (x fixed), 1 = along X
+		var along_len: float = (hz if axis == 0 else hx) * 2.0 - 2.0
+		var yaw := 0.0 if axis == 0 else PI * 0.5
+		# Dashed yellow centre line.
+		var dash := 1.6
+		var gap := 1.4
+		var n := int(along_len / (dash + gap))
+		for i in n:
+			var t: float = -along_len * 0.5 + (dash + gap) * (float(i) + 0.5)
+			# Leave the intersection box itself unpainted.
+			if absf(t) < half_road + 1.0:
+				continue
+			var c: Vector3 = Vector3(0, 0.02, t) if axis == 0 else Vector3(t, 0.02, 0)
+			_paint_stripe(c, Vector2(0.2, dash), yaw, yellow)
+		# Solid white edge lines.
+		for side in [-1.0, 1.0]:
+			var off: float = side * half_road
+			var c2: Vector3 = Vector3(off, 0.02, 0) if axis == 0 else Vector3(0, 0.02, off)
+			_paint_stripe(c2, Vector2(0.16, along_len), yaw, white)
+
+	# Crosswalk zebra stripes on each of the four approaches to the intersection.
+	var approaches := [Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(-1, 0, 0)]
+	for app in approaches.size():
+		var dir: Vector3 = approaches[app]
+		var base: Vector3 = dir * (half_road + 1.6)
+		var perp := Vector3(dir.z, 0, dir.x)
+		for s in range(-3, 4):
+			var c: Vector3 = base + perp * (float(s) * 0.8) + Vector3(0, 0.02, 0)
+			var sz: Vector2 = Vector2(0.45, 2.2) if absf(dir.z) > 0.5 else Vector2(2.2, 0.45)
+			_paint_stripe(c, sz, 0.0, white)
+
+	_build_parking_lot(Vector3(hx * 0.5, 0, -hz * 0.5), white)
+	_build_traffic_signs(def, hx, hz)
+
+## A marked parking lot: a row of stalls (back line + dividers) on the tarmac.
+func _build_parking_lot(center: Vector3, paint: Material) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	var stalls := int(round(6 * clampf(density, 0.4, 1.2)))
+	var stall_w := 2.6
+	var depth := 5.0
+	var span := stall_w * stalls
+	# Back line.
+	_paint_stripe(center + Vector3(0, 0.02, -depth * 0.5), Vector2(span + 0.2, 0.16), 0.0, paint)
+	# Stall dividers.
+	for i in stalls + 1:
+		var x := center.x - span * 0.5 + stall_w * i
+		_paint_stripe(Vector3(x, 0.02, center.z), Vector2(0.14, depth), 0.0, paint)
+
+## A handful of roadside traffic signs (stop / warning / parking) on thin poles,
+## set back from the carriageways near the corners. Visual only.
+func _build_traffic_signs(def: Dictionary, hx: float, hz: float) -> void:
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	# (pos, kind) — set on the verges by the intersection and out by the lot/corners.
+	# kinds: "stop" red, "warn" yellow diamond, "info" blue.
+	var signs := [
+		[Vector3(7.0, 0, 7.0), "stop"],
+		[Vector3(-7.0, 0, 7.0), "warn"],
+		[Vector3(hx * 0.5 - 4.0, 0, -hz * 0.5 + 4.0), "info"],
+		[Vector3(-hx * 0.55, 0, hz * 0.3), "warn"],
+	]
+	for entry in signs:
+		var pos: Vector3 = entry[0]
+		if Vector2(pos.x - spawn.x, pos.z - spawn.z).length() < 5.0: continue
+		if Vector2(pos.x - exitp.x, pos.z - exitp.z).length() < 5.0: continue
+		_road_sign(pos, String(entry[1]))
+
+func _road_sign(pos: Vector3, kind: String) -> void:
+	var pole := CylinderMesh.new()
+	pole.top_radius = 0.05; pole.bottom_radius = 0.06; pole.height = 2.2; pole.radial_segments = 6
+	pole.material = MAT_TRIM
+	var pm := MeshInstance3D.new()
+	pm.mesh = pole
+	pm.position = pos + Vector3(0, 1.1, 0)
+	pm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(pm)
+	var col := Color(0.85, 0.12, 0.1)
+	var face := Color(0.95, 0.95, 0.95)
+	match kind:
+		"warn": col = Color(0.95, 0.78, 0.05); face = Color(0.1, 0.1, 0.1)
+		"info": col = Color(0.1, 0.35, 0.8); face = Color(0.95, 0.95, 0.95)
+	var board := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.7, 0.7, 0.06)
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = col
+	bmat.roughness = 0.5
+	bmat.emission_enabled = true
+	bmat.emission = col
+	bmat.emission_energy_multiplier = 0.25 # reads at night without glowing
+	bm.material = bmat
+	board.mesh = bm
+	board.position = pos + Vector3(0, 2.2, 0)
+	if kind == "warn":
+		board.rotation.z = PI * 0.25 # diamond
+	board.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(board)
+	# A small painted glyph bar so the sign isn't a blank plate.
+	var glyph := MeshInstance3D.new()
+	var gm := BoxMesh.new()
+	gm.size = Vector3(0.42, 0.1, 0.02)
+	gm.material = _emissive_material(face, 0.2)
+	glyph.mesh = gm
+	glyph.position = pos + Vector3(0, 2.2, 0.04)
+	glyph.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(glyph)
+
+## A flat painted road marking: a thin slab laid on the tarmac. size is (x, z).
+func _paint_stripe(center: Vector3, size_xz: Vector2, yaw: float, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(size_xz.x, 0.04, size_xz.y)
+	bm.material = mat
+	mi.mesh = bm
+	mi.position = center
+	mi.rotation.y = yaw
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+
+## Road-paint material: matte white/yellow with a faint emission so the lines
+## still read on a dark night street.
+func _road_paint(color: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = color
+	m.roughness = 0.8
+	m.metallic = 0.0
+	m.emission_enabled = true
+	m.emission = color
+	m.emission_energy_multiplier = 0.12
 	return m
 
 ## Open-air dressing for outdoor levels: utility poles strung with sagging power

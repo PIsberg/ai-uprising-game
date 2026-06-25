@@ -40,8 +40,8 @@ func _ready() -> void:
 		var player := lvl.find_child("Player", false, false) as Node3D
 		var spawn := player.global_position if player else Vector3(16, 0, 16)
 		cam.current = true
-		cam.global_position = Vector3(spawn.x * 0.7, 1.7, spawn.z * 0.7)
-		cam.look_at(Vector3(0, 1.4, 0), Vector3.UP)
+		cam.global_position = Vector3(spawn.x * 0.5, 2.3, spawn.z * 0.5)
+		cam.look_at(Vector3(0, 1.3, 0), Vector3.UP)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		var img := get_viewport().get_texture().get_image()

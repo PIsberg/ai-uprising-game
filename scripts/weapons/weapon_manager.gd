@@ -84,11 +84,17 @@ func _input(event: InputEvent) -> void:
 		var m := event as InputEventMouseMotion
 		_mouse_input += m.relative
 	elif event is InputEventKey and event.pressed and not event.echo:
-		# Number keys 1-9 directly select that weapon slot (if owned). Ignored mid-draw.
+		# Number keys 1-9 select that weapon slot directly; 0 selects the 10th.
+		# Anything past the 10th is reached with the mouse wheel (weapon_next/prev),
+		# which cycles the whole rack. Ignored mid-draw.
 		var k := (event as InputEventKey).physical_keycode
-		if k >= KEY_1 and k <= KEY_9 and _equip_timer <= 0.0:
-			var idx := k - KEY_1
-			if idx < weapons.size():
+		if _equip_timer <= 0.0:
+			var idx := -1
+			if k >= KEY_1 and k <= KEY_9:
+				idx = k - KEY_1
+			elif k == KEY_0:
+				idx = 9
+			if idx >= 0 and idx < weapons.size():
 				_equip(idx)
 
 

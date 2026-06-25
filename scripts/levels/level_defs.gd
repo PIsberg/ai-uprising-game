@@ -74,6 +74,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["pos"] = _sv(e["pos"], s)
 			if e.has("size"):
 				e["size"] = _sv(e["size"], s)
+	# Lava beds are part of the layout too — they MUST scale with the arena, or the
+	# objectives/gaps (which do scale) drift into them (a hack terminal authored in
+	# a safe gap ends up sitting in a stream). size is a Vector2 footprint (x by z).
+	for e in def.get("lava", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms"]:
@@ -1809,6 +1817,8 @@ static func _suburb() -> Dictionary:
 			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(0, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15)},
 		],
 		"open_sky": true,
+		"streets": true,
+		"trees": 16,
 		"floor_size": Vector2(64, 64),
 		"floor_color": Color(0.17, 0.17, 0.2),
 		"spawn": Vector3(-26, 0.6, -26),
@@ -1924,6 +1934,8 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "kill_all"},
 			{"type": "survive", "label": "Survive the GOLIATH onslaught", "seconds": 40.0},
 		],
+		"streets": true,
+		"trees": 16,
 		"open_sky": true,
 		"floor_size": Vector2(90, 90),
 		"floor_color": Color(0.16, 0.15, 0.17),
