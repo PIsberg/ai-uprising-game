@@ -313,6 +313,9 @@ func _boot() -> void:
 	if p:
 		pillar.face(p.global_position)
 	pillar.open(0.5)
+	# A herald lightning bolt cracks down through the boot column as it opens.
+	_boot_strike(Vector3.ZERO, hover_height + 8.0)
+	_boot_strike(Vector3(2.6, 0, -2.0), hover_height + 4.0)
 
 	# The brain glitches into being.
 	_bob.scale = Vector3.ZERO
@@ -321,20 +324,35 @@ func _boot() -> void:
 	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_bob, "scale", Vector3.ONE, 0.8)
 	AudioBus.play_synth_at("broadcast_blip", global_position, -2.0, 0.5)
+	_boot_strike(Vector3(-2.8, 0, 1.8), hover_height + 6.0)
 	await get_tree().create_timer(0.9).timeout
 	pillar.close(0.5)
 
-	# Core ignites + shield snaps up.
+	# Core ignites + shield snaps up — a ring of strikes surges in around it.
 	_shield.visible = true
 	_shield.scale = Vector3.ZERO
 	var stw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	stw.tween_property(_shield, "scale", Vector3.ONE, 0.4)
 	AudioBus.play_synth_at("drone_shot", global_position, 0.0, 0.6)
+	for a in 3:
+		var ang := float(a) / 3.0 * TAU
+		_boot_strike(Vector3(cos(ang) * 4.0, 0, sin(ang) * 4.0), hover_height + 5.0)
 	await get_tree().create_timer(0.5).timeout
 
 	_mode = Mode.SHIELDED
 	set_physics_process(true)
 	_start_wave()
+
+
+## Spawn one lightning strike at ground level under the ARCHON (plus an offset),
+## tinted to the shield colour. Used to herald the boot-up.
+func _boot_strike(offset: Vector3, h: float) -> void:
+	var s := LightningStrike.new()
+	s.height = h
+	s.color = COL_SHIELD
+	s.lifetime = 0.7
+	get_tree().current_scene.add_child(s)
+	s.global_position = Vector3(global_position.x, 0.0, global_position.z) + offset
 
 
 # ---------- siege loop ----------
