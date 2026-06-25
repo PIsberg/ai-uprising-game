@@ -1509,6 +1509,13 @@ func _build_cover_trim(def: Dictionary) -> void:
 	m.emission_enabled = true
 	m.emission = col
 	m.emission_energy_multiplier = 0.9 # subtle — outline, not signage
+	# Greebles (corner posts, vent grille, accent groove, status pips) follow the
+	# detail tier like the wall trim: they turn the bare cover blocks into machined
+	# consoles. LOW tier skips them; the cheap top-rim outline below always runs.
+	var density := 1.0
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
 	for w in def.get("walls", []):
 		var pos: Vector3 = w["pos"]
 		var size: Vector3 = w["size"]
@@ -1528,6 +1535,80 @@ func _build_cover_trim(def: Dictionary) -> void:
 			mi.position = edge[0]
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(mi)
+		# Machined detailing for blocky cover; skip slabs too thin to host it.
+		if density > 0.0 and minf(size.x, size.z) >= 1.0:
+			_dress_cover_box(pos, size, col)
+
+## Turns a bare cover block into a piece of machinery: four dark corner posts (a
+## framed-cabinet read), a recessed vent grille on the face toward the arena
+## centre, a near-flush theme-coloured accent groove around the body, and a row
+## of bright status pips beside the grille. All visual-only (no colliders).
+func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color) -> void:
+	var half := size * 0.5
+	# Front = the face toward the arena centre (origin) — what the player approaches.
+	var to_origin := Vector3(0, pos.y, 0) - pos
+	var on_x := absf(to_origin.x) > absf(to_origin.z)
+	var face_n: Vector3 = (Vector3(signf(to_origin.x), 0, 0) if on_x else Vector3(0, 0, signf(to_origin.z)))
+	if face_n.length() < 0.5:
+		face_n = Vector3(0, 0, 1)
+		on_x = false
+	var depth := half.x if on_x else half.z
+	var width := half.z if on_x else half.x # in-plane horizontal half-extent
+	var face_yaw := 0.0 if on_x else PI * 0.5
+	var face_center := pos + face_n * (depth + 0.01)
+
+	# 1) Four vertical corner posts.
+	var post_w := 0.16
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			var post := _beveled_box(Vector3(post_w, size.y, post_w))
+			post.material = MAT_TRIM
+			_add_detail_mesh(post, Vector3(pos.x + sx * (half.x - post_w * 0.4), pos.y, pos.z + sz * (half.z - post_w * 0.4)), 0.0)
+
+	# 2) Recessed vent grille (dark backplate + horizontal slats) on the front face.
+	var grille_w := minf(width * 1.4, width * 2.0 - 0.5)
+	var back := BoxMesh.new()
+	back.size = Vector3(grille_w, size.y * 0.5, 0.04)
+	back.material = MAT_SEAM
+	_add_detail_mesh(back, face_center + Vector3(0, -size.y * 0.05, 0), face_yaw)
+	var n_slats := 5
+	for i in n_slats:
+		var sy := -size.y * 0.05 + (float(i) / float(n_slats - 1) - 0.5) * size.y * 0.42
+		var slat := BoxMesh.new()
+		slat.size = Vector3(grille_w - 0.1, 0.05, 0.07)
+		slat.material = MAT_TRIM
+		_add_detail_mesh(slat, face_center + Vector3(0, sy, 0) + face_n * 0.02, face_yaw)
+
+	# 3) Theme accent groove around all four faces, at mid-body, near flush.
+	var accent := StandardMaterial3D.new()
+	accent.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	accent.albedo_color = theme
+	accent.emission_enabled = true
+	accent.emission = theme
+	accent.emission_energy_multiplier = 0.8
+	var band_dy := half.y * 0.3
+	for nrm in [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]:
+		var nx := absf(nrm.x) > 0.5
+		var bd := half.x if nx else half.z
+		var bw := (half.z if nx else half.x) * 2.0 - post_w * 2.2
+		var band := BoxMesh.new()
+		band.size = Vector3(bw, 0.05, 0.015)
+		band.material = accent
+		_add_detail_mesh(band, pos + nrm * (bd + 0.006) + Vector3(0, band_dy, 0), 0.0 if nx else PI * 0.5)
+
+	# 4) Status pips: a short row of bright theme-coloured lights by the grille top.
+	var pip := StandardMaterial3D.new()
+	pip.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pip.albedo_color = theme
+	pip.emission_enabled = true
+	pip.emission = theme
+	pip.emission_energy_multiplier = 4.0
+	var tangent := Vector3(0, 0, 1) if on_x else Vector3(1, 0, 0)
+	for i in 3:
+		var dot := BoxMesh.new()
+		dot.size = Vector3(0.12, 0.12, 0.05)
+		dot.material = pip
+		_add_detail_mesh(dot, face_center + tangent * (width - 0.35 - float(i) * 0.28) + Vector3(0, half.y - 0.3, 0) + face_n * 0.02, face_yaw)
 
 ## Panel seams ruled across interior floors: thin recess-dark strips every few
 ## metres in both axes. Breaks the monotony of a large single-material slab and
