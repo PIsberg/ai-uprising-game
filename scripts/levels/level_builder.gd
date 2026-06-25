@@ -196,6 +196,7 @@ func _ready() -> void:
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
 	_build_streets(def)
+	_build_trees(def)
 	_build_rubble(def)
 	_build_fires(def)
 	_build_weather(def)
@@ -1987,6 +1988,63 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission = color
 	m.emission_energy_multiplier = energy
 	return m
+
+## Scatter volumetric-billboard trees across an outdoor level (def "trees": N).
+## Trees are visual-only (no collider — the navmesh is already baked) and avoid
+## the spawn/exit, the road corridors on street levels, and building/cover
+## footprints so they don't sprout through a house. Count scales with detail tier.
+func _build_trees(def: Dictionary) -> void:
+	if not def.get("open_sky", false):
+		return
+	var count := int(def.get("trees", 0))
+	if count <= 0:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	count = int(round(count * clampf(density, 0.4, 1.2)))
+	var fs: Vector2 = def.get("floor_size", Vector2(60, 60))
+	var hx := fs.x * 0.5 - 2.0
+	var hz := fs.y * 0.5 - 2.0
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	var streets: bool = def.get("streets", false)
+	var blockers: Array = []
+	for key in ["buildings", "walls"]:
+		for e in def.get(key, []):
+			if e.has("pos") and e.has("size"):
+				blockers.append([e["pos"], e["size"]])
+	var placed := 0
+	var attempts := 0
+	while placed < count and attempts < count * 10:
+		attempts += 1
+		var x := randf_range(-hx, hx)
+		var z := randf_range(-hz, hz)
+		var p := Vector3(x, 0, z)
+		if Vector2(x - spawn.x, z - spawn.z).length() < 7.0:
+			continue
+		if Vector2(x - exitp.x, z - exitp.z).length() < 7.0:
+			continue
+		# Keep off the carriageways/intersection on street levels.
+		if streets and (absf(x) < 7.0 or absf(z) < 7.0):
+			continue
+		var blocked := false
+		for b in blockers:
+			var bp: Vector3 = b[0]
+			var bs: Vector3 = b[1]
+			if absf(x - bp.x) < bs.x * 0.5 + 1.5 and absf(z - bp.z) < bs.z * 0.5 + 1.5:
+				blocked = true
+				break
+		if blocked:
+			continue
+		var size := randf_range(3.2, 5.8)
+		var tree := VolumetricTree.make(size)
+		tree.position = Vector3(x, size * 0.5, z)
+		add_child(tree)
+		placed += 1
 
 ## Street dressing for road/suburb levels (def "streets": true): painted lane
 ## lines + a crossroads through the centre, a crosswalk on each approach, a marked
