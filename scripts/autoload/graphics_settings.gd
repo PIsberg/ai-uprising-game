@@ -42,6 +42,9 @@ var hdr_output_enabled: bool = false
 ## Gamepad aim friction (eases look speed near a target). On by default; some
 ## players prefer raw stick aim, so it's toggleable. Mouse aim is never affected.
 var aim_assist: bool = true
+## Show a live FPS counter in the HUD's top-left corner. Off by default; the HUD
+## reads this each frame and shows/hides its counter accordingly.
+var show_fps: bool = false
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -173,6 +176,11 @@ func set_aim_assist(v: bool) -> void:
 	var p := get_tree().get_first_node_in_group("player") if is_inside_tree() else null
 	if p and "aim_assist_enabled" in p:
 		p.aim_assist_enabled = v
+	_save_settings()
+
+## Show/hide the HUD FPS counter (the HUD polls show_fps each frame).
+func set_show_fps(v: bool) -> void:
+	show_fps = v
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -508,6 +516,7 @@ func _load_settings() -> void:
 		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
 		aim_assist = bool(cf.get_value("input", "aim_assist", true))
 		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
+		show_fps = bool(cf.get_value("graphics_adv", "show_fps", false))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -528,5 +537,6 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
 	cf.set_value("input", "aim_assist", aim_assist)
 	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
+	cf.set_value("graphics_adv", "show_fps", show_fps)
 
 	cf.save(SETTINGS_PATH)

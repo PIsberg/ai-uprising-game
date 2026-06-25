@@ -87,6 +87,13 @@ func _build_extra_settings() -> void:
 	hdr.toggled.connect(func(p: bool): GraphicsSettings.set_hdr_output_enabled(p))
 	_settings.add_child(hdr)
 
+	var show_fps := CheckButton.new()
+	show_fps.text = tr("Show FPS Counter")
+	show_fps.custom_minimum_size = Vector2(360, 44)
+	show_fps.button_pressed = GraphicsSettings.show_fps
+	show_fps.toggled.connect(func(p: bool): GraphicsSettings.set_show_fps(p))
+	_settings.add_child(show_fps)
+
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()

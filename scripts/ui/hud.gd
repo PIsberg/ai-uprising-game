@@ -45,6 +45,8 @@ var _hit_crit: bool = false ## Last hit was a headshot — flashes the marker go
 var _crosshair_base_scale: Vector2 = Vector2.ONE
 var _objective_base: String = "" ## Flavour objective text, shown when no task checklist is active.
 var _combo_label: Label = null
+var _fps_label: Label = null ## Top-left FPS counter; visibility follows GraphicsSettings.show_fps.
+var _fps_accum: float = 0.0  ## Throttles the FPS text refresh (~5 Hz).
 var _combo_alpha: float = 0.0
 var _combo_pop: float = 0.0
 var _last_grade: String = ""
@@ -135,6 +137,7 @@ func _ready() -> void:
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
 	_style_health_bar()
+	_build_fps_label()
 	_build_ammo_block()
 	_build_overclock_label()
 	GameState.overclock_changed.connect(_on_overclock_changed)
@@ -320,6 +323,36 @@ func _build_combo_label() -> void:
 	_combo_label.modulate.a = 0.0
 	_combo_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_combo_label)
+
+## Poll the FPS setting and refresh the counter (~5 Hz so the number is readable).
+func _update_fps(delta: float) -> void:
+	if _fps_label == null:
+		return
+	var want: bool = bool(GraphicsSettings.show_fps)
+	if _fps_label.visible != want:
+		_fps_label.visible = want
+	if not want:
+		return
+	_fps_accum += delta
+	if _fps_accum >= 0.2:
+		_fps_accum = 0.0
+		_fps_label.text = "%d FPS" % int(round(Engine.get_frames_per_second()))
+
+## Optional FPS counter, pinned to the top-left corner. Off unless the player
+## enables it in settings (GraphicsSettings.show_fps), which _process polls.
+func _build_fps_label() -> void:
+	_fps_label = Label.new()
+	_fps_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	# Top-left corner, tucked just under the objective checklist row so it never
+	# overlaps it.
+	_fps_label.position = Vector2(24, 46)
+	_fps_label.add_theme_font_size_override("font_size", 16)
+	_fps_label.add_theme_color_override("font_color", Color(0.65, 1.0, 0.7))
+	_fps_label.add_theme_constant_override("outline_size", 4)
+	_fps_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_fps_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fps_label.visible = false
+	add_child(_fps_label)
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
@@ -519,6 +552,7 @@ func _auto_advance() -> void:
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)
+	_update_fps(delta)
 	if _damage_alpha > 0.0:
 		_damage_alpha = maxf(0.0, _damage_alpha - delta * 1.5)
 		damage_overlay.color.a = _damage_alpha
