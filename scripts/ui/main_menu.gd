@@ -182,7 +182,16 @@ var _diff_btns: Array[Button] = []
 
 func _input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo or k.unicode == 0:
+	if k == null or not k.pressed or k.echo:
+		return
+	# ESC backs out of any sub-panel (settings / difficulty / controls / levels)
+	# to the main menu — these panels can overflow and bury their Back button.
+	if k.physical_keycode == KEY_ESCAPE:
+		if _main and not _main.visible:
+			_show_panel(_main)
+			accept_event()
+		return
+	if k.unicode == 0:
 		return
 	_cheat_buf = (_cheat_buf + char(k.unicode).to_lower()).right(CHEAT_WORD.length())
 	if _cheat_buf == CHEAT_WORD:
