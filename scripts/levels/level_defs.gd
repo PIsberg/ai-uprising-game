@@ -362,6 +362,9 @@ static func _neon() -> Dictionary:
 			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
 			{"type": "hunter", "pos": Vector3(12, 0.5, -10), "trigger": 13},
+			# Evil MAITRE-D' serving bots glide out of the arcade's cafe units.
+			{"type": "server", "pos": Vector3(-12, 0.5, 6), "trigger": 15},
+			{"type": "server", "pos": Vector3(10, 0.5, -6), "trigger": 17},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -1953,6 +1956,10 @@ static func _suburb() -> Dictionary:
 			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
 			{"type": "strider", "pos": Vector3(-18, 0.5, 14), "trigger": 24},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+			# A K-9 HUNTER pack bursts from the yards mid-fight.
+			{"type": "dog", "pos": Vector3(-8, 0.5, 8), "trigger": 18},
+			{"type": "dog", "pos": Vector3(8, 0.5, 8), "trigger": 18},
+			{"type": "dog", "pos": Vector3(0, 0.5, 14), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -16)},

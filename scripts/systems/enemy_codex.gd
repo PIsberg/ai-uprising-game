@@ -14,7 +14,7 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
-	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "alien",
+	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
 ]
 
@@ -151,6 +151,20 @@ const ENTRIES := {
 		"strengths": ["Colossal armour pool", "Long-range salvos pin you down", "Shrugs off small-arms fire"],
 		"weaknesses": ["Slow to turn and reposition", "Telegraphed charge before each salvo", "Flank it while it's committed to a shot"],
 		"weapons": ["TPX-9 Tempest Coil", "GRK-X Devastator", "OMEGA-X Annihilator"],
+	},
+	"dog": {
+		"scene": "res://scenes/enemies/dog.tscn", "name": "K-9 HUNTER", "scale": 1.4, "y": 0.0,
+		"desc": "A four-legged robot attack-hound. It sprints the gap in a heartbeat, hunts in packs, and lunges in to bite. Fragile — but if one closes, more are right behind it.",
+		"strengths": ["Blistering speed — eats distance instantly", "Hunts in packs and flanks", "Low to the ground, hard to track far off"],
+		"weaknesses": ["Thin armour — drops to a solid hit", "No ranged attack — kill it before it reaches you"],
+		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "VK-7 Tesla Projector"],
+	},
+	"server": {
+		"scene": "res://scenes/enemies/server.tscn", "name": "MAITRE-D'", "scale": 1.0, "y": 0.0,
+		"desc": "A cafe serving robot whose smile turned to a red glare. It trundles up on its wheeled base and swings its serving trays like cleavers, bashing you off your feet. Slow, but tanky and brutal up close.",
+		"strengths": ["Tough chassis — soaks a lot of fire", "Heavy tray-swings knock you back", "Relentless once it has your scent"],
+		"weaknesses": ["Slow — kite it in circles", "No ranged option", "Big, easy target for heavy weapons"],
+		"weapons": ["GRK-X Devastator", "SG-12 Breacher", ".50 Maelstrom"],
 	},
 	"alien": {
 		"scene": "res://scenes/enemies/alien.tscn", "name": "VOID SENTINEL", "scale": 1.0, "y": 1.4,
