@@ -1,0 +1,59 @@
+[gd_scene load_steps=8 format=3 uid="uid://b0smasher0boss01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_smasher.gd" id="1_sm"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="3_gr"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="4_rm"]
+[ext_resource type="PackedScene" uid="uid://c02e0aq5wmt" path="res://assets/models/robots/George_smasher.glb" id="5_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 2.4
+height = 10.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_reactor"]
+radius = 0.95
+height = 1.9
+material = ExtResource("3_gr")
+
+[node name="Smasher" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_sm")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("4_rm")
+anim_walk = "Walk"
+anim_attack = "Punch"
+anim_stagger = "HitRecieve_2"
+walk_speed_scale = 1.1
+
+[node name="Mesh" parent="Model" instance=ExtResource("5_model")]
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, 0, 0)
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 0)
+
+[node name="Eye" type="Node3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -1.1)
+
+[node name="EyeLight" type="SpotLight3D" parent="Head/Eye"]
+light_color = Color(1, 0.1, 0.1, 1)
+light_energy = 4.5
+spot_range = 34.0
+spot_angle = 24.0
+
+[node name="Reactor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.7)
+mesh = SubResource("SphereMesh_reactor")
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 3600.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 2.4
+height = 10.0

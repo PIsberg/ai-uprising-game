@@ -15,7 +15,7 @@ const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "alien",
-	"terminator", "overseer", "colossus", "titan", "archon",
+	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
 ]
 
 const ENTRIES := {
@@ -178,6 +178,13 @@ const ENTRIES := {
 		"desc": "A walking siege engine. Bring everything you have — and keep moving.",
 		"strengths": ["Massive health and armour", "Area attacks punish standing still"],
 		"weaknesses": ["Slow — outmanoeuvre it", "Heavy weapons are the only real answer"],
+		"weapons": ["OMEGA-X Annihilator", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
+	},
+	"smasher": {
+		"scene": "res://scenes/enemies/smasher.tscn", "name": "BEHEMOTH-X", "scale": 0.3, "y": 0.0,
+		"desc": "A towering humanoid war-mech with a blazing reactor core and two oversized fists. It doesn't shoot — it CHARGES you down and hammers with overhead fist-smashes and ground-quaking slams. Never let it corner you.",
+		"strengths": ["Colossal health and armour", "Closes distance in a relentless charge", "Smash and slam hit brutally hard up close"],
+		"weaknesses": ["Pure melee — kite it and punish from range", "Telegraphs each smash/slam — read it and dash clear"],
 		"weapons": ["OMEGA-X Annihilator", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
 	},
 	"titan": {

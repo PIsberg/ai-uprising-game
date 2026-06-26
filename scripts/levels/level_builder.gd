@@ -39,6 +39,7 @@ const ENEMY_SCENES := {
 	"mauler": preload("res://scenes/enemies/mauler.tscn"),
 	"ravager": preload("res://scenes/enemies/ravager.tscn"),
 	"warmech": preload("res://scenes/enemies/warmech.tscn"),
+	"smasher": preload("res://scenes/enemies/smasher.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 

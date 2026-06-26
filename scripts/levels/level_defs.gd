@@ -518,11 +518,16 @@ static func _crucible() -> Dictionary:
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15},
 			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14},
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
+			# centrepiece boss — a towering melee mech that charges and hammers you.
+			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
 			{"type": "ammo", "pos": Vector3(0, 0, 16)},
 			{"type": "overclock", "pos": Vector3(16, 0, 0)},
+			# A heavy weapon to crack the BEHEMOTH.
+			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 		],
 	}
 
