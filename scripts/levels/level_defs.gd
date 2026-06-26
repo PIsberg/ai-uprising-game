@@ -1241,13 +1241,14 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(20, 5, -20), "color": Color(1.0, 0.45, 0.2), "energy": 2.2, "range": 22},
 			{"pos": Vector3(20, 5, 20), "color": Color(0.9, 0.5, 0.25), "energy": 2.0, "range": 20},
 		],
+		# Layout: production-line CONVEYOR RAILS — two long offset assembly rails
+		# flank the reactor, with upright stanchions, instead of the corner-block +
+		# side-wall arrangement the other big arenas use.
 		"walls": [
-			{"pos": Vector3(-13, 2, 13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(13, 2, 13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-13, 2, -13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(13, 2, -13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
-			{"pos": Vector3(19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+			{"pos": Vector3(-6, 2, -3), "size": Vector3(12, 4, 1)},
+			{"pos": Vector3(6, 2, 3), "size": Vector3(12, 4, 1)},
+			{"pos": Vector3(-14, 2, 4), "size": Vector3(1, 4, 8)},
+			{"pos": Vector3(14, 2, -4), "size": Vector3(1, 4, 8)},
 		],
 		# Reactor smelt overflow: molten channels force a serpentine route past the
 		# central reactor (the sabotage point at origin stays clear).
@@ -1256,8 +1257,8 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(12, 0, 9), "size": Vector2(40, 4.0), "dmg": 30.0},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 52), "color": Color(1.0, 0.5, 0.2)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(52, 0.1, 0.5), "color": Color(1.0, 0.6, 0.25)},
+			{"pos": Vector3(-6, 0.05, -3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.5, 0.2)},
+			{"pos": Vector3(6, 0.05, 3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.6, 0.25)},
 		],
 		"sign": "ROBOTICS PLANT 04",
 		"slogans": [
@@ -1427,13 +1428,14 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.7), "energy": 1.84, "range": 16},
 		],
+		# Layout: server-hall AISLES — two long offset rack walls form a central
+		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
+		# side-wall arrangement the other indoor cores use.
 		"walls": [
-			{"pos": Vector3(-6, 2, -6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(6, 2, -6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(-6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(-13, 1.5, 4), "size": Vector3(1.4, 3, 6)},
-			{"pos": Vector3(13, 1.5, -4), "size": Vector3(1.4, 3, 6)},
+			{"pos": Vector3(-5, 2, -2), "size": Vector3(1, 4, 10)},
+			{"pos": Vector3(5, 2, 2), "size": Vector3(1, 4, 10)},
+			{"pos": Vector3(-11, 2, 5), "size": Vector3(6, 4, 1)},
+			{"pos": Vector3(11, 2, -5), "size": Vector3(6, 4, 1)},
 		],
 		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
 		# to the exit, kept clear of the central core and the hack terminal at z=8.
@@ -1442,8 +1444,9 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(8, 0, 13), "size": Vector2(28, 3.5)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
-			{"pos": Vector3(0, 0.05, 10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(-5, 0.05, -2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(5, 0.05, 2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(0, 0.05, 8), "size": Vector3(10, 0.1, 0.3), "color": Color(0.4, 1, 0.6)},
 		],
 		"sign": "OPENAI FOUNDRY",
 		"slogans": [
@@ -1762,16 +1765,21 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(-16, 5, 16), "color": Color(1, 0.4, 0.3), "energy": 2.3, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(1, 0.25, 0.2), "energy": 2.3, "range": 20},
 		],
+		# Layout: toppled black-site MONOLITHS — tall slabs at irregular angles and
+		# sizes scattered asymmetrically, not the tidy center-block + four-corners
+		# arrangement of the other open arenas. The wide-open centre is left for the
+		# fight (the old central block trapped a pickup there).
 		"walls": [
-			{"pos": Vector3(0, 2, 0), "size": Vector3(6, 4, 6)},
-			{"pos": Vector3(-12, 2, 8), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(12, 2, -8), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(10, 2, 12), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-10, 2, -12), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-8, 3, -4), "size": Vector3(2.5, 6, 6)},
+			{"pos": Vector3(6, 2.5, 4), "size": Vector3(7, 5, 2.5)},
+			{"pos": Vector3(-4, 2, 11), "size": Vector3(5, 4, 2)},
+			{"pos": Vector3(12, 2, -10), "size": Vector3(3, 4, 3)},
+			{"pos": Vector3(-15, 2, 7), "size": Vector3(3, 4, 3)},
+			{"pos": Vector3(10, 3, 15), "size": Vector3(2, 6, 6)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 40), "color": Color(1, 0.25, 0.2)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(40, 0.1, 0.4), "color": Color(1, 0.25, 0.2)},
+			{"pos": Vector3(-8, 0.05, -4), "size": Vector3(0.4, 0.1, 30), "color": Color(1, 0.25, 0.2)},
+			{"pos": Vector3(6, 0.05, 4), "size": Vector3(30, 0.1, 0.4), "color": Color(1, 0.3, 0.22)},
 		],
 		"sign": "XAI BLACK-SITE",
 		"slogans": [

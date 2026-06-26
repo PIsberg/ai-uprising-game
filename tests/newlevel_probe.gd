@@ -3,7 +3,7 @@ extends Node3D
 ## spawn (softlock guard), and captures an eye-level shot of each.
 ## Run windowed: godot --path . --quit-after 2000 res://tests/newlevel_probe.tscn
 
-const IDS := ["frostbreak", "neon", "sublevel", "crucible"]
+const IDS := ["frostbreak", "neon", "sublevel", "crucible", "gpt", "grok", "assembly"]
 
 func _ready() -> void:
 	var cam := Camera3D.new()
