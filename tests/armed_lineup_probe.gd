@@ -6,6 +6,7 @@ const MODELS := [
 	"res://assets/models/robots/quaternius_bot_armed.glb",
 	"res://assets/models/robots/quaternius_gunner_armed.glb",
 	"res://assets/models/robots/quaternius_flyergun_armed.glb",
+	"res://assets/models/robots/quaternius_mech_armed.glb",
 ]
 
 func _ready() -> void:
