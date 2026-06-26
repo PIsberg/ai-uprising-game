@@ -17,6 +17,11 @@ var _completed: bool = false
 var _locked: bool = true
 var _seen_enemies: bool = false
 var _check_timer: float = 0.0
+## Consecutive zero-enemy checks before "kill_all" completes. A dying SPLITTER
+## (or VOLATILE) spawns its replacements via call_deferred, so for one frame the
+## old unit reads dead and the new ones don't exist yet — a single check can hit
+## that window and unlock the gate early. Requiring two checks bridges it.
+var _kill_all_zero_streak: int = 0
 var _t: float = 0.0
 var _deny_flash: float = 0.0
 
@@ -230,8 +235,11 @@ func _refresh_lock() -> void:
 		var alive := _alive_enemies()
 		if alive > 0:
 			_seen_enemies = true
+			_kill_all_zero_streak = 0
 		elif _seen_enemies:
-			GameState.complete_task("kill_all")
+			_kill_all_zero_streak += 1
+			if _kill_all_zero_streak >= 2: # confirm across a tick so deferred splits count
+				GameState.complete_task("kill_all")
 	if GameState.all_tasks_done():
 		unlock()
 
