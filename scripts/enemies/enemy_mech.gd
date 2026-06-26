@@ -89,6 +89,14 @@ func _state_attack(delta: float) -> void:
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
+	# Planted while a slam winds up: the telegraph ring is pinned at the mech's
+	# position when the windup starts, so charging out from under it during the
+	# 0.55s would land the shockwave somewhere the danger ring never marked. Hold
+	# position so the telegraph honestly shows the kill zone.
+	if _slam_windup > 0.0:
+		_charging = false
+		_decelerate()
+		return
 	var dist := global_position.distance_to(target.global_position)
 	if dist < charge_threshold:
 		_do_stomp_if_close()
