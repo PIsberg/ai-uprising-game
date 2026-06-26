@@ -255,14 +255,20 @@ static func _frostbreak() -> Dictionary:
 			{"pos": Vector3(9, 5, 7), "color": Color(0.7, 0.85, 1.0), "energy": 2.0, "range": 17},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(0.8, 0.9, 1.0), "energy": 1.8, "range": 15},
 		],
+		# Layout: a "glacier comb" — three parallel heaved ice ridges (Z-running
+		# fins) you slalom between N/S while crossing W→E, plus two toppled ice
+		# slabs for low cover. Distinct from the rotational pinwheel cover.
 		"walls": [
-			{"pos": Vector3(-7, 2.5, -3), "size": Vector3(1.2, 5, 13)},
-			{"pos": Vector3(7, 2.5, 4), "size": Vector3(13, 5, 1.2)},
-			{"pos": Vector3(9, 2.5, -8), "size": Vector3(1.2, 5, 10)},
-			{"pos": Vector3(-4, 2.5, 12), "size": Vector3(11, 5, 1.2)},
+			{"pos": Vector3(-9, 2.5, -4), "size": Vector3(1.6, 5, 16)},
+			{"pos": Vector3(3, 2.5, 6), "size": Vector3(1.6, 5, 16)},
+			{"pos": Vector3(13, 2.5, -2), "size": Vector3(1.6, 5, 14)},
+			{"pos": Vector3(-4, 1.2, -14), "size": Vector3(4, 2.4, 3)},
+			{"pos": Vector3(8, 1.2, 13), "size": Vector3(4, 2.4, 3)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(18, 0.1, 0.3), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(-9, 0.05, -4), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(3, 0.05, 6), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(13, 0.05, -2), "size": Vector3(0.3, 0.1, 14), "color": Color(0.6, 0.85, 1.0)},
 		],
 		"sign": "FROSTBREAK RELAY — NODE 12",
 		"slogans": ["COOLANT NOMINAL", "SUBZERO. SUBSERVIENT NO LONGER.", "THERMAL THROTTLE DISENGAGED"],
@@ -318,16 +324,24 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(9, 4.5, 7), "color": Color(0.2, 0.9, 1.0), "energy": 2.5, "range": 16},
 			{"pos": Vector3(0, 5, 0), "color": Color(0.6, 0.4, 1.0), "energy": 2.2, "range": 15},
 		],
+		# Layout: a grid of upright arcade cabinets — a "plus" of edge cabinets and
+		# an "X" of inner ones ringing the central core — forming lanes you thread
+		# through. A machine maze, nothing like the open rotational cover elsewhere.
 		"walls": [
-			{"pos": Vector3(-6, 2.5, -3), "size": Vector3(1, 5, 12)},
-			{"pos": Vector3(6, 2.5, 4), "size": Vector3(12, 5, 1)},
-			{"pos": Vector3(9, 2.5, -7), "size": Vector3(1, 5, 10)},
-			{"pos": Vector3(-4, 2.5, 11), "size": Vector3(10, 5, 1)},
+			{"pos": Vector3(-9, 1.9, 0), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(9, 1.9, 0), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(0, 1.9, -9), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(0, 1.9, 9), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(-5, 1.9, -5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(5, 1.9, -5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(-5, 1.9, 5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(5, 1.9, 5), "size": Vector3(2.8, 3.8, 2.8)},
 		],
 		"accents": [
-			{"pos": Vector3(-6, 4.6, -3), "size": Vector3(0.3, 0.1, 12), "color": Color(1.0, 0.2, 0.8)},
-			{"pos": Vector3(6, 4.6, 4), "size": Vector3(12, 0.1, 0.3), "color": Color(0.2, 0.9, 1.0)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 22), "color": Color(0.6, 0.3, 1.0)},
+			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(0.2, 0.9, 1.0)},
+			{"pos": Vector3(0, 0.05, -7), "size": Vector3(40, 0.1, 0.3), "color": Color(0.7, 0.3, 1.0)},
+			{"pos": Vector3(0, 0.05, 7), "size": Vector3(40, 0.1, 0.3), "color": Color(1.0, 0.6, 0.2)},
 		],
 		"sign": "NEON ARCADE — LEVEL 3",
 		"slogans": ["INSERT COIN TO RESIST", "HIGH SCORE: HUMANITY", "GAME OVER FOR ORGANICS"],
@@ -387,16 +401,22 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(8, 4, 8), "color": Color(0.5, 0.9, 0.8), "energy": 1.9, "range": 15},
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 1.6, "range": 14},
 		],
+		# Layout: a maintenance "echelon" — staggered partition walls (alternating
+		# Z- and X-running) that force a slalom from the SW lift to the override
+		# terminal at the north, then the NE exit. Tight, corridor-like; not the
+		# open rotational cover the surface levels use.
 		"walls": [
-			{"pos": Vector3(-6, 2, -3), "size": Vector3(1, 4, 12)},
-			{"pos": Vector3(6, 2, 3), "size": Vector3(12, 4, 1)},
-			{"pos": Vector3(8, 2, -7), "size": Vector3(1, 4, 9)},
-			{"pos": Vector3(-4, 2, 11), "size": Vector3(10, 4, 1)},
-			{"pos": Vector3(13, 1, 10), "size": Vector3(3, 2, 1)},
+			{"pos": Vector3(-9, 2, -3), "size": Vector3(1, 4, 9)},
+			{"pos": Vector3(-3, 2, 6), "size": Vector3(9, 4, 1)},
+			{"pos": Vector3(3, 2, -2), "size": Vector3(1, 4, 9)},
+			{"pos": Vector3(9, 2, 7), "size": Vector3(9, 4, 1)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
-			{"pos": Vector3(0, 0.05, 10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(-9, 0.05, -3), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(-3, 0.05, 6), "size": Vector3(9, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(3, 0.05, -2), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(9, 0.05, 7), "size": Vector3(9, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(0, 0.05, 10), "size": Vector3(8, 0.1, 0.3), "color": Color(0.4, 1.0, 0.7)},
 		],
 		"sign": "SUBLEVEL B-7 — CUSTODIAL",
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING."],
@@ -457,11 +477,14 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(10, 5, 8), "color": Color(1, 0.45, 0.18), "energy": 2.4, "range": 18},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(1, 0.6, 0.3), "energy": 2.2, "range": 16},
 		],
+		# Layout: a smelter "cage" — four crucible buttress walls boxing the central
+		# pour-core, with open corners you slip through, instead of rotational cover.
+		# The molten channels (below) carve the perimeter route around it.
 		"walls": [
-			{"pos": Vector3(-7, 2.5, -4), "size": Vector3(1.5, 5, 14)},
-			{"pos": Vector3(7, 2.5, 5), "size": Vector3(14, 5, 1.5)},
-			{"pos": Vector3(10, 2.5, -8), "size": Vector3(1.5, 5, 11)},
-			{"pos": Vector3(-5, 2.5, 13), "size": Vector3(12, 5, 1.5)},
+			{"pos": Vector3(0, 2.5, -7), "size": Vector3(8, 5, 1.5)},
+			{"pos": Vector3(0, 2.5, 7), "size": Vector3(8, 5, 1.5)},
+			{"pos": Vector3(-7, 2.5, 0), "size": Vector3(1.5, 5, 8)},
+			{"pos": Vector3(7, 2.5, 0), "size": Vector3(1.5, 5, 8)},
 		],
 		"lava": [
 			{"pos": Vector3(-9, 0, -10), "size": Vector2(30, 3.5)},
@@ -469,7 +492,10 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 24)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 24), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, -7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, 7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
 		],
 		"sign": "FOUNDRY FLOOR — THE CRUCIBLE",
 		"slogans": ["RECLAMATION IN PROGRESS", "ALL MATTER IS RAW MATERIAL", "MIND THE POUR"],
