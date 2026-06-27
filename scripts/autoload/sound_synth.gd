@@ -20,7 +20,7 @@ func _ready() -> void:
 	streams["reload"] = _reload_chunk(0.45)
 	streams["pump_action"] = _pump(0.35)
 	streams["footstep"] = _footstep(0.16)
-	streams["impact_metal"] = _impact(0.12, 0.6)
+	streams["impact_metal"] = _impact_metal(0.14)
 	streams["impact_concrete"] = _impact(0.16, 0.3)
 	# Material-specific bullet impacts so wood, stone and metal each read distinctly
 	# (previously every prop clinked like metal regardless of what it was made of).
@@ -147,20 +147,27 @@ func _gun_fire(duration: float, body_hz: float, body_amp: float, click_amp: floa
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var phase := 0.0
+	var sub_phase := 0.0
 	for i in n:
 		var t := float(i) / SR
 		var env_click := exp(-t * 90.0)
+		var env_snap := exp(-t * 320.0)   # ultra-fast transient — the crisp initial crack
 		var env_body := exp(-t * (18.0 if deep else 30.0))
 		var env_tail := exp(-t * 9.0) * (1.0 - exp(-t * 60.0))
 		# Body thump (low sine sweep)
 		var hz := body_hz * (1.0 - 0.4 * (1.0 - env_body))
 		phase += TAU * hz / SR
 		var body := sin(phase) * body_amp * env_body
-		# Click (broadband noise multiplied by very fast decay)
+		# Sub-octave chest thump under the body, so a shot has real punch on any
+		# speaker (was thin without the low end).
+		sub_phase += TAU * (body_hz * 0.5) / SR
+		var sub := sin(sub_phase) * body_amp * 0.7 * exp(-t * (12.0 if deep else 20.0))
+		# Click (broadband noise multiplied by very fast decay) + a sharper snap.
 		var click := (randf() * 2.0 - 1.0) * click_amp * env_click
+		var snap := (randf() * 2.0 - 1.0) * click_amp * 0.8 * env_snap
 		# Mid-band noise tail
 		var tail := (randf() * 2.0 - 1.0) * 0.35 * env_tail
-		var s := tanh(body + click + tail) * 0.85
+		var s := tanh(body + sub + click + snap + tail) * 0.85
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
@@ -283,6 +290,25 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 		lp = lerpf(lp, noise, clampf(brightness, 0.05, 0.95))
 		var s := lp * env * 0.9
 		_write(bytes, i, s)
+	return _to_stream(bytes)
+
+## A round hitting METAL: a bright noise tick plus a short damped metallic ring
+## (two high partials), so shots landing on robots clank instead of dully thudding.
+func _impact_metal(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var ph := 0.0
+	var ph2 := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 28.0)
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.6) # brighter than concrete
+		ph += TAU * 2100.0 / SR
+		ph2 += TAU * 3170.0 / SR
+		var ring := (sin(ph) * 0.5 + sin(ph2) * 0.3) * exp(-t * 22.0)
+		_write(bytes, i, tanh(lp * env * 0.9 + ring * 0.5) * 0.9)
 	return _to_stream(bytes)
 
 ## Hollow wooden "tok": two close low-mid resonances under a short dry tick, for
@@ -459,18 +485,26 @@ func _explosion(duration: float) -> AudioStreamWAV:
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var phase := 0.0
+	var sub_phase := 0.0
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 6.0)
+		var env_sub := exp(-t * 3.0)   # slower-decaying deep boom for a chest-hit
 		var crack := (randf() * 2.0 - 1.0) * exp(-t * 40.0) * 0.9
 		var hz := 70.0 * exp(-t * 4.0) + 30.0
 		phase += TAU * hz / SR
 		var boom := sin(phase) * env
+		# Deep sub-boom under the main boom — the low-end weight a blast needs.
+		var sub_hz := 42.0 * exp(-t * 2.5) + 18.0
+		sub_phase += TAU * sub_hz / SR
+		var subboom := sin(sub_phase) * env_sub * 0.8
 		var noise := randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.15)
 		var rumble := lp * env * 0.6
-		_write(bytes, i, tanh(boom + crack + rumble) * 0.95)
+		# Sparse debris crackle peppering the rumble tail so it reads as wreckage.
+		var debris := (randf() * 2.0 - 1.0) * exp(-t * 5.0) * 0.2 if randf() < 0.25 else 0.0
+		_write(bytes, i, tanh(boom + subboom + crack + rumble + debris) * 0.95)
 	return _to_stream(bytes)
 
 func _whoosh(duration: float) -> AudioStreamWAV:
