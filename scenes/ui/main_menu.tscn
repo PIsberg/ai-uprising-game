@@ -125,6 +125,11 @@ custom_minimum_size = Vector2(320, 48)
 layout_mode = 2
 text = "Enemy Codex"
 
+[node name="WeaponCodex" type="Button" parent="Center/VBox/MainButtons"]
+custom_minimum_size = Vector2(320, 48)
+layout_mode = 2
+text = "Weapon Codex"
+
 [node name="Quit" type="Button" parent="Center/VBox/MainButtons"]
 custom_minimum_size = Vector2(320, 48)
 layout_mode = 2
@@ -239,6 +244,7 @@ text = "Back"
 [connection signal="pressed" from="Center/VBox/MainButtons/Settings" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Controls" to="." method="_on_controls_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Encyclopedia" to="." method="_on_encyclopedia_pressed"]
+[connection signal="pressed" from="Center/VBox/MainButtons/WeaponCodex" to="." method="_on_weapon_codex_pressed"]
 [connection signal="pressed" from="Center/VBox/MainButtons/Quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="Center/VBox/DiffButtons/Easy" to="." method="_on_easy_pressed"]
 [connection signal="pressed" from="Center/VBox/DiffButtons/Normal" to="." method="_on_normal_pressed"]

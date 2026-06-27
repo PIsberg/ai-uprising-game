@@ -1,0 +1,300 @@
+extends Control
+## The arsenal reference: every weapon in the game with its class, a dossier line,
+## and full stats (damage, rate, DPS, magazine, reload, range, headshot, pierce,
+## splash) plus comparison bars normalised across the whole arsenal. Reached from
+## the main menu, alongside the Enemy Codex. Reads each weapon's WeaponData straight
+## off its scene (instantiate without entering the tree, so no _ready side effects).
+
+## Short dossier per weapon, keyed by scene-file basename.
+const DOSSIER := {
+	"pistol": "Reliable M9 sidearm — deep reserve and clean headshots. Your fallback when everything else runs dry.",
+	"smg": "TKN-9 Spitter. Hoses a room with a fast, low-damage spray. Shreds swarms up close; wasteful at range.",
+	"rifle": "AR-7 Pulse Rifle — the do-everything automatic: accurate, controllable, effective at every range.",
+	"shotgun": "SG-12 Breacher. A wall of pellets that deletes anything point-blank. SLUG alt collapses it into one heavy round.",
+	"magnum": ".50 Maelstrom hand cannon — enormous per-shot damage and headshots, slow and unforgiving.",
+	"tesla": "VK-7 Tesla Projector. A continuous electric beam that melts armour the longer you hold it on a target.",
+	"arccoil": "CL-3 Arc Coil — a short-range electric burst that chains between bunched-up machines.",
+	"sniper": "MK-VII Longshot. One-shot precision at any distance. CHARGE for a boosted round; weak up close.",
+	"plasma": "PL-1 Plasma Launcher — lobbed plasma bolts with splash. Area denial that cooks clustered foes.",
+	"twinrail": "GEM-2 Twin Rail. Paired laser rails that pierce a whole line of enemies. Line them up.",
+	"nova": "NV-X Nova Scatter — an energy shotgun: a bright, piercing fan of bolts for close-to-mid crowds.",
+	"gauss": "ARC-9 Gauss Lance. A coil-gun spike that punches clean through a rank of machines.",
+	"swarm": "SW-7 Swarm Launcher — fires homing micro-missiles that hunt down whatever you mark.",
+	"tempest": "TPX-9 Tempest Coil. Chain lightning that leaps from target to target across a pack.",
+	"singularity": "VOID-9 Singularity Cannon — births a gravity well that drags a crowd into one knot, then deletes it.",
+	"devastator": "GRK-X Devastator. A heavy rocket launcher: big splash, slow reload. Bring it to a horde.",
+	"omega": "OMEGA-X Annihilator — the ultimate. Everything, dialled to maximum. Earn it, then end things.",
+}
+
+const FIRE_NAMES := ["SEMI", "AUTO", "BURST", "BEAM"]
+const DMG_NAMES := ["HITSCAN", "PROJECTILE"]
+const ALT_NAMES := ["", " · CHARGE alt", " · VOLLEY alt", " · SLUG alt"]
+const ACCENT := Color(0.5, 0.8, 1.0)
+
+var _weapons: Array = []   # [{id, data}]
+var _index: int = 0
+var _max: Dictionary = {}  # arsenal maxima for the comparison bars
+
+# UI refs
+var _list: VBoxContainer
+var _name_lbl: Label
+var _class_lbl: Label
+var _count_lbl: Label
+var _desc_lbl: Label
+var _stats: VBoxContainer
+var _bars: VBoxContainer
+var _list_btns: Array[Button] = []
+
+func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	GameState.set_state(GameState.State.MENU)
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_load_weapons()
+	_build_ui()
+	_refresh()
+
+## Read each weapon's WeaponData off its scene without entering the tree.
+func _load_weapons() -> void:
+	var dmg := 1.0; var rof := 1.0; var mag := 1.0; var rng := 1.0
+	for path in GameState.WEAPON_ORDER:
+		var ps := load(path) as PackedScene
+		if ps == null:
+			continue
+		var inst := ps.instantiate()
+		var d := inst.get("data") as WeaponData
+		if d != null:
+			_weapons.append({"id": String(path).get_file().get_basename(), "data": d})
+			dmg = maxf(dmg, d.damage * maxi(d.pellets, 1))
+			rof = maxf(rof, d.fire_rate)
+			mag = maxf(mag, float(d.mag_size))
+			rng = maxf(rng, d.range_m)
+		inst.free()
+	_max = {"dmg": dmg, "rof": rof, "mag": mag, "rng": rng}
+
+# ---------- UI ----------
+
+func _build_ui() -> void:
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = Color(0.03, 0.04, 0.06)
+	add_child(bg)
+
+	var title := Label.new()
+	title.text = "WEAPON CODEX"
+	title.position = Vector2(48, 34)
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", Color(0.7, 0.95, 1.0))
+	add_child(title)
+
+	var sub := Label.new()
+	sub.text = "The full arsenal. ◂ ▸ to browse · Esc to go back."
+	sub.position = Vector2(50, 78)
+	sub.add_theme_color_override("font_color", Color(0.55, 0.7, 0.8))
+	add_child(sub)
+
+	# Left: scrollable weapon list.
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	scroll.offset_left = 48; scroll.offset_right = 360
+	scroll.offset_top = 120; scroll.offset_bottom = -96
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
+	_list = VBoxContainer.new()
+	_list.add_theme_constant_override("separation", 6)
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_list)
+	for i in _weapons.size():
+		var d: WeaponData = _weapons[i]["data"]
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(300, 40)
+		b.text = "%d.  %s" % [i + 1, d.display_name]
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_color_override("font_color", d.tracer_color.lerp(Color.WHITE, 0.35))
+		b.pressed.connect(_select.bind(i))
+		_list.add_child(b)
+		_list_btns.append(b)
+
+	# Right: dossier panel.
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = 392; panel.offset_right = -48
+	panel.offset_top = 120; panel.offset_bottom = -96
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.07, 0.1, 0.85)
+	sb.border_color = Color(0.3, 0.55, 0.9, 0.6)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(26)
+	panel.add_theme_stylebox_override("panel", sb)
+	add_child(panel)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	panel.add_child(vb)
+
+	_name_lbl = Label.new()
+	_name_lbl.add_theme_font_size_override("font_size", 38)
+	_name_lbl.add_theme_color_override("font_color", Color(1, 0.96, 0.9))
+	vb.add_child(_name_lbl)
+
+	_class_lbl = Label.new()
+	_class_lbl.add_theme_font_size_override("font_size", 16)
+	_class_lbl.add_theme_color_override("font_color", ACCENT)
+	vb.add_child(_class_lbl)
+
+	_count_lbl = Label.new()
+	_count_lbl.add_theme_font_size_override("font_size", 13)
+	_count_lbl.add_theme_color_override("font_color", Color(0.6, 0.65, 0.75))
+	vb.add_child(_count_lbl)
+
+	_desc_lbl = Label.new()
+	_desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_desc_lbl.custom_minimum_size = Vector2(640, 0)
+	_desc_lbl.add_theme_font_size_override("font_size", 18)
+	_desc_lbl.add_theme_color_override("font_color", Color(0.85, 0.88, 0.95))
+	vb.add_child(_desc_lbl)
+
+	vb.add_child(_title_label("SPECIFICATIONS"))
+	_stats = VBoxContainer.new()
+	_stats.add_theme_constant_override("separation", 3)
+	vb.add_child(_stats)
+
+	vb.add_child(_title_label("PROFILE"))
+	_bars = VBoxContainer.new()
+	_bars.add_theme_constant_override("separation", 6)
+	vb.add_child(_bars)
+
+	# Bottom nav.
+	var nav := HBoxContainer.new()
+	nav.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	nav.anchor_top = 1.0; nav.anchor_bottom = 1.0
+	nav.offset_top = -78; nav.offset_bottom = -28
+	nav.offset_left = 48; nav.offset_right = -48
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_theme_constant_override("separation", 16)
+	add_child(nav)
+	var prev := Button.new()
+	prev.text = "◂  Prev"; prev.custom_minimum_size = Vector2(150, 46)
+	prev.pressed.connect(func(): _step(-1))
+	nav.add_child(prev)
+	var back := Button.new()
+	back.text = "Back to Menu"; back.custom_minimum_size = Vector2(220, 46)
+	back.pressed.connect(_on_back)
+	nav.add_child(back)
+	var nxt := Button.new()
+	nxt.text = "Next  ▸"; nxt.custom_minimum_size = Vector2(150, 46)
+	nxt.pressed.connect(func(): _step(1))
+	nav.add_child(nxt)
+
+func _title_label(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 16)
+	l.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
+	return l
+
+func _stat_row(key: String, val: String) -> void:
+	var row := HBoxContainer.new()
+	var k := Label.new()
+	k.text = key
+	k.custom_minimum_size = Vector2(220, 0)
+	k.add_theme_color_override("font_color", Color(0.62, 0.68, 0.78))
+	k.add_theme_font_size_override("font_size", 16)
+	var v := Label.new()
+	v.text = val
+	v.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
+	v.add_theme_font_size_override("font_size", 16)
+	row.add_child(k); row.add_child(v)
+	_stats.add_child(row)
+
+func _bar_row(key: String, ratio: float, col: Color) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var k := Label.new()
+	k.text = key
+	k.custom_minimum_size = Vector2(120, 0)
+	k.add_theme_color_override("font_color", Color(0.62, 0.68, 0.78))
+	k.add_theme_font_size_override("font_size", 15)
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(420, 16)
+	bar.min_value = 0.0; bar.max_value = 1.0
+	bar.value = clampf(ratio, 0.03, 1.0)
+	bar.show_percentage = false
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.1, 0.12, 0.16); bg.set_corner_radius_all(4)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = col; fill.set_corner_radius_all(4)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+	row.add_child(k); row.add_child(bar)
+	_bars.add_child(row)
+
+# ---------- selection ----------
+
+func _select(i: int) -> void:
+	_index = i
+	AudioBus.play_synth_ui("broadcast_blip", -16.0, 1.6)
+	_refresh()
+
+func _step(d: int) -> void:
+	if _weapons.is_empty():
+		return
+	_index = wrapi(_index + d, 0, _weapons.size())
+	AudioBus.play_synth_ui("broadcast_blip", -14.0, 1.5)
+	_refresh()
+
+func _refresh() -> void:
+	if _weapons.is_empty():
+		_name_lbl.text = "NO WEAPONS"
+		return
+	var d: WeaponData = _weapons[_index]["data"]
+	var id: String = _weapons[_index]["id"]
+	_name_lbl.text = d.display_name
+	_class_lbl.text = "%s · %s%s" % [
+		FIRE_NAMES[clampi(d.fire_mode, 0, 3)], DMG_NAMES[clampi(d.damage_type, 0, 1)],
+		ALT_NAMES[clampi(d.alt_mode, 0, 3)]]
+	_count_lbl.text = "%d / %d  ·  weakest → strongest" % [_index + 1, _weapons.size()]
+	_desc_lbl.text = DOSSIER.get(id, "")
+
+	for c in _stats.get_children():
+		c.queue_free()
+	var per_shot := d.damage * maxi(d.pellets, 1)
+	_stat_row("Damage", "%.0f%s" % [d.damage, "  × %d pellets" % d.pellets if d.pellets > 1 else ""])
+	_stat_row("Rate of fire", "%.1f / s" % d.fire_rate)
+	_stat_row("Damage per second", "%.0f" % (per_shot * d.fire_rate))
+	_stat_row("Magazine", str(d.mag_size))
+	_stat_row("Reserve", str(d.reserve_max))
+	_stat_row("Reload", "%.1f s" % d.reload_time)
+	if d.range_falloff:
+		_stat_row("Effective range", "%.0f m  (best %.0f–%.0f m)" % [d.range_m, d.opt_min, d.opt_max])
+	else:
+		_stat_row("Range", "%.0f m  (flat)" % d.range_m)
+	_stat_row("Headshot", "%.1f ×" % d.headshot_mult)
+	if d.pierce > 0:
+		_stat_row("Pierce", "+%d targets" % d.pierce)
+	if d.damage_type == WeaponData.DamageType.PROJECTILE and d.splash_radius > 0.0:
+		_stat_row("Splash", "%.0f dmg · %.1f m radius" % [d.splash_damage, d.splash_radius])
+
+	for c in _bars.get_children():
+		c.queue_free()
+	_bar_row("DAMAGE", per_shot / float(_max.get("dmg", 1.0)), Color(1.0, 0.55, 0.4))
+	_bar_row("FIRE RATE", d.fire_rate / float(_max.get("rof", 1.0)), Color(1.0, 0.85, 0.4))
+	_bar_row("MAGAZINE", float(d.mag_size) / float(_max.get("mag", 1.0)), Color(0.5, 0.85, 1.0))
+	_bar_row("RANGE", d.range_m / float(_max.get("rng", 1.0)), Color(0.6, 0.9, 0.6))
+
+	for i in _list_btns.size():
+		var on := i == _index
+		_list_btns[i].add_theme_color_override("font_color",
+			Color(1, 1, 1) if on else (_weapons[i]["data"] as WeaponData).tracer_color.lerp(Color.WHITE, 0.3))
+		_list_btns[i].modulate = Color(1, 1, 1, 1.0 if on else 0.7)
+
+func _on_back() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back()
+	elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+		_step(1)
+	elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+		_step(-1)
