@@ -20,6 +20,12 @@ var _leap_time: float = 0.0
 var _windup: float = 0.0
 var _leap_cd: float = 0.0
 
+# Spider scuttle: real spiders dart, freeze to "assess", then dart again, rather
+# than gliding in a straight line. This cycles a short fast dash and a brief
+# motionless pause while it's pursuing at range (it still commits up close).
+var _scuttle_t: float = 0.0
+var _assessing: bool = false
+
 
 func _ready() -> void:
 	super._ready()
@@ -63,6 +69,26 @@ func _physics_process(delta: float) -> void:
 		if _windup <= 0.0:
 			_launch_leap()
 		return
+	# Scuttle cadence: while pursuing at range, dart for a beat then freeze to
+	# assess. Skip it up close (let it press the bite) and when not engaged.
+	if target and is_instance_valid(target) and is_on_floor() \
+			and (state == State.CHASE or state == State.ALERT) \
+			and global_position.distance_to(target.global_position) > attack_range * 1.5:
+		_scuttle_t -= delta
+		if _scuttle_t <= 0.0:
+			_assessing = not _assessing
+			_scuttle_t = randf_range(0.18, 0.34) if _assessing else randf_range(0.45, 0.8)
+		if _assessing:
+			_decelerate()
+			_face_target(delta)
+			_apply_gravity(delta)
+			move_and_slide()
+			# Still allow a leap to interrupt the freeze if the spacing is right.
+			if _leap_cd <= 0.0:
+				var ld := global_position.distance_to(target.global_position)
+				if ld >= leap_min and ld <= leap_max and _can_see(target):
+					_begin_windup()
+			return
 	super._physics_process(delta)
 	# Consider springing from range.
 	if target and _leap_cd <= 0.0 and is_on_floor():

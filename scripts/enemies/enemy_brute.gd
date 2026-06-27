@@ -18,7 +18,7 @@ func _ready() -> void:
 	_build_shield()
 	super._ready()
 	max_health = 280.0
-	move_speed = 2.5
+	move_speed = 2.0 # lumbering — slow enough that you can circle out and flank it
 	turn_speed = 1.8 # turns slowly — circle to its unshielded sides/back to flank it
 	sight_range = 40.0
 	sight_angle_deg = 200.0
@@ -40,23 +40,27 @@ func _build_shield() -> void:
 	var rig := Node3D.new()
 	rig.name = "ShieldRig"
 	add_child(rig)
-	# The big frontal shield slab (faces local -Z, the enemy's front).
+	# A tower shield HELD IN THE LEFT HAND (the brute's -X side), angled across the
+	# front so it still covers the head-on arc — while the RIGHT arm stays free to
+	# slam. Offset + tilted so it reads as carried, not a centred barn-door wall.
 	var shield := MeshInstance3D.new()
 	shield.name = "ShieldSlab"
 	var shm := BeveledBoxMesh.new()
-	shm.size = Vector3(1.6, 1.8, 0.16)
+	shm.size = Vector3(1.15, 1.6, 0.14)
 	shm.bevel = 0.04
 	shield.mesh = shm
-	shield.position = Vector3(0, 1.3, -0.8)
+	shield.position = Vector3(-0.62, 1.2, -0.74)
+	shield.rotation_degrees = Vector3(0, 15, 6) # canted like a shield braced on the forearm
 	rig.add_child(shield)
-	
+
 	# Glowing shield rim so the protected face reads at a glance.
 	var rim := MeshInstance3D.new()
 	rim.name = "ShieldRim"
 	var rm := BoxMesh.new()
-	rm.size = Vector3(1.72, 1.92, 0.06)
+	rm.size = Vector3(1.25, 1.7, 0.05)
 	rim.mesh = rm
-	rim.position = Vector3(0, 1.3, -0.86)
+	rim.position = Vector3(-0.65, 1.2, -0.79)
+	rim.rotation_degrees = Vector3(0, 15, 6)
 	rig.add_child(rim)
 	
 	_apply_shield_material()
