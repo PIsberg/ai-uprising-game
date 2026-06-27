@@ -44,6 +44,11 @@ var _desc_lbl: Label
 var _stats: VBoxContainer
 var _bars: VBoxContainer
 var _list_btns: Array[Button] = []
+# 3D preview: a spinning gun model rendered in its own SubViewport.
+var _subvp: SubViewport
+var _turntable: Node3D
+var _cam: Camera3D
+var _model: Node3D
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -63,7 +68,7 @@ func _load_weapons() -> void:
 		var inst := ps.instantiate()
 		var d := inst.get("data") as WeaponData
 		if d != null:
-			_weapons.append({"id": String(path).get_file().get_basename(), "data": d})
+			_weapons.append({"id": String(path).get_file().get_basename(), "data": d, "path": String(path)})
 			dmg = maxf(dmg, d.damage * maxi(d.pellets, 1))
 			rof = maxf(rof, d.fire_rate)
 			mag = maxf(mag, float(d.mag_size))
@@ -132,6 +137,8 @@ func _build_ui() -> void:
 	vb.add_theme_constant_override("separation", 10)
 	panel.add_child(vb)
 
+	_build_preview(vb)
+
 	_name_lbl = Label.new()
 	_name_lbl.add_theme_font_size_override("font_size", 38)
 	_name_lbl.add_theme_color_override("font_color", Color(1, 0.96, 0.9))
@@ -185,6 +192,108 @@ func _build_ui() -> void:
 	nxt.text = "Next  ▸"; nxt.custom_minimum_size = Vector2(150, 46)
 	nxt.pressed.connect(func(): _step(1))
 	nav.add_child(nxt)
+
+## A small 3D stage in the dossier that spins the selected weapon's viewmodel.
+func _build_preview(vb: VBoxContainer) -> void:
+	_subvp = SubViewport.new()
+	_subvp.own_world_3d = true
+	_subvp.transparent_bg = false
+	_subvp.msaa_3d = Viewport.MSAA_4X
+	_turntable = Node3D.new()
+	_subvp.add_child(_turntable)
+	_cam = Camera3D.new()
+	_cam.fov = 35.0
+	_cam.position = Vector3(0.3, 0.18, 0.45)
+	_cam.look_at(Vector3.ZERO, Vector3.UP)
+	_subvp.add_child(_cam)
+	var key := DirectionalLight3D.new()
+	key.rotation_degrees = Vector3(-42, -36, 0)
+	key.light_energy = 2.8
+	_subvp.add_child(key)
+	var fill := OmniLight3D.new()
+	fill.position = Vector3(-0.5, 0.35, 0.45)
+	fill.light_color = Color(0.6, 0.72, 0.95)
+	fill.light_energy = 3.0
+	fill.omni_range = 3.5
+	_subvp.add_child(fill)
+	# Warm back-rim so the dark gunmetal silhouette pops off the backdrop.
+	var rim := OmniLight3D.new()
+	rim.position = Vector3(0.3, 0.25, -0.5)
+	rim.light_color = Color(1.0, 0.85, 0.6)
+	rim.light_energy = 2.4
+	rim.omni_range = 3.0
+	_subvp.add_child(rim)
+	var we := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.09, 0.11, 0.16)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.45, 0.5, 0.62)
+	env.ambient_light_energy = 0.95
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.glow_enabled = true
+	we.environment = env
+	_subvp.add_child(we)
+	var box := SubViewportContainer.new()
+	box.stretch = true
+	box.custom_minimum_size = Vector2(0, 200)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(_subvp)
+	vb.add_child(box)
+
+## Swap in the selected weapon's viewmodel on the turntable. Instantiated but NOT
+## added to the scene tree, so weapon.gd's _ready (which expects a camera/player)
+## never fires — we lift out just the script-less "Viewmodel" node and free the rest.
+func _show_model(scene_path: String) -> void:
+	if _turntable == null:
+		return
+	if _model and is_instance_valid(_model):
+		_model.queue_free()
+		_model = null
+	_turntable.rotation = Vector3.ZERO
+	var ps := load(scene_path) as PackedScene
+	if ps == null:
+		return
+	var w := ps.instantiate()
+	var vm := w.get_node_or_null("Viewmodel") as Node3D
+	if vm:
+		w.remove_child(vm)
+		_model = vm
+		_turntable.add_child(vm)
+		_frame_model()
+	w.free()
+
+func _frame_model() -> void:
+	if _model == null:
+		return
+	var aabb := _model_aabb(_model)
+	var ctr := aabb.position + aabb.size * 0.5
+	_model.position = -ctr # spin around the model's own centre
+	var radius: float = maxf(aabb.size.length() * 0.5, 0.14)
+	var dist := radius / tan(deg_to_rad(_cam.fov) * 0.5) * 0.78 # tighter so the gun fills the box
+	# Side-on 3/4 view (barrel runs across the frame) — the iconic gun profile; it
+	# spins from here so every angle shows.
+	_cam.position = Vector3(dist * 0.82, dist * 0.34, dist * 0.42)
+	_cam.look_at(Vector3.ZERO, Vector3.UP)
+
+func _model_aabb(root: Node3D) -> AABB:
+	var merged := AABB()
+	var first := true
+	var inv := root.global_transform.affine_inverse()
+	for mi in root.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var a: AABB = (inv * m.global_transform) * m.mesh.get_aabb()
+		merged = a if first else merged.merge(a)
+		first = false
+	if first:
+		return AABB(Vector3(-0.15, -0.15, -0.15), Vector3(0.3, 0.3, 0.3))
+	return merged
+
+func _process(delta: float) -> void:
+	if _turntable:
+		_turntable.rotation.y += delta * 0.8
 
 func _title_label(text: String) -> Label:
 	var l := Label.new()
@@ -287,6 +396,8 @@ func _refresh() -> void:
 		_list_btns[i].add_theme_color_override("font_color",
 			Color(1, 1, 1) if on else (_weapons[i]["data"] as WeaponData).tracer_color.lerp(Color.WHITE, 0.3))
 		_list_btns[i].modulate = Color(1, 1, 1, 1.0 if on else 0.7)
+
+	_show_model(_weapons[_index]["path"])
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
