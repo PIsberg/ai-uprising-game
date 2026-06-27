@@ -113,6 +113,10 @@ func _build_extra_settings() -> void:
 	var music := _add_slider_row("Music Volume", 0.0, 1.0, 0.05, AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
 
+	# Accessibility: scale (or kill) gameplay camera shake.
+	var shake := _add_slider_row("Screen Shake", 0.0, 1.0, 0.05, GraphicsSettings.screen_shake)
+	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
+
 	_add_language_row()
 
 	# Keep the Back button at the bottom of the panel.

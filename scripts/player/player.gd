@@ -632,7 +632,8 @@ func _handle_camera_feel(delta: float) -> void:
 	# Trauma model: shake decays linearly but is applied squared, so it ramps
 	# off sharply for a punchy, non-lingering kick (Vlambeer-style).
 	_shake_amount = maxf(0.0, _shake_amount - delta * 1.6)
-	var trauma := _shake_amount * _shake_amount
+	# Accessibility: scale all camera shake by the player's Screen Shake setting.
+	var trauma := _shake_amount * _shake_amount * GraphicsSettings.screen_shake
 	var shake_y := (randf() * 2.0 - 1.0) * trauma * 0.08
 	camera.position.y = _camera_base_y + bob + _land_offset + shake_y
 	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08

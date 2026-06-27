@@ -240,6 +240,10 @@ func _build_pause_audio() -> void:
 		if is_instance_valid(_player_ref) and _player_ref.has_method("set_look_sensitivity"):
 			_player_ref.set_look_sensitivity(v))
 
+	# Accessibility: scale gameplay camera shake live (0 = off).
+	var shake := _audio_slider_row(vbox, tr("Screen Shake"), GraphicsSettings.screen_shake, 0.0, 1.0, 0.05)
+	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
+
 	# Advanced Graphics Toggles
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = tr("GPU Particles")
