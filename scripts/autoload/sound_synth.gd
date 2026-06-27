@@ -573,7 +573,15 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 	var drive: float = p.get("drive", 0.9)
 	var saw_bass: bool = p.get("saw_bass", true)
 	var arp_div: float = p.get("arp_div", 0.5) # 0.5 = eighths, 0.25 = sixteenths
+	# Groove upgrades shared by every theme: a backbeat clap on beats 2 & 4, a
+	# sidechain "pump" that ducks the bass/pad/arp under each kick, and a sub-bass
+	# octave for weight on big speakers. All keyed to beat timing so the loop stays
+	# seamless. Per-theme dicts can dial these to taste.
+	var snare_lvl: float = p.get("snare", 0.5)
+	var sidechain: float = p.get("sidechain", 0.7) # 0 = flat, 1 = full duck under the kick
+	var sub_amt: float = p.get("sub", 0.5)         # sub-octave level as a fraction of the bass
 	var bass_phase := 0.0
+	var sub_phase := 0.0
 	var arp_phase := 0.0
 	var pad_a := 0.0
 	var pad_b := 0.0
@@ -587,10 +595,19 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		var kick_env := exp(-beat_t * 24.0)
 		var kick_hz := 110.0 * exp(-beat_t * 16.0) + 45.0
 		var kick := sin(TAU * kick_hz * beat_t) * kick_env * kick_lvl
-		# Bass, eighth-note gated (saw or square).
+		# Backbeat clap/snare on beats 2 & 4 — a noise burst with a short tonal body
+		# that gives the four-on-the-floor kick a groove to push against.
+		var snare := 0.0
+		if snare_lvl > 0.0 and beat_idx % 2 == 1:
+			var s_env := exp(-beat_t * 30.0)
+			var s_tone := sin(TAU * 180.0 * beat_t) * 0.5
+			snare = ((randf() * 2.0 - 1.0) * 0.7 + s_tone) * s_env * snare_lvl
+		# Bass, eighth-note gated (saw or square), with a sub-octave sine underneath.
 		bass_phase += TAU * root / SR
 		var bass_wave := (fposmod(bass_phase, TAU) / TAU * 2.0 - 1.0) if saw_bass else sign_wave(bass_phase)
 		var bass := bass_wave * bass_lvl * exp(-half_t * 5.0)
+		sub_phase += TAU * root * 0.5 / SR
+		var sub := sin(sub_phase) * bass_lvl * sub_amt * exp(-half_t * 5.0)
 		# Lead arp — a square plus an octave-up sine sparkle so the melody sits in
 		# the mids/highs and cuts through on any speaker (the old thin square at a
 		# low level vanished under the sub-bass kick on small speakers).
@@ -607,12 +624,16 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 			pad = (sin(pad_a) + sin(pad_b) * 0.7) * pad_lvl
 		# Offbeat hats.
 		var hat := (randf() * 2.0 - 1.0) * exp(-half_t * 80.0) * hat_lvl
+		# Sidechain: the melodic/bass elements duck on each kick and breathe back —
+		# the classic pumping techno motion that locks everything to the beat.
+		var duck := 1.0 - sidechain * kick_env
+		var voiced := (bass + sub + arp_s + pad) * duck
 		var fade := 1.0
 		if t < 0.012:
 			fade = t / 0.012
 		elif t > dur - 0.012:
 			fade = (dur - t) / 0.012
-		_write(bytes, i, tanh((kick + bass + arp_s + hat + pad) * drive) * 0.9 * fade)
+		_write(bytes, i, tanh((kick + snare + voiced + hat) * drive) * 0.9 * fade)
 	return _to_stream(bytes, true)
 
 ## Aggressive boss/black-site theme: faster, darker key, pounding kick, gritty
@@ -624,6 +645,7 @@ func _music_grok() -> AudioStreamWAV:
 	return _music_track(142.0, roots, arp, {
 		"kick": 0.85, "bass": 0.26, "arp": 0.18, "hat": 0.15,
 		"drive": 1.15, "pad": 0.06, "arp_div": 0.25,
+		"snare": 0.6, "sidechain": 0.82, # hard pump + sharp backbeat for aggression
 	})
 
 ## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
@@ -636,6 +658,7 @@ func _music_archon() -> AudioStreamWAV:
 	return _music_track(96.0, roots, arp, {
 		"kick": 0.9, "bass": 0.3, "arp": 0.15, "hat": 0.13,
 		"drive": 1.2, "pad": 0.13, "arp_div": 0.25,
+		"snare": 0.42, "sidechain": 0.85, "sub": 0.7, # slow, crushing, deep-pumping
 	})
 
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
@@ -646,6 +669,7 @@ func _music_gemini() -> AudioStreamWAV:
 	return _music_track(122.0, roots, arp, {
 		"kick": 0.68, "bass": 0.16, "arp": 0.22, "hat": 0.12,
 		"drive": 0.8, "pad": 0.1, "saw_bass": false,
+		"snare": 0.38, "sidechain": 0.5, # light, airy groove — gentle pump
 	})
 
 ## Brooding dusk-suburb theme: slow, sparse, heavy on the pad, light percussion.
@@ -656,6 +680,7 @@ func _music_suburb() -> AudioStreamWAV:
 	return _music_track(104.0, roots, arp, {
 		"kick": 0.78, "bass": 0.18, "arp": 0.14, "hat": 0.08,
 		"drive": 0.85, "pad": 0.11,
+		"snare": 0.3, "sidechain": 0.62, # sparse backbeat, brooding pump
 	})
 
 func _victory_sting(duration: float) -> AudioStreamWAV:
