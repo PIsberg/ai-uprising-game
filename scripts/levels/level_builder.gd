@@ -1360,6 +1360,9 @@ func _build_lava(def: Dictionary) -> void:
 		if entry.has("color"):
 			lava.recolor = true
 			lava.hazard_color = entry["color"]
+		# Opt-in water mode: a deep pool you fall into (blue surface + water sound).
+		if entry.get("water", false):
+			lava.water = true
 		lava.position = entry.get("pos", Vector3.ZERO)
 		lava.rotation.y = deg_to_rad(entry.get("yaw", 0.0))
 		_nav_region.add_child(lava)

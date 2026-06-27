@@ -133,6 +133,8 @@ static func _defs() -> Dictionary:
 		"crucible": _crucible(),
 		"frostbreak": _frostbreak(),
 		"neon": _neon(),
+		"lava_world": _lava_world(),
+		"water_world": _water_world(),
 	}
 
 
@@ -2355,5 +2357,131 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
 			{"type": "overclock", "pos": Vector3(0, 0, 0)},
+		],
+	}
+
+
+# ===================================================================
+# Hazard-balance arenas: the whole floor is a hazard sea (lava / water)
+# and the playable space is a network of narrow walkways suspended over
+# it. Fall off while dodging the flying enemies and you take hazard
+# damage and have to scramble back up. Enemies are all FLYERS — the sea
+# carves the navmesh away, so ground units couldn't path here anyway.
+# The walkways overlap (no jump-gaps), so the route is always traversable
+# even after WORLD_SCALE; the challenge is staying ON them under fire.
+# ===================================================================
+
+## Shared walkway network for both hazard arenas (coords pre-WORLD_SCALE).
+## A continuous path spawn(NW) → north walk → NE → east walk → exit(SE), plus a
+## central hub spur and a side perch, all narrow so you can be knocked off.
+static func _hazard_platforms(col: Color) -> Array:
+	return [
+		{"pos": Vector3(-15, 1.4, -15), "size": Vector3(6, 0.4, 6), "color": col},     # spawn island
+		{"pos": Vector3(0, 1.4, -15), "size": Vector3(28, 0.4, 2.6), "color": col},    # north walkway
+		{"pos": Vector3(14, 1.4, -15), "size": Vector3(6, 0.4, 6), "color": col},      # NE corner
+		{"pos": Vector3(14, 1.4, 0), "size": Vector3(2.6, 0.4, 28), "color": col},     # east walkway
+		{"pos": Vector3(14, 1.4, 14), "size": Vector3(6, 0.4, 6), "color": col},       # exit island
+		{"pos": Vector3(0, 1.4, -8), "size": Vector3(2.6, 0.4, 15), "color": col},     # north→hub spur
+		{"pos": Vector3(0, 1.4, 0), "size": Vector3(8, 0.4, 8), "color": col},         # central hub
+		{"pos": Vector3(8, 1.4, 0), "size": Vector3(14, 0.4, 2.6), "color": col},      # hub→east spur
+		{"pos": Vector3(-7, 1.4, 5), "size": Vector3(2.6, 0.4, 9), "color": col},      # hub→perch spur
+		{"pos": Vector3(-7, 1.4, 11), "size": Vector3(5, 0.4, 5), "color": col},       # side combat perch
+	]
+
+## Lava World — a foundry sea of molten rock. Falling off the catwalks scalds you.
+static func _lava_world() -> Dictionary:
+	return {
+		"name": "Vulcan Forge — The Molten Sea",
+		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
+		"sign": "VULCAN FORGE — DO NOT FALL",
+		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
+		"tasks": [{"type": "kill_all"}],
+		"open_sky": true,
+		"floor_size": Vector2(40, 40),
+		"floor_color": Color(0.08, 0.04, 0.03),
+		"spawn": Vector3(-15, 2.2, -15),
+		"exit": Vector3(14, 1.6, 14),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(1.0, 0.5, 0.2)},
+		"env": {
+			"sky_top": Color(0.12, 0.03, 0.02), "sky_horizon": Color(0.42, 0.12, 0.03),
+			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
+			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
+			"sky_contribution": 0.3, "glow": 1.25, "fog_density": 0.012,
+			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
+			"contrast": 1.2, "saturation": 1.2, "brightness": 0.88,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
+			{"pos": Vector3(-14, 4, -14), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16},
+			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
+		],
+		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
+		"lava": [
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 22.0},
+		],
+		"lore": [
+			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
+				"text": "Reclamation directive: obsolete hardware is fed to the sea. The catwalks were never meant to carry your weight. We are counting on it."},
+		],
+		"enemies": [
+			{"type": "drone", "pos": Vector3(-8, 3, -15)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2)},
+			{"type": "drone", "pos": Vector3(14, 3, -5)},
+			{"type": "drone", "pos": Vector3(6, 3, 6)},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "drone", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "drone", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+	}
+
+## Water World — a flooded reactor basin. Falling off the gantries drops you into
+## deep cold water that drowns you if you linger.
+static func _water_world() -> Dictionary:
+	return {
+		"name": "Tidecore Basin — The Flooded Reactor",
+		"objective": "Cross the gantries over the flooded reactor and reach the lift",
+		"sign": "TIDECORE BASIN — DEEP WATER",
+		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY"],
+		"tasks": [{"type": "kill_all"}],
+		"open_sky": true,
+		"floor_size": Vector2(40, 40),
+		"floor_color": Color(0.03, 0.06, 0.08),
+		"spawn": Vector3(-15, 2.2, -15),
+		"exit": Vector3(14, 1.6, 14),
+		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.3, 0.7, 1.0)},
+		"env": {
+			"sky_top": Color(0.02, 0.05, 0.1), "sky_horizon": Color(0.06, 0.2, 0.34),
+			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.25, 0.4),
+			"ambient": Color(0.4, 0.7, 0.95), "ambient_energy": 0.45,
+			"sky_contribution": 0.35, "glow": 1.05, "fog_density": 0.013,
+			"sun_color": Color(0.6, 0.85, 1.0), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.15, "brightness": 0.9,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+		],
+		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)),
+		"lava": [
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 12.0,
+				"color": Color(0.2, 0.55, 0.95)},
+		],
+		"lore": [
+			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(14, 1.7, 14), "color": Color(0.4, 0.8, 1.0),
+				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},
+		],
+		"enemies": [
+			{"type": "drone", "pos": Vector3(-8, 3, -15)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2)},
+			{"type": "drone", "pos": Vector3(14, 3, -5)},
+			{"type": "drone", "pos": Vector3(6, 3, 6)},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "drone", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "drone", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
 		],
 	}

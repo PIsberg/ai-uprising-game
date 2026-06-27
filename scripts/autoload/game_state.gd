@@ -89,8 +89,10 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_assembly.tscn",
 	"res://scenes/levels/level_sublevel.tscn",
 	"res://scenes/levels/level_frostbreak.tscn",
+	"res://scenes/levels/level_water_world.tscn",
 	"res://scenes/levels/level_neon.tscn",
 	"res://scenes/levels/level_crucible.tscn",
+	"res://scenes/levels/level_lava_world.tscn",
 	"res://scenes/levels/level_titan.tscn",
 	"res://scenes/levels/level_archon.tscn",
 ]
