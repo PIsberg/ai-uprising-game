@@ -11,6 +11,7 @@ extends EnemyBase
 ## red visor spotlight are scene markers layered on top.
 
 @export var boss_name: String = "BEHEMOTH-X"   ## Shown on the HUD boss bar.
+@export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the wake-roar entrance, boss bar + AI.
 
 @export_group("Smash")
 @export var smash_damage: float = 40.0
@@ -68,6 +69,12 @@ func _ready() -> void:
 	if _reactor:
 		_reactor.material_override = _glow_mat
 	_relax_arms()
+	# Codex/briefing: idle on the dais — skip the wake-roar entrance + AI.
+	if preview:
+		_wake = 0.0
+		hp.invulnerable = true
+		set_physics_process(false)
+		return
 	hp.invulnerable = true
 	_do_entrance.call_deferred()
 
