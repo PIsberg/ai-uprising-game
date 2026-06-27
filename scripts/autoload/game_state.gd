@@ -42,9 +42,13 @@ const DIFFICULTY_CONFIG := {
 	# scaling is preserved.
 	Difficulty.EASY: {
 		"label": "EASY",
-		"health_mult": 0.5, "cooldown_mult": 1.9, "speed_mult": 0.62,
-		"enemy_count_mult": 0.3, "pickup_mult": 1.8, "aim_spread_deg": 16.0,
-		"reaction_mult": 3.0, # very slow to open fire — gives you a beat
+		# Soft but not empty: it used to cull 70% of every roster (0.3) and miss
+		# almost every shot (16deg), which left arenas feeling deserted. Now it
+		# fields about half the pack and lands the odd hit, so it still reads as a
+		# fight — just a forgiving one (clearly easier than NORMAL).
+		"health_mult": 0.5, "cooldown_mult": 1.6, "speed_mult": 0.62,
+		"enemy_count_mult": 0.5, "pickup_mult": 1.8, "aim_spread_deg": 12.0,
+		"reaction_mult": 2.6, # slow to open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",

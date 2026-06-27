@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://difficultycurve01"]
+
+[ext_resource type="Script" path="res://tests/difficulty_curve.gd" id="1"]
+
+[node name="DifficultyCurve" type="Node"]
+script = ExtResource("1")

@@ -289,6 +289,20 @@ static func _frostbreak() -> Dictionary:
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -10), "trigger": 17},
 			{"type": "hunter", "pos": Vector3(12, 0.5, 10), "trigger": 14},
 			{"type": "mauler", "pos": Vector3(0, 0.5, 16), "trigger": 13},
+			# Act III ramp: this relay was near the bottom of the curve (14th of 18);
+			# reinforced to a dense frozen-yard defence that rises toward the finale.
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 8, "trigger": 15},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19},
+			{"type": "strider", "pos": Vector3(-13, 0.5, 12), "trigger": 17},
+			{"type": "strider", "pos": Vector3(7, 0.5, -12), "trigger": 16},
+			{"type": "hunter", "pos": Vector3(8, 0.5, 6), "trigger": 16},
+			{"type": "brute", "pos": Vector3(-13, 0.5, -12), "trigger": 21},
+			{"type": "ravager", "pos": Vector3(-8, 0.5, 10), "trigger": 23},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 6), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(15, 0.5, 6), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(-6, 0.5, -8), "count": 6, "trigger": 16},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
@@ -365,6 +379,19 @@ static func _neon() -> Dictionary:
 			# Evil MAITRE-D' serving bots glide out of the arcade's cafe units.
 			{"type": "server", "pos": Vector3(-12, 0.5, 6), "trigger": 15},
 			{"type": "server", "pos": Vector3(10, 0.5, -6), "trigger": 17},
+			# Act III ramp: the arcade was a valley (15th of 18); reinforced into a
+			# dense neon brawl that climbs toward the foundry + titan finale.
+			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 8, "trigger": 16},
+			{"type": "ravager", "pos": Vector3(13, 0.5, 13), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(-13, 0.5, -13), "trigger": 22},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 0), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
+			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14},
+			{"type": "strider", "pos": Vector3(-13, 0.5, 13), "trigger": 17},
+			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21},
+			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18},
+			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21},
+			{"type": "reaper", "pos": Vector3(2, 0.5, -7), "trigger": 14},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -443,6 +470,19 @@ static func _sublevel() -> Dictionary:
 			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
 			{"type": "vacuum", "pos": Vector3(12, 0.3, -10), "trigger": 13},
 			{"type": "mauler", "pos": Vector3(0, 0.5, 14), "trigger": 12},
+			# Act III ramp: this off-world sublevel was the easiest level in the game
+			# (13th of 18); reinforced to a proper late-campaign garrison.
+			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 14},
+			{"type": "gunner", "pos": Vector3(13, 0.5, -4), "trigger": 16},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 2), "trigger": 18},
+			{"type": "strider", "pos": Vector3(-12, 0.5, -12), "trigger": 17},
+			{"type": "strider", "pos": Vector3(12, 0.5, 12), "trigger": 19},
+			{"type": "vacuum", "pos": Vector3(-6, 0.5, -10), "trigger": 13},
+			{"type": "ravager", "pos": Vector3(10, 0.5, -12), "trigger": 22},
+			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, -4), "trigger": 18},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, 4), "trigger": 20},
+			{"type": "skitter", "pos": Vector3(6, 0.5, -6), "count": 6, "trigger": 15},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -521,6 +561,11 @@ static func _crucible() -> Dictionary:
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15},
 			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14},
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			# Pre-finale foundry: heavier garrison so it's the hardest level before titan.
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17},
+			{"type": "strider", "pos": Vector3(16, 0.5, -6), "trigger": 16},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15},
 			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
 			# centrepiece boss — a towering melee mech that charges and hammers you.
 			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
@@ -792,6 +837,16 @@ static func _overseer() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
 			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
 			{"type": "strider", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
+			# This Act II boss arena was under-tuned (lower threat than level 2);
+			# the OVERSEER now fields a real escort — more Seeker swarm + heavies.
+			{"type": "seeker", "pos": Vector3(8, 2.5, 8), "trigger": 24},
+			{"type": "seeker", "pos": Vector3(-8, 2.5, 10), "trigger": 26},
+			{"type": "seeker", "pos": Vector3(10, 2.5, -8), "trigger": 28},
+			{"type": "android", "pos": Vector3(-16, 0.5, -16), "count": 3, "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 22},
+			{"type": "strider", "pos": Vector3(16, 0.5, -4), "trigger": 24},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 26},
+			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -880,6 +935,12 @@ static func _alien() -> Dictionary:
 			{"type": "strider", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
 			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
+			# Act III opener: lift it above the Act II finale so the off-world act ramps up.
+			{"type": "alien", "pos": Vector3(0, 2.5, -14), "trigger": 24},
+			{"type": "alien", "pos": Vector3(-16, 2.5, -6), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(16, 0.5, 8), "trigger": 26},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 16), "trigger": 28},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -18), "count": 6, "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-24, 0, -16)},
@@ -1308,6 +1369,10 @@ static func _assembly() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
 			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
+			# Plant floor reinforcements so the production gauntlet keeps climbing.
+			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26},
+			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -16), "count": 6, "trigger": 22},
 		],
 	}
 
