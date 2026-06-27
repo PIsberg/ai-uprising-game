@@ -9,6 +9,7 @@ GODOT="${GODOT_BIN:-godot}"
 # (enemy_view, map) need a window and are intentionally excluded here.
 PROBES=(
   res://tests/ai_director_probe.tscn
+  res://tests/elite_probe.tscn
   res://tests/teach_probe.tscn
   res://tests/objective_probe.tscn
   res://tests/hazard_probe.tscn

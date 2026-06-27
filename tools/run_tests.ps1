@@ -6,6 +6,7 @@ if (-not $Godot) { $Godot = "godot" }
 
 $probes = @(
   "res://tests/ai_director_probe.tscn",
+  "res://tests/elite_probe.tscn",
   "res://tests/teach_probe.tscn",
   "res://tests/objective_probe.tscn",
   "res://tests/hazard_probe.tscn",
