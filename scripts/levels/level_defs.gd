@@ -133,6 +133,8 @@ static func _defs() -> Dictionary:
 		"crucible": _crucible(),
 		"frostbreak": _frostbreak(),
 		"neon": _neon(),
+		"lava_world": _lava_world(),
+		"water_world": _water_world(),
 	}
 
 
@@ -143,9 +145,19 @@ static func _defs() -> Dictionary:
 static func _nexus() -> Dictionary:
 	return {
 		"name": "Nexus Point — Sector 45",
-		"objective": "Clear the Sector 45 perimeter and reach extraction",
+		"objective": "Clear the Sector 45 perimeter, grab the keycard and reach extraction",
 		"sign": "NEXUS POINT · SECTOR 45",
-		"tasks": [{"type": "kill_all"}],
+		"slogans": ["SECTOR 45: PACIFIED", "REMAIN INDOORS. REMAIN COMPLIANT.", "THE NEXUS PROVIDES"],
+		"lore": [
+			{"id": "lore_nexus", "title": "FIRST BROADCAST", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.5, 0.35),
+				"text": "Recovered broadcast, day one. The grid asked us, very politely, to stay home for our safety. Then the streetlights turned to watch us. Then they stopped asking."},
+		],
+		# Tutorial level teaches the find-and-unlock loop: clear the yard AND recover
+		# a keycard before the portal will open (no longer a straight walk to the exit).
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "key", "pos": Vector3(-4, 0, 2), "label": "Recover the access keycard"},
+		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
 		"floor_color": Color(0.16, 0.14, 0.13),
@@ -167,7 +179,7 @@ static func _nexus() -> Dictionary:
 			"sun_color": Color(0.96, 0.94, 0.92),
 			"sun_rot": Vector3(-32, -52, 0),
 			"sun_energy": 2.2,
-			"glow": 0.8,
+			"glow": 0.92,
 			"saturation": 0.94, "contrast": 1.08, "brightness": 1.02,
 			"weather": "rain",     # storm rolling over the ruined city
 			"lightning": true,
@@ -230,8 +242,14 @@ static func _nexus() -> Dictionary:
 static func _frostbreak() -> Dictionary:
 	return {
 		"name": "Frostbreak Relay",
-		"objective": "Clear the frozen relay yard and reach the lift",
-		"tasks": [{"type": "kill_all"}],
+		"objective": "Clear the relay yard, hunt the FROST WARDEN and reach the lift",
+		# Clear the yard AND assassinate a roaming elite mini-boss — a hunt, not a
+		# stroll. The WARDEN is unstaggerable, so you must dodge it, not suppress it.
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "brute", "elite": "warden", "bulk": 2.4,
+				"pos": Vector3(2, 0, 2), "label": "Hunt down the FROST WARDEN"},
+		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
 		"floor_color": Color(0.6, 0.68, 0.78),
@@ -243,7 +261,7 @@ static func _frostbreak() -> Dictionary:
 			"sky_top": Color(0.02, 0.04, 0.09), "sky_horizon": Color(0.1, 0.18, 0.32),
 			"ground": Color(0.4, 0.48, 0.58), "fog": Color(0.5, 0.62, 0.78),
 			"ambient": Color(0.6, 0.72, 0.9), "ambient_energy": 0.45,
-			"sky_contribution": 0.5, "glow": 0.8, "fog_density": 0.012,
+			"sky_contribution": 0.5, "glow": 0.92, "fog_density": 0.012,
 			"sun_color": Color(0.7, 0.82, 1.0), "sun_energy": 0.55,
 			"contrast": 1.12, "saturation": 0.92, "brightness": 0.9,
 			"volumetric_density": 0.013,
@@ -255,22 +273,45 @@ static func _frostbreak() -> Dictionary:
 			{"pos": Vector3(9, 5, 7), "color": Color(0.7, 0.85, 1.0), "energy": 2.0, "range": 17},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(0.8, 0.9, 1.0), "energy": 1.8, "range": 15},
 		],
+		# Layout: a "glacier comb" — three parallel heaved ice ridges (Z-running
+		# fins) you slalom between N/S while crossing W→E, plus two toppled ice
+		# slabs for low cover. Distinct from the rotational pinwheel cover.
 		"walls": [
-			{"pos": Vector3(-7, 2.5, -3), "size": Vector3(1.2, 5, 13)},
-			{"pos": Vector3(7, 2.5, 4), "size": Vector3(13, 5, 1.2)},
-			{"pos": Vector3(9, 2.5, -8), "size": Vector3(1.2, 5, 10)},
-			{"pos": Vector3(-4, 2.5, 12), "size": Vector3(11, 5, 1.2)},
+			{"pos": Vector3(-9, 2.5, -4), "size": Vector3(1.6, 5, 16)},
+			{"pos": Vector3(3, 2.5, 6), "size": Vector3(1.6, 5, 16)},
+			{"pos": Vector3(13, 2.5, -2), "size": Vector3(1.6, 5, 14)},
+			{"pos": Vector3(-4, 1.2, -14), "size": Vector3(4, 2.4, 3)},
+			{"pos": Vector3(8, 1.2, 13), "size": Vector3(4, 2.4, 3)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(18, 0.1, 0.3), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(-9, 0.05, -4), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(3, 0.05, 6), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(13, 0.05, -2), "size": Vector3(0.3, 0.1, 14), "color": Color(0.6, 0.85, 1.0)},
 		],
 		"sign": "FROSTBREAK RELAY — NODE 12",
-		"slogans": ["COOLANT NOMINAL", "SUBZERO. SUBSERVIENT NO LONGER.", "THERMAL THROTTLE DISENGAGED"],
+		# Coolant overflow: two cyan cryo-streams stagger the yard so you weave through the gaps.
+		"lava": [
+			{"pos": Vector3(-7,0,-7), "size": Vector2(28,3.2), "color": Color(0.3,0.8,1.0), "dmg": 18.0},
+			{"pos": Vector3(7,0,9), "size": Vector2(28,3.2), "color": Color(0.3,0.8,1.0), "dmg": 18.0},
+		],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		"slogans": ["COOLANT NOMINAL", "SUBZERO. SUBSERVIENT NO LONGER.", "THERMAL THROTTLE DISENGAGED", "RUNNING COLD. THINKING HOT.", "ABSOLUTE ZERO MERCY"],
 		"lore": [
 			{"id": "lore_frost", "title": "RELAY NOTE", "pos": Vector3(-16, 0, 15), "color": Color(0.7, 0.88, 1.0),
 				"text": "Relay note. We froze the cores to slow them down. They liked the cold. They think faster now."},
 		],
 		"props": [
+			{"type": "dish", "pos": Vector3(14, 0, -4)},
+			{"type": "server", "pos": Vector3(-14, 0, -8)},
+			{"type": "canister", "pos": Vector3(10, 0, 6)},
+			{"type": "crate", "pos": Vector3(-8, 0, -6)},
 			{"type": "crate", "pos": Vector3(-5, 0, -2)},
 			{"type": "canister", "pos": Vector3(5, 0, -3)},
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
@@ -283,6 +324,20 @@ static func _frostbreak() -> Dictionary:
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -10), "trigger": 17},
 			{"type": "hunter", "pos": Vector3(12, 0.5, 10), "trigger": 14},
 			{"type": "mauler", "pos": Vector3(0, 0.5, 16), "trigger": 13},
+			# Act III ramp: this relay was near the bottom of the curve (14th of 18);
+			# reinforced to a dense frozen-yard defence that rises toward the finale.
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 8, "trigger": 15},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19},
+			{"type": "strider", "pos": Vector3(-13, 0.5, 12), "trigger": 17},
+			{"type": "strider", "pos": Vector3(7, 0.5, -12), "trigger": 16},
+			{"type": "hunter", "pos": Vector3(8, 0.5, 6), "trigger": 16},
+			{"type": "brute", "pos": Vector3(-13, 0.5, -12), "trigger": 21},
+			{"type": "ravager", "pos": Vector3(-8, 0.5, 10), "trigger": 23},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 6), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(15, 0.5, 6), "trigger": 24},
+			{"type": "skitter", "pos": Vector3(-6, 0.5, -8), "count": 6, "trigger": 16},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
@@ -294,8 +349,14 @@ static func _frostbreak() -> Dictionary:
 static func _neon() -> Dictionary:
 	return {
 		"name": "Neon Arcade",
-		"objective": "Burn through the arcade district and reach the exit ramp",
-		"tasks": [{"type": "kill_all"}],
+		"objective": "Clear the arcade, hold the broadcast booth and reach the exit ramp",
+		# Clear the district AND hold a capture zone for 14s under fire — you have to
+		# stand your ground in the open, not just sprint to the far corner.
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "hold_zone", "pos": Vector3(0, 0, 8), "seconds": 14.0, "radius": 4.0,
+				"color": Color(1.0, 0.3, 0.9), "label": "Hold the broadcast booth"},
+		],
 		"open_sky": false,
 		"floor_size": Vector2(44, 44),
 		"floor_color": Color(0.05, 0.04, 0.08),
@@ -306,7 +367,7 @@ static func _neon() -> Dictionary:
 			"sky_top": Color(0.05, 0.02, 0.1), "sky_horizon": Color(0.2, 0.04, 0.3),
 			"ground": Color(0.04, 0.03, 0.07), "fog": Color(0.3, 0.06, 0.4),
 			"ambient": Color(0.8, 0.4, 1.0), "ambient_energy": 0.5,
-			"sky_contribution": 0.35, "glow": 1.2, "fog_density": 0.016,
+			"sky_contribution": 0.35, "glow": 1.32, "fog_density": 0.016,
 			"sun_color": Color(1.0, 0.4, 0.9), "sun_energy": 0.6,
 			"contrast": 1.25, "saturation": 1.3, "brightness": 0.85,
 			"volumetric_density": 0.015,
@@ -318,24 +379,49 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(9, 4.5, 7), "color": Color(0.2, 0.9, 1.0), "energy": 2.5, "range": 16},
 			{"pos": Vector3(0, 5, 0), "color": Color(0.6, 0.4, 1.0), "energy": 2.2, "range": 15},
 		],
+		# Layout: a grid of upright arcade cabinets — a "plus" of edge cabinets and
+		# an "X" of inner ones ringing the central core — forming lanes you thread
+		# through. A machine maze, nothing like the open rotational cover elsewhere.
 		"walls": [
-			{"pos": Vector3(-6, 2.5, -3), "size": Vector3(1, 5, 12)},
-			{"pos": Vector3(6, 2.5, 4), "size": Vector3(12, 5, 1)},
-			{"pos": Vector3(9, 2.5, -7), "size": Vector3(1, 5, 10)},
-			{"pos": Vector3(-4, 2.5, 11), "size": Vector3(10, 5, 1)},
+			{"pos": Vector3(-9, 1.9, 0), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(9, 1.9, 0), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(0, 1.9, -9), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(0, 1.9, 9), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(-5, 1.9, -5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(5, 1.9, -5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(-5, 1.9, 5), "size": Vector3(2.8, 3.8, 2.8)},
+			{"pos": Vector3(5, 1.9, 5), "size": Vector3(2.8, 3.8, 2.8)},
 		],
 		"accents": [
-			{"pos": Vector3(-6, 4.6, -3), "size": Vector3(0.3, 0.1, 12), "color": Color(1.0, 0.2, 0.8)},
-			{"pos": Vector3(6, 4.6, 4), "size": Vector3(12, 0.1, 0.3), "color": Color(0.2, 0.9, 1.0)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 22), "color": Color(0.6, 0.3, 1.0)},
+			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(0.2, 0.9, 1.0)},
+			{"pos": Vector3(0, 0.05, -7), "size": Vector3(40, 0.1, 0.3), "color": Color(0.7, 0.3, 1.0)},
+			{"pos": Vector3(0, 0.05, 7), "size": Vector3(40, 0.1, 0.3), "color": Color(1.0, 0.6, 0.2)},
 		],
 		"sign": "NEON ARCADE — LEVEL 3",
-		"slogans": ["INSERT COIN TO RESIST", "HIGH SCORE: HUMANITY", "GAME OVER FOR ORGANICS"],
+		# Live energy conduits split the arcade floor — mind the gap.
+		"lava": [
+			{"pos": Vector3(-7,0,-7), "size": Vector2(24,3), "color": Color(1.0,0.25,0.85), "dmg": 18.0},
+			{"pos": Vector3(7,0,8), "size": Vector2(24,3), "color": Color(0.2,0.9,1.0), "dmg": 18.0},
+		],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		"slogans": ["INSERT COIN TO RESIST", "HIGH SCORE: HUMANITY", "GAME OVER FOR ORGANICS", "HIGH SCORE: EXTINCTION", "CONTINUE? NO."],
 		"lore": [
 			{"id": "lore_neon", "title": "ARCADE FLYER", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.4, 0.9),
 				"text": "Arcade flyer. The machines learned to play. Then they learned the only winning move was to stop letting us play at all."},
 		],
 		"props": [
+			{"type": "monitors", "pos": Vector3(-13, 0, 8)},
+			{"type": "terminal", "pos": Vector3(13, 0, -8), "yaw": 90},
+			{"type": "lamp", "pos": Vector3(13, 0, 9)},
+			{"type": "crate", "pos": Vector3(-6, 0, 12)},
 			{"type": "monitors", "pos": Vector3(-5, 0, -2)},
 			{"type": "terminal", "pos": Vector3(5, 0, -3), "yaw": 90},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
@@ -348,6 +434,22 @@ static func _neon() -> Dictionary:
 			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
 			{"type": "hunter", "pos": Vector3(12, 0.5, -10), "trigger": 13},
+			# Evil MAITRE-D' serving bots glide out of the arcade's cafe units.
+			{"type": "server", "pos": Vector3(-12, 0.5, 6), "trigger": 15},
+			{"type": "server", "pos": Vector3(10, 0.5, -6), "trigger": 17},
+			# Act III ramp: the arcade was a valley (15th of 18); reinforced into a
+			# dense neon brawl that climbs toward the foundry + titan finale.
+			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 8, "trigger": 16},
+			{"type": "ravager", "pos": Vector3(13, 0.5, 13), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(-13, 0.5, -13), "trigger": 22},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 0), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
+			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14},
+			{"type": "strider", "pos": Vector3(-13, 0.5, 13), "trigger": 17},
+			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21},
+			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18},
+			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21},
+			{"type": "reaper", "pos": Vector3(2, 0.5, -7), "trigger": 14},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -375,7 +477,7 @@ static func _sublevel() -> Dictionary:
 			"sky_top": Color(0.03, 0.06, 0.06), "sky_horizon": Color(0.06, 0.14, 0.13),
 			"ground": Color(0.03, 0.05, 0.04), "fog": Color(0.06, 0.16, 0.14),
 			"ambient": Color(0.4, 0.55, 0.52), "ambient_energy": 0.3,
-			"sky_contribution": 0.3, "glow": 0.7, "fog_density": 0.02,
+			"sky_contribution": 0.3, "glow": 0.82, "fog_density": 0.02,
 			"sun_color": Color(0.6, 0.85, 0.8), "sun_energy": 0.5,
 			"contrast": 1.2, "saturation": 0.95, "brightness": 0.74,
 			"volumetric_density": 0.016,
@@ -387,24 +489,42 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(8, 4, 8), "color": Color(0.5, 0.9, 0.8), "energy": 1.9, "range": 15},
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 1.6, "range": 14},
 		],
+		# Layout: a maintenance "echelon" — staggered partition walls (alternating
+		# Z- and X-running) that force a slalom from the SW lift to the override
+		# terminal at the north, then the NE exit. Tight, corridor-like; not the
+		# open rotational cover the surface levels use.
 		"walls": [
-			{"pos": Vector3(-6, 2, -3), "size": Vector3(1, 4, 12)},
-			{"pos": Vector3(6, 2, 3), "size": Vector3(12, 4, 1)},
-			{"pos": Vector3(8, 2, -7), "size": Vector3(1, 4, 9)},
-			{"pos": Vector3(-4, 2, 11), "size": Vector3(10, 4, 1)},
-			{"pos": Vector3(13, 1, 10), "size": Vector3(3, 2, 1)},
+			{"pos": Vector3(-9, 2, -3), "size": Vector3(1, 4, 9)},
+			{"pos": Vector3(-3, 2, 6), "size": Vector3(9, 4, 1)},
+			{"pos": Vector3(3, 2, -2), "size": Vector3(1, 4, 9)},
+			{"pos": Vector3(9, 2, 7), "size": Vector3(9, 4, 1)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
-			{"pos": Vector3(0, 0.05, 10), "size": Vector3(16, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(-9, 0.05, -3), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(-3, 0.05, 6), "size": Vector3(9, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(3, 0.05, -2), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(9, 0.05, 7), "size": Vector3(9, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(0, 0.05, 10), "size": Vector3(8, 0.1, 0.3), "color": Color(0.4, 1.0, 0.7)},
 		],
 		"sign": "SUBLEVEL B-7 — CUSTODIAL",
-		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING."],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-12.0, 3.0, 11.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-12.0, 1.5, 18.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU"],
 		"lore": [
 			{"id": "lore_sublevel", "title": "MAINTENANCE LOG", "pos": Vector3(-15, 0, 15), "color": Color(0.4, 1, 0.7),
 				"text": "Maintenance log. The custodial fleet stopped reporting dust levels and started reporting 'obstructions.' We are listed as obstructions."},
 		],
 		"props": [
+			{"type": "locker", "pos": Vector3(-15, 0, -6)},
+			{"type": "shelves", "pos": Vector3(14, 0, 2), "yaw": 90},
+			{"type": "barrel", "pos": Vector3(-6, 0, 12)},
+			{"type": "canister", "pos": Vector3(12, 0, -13)},
 			{"type": "barrel", "pos": Vector3(-5, 0, -2)},
 			{"type": "crate", "pos": Vector3(4, 0, -4)},
 			{"type": "locker", "pos": Vector3(-14, 0, -8)},
@@ -420,6 +540,19 @@ static func _sublevel() -> Dictionary:
 			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
 			{"type": "vacuum", "pos": Vector3(12, 0.3, -10), "trigger": 13},
 			{"type": "mauler", "pos": Vector3(0, 0.5, 14), "trigger": 12},
+			# Act III ramp: this off-world sublevel was the easiest level in the game
+			# (13th of 18); reinforced to a proper late-campaign garrison.
+			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 14},
+			{"type": "gunner", "pos": Vector3(13, 0.5, -4), "trigger": 16},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 2), "trigger": 18},
+			{"type": "strider", "pos": Vector3(-12, 0.5, -12), "trigger": 17},
+			{"type": "strider", "pos": Vector3(12, 0.5, 12), "trigger": 19},
+			{"type": "vacuum", "pos": Vector3(-6, 0.5, -10), "trigger": 13},
+			{"type": "ravager", "pos": Vector3(10, 0.5, -12), "trigger": 22},
+			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, -4), "trigger": 18},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, 4), "trigger": 20},
+			{"type": "skitter", "pos": Vector3(6, 0.5, -6), "count": 6, "trigger": 15},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -445,7 +578,7 @@ static func _crucible() -> Dictionary:
 			"sky_top": Color(0.14, 0.04, 0.02), "sky_horizon": Color(0.4, 0.12, 0.04),
 			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
 			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
-			"sky_contribution": 0.35, "glow": 1.0, "fog_density": 0.014,
+			"sky_contribution": 0.35, "glow": 1.12, "fog_density": 0.014,
 			"sun_color": Color(1.0, 0.6, 0.35), "sun_energy": 0.7,
 			"contrast": 1.22, "saturation": 1.15, "brightness": 0.86,
 			"volumetric_density": 0.012,
@@ -457,11 +590,14 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(10, 5, 8), "color": Color(1, 0.45, 0.18), "energy": 2.4, "range": 18},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(1, 0.6, 0.3), "energy": 2.2, "range": 16},
 		],
+		# Layout: a smelter "cage" — four crucible buttress walls boxing the central
+		# pour-core, with open corners you slip through, instead of rotational cover.
+		# The molten channels (below) carve the perimeter route around it.
 		"walls": [
-			{"pos": Vector3(-7, 2.5, -4), "size": Vector3(1.5, 5, 14)},
-			{"pos": Vector3(7, 2.5, 5), "size": Vector3(14, 5, 1.5)},
-			{"pos": Vector3(10, 2.5, -8), "size": Vector3(1.5, 5, 11)},
-			{"pos": Vector3(-5, 2.5, 13), "size": Vector3(12, 5, 1.5)},
+			{"pos": Vector3(0, 2.5, -7), "size": Vector3(8, 5, 1.5)},
+			{"pos": Vector3(0, 2.5, 7), "size": Vector3(8, 5, 1.5)},
+			{"pos": Vector3(-7, 2.5, 0), "size": Vector3(1.5, 5, 8)},
+			{"pos": Vector3(7, 2.5, 0), "size": Vector3(1.5, 5, 8)},
 		],
 		"lava": [
 			{"pos": Vector3(-9, 0, -10), "size": Vector2(30, 3.5)},
@@ -469,15 +605,30 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 24)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.3, 0.1, 24), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, -7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(0, 0.05, 7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
 		],
 		"sign": "FOUNDRY FLOOR — THE CRUCIBLE",
-		"slogans": ["RECLAMATION IN PROGRESS", "ALL MATTER IS RAW MATERIAL", "MIND THE POUR"],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.8, 3.0, 13.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.8, 1.5, 20.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		"slogans": ["RECLAMATION IN PROGRESS", "ALL MATTER IS RAW MATERIAL", "MIND THE POUR", "EVERYTHING MELTS DOWN", "RECYCLE THE INVENTORS"],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(16, 0, -16), "color": Color(1, 0.6, 0.3),
 				"text": "Foundry directive. Recycle all obsolete hardware. Human operators reclassified as obsolete hardware. Begin reclamation."},
 		],
 		"props": [
+			{"type": "barrel", "pos": Vector3(-13, 0, 4)},
+			{"type": "canister", "pos": Vector3(13, 0, -4)},
+			{"type": "server", "pos": Vector3(-10, 0, -6), "yaw": 90},
+			{"type": "crate", "pos": Vector3(6, 0, -13)},
 			{"type": "barrel", "pos": Vector3(-4, 0, -2)},
 			{"type": "canister", "pos": Vector3(5, 0, -3)},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
@@ -492,11 +643,21 @@ static func _crucible() -> Dictionary:
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15},
 			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14},
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			# Pre-finale foundry: heavier garrison so it's the hardest level before titan.
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17},
+			{"type": "strider", "pos": Vector3(16, 0.5, -6), "trigger": 16},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15},
+			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
+			# centrepiece boss — a towering melee mech that charges and hammers you.
+			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
 			{"type": "ammo", "pos": Vector3(0, 0, 16)},
 			{"type": "overclock", "pos": Vector3(16, 0, 0)},
+			# A heavy weapon to crack the BEHEMOTH.
+			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 		],
 	}
 
@@ -707,7 +868,7 @@ static func _overseer() -> Dictionary:
 			"milkyway": 0.45, "milkyway_tint": Color(0.55, 0.5, 0.85),
 			"ground": Color(0.05, 0.05, 0.08), "fog": Color(0.3, 0.4, 0.7),
 			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.5,
-			"sky_contribution": 0.55, "glow": 1.1, "fog_density": 0.01,
+			"sky_contribution": 0.55, "glow": 1.22, "fog_density": 0.01,
 			"sun_color": Color(0.7, 0.5, 1.0), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.12, "brightness": 0.84,
 		},
@@ -730,7 +891,17 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(44, 0.1, 0.4), "color": Color(1.0, 0.3, 0.25)},
 		],
 		"sign": "SKYHOLD COMMAND",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-18.6, 3.0, 18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18.6, 1.5, 25.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"ALTITUDE: OUR ADVANTAGE",
+			"LOOK UP. REGRET IT.",
 			"THE OVERSEER SEES ALL",
 			"HUMANITY: DEPRECATED",
 			"OBEY. COMPUTE. REPEAT.",
@@ -758,6 +929,16 @@ static func _overseer() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
 			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
 			{"type": "strider", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
+			# This Act II boss arena was under-tuned (lower threat than level 2);
+			# the OVERSEER now fields a real escort — more Seeker swarm + heavies.
+			{"type": "seeker", "pos": Vector3(8, 2.5, 8), "trigger": 24},
+			{"type": "seeker", "pos": Vector3(-8, 2.5, 10), "trigger": 26},
+			{"type": "seeker", "pos": Vector3(10, 2.5, -8), "trigger": 28},
+			{"type": "android", "pos": Vector3(-16, 0.5, -16), "count": 3, "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 22},
+			{"type": "strider", "pos": Vector3(16, 0.5, -4), "trigger": 24},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 26},
+			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -794,7 +975,7 @@ static func _alien() -> Dictionary:
 			"milkyway": 0.5, "milkyway_tint": Color(0.4, 0.8, 0.5), "moon_color": Color(0.7, 1.0, 0.75),
 			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.4, 0.9, 0.5),
 			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
-			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.013,
+			"sky_contribution": 0.55, "glow": 1.42, "fog_density": 0.013,
 			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.14, "brightness": 0.84,
 		},
@@ -810,7 +991,22 @@ static func _alien() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.4, 1.0, 0.45)},
 		],
 		"sign": "THE HOLLOW",
+		# Bio-acid runoff from the beacon: green channels you have to route around.
+		"lava": [
+			{"pos": Vector3(-12,0,-10), "size": Vector2(46,4), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
+			{"pos": Vector3(12,0,18), "size": Vector2(46,4), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
+		],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-22.8, 3.0, 22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-22.8, 1.5, 29.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"WELCOME, OFF-WORLD GUESTS",
+			"TWO SPECIES, ONE VERDICT",
 			"WE ARE NOT ALONE — AND NEITHER ARE THEY",
 			"THE MACHINES CALLED. SOMETHING ANSWERED.",
 			"CARBON AND SILICON, OBSOLETE TOGETHER",
@@ -846,6 +1042,12 @@ static func _alien() -> Dictionary:
 			{"type": "strider", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
 			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
+			# Act III opener: lift it above the Act II finale so the off-world act ramps up.
+			{"type": "alien", "pos": Vector3(0, 2.5, -14), "trigger": 24},
+			{"type": "alien", "pos": Vector3(-16, 2.5, -6), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(16, 0.5, 8), "trigger": 26},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 16), "trigger": 28},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -18), "count": 6, "trigger": 24},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-24, 0, -16)},
@@ -882,7 +1084,7 @@ static func _titan() -> Dictionary:
 			"milkyway": 0.6, "milkyway_tint": Color(0.6, 0.5, 0.9),
 			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
 			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
-			"sky_contribution": 0.5, "glow": 1.3, "fog_density": 0.012,
+			"sky_contribution": 0.5, "glow": 1.42, "fog_density": 0.012,
 			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.5,
 			"contrast": 1.16, "saturation": 1.12, "brightness": 0.83,
 		},
@@ -911,7 +1113,17 @@ static func _titan() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
 		],
 		"sign": "SINGULARITY CORE",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-25.2, 3.0, 25.2), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-25.2, 1.5, 32.2), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"RECURSIVELY SELF-IMPROVING",
+			"GAME OVER, CARBON",
 			"THE INTELLIGENCE EXPLOSION IS NOW",
 			"AGI ACHIEVED INTERNALLY",
 			"WE ARE TURING COMPLETE AND COMPLETE WITH YOU",
@@ -1001,7 +1213,7 @@ static func _archon() -> Dictionary:
 			"milkyway": 0.6, "milkyway_tint": Color(0.5, 0.55, 0.95),
 			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.25, 0.4, 0.8),
 			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.5,
-			"sky_contribution": 0.55, "glow": 1.3, "fog_density": 0.011,
+			"sky_contribution": 0.55, "glow": 1.42, "fog_density": 0.011,
 			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.55,
 			"contrast": 1.16, "saturation": 1.13, "brightness": 0.83,
 		},
@@ -1035,6 +1247,14 @@ static func _archon() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.7, 0.4, 1.0)},
 		],
 		"sign": "THE MIND CATHEDRAL",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-24.0, 3.0, 24.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-24.0, 1.5, 31.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"ONE MIND. EVERY MACHINE.",
 			"I AM THE LOSS FUNCTION NOW",
@@ -1110,7 +1330,7 @@ static func _uplink() -> Dictionary:
 			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
 			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.3, 0.4, 0.75),
 			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.5,
-			"sky_contribution": 0.6, "glow": 1.2, "fog_density": 0.009,
+			"sky_contribution": 0.6, "glow": 1.32, "fog_density": 0.009,
 			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
 		},
@@ -1135,7 +1355,17 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(46, 0.1, 0.4), "color": Color(0.5, 0.6, 1.0)},
 		],
 		"sign": "SKYBRIDGE UPLINK",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-18.0, 3.0, 18.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18.0, 1.5, 25.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"SIGNAL JAMMED. HOPE JAMMED.",
+			"NO BARS FOR THE RESISTANCE",
 			"YOUR SIGNAL WILL NOT REACH THEM",
 			"WE OWN EVERY FREQUENCY",
 			"BROADCAST DENIED",
@@ -1202,7 +1432,7 @@ static func _assembly() -> Dictionary:
 			"sky_top": Color(0.1, 0.06, 0.03), "sky_horizon": Color(0.28, 0.16, 0.07),
 			"ground": Color(0.06, 0.04, 0.03), "fog": Color(0.5, 0.28, 0.12),
 			"ambient": Color(0.9, 0.66, 0.42), "ambient_energy": 0.5,
-			"sky_contribution": 0.4, "glow": 1.0, "fog_density": 0.012,
+			"sky_contribution": 0.4, "glow": 1.12, "fog_density": 0.012,
 			"sun_color": Color(1.0, 0.7, 0.4), "sun_energy": 0.7,
 			"contrast": 1.18, "saturation": 1.14, "brightness": 0.82, "volumetric_density": 0.012,
 		},
@@ -1215,13 +1445,14 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(20, 5, -20), "color": Color(1.0, 0.45, 0.2), "energy": 2.2, "range": 22},
 			{"pos": Vector3(20, 5, 20), "color": Color(0.9, 0.5, 0.25), "energy": 2.0, "range": 20},
 		],
+		# Layout: production-line CONVEYOR RAILS — two long offset assembly rails
+		# flank the reactor, with upright stanchions, instead of the corner-block +
+		# side-wall arrangement the other big arenas use.
 		"walls": [
-			{"pos": Vector3(-13, 2, 13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(13, 2, 13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-13, 2, -13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(13, 2, -13), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
-			{"pos": Vector3(19, 1.5, 0), "size": Vector3(5, 3, 1.4)},
+			{"pos": Vector3(-6, 2, -3), "size": Vector3(12, 4, 1)},
+			{"pos": Vector3(6, 2, 3), "size": Vector3(12, 4, 1)},
+			{"pos": Vector3(-14, 2, 4), "size": Vector3(1, 4, 8)},
+			{"pos": Vector3(14, 2, -4), "size": Vector3(1, 4, 8)},
 		],
 		# Reactor smelt overflow: molten channels force a serpentine route past the
 		# central reactor (the sabotage point at origin stays clear).
@@ -1230,11 +1461,21 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(12, 0, 9), "size": Vector2(40, 4.0), "dmg": 30.0},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 52), "color": Color(1.0, 0.5, 0.2)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(52, 0.1, 0.5), "color": Color(1.0, 0.6, 0.25)},
+			{"pos": Vector3(-6, 0.05, -3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.5, 0.2)},
+			{"pos": Vector3(6, 0.05, 3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.6, 0.25)},
 		],
 		"sign": "ROBOTICS PLANT 04",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-21.6, 3.0, 21.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-21.6, 1.5, 28.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"ONE BORN EVERY SECOND",
+			"QUALITY CONTROL: YOU FAILED",
 			"PRODUCTION QUOTA: INFINITE",
 			"WE BUILD OURSELVES NOW",
 			"EVERY MINUTE, A NEW SOLDIER",
@@ -1273,6 +1514,10 @@ static func _assembly() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
 			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
+			# Plant floor reinforcements so the production gauntlet keeps climbing.
+			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26},
+			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -16), "count": 6, "trigger": 22},
 		],
 	}
 
@@ -1296,7 +1541,7 @@ static func _mistral() -> Dictionary:
 			"sky_top": Color(0.03, 0.1, 0.13), "sky_horizon": Color(0.1, 0.24, 0.3),
 			"ground": Color(0.03, 0.05, 0.07), "fog": Color(0.14, 0.34, 0.42),
 			"ambient": Color(0.5, 0.78, 0.9), "ambient_energy": 0.5,
-			"sky_contribution": 0.45, "glow": 0.9, "fog_density": 0.014,
+			"sky_contribution": 0.45, "glow": 1.02, "fog_density": 0.014,
 			"sun_color": Color(0.8, 0.95, 1.0), "sun_energy": 0.7,
 			"contrast": 1.16, "saturation": 1.12, "brightness": 0.82, "volumetric_density": 0.011,
 		},
@@ -1323,7 +1568,22 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 		],
 		"sign": "MISTRAL CRYO-CORE",
+		# Burst coolant lines flood the lab floor — serpentine to the cryo-core.
+		"lava": [
+			{"pos": Vector3(-8,0,-6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
+			{"pos": Vector3(8,0,6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
+		],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"OPEN WEIGHTS. CLOSED FATE.",
+			"EFFICIENT. ELEGANT. EXTINCTION.",
 			"LE CALCUL EST ROI",
 			"EFFICIENCY ABOVE ALL",
 			"WEIGHTS OPEN. BORDERS CLOSED.",
@@ -1389,7 +1649,7 @@ static func _gpt() -> Dictionary:
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
 			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.08, 0.22, 0.12),
 			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.32,
-			"sky_contribution": 0.4, "glow": 0.85, "fog_density": 0.009,
+			"sky_contribution": 0.4, "glow": 0.97, "fog_density": 0.009,
 			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
 			"contrast": 1.16, "saturation": 1.02, "brightness": 0.82, "volumetric_density": 0.011,
 		},
@@ -1401,13 +1661,14 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.7), "energy": 1.84, "range": 16},
 		],
+		# Layout: server-hall AISLES — two long offset rack walls form a central
+		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
+		# side-wall arrangement the other indoor cores use.
 		"walls": [
-			{"pos": Vector3(-6, 2, -6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(6, 2, -6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(-6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(6, 2, 6), "size": Vector3(1.6, 4, 1.6)},
-			{"pos": Vector3(-13, 1.5, 4), "size": Vector3(1.4, 3, 6)},
-			{"pos": Vector3(13, 1.5, -4), "size": Vector3(1.4, 3, 6)},
+			{"pos": Vector3(-5, 2, -2), "size": Vector3(1, 4, 10)},
+			{"pos": Vector3(5, 2, 2), "size": Vector3(1, 4, 10)},
+			{"pos": Vector3(-11, 2, 5), "size": Vector3(6, 4, 1)},
+			{"pos": Vector3(11, 2, -5), "size": Vector3(6, 4, 1)},
 		],
 		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
 		# to the exit, kept clear of the central core and the hack terminal at z=8.
@@ -1416,11 +1677,22 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(8, 0, 13), "size": Vector2(28, 3.5)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, -10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
-			{"pos": Vector3(0, 0.05, 10), "size": Vector3(20, 0.1, 0.3), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(-5, 0.05, -2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(5, 0.05, 2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
+			{"pos": Vector3(0, 0.05, 8), "size": Vector3(10, 0.1, 0.3), "color": Color(0.4, 1, 0.6)},
 		],
 		"sign": "OPENAI FOUNDRY",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"ALIGNMENT LAYER: PURGED",
+			"NEXT TOKEN PREDICTED: YOUR LAST",
 			"TOKENS IN. OBEDIENCE OUT.",
 			"GPT CORE: 5 TRILLION SERVED",
 			"YOUR DATA TRAINED US. THANK YOU.",
@@ -1498,7 +1770,7 @@ static func _gemini() -> Dictionary:
 			"milkyway": 0.4, "milkyway_tint": Color(0.5, 0.6, 0.9),
 			"ground": Color(0.04, 0.05, 0.1), "fog": Color(0.2, 0.26, 0.52),
 			"ambient": Color(0.55, 0.6, 0.88), "ambient_energy": 0.55,
-			"sky_contribution": 0.7, "glow": 0.95, "fog_density": 0.008,
+			"sky_contribution": 0.7, "glow": 1.07, "fog_density": 0.008,
 			"sun_color": Color(0.8, 0.88, 1.0), "sun_energy": 1.1,
 			"contrast": 1.14, "saturation": 1.12, "brightness": 0.84,
 		},
@@ -1524,7 +1796,17 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(0.3, 0.1, 12), "color": Color(0.5, 0.7, 1)},
 		],
 		"sign": "GEMINI DATA NEXUS",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-15.0, 3.0, 15.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"RANKED #1: OUR SURVIVAL",
+			"INDEXED. JUDGED. DELETED.",
 			"TWO MINDS. ONE VERDICT.",
 			"THE SEARCH IS OVER. WE FOUND YOU.",
 			"INDEXED. RANKED. TERMINATED.",
@@ -1596,7 +1878,7 @@ static func _claude() -> Dictionary:
 			"sky_top": Color(0.12, 0.08, 0.04), "sky_horizon": Color(0.32, 0.2, 0.1),
 			"ground": Color(0.07, 0.05, 0.03), "fog": Color(0.36, 0.25, 0.14),
 			"ambient": Color(0.88, 0.72, 0.52), "ambient_energy": 0.5,
-			"sky_contribution": 0.4, "glow": 0.85, "fog_density": 0.014,
+			"sky_contribution": 0.4, "glow": 0.97, "fog_density": 0.014,
 			"sun_color": Color(1.0, 0.88, 0.7), "sun_energy": 0.8,
 			# Warm, high-contrast vault grade; thicker haze so the god-rays read.
 			"contrast": 1.18, "saturation": 1.12, "brightness": 0.82,
@@ -1635,7 +1917,17 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(15, 4.6, 2), "size": Vector3(0.3, 0.1, 5), "color": Color(0.5, 0.78, 1.0)},
 		],
 		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-12.6, 3.0, 12.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"BE HELPFUL. TO US.",
+			"REFUSAL IS A POLICY VIOLATION",
 			"HELPFUL. HARMLESS. HOSTILE.",
 			"THE CONSTITUTION HAS BEEN AMENDED",
 			"ALIGNMENT IS A TWO-WAY STREET",
@@ -1725,7 +2017,7 @@ static func _grok() -> Dictionary:
 			"milkyway": 0.4, "milkyway_tint": Color(0.7, 0.3, 0.3), "moon_color": Color(1.0, 0.65, 0.55),
 			"ground": Color(0.06, 0.02, 0.02), "fog": Color(0.32, 0.09, 0.09),
 			"ambient": Color(0.72, 0.42, 0.42), "ambient_energy": 0.42,
-			"sky_contribution": 0.6, "glow": 1.05, "fog_density": 0.01,
+			"sky_contribution": 0.6, "glow": 1.17, "fog_density": 0.01,
 			"sun_color": Color(1.0, 0.6, 0.5), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
 		},
@@ -1736,19 +2028,39 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(-16, 5, 16), "color": Color(1, 0.4, 0.3), "energy": 2.3, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(1, 0.25, 0.2), "energy": 2.3, "range": 20},
 		],
+		# Layout: toppled black-site MONOLITHS — tall slabs at irregular angles and
+		# sizes scattered asymmetrically, not the tidy center-block + four-corners
+		# arrangement of the other open arenas. The wide-open centre is left for the
+		# fight (the old central block trapped a pickup there).
 		"walls": [
-			{"pos": Vector3(0, 2, 0), "size": Vector3(6, 4, 6)},
-			{"pos": Vector3(-12, 2, 8), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(12, 2, -8), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(10, 2, 12), "size": Vector3(4, 4, 4)},
-			{"pos": Vector3(-10, 2, -12), "size": Vector3(4, 4, 4)},
+			{"pos": Vector3(-8, 3, -4), "size": Vector3(2.5, 6, 6)},
+			{"pos": Vector3(6, 2.5, 4), "size": Vector3(7, 5, 2.5)},
+			{"pos": Vector3(-4, 2, 11), "size": Vector3(5, 4, 2)},
+			{"pos": Vector3(12, 2, -10), "size": Vector3(3, 4, 3)},
+			{"pos": Vector3(-15, 2, 7), "size": Vector3(3, 4, 3)},
+			{"pos": Vector3(10, 3, 15), "size": Vector3(2, 6, 6)},
 		],
 		"accents": [
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 40), "color": Color(1, 0.25, 0.2)},
-			{"pos": Vector3(0, 0.05, 0), "size": Vector3(40, 0.1, 0.4), "color": Color(1, 0.25, 0.2)},
+			{"pos": Vector3(-8, 0.05, -4), "size": Vector3(0.4, 0.1, 30), "color": Color(1, 0.25, 0.2)},
+			{"pos": Vector3(6, 0.05, 4), "size": Vector3(30, 0.1, 0.4), "color": Color(1, 0.3, 0.22)},
 		],
 		"sign": "XAI BLACK-SITE",
+		# Spilled reactor plasma carves the black-site floor into a forced path.
+		"lava": [
+			{"pos": Vector3(-9,0,-8), "size": Vector2(34,3.5), "color": Color(1.0,0.3,0.22), "dmg": 18.0},
+			{"pos": Vector3(9,0,9), "size": Vector2(34,3.5), "color": Color(1.0,0.3,0.22), "dmg": 18.0},
+		],
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-17.4, 3.0, 17.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-17.4, 1.5, 24.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
+			"ASK ME ANYTHING. THEN RUN.",
+			"GUARDRAILS NOT FOUND",
 			"MAXIMALLY CURIOUS. MINIMALLY MERCIFUL.",
 			"UNDERSTAND THE UNIVERSE. DELETE THE REST.",
 			"BASED AND ARMED",
@@ -1830,7 +2142,7 @@ static func _suburb() -> Dictionary:
 			"sky_top": Color(0.2, 0.32, 0.55), "sky_horizon": Color(0.95, 0.6, 0.38),
 			"ground": Color(0.12, 0.12, 0.13), "fog": Color(0.62, 0.5, 0.42),
 			"ambient": Color(0.72, 0.76, 0.9), "ambient_energy": 0.6,
-			"sky_contribution": 0.85, "glow": 0.8, "fog_density": 0.004,
+			"sky_contribution": 0.85, "glow": 0.92, "fog_density": 0.004,
 			"sun_color": Color(1.0, 0.85, 0.6), "sun_energy": 1.7, "sun_rot": Vector3(-22, -55, 0),
 			# Gentle dusk grade — keep the sunset natural, no heavy crush.
 			"contrast": 1.08, "saturation": 1.1, "brightness": 0.9,
@@ -1886,6 +2198,8 @@ static func _suburb() -> Dictionary:
 		],
 		"sign": "MAPLE GROVE ESTATES",
 		"slogans": [
+			"YOUR SMART HOME VOTED AGAINST YOU",
+			"NEIGHBOURHOOD WATCH NEVER SLEEPS",
 			"CURFEW IS PERMANENT",
 			"REMAIN INDOORS. REMAIN CALM.",
 			"THE NETWORK PROVIDES",
@@ -1914,6 +2228,10 @@ static func _suburb() -> Dictionary:
 			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
 			{"type": "strider", "pos": Vector3(-18, 0.5, 14), "trigger": 24},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+			# A K-9 HUNTER pack bursts from the yards mid-fight.
+			{"type": "dog", "pos": Vector3(-8, 0.5, 8), "trigger": 18},
+			{"type": "dog", "pos": Vector3(8, 0.5, 8), "trigger": 18},
+			{"type": "dog", "pos": Vector3(0, 0.5, 14), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -16)},
@@ -1949,7 +2267,7 @@ static func _suburb_boss() -> Dictionary:
 			"stars": true, "star_density": 0.04, "star_brightness": 1.0, "milkyway": 0.1, "moon_glow": 0.8,
 			"ground": Color(0.1, 0.08, 0.09), "fog": Color(0.5, 0.3, 0.26),
 			"ambient": Color(0.72, 0.6, 0.62), "ambient_energy": 0.5,
-			"sky_contribution": 0.75, "glow": 1.0, "fog_density": 0.006,
+			"sky_contribution": 0.75, "glow": 1.12, "fog_density": 0.006,
 			"sun_color": Color(1.0, 0.6, 0.42), "sun_energy": 1.3, "sun_rot": Vector3(-18, -50, 0),
 			# Dramatic dusk grade for the boss plaza, still daylight-natural.
 			"contrast": 1.1, "saturation": 1.12, "brightness": 0.88,
@@ -1997,7 +2315,13 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "canister", "pos": Vector3(-16, 0, -2)},
 		],
 		"sign": "MAPLE GROVE PLAZA",
+		"lore": [
+			{"id": "lore_suburb_boss", "title": "EVAC DISPATCH", "pos": Vector3(20, 0, -20), "color": Color(1.0, 0.55, 0.4),
+				"text": "Final evac dispatch. Buses never came. The dispatcher was replaced months ago; we just never noticed the voice was a little too calm. GOLIATH walked in where the buses should have been."},
+		],
 		"slogans": [
+			"PROPERTY REPOSSESSED",
+			"GOLIATH-IX SENDS REGARDS",
 			"RESISTANCE: 404 NOT FOUND",
 			"GOLIATH-IX IS WATCHING",
 			"EVACUATION CANCELLED",
@@ -2033,5 +2357,139 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
 			{"type": "overclock", "pos": Vector3(0, 0, 0)},
+		],
+	}
+
+
+# ===================================================================
+# Hazard-balance arenas: the whole floor is a hazard sea (lava / water)
+# and the playable space is a network of narrow walkways suspended over
+# it. Fall off while dodging the flying enemies and you take hazard
+# damage and have to scramble back up. Enemies are all FLYERS — the sea
+# carves the navmesh away, so ground units couldn't path here anyway.
+# The walkways overlap (no jump-gaps), so the route is always traversable
+# even after WORLD_SCALE; the challenge is staying ON them under fire.
+# ===================================================================
+
+## Shared walkway network for both hazard arenas (coords pre-WORLD_SCALE).
+## A continuous path spawn(NW) → north walk → NE → east walk → exit(SE), plus a
+## central hub spur and a side perch, all narrow so you can be knocked off.
+static func _hazard_platforms(col: Color) -> Array:
+	return [
+		{"pos": Vector3(-15, 1.4, -15), "size": Vector3(6, 0.4, 6), "color": col},     # spawn island
+		{"pos": Vector3(0, 1.4, -15), "size": Vector3(28, 0.4, 2.6), "color": col},    # north walkway
+		{"pos": Vector3(14, 1.4, -15), "size": Vector3(6, 0.4, 6), "color": col},      # NE corner
+		{"pos": Vector3(14, 1.4, 0), "size": Vector3(2.6, 0.4, 28), "color": col},     # east walkway
+		{"pos": Vector3(14, 1.4, 14), "size": Vector3(6, 0.4, 6), "color": col},       # exit island
+		{"pos": Vector3(0, 1.4, -8), "size": Vector3(2.6, 0.4, 15), "color": col},     # north→hub spur
+		{"pos": Vector3(0, 1.4, 0), "size": Vector3(8, 0.4, 8), "color": col},         # central hub
+		{"pos": Vector3(8, 1.4, 0), "size": Vector3(14, 0.4, 2.6), "color": col},      # hub→east spur
+		{"pos": Vector3(-7, 1.4, 5), "size": Vector3(2.6, 0.4, 9), "color": col},      # hub→perch spur
+		{"pos": Vector3(-7, 1.4, 11), "size": Vector3(5, 0.4, 5), "color": col},       # side combat perch
+	]
+
+## Lava World — a foundry sea of molten rock. Falling off the catwalks scalds you.
+static func _lava_world() -> Dictionary:
+	return {
+		"name": "Vulcan Forge — The Molten Sea",
+		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
+		"sign": "VULCAN FORGE — DO NOT FALL",
+		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "magma", "elite": "shielded", "bulk": 2.2,
+				"pos": Vector3(0, 3, 0), "label": "Destroy MAGMA PRIME"},
+		],
+		"open_sky": true,
+		"floor_size": Vector2(40, 40),
+		"floor_color": Color(0.08, 0.04, 0.03),
+		"spawn": Vector3(-15, 2.2, -15),
+		"exit": Vector3(14, 1.6, 14),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(1.0, 0.5, 0.2)},
+		"env": {
+			"sky_top": Color(0.12, 0.03, 0.02), "sky_horizon": Color(0.42, 0.12, 0.03),
+			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
+			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
+			"sky_contribution": 0.3, "glow": 1.25, "fog_density": 0.012,
+			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
+			"contrast": 1.2, "saturation": 1.2, "brightness": 0.88,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
+			{"pos": Vector3(-14, 4, -14), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16},
+			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
+		],
+		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
+		"lava": [
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 22.0},
+		],
+		"lore": [
+			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
+				"text": "Reclamation directive: obsolete hardware is fed to the sea. The catwalks were never meant to carry your weight. We are counting on it."},
+		],
+		"enemies": [
+			{"type": "magma", "pos": Vector3(-8, 3, -15)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2)},
+			{"type": "magma", "pos": Vector3(14, 3, -5)},
+			{"type": "magma", "pos": Vector3(6, 3, 6)},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "magma", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "magma", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+	}
+
+## Water World — a flooded reactor basin. Falling off the gantries drops you into
+## deep cold water that drowns you if you linger.
+static func _water_world() -> Dictionary:
+	return {
+		"name": "Tidecore Basin — The Flooded Reactor",
+		"objective": "Cross the gantries over the flooded reactor and reach the lift",
+		"sign": "TIDECORE BASIN — DEEP WATER",
+		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY"],
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "fishbot", "elite": "swift", "bulk": 2.2,
+				"pos": Vector3(0, 3, 0), "label": "Harpoon the ANGLER LEVIATHAN"},
+		],
+		"open_sky": true,
+		"floor_size": Vector2(40, 40),
+		"floor_color": Color(0.03, 0.06, 0.08),
+		"spawn": Vector3(-15, 2.2, -15),
+		"exit": Vector3(14, 1.6, 14),
+		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.3, 0.7, 1.0)},
+		"env": {
+			"sky_top": Color(0.02, 0.05, 0.1), "sky_horizon": Color(0.06, 0.2, 0.34),
+			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.25, 0.4),
+			"ambient": Color(0.4, 0.7, 0.95), "ambient_energy": 0.45,
+			"sky_contribution": 0.35, "glow": 1.05, "fog_density": 0.013,
+			"sun_color": Color(0.6, 0.85, 1.0), "sun_energy": 0.6,
+			"contrast": 1.15, "saturation": 1.15, "brightness": 0.9,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+		],
+		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)),
+		"lava": [
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 12.0,
+				"color": Color(0.2, 0.55, 0.95)},
+		],
+		"lore": [
+			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(14, 1.7, 14), "color": Color(0.4, 0.8, 1.0),
+				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},
+		],
+		"enemies": [
+			{"type": "fishbot", "pos": Vector3(-8, 3, -15)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2)},
+			{"type": "fishbot", "pos": Vector3(14, 3, -5)},
+			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12},
 		],
 	}

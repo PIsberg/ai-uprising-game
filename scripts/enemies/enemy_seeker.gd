@@ -137,6 +137,11 @@ func _detonate(hit_player: bool) -> void:
 	if _detonated:
 		return
 	_detonated = true
+	# A clean kamikaze hit lands the full payload; shooting it down first earns a
+	# weaker blast — so destroying it at close range is rewarded, not still a full
+	# point-blank punish (the intended counter-play).
+	var radius := blast_radius if hit_player else blast_radius * 0.6
+	var damage := blast_damage if hit_player else blast_damage * 0.45
 	var scene := get_tree().current_scene
 	if scene:
 		var fx := BIG_BLAST.instantiate()
@@ -148,7 +153,7 @@ func _detonate(hit_player: bool) -> void:
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsShapeQueryParameters3D.new()
 	var sh := SphereShape3D.new()
-	sh.radius = blast_radius
+	sh.radius = radius
 	q.shape = sh
 	q.transform = Transform3D(Basis(), global_position)
 	q.collision_mask = 0b0000111 # world + player + enemy
@@ -162,13 +167,13 @@ func _detonate(hit_player: bool) -> void:
 			continue
 		seen[d] = true
 		var dist: float = (col as Node3D).global_position.distance_to(global_position) if col is Node3D else 0.0
-		var falloff := clampf(1.0 - dist / blast_radius, 0.0, 1.0)
-		d.apply_damage(blast_damage * falloff, self)
+		var falloff := clampf(1.0 - dist / radius, 0.0, 1.0)
+		d.apply_damage(damage * falloff, self)
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("shake"):
 		var pd: float = (p as Node3D).global_position.distance_to(global_position)
-		if pd < blast_radius * 2.0:
-			p.shake(clampf(1.0 - pd / (blast_radius * 2.0), 0.0, 1.0))
+		if pd < radius * 2.0:
+			p.shake(clampf(1.0 - pd / (radius * 2.0), 0.0, 1.0))
 	queue_free()
 
 # Shot down before it reaches you -> it still goes off (smaller, no free kill at point-blank).

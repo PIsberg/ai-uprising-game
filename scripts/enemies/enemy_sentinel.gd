@@ -4,7 +4,7 @@ extends EnemyBase
 ## heavy bolts. Visuals from a real robot model in sentinel.tscn.
 
 @export var proj_speed: float = 34.0
-@export var proj_damage: float = 16.0
+@export var proj_damage: float = 18.0
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 
@@ -18,6 +18,7 @@ func _ready() -> void:
 	attack_range = 34.0
 	preferred_range = 22.0
 	attack_cooldown = 1.9
+	telegraph_time = 0.0 # a planted weapons platform fires on cadence — no generic wind-up (its bolts are the threat)
 	score_value = 180
 	stagger_threshold = 120.0
 	super._ready()

@@ -14,8 +14,9 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
-	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "alien",
-	"terminator", "overseer", "colossus", "titan", "archon",
+	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
+	"magma", "fishbot",
+	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
 ]
 
 const ENTRIES := {
@@ -25,6 +26,20 @@ const ENTRIES := {
 		"strengths": ["Fast and erratic — hard to track in the air", "Attacks from angles ground units can't"],
 		"weaknesses": ["Paper-thin armour — one solid hit drops it", "Predictable dive telegraphs its approach"],
 		"weapons": ["AR-7 Pulse Rifle", "MK-VII Longshot", "M9 Sidearm"],
+	},
+	"magma": {
+		"scene": "res://scenes/enemies/magma.tscn", "name": "MAGMA WRAITH", "scale": 1.0, "y": 1.6,
+		"desc": "A molten foundry drone crowned in glowing horns. Hovers over the lava and lobs scorching bolts while you balance on the catwalks.",
+		"strengths": ["Up-armoured — soaks more than a recon drone", "Fights over the lava where a miss means a fall"],
+		"weaknesses": ["Slower and more deliberate than a recon drone", "Big glowing silhouette — easy to track"],
+		"weapons": ["AR-7 Pulse Rifle", "PL-1 Plasma Launcher", "MK-VII Longshot"],
+	},
+	"fishbot": {
+		"scene": "res://scenes/enemies/fishbot.tscn", "name": "ANGLER UNIT", "scale": 1.0, "y": 1.6,
+		"desc": "A robotic deep-sea fish that prowls the flooded basins — finned, darting and trailing bubbles, spitting pressurised water bolts.",
+		"strengths": ["Very fast and darting — hard to track", "Harasses you across the gantries from any angle"],
+		"weaknesses": ["Fragile — a solid hit drops it", "Predictable swim-in to harpoon range"],
+		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "VK-7 Tesla Projector"],
 	},
 	"android": {
 		"scene": "res://scenes/enemies/android.tscn", "name": "INFANTRY ANDROID", "scale": 1.0, "y": 0.0,
@@ -152,6 +167,20 @@ const ENTRIES := {
 		"weaknesses": ["Slow to turn and reposition", "Telegraphed charge before each salvo", "Flank it while it's committed to a shot"],
 		"weapons": ["TPX-9 Tempest Coil", "GRK-X Devastator", "OMEGA-X Annihilator"],
 	},
+	"dog": {
+		"scene": "res://scenes/enemies/dog.tscn", "name": "K-9 HUNTER", "scale": 1.4, "y": 0.0,
+		"desc": "A four-legged robot attack-hound. It sprints the gap in a heartbeat, hunts in packs, and lunges in to bite. Fragile — but if one closes, more are right behind it.",
+		"strengths": ["Blistering speed — eats distance instantly", "Hunts in packs and flanks", "Low to the ground, hard to track far off"],
+		"weaknesses": ["Thin armour — drops to a solid hit", "No ranged attack — kill it before it reaches you"],
+		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "VK-7 Tesla Projector"],
+	},
+	"server": {
+		"scene": "res://scenes/enemies/server.tscn", "name": "MAITRE-D'", "scale": 1.0, "y": 0.0,
+		"desc": "A cafe serving robot whose smile turned to a red glare. It trundles up on its wheeled base and swings its serving trays like cleavers, bashing you off your feet. Slow, but tanky and brutal up close.",
+		"strengths": ["Tough chassis — soaks a lot of fire", "Heavy tray-swings knock you back", "Relentless once it has your scent"],
+		"weaknesses": ["Slow — kite it in circles", "No ranged option", "Big, easy target for heavy weapons"],
+		"weapons": ["GRK-X Devastator", "SG-12 Breacher", ".50 Maelstrom"],
+	},
 	"alien": {
 		"scene": "res://scenes/enemies/alien.tscn", "name": "VOID SENTINEL", "scale": 1.0, "y": 1.4,
 		"desc": "An off-world flyer the AI summoned across the dark. Strafes and spits corrosive bio-plasma — its throat flares green before it fires.",
@@ -178,6 +207,13 @@ const ENTRIES := {
 		"desc": "A walking siege engine. Bring everything you have — and keep moving.",
 		"strengths": ["Massive health and armour", "Area attacks punish standing still"],
 		"weaknesses": ["Slow — outmanoeuvre it", "Heavy weapons are the only real answer"],
+		"weapons": ["OMEGA-X Annihilator", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
+	},
+	"smasher": {
+		"scene": "res://scenes/enemies/smasher.tscn", "name": "BEHEMOTH-X", "scale": 0.3, "y": 0.0,
+		"desc": "A towering humanoid war-mech with a blazing reactor core and two oversized fists. It doesn't shoot — it CHARGES you down and hammers with overhead fist-smashes and ground-quaking slams. Never let it corner you.",
+		"strengths": ["Colossal health and armour", "Closes distance in a relentless charge", "Smash and slam hit brutally hard up close"],
+		"weaknesses": ["Pure melee — kite it and punish from range", "Telegraphs each smash/slam — read it and dash clear"],
 		"weapons": ["OMEGA-X Annihilator", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
 	},
 	"titan": {

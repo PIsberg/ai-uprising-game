@@ -3,7 +3,7 @@ extends EnemyBase
 
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 30.0
-@export var rocket_damage: float = 40.0
+@export var rocket_damage: float = 24.0   ## Direct hit on the player (the rocket now lands instead of relying on splash that excluded the player).
 @export var rocket_splash_radius: float = 4.5
 @export var rocket_splash_damage: float = 35.0
 @export var charge_threshold: float = 6.0
@@ -89,6 +89,14 @@ func _state_attack(delta: float) -> void:
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
+	# Planted while a slam winds up: the telegraph ring is pinned at the mech's
+	# position when the windup starts, so charging out from under it during the
+	# 0.55s would land the shockwave somewhere the danger ring never marked. Hold
+	# position so the telegraph honestly shows the kill zone.
+	if _slam_windup > 0.0:
+		_charging = false
+		_decelerate()
+		return
 	var dist := global_position.distance_to(target.global_position)
 	if dist < charge_threshold:
 		_do_stomp_if_close()

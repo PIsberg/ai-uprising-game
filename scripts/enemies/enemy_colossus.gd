@@ -10,13 +10,14 @@ extends EnemyBase
 ## are scene markers layered on top.
 
 @export var boss_name: String = "GOLIATH-IX"   ## Shown on the HUD boss bar.
+@export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the sky-drop entrance, thrusters, boss bar + AI.
 @export var rocket_scene: PackedScene
 @export var tracer_scene: PackedScene
 @export var muzzle_flash_scene: PackedScene
 
 @export_group("Artillery")
 @export var rocket_speed: float = 30.0
-@export var rocket_damage: float = 20.0
+@export var rocket_damage: float = 14.0   ## Per-rocket DIRECT hit (volleys of 3-5; the rocket now lands instead of relying on splash that excluded the player).
 @export var rocket_splash_radius: float = 5.0
 @export var rocket_splash_damage: float = 16.0
 @export var artillery_cooldown: float = 2.6
@@ -91,6 +92,12 @@ func _ready() -> void:
 	# The George rig bakes the arms into a raised "guard" across every clip; drop
 	# the upper arms to a natural carry (no-op on rigless models like the titan).
 	_relax_arms()
+	# Codex/briefing: stand idle on the dais — no sky-drop, thrusters, boss bar or
+	# AI (those spawn FX into the scene that would litter/stick in the viewer).
+	if preview:
+		hp.invulnerable = true
+		set_physics_process(false)
+		return
 	# Cinematic sky-drop: GOLIATH-IX makes planetfall on its foot retro-rockets,
 	# then slams down. It hangs high and invulnerable until it lands.
 	_drop_target_y = global_position.y

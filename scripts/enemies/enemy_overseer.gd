@@ -8,6 +8,7 @@ extends EnemyBase
 @export var fly_height: float = 6.5
 @export var proj_speed: float = 40.0
 @export var proj_damage: float = 13.0
+@export var preview: bool = false ## Codex/briefing showcase: hover idle, skip the portal arrival (BossPortal swirl), boss bar + AI.
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 const SEEKER := preload("res://scenes/enemies/seeker.tscn")
@@ -38,6 +39,12 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.armor = 4.0
 	flinch_knockback = 0.0
+	# Codex/briefing: hover idle — skip the portal arrival (which spawns a swirling
+	# BossPortal into the scene that would litter/stick in the viewer) + AI.
+	if preview:
+		hp.invulnerable = true
+		set_physics_process(false)
+		return
 	# Hold the AI until the gate-arrival cinematic finishes.
 	_arriving = true
 	hp.invulnerable = true

@@ -13,6 +13,16 @@ extends Area3D
 @export var damage_per_tick: float = 26.0      ## Burn applied every tick to anything inside.
 @export var tick: float = 0.35                 ## Seconds between burns.
 @export var surface_y: float = 0.06            ## Lava surface height above the floor.
+## Opt-in recolor: turns the molten bed into a themed "river" (coolant cyan, acid
+## green, energy blue, ...) while keeping the same carve-navmesh + burn-player
+## path-forcing behaviour. Left off, the bed renders as the original orange lava.
+@export var recolor: bool = false
+@export var hazard_color: Color = Color(1.0, 0.45, 0.12) ## Glow/light/flow tint when `recolor` is on.
+## Water mode: the bed becomes a deep, rippling pool instead of molten rock — a
+## translucent blue surface, a cool blue glow, the water ambience loop, and a
+## gentler "you're drowning, get out" tick. Same carve-navmesh + push-out-of-it
+## machinery; just a different element. Set by the builder for water levels.
+@export var water: bool = false
 
 const PLAYER_LAYER := 2
 const ENEMY_LAYER := 4
@@ -30,6 +40,11 @@ func _ready() -> void:
 	collision_mask = PLAYER_LAYER
 	monitoring = true
 	add_to_group("hazard")
+	if water:
+		# Water mode drives its own cool palette unless the level overrode the tint.
+		recolor = true
+		if hazard_color == Color(1.0, 0.45, 0.12):
+			hazard_color = Color(0.2, 0.55, 0.95)
 
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
@@ -43,9 +58,13 @@ func _ready() -> void:
 	_build_surface()
 	_build_obstacle()
 	_build_light()
+	_build_audio()
 
-## The glowing molten surface plane.
+## The glowing molten surface plane (or, in water mode, a deep blue pool).
 func _build_surface() -> void:
+	if water:
+		_build_water_surface()
+		return
 	var mesh := PlaneMesh.new()
 	mesh.size = size
 	_mat = ShaderMaterial.new()
@@ -54,6 +73,9 @@ func _build_surface() -> void:
 	# consistent scale regardless of how big the stream is.
 	_mat.set_shader_parameter("noise_texture", FlameMaterial.noise())
 	_mat.set_shader_parameter("plane_size", size)
+	if recolor:
+		# Deeper base for the flowing cells, tinted to the river's colour.
+		_mat.set_shader_parameter("base_color", Color(hazard_color.r, hazard_color.g, hazard_color.b) * 0.32)
 	mesh.material = _mat
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
@@ -68,13 +90,47 @@ func _build_surface() -> void:
 	rmat.albedo_color = Color(0.06, 0.04, 0.04)
 	rmat.roughness = 1.0
 	rmat.emission_enabled = true
-	rmat.emission = Color(0.5, 0.12, 0.02)
+	rmat.emission = Color(hazard_color.r, hazard_color.g, hazard_color.b) * 0.5 if recolor else Color(0.5, 0.12, 0.02)
 	rmat.emission_energy_multiplier = 0.4
 	rm.material = rmat
 	rim.mesh = rm
 	rim.position = Vector3(0, surface_y - 0.07, 0)
 	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(rim)
+
+## A deep-water pool: a translucent, near-mirror blue plane over a darker basin,
+## so it reads as water you can fall into (not molten rock). No shader needed —
+## a glossy transparent surface plus the cool glow + water ambience sell it.
+func _build_water_surface() -> void:
+	var tint := hazard_color
+	var surf := MeshInstance3D.new()
+	var mesh := PlaneMesh.new()
+	mesh.size = size
+	var wm := StandardMaterial3D.new()
+	wm.albedo_color = Color(tint.r, tint.g, tint.b, 0.62)
+	wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	wm.roughness = 0.04          # glassy, reflective water sheen
+	wm.metallic = 0.25
+	wm.emission_enabled = true
+	wm.emission = Color(tint.r, tint.g, tint.b) * 0.5
+	wm.emission_energy_multiplier = 0.25
+	mesh.material = wm
+	surf.mesh = mesh
+	surf.position = Vector3(0, surface_y, 0)
+	surf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(surf)
+	# A dark basin just below so the pool reads as deep, not a painted tile.
+	var basin := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(size.x + 0.4, 0.5, size.y + 0.4)
+	var basin_mat := StandardMaterial3D.new()
+	basin_mat.albedo_color = Color(0.02, 0.05, 0.08)
+	basin_mat.roughness = 1.0
+	bm.material = basin_mat
+	basin.mesh = bm
+	basin.position = Vector3(0, surface_y - 0.3, 0)
+	basin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(basin)
 
 ## Carve the bed out of the baked navmesh so enemies route around it. Present
 ## before the builder's deferred bake, so the static carve takes.
@@ -93,12 +149,33 @@ func _build_obstacle() -> void:
 
 func _build_light() -> void:
 	_light = OmniLight3D.new()
-	_light.light_color = Color(1.0, 0.45, 0.12)
+	_light.light_color = hazard_color if recolor else Color(1.0, 0.45, 0.12)
 	_light.light_energy = 2.4
 	_light.omni_range = maxf(size.x, size.y) * 0.9 + 4.0
 	_light.shadow_enabled = false
 	_light.position = Vector3(0, 1.2, 0)
 	add_child(_light)
+
+## A looping bubbling bed so the hazard is recognisable by ear before you reach
+## it. Louder/lower for molten lava; thinner and quieter for a recolored coolant
+## or acid "river". Skipped while the editor suppresses world SFX.
+func _build_audio() -> void:
+	if AudioBus.suppress_world_sfx:
+		return
+	# Water beds murmur a gentle trickle; lava (incl. recolored hazard rivers) bubbles.
+	var stream := AudioBus.synth("water_loop" if water else "lava_loop")
+	if stream == null:
+		return
+	var p := AudioStreamPlayer3D.new()
+	p.stream = stream
+	p.bus = "SFX"
+	p.unit_size = maxf(size.x, size.y) * 0.5 + 2.0
+	p.max_distance = 42.0
+	p.volume_db = -12.0 if water else (-10.0 if recolor else -6.0)
+	p.pitch_scale = 1.0 if water else (1.25 if recolor else 1.0)
+	p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	add_child(p)
+	p.play()
 
 func _process(delta: float) -> void:
 	_clock += delta

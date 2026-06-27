@@ -1,0 +1,45 @@
+// Steam content-build script for AI Uprising.
+//
+// Uploads the release binaries in build/ to Steam via SteamPipe. Fill in the
+// three IDs from your Steamworks app (App Admin -> SteamPipe -> Depots), then:
+//
+//   steamcmd +login <builder_account> +run_app_build <abs-path>\app_build.vdf +quit
+//
+// (Run tools/build_release.ps1 first so build/windows + build/linux exist.)
+//
+// Replace:
+//   YOUR_APP_ID        - the AppID Steamworks assigned your game
+//   WINDOWS_DEPOT_ID   - usually <AppID>+1  (a Windows depot)
+//   LINUX_DEPOT_ID     - usually <AppID>+2  (a Linux depot)
+"AppBuild"
+{
+	"AppID" "YOUR_APP_ID"
+	"Desc"  "AI Uprising 1.0.0"        // shows in Steamworks build list; bump per build
+
+	"BuildOutput" "..\..\build\steam_output\"   // steamcmd logs + chunk cache (gitignored)
+	"ContentRoot" "..\..\build\"                 // depots' paths are relative to here
+
+	"SetLive" ""    // leave empty -> upload only; set a branch (e.g. "beta") to auto-set-live
+
+	"Depots"
+	{
+		"WINDOWS_DEPOT_ID"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "windows\*"
+				"DepotPath" "."
+				"Recursive" "1"
+			}
+		}
+		"LINUX_DEPOT_ID"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "linux\*"
+				"DepotPath" "."
+				"Recursive" "1"
+			}
+		}
+	}
+}

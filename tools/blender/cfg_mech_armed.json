@@ -1,0 +1,14 @@
+{
+  "in":  "assets/models/robots/quaternius_mech.glb",
+  "out": "assets/models/robots/quaternius_mech_armed.glb",
+  "render": "tools/blender/preview_mech_armed.png",
+  "rig": "skin",
+  "parts": [
+    {"type":"blade","name":"ShoulderGunL","loc":[0.6,-0.55,2.45],"rot":[0,0,0],"size":[0.16,0.8,0.16],"bone":"Chest"},
+    {"type":"blade","name":"ShoulderGunR","loc":[-0.6,-0.55,2.45],"rot":[0,0,0],"size":[0.16,0.8,0.16],"bone":"Chest"},
+    {"type":"blade","name":"GunMountL","loc":[0.55,-0.1,2.45],"rot":[0,0,0],"size":[0.26,0.3,0.26],"bone":"Chest"},
+    {"type":"blade","name":"GunMountR","loc":[-0.55,-0.1,2.45],"rot":[0,0,0],"size":[0.26,0.3,0.26],"bone":"Chest"},
+    {"type":"blade","name":"BackPack","loc":[0.0,0.5,2.55],"rot":[0,0,0],"size":[0.55,0.4,0.5],"bone":"Torso"},
+    {"type":"blade","name":"MissilePod","loc":[0.0,0.42,2.95],"rot":[0,0,0],"size":[0.5,0.32,0.22],"bone":"Torso"}
+  ]
+}

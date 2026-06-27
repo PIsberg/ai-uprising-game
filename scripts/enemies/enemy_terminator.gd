@@ -20,6 +20,7 @@ const ANIM_WALK := "RobotArmature|Robot_Walking"
 @export var target_height: float = 2.2   ## The model is scaled to this height (metres).
 @export var model_yaw_deg: float = 180.0 ## Flip (0/180) if the model faces the wrong way.
 @export var boss_name: String = "APEX ENDOFRAME" ## Shown on the HUD boss bar.
+@export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the eruption entrance (telegraph ring), boss bar + AI.
 
 const ENTRANCE_FX := preload("res://scenes/fx/enemy_explosion.tscn")
 
@@ -100,6 +101,13 @@ func _ready() -> void:
 				_anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 		if _anim.has_animation(ANIM_IDLE):
 			_anim.play(ANIM_IDLE)
+	# Codex/briefing: stand idle on the dais — skip the eruption entrance (which
+	# spawns a warning ring into the scene that would litter/stick in the viewer).
+	# _fit_model (queued above) still runs to size + reveal the model.
+	if preview:
+		hp.invulnerable = true
+		set_physics_process(false)
+		return
 	# Eruption entrance: bury it under the deck, then it bursts up through the
 	# breaking floor. Invulnerable + held until it settles.
 	_rise_target_y = global_position.y

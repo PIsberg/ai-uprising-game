@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://armedlineupprobe01"]
+
+[ext_resource type="Script" path="res://tests/armed_lineup_probe.gd" id="1"]
+
+[node name="ArmedLineupProbe" type="Node3D"]
+script = ExtResource("1")

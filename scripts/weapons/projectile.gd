@@ -518,10 +518,13 @@ func _spawn_cluster(center: Vector3) -> void:
 		var srad := _splash_radius * 0.55
 		var tcol := trail_color
 		var t := scene.get_tree().create_timer(cluster_delay * float(i + 1))
-		t.timeout.connect(func() -> void:
-			_detonate_bomblet(scene, spot, dmg, srad, shooter, tcol))
+		# Bind a STATIC callable (not a lambda closing over `self`): this projectile
+		# queue_free()s the same frame it spawns the cluster, so any callback bound to
+		# it would be auto-disconnected before the staggered timers fire — leaving the
+		# carpet silent. The static call survives the projectile's death.
+		t.timeout.connect(Projectile._detonate_bomblet.bind(scene, spot, dmg, srad, shooter, tcol))
 
-func _detonate_bomblet(scene: Node, pos: Vector3, dmg: float, srad: float, shooter: Node, tcol: Color) -> void:
+static func _detonate_bomblet(scene: Node, pos: Vector3, dmg: float, srad: float, shooter: Node, tcol: Color) -> void:
 	if not is_instance_valid(scene) or not scene is Node3D:
 		return
 	# Splash query for this bomblet.

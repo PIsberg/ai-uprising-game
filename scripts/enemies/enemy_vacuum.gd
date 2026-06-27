@@ -8,6 +8,7 @@ extends EnemyBase
 
 enum Phase { GROUND, RISING, COMBAT }
 
+@export var preview: bool = false ## Codex/briefing showcase: loop the disc->walker rise so the transformation reads in the viewer.
 @export var wake_range: float = 13.0
 @export var rise_duration: float = 1.4
 @export var rise_height: float = 0.95
@@ -43,6 +44,23 @@ func _ready() -> void:
 	super._ready()
 	_build_model()
 	_apply_rise(0.0)
+	if preview:
+		# Codex showcase: physics is disabled there, so drive the disc->walker rise
+		# (and a fold back) on a loop via a tween, so the viewer sees it transform
+		# exactly like it does the instant it senses you in-game.
+		_preview_rise()
+
+
+## Looping rise/fold for the encyclopedia (runs off a tween, not physics).
+func _preview_rise() -> void:
+	if _eye_mat:
+		_eye_mat.emission_energy_multiplier = 1.2
+	var t := create_tween().set_loops()
+	t.tween_interval(0.8)
+	t.tween_method(_apply_rise, 0.0, 1.0, rise_duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_interval(2.4)              # stand reared up so it reads as the hostile walker
+	t.tween_method(_apply_rise, 1.0, 0.0, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	t.tween_interval(1.0)
 
 
 func _build_model() -> void:

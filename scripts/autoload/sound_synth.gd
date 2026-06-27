@@ -22,6 +22,10 @@ func _ready() -> void:
 	streams["footstep"] = _footstep(0.16)
 	streams["impact_metal"] = _impact(0.12, 0.6)
 	streams["impact_concrete"] = _impact(0.16, 0.3)
+	# Material-specific bullet impacts so wood, stone and metal each read distinctly
+	# (previously every prop clinked like metal regardless of what it was made of).
+	streams["impact_wood"] = _impact_wood(0.16)
+	streams["impact_stone"] = _impact_stone(0.14)
 	streams["drone_hum"] = _drone_hum(1.2)
 	streams["mech_step"] = _mech_step(0.32)
 	streams["pickup_health"] = _chime(0.3, 660.0, 990.0)
@@ -48,6 +52,10 @@ func _ready() -> void:
 	streams["charge"] = _charge_up(0.32)
 	streams["ambience_rain"] = _rain(4.0)
 	streams["thunder"] = _thunder(1.8)
+	# Looping environment beds so a player recognises lava (or a hazard river) and
+	# standing water by ear — a familiar bubbling vs. a gentle trickle.
+	streams["lava_loop"] = _lava_bubble(4.0)
+	streams["water_loop"] = _water_flow(4.0)
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -275,6 +283,80 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
+## Hollow wooden "tok": two close low-mid resonances under a short dry tick, for
+## shots thwacking crates, logs, benches and tree trunks.
+func _impact_wood(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var ph2 := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 34.0)
+		# Two detuned low-mid modes give the knock a woody, hollow body.
+		ph += TAU * 210.0 / SR
+		ph2 += TAU * 318.0 / SR
+		var body := (sin(ph) * 0.6 + sin(ph2) * 0.3) * env
+		# A short dry tick on the very front edge so it reads as a strike, not a tone.
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.35)
+		var tick := lp * exp(-t * 130.0) * 0.5
+		_write(bytes, i, tanh(body + tick) * 0.8)
+	return _to_stream(bytes)
+
+## Sharp stony crack: high-passed gritty noise that snaps and dies fast, for
+## rock, boulders, pillars and statues (brighter and drier than concrete).
+func _impact_stone(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var prev := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 48.0)
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.8)
+		var hp := lp - prev # crude high-pass -> bright chip, not a dull thud
+		prev = lp
+		_write(bytes, i, clampf(hp * env * 1.5, -1.0, 1.0) * 0.8)
+	return _to_stream(bytes)
+
+## Molten lava bed — a seamless 4s loop of slow gloopy bubbles over a low sizzle.
+## LFO + carrier frequencies are whole cycles over the loop so it tiles cleanly.
+func _lava_bubble(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		# Constant low sizzle bed.
+		var white := randf() * 2.0 - 1.0
+		lp = lp * 0.85 + white * 0.15
+		var sizzle := lp * 0.18
+		# Slow bubbles: overlapping low LFOs gate brief low-freq blips.
+		var gate := maxf(0.0, sin(TAU * 1.5 * t)) * maxf(0.0, sin(TAU * 0.5 * t + 1.3))
+		var bubble := sin(TAU * 70.0 * t) * gate * 0.5
+		bubble += sin(TAU * 48.0 * t) * maxf(0.0, sin(TAU * 2.25 * t + 2.0)) * 0.32
+		_write(bytes, i, tanh(sizzle + bubble) * 0.5)
+	return _to_stream(bytes, true)
+
+## Gentle water — a seamless 4s loop of soft filtered burbling that swells lightly,
+## a calm counterpart to the lava bubble so rivers/ponds read by ear.
+func _water_flow(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var white := randf() * 2.0 - 1.0
+		lp = lp * 0.6 + white * 0.4    # bright trickle hiss
+		lp2 = lp2 * 0.92 + lp * 0.08   # softer flow body
+		var swell := 0.6 + 0.4 * sin(TAU * 0.5 * t) # whole cycle over 4s -> seamless
+		_write(bytes, i, (lp2 * 0.7 + lp * 0.12) * swell * 0.5)
+	return _to_stream(bytes, true)
+
 ## A short muffled "oof" + body thump for when the player takes a hit: a
 ## vocal-ish tone gliding down in pitch over a low-passed impact thump.
 func _hurt(duration: float) -> AudioStreamWAV:
@@ -491,7 +573,15 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 	var drive: float = p.get("drive", 0.9)
 	var saw_bass: bool = p.get("saw_bass", true)
 	var arp_div: float = p.get("arp_div", 0.5) # 0.5 = eighths, 0.25 = sixteenths
+	# Groove upgrades shared by every theme: a backbeat clap on beats 2 & 4, a
+	# sidechain "pump" that ducks the bass/pad/arp under each kick, and a sub-bass
+	# octave for weight on big speakers. All keyed to beat timing so the loop stays
+	# seamless. Per-theme dicts can dial these to taste.
+	var snare_lvl: float = p.get("snare", 0.5)
+	var sidechain: float = p.get("sidechain", 0.7) # 0 = flat, 1 = full duck under the kick
+	var sub_amt: float = p.get("sub", 0.5)         # sub-octave level as a fraction of the bass
 	var bass_phase := 0.0
+	var sub_phase := 0.0
 	var arp_phase := 0.0
 	var pad_a := 0.0
 	var pad_b := 0.0
@@ -505,10 +595,19 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		var kick_env := exp(-beat_t * 24.0)
 		var kick_hz := 110.0 * exp(-beat_t * 16.0) + 45.0
 		var kick := sin(TAU * kick_hz * beat_t) * kick_env * kick_lvl
-		# Bass, eighth-note gated (saw or square).
+		# Backbeat clap/snare on beats 2 & 4 — a noise burst with a short tonal body
+		# that gives the four-on-the-floor kick a groove to push against.
+		var snare := 0.0
+		if snare_lvl > 0.0 and beat_idx % 2 == 1:
+			var s_env := exp(-beat_t * 30.0)
+			var s_tone := sin(TAU * 180.0 * beat_t) * 0.5
+			snare = ((randf() * 2.0 - 1.0) * 0.7 + s_tone) * s_env * snare_lvl
+		# Bass, eighth-note gated (saw or square), with a sub-octave sine underneath.
 		bass_phase += TAU * root / SR
 		var bass_wave := (fposmod(bass_phase, TAU) / TAU * 2.0 - 1.0) if saw_bass else sign_wave(bass_phase)
 		var bass := bass_wave * bass_lvl * exp(-half_t * 5.0)
+		sub_phase += TAU * root * 0.5 / SR
+		var sub := sin(sub_phase) * bass_lvl * sub_amt * exp(-half_t * 5.0)
 		# Lead arp — a square plus an octave-up sine sparkle so the melody sits in
 		# the mids/highs and cuts through on any speaker (the old thin square at a
 		# low level vanished under the sub-bass kick on small speakers).
@@ -525,12 +624,16 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 			pad = (sin(pad_a) + sin(pad_b) * 0.7) * pad_lvl
 		# Offbeat hats.
 		var hat := (randf() * 2.0 - 1.0) * exp(-half_t * 80.0) * hat_lvl
+		# Sidechain: the melodic/bass elements duck on each kick and breathe back —
+		# the classic pumping techno motion that locks everything to the beat.
+		var duck := 1.0 - sidechain * kick_env
+		var voiced := (bass + sub + arp_s + pad) * duck
 		var fade := 1.0
 		if t < 0.012:
 			fade = t / 0.012
 		elif t > dur - 0.012:
 			fade = (dur - t) / 0.012
-		_write(bytes, i, tanh((kick + bass + arp_s + hat + pad) * drive) * 0.9 * fade)
+		_write(bytes, i, tanh((kick + snare + voiced + hat) * drive) * 0.9 * fade)
 	return _to_stream(bytes, true)
 
 ## Aggressive boss/black-site theme: faster, darker key, pounding kick, gritty
@@ -542,6 +645,7 @@ func _music_grok() -> AudioStreamWAV:
 	return _music_track(142.0, roots, arp, {
 		"kick": 0.85, "bass": 0.26, "arp": 0.18, "hat": 0.15,
 		"drive": 1.15, "pad": 0.06, "arp_div": 0.25,
+		"snare": 0.6, "sidechain": 0.82, # hard pump + sharp backbeat for aggression
 	})
 
 ## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
@@ -554,6 +658,7 @@ func _music_archon() -> AudioStreamWAV:
 	return _music_track(96.0, roots, arp, {
 		"kick": 0.9, "bass": 0.3, "arp": 0.15, "hat": 0.13,
 		"drive": 1.2, "pad": 0.13, "arp_div": 0.25,
+		"snare": 0.42, "sidechain": 0.85, "sub": 0.7, # slow, crushing, deep-pumping
 	})
 
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
@@ -564,6 +669,7 @@ func _music_gemini() -> AudioStreamWAV:
 	return _music_track(122.0, roots, arp, {
 		"kick": 0.68, "bass": 0.16, "arp": 0.22, "hat": 0.12,
 		"drive": 0.8, "pad": 0.1, "saw_bass": false,
+		"snare": 0.38, "sidechain": 0.5, # light, airy groove — gentle pump
 	})
 
 ## Brooding dusk-suburb theme: slow, sparse, heavy on the pad, light percussion.
@@ -574,6 +680,7 @@ func _music_suburb() -> AudioStreamWAV:
 	return _music_track(104.0, roots, arp, {
 		"kick": 0.78, "bass": 0.18, "arp": 0.14, "hat": 0.08,
 		"drive": 0.85, "pad": 0.11,
+		"snare": 0.3, "sidechain": 0.62, # sparse backbeat, brooding pump
 	})
 
 func _victory_sting(duration: float) -> AudioStreamWAV:

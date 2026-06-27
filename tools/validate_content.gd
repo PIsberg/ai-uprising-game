@@ -16,6 +16,7 @@ func _initialize() -> void:
 		"res://scripts/enemies/enemy_mauler.gd",
 		"res://scripts/levels/level_builder.gd",
 		"res://scripts/cutscene/level_briefing.gd",
+		"res://scripts/cutscene/level_comic_briefing.gd",
 		"res://scripts/cutscene/uprising_reveal.gd",
 		"res://scripts/autoload/game_state.gd",
 	]
@@ -47,6 +48,7 @@ func _initialize() -> void:
 		"res://scenes/levels/level_frostbreak.tscn",
 		"res://scenes/levels/level_neon.tscn",
 		"res://scenes/cutscene/uprising_reveal.tscn",
+		"res://scenes/cutscene/level_comic_briefing.tscn",
 	]
 	for p in scenes:
 		var ps = load(p)

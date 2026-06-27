@@ -9,7 +9,7 @@ extends EnemyBase
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 
 @export var proj_speed: float = 42.0
-@export var proj_damage: float = 8.0
+@export var proj_damage: float = 9.0
 @export var burst_count: int = 12
 @export var burst_interval: float = 0.11
 @export var windup: float = 0.6
@@ -98,7 +98,7 @@ func _fire_one() -> void:
 	scene.add_child(proj)
 	(proj as Node3D).global_position = muzzle.global_position
 	var dir := (target.global_position + Vector3.UP * 0.5 - muzzle.global_position).normalized()
-	dir = scatter_aim(dir, 4.5) # suppressive fire: a spread cone, not a laser
+	dir = scatter_aim(dir, 3.0) # suppressive fire: a spread cone, not a laser (tightened so the chaingun actually connects)
 	if proj.has_method("launch"):
 		proj.launch(dir * proj_speed, self, proj_damage, 0.0, 0.0)
 	recoil = 1.0

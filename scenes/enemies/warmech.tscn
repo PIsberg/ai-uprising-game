@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_warmech.gd" id="1_wm"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" path="res://assets/models/robots/quaternius_mech.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://blkvgdw76vwrl" path="res://assets/models/robots/quaternius_mech_armed.glb" id="4_model"]
 
 [sub_resource type="BoxShape3D" id="Box_col"]
 size = Vector3(1.7, 2.8, 1.7)
