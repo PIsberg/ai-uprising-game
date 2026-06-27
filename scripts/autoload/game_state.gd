@@ -111,6 +111,9 @@ var unlocked_weapons: Array[String] = []
 var equipped_weapon: String = ""
 ## The opening broadcast plays once per campaign run, not on every retry.
 var intro_played: bool = false
+## The first-level controls overlay teaches once per campaign run — set true the
+## first time the HUD shows it so retries / later levels don't repeat it.
+var controls_taught: bool = false
 
 func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
@@ -485,6 +488,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	equipped_weapon = ""     # ...armed with the default (pistol)
 	upgrades = {"damage": 0, "mag": 0, "reload": 0} # armory resets with the run
 	intro_played = false
+	controls_taught = false # re-teach controls at the start of a fresh campaign
 	level_index = 0
 	max_level_reached = 0
 	go_to_level(campaign()[0], false)

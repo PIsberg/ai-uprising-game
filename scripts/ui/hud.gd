@@ -190,6 +190,18 @@ func _ready() -> void:
 	_build_pause_audio()
 	_build_editor_return()
 	_render_objective()
+	_maybe_build_tutorial()
+
+## Show the interactive controls overlay once, on the first campaign level (not in
+## editor playtests). It teaches every key and clears each hint as the player uses
+## it, then removes itself. Guarded so retries and later levels never repeat it.
+func _maybe_build_tutorial() -> void:
+	if GameState.from_editor or GameState.controls_taught:
+		return
+	if not GameState.current_level_path.ends_with("level_01.tscn"):
+		return
+	GameState.controls_taught = true
+	add_child(KeyTutorial.new())
 
 ## During an editor playtest, add a "Return to Editor" button to the pause menu
 ## (just under Resume) and show the F2 hint. Normal play is unaffected.
