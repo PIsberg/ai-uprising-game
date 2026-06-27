@@ -56,15 +56,17 @@ func notify_pickup(text: String) -> void:
 @export var grenade_cooldown: float = 0.7
 const GRENADE_SCENE := preload("res://scenes/weapons/grenade.tscn")
 const VORTEX_SCENE := preload("res://scenes/weapons/grenade_vortex.tscn")
-enum GrenadeType { FRAG, VORTEX }
+const EMP_SCENE := preload("res://scenes/weapons/grenade_emp.tscn")
+enum GrenadeType { FRAG, VORTEX, EMP }
 ## Per-type loadout. FRAG is the workhorse; VORTEX is the rare "herd-then-delete"
 ## special — fewer carried, picked up later. Cycle with the grenade-cycle key.
 var grenade_kinds := [
 	{"type": GrenadeType.FRAG, "scene": GRENADE_SCENE, "name": "FRAG", "color": Color(1.0, 0.72, 0.2), "max": 3},
 	{"type": GrenadeType.VORTEX, "scene": VORTEX_SCENE, "name": "VORTEX", "color": Color(0.66, 0.4, 1.0), "max": 2},
+	{"type": GrenadeType.EMP, "scene": EMP_SCENE, "name": "EMP", "color": Color(0.35, 0.8, 1.0), "max": 2},
 ]
 var grenade_type: int = 0                  # index into grenade_kinds
-var grenade_counts := [3, 1]               # current count per kind (parallel to grenade_kinds)
+var grenade_counts := [3, 1, 2]            # current count per kind (parallel to grenade_kinds)
 var grenades: int = 3                       # mirror of the selected kind's count (HUD + back-compat)
 var _grenade_cd: float = 0.0
 

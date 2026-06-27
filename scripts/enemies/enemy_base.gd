@@ -71,6 +71,7 @@ var _visual_base_rot: Vector3
 var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
+var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
 var _oil_cd: float = 0.0 ## Throttle so rapid fire doesn't spawn an oil burst every tick.
 var _alerted: bool = false ## True once this enemy has reacted to first spotting the player.
 var _overload_light: OmniLight3D = null ## Flickering red core glow during a last stand.
@@ -151,6 +152,16 @@ func _collect_meshes(n: Node) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	# EMP'd: scrambled and inert — no perception, AI or attacks. Bleed off any
+	# momentum and just settle under gravity until it reboots. Runs in EnemyBase so
+	# every subclass (incl. the flyers, which call super) is disabled uniformly.
+	if _emp_t > 0.0:
+		_emp_t = maxf(0.0, _emp_t - delta)
+		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
+		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
+		_apply_gravity(delta)
+		move_and_slide()
+		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	_state_timer += delta
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
@@ -162,6 +173,44 @@ func _physics_process(delta: float) -> void:
 	_update_overload(delta)
 	_oil_cd = maxf(0.0, _oil_cd - delta)
 	_poise = maxf(0.0, _poise - delta * 26.0) # poise regenerates between hits
+
+## Scramble this unit: it goes inert for `duration` seconds (no perception, AI or
+## attacks), crackling with EMP static. Called by the EMP grenade burst. Refreshes
+## (takes the longer of the two) if already disabled.
+func emp_disable(duration: float) -> void:
+	if state == State.DEAD or hp == null or not hp.is_alive():
+		return
+	var was_off := _emp_t <= 0.0
+	_emp_t = maxf(_emp_t, duration)
+	if was_off:
+		_spawn_emp_fx()
+
+## A short-lived crackle of blue electric motes over the chassis while it's EMP'd.
+func _spawn_emp_fx() -> void:
+	var p := CPUParticles3D.new()
+	p.amount = 16
+	p.lifetime = 0.35
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.45
+	p.gravity = Vector3.ZERO
+	p.initial_velocity_min = 0.6
+	p.initial_velocity_max = 1.8
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.04; mesh.height = 0.08; mesh.radial_segments = 5; mesh.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(0.4, 0.85, 1.0)
+	mat.albedo_color = Color(0.5, 0.9, 1.0)
+	mesh.material = mat
+	p.mesh = mesh
+	p.position = Vector3(0, 0.7, 0)
+	add_child(p)
+	# Self-clean once the unit reboots.
+	get_tree().create_timer(maxf(_emp_t, 0.2)).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
 
 ## Visible recoil hitch (quick nudge) plus the heavier stagger reel (the model
 ## lurches back and rights itself) on the enemy's model when it's shot.
