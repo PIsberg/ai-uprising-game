@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwlevelbriefcomic"]
+
+[ext_resource type="Script" path="res://scripts/cutscene/level_comic_briefing.gd" id="1_brief"]
+
+[node name="LevelComicBriefing" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_brief")

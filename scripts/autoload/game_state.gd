@@ -491,7 +491,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 
 ## The opener is now a comic-panel flash instead of the old 3D story cutscene.
 const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
-const LEVEL_BRIEFING := "res://scenes/cutscene/level_briefing.tscn"
+const LEVEL_BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
 const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
 ## Scene that builds a custom editor level from a .lvl data file (via
 ## `custom_level_path`). Campaign entries / paths ending in `.lvl` route here
