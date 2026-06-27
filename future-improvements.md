@@ -71,7 +71,9 @@ The input map is fixed in `project.godot`. A rebinding screen in Settings
 (`scripts/ui/main_menu.gd`) writing to a user config.
 
 ### Weapon Codex polish 🤖
-- A spinning 3D weapon model on the dossier (map a `blaster-*.glb` per weapon).
+- ✅ **Spinning 3D weapon preview shipped** — lifts each weapon's `Viewmodel` node
+  into a SubViewport turntable (no `blaster-*.glb` mapping needed; the in-game guns
+  are procedural meshes).
 - Optional "weapons discovered as you pick them up" gating (needs a persistent
   `discovered_weapons` like the bestiary's `discovered_enemies`).
 
