@@ -244,6 +244,10 @@ func _build_pause_audio() -> void:
 	var shake := _audio_slider_row(vbox, tr("Screen Shake"), GraphicsSettings.screen_shake, 0.0, 1.0, 0.05)
 	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
 
+	# Accessibility: scale full-screen flashes live (photosensitivity safety).
+	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
+	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
+
 	# Advanced Graphics Toggles
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = tr("GPU Particles")
@@ -577,7 +581,7 @@ func _process(delta: float) -> void:
 	_update_fps(delta)
 	if _damage_alpha > 0.0:
 		_damage_alpha = maxf(0.0, _damage_alpha - delta * 1.5)
-		damage_overlay.color.a = _damage_alpha
+		damage_overlay.color.a = _damage_alpha * GraphicsSettings.flash_intensity
 	if _toast_time > 0.0:
 		_toast_time = maxf(0.0, _toast_time - delta)
 		toast.modulate.a = clampf(_toast_time, 0.0, 1.0) # hold full, then fade
@@ -636,7 +640,7 @@ func _process(delta: float) -> void:
 	if _kill_flash > 0.0:
 		_kill_flash = maxf(0.0, _kill_flash - delta * 3.2)
 		if _kill_edge:
-			_kill_edge.modulate.a = _kill_flash * 0.45
+			_kill_edge.modulate.a = _kill_flash * 0.45 * GraphicsSettings.flash_intensity
 		if _kill_x:
 			_kill_x.modulate.a = clampf(_kill_flash * 1.4, 0.0, 1.0)
 			var kpop := 0.7 + (1.0 - _kill_flash) * 0.6
@@ -648,7 +652,7 @@ func _process(delta: float) -> void:
 		_vig_time += delta
 		var danger := clampf((0.4 - _hp_ratio) / 0.4, 0.0, 1.0)
 		var a := danger * (0.55 + 0.3 * sin(_vig_time * 5.0)) if danger > 0.0 else 0.0
-		_low_vig.modulate.a = a
+		_low_vig.modulate.a = a * GraphicsSettings.flash_intensity
 
 ## Dynamic reticle: widens while moving/firing, tightens when aiming/still.
 func _update_crosshair(delta: float) -> void:

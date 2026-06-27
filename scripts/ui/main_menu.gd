@@ -117,6 +117,10 @@ func _build_extra_settings() -> void:
 	var shake := _add_slider_row("Screen Shake", 0.0, 1.0, 0.05, GraphicsSettings.screen_shake)
 	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
 
+	# Accessibility: scale (or kill) full-screen flashes (photosensitivity safety).
+	var flash := _add_slider_row("Flash Intensity", 0.0, 1.0, 0.05, GraphicsSettings.flash_intensity)
+	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
+
 	_add_language_row()
 
 	# Keep the Back button at the bottom of the panel.

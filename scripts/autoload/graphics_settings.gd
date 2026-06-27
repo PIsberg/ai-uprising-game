@@ -53,6 +53,10 @@ var dof_enabled: bool = false
 ## player reads this each frame and multiplies its trauma by it — for players who
 ## find heavy screen shake nauseating.
 var screen_shake: float = 1.0
+## Accessibility: scales the intensity of full-screen flashes — the red damage
+## overlay, low-health vignette pulse and kill-edge flash. 1.0 = full, 0 = none.
+## The HUD reads this each frame (photosensitivity / epilepsy safety).
+var flash_intensity: float = 1.0
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -199,6 +203,11 @@ func set_dof_enabled(v: bool) -> void:
 ## Accessibility: 0..1 scale on gameplay camera shake (the player polls it).
 func set_screen_shake(v: float) -> void:
 	screen_shake = clampf(v, 0.0, 1.0)
+	_save_settings()
+
+## Accessibility: 0..1 scale on full-screen flashes (the HUD polls it).
+func set_flash_intensity(v: float) -> void:
+	flash_intensity = clampf(v, 0.0, 1.0)
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -537,6 +546,7 @@ func _load_settings() -> void:
 		show_fps = bool(cf.get_value("graphics_adv", "show_fps", false))
 		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
 		screen_shake = float(cf.get_value("graphics_adv", "screen_shake", 1.0))
+		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -560,5 +570,6 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "show_fps", show_fps)
 	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
 	cf.set_value("graphics_adv", "screen_shake", screen_shake)
+	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
 
 	cf.save(SETTINGS_PATH)
