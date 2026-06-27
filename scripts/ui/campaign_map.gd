@@ -28,6 +28,7 @@ var _intel: PanelContainer    # right-hand "sector intel" readout
 var _intel_title: Label
 var _intel_act: Label
 var _intel_body: Label
+var _motes: Array = []   # drifting holographic dust [{p, v, r, a}]
 
 ## Per-act accent colours for the route bands + act headers.
 const ACT_COLORS := [Color(0.45, 0.8, 1.0), Color(0.7, 0.95, 0.45),
@@ -48,6 +49,7 @@ func _ready() -> void:
 		GameState.load_progress()
 	_frontier = clampi(GameState.max_level_reached, 0, _campaign().size() - 1)
 	_build()
+	_init_motes()
 	resized.connect(_relayout)
 	_relayout.call_deferred()
 	# Start the keyboard cursor on the current objective and brief it.
@@ -77,6 +79,7 @@ func _build() -> void:
 			"title": LevelDefs.level_title(id),
 			"boss": LevelDefs.level_is_boss(id),
 			"chapter": LevelDefs.chapter_index_of(id),
+			"hazard": LevelDefs.level_hazard(id),
 			"pos": Vector2.ZERO, "btn": null,
 		}
 		var btn := Button.new()
@@ -254,8 +257,33 @@ func _style_node(d: Dictionary) -> void:
 	# Boss glyph always shows; other locked sectors hide their number behind a lock.
 	btn.text = "☠" if d["boss"] else ("🔒" if locked else str(i + 1))
 
+## Seed a field of slow holographic dust motes that drift up the screen — ambient
+## motion so the map reads as a live tactical display, not a static diagram.
+func _init_motes() -> void:
+	var vp := get_viewport_rect().size
+	_motes.clear()
+	for i in 64:
+		_motes.append({
+			"p": Vector2(randf() * vp.x, randf() * vp.y),
+			"v": Vector2(randf_range(-5.0, 5.0), randf_range(-26.0, -9.0)), # drift upward
+			"r": randf_range(0.7, 2.1),
+			"a": randf_range(0.05, 0.22),
+		})
+
+func _update_motes(delta: float) -> void:
+	var vp := size if size.x > 100.0 else get_viewport_rect().size
+	for m in _motes:
+		m["p"] += m["v"] * delta
+		if m["p"].y < -4.0:
+			m["p"] = Vector2(randf() * vp.x, vp.y + 4.0) # wrap to the bottom
+		if m["p"].x < -4.0:
+			m["p"].x = vp.x + 4.0
+		elif m["p"].x > vp.x + 4.0:
+			m["p"].x = -4.0
+
 func _process(delta: float) -> void:
 	_time += delta
+	_update_motes(delta)
 	_ping_t = minf(1.0, _ping_t + delta * 2.2)
 	# Pulse the current objective so the eye lands on "play next".
 	if _frontier < _nodes.size():
@@ -276,6 +304,9 @@ func _draw() -> void:
 	while y < size.y:
 		draw_line(Vector2(0, y), Vector2(size.x, y), COL_GRID, 1.0)
 		y += GRID
+	# Drifting holographic dust — ambient motion behind the route.
+	for m in _motes:
+		draw_circle(m["p"], m["r"], Color(0.45, 0.8, 1.0, m["a"]))
 	# Route between consecutive sectors, coloured by progress.
 	for i in range(1, _nodes.size()):
 		var a: Vector2 = _nodes[i - 1]["pos"]
@@ -298,6 +329,22 @@ func _draw() -> void:
 		var locked: bool = d["idx"] > _frontier
 		var rr := NODE_R * 1.35 + 8.0 + (2.0 * sin(_time * 3.0) if not locked else 0.0)
 		draw_arc(d["pos"], rr, 0.0, TAU, 40, Color(COL_BOSS.r, COL_BOSS.g, COL_BOSS.b, 0.4 if locked else 0.75), 2.0)
+	# Hazard sectors (lava / water) get a pulsing themed warning ring + chevrons, so
+	# the dangerous terrain reads at a glance on the route.
+	for d in _nodes:
+		var hz: Dictionary = d["hazard"]
+		if not hz.get("hazard", false):
+			continue
+		var locked: bool = d["idx"] > _frontier
+		var hc: Color = hz["color"]
+		var br := NODE_R * (1.35 if d["boss"] else 1.0)
+		var rr := br + 5.0 + (1.6 * sin(_time * 2.4 + d["idx"]) if not locked else 0.0)
+		draw_arc(d["pos"], rr, 0.0, TAU, 32, Color(hc.r, hc.g, hc.b, 0.45 if locked else 0.8), 2.0)
+		# Four little warning chevrons spinning slowly around the ring.
+		if not locked:
+			for q in 4:
+				var a0 := _time * 0.8 + q * (TAU / 4.0)
+				draw_arc(d["pos"], rr + 4.0, a0 - 0.18, a0 + 0.18, 6, Color(hc.r, hc.g, hc.b, 0.9), 2.5)
 
 	# --- hologram juice ---
 	# A scanline band sweeping down the screen (CRT/holo read).
@@ -387,6 +434,8 @@ func _set_intel(i: int) -> void:
 		_intel_title.text = "█ CLASSIFIED"
 		_intel_title.add_theme_color_override("font_color", COL_LOCK)
 		var threat := "\n☠ BOSS-HELD SECTOR" if d["boss"] else ""
+		if (d["hazard"] as Dictionary).get("hazard", false):
+			threat += "\n⚠ HAZARDOUS TERRAIN DETECTED"
 		_intel_body.text = "Status: 🔒 LOCKED%s\n\nThreat assessment classified. Push the front line here to reveal hostiles and objective." % threat
 		return
 	_intel_title.text = "%d. %s" % [i + 1, d["title"]]
@@ -396,10 +445,16 @@ func _set_intel(i: int) -> void:
 	var lines := "Status: %s" % status
 	if d["boss"]:
 		lines += "\n☠ BOSS SECTOR"
+	var hz: Dictionary = d["hazard"]
+	if hz.get("hazard", false):
+		lines += "\n⚠ TERRAIN: %s" % hz["label"]
 	var obj: String = String(def.get("objective", ""))
 	if obj != "":
 		lines += "\n\nObjective:\n%s" % obj
-	lines += "\n\nHostiles:\n%s" % _hostiles_of(d["id"])
+	var n_total := 0
+	for e in def.get("enemies", []):
+		n_total += int((e as Dictionary).get("count", 1))
+	lines += "\n\nHostiles (%d):\n%s" % [n_total, _hostiles_of(d["id"])]
 	var best: String = str(GameState.level_bests.get(d["id"], ""))
 	lines += "\n\nBest rank: %s" % ("★ %s" % best if best != "" else "—")
 	_intel_body.text = lines

@@ -38,9 +38,20 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "neon", "crucible", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "neon", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
+
+## Terrain / environmental hazard descriptor for a level, used by the campaign map
+## to flag and colour hazard sectors and to enrich the sector intel. Reads the
+## level's own hazard beds: a `water` bed → deep water, any other → molten lava.
+static func level_hazard(id: String) -> Dictionary:
+	var def := get_def(id)
+	for b in def.get("lava", []):
+		if (b as Dictionary).get("water", false):
+			return {"hazard": true, "color": Color(0.3, 0.65, 1.0), "label": "DEEP WATER — don't fall in"}
+		return {"hazard": true, "color": Color(1.0, 0.45, 0.15), "label": "MOLTEN LAVA — don't fall in"}
+	return {"hazard": false, "color": Color(0.5, 0.7, 0.9), "label": ""}
 
 ## Chapter index a level belongs to, or -1 (e.g. sandbox levels / custom order).
 static func chapter_index_of(id: String) -> int:
