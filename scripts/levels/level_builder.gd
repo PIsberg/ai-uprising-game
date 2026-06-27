@@ -2881,6 +2881,34 @@ func _build_tasks(def: Dictionary) -> void:
 					zone.accent = t["color"]
 				zone.position = t.get("pos", Vector3.ZERO)
 				add_child(zone)
+			"assassinate":
+				_spawn_hvt(t)
+
+## "assassinate" objective: a single high-value target the player must hunt down
+## (the level clears when IT dies, not when the room is empty). It spawns as a
+## real Elite — distinct tint/glow, tougher, with a twist (default WARDEN, so it
+## walks through suppression and you have to dodge it) — and joins the "objective"
+## group so the HUD waypoint guides you to it across the arena. Because the target
+## is a live, mobile enemy, exact placement is forgiving: it paths to the player.
+func _spawn_hvt(t: Dictionary) -> void:
+	var id: String = t.get("id", "hvt")
+	GameState.register_task(id, t.get("label", "Eliminate the high-value target"))
+	var scene: PackedScene = ENEMY_SCENES.get(t.get("enemy", "brute"))
+	if scene == null:
+		return
+	var hvt := scene.instantiate() as EnemyBase
+	if hvt == null:
+		return
+	hvt.position = t.get("pos", Vector3.ZERO)
+	# Apply the affix BEFORE add_child so _ready reads the boosted exports.
+	Elite.apply(hvt, t.get("elite", "warden"))
+	hvt._health_mult *= float(t.get("bulk", 2.2)) # extra HVT bulk on top of the affix
+	hvt.score_value = int(hvt.score_value * 1.5)
+	hvt.add_to_group("objective") # HUD waypoint points the player at it
+	hvt.add_to_group("hvt")
+	add_child(hvt)
+	if hvt.hp:
+		hvt.hp.died.connect(func(_src): GameState.complete_task(id))
 
 func _build_exit(def: Dictionary) -> void:
 	if def.get("no_exit", false):

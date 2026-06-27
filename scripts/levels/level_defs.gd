@@ -143,14 +143,19 @@ static func _defs() -> Dictionary:
 static func _nexus() -> Dictionary:
 	return {
 		"name": "Nexus Point — Sector 45",
-		"objective": "Clear the Sector 45 perimeter and reach extraction",
+		"objective": "Clear the Sector 45 perimeter, grab the keycard and reach extraction",
 		"sign": "NEXUS POINT · SECTOR 45",
 		"slogans": ["SECTOR 45: PACIFIED", "REMAIN INDOORS. REMAIN COMPLIANT.", "THE NEXUS PROVIDES"],
 		"lore": [
 			{"id": "lore_nexus", "title": "FIRST BROADCAST", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.5, 0.35),
 				"text": "Recovered broadcast, day one. The grid asked us, very politely, to stay home for our safety. Then the streetlights turned to watch us. Then they stopped asking."},
 		],
-		"tasks": [{"type": "kill_all"}],
+		# Tutorial level teaches the find-and-unlock loop: clear the yard AND recover
+		# a keycard before the portal will open (no longer a straight walk to the exit).
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "key", "pos": Vector3(-4, 0, 2), "label": "Recover the access keycard"},
+		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
 		"floor_color": Color(0.16, 0.14, 0.13),
@@ -235,8 +240,14 @@ static func _nexus() -> Dictionary:
 static func _frostbreak() -> Dictionary:
 	return {
 		"name": "Frostbreak Relay",
-		"objective": "Clear the frozen relay yard and reach the lift",
-		"tasks": [{"type": "kill_all"}],
+		"objective": "Clear the relay yard, hunt the FROST WARDEN and reach the lift",
+		# Clear the yard AND assassinate a roaming elite mini-boss — a hunt, not a
+		# stroll. The WARDEN is unstaggerable, so you must dodge it, not suppress it.
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "brute", "elite": "warden", "bulk": 2.4,
+				"pos": Vector3(2, 0, 2), "label": "Hunt down the FROST WARDEN"},
+		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
 		"floor_color": Color(0.6, 0.68, 0.78),
@@ -336,8 +347,14 @@ static func _frostbreak() -> Dictionary:
 static func _neon() -> Dictionary:
 	return {
 		"name": "Neon Arcade",
-		"objective": "Burn through the arcade district and reach the exit ramp",
-		"tasks": [{"type": "kill_all"}],
+		"objective": "Clear the arcade, hold the broadcast booth and reach the exit ramp",
+		# Clear the district AND hold a capture zone for 14s under fire — you have to
+		# stand your ground in the open, not just sprint to the far corner.
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "hold_zone", "pos": Vector3(0, 0, 8), "seconds": 14.0, "radius": 4.0,
+				"color": Color(1.0, 0.3, 0.9), "label": "Hold the broadcast booth"},
+		],
 		"open_sky": false,
 		"floor_size": Vector2(44, 44),
 		"floor_color": Color(0.05, 0.04, 0.08),
