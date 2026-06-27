@@ -48,17 +48,20 @@ daily run, a local leaderboard off the existing grade/records system (`GameState
 `records.cfg`), or a challenge-modifier mode.
 
 ### The AI Director's player counter-move 🤖
-Deliberately skipped (idea #2). A chargeable **hack/EMP** that converts a robot to your
-side / overloads it / disables its weapon — creates AI-adapts ↔ you-subvert back-and-forth.
-Builds on `Elite`, `Damageable`, and the `hack_terminal` objective tech. (Ideas #3 "AI
-patch-notes escalation" and #4 "glitch warfare" are also on the table.)
+✅ **First cut shipped** — the **EMP grenade** (3rd grenade type) bursts in a radius and
+disables robots for a few seconds (`EnemyBase.emp_disable`, `grenade_emp.{gd,tscn}`).
+Still open as bigger swings: a **hijack** that converts a robot to your side, an overload
+that turns it into a bomb, or weapon-disable. (Ideas #3 "AI patch-notes escalation" and #4
+"glitch warfare" remain on the table.)
 
 ---
 
 ## 3. UX & accessibility ♿
 
 ### More accessibility toggles 🤖
-- A **reduce-flashing** toggle (muzzle/explosion/hit-flash intensity) — epilepsy safety.
+- ✅ **Screen Shake** scale and **Flash Intensity** scale shipped (Settings + pause menu).
+- Extend Flash Intensity to muzzle-flash / explosion-light brightness (currently covers the
+  full-screen HUD flashes: damage overlay, low-health vignette, kill-edge).
 - Colourblind-aware FX/HUD palettes (hazard rings already have a text tag; extend to other colour-only cues).
 - Subtitle/damage-number size scaling.
 - Difficulty assists / modifiers (aim-assist exists for gamepad; add for KBM, plus damage-taken sliders).
@@ -82,7 +85,7 @@ Let the pause menu peek the enemy/weapon codex without leaving the level
 
 - **Performance** — profile big hordes / low-end GPUs (`Last Stand` horde mode is a good stress test); verify the 4 graphics tiers scale cost as intended.
 - **Cleaner CI logs** — the load-test tolerates benign asset errors (missing `colormap.png` weapon texture, generated `.translation` files). Ship the missing texture or scope the error grep so real errors stand out.
-- **Wider probe coverage** — the logic-probe suite (`tools/run_tests.sh`) covers objectives/hazards/loot/teaching/director/elites; add probes for combat math, weapon stats, and save/load.
+- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, and **EMP**. Still want: combat-damage math (range falloff, headshots, pierce), and save/load round-trip.
 
 ---
 
