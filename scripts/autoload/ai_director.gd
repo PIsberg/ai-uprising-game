@@ -142,3 +142,25 @@ func taunt() -> String:
 	if lines.is_empty():
 		return ""
 	return lines[randi() % lines.size()]
+
+## A one-line post-level readout of what the AI learned and how it answered, shown
+## on the sector-cleared screen so the player SEES the director adapting (otherwise
+## it's invisible). "" while calibrating / nothing notable.
+func assessment() -> String:
+	if calibrating():
+		return ""
+	var read_ := ""
+	var answer := ""
+	match counter_affix():
+		"warden":
+			read_ = "your precision"
+			answer = "WARDEN units you couldn't stagger"
+		"swift":
+			read_ = "your distance"
+			answer = "SWIFT rushers to close the gap"
+		"shielded":
+			read_ = "your %s" % dominant_weapon() if weapon_focus() > 0.7 and dominant_weapon() != "" else "your aggression"
+			answer = "SHIELDED armour to soak it"
+		_:
+			return ""
+	return "⟁ AI ADAPTATION — it read %s and fielded %s." % [read_, answer]

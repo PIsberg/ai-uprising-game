@@ -26,6 +26,15 @@ func _run() -> void:
 	print("taunt -> '%s'" % t)
 	if t == "":
 		ok = false
+	# Post-level assessment: a sniper profile -> SWIFT counter readout; calibrating -> "".
+	_set_profile({"range": 0.85})
+	var a := AIDirector.assessment()
+	print("assessment -> '%s'" % a)
+	if not a.contains("SWIFT"):
+		ok = false
+	AIDirector.reset_profile()
+	if AIDirector.assessment() != "":
+		ok = false
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
 

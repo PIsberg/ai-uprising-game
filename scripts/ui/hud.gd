@@ -553,6 +553,11 @@ func _on_level_completed() -> void:
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
+	# Surface what the Adaptive AI Director learned this level and how it answered
+	# — so the player SEES the enemy adapting, not just feels it.
+	var assess := AIDirector.assessment()
+	if assess != "":
+		win_title.text += "\n\n" + assess
 	if GameState.has_next_level() and not _auto_advance_armed:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
