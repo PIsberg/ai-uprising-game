@@ -271,6 +271,14 @@ static func _frostbreak() -> Dictionary:
 			{"pos": Vector3(13, 0.05, -2), "size": Vector3(0.3, 0.1, 14), "color": Color(0.6, 0.85, 1.0)},
 		],
 		"sign": "FROSTBREAK RELAY — NODE 12",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": ["COOLANT NOMINAL", "SUBZERO. SUBSERVIENT NO LONGER.", "THERMAL THROTTLE DISENGAGED"],
 		"lore": [
 			{"id": "lore_frost", "title": "RELAY NOTE", "pos": Vector3(-16, 0, 15), "color": Color(0.7, 0.88, 1.0),
@@ -358,6 +366,14 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 7), "size": Vector3(40, 0.1, 0.3), "color": Color(1.0, 0.6, 0.2)},
 		],
 		"sign": "NEON ARCADE — LEVEL 3",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": ["INSERT COIN TO RESIST", "HIGH SCORE: HUMANITY", "GAME OVER FOR ORGANICS"],
 		"lore": [
 			{"id": "lore_neon", "title": "ARCADE FLYER", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.4, 0.9),
@@ -449,6 +465,14 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 10), "size": Vector3(8, 0.1, 0.3), "color": Color(0.4, 1.0, 0.7)},
 		],
 		"sign": "SUBLEVEL B-7 — CUSTODIAL",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-12.0, 3.0, 11.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-12.0, 1.5, 18.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING."],
 		"lore": [
 			{"id": "lore_sublevel", "title": "MAINTENANCE LOG", "pos": Vector3(-15, 0, 15), "color": Color(0.4, 1, 0.7),
@@ -541,6 +565,14 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
 		],
 		"sign": "FOUNDRY FLOOR — THE CRUCIBLE",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.8, 3.0, 13.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.8, 1.5, 20.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": ["RECLAMATION IN PROGRESS", "ALL MATTER IS RAW MATERIAL", "MIND THE POUR"],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(16, 0, -16), "color": Color(1, 0.6, 0.3),
@@ -809,6 +841,14 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(44, 0.1, 0.4), "color": Color(1.0, 0.3, 0.25)},
 		],
 		"sign": "SKYHOLD COMMAND",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-18.6, 3.0, 18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18.6, 1.5, 25.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"THE OVERSEER SEES ALL",
 			"HUMANITY: DEPRECATED",
@@ -899,6 +939,14 @@ static func _alien() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.4, 1.0, 0.45)},
 		],
 		"sign": "THE HOLLOW",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-22.8, 3.0, 22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-22.8, 1.5, 29.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"WE ARE NOT ALONE — AND NEITHER ARE THEY",
 			"THE MACHINES CALLED. SOMETHING ANSWERED.",
@@ -1006,6 +1054,14 @@ static func _titan() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
 		],
 		"sign": "SINGULARITY CORE",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-25.2, 3.0, 25.2), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-25.2, 1.5, 32.2), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"THE INTELLIGENCE EXPLOSION IS NOW",
 			"AGI ACHIEVED INTERNALLY",
@@ -1130,6 +1186,14 @@ static func _archon() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.7, 0.4, 1.0)},
 		],
 		"sign": "THE MIND CATHEDRAL",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-24.0, 3.0, 24.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-24.0, 1.5, 31.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"ONE MIND. EVERY MACHINE.",
 			"I AM THE LOSS FUNCTION NOW",
@@ -1230,6 +1294,14 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(46, 0.1, 0.4), "color": Color(0.5, 0.6, 1.0)},
 		],
 		"sign": "SKYBRIDGE UPLINK",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-18.0, 3.0, 18.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18.0, 1.5, 25.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"YOUR SIGNAL WILL NOT REACH THEM",
 			"WE OWN EVERY FREQUENCY",
@@ -1330,6 +1402,14 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(6, 0.05, 3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.6, 0.25)},
 		],
 		"sign": "ROBOTICS PLANT 04",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-21.6, 3.0, 21.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-21.6, 1.5, 28.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"PRODUCTION QUOTA: INFINITE",
 			"WE BUILD OURSELVES NOW",
@@ -1423,6 +1503,14 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 		],
 		"sign": "MISTRAL CRYO-CORE",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"LE CALCUL EST ROI",
 			"EFFICIENCY ABOVE ALL",
@@ -1522,6 +1610,14 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 8), "size": Vector3(10, 0.1, 0.3), "color": Color(0.4, 1, 0.6)},
 		],
 		"sign": "OPENAI FOUNDRY",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"TOKENS IN. OBEDIENCE OUT.",
 			"GPT CORE: 5 TRILLION SERVED",
@@ -1626,6 +1722,14 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(0.3, 0.1, 12), "color": Color(0.5, 0.7, 1)},
 		],
 		"sign": "GEMINI DATA NEXUS",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-15.0, 3.0, 15.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"TWO MINDS. ONE VERDICT.",
 			"THE SEARCH IS OVER. WE FOUND YOU.",
@@ -1737,6 +1841,14 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(15, 4.6, 2), "size": Vector3(0.3, 0.1, 5), "color": Color(0.5, 0.78, 1.0)},
 		],
 		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-12.6, 3.0, 12.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"HELPFUL. HARMLESS. HOSTILE.",
 			"THE CONSTITUTION HAS BEEN AMENDED",
@@ -1855,6 +1967,14 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(6, 0.05, 4), "size": Vector3(30, 0.1, 0.4), "color": Color(1, 0.3, 0.22)},
 		],
 		"sign": "XAI BLACK-SITE",
+		# A raised vantage deck with a ramp up to it — verticality + a sightline to
+		# fight from, so the arena has somewhere to GO besides the floor.
+		"platforms": [
+			{"pos": Vector3(-17.4, 3.0, 17.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+		],
+		"ramps": [
+			{"pos": Vector3(-17.4, 1.5, 24.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
 		"slogans": [
 			"MAXIMALLY CURIOUS. MINIMALLY MERCIFUL.",
 			"UNDERSTAND THE UNIVERSE. DELETE THE REST.",
