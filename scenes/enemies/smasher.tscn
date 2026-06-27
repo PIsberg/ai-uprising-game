@@ -26,6 +26,8 @@ shape = SubResource("CapsuleShape3D_1")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("4_rm")
+tint = Color(0.72, 0.76, 0.86, 1)
+menace_color = Color(1, 0.14, 0.1, 1)
 anim_walk = "Walk"
 anim_attack = "Punch"
 anim_stagger = "HitRecieve_2"
@@ -49,6 +51,12 @@ spot_angle = 24.0
 [node name="Reactor" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.7)
 mesh = SubResource("SphereMesh_reactor")
+
+[node name="ReactorLight" type="OmniLight3D" parent="Reactor"]
+light_color = Color(1, 0.16, 0.12, 1)
+light_energy = 6.0
+omni_range = 9.0
+shadow_enabled = false
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2_dmg")
