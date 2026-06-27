@@ -21,53 +21,11 @@ func _ready() -> void:
 	hover_freq = 2.6
 	hp.max_health = max_health
 	hp.current_health = max_health
-	_build_fish_look()
 
-func _emissive_mat(c: Color, energy: float) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(c.r, c.g, c.b, 0.85)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.emission_enabled = true
-	m.emission = c
-	m.emission_energy_multiplier = energy
-	return m
-
-## A thin finned blade (box) at `pos`, rotated `rot_deg`, sized `size`.
-func _fin(size: Vector3, pos: Vector3, rot_deg: Vector3, mat: Material) -> void:
-	var fin := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = size
-	fin.mesh = bm
-	fin.material_override = mat
-	fin.position = pos
-	fin.rotation = Vector3(deg_to_rad(rot_deg.x), deg_to_rad(rot_deg.y), deg_to_rad(rot_deg.z))
-	add_child(fin)
-
-## Bolt-on fish anatomy. Forward is −Z (the body's front), so the tail rides +Z.
-func _build_fish_look() -> void:
-	var finmat := _emissive_mat(Color(0.25, 0.7, 1.0), 2.2)
-	# Caudal (tail) fin: a swept V at the back.
-	_fin(Vector3(0.03, 0.5, 0.4), Vector3(0, 0.12, 0.5), Vector3(28, 0, 0), finmat)
-	_fin(Vector3(0.03, 0.5, 0.4), Vector3(0, -0.12, 0.5), Vector3(-28, 0, 0), finmat)
-	# Dorsal fin on top, swept back.
-	_fin(Vector3(0.03, 0.34, 0.5), Vector3(0, 0.4, 0.1), Vector3(-22, 0, 0), finmat)
-	# Pectoral fins flaring from the flanks.
-	_fin(Vector3(0.4, 0.03, 0.3), Vector3(0.42, -0.02, 0.05), Vector3(0, 0, -24), finmat)
-	_fin(Vector3(0.4, 0.03, 0.3), Vector3(-0.42, -0.02, 0.05), Vector3(0, 0, 24), finmat)
-	# Needle harpoon nose at the front — the weaponised tip.
-	var nose := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.0
-	cm.bottom_radius = 0.08
-	cm.height = 0.55
-	cm.radial_segments = 8
-	nose.mesh = cm
-	nose.material_override = _emissive_mat(Color(0.5, 0.9, 1.0), 2.6)
-	nose.rotation.x = deg_to_rad(-90.0) # point forward (-Z)
-	nose.position = Vector3(0, -0.02, -0.5)
-	add_child(nose)
-
-## Override the drone's orange thruster trail with a slow rising bubble stream.
+## The fins (tail/dorsal/pectoral) and harpoon nose are baked into the model
+## (EyeDrone_fishbot.glb, forked in Blender — see tools/blender/cfg_fishbot.json)
+## and tinted blue by RobotModel. Override the drone's orange thruster trail with
+## a slow rising stream of bubbles so it reads as swimming.
 func _make_exhaust() -> void:
 	var p := CPUParticles3D.new()
 	p.amount = 16

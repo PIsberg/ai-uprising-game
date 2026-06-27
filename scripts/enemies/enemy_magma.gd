@@ -29,39 +29,11 @@ func _emissive_mat(c: Color, energy: float) -> StandardMaterial3D:
 	m.emission_energy_multiplier = energy
 	return m
 
-## Bolt-on geometry that gives the chassis a fierce molten identity. Parented to
-## the body (not the leaning model) so the parts stay rigid as it banks.
+## The molten crown of horns and cannon barrels are baked into the model
+## (EyeDrone_magma.glb, forked in Blender — see tools/blender/cfg_magma.json) and
+## tinted hot by RobotModel. This adds the live FX on top: a rising ember plume so
+## it trails fire as it flies.
 func _build_magma_look() -> void:
-	var molten := _emissive_mat(Color(1.0, 0.42, 0.1), 3.2)
-	# A jagged crown of molten horns ringing the chassis.
-	var horns := 6
-	for i in horns:
-		var a := TAU * float(i) / float(horns)
-		var spike := MeshInstance3D.new()
-		var cm := CylinderMesh.new()
-		cm.top_radius = 0.0
-		cm.bottom_radius = 0.07
-		cm.height = 0.42
-		cm.radial_segments = 5
-		spike.mesh = cm
-		spike.material_override = molten
-		spike.position = Vector3(sin(a) * 0.42, 0.2, cos(a) * 0.42)
-		spike.rotation = Vector3(cos(a) * 0.5, 0.0, -sin(a) * 0.5) # splay outward
-		add_child(spike)
-	# Twin cannon barrels flanking the optic — the "weaponised" read.
-	for sx in [-1.0, 1.0]:
-		var barrel := MeshInstance3D.new()
-		var bm := CylinderMesh.new()
-		bm.top_radius = 0.05
-		bm.bottom_radius = 0.065
-		bm.height = 0.5
-		bm.radial_segments = 8
-		barrel.mesh = bm
-		barrel.material_override = _emissive_mat(Color(0.9, 0.28, 0.05), 1.6)
-		barrel.rotation.x = deg_to_rad(90.0) # cylinder Y-axis -> point forward (-Z)
-		barrel.position = Vector3(0.13 * sx, -0.05, -0.42)
-		add_child(barrel)
-	# A rising ember plume so it trails fire as it flies.
 	var p := CPUParticles3D.new()
 	p.amount = 20
 	p.lifetime = 0.8

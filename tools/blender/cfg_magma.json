@@ -1,0 +1,15 @@
+{
+  "in":  "assets/models/robots/Enemy_EyeDrone.gltf",
+  "out": "assets/models/robots/EyeDrone_magma.glb",
+  "render": "tools/blender/preview_magma.png",
+  "rig": "skin",
+  "parts": [
+    {"type":"spike","name":"CrownC","loc":[0.0,0.0,0.52],"rot":[0,0,0],"len":0.46,"r":0.06,"bone":"Body"},
+    {"type":"spike","name":"CrownL","loc":[0.30,0.0,0.40],"rot":[0,30,0],"len":0.40,"r":0.05,"bone":"Body"},
+    {"type":"spike","name":"CrownR","loc":[-0.30,0.0,0.40],"rot":[0,-30,0],"len":0.40,"r":0.05,"bone":"Body"},
+    {"type":"spike","name":"CrownB","loc":[0.0,0.30,0.40],"rot":[30,0,0],"len":0.40,"r":0.05,"bone":"Body"},
+    {"type":"spike","name":"CrownF","loc":[0.0,-0.30,0.40],"rot":[-30,0,0],"len":0.40,"r":0.05,"bone":"Body"},
+    {"type":"spike","name":"TuskL","loc":[0.20,-0.42,-0.05],"rot":[90,0,0],"len":0.34,"r":0.05,"bone":"Body"},
+    {"type":"spike","name":"TuskR","loc":[-0.20,-0.42,-0.05],"rot":[90,0,0],"len":0.34,"r":0.05,"bone":"Body"}
+  ]
+}

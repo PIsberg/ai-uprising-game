@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="PackedScene" uid="uid://b0proj0drone01" path="res://scenes/weapons/projectile_drone.tscn" id="3_proj"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="4_rm"]
-[ext_resource type="PackedScene" uid="uid://cru0ti7g5r10d" path="res://assets/models/robots/Enemy_EyeDrone.gltf" id="5_model"]
+[ext_resource type="PackedScene" uid="uid://en5xusgupu6v" path="res://assets/models/robots/EyeDrone_fishbot.glb" id="5_model"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_col"]
 radius = 0.45
