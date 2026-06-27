@@ -109,6 +109,19 @@ const STEP_INTERVAL_WALK := 2.4
 const STEP_INTERVAL_SPRINT := 3.2
 const STEP_INTERVAL_CROUCH := 1.6
 
+# ---------- melee shove (F): a close-quarters panic kick ----------
+# A quick frontal shove that damages + knocks back everything in a cone right in
+# front of you, on a short cooldown — the answer to being swarmed by skitters,
+# spiders, dogs and other rushers when reloading or boxed in. No ammo cost.
+@export_group("Melee")
+@export var melee_damage: float = 28.0
+@export var melee_range: float = 3.2
+@export var melee_radius: float = 2.4
+@export var melee_arc_deg: float = 120.0
+@export var melee_knockback: float = 13.0
+@export var melee_cooldown: float = 0.85
+var _melee_cd: float = 0.0
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_camera_base_y = camera.position.y
@@ -116,6 +129,7 @@ func _ready() -> void:
 	_build_dof_overlay()
 	_fov_base = camera.fov
 	_register_dash_action()
+	_register_melee_action()
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -280,6 +294,7 @@ func _physics_process(delta: float) -> void:
 	_handle_speed_warp(delta)
 	_handle_low_health(delta)
 	_handle_dash(delta)
+	_handle_melee(delta)
 	_handle_slide(delta)
 	_handle_jump(delta)
 	_handle_grenade(delta)
@@ -300,6 +315,78 @@ func _register_dash_action() -> void:
 		var ev := InputEventKey.new()
 		ev.physical_keycode = KEY_Q
 		InputMap.action_add_event("dash", ev)
+
+## Registers the melee shove (F + gamepad B) at runtime, like the dash — no
+## project input-map edit needed.
+func _register_melee_action() -> void:
+	if not InputMap.has_action("melee"):
+		InputMap.add_action("melee")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_F
+		InputMap.action_add_event("melee", ev)
+		var pad := InputEventJoypadButton.new()
+		pad.button_index = JOY_BUTTON_B
+		InputMap.action_add_event("melee", pad)
+
+## Frontal shove: a cone-of-influence kick that damages + knocks back every
+## hostile right in front of you, on a short cooldown. Your get-off-me button.
+func _handle_melee(delta: float) -> void:
+	_melee_cd = maxf(0.0, _melee_cd - delta)
+	if _melee_cd > 0.0 or not Input.is_action_just_pressed("melee"):
+		return
+	_melee_cd = melee_cooldown
+	_fov_kick = maxf(_fov_kick, 6.0)
+	shake(0.18)
+	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.7) # whoosh
+	# A quick viewmodel jab so the shove reads in first person.
+	if weapon_holder:
+		var home := weapon_holder.position
+		var tw := create_tween()
+		tw.tween_property(weapon_holder, "position", home + Vector3(0, -0.05, -0.14), 0.06)
+		tw.tween_property(weapon_holder, "position", home, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_do_melee()
+
+func _do_melee() -> void:
+	var origin := camera.global_position
+	var fwd := -camera.global_transform.basis.z
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = melee_radius
+	q.shape = sh
+	# Centre the probe sphere a little ahead so the cone covers what's in front.
+	q.transform = Transform3D(Basis(), origin + fwd * (melee_range - melee_radius * 0.5))
+	q.collision_mask = 0b0000100 # enemies (layer 3)
+	q.collide_with_areas = false
+	var hits := space.intersect_shape(q, 16)
+	var struck := false
+	var seen := {}
+	for h in hits:
+		var col: Node = h.get("collider")
+		if col == null or seen.has(col):
+			continue
+		seen[col] = true
+		if not (col is Node3D):
+			continue
+		var to: Vector3 = (col as Node3D).global_position + Vector3.UP * 0.8 - origin
+		if to.length() > melee_range + 0.6:
+			continue
+		# Frontal cone only — it's a shove, not an aura.
+		var flat := to; flat.y = 0.0
+		if flat.length() > 0.1 and rad_to_deg(fwd.angle_to(flat.normalized())) > melee_arc_deg * 0.5:
+			continue
+		var d := col.get_node_or_null("Damageable")
+		if d and d.has_method("apply_damage"):
+			d.apply_damage(melee_damage, self)
+			struck = true
+		# Heavy knockback away from the player (+ a little lift) — the "get off me".
+		if "velocity" in col:
+			var push := flat.normalized() if flat.length() > 0.1 else fwd
+			col.velocity += push * melee_knockback + Vector3.UP * 3.0
+	if struck:
+		AudioBus.play_synth_at("impact_metal", origin + fwd * 1.5, -2.0, 0.8)
+		shake(0.3)
+		_fov_kick = maxf(_fov_kick, 9.0)
 
 ## A short, snappy burst in the movement direction (or forward if idle). Works
 ## on the ground or in the air; has a cooldown and a FOV/whoosh kick for punch.
