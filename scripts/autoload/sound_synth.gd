@@ -22,6 +22,10 @@ func _ready() -> void:
 	streams["footstep"] = _footstep(0.16)
 	streams["impact_metal"] = _impact(0.12, 0.6)
 	streams["impact_concrete"] = _impact(0.16, 0.3)
+	# Material-specific bullet impacts so wood, stone and metal each read distinctly
+	# (previously every prop clinked like metal regardless of what it was made of).
+	streams["impact_wood"] = _impact_wood(0.16)
+	streams["impact_stone"] = _impact_stone(0.14)
 	streams["drone_hum"] = _drone_hum(1.2)
 	streams["mech_step"] = _mech_step(0.32)
 	streams["pickup_health"] = _chime(0.3, 660.0, 990.0)
@@ -48,6 +52,10 @@ func _ready() -> void:
 	streams["charge"] = _charge_up(0.32)
 	streams["ambience_rain"] = _rain(4.0)
 	streams["thunder"] = _thunder(1.8)
+	# Looping environment beds so a player recognises lava (or a hazard river) and
+	# standing water by ear — a familiar bubbling vs. a gentle trickle.
+	streams["lava_loop"] = _lava_bubble(4.0)
+	streams["water_loop"] = _water_flow(4.0)
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -274,6 +282,80 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 		var s := lp * env * 0.9
 		_write(bytes, i, s)
 	return _to_stream(bytes)
+
+## Hollow wooden "tok": two close low-mid resonances under a short dry tick, for
+## shots thwacking crates, logs, benches and tree trunks.
+func _impact_wood(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var ph2 := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 34.0)
+		# Two detuned low-mid modes give the knock a woody, hollow body.
+		ph += TAU * 210.0 / SR
+		ph2 += TAU * 318.0 / SR
+		var body := (sin(ph) * 0.6 + sin(ph2) * 0.3) * env
+		# A short dry tick on the very front edge so it reads as a strike, not a tone.
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.35)
+		var tick := lp * exp(-t * 130.0) * 0.5
+		_write(bytes, i, tanh(body + tick) * 0.8)
+	return _to_stream(bytes)
+
+## Sharp stony crack: high-passed gritty noise that snaps and dies fast, for
+## rock, boulders, pillars and statues (brighter and drier than concrete).
+func _impact_stone(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var prev := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 48.0)
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.8)
+		var hp := lp - prev # crude high-pass -> bright chip, not a dull thud
+		prev = lp
+		_write(bytes, i, clampf(hp * env * 1.5, -1.0, 1.0) * 0.8)
+	return _to_stream(bytes)
+
+## Molten lava bed — a seamless 4s loop of slow gloopy bubbles over a low sizzle.
+## LFO + carrier frequencies are whole cycles over the loop so it tiles cleanly.
+func _lava_bubble(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		# Constant low sizzle bed.
+		var white := randf() * 2.0 - 1.0
+		lp = lp * 0.85 + white * 0.15
+		var sizzle := lp * 0.18
+		# Slow bubbles: overlapping low LFOs gate brief low-freq blips.
+		var gate := maxf(0.0, sin(TAU * 1.5 * t)) * maxf(0.0, sin(TAU * 0.5 * t + 1.3))
+		var bubble := sin(TAU * 70.0 * t) * gate * 0.5
+		bubble += sin(TAU * 48.0 * t) * maxf(0.0, sin(TAU * 2.25 * t + 2.0)) * 0.32
+		_write(bytes, i, tanh(sizzle + bubble) * 0.5)
+	return _to_stream(bytes, true)
+
+## Gentle water — a seamless 4s loop of soft filtered burbling that swells lightly,
+## a calm counterpart to the lava bubble so rivers/ponds read by ear.
+func _water_flow(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var white := randf() * 2.0 - 1.0
+		lp = lp * 0.6 + white * 0.4    # bright trickle hiss
+		lp2 = lp2 * 0.92 + lp * 0.08   # softer flow body
+		var swell := 0.6 + 0.4 * sin(TAU * 0.5 * t) # whole cycle over 4s -> seamless
+		_write(bytes, i, (lp2 * 0.7 + lp * 0.12) * swell * 0.5)
+	return _to_stream(bytes, true)
 
 ## A short muffled "oof" + body thump for when the player takes a hit: a
 ## vocal-ish tone gliding down in pitch over a low-passed impact thump.

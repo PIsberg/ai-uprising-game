@@ -41,6 +41,43 @@ func _build() -> void:
 		"crate_stack": _crate_stack()
 		_: _rock(1.0)
 
+# ---------- material / audio ----------
+
+## The bullet-impact surface group for this prop's material, so shots read the
+## right way (wood thocks, stone cracks, metal clinks). Drives weapon.gd's
+## _surface_of(); unlisted kinds fall back to concrete (the default in weapon.gd).
+func _surface_group() -> String:
+	match kind:
+		"pine", "dead_tree", "log", "stump", "bench", "crate_stack":
+			return "surf_wood"
+		"rock", "boulder", "pillar", "statue", "planter":
+			return "surf_stone"
+		"hydrant", "dumpster":
+			return "surf_metal"
+		"sandbags":
+			return "surf_dirt"
+		_:
+			return "surf_concrete" # barriers etc. -> concrete thud
+	# (unreachable; match always returns)
+
+## Attach a looping positional ambience to this prop (water trickle, etc.) so the
+## feature is recognisable by ear. Skipped while the editor suppresses world SFX.
+func _ambient(id: String, db: float, reach: float) -> void:
+	if AudioBus.suppress_world_sfx:
+		return
+	var stream := AudioBus.synth(id)
+	if stream == null:
+		return
+	var p := AudioStreamPlayer3D.new()
+	p.stream = stream
+	p.bus = "SFX"
+	p.unit_size = reach
+	p.max_distance = 30.0
+	p.volume_db = db
+	p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	add_child(p)
+	p.play()
+
 # ---------- mesh helpers ----------
 
 func _mat(c: Color, rough := 0.9, metal := 0.0, emis := false) -> StandardMaterial3D:
@@ -88,7 +125,7 @@ func _collide_box(size: Vector3, ypos: float) -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
-	body.add_to_group("surf_metal")
+	body.add_to_group(_surface_group())
 	var cs := CollisionShape3D.new()
 	var sh := BoxShape3D.new(); sh.size = size
 	cs.shape = sh
@@ -100,6 +137,7 @@ func _collide_cyl(r: float, h: float, ypos: float) -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
+	body.add_to_group(_surface_group())
 	var cs := CollisionShape3D.new()
 	var sh := CylinderShape3D.new(); sh.radius = r; sh.height = h
 	cs.shape = sh
@@ -196,11 +234,15 @@ func _water(size: Vector3, c: Color) -> void:
 	var m := _mat(c, 0.1, 0.3)
 	m.emission_enabled = true; m.emission = c; m.emission_energy_multiplier = 0.15
 	_box(size, Color.BLACK, Vector3(0, size.y * 0.5, 0), Vector3.ZERO, m)
+	# A gentle trickle that scales with the river's length, so flowing water is
+	# audible before you see it.
+	_ambient("water_loop", -13.0, maxf(size.x, size.z) * 0.4 + 2.0)
 
 func _pond() -> void:
 	var c := Color(0.16, 0.38, 0.5, 0.7)
 	var m := _mat(c, 0.1, 0.3)
 	_cyl(3.0, 3.0, 0.1, Color.BLACK, Vector3(0, 0.05, 0), m)
+	_ambient("water_loop", -16.0, 3.0) # calmer, quieter than a flowing river
 
 # ---------- urban obstacles ----------
 

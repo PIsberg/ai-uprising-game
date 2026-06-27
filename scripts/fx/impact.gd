@@ -51,12 +51,18 @@ func set_surface(kind: String) -> void:
 				_sparks.color = Color(1.0, 0.92, 0.65); _sparks.amount = 30
 			"dirt":
 				_sparks.color = Color(0.85, 0.6, 0.35); _sparks.amount = 7
+			"wood":
+				_sparks.color = Color(0.78, 0.56, 0.32); _sparks.amount = 9
+			"stone":
+				_sparks.color = Color(0.86, 0.84, 0.8); _sparks.amount = 12
 			_:
 				_sparks.color = Color(0.92, 0.88, 0.8); _sparks.amount = 14
 	if _smoke:
 		match kind:
 			"metal": _smoke.color = Color(0.62, 0.62, 0.66)
 			"dirt": _smoke.color = Color(0.52, 0.42, 0.3)
+			"wood": _smoke.color = Color(0.5, 0.4, 0.28)
+			"stone": _smoke.color = Color(0.72, 0.7, 0.66)
 			_: _smoke.color = Color(0.72, 0.72, 0.72)
 	_spawn_debris(kind)
 
@@ -91,6 +97,14 @@ func _spawn_debris(kind: String) -> void:
 			p.amount = 7; p.initial_velocity_min = 2.0; p.initial_velocity_max = 5.0
 			frag.size = Vector3(0.06, 0.06, 0.06)
 			mat.albedo_color = Color(0.32, 0.24, 0.16)
+		"wood":
+			p.amount = 8; p.initial_velocity_min = 3.0; p.initial_velocity_max = 6.0
+			frag.size = Vector3(0.03, 0.03, 0.11) # long splinters
+			mat.albedo_color = Color(0.4, 0.28, 0.16)
+		"stone":
+			p.amount = 9; p.initial_velocity_min = 3.0; p.initial_velocity_max = 6.5
+			frag.size = Vector3(0.05, 0.05, 0.05)
+			mat.albedo_color = Color(0.55, 0.54, 0.5)
 		_:
 			p.amount = 8; p.initial_velocity_min = 3.0; p.initial_velocity_max = 6.5
 			frag.size = Vector3(0.055, 0.055, 0.055)

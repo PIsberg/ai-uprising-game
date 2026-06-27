@@ -505,9 +505,8 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			dmg_node = _find_damageable(col)
 		var surf := _surface_of(col, dmg_node != null) if col else "concrete"
 		_spawn_impact(hpos, hit.normal, surf)
-		var snd := "impact_metal" if surf == "metal" else "impact_concrete"
 		var pitch := randf_range(0.7, 0.85) if surf == "dirt" else randf_range(0.9, 1.1)
-		AudioBus.play_synth_at(snd, hpos, -8.0, pitch)
+		AudioBus.play_synth_at(_impact_sound_for(surf), hpos, -8.0, pitch)
 		if dmg_node == null:
 			_spawn_bullet_hole(hpos, hit.normal)
 		if dmg_node:
@@ -752,9 +751,23 @@ func _ensure_beam() -> void:
 func _surface_of(col: Node, is_enemy: bool) -> String:
 	if is_enemy or col.is_in_group("surf_metal"):
 		return "metal"
+	if col.is_in_group("surf_wood"):
+		return "wood"
+	if col.is_in_group("surf_stone"):
+		return "stone"
 	if col.is_in_group("surf_dirt"):
 		return "dirt"
 	return "concrete"
+
+## Pick the bullet-impact sound for a classified surface so each material reads
+## distinctly (wood thocks, stone cracks, metal clinks). Dirt reuses the concrete
+## thud at a lower pitch (set by the caller).
+const _IMPACT_SOUND := {
+	"metal": "impact_metal", "wood": "impact_wood", "stone": "impact_stone",
+	"concrete": "impact_concrete", "dirt": "impact_concrete",
+}
+func _impact_sound_for(surf: String) -> String:
+	return _IMPACT_SOUND.get(surf, "impact_concrete")
 
 ## Bleeds barrel heat off over time and drives the muzzle-tip glow from it.
 func _update_heat(delta: float) -> void:

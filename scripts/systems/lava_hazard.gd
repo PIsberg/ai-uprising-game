@@ -48,6 +48,7 @@ func _ready() -> void:
 	_build_surface()
 	_build_obstacle()
 	_build_light()
+	_build_audio()
 
 ## The glowing molten surface plane.
 func _build_surface() -> void:
@@ -107,6 +108,26 @@ func _build_light() -> void:
 	_light.shadow_enabled = false
 	_light.position = Vector3(0, 1.2, 0)
 	add_child(_light)
+
+## A looping bubbling bed so the hazard is recognisable by ear before you reach
+## it. Louder/lower for molten lava; thinner and quieter for a recolored coolant
+## or acid "river". Skipped while the editor suppresses world SFX.
+func _build_audio() -> void:
+	if AudioBus.suppress_world_sfx:
+		return
+	var stream := AudioBus.synth("lava_loop")
+	if stream == null:
+		return
+	var p := AudioStreamPlayer3D.new()
+	p.stream = stream
+	p.bus = "SFX"
+	p.unit_size = maxf(size.x, size.y) * 0.5 + 2.0
+	p.max_distance = 42.0
+	p.volume_db = -10.0 if recolor else -6.0
+	p.pitch_scale = 1.25 if recolor else 1.0
+	p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
+	add_child(p)
+	p.play()
 
 func _process(delta: float) -> void:
 	_clock += delta
