@@ -42,6 +42,8 @@ const ENEMY_SCENES := {
 	"smasher": preload("res://scenes/enemies/smasher.tscn"),
 	"dog": preload("res://scenes/enemies/dog.tscn"),
 	"server": preload("res://scenes/enemies/server.tscn"),
+	"magma": preload("res://scenes/enemies/magma.tscn"),
+	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
