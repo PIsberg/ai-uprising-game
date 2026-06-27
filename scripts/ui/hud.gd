@@ -248,6 +248,10 @@ func _build_pause_audio() -> void:
 	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
+	# Resolution scale live (1.0 = native/sharp; lower for performance).
+	var rscale := _audio_slider_row(vbox, tr("Render Scale"), GraphicsSettings.render_scale, 0.5, 1.0, 0.05)
+	rscale.value_changed.connect(func(v: float): GraphicsSettings.set_render_scale(v))
+
 	# Advanced Graphics Toggles
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = tr("GPU Particles")

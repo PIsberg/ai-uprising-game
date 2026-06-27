@@ -121,6 +121,10 @@ func _build_extra_settings() -> void:
 	var flash := _add_slider_row("Flash Intensity", 0.0, 1.0, 0.05, GraphicsSettings.flash_intensity)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
+	# Resolution scale — 1.0 = native/sharp; lower it for performance (FSR2 upscale).
+	var rscale := _add_slider_row("Render Scale", 0.5, 1.0, 0.05, GraphicsSettings.render_scale)
+	rscale.value_changed.connect(func(v: float): GraphicsSettings.set_render_scale(v))
+
 	_add_language_row()
 
 	# Keep the Back button at the bottom of the panel.
