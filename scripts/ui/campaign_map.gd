@@ -201,6 +201,11 @@ func _relayout() -> void:
 		var name_txt: String = "█ CLASSIFIED" if locked else "%d. %s" % [i + 1, d["title"]]
 		if d["boss"]:
 			name_txt += "\n☠ BOSS"
+		# Hazard tag as TEXT (not just the colour ring) so the warning reads for
+		# colourblind players too.
+		var hz: Dictionary = d["hazard"]
+		if not locked and hz.get("hazard", false):
+			name_txt += "\n⚠ %s" % hz.get("tag", "HAZARD")
 		# Show your best rank on cleared sectors — the S-rank chase, visible.
 		if not locked:
 			var best: String = str(GameState.level_bests.get(d["id"], ""))

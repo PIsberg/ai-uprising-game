@@ -47,11 +47,25 @@ const CHAPTERS := [
 ## level's own hazard beds: a `water` bed → deep water, any other → molten lava.
 static func level_hazard(id: String) -> Dictionary:
 	var def := get_def(id)
+	# Only flag a sector when the hazard SEA covers most of the floor — i.e. a level
+	# you balance across on walkways, where falling in is the defining danger. Lots
+	# of levels have decorative lava channels; those shouldn't all read as hazards or
+	# the warning means nothing. Compare the biggest bed against the floor footprint.
+	var floor_sz: Vector2 = def.get("floor_size", Vector2(40.0, 40.0))
+	var floor_area: float = floor_sz.x * floor_sz.y
+	var max_area := 0.0
+	var is_water := false
 	for b in def.get("lava", []):
-		if (b as Dictionary).get("water", false):
-			return {"hazard": true, "color": Color(0.3, 0.65, 1.0), "label": "DEEP WATER — don't fall in"}
-		return {"hazard": true, "color": Color(1.0, 0.45, 0.15), "label": "MOLTEN LAVA — don't fall in"}
-	return {"hazard": false, "color": Color(0.5, 0.7, 0.9), "label": ""}
+		var s: Vector2 = (b as Dictionary).get("size", Vector2(8.0, 3.0))
+		var a := s.x * s.y
+		if a > max_area:
+			max_area = a
+			is_water = (b as Dictionary).get("water", false)
+	if floor_area <= 0.0 or max_area < floor_area * 0.45:
+		return {"hazard": false, "color": Color(0.5, 0.7, 0.9), "tag": "", "label": ""}
+	if is_water:
+		return {"hazard": true, "color": Color(0.3, 0.65, 1.0), "tag": "WATER", "label": "DEEP WATER — don't fall in"}
+	return {"hazard": true, "color": Color(1.0, 0.45, 0.15), "tag": "LAVA", "label": "MOLTEN LAVA — don't fall in"}
 
 ## Chapter index a level belongs to, or -1 (e.g. sandbox levels / custom order).
 static func chapter_index_of(id: String) -> int:
