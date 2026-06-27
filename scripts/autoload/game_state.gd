@@ -19,6 +19,7 @@ func announce_boss(boss: Node) -> void:
 ## Called by Damageable when the player damages something. Drives combat feedback.
 func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	register_hit()
+	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
 	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
 	# the punch that separates a good-feeling shooter from a flat one. A kill
@@ -375,9 +376,11 @@ func reset_level_stats() -> void:
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
+	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
 	stat_shots += 1
+	AIDirector.note_shot() # feed the adaptive director (shot count + weapon focus)
 
 func register_hit() -> void:
 	stat_hits += 1

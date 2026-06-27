@@ -604,7 +604,13 @@ func _process(delta: float) -> void:
 			if _overlord_cd <= 0.0:
 				_overlord_cd = randf_range(30.0, 50.0)
 				if _overlord_time <= 0.0:
-					_overlord_say(OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()])
+					# Prefer a profile-aware jab from the Adaptive AI Director (it
+					# references how you're actually playing); fall back to the
+					# generic taunt pool when it's still calibrating.
+					var line: String = AIDirector.taunt() if randf() < 0.6 else ""
+					if line == "":
+						line = OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()]
+					_overlord_say(line)
 	if _hit_flash > 0.0:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5

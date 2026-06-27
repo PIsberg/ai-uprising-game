@@ -44,7 +44,17 @@ static func maybe_apply(enemy: Node3D, chance: float = -1.0) -> void:
 		chance = roll_chance()
 	if randf() > chance:
 		return
-	apply(enemy, KINDS.pick_random())
+	# Adaptive AI Director: most elites come up as the affix that COUNTERS the
+	# player's current style (snipe -> swift rushers, out-aim it -> wardens you
+	# can't stagger, spam one gun -> shielded armour). Falls back to a random
+	# affix while the director is still calibrating or for variety.
+	var kind: String = KINDS.pick_random()
+	var ad := enemy.get_node_or_null("/root/AIDirector")
+	if ad and ad.has_method("counter_affix"):
+		var c: String = ad.counter_affix()
+		if c != "" and c in KINDS and randf() < 0.7:
+			kind = c
+	apply(enemy, kind)
 
 static func apply(enemy: Node3D, kind: String) -> void:
 	var eb := enemy as EnemyBase
