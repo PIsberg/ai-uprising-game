@@ -204,8 +204,8 @@ func _build_preview(vb: VBoxContainer) -> void:
 	_cam = Camera3D.new()
 	_cam.fov = 35.0
 	_cam.position = Vector3(0.3, 0.18, 0.45)
-	_cam.look_at(Vector3.ZERO, Vector3.UP)
 	_subvp.add_child(_cam)
+	# Orientation is set per-weapon in _frame_model (look_at needs the cam in-tree).
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-42, -36, 0)
 	key.light_energy = 2.8
@@ -258,6 +258,7 @@ func _show_model(scene_path: String) -> void:
 	var vm := w.get_node_or_null("Viewmodel") as Node3D
 	if vm:
 		w.remove_child(vm)
+		vm.owner = null # detach from the freed weapon scene's ownership
 		_model = vm
 		_turntable.add_child(vm)
 		_frame_model()

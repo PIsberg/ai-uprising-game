@@ -399,18 +399,20 @@ func _active() -> int:
 ## Keyboard + controller navigation: arrows / D-pad move the cursor along the
 ## strike route, Enter / A deploys, Esc / B backs out.
 func _unhandled_input(event: InputEvent) -> void:
+	# Mark handled BEFORE acting: _on_back / deploy change the scene, which frees
+	# this node — touching get_viewport() afterward then crashes on a null viewport.
 	if event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
 		_on_back()
-		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
 		_on_node_pressed(_sel)
-		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+		get_viewport().set_input_as_handled()
 		_move_sel(1)
-		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
-		_move_sel(-1)
 		get_viewport().set_input_as_handled()
+		_move_sel(-1)
 
 func _move_sel(d: int) -> void:
 	if _nodes.is_empty():
