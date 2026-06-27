@@ -1356,6 +1356,10 @@ func _build_lava(def: Dictionary) -> void:
 		lava.size = entry.get("size", Vector2(8, 3))
 		if entry.has("dmg"):
 			lava.damage_per_tick = entry["dmg"]
+		# Opt-in "river" recolor (coolant/acid/energy) — same path-forcing carve+burn.
+		if entry.has("color"):
+			lava.recolor = true
+			lava.hazard_color = entry["color"]
 		lava.position = entry.get("pos", Vector3.ZERO)
 		lava.rotation.y = deg_to_rad(entry.get("yaw", 0.0))
 		_nav_region.add_child(lava)
