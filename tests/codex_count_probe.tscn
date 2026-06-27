@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://ccodexcount0001"]
+
+[ext_resource type="Script" path="res://tests/codex_count_probe.gd" id="1_p"]
+
+[node name="CodexCountProbe" type="Node"]
+script = ExtResource("1_p")

@@ -237,6 +237,20 @@ func _build_level_select() -> void:
 	back.text = "Back to Menu"
 	back.pressed.connect(func(): _show_panel(_main))
 	_levels_panel.add_child(back)
+	# Warp unlocks the whole bestiary (discover_all_enemies above), so offer direct
+	# jumps to the codices right here — no need to back out and hunt for the buttons.
+	var bestiary := Button.new()
+	bestiary.custom_minimum_size = Vector2(420, 40)
+	bestiary.text = "▣  Enemy Codex (all unlocked)"
+	bestiary.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
+	bestiary.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/ui/encyclopedia.tscn"))
+	_levels_panel.add_child(bestiary)
+	var wcodex := Button.new()
+	wcodex.custom_minimum_size = Vector2(420, 40)
+	wcodex.text = "▣  Weapon Codex"
+	wcodex.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
+	wcodex.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/ui/weapon_codex.tscn"))
+	_levels_panel.add_child(wcodex)
 	# Scroll the (18-level) list so every entry — and the Back button — stays
 	# reachable on any screen height.
 	var scroll := ScrollContainer.new()

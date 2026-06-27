@@ -10,6 +10,7 @@ $probes = @(
   "res://tests/weapon_stats_probe.tscn",
   "res://tests/emp_probe.tscn",
   "res://tests/synth_probe.tscn",
+  "res://tests/codex_count_probe.tscn",
   "res://tests/teach_probe.tscn",
   "res://tests/objective_probe.tscn",
   "res://tests/hazard_probe.tscn",
