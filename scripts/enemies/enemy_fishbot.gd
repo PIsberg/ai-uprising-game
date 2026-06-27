@@ -22,11 +22,34 @@ func _ready() -> void:
 	drops_loot = true       # a basin mini-elite leaves supplies (landed on the gantry)
 	hp.max_health = max_health
 	hp.current_health = max_health
+	_build_fins()
 
-## The fins (tail/dorsal/pectoral) and harpoon nose are baked into the model
-## (EyeDrone_fishbot.glb, forked in Blender — see tools/blender/cfg_fishbot.json)
-## and tinted blue by RobotModel. Override the drone's orange thruster trail with
-## a slow rising stream of bubbles so it reads as swimming.
+## Glowing blue fins bolted onto the alien-flyer chassis (dorsal, swept tail, two
+## pectorals) so the unit reads as a robotic fish, not just another drone.
+func _build_fins() -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.3, 0.7, 1.0, 0.8)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.emission_enabled = true
+	mat.emission = Color(0.3, 0.75, 1.0)
+	mat.emission_energy_multiplier = 1.9
+	_fin(Vector3(0.03, 0.34, 0.26), Vector3(0.0, 0.92, 0.06), Vector3(16, 0, 0), mat)   # dorsal
+	_fin(Vector3(0.03, 0.3, 0.42), Vector3(0.0, 0.6, 0.42), Vector3(46, 0, 0), mat)     # tail (swept back)
+	_fin(Vector3(0.34, 0.03, 0.22), Vector3(0.4, 0.5, 0.0), Vector3(0, 0, -26), mat)    # pectoral L
+	_fin(Vector3(0.34, 0.03, 0.22), Vector3(-0.4, 0.5, 0.0), Vector3(0, 0, 26), mat)    # pectoral R
+
+func _fin(size: Vector3, pos: Vector3, rot_deg: Vector3, mat: Material) -> void:
+	var fin := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	fin.mesh = bm
+	fin.material_override = mat
+	fin.position = pos
+	fin.rotation = Vector3(deg_to_rad(rot_deg.x), deg_to_rad(rot_deg.y), deg_to_rad(rot_deg.z))
+	add_child(fin)
+
+## Override the drone's orange thruster trail with a slow rising stream of bubbles
+## so it reads as swimming.
 func _make_exhaust() -> void:
 	var p := CPUParticles3D.new()
 	p.amount = 16
