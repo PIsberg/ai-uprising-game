@@ -248,6 +248,8 @@ func set_state(new_state: State) -> void:
 		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
 		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
+		if elite != "":
+			GameState.teach_elite(elite) # one-off coaching toast the first time an affix engages you
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 

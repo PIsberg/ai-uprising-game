@@ -177,6 +177,7 @@ func _ready() -> void:
 	GameState.player_dealt_damage.connect(_on_player_dealt_damage)
 	GameState.enemy_killed.connect(_on_enemy_killed)
 	GameState.objective_blocked.connect(_show_toast)
+	GameState.teach_hint.connect(_show_toast) # one-off coaching toasts (elite affixes, hazards)
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
