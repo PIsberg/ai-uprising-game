@@ -442,24 +442,29 @@ func _apply_viewport() -> void:
 			vp.use_taa = false
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.MEDIUM:
+			# Less aggressive upscale than before (was 0.77) so the distance reads
+			# sharper; FSR2 reconstructs the rest.
 			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
-			vp.scaling_3d_scale = 0.77
+			vp.scaling_3d_scale = 0.85
 			vp.msaa_3d = Viewport.MSAA_DISABLED
 			vp.use_taa = false
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.HIGH:
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-			vp.scaling_3d_scale = 1.0
-			vp.msaa_3d = Viewport.MSAA_DISABLED
-			vp.use_taa = true
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-		Quality.ULTRA:
-			# MSAA under TAA: geometry edges resolved by hardware, shading
-			# stability by the temporal pass — the cleanest image we can make.
+			# Native res with MSAA, NOT TAA: TAA's temporal accumulation softens
+			# fine distant detail (the "blurry in the distance" look). MSAA keeps
+			# edges clean while the image stays crisp.
 			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
 			vp.scaling_3d_scale = 1.0
 			vp.msaa_3d = Viewport.MSAA_2X
-			vp.use_taa = true
+			vp.use_taa = false
+			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		Quality.ULTRA:
+			# Native res with heavy MSAA — the sharpest, cleanest image. TAA off so
+			# the distance stays crisp; 4x MSAA carries the edge anti-aliasing.
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+			vp.scaling_3d_scale = 1.0
+			vp.msaa_3d = Viewport.MSAA_4X
+			vp.use_taa = false
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	_apply_shadow_quality()
 
