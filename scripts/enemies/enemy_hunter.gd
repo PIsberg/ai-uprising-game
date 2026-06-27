@@ -24,6 +24,7 @@ func _ready() -> void:
 	attack_cooldown = 1.6
 	score_value = 120
 	stagger_threshold = 45.0
+	combat_strafe = true # circle-strafe skirmisher: stays mobile + banks into it (was a static plinker, unlike the stationary android)
 	super._ready()
 
 

@@ -17,7 +17,7 @@ extends EnemyBase
 
 @export_group("Artillery")
 @export var rocket_speed: float = 30.0
-@export var rocket_damage: float = 20.0
+@export var rocket_damage: float = 14.0   ## Per-rocket DIRECT hit (volleys of 3-5; the rocket now lands instead of relying on splash that excluded the player).
 @export var rocket_splash_radius: float = 5.0
 @export var rocket_splash_damage: float = 16.0
 @export var artillery_cooldown: float = 2.6

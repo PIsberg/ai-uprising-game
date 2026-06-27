@@ -28,6 +28,7 @@ func _ready() -> void:
 	attack_range = 30.0
 	preferred_range = 16.0
 	attack_cooldown = 2.0
+	telegraph_time = 0.0 # a strafing chin-gun fires on cadence — the generic wind-up + strafing left it barely landing a shot
 	score_value = 140
 	head_radius = 0.5
 	combat_strafe = true # circle-strafe while shooting (and bank into it)

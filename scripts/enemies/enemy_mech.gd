@@ -3,7 +3,7 @@ extends EnemyBase
 
 @export var projectile_scene: PackedScene
 @export var projectile_speed: float = 30.0
-@export var rocket_damage: float = 40.0
+@export var rocket_damage: float = 24.0   ## Direct hit on the player (the rocket now lands instead of relying on splash that excluded the player).
 @export var rocket_splash_radius: float = 4.5
 @export var rocket_splash_damage: float = 35.0
 @export var charge_threshold: float = 6.0
