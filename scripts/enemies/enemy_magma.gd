@@ -17,6 +17,7 @@ func _ready() -> void:
 	projectile_speed = 30.0
 	projectile_damage = 16.0
 	score_value = 130
+	drops_loot = true # a foundry mini-elite leaves supplies (landed on the catwalk)
 	hp.max_health = max_health
 	hp.current_health = max_health
 	_build_magma_look()

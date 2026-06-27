@@ -1138,11 +1138,34 @@ func _drop_loot() -> void:
 	var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 0.5, pos + Vector3.DOWN * 14.0, 1)
 	var hit := get_world_3d().direct_space_state.intersect_ray(q)
 	pos.y = hit.position.y if not hit.is_empty() else 0.0
+	# Hazard levels: a flier dying over open sea lands its drop on the floor INSIDE
+	# the lava/water (unreachable). A drop that landed on a walkway (high y) is fine;
+	# only relocate a floor-level landing that sits in a hazard footprint — snug it up
+	# beside the player, who is always on a safe gantry.
+	if pos.y < 1.0 and _pos_in_hazard(pos):
+		var pl := get_tree().get_first_node_in_group("player") as Node3D
+		if pl:
+			var toward: Vector3 = global_position - pl.global_position
+			toward.y = 0.0
+			var off: Vector3 = toward.normalized() * 1.6 if toward.length() > 0.2 else Vector3.FORWARD * 1.6
+			pos = pl.global_position + off
+			pos.y = pl.global_position.y
 	p.global_position = pos
 	# Pop in so the drop reads through the explosion.
 	p.scale = Vector3.ONE * 0.2
 	var ptw := p.create_tween()
 	ptw.tween_property(p, "scale", Vector3.ONE, 0.3) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+## True if a world point's footprint falls inside any active hazard bed (lava /
+## water). Used so supply drops aren't stranded in the sea on the hazard arenas.
+func _pos_in_hazard(p: Vector3) -> bool:
+	for h in get_tree().get_nodes_in_group("hazard"):
+		if h is LavaHazard:
+			var hp: Vector3 = (h as Node3D).global_position
+			var s: Vector2 = (h as LavaHazard).size
+			if absf(p.x - hp.x) <= s.x * 0.5 and absf(p.z - hp.z) <= s.y * 0.5:
+				return true
+	return false
 
 

@@ -19,6 +19,7 @@ func _ready() -> void:
 	score_value = 110
 	hover_amplitude = 0.5   # a deeper, fish-like undulation
 	hover_freq = 2.6
+	drops_loot = true       # a basin mini-elite leaves supplies (landed on the gantry)
 	hp.max_health = max_health
 	hp.current_health = max_health
 
