@@ -1338,8 +1338,13 @@ func _strip_lava_overlaps(def: Dictionary) -> void:
 			continue
 		var kept := []
 		for e in arr:
-			if e is Dictionary and e.has("pos") and _pos_in_lava(e["pos"], beds, 0.6):
-				continue # inside a bed → drop it
+			# Only floor-level clutter is dropped: an item raised onto a walkway /
+			# platform (y >= 1.0) bridges the bed on purpose — e.g. pickups on the
+			# catwalks of the lava/water arenas — so it must survive.
+			if e is Dictionary and e.has("pos"):
+				var p: Vector3 = e["pos"]
+				if p.y < 1.0 and _pos_in_lava(p, beds, 0.6):
+					continue # inside a bed at floor level → drop it
 			kept.append(e)
 		def[key] = kept
 

@@ -2393,6 +2393,7 @@ static func _lava_world() -> Dictionary:
 	return {
 		"name": "Vulcan Forge — The Molten Sea",
 		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
+		"music": "music_lava",
 		"sign": "VULCAN FORGE — DO NOT FALL",
 		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
 		"tasks": [
@@ -2422,7 +2423,7 @@ static func _lava_world() -> Dictionary:
 		],
 		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 22.0},
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 16.0},
 		],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
@@ -2430,13 +2431,18 @@ static func _lava_world() -> Dictionary:
 		],
 		"enemies": [
 			{"type": "magma", "pos": Vector3(-8, 3, -15)},
-			{"type": "seeker", "pos": Vector3(0, 3, -2)},
-			{"type": "magma", "pos": Vector3(14, 3, -5)},
 			{"type": "magma", "pos": Vector3(6, 3, 6)},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
+			{"type": "magma", "pos": Vector3(14, 3, -5), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
 			{"type": "magma", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "magma", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
+			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 		],
 	}
 
@@ -2446,6 +2452,7 @@ static func _water_world() -> Dictionary:
 	return {
 		"name": "Tidecore Basin — The Flooded Reactor",
 		"objective": "Cross the gantries over the flooded reactor and reach the lift",
+		"music": "music_water",
 		"sign": "TIDECORE BASIN — DEEP WATER",
 		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY"],
 		"tasks": [
@@ -2475,7 +2482,7 @@ static func _water_world() -> Dictionary:
 		],
 		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)),
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 12.0,
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
 				"color": Color(0.2, 0.55, 0.95)},
 		],
 		"lore": [
@@ -2484,12 +2491,17 @@ static func _water_world() -> Dictionary:
 		],
 		"enemies": [
 			{"type": "fishbot", "pos": Vector3(-8, 3, -15)},
-			{"type": "seeker", "pos": Vector3(0, 3, -2)},
-			{"type": "fishbot", "pos": Vector3(14, 3, -5)},
 			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
+			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
+			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 		],
 	}

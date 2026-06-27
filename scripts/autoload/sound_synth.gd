@@ -45,6 +45,8 @@ func _ready() -> void:
 	streams["music_gemini"] = _music_gemini()
 	streams["music_suburb"] = _music_suburb()
 	streams["music_archon"] = _music_archon()
+	streams["music_lava"] = _music_lava()
+	streams["music_water"] = _music_water()
 	streams["ambience_drone"] = _ambient_drone(4.0)
 	streams["ambience_wind"] = _ambient_wind(4.0)
 	streams["breathing"] = _breathing(4.0)
@@ -670,6 +672,30 @@ func _music_gemini() -> AudioStreamWAV:
 		"kick": 0.68, "bass": 0.16, "arp": 0.22, "hat": 0.12,
 		"drive": 0.8, "pad": 0.1, "saw_bass": false,
 		"snare": 0.38, "sidechain": 0.5, # light, airy groove — gentle pump
+	})
+
+## Vulcan Forge theme: fast, hot and pounding — a hard-pumping foundry drive for
+## the molten-sea catwalks. Dark minor key, sixteenth arp, heavy sub.
+func _music_lava() -> AudioStreamWAV:
+	var roots := [55.0, 55.0, 58.27, 49.0, 55.0, 55.0, 65.41, 61.74,
+		49.0, 49.0, 55.0, 58.27, 65.41, 61.74, 55.0, 49.0]
+	var arp := [110.0, 164.81, 220.0, 164.81, 130.81, 196.0, 261.63, 196.0]
+	return _music_track(134.0, roots, arp, {
+		"kick": 0.86, "bass": 0.26, "arp": 0.16, "hat": 0.14,
+		"drive": 1.18, "pad": 0.08, "arp_div": 0.25,
+		"snare": 0.55, "sidechain": 0.84, "sub": 0.7,
+	})
+
+## Tidecore Basin theme: slow, deep and flowing — a lush, brooding pad over a soft
+## square bass for the flooded-reactor gantries. Gentle pump, airy.
+func _music_water() -> AudioStreamWAV:
+	var roots := [49.0, 49.0, 55.0, 65.41, 49.0, 49.0, 58.27, 55.0,
+		43.65, 43.65, 49.0, 55.0, 58.27, 55.0, 49.0, 43.65]
+	var arp := [196.0, 233.08, 293.66, 233.08, 174.61, 220.0, 293.66, 220.0]
+	return _music_track(108.0, roots, arp, {
+		"kick": 0.7, "bass": 0.16, "arp": 0.18, "hat": 0.1,
+		"drive": 0.82, "pad": 0.14, "saw_bass": false,
+		"snare": 0.34, "sidechain": 0.55, "sub": 0.6,
 	})
 
 ## Brooding dusk-suburb theme: slow, sparse, heavy on the pad, light percussion.
