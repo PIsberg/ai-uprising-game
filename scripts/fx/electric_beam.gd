@@ -6,9 +6,9 @@ extends Node3D
 ## `update_beam(from, to, hit)` every frame while firing and `deactivate()`
 ## when the trigger releases.
 
-const SEGMENTS := 12       # denser polyline → more jagged, more electric
-const NUM_FORKS := 4       # branch tendrils that split off the bolt
-const FORK_SEGS := 3       # links per fork
+const SEGMENTS := 14       # denser polyline → more jagged, more electric
+const NUM_FORKS := 7       # branch tendrils that split off the bolt
+const FORK_SEGS := 4       # links per fork
 
 var color: Color = Color(0.45, 0.85, 1.0)
 
@@ -58,8 +58,8 @@ func _ready() -> void:
 	_core_mat.emission = color
 	_core_mat.emission_energy_multiplier = 3.0
 	_core_mesh = CylinderMesh.new()
-	_core_mesh.top_radius = 0.02
-	_core_mesh.bottom_radius = 0.03
+	_core_mesh.top_radius = 0.032
+	_core_mesh.bottom_radius = 0.046
 	_core_mesh.height = 1.0
 	_core_mesh.radial_segments = 8
 	_core_mesh.material = _core_mat
@@ -79,8 +79,8 @@ func _ready() -> void:
 	_glow_mat.emission = color
 	_glow_mat.emission_energy_multiplier = 1.6
 	var glow_mesh := CylinderMesh.new()
-	glow_mesh.top_radius = 0.09
-	glow_mesh.bottom_radius = 0.11
+	glow_mesh.top_radius = 0.13
+	glow_mesh.bottom_radius = 0.16
 	glow_mesh.height = 1.0
 	glow_mesh.radial_segments = 10
 	glow_mesh.material = _glow_mat
@@ -111,7 +111,7 @@ func _ready() -> void:
 	_hot_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_hot_core)
 	_arc_mesh = BoxMesh.new()
-	_arc_mesh.size = Vector3(0.012, 0.012, 1.0)
+	_arc_mesh.size = Vector3(0.02, 0.02, 1.0)
 	_arc_mesh.material = _mat
 	for _i in SEGMENTS:
 		var seg := MeshInstance3D.new()
@@ -141,8 +141,8 @@ func _ready() -> void:
 	add_child(_muzzle_light)
 	_sparks = CPUParticles3D.new()
 	_sparks.emitting = false
-	_sparks.amount = 14
-	_sparks.lifetime = 0.3
+	_sparks.amount = 22
+	_sparks.lifetime = 0.34
 	_sparks.spread = 70.0
 	_sparks.gravity = Vector3(0, -14, 0)
 	_sparks.initial_velocity_min = 2.0
@@ -226,15 +226,15 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 	var throb := 1.0 + 0.25 * sin(_time * 38.0)
 	_stretch_between(_core, from, to)
 	_core.visible = true
-	_core_mat.emission_energy_multiplier = 3.0 * throb
+	_core_mat.emission_energy_multiplier = 4.5 * throb
 	# Fat outer halo runs the whole bolt and breathes with the throb.
 	_stretch_between(_glow, from, to)
 	_glow.visible = true
-	_glow_mat.emission_energy_multiplier = 1.6 * throb
+	_glow_mat.emission_energy_multiplier = 2.4 * throb
 	# White-hot inner filament runs the full beam, slightly proud of the core.
 	_stretch_between(_hot_core, from, to)
 	_hot_core.visible = true
-	_hot_mat.emission_energy_multiplier = 12.0 * throb
+	_hot_mat.emission_energy_multiplier = 16.0 * throb
 	# Jittered arcs: a polyline of SEGMENTS links whose interior points wander
 	# off-axis each frame — re-randomizing every frame is what reads as electricity.
 	var prev := from
@@ -243,7 +243,7 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 		var p := from + dir * (dist * t)
 		if i < _arcs.size() - 1:
 			# Sag envelope: zero jitter at the muzzle and the hit, widest mid-beam.
-			var amp := 0.18 * sin(PI * t) * minf(dist * 0.2, 1.0)
+			var amp := 0.24 * sin(PI * t) * minf(dist * 0.2, 1.0)
 			p += Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 2.0 * amp
 		_stretch_between(_arcs[i], prev, p)
 		_arcs[i].visible = true
@@ -266,9 +266,9 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 			fi += 1
 	# Lights flicker slightly so nearby surfaces dance.
 	_muzzle_light.global_position = from
-	_muzzle_light.light_energy = randf_range(1.2, 2.0)
+	_muzzle_light.light_energy = randf_range(1.8, 2.8)
 	_impact_light.global_position = to - dir * 0.1
-	_impact_light.light_energy = randf_range(2.5, 4.5) if hit_something else 0.0
+	_impact_light.light_energy = randf_range(3.5, 6.0) if hit_something else 0.0
 	_sparks.global_position = to
 	_sparks.direction = -dir
 	_sparks.emitting = hit_something
