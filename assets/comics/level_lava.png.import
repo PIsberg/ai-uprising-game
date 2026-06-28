@@ -2,12 +2,12 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmhu1semy5tf2"
+uid="uid://dff4gtqqihq5h"
 valid=false
 
 [deps]
 
-source_file="res://assets/comics/level_assembly.png"
+source_file="res://assets/comics/level_lava.png"
 
 [params]
 
