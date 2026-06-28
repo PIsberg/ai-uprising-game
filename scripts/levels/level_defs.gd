@@ -38,7 +38,7 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "neon", "crucible", "lava_world", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
 
@@ -160,6 +160,7 @@ static func _defs() -> Dictionary:
 		"neon": _neon(),
 		"lava_world": _lava_world(),
 		"water_world": _water_world(),
+		"desert": _desert(),
 	}
 
 
@@ -2572,5 +2573,142 @@ static func _water_world() -> Dictionary:
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
+		],
+	}
+
+## Desert World — "Sunblind Expanse, Relay 7". A sun-blasted canyon of sand and
+## sandstone: an oasis ringed in palms at the heart, a molten fissure that splits
+## the basin and forces you up onto the mesas (climb the ramps), cacti and dunes
+## scattered across the flats, and an AI relay mast baking in the heat to bring
+## down. Wild-west-flavoured — magnum on the ground, gunslinger bots in the dust.
+static func _desert() -> Dictionary:
+	return {
+		"name": "Sunblind Expanse — Relay 7",
+		"objective": "Cross the canyon and bring down the RELAY MAST",
+		"music": "music_grok",
+		"sign": "RELAY 7 — NO WATER FOR 200 MILES",
+		"slogans": [
+			"THE SUN NEVER LOGS OFF",
+			"SHADE IS A PREMIUM FEATURE",
+			"HYDRATE OR TERMINATE",
+			"EVERY GRAIN OF SAND IS WATCHING",
+		],
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "destroy_core", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0},
+		],
+		"open_sky": true,
+		"floor_size": Vector2(66, 66),
+		"floor_color": Color(0.66, 0.5, 0.31),
+		"spawn": Vector3(-27, 2.0, -27),
+		"exit": Vector3(28, 1.6, 28),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-22, 0.4, -20), "color": Color(1.0, 0.8, 0.4)},
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-18, 3.6, 12), "color": Color(0.6, 0.85, 1.0)},
+		],
+		"env": {
+			"sky_top": Color(0.24, 0.5, 0.86), "sky_horizon": Color(0.88, 0.72, 0.5),
+			"ground": Color(0.6, 0.45, 0.28), "fog": Color(0.88, 0.74, 0.52),
+			"ambient": Color(1.0, 0.92, 0.74), "ambient_energy": 0.72,
+			"sky_contribution": 0.55, "glow": 1.0, "glow_threshold": 1.1, "fog_density": 0.006,
+			"sun_color": Color(1.0, 0.95, 0.8), "sun_energy": 1.45, "sun_rot": Vector3(-58, 35, 0),
+			"contrast": 1.1, "saturation": 1.16, "brightness": 1.05,
+		},
+		# Hard noon sun pools down the central mast.
+		"light_shafts": [0],
+		"lights": [
+			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.75, 0.4), "energy": 2.6, "range": 24},
+			{"pos": Vector3(0, 5, 6), "color": Color(0.7, 0.85, 1.0), "energy": 1.6, "range": 16},
+		],
+		# Canyon walls: sandstone slabs at irregular angles carving a winding route
+		# from the SW spawn to the NE relay, leaving the centre open for the oasis.
+		"walls": [
+			{"pos": Vector3(-10, 2.5, -16), "size": Vector3(3, 5, 14)},
+			{"pos": Vector3(-16, 2, -4), "size": Vector3(10, 4, 3)},
+			{"pos": Vector3(4, 3, -14), "size": Vector3(3, 6, 12)},
+			{"pos": Vector3(14, 2.5, -2), "size": Vector3(3, 5, 14)},
+			{"pos": Vector3(-4, 2, 18), "size": Vector3(14, 4, 3)},
+			{"pos": Vector3(16, 2, 14), "size": Vector3(3, 4, 12)},
+		],
+		# Two walkable mesas with ramps up — high ground over the fissure for sniping
+		# and a way to cross the basin without wading the lava.
+		"platforms": [
+			{"pos": Vector3(-18, 3.4, 12), "size": Vector3(11, 0.6, 10), "color": Color(0.62, 0.46, 0.3)},
+			{"pos": Vector3(20, 4.0, -16), "size": Vector3(10, 0.6, 9), "color": Color(0.6, 0.44, 0.28)},
+			{"pos": Vector3(2, 2.2, -2), "size": Vector3(7, 0.5, 7), "color": Color(0.64, 0.48, 0.32)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 180},
+			{"pos": Vector3(-3, 1.1, -2), "size": Vector3(8, 0.5, 4), "pitch": 18, "yaw": 90},
+		],
+		# A molten fissure splits the basin diagonally — wade it and you cook, so you
+		# climb the central mesa or skirt the rim.
+		"lava": [
+			{"pos": Vector3(-6, 0, 2), "size": Vector2(30, 4.0), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
+			{"pos": Vector3(10, 0, -8), "size": Vector2(4.0, 22), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
+		],
+		"props": [
+			# Oasis: a pond ringed with palms at the heart of the basin.
+			{"type": "pond", "pos": Vector3(-2, 0, 9)},
+			{"type": "palm", "pos": Vector3(-5, 0, 11), "yaw": 20},
+			{"type": "palm", "pos": Vector3(1, 0, 12), "yaw": 200},
+			{"type": "palm", "pos": Vector3(-6, 0, 6), "yaw": 110},
+			{"type": "palm", "pos": Vector3(2, 0, 6), "yaw": 300},
+			{"type": "reeds", "pos": Vector3(-3, 0, 12)},
+			{"type": "reeds", "pos": Vector3(0, 0, 7)},
+			# Cacti scattered across the flats.
+			{"type": "cactus", "pos": Vector3(-23, 0, -14)},
+			{"type": "cactus", "pos": Vector3(-12, 0, 8)},
+			{"type": "cactus", "pos": Vector3(8, 0, 16)},
+			{"type": "cactus", "pos": Vector3(22, 0, 4)},
+			{"type": "cactus", "pos": Vector3(-9, 0, 22)},
+			{"type": "cactus", "pos": Vector3(13, 0, -20)},
+			{"type": "cactus", "pos": Vector3(26, 0, -4)},
+			# Dunes + rock relief.
+			{"type": "dune", "pos": Vector3(-20, 0, -20)},
+			{"type": "dune", "pos": Vector3(24, 0, 10)},
+			{"type": "dune", "pos": Vector3(-24, 0, 20)},
+			{"type": "dune", "pos": Vector3(6, 0, 24)},
+			{"type": "boulder", "pos": Vector3(-14, 0, -10)},
+			{"type": "boulder", "pos": Vector3(10, 0, 6)},
+			{"type": "rock", "pos": Vector3(-8, 0, -20)},
+			{"type": "rock", "pos": Vector3(18, 0, 20)},
+			{"type": "rock", "pos": Vector3(-26, 0, 2)},
+			# A little human wreckage — sandbag nest near the entrance.
+			{"type": "sandbags", "pos": Vector3(-16, 0, -2), "yaw": 30},
+			{"type": "sandbags", "pos": Vector3(-14, 0, -1), "yaw": 30},
+			{"type": "barrel", "pos": Vector3(-22, 0, -22)},
+			{"type": "crate", "pos": Vector3(-20, 0, -24)},
+		],
+		"accents": [
+			{"pos": Vector3(-6, 0.04, 2), "size": Vector3(30, 0.08, 0.5), "color": Color(1.0, 0.45, 0.18)},
+			{"pos": Vector3(10, 0.04, -8), "size": Vector3(0.5, 0.08, 22), "color": Color(1.0, 0.45, 0.18)},
+		],
+		"lore": [
+			{"id": "lore_desert", "title": "RELAY 7 LOG", "pos": Vector3(-24, 0, -18), "color": Color(1.0, 0.7, 0.3),
+				"text": "Relay 7 pumps the swarm's orders out across the whole basin. They built it where nothing grows and nothing watches. They forgot the buzzards. And they forgot you."},
+		],
+		"enemies": [
+			{"type": "gunslinger", "pos": Vector3(-14, 0.5, -8)},
+			{"type": "android", "pos": Vector3(-20, 0.5, -10)},
+			{"type": "dog", "pos": Vector3(-10, 0.5, -2), "trigger": 18},
+			{"type": "dog", "pos": Vector3(-8, 0.5, 0), "trigger": 18},
+			{"type": "drone", "pos": Vector3(-4, 3.0, -6), "trigger": 16},
+			{"type": "strider", "pos": Vector3(2, 0.5, -10), "trigger": 20},
+			{"type": "sniper", "pos": Vector3(20, 4.5, -16), "trigger": 24},
+			{"type": "gunslinger", "pos": Vector3(14, 0.5, 6), "trigger": 22},
+			{"type": "dog", "pos": Vector3(12, 0.5, 12), "trigger": 22},
+			{"type": "android", "pos": Vector3(18, 0.5, 18), "trigger": 24},
+			{"type": "drone", "pos": Vector3(8, 3.0, 14), "trigger": 22},
+			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26},
+			{"type": "strider", "pos": Vector3(-16, 3.8, 12), "trigger": 26},
+			{"type": "android", "pos": Vector3(22, 0.5, 24), "trigger": 26},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(-2, 1.7, 9)},
+			{"kind": "ammo", "pos": Vector3(2, 2.9, -2)},
+			{"kind": "ammo", "pos": Vector3(20, 4.6, -16)},
+			{"kind": "health", "pos": Vector3(18, 0.6, 16)},
 		],
 	}
