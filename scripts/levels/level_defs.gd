@@ -2517,7 +2517,30 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(-14, 4, -14), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16},
 			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
 		],
-		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
+		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
+		# arena has a high sniping vantage, not just one flat plane of gantries.
+		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)) + [
+			{"pos": Vector3(0, 2.4, -1), "size": Vector3(4, 0.4, 4), "color": Color(0.26, 0.22, 0.2)},
+		],
+		"ramps": [
+			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
+		],
+		# Foundry dressing: smelter columns rising out of the molten pools to break
+		# sightlines + crates/canisters/servers for light cover on the islands.
+		"props": [
+			{"type": "pillar", "pos": Vector3(-9.5, 0, -9.5)},
+			{"type": "pillar", "pos": Vector3(9.5, 0, 9.5)},
+			{"type": "pillar", "pos": Vector3(-9.5, 0, 9.5)},
+			{"type": "canister", "pos": Vector3(-16, 1.6, -13)},
+			{"type": "crate_stack", "pos": Vector3(-14, 1.6, -16)},
+			{"type": "barrel", "pos": Vector3(15, 1.6, -16)},
+			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
+			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
+			{"type": "crate_stack", "pos": Vector3(13, 1.6, 13)},
+			{"type": "barrel", "pos": Vector3(-8, 1.6, 11)},
+			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
+			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
+		],
 		# Four recessed molten pools in the quadrants instead of one wall-to-wall
 		# sea: ~40% lava (was 100%), leaving solid walkable floor cross-lanes between
 		# them + the catwalks. Less fill-rate (smaller shader area) and far more
@@ -2583,10 +2606,33 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
 			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
 		],
-		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)),
+		# Gantry web + a raised control perch over the central hub (ramp up) for a
+		# dry sniping vantage above the flooded floor.
+		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)) + [
+			{"pos": Vector3(0, 2.4, -1), "size": Vector3(4, 0.4, 4), "color": Color(0.2, 0.24, 0.28)},
+		],
+		"ramps": [
+			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
+		],
 		"lava": [
 			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
 				"color": Color(0.2, 0.55, 0.95)},
+		],
+		# Reactor dressing: drowned coolant columns standing out of the water to
+		# break sightlines + canisters/servers/crates for cover on the gantries.
+		"props": [
+			{"type": "pillar", "pos": Vector3(-9.5, 0, -9.5)},
+			{"type": "pillar", "pos": Vector3(9.5, 0, 9.5)},
+			{"type": "pillar", "pos": Vector3(-9.5, 0, 9.5)},
+			{"type": "pillar", "pos": Vector3(9.5, 0, -9.5)},
+			{"type": "canister", "pos": Vector3(-16, 1.6, -13)},
+			{"type": "crate", "pos": Vector3(-14, 1.6, -16)},
+			{"type": "barrier", "pos": Vector3(15, 1.6, -16), "yaw": 90},
+			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
+			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
+			{"type": "crate", "pos": Vector3(13, 1.6, 13)},
+			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
+			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
 		],
 		"lore": [
 			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(14, 1.7, 14), "color": Color(0.4, 0.8, 1.0),
