@@ -1062,8 +1062,21 @@ static func _alien() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.4, 1.0, 0.45)},
+			# Glowing footings for the alien monoliths (the cover walls below).
+			{"pos": Vector3(-8, 0.05, -2), "size": Vector3(2.6, 0.1, 5.6), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(9, 0.05, 2), "size": Vector3(2.6, 0.1, 5.6), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(-2, 0.05, 20), "size": Vector3(6.6, 0.1, 2.6), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(4, 0.05, -16), "size": Vector3(5.6, 0.1, 2.6), "color": Color(0.4, 1.0, 0.45)},
 		],
 		"sign": "THE HOLLOW",
+		# Off-world monoliths break up the wide-open hollow, giving cover from the
+		# snipers/gunners as you push the long crossing toward the beacon.
+		"walls": [
+			{"pos": Vector3(-8, 2.0, -2), "size": Vector3(2, 4, 5)},
+			{"pos": Vector3(9, 2.0, 2), "size": Vector3(2, 4, 5)},
+			{"pos": Vector3(-2, 1.5, 20), "size": Vector3(6, 3, 2)},
+			{"pos": Vector3(4, 2.5, -16), "size": Vector3(5, 5, 2)},
+		],
 		# Bio-acid runoff from the beacon: green channels you have to route around.
 		"lava": [
 			{"pos": Vector3(-12,0,-10), "size": Vector2(46,4), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
@@ -1073,9 +1086,11 @@ static func _alien() -> Dictionary:
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-22.8, 3.0, 22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(22.8, 3.0, -22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-22.8, 1.5, 29.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(22.8, 1.5, -29.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
 		],
 		"slogans": [
 			"WELCOME, OFF-WORLD GUESTS",
