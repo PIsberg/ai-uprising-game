@@ -1,0 +1,47 @@
+[gd_scene load_steps=9 format=3 uid="uid://b0enemy0warbot01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_warbot.gd" id="1_war"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" uid="uid://b0fx0tracerred" path="res://scenes/fx/tracer_red.tscn" id="3_tracer"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="4_mf"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="5_rm"]
+[ext_resource type="PackedScene" uid="uid://bug4yu6o8yvc3" path="res://assets/models/robots/Robot.glb" id="6_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.45
+height = 1.9
+
+[node name="Warbot" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_war")
+tracer_scene = ExtResource("3_tracer")
+muzzle_flash_scene = ExtResource("4_mf")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("5_rm")
+tint = Color(0.85, 0.88, 0.95, 1)
+eye_glow = 0.0
+anim_walk = ""
+
+[node name="Mesh" parent="Model" instance=ExtResource("6_model")]
+transform = Transform3D(-1.2, 0, 0, 0, 1.2, 0, 0, 0, -1.2, 0, 0, 0)
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.3)
+
+[node name="Muzzle" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 1.08, -1.05)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 150.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.55
+height = 1.9
+avoidance_enabled = true

@@ -44,6 +44,13 @@ const ENEMY_SCENES := {
 	"server": preload("res://scenes/enemies/server.tscn"),
 	"magma": preload("res://scenes/enemies/magma.tscn"),
 	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
+	"warbot": preload("res://scenes/enemies/warbot.tscn"),
+	"enforcer": preload("res://scenes/enemies/enforcer.tscn"),
+	"ripper": preload("res://scenes/enemies/ripper.tscn"),
+	"optic": preload("res://scenes/enemies/optic.tscn"),
+	"roller": preload("res://scenes/enemies/roller.tscn"),
+	"shark": preload("res://scenes/enemies/shark.tscn"),
+	"gunslinger": preload("res://scenes/enemies/gunslinger.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 

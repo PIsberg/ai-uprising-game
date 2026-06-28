@@ -29,6 +29,13 @@ extends Node3D
 @export var walk_speed_scale: float = 1.4 ## Walk clip speed at full ground speed.
 @export var lean_max: float = 0.14 ## Max forward/back lean (radians) from movement.
 @export var bank_max: float = 0.22 ## Max roll into lateral movement (radians). Flyers auto-bank harder.
+## Auto-fit: when > 0, the imported mesh is scaled at runtime so its height is
+## this many metres and stood on the floor (feet at y=0), regardless of the
+## model's authored scale/pivot. Lets enemy scenes drop in any model without
+## hand-tuning a transform. 0 = use the Mesh node's authored transform as-is.
+@export var fit_height: float = 0.0
+@export var fit_yaw_deg: float = 0.0 ## Yaw applied after fitting (180 if the model faces +Z).
+@export var fit_ground: bool = true ## Stand feet on the floor; false = center vertically (flyers).
 
 var _anim: AnimationPlayer
 var _parent: EnemyBase
@@ -58,6 +65,11 @@ func _ready() -> void:
 			_mesh = c
 			_mesh_base = (c as Node3D).transform
 			break
+	# Auto-fit: size + stand the model at runtime. Deferred so any rig's bones have
+	# posed (skinned meshes need their posed bounds, not the rest-frame transform).
+	if fit_height > 0.0 and _mesh:
+		_mesh.visible = false
+		_apply_fit.call_deferred()
 	# Flyers (no walk gait) bank like aircraft; walkers just lean a little.
 	if anim_walk == "":
 		bank_max *= 2.6
@@ -71,6 +83,56 @@ func _ready() -> void:
 			_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 	if _anim.has_animation(anim_idle):
 		_anim.play(anim_idle)
+
+## Scale the imported mesh so it stands `fit_height` metres tall, centred on
+## x/z, feet on the floor (or vertically centred for flyers), then yaw it. The
+## fitted transform becomes the lean/bank base so movement tilt composes on top.
+func _apply_fit() -> void:
+	if _mesh == null:
+		return
+	_mesh.transform = Transform3D.IDENTITY
+	# Skinned models report a misleading rest-pose mesh AABB — measure the POSED
+	# skeleton instead (after the idle clip has had a few frames to pose it).
+	var skel := _mesh.find_child("Skeleton3D", true, false) as Skeleton3D
+	var ab := AABB()
+	var first := true
+	if skel and skel.get_bone_count() > 0:
+		for i in 3:
+			await get_tree().process_frame
+		if not is_instance_valid(_mesh):
+			return
+		var inv_s := _mesh.global_transform.affine_inverse()
+		for b in skel.get_bone_count():
+			var p: Vector3 = inv_s * (skel.global_transform * skel.get_bone_global_pose(b)).origin
+			if first:
+				ab = AABB(p, Vector3.ZERO); first = false
+			else:
+				ab = ab.expand(p)
+		ab = ab.grow(ab.size.length() * 0.06) # bones sit inside the mesh skin
+	else:
+		var meshes: Array[MeshInstance3D] = _collect_meshes(_mesh)
+		var inv := _mesh.global_transform.affine_inverse()
+		for mi in meshes:
+			if mi.mesh == null:
+				continue
+			var part: AABB = inv * (mi.global_transform * mi.mesh.get_aabb())
+			if first:
+				ab = part; first = false
+			else:
+				ab = ab.merge(part)
+	if first:
+		_mesh.visible = true
+		return
+	var h := ab.size.y
+	if h > 0.0001:
+		var s := fit_height / h
+		var c := ab.get_center()
+		var oy := -ab.position.y * s if fit_ground else -c.y * s
+		_mesh.transform = Transform3D(
+			Basis.from_euler(Vector3(0, deg_to_rad(fit_yaw_deg), 0)).scaled(Vector3(s, s, s)),
+			Vector3(-c.x * s, oy, -c.z * s))
+	_mesh_base = _mesh.transform
+	_mesh.visible = true
 
 ## Manual override hook for enemy specials (e.g. the sniper's charge-up).
 func play_named(anim_name: String, blend: float = 0.2) -> void:

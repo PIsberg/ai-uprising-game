@@ -231,12 +231,30 @@ func _fit_model() -> void:
 	if meshes.is_empty():
 		return
 	var inv := _model.global_transform.affine_inverse()
-	var ab := AABB()
-	var first := true
+	# Some imported mechs ship welded to a flat display slab. Measure each mesh in
+	# MODEL space (post-transform) and hide any wide, flat, low-sitting slab so the
+	# unit isn't standing on a floating grid in the level.
+	var parts := {}
+	var lowest := 1e9
 	for mi in meshes:
 		if mi.mesh == null:
 			continue
-		var part: AABB = inv * (mi.global_transform * mi.mesh.get_aabb())
+		var p: AABB = inv * (mi.global_transform * mi.mesh.get_aabb())
+		parts[mi] = p
+		lowest = minf(lowest, p.position.y)
+	for mi in parts:
+		var p: AABB = parts[mi]
+		var foot: float = maxf(p.size.x, p.size.z)
+		var flat := p.size.y < foot * 0.16
+		var low := p.position.y < lowest + maxf(0.2, p.size.y)
+		if foot > 1.5 and flat and low:
+			(mi as MeshInstance3D).visible = false
+	var ab := AABB()
+	var first := true
+	for mi in parts:
+		if not (mi as MeshInstance3D).visible:
+			continue
+		var part: AABB = parts[mi]
 		if first:
 			ab = part
 			first = false

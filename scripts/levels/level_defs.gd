@@ -455,6 +455,9 @@ static func _neon() -> Dictionary:
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
 			{"type": "hunter", "pos": Vector3(-8, 0.5, -4)},
+			# GUNSLINGER duelists holding the arcade lanes.
+			{"type": "gunslinger", "pos": Vector3(12, 0.5, 4)},
+			{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10), "trigger": 16},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
 			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
@@ -560,6 +563,11 @@ static func _sublevel() -> Dictionary:
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
+			# OPTICON cutting-units and a ROLLER — the sublevel's own custodial fleet,
+			# turned hostile.
+			{"type": "optic", "pos": Vector3(8, 0.5, 4)},
+			{"type": "optic", "pos": Vector3(-8, 0.5, -6), "trigger": 14},
+			{"type": "roller", "pos": Vector3(0, 0.5, -10), "trigger": 18},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 8), "trigger": 16},
 			{"type": "reaper", "pos": Vector3(10, 0.5, 10), "trigger": 14},
 			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
@@ -1527,9 +1535,12 @@ static func _assembly() -> Dictionary:
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and striders/mech press in — fight to the reactor.
 		"enemies": [
-			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
-			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			# Fresh off the line: WAR-BOTS, all grins until they lock on.
+			{"type": "warbot", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "warbot", "pos": Vector3(6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(0, 0.5, -8)},
 			{"type": "strider", "pos": Vector3(0, 0.5, 8)},
+			{"type": "warbot", "pos": Vector3(10, 0.5, 10), "trigger": 24},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
 			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
@@ -1543,6 +1554,10 @@ static func _assembly() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26},
 			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28},
 			{"type": "skitter", "pos": Vector3(0, 0.5, -16), "count": 6, "trigger": 22},
+			# Fresh off the line: an ENFORCER squad and a RIPPER minigun platform.
+			{"type": "enforcer", "pos": Vector3(8, 0.5, -14), "trigger": 24},
+			{"type": "enforcer", "pos": Vector3(-8, 0.5, 14), "trigger": 26},
+			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28},
 		],
 	}
 
@@ -2517,9 +2532,13 @@ static func _water_world() -> Dictionary:
 		"enemies": [
 			{"type": "fishbot", "pos": Vector3(-8, 3, -15)},
 			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
+			# RAZORFIN sharks lurk under the surface and breach at you on the gantries.
+			{"type": "shark", "pos": Vector3(-4, 0, -8)},
+			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16},
 			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
 			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
 			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
+			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 22},
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12},

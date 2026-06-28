@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://csmasherview001"]
+[gd_scene format=3 uid="uid://cr5wnw8bqgpum"]
 
 [ext_resource type="Script" path="res://tests/smasher_view_probe.gd" id="1_p"]
 

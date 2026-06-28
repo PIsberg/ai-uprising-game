@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="PackedScene" uid="uid://b0fx0tracerred" path="res://scenes/fx/tracer_red.tscn" id="3_tracer"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="4_mf"]
-[ext_resource type="PackedScene" uid="uid://i0g402crie8t" path="res://assets/models/robots/quaternius_heavy.glb" id="5_model"]
+[ext_resource type="PackedScene" uid="uid://btlgoc8g6pece" path="res://assets/models/robots/combat_robot.glb" id="5_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.45

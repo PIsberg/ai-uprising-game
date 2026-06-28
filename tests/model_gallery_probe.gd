@@ -5,10 +5,7 @@ extends Node3D
 
 const OUT := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private/4fbdff7a-4323-435c-af31-9542c7153dc8/scratchpad/model_gallery.png"
 const MODELS := [
-	"res://assets/models/robots/George_smasher.glb",
-	"res://assets/models/robots/RobotExpressive.glb",
-	"res://assets/models/robots/quaternius_gunner.glb",
-	"res://assets/models/robots/quaternius_heavy.glb",
+	"res://assets/models/robots/Robot.glb",
 ]
 
 func _ready() -> void:
@@ -24,16 +21,17 @@ func _ready() -> void:
 	sun.rotation_degrees = Vector3(-45, -40, 0)
 	sun.light_energy = 1.6
 	add_child(sun)
-	var x := -4.5
 	for path in MODELS:
 		if ResourceLoader.exists(path):
 			var m: Node3D = load(path).instantiate()
 			add_child(m)
-			m.global_position = Vector3(x, 0, 0)
-		x += 3.0
+			m.global_position = Vector3.ZERO
+			for mi in m.find_children("*", "MeshInstance3D", true, false):
+				if mi.mesh:
+					print("AABB ", (mi as MeshInstance3D).mesh.get_aabb())
 	var cam := Camera3D.new()
-	cam.position = Vector3(0, 1.6, 11.0)
-	cam.look_at_from_position(Vector3(0, 1.6, 11.0), Vector3(0, 1.2, 0), Vector3.UP)
+	cam.position = Vector3(0, 1.1, 2.3)
+	cam.look_at_from_position(Vector3(0, 1.1, 2.3), Vector3(0, 1.05, 0), Vector3.UP)
 	add_child(cam)
 	_shoot.call_deferred()
 

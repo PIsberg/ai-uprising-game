@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3 uid="uid://b0enemy0roller01"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_roller.gd" id="1_rol"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
+[ext_resource type="PackedScene" uid="uid://0s8my1hiffnv" path="res://assets/models/robots/wheeled_robot.glb" id="4_model"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule_col"]
+radius = 0.45
+height = 1.8
+
+[node name="Roller" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_rol")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Capsule_col")
+
+[node name="Model" type="Node3D" parent="."]
+script = ExtResource("3_rm")
+menace_color = Color(1, 0.55, 0.1, 1)
+eye_glow = 0.0
+anim_walk = ""
+fit_height = 1.8
+fit_yaw_deg = 180.0
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, -0.3)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 150.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.5
+height = 1.8
+avoidance_enabled = true

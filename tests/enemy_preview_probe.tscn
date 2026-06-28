@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cenemyprev00001"]
+
+[ext_resource type="Script" path="res://tests/enemy_preview_probe.gd" id="1_p"]
+
+[node name="EnemyPreviewProbe" type="Node3D"]
+script = ExtResource("1_p")
