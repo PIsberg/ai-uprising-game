@@ -15,7 +15,7 @@ const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
-	"magma", "fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
+	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
 	"whirlwind", "breaker",
 	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
 ]
@@ -27,13 +27,6 @@ const ENTRIES := {
 		"strengths": ["Fast and erratic — hard to track in the air", "Attacks from angles ground units can't"],
 		"weaknesses": ["Paper-thin armour — one solid hit drops it", "Predictable dive telegraphs its approach"],
 		"weapons": ["AR-7 Pulse Rifle", "MK-VII Longshot", "M9 Sidearm"],
-	},
-	"magma": {
-		"scene": "res://scenes/enemies/magma.tscn", "name": "MAGMA WRAITH", "scale": 1.0, "y": 1.6,
-		"desc": "A molten foundry drone crowned in glowing horns. Hovers over the lava and lobs scorching bolts while you balance on the catwalks.",
-		"strengths": ["Up-armoured — soaks more than a recon drone", "Fights over the lava where a miss means a fall"],
-		"weaknesses": ["Slower and more deliberate than a recon drone", "Big glowing silhouette — easy to track"],
-		"weapons": ["AR-7 Pulse Rifle", "PL-1 Plasma Launcher", "MK-VII Longshot"],
 	},
 	"fishbot": {
 		"scene": "res://scenes/enemies/fishbot.tscn", "name": "ANGLER UNIT", "scale": 1.0, "y": 1.6, "light": 0.5,
@@ -232,7 +225,7 @@ const ENTRIES := {
 		"weapons": ["TPX-9 Tempest Coil", "GRK-X Devastator", "OMEGA-X Annihilator"],
 	},
 	"dog": {
-		"scene": "res://scenes/enemies/dog.tscn", "name": "K-9 HUNTER", "scale": 1.4, "y": 0.0,
+		"scene": "res://scenes/enemies/dog.tscn", "name": "K-9 HUNTER", "scale": 1.05, "y": 0.0, "yaw": 40.0,
 		"desc": "A four-legged robot attack-hound. It sprints the gap in a heartbeat, hunts in packs, and lunges in to bite. Fragile — but if one closes, more are right behind it.",
 		"strengths": ["Blistering speed — eats distance instantly", "Hunts in packs and flanks", "Low to the ground, hard to track far off"],
 		"weaknesses": ["Thin armour — drops to a solid hit", "No ranged attack — kill it before it reaches you"],

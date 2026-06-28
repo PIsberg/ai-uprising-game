@@ -2152,6 +2152,8 @@ static func _grok() -> Dictionary:
 			{"type": "drone", "pos": Vector3(18, 2.5, -6), "trigger": 24},
 			{"type": "spider", "pos": Vector3(-6, 0.5, 6), "trigger": 16},
 			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20},
+			{"type": "dog", "pos": Vector3(-10, 0.5, 2), "trigger": 18},
+			{"type": "dog", "pos": Vector3(10, 0.5, 0), "trigger": 18},
 			{"type": "sniper", "pos": Vector3(-18, 0.0, 18), "trigger": 26},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
 			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24},

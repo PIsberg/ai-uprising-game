@@ -56,6 +56,11 @@ var _cur_data: WeaponData
 var _fire_cd: float = 0.8
 var _model_base_pos: Vector3 = Vector3.ZERO
 var _recoil_kick: float = 0.0
+# Down-range shot FX (tracers / projectiles / beam) spawned in the preview world,
+# so the Codex shows each gun's REAL shot leaving the barrel — not just a flash.
+var _fx_root: Node3D
+var _beam: ElectricBeam
+var _beam_hold: float = 0.0   ## seconds the beam stays lit after a "fire" tick
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -241,6 +246,10 @@ func _build_preview(vb: VBoxContainer) -> void:
 	env.glow_enabled = true
 	we.environment = env
 	_subvp.add_child(we)
+	# A static world node the shot FX live in (NOT the turntable — once a bolt
+	# leaves the barrel it flies straight; only the gun keeps spinning).
+	_fx_root = Node3D.new()
+	_subvp.add_child(_fx_root)
 	var box := SubViewportContainer.new()
 	box.stretch = true
 	box.custom_minimum_size = Vector2(0, 200)
@@ -313,8 +322,15 @@ func _process(delta: float) -> void:
 	if _model and is_instance_valid(_model):
 		_recoil_kick = move_toward(_recoil_kick, 0.0, delta * 0.35)
 		_model.position = _model_base_pos + Vector3(0.0, 0.0, _recoil_kick)
-	# Auto-fire the previewed weapon on a calm cadence so its muzzle flash, tint
-	# and recoil read at a glance — a live check that each gun's FX is wired right.
+	# Beam weapons fire a sustained electric beam (held, like in-game) that tracks
+	# the spinning barrel. Everything else auto-fires its real shot on a cadence.
+	if _cur_data and _cur_data.fire_mode == WeaponData.FireMode.BEAM:
+		_drive_beam(true)
+		return
+	_drive_beam(false)
+	# Auto-fire the previewed weapon on a calm cadence so its muzzle flash, tint,
+	# recoil AND real shot (tracer / projectile) read at a glance — a live check
+	# that each gun's FX is wired right.
 	_fire_cd -= delta
 	if _fire_cd <= 0.0:
 		_fire_cd = 1.4
@@ -336,8 +352,68 @@ func _fire_burst(n: int) -> void:
 		if _cur_data == null or not is_instance_valid(_muzzle):
 			return
 		_spawn_flash()
+		_spawn_downrange()
 		if i < n - 1:
 			await get_tree().create_timer(0.09).timeout
+
+## Fire the gun's REAL down-range shot into the preview world: a hitscan gun's
+## tracer bolt, or a projectile gun's actual round (gravity zeroed and freed before
+## it can detonate, so it just flies the barrel like in-game). Beam guns are driven
+## separately by _drive_beam.
+func _spawn_downrange() -> void:
+	if _cur_data == null or not is_instance_valid(_muzzle) or _fx_root == null:
+		return
+	var from: Vector3 = _muzzle.global_position
+	var fwd: Vector3 = -_muzzle.global_transform.basis.z.normalized()
+	if _cur_data.projectile_scene != null:
+		_spawn_preview_projectile(from, fwd)
+	elif _cur_data.tracer_scene != null:
+		_spawn_preview_tracer(from, from + fwd * 2.6)
+
+func _spawn_preview_tracer(from: Vector3, to: Vector3) -> void:
+	var t := _cur_data.tracer_scene.instantiate()
+	_fx_root.add_child(t)
+	# Bolt mode at a calm speed so the shot visibly travels across the small stage.
+	if "bolt" in t:
+		t.bolt = true
+		t.bolt_speed = 7.0
+		t.bolt_length = 0.7
+		t.bolt_width = 1.4
+	if t.has_method("setup"):
+		t.setup(from, to, _cur_data.tracer_color)
+
+func _spawn_preview_projectile(from: Vector3, fwd: Vector3) -> void:
+	var p := _cur_data.projectile_scene.instantiate()
+	_fx_root.add_child(p)
+	p.global_position = from + fwd * 0.1
+	# Tame it for the tiny stage: no gravity arc, no homing (nothing to chase),
+	# and a slow visual speed so the round lingers in frame.
+	if "gravity_scale" in p:
+		p.gravity_scale = 0.0
+	if "homing_turn_rate" in p:
+		p.homing_turn_rate = 0.0
+	if p.has_method("launch"):
+		p.launch(fwd * 2.4, null, 0.0, 0.0, 0.0) # visual only — zero damage/splash
+	# Free it before its lifetime expires so the real (off-stage) detonation never
+	# fires — we only want the round flying out of the barrel.
+	get_tree().create_timer(0.7).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
+
+## Sustain (or kill) the beam-weapon's electric beam, drawn live from the muzzle
+## down-range so it tracks the spinning barrel.
+func _drive_beam(active: bool) -> void:
+	if not active or not is_instance_valid(_muzzle) or _fx_root == null:
+		if _beam and is_instance_valid(_beam):
+			_beam.deactivate()
+		return
+	if _beam == null or not is_instance_valid(_beam):
+		_beam = ElectricBeam.new()
+		_fx_root.add_child(_beam)
+	_beam.set_color(_cur_data.tracer_color)
+	var from: Vector3 = _muzzle.global_position
+	var fwd: Vector3 = -_muzzle.global_transform.basis.z.normalized()
+	_beam.update_beam(from, from + fwd * 2.4, false)
 
 ## Spawn the weapon's own muzzle flash at the barrel tip — same tint + size_mult
 ## weapon.gd uses — so the Codex shows the real per-weapon blast. Energy/beam guns

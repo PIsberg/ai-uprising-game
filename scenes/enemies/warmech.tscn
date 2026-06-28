@@ -24,7 +24,7 @@ anim_walk = "RobotArmature|Walk"
 anim_attack = "RobotArmature|Shoot_Big"
 anim_stagger = "RobotArmature|HitRecieve_1"
 walk_speed_scale = 1.0
-tint = Color(0.78, 0.32, 0.32, 1)
+tint = Color(0.6, 0.63, 0.68, 1)
 menace_color = Color(1, 0.12, 0.08, 1)
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]

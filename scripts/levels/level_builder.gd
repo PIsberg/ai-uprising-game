@@ -42,7 +42,6 @@ const ENEMY_SCENES := {
 	"smasher": preload("res://scenes/enemies/smasher.tscn"),
 	"dog": preload("res://scenes/enemies/dog.tscn"),
 	"server": preload("res://scenes/enemies/server.tscn"),
-	"magma": preload("res://scenes/enemies/magma.tscn"),
 	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
 	"warbot": preload("res://scenes/enemies/warbot.tscn"),
 	"enforcer": preload("res://scenes/enemies/enforcer.tscn"),

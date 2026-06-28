@@ -175,7 +175,7 @@ func _fall_dead(delta: float) -> void:
 	if is_on_floor() or _fall_time > 4.0:
 		_explode_on_impact()
 
-## Beefier flyer variants (magma / fishbot) set this so they leave a supply drop
+## Beefier flyer variants (e.g. fishbot) set this so they leave a supply drop
 ## like ground specials do — basic recon drones stay loot-free (they're plentiful).
 ## The drop is landed safely on a walkway by _drop_loot's hazard relocation.
 @export var drops_loot: bool = false
