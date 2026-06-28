@@ -49,6 +49,18 @@ var show_fps: bool = false
 ## default — full-screen blur can hurt target readability in a shooter; the
 ## player's DoF overlay polls this each frame.
 var dof_enabled: bool = false
+## Accessibility: scales all gameplay camera shake (1.0 = full, 0 = none). The
+## player reads this each frame and multiplies its trauma by it — for players who
+## find heavy screen shake nauseating.
+var screen_shake: float = 1.0
+## Accessibility: scales the intensity of full-screen flashes — the red damage
+## overlay, low-health vignette pulse and kill-edge flash. 1.0 = full, 0 = none.
+## The HUD reads this each frame (photosensitivity / epilepsy safety).
+var flash_intensity: float = 1.0
+## 3D resolution scale, independent of the quality tier. 1.0 = native (sharp, no
+## upscaling); below 1.0 renders at a lower internal res and FSR2-upscales (faster,
+## softer in the distance). Lets you keep effects low for perf without the blur.
+var render_scale: float = 1.0
 
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
@@ -190,6 +202,22 @@ func set_show_fps(v: bool) -> void:
 ## Toggle cinematic depth-of-field (the player's DoF overlay polls dof_enabled).
 func set_dof_enabled(v: bool) -> void:
 	dof_enabled = v
+	_save_settings()
+
+## Accessibility: 0..1 scale on gameplay camera shake (the player polls it).
+func set_screen_shake(v: float) -> void:
+	screen_shake = clampf(v, 0.0, 1.0)
+	_save_settings()
+
+## Accessibility: 0..1 scale on full-screen flashes (the HUD polls it).
+func set_flash_intensity(v: float) -> void:
+	flash_intensity = clampf(v, 0.0, 1.0)
+	_save_settings()
+
+## 3D resolution scale (0.5..1.0). Applies to the live viewport immediately.
+func set_render_scale(v: float) -> void:
+	render_scale = clampf(v, 0.5, 1.0)
+	_apply_viewport()
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -413,36 +441,26 @@ func _apply_viewport() -> void:
 	var vp := get_viewport()
 	if vp == null:
 		return
+	# Anti-aliasing per tier. TAA is OFF on every tier — its temporal accumulation
+	# softens fine distant detail (the "blurry in the distance" look); MSAA on the
+	# higher tiers carries edge anti-aliasing instead.
 	match quality:
 		Quality.LOW:
-			# FSR2 reconstructs near-native detail from a lower internal res —
-			# sharper than bilinear was at 70%, with more GPU headroom. It has
-			# temporal AA built in, so TAA/FXAA stay off.
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
-			vp.scaling_3d_scale = 0.67
 			vp.msaa_3d = Viewport.MSAA_DISABLED
-			vp.use_taa = false
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.MEDIUM:
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR2
-			vp.scaling_3d_scale = 0.77
 			vp.msaa_3d = Viewport.MSAA_DISABLED
-			vp.use_taa = false
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 		Quality.HIGH:
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-			vp.scaling_3d_scale = 1.0
-			vp.msaa_3d = Viewport.MSAA_DISABLED
-			vp.use_taa = true
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
-		Quality.ULTRA:
-			# MSAA under TAA: geometry edges resolved by hardware, shading
-			# stability by the temporal pass — the cleanest image we can make.
-			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
-			vp.scaling_3d_scale = 1.0
 			vp.msaa_3d = Viewport.MSAA_2X
-			vp.use_taa = true
-			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+		Quality.ULTRA:
+			vp.msaa_3d = Viewport.MSAA_4X
+	vp.use_taa = false
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
+	# Resolution scale is now a USER setting, independent of the quality tier, so you
+	# can keep effects low for performance WITHOUT the upscaling blur. 1.0 = native
+	# (sharp, bilinear, no upscale); below 1.0 renders smaller and FSR2-reconstructs.
+	var rs := clampf(render_scale, 0.5, 1.0)
+	vp.scaling_3d_scale = rs
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if rs >= 0.999 else Viewport.SCALING_3D_MODE_FSR2
 	_apply_shadow_quality()
 
 func _apply_shadow_quality() -> void:
@@ -527,6 +545,9 @@ func _load_settings() -> void:
 		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 		show_fps = bool(cf.get_value("graphics_adv", "show_fps", false))
 		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
+		screen_shake = float(cf.get_value("graphics_adv", "screen_shake", 1.0))
+		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
+		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -549,5 +570,8 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
 	cf.set_value("graphics_adv", "show_fps", show_fps)
 	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
+	cf.set_value("graphics_adv", "screen_shake", screen_shake)
+	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
+	cf.set_value("video", "render_scale", render_scale)
 
 	cf.save(SETTINGS_PATH)

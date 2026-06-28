@@ -18,6 +18,12 @@ const TIPS := [
 	"Heavy weapons stagger big units. Save them for the brutes.",
 	"Skitters bunch up — splash and chain weapons shred them.",
 	"Keep moving against snipers; the red beam marks the shot.",
+	"The AI learns how you fight — vary your weapons and angles to stay unpredictable.",
+	"WARDEN elites can't be staggered. Dodge their attacks; don't try to trade.",
+	"VOLATILE elites detonate on death — don't be standing next to one when it drops.",
+	"Fall into lava or deep water and it cooks you. Stay on the walkways.",
+	"Every gun has a role — check the Weapon Codex from the main menu.",
+	"Hunt the marked high-value target to clear an assassination sector.",
 ]
 
 var _spinner: Control

@@ -17,6 +17,7 @@ func _ready() -> void:
 	projectile_speed = 30.0
 	projectile_damage = 16.0
 	score_value = 130
+	drops_loot = true # a foundry mini-elite leaves supplies (landed on the catwalk)
 	hp.max_health = max_health
 	hp.current_health = max_health
 	_build_magma_look()
@@ -29,9 +30,8 @@ func _emissive_mat(c: Color, energy: float) -> StandardMaterial3D:
 	m.emission_energy_multiplier = energy
 	return m
 
-## The molten crown of horns and cannon barrels are baked into the model
-## (EyeDrone_magma.glb, forked in Blender — see tools/blender/cfg_magma.json) and
-## tinted hot by RobotModel. This adds the live FX on top: a rising ember plume so
+## The chassis is the winged QuadShell model, tinted molten-hot by RobotModel; this
+## adds the live FX on top: a rising ember plume so
 ## it trails fire as it flies.
 func _build_magma_look() -> void:
 	var p := CPUParticles3D.new()

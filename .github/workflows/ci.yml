@@ -54,6 +54,13 @@ jobs:
           godot --headless --path . res://tests/bevel_smoke.tscn
           godot --headless --path . res://tests/robot_models_check.tscn
 
+      - name: Run probe suite
+        # Logic/integration probes (objectives, hazards, loot, teaching, the
+        # adaptive AI director). The runner asserts each printed "RESULT PASS".
+        env:
+          GODOT_BIN: godot
+        run: bash tools/run_tests.sh
+
       - name: Load-test all levels, cutscenes and menu
         run: |
           fail=0

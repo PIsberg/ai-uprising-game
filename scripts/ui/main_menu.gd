@@ -113,6 +113,18 @@ func _build_extra_settings() -> void:
 	var music := _add_slider_row("Music Volume", 0.0, 1.0, 0.05, AudioBus.get_music_volume())
 	music.value_changed.connect(func(v: float): AudioBus.set_music_volume_linear(v))
 
+	# Accessibility: scale (or kill) gameplay camera shake.
+	var shake := _add_slider_row("Screen Shake", 0.0, 1.0, 0.05, GraphicsSettings.screen_shake)
+	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
+
+	# Accessibility: scale (or kill) full-screen flashes (photosensitivity safety).
+	var flash := _add_slider_row("Flash Intensity", 0.0, 1.0, 0.05, GraphicsSettings.flash_intensity)
+	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
+
+	# Resolution scale — 1.0 = native/sharp; lower it for performance (FSR2 upscale).
+	var rscale := _add_slider_row("Render Scale", 0.5, 1.0, 0.05, GraphicsSettings.render_scale)
+	rscale.value_changed.connect(func(v: float): GraphicsSettings.set_render_scale(v))
+
 	_add_language_row()
 
 	# Keep the Back button at the bottom of the panel.
@@ -229,6 +241,20 @@ func _build_level_select() -> void:
 	back.text = "Back to Menu"
 	back.pressed.connect(func(): _show_panel(_main))
 	_levels_panel.add_child(back)
+	# Warp unlocks the whole bestiary (discover_all_enemies above), so offer direct
+	# jumps to the codices right here — no need to back out and hunt for the buttons.
+	var bestiary := Button.new()
+	bestiary.custom_minimum_size = Vector2(420, 40)
+	bestiary.text = "▣  Enemy Codex (all unlocked)"
+	bestiary.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
+	bestiary.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/ui/encyclopedia.tscn"))
+	_levels_panel.add_child(bestiary)
+	var wcodex := Button.new()
+	wcodex.custom_minimum_size = Vector2(420, 40)
+	wcodex.text = "▣  Weapon Codex"
+	wcodex.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
+	wcodex.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/ui/weapon_codex.tscn"))
+	_levels_panel.add_child(wcodex)
 	# Scroll the (18-level) list so every entry — and the Back button — stays
 	# reachable on any screen height.
 	var scroll := ScrollContainer.new()
@@ -326,6 +352,9 @@ func _on_controls_pressed() -> void:
 
 func _on_encyclopedia_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/encyclopedia.tscn")
+
+func _on_weapon_codex_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/weapon_codex.tscn")
 
 func _on_controls_back_pressed() -> void:
 	_show_panel(_main)

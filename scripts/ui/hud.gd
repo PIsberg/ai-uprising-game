@@ -177,6 +177,7 @@ func _ready() -> void:
 	GameState.player_dealt_damage.connect(_on_player_dealt_damage)
 	GameState.enemy_killed.connect(_on_enemy_killed)
 	GameState.objective_blocked.connect(_show_toast)
+	GameState.teach_hint.connect(_show_toast) # one-off coaching toasts (elite affixes, hazards)
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
@@ -238,6 +239,18 @@ func _build_pause_audio() -> void:
 		GraphicsSettings.set_sensitivity(v)
 		if is_instance_valid(_player_ref) and _player_ref.has_method("set_look_sensitivity"):
 			_player_ref.set_look_sensitivity(v))
+
+	# Accessibility: scale gameplay camera shake live (0 = off).
+	var shake := _audio_slider_row(vbox, tr("Screen Shake"), GraphicsSettings.screen_shake, 0.0, 1.0, 0.05)
+	shake.value_changed.connect(func(v: float): GraphicsSettings.set_screen_shake(v))
+
+	# Accessibility: scale full-screen flashes live (photosensitivity safety).
+	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
+	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
+
+	# Resolution scale live (1.0 = native/sharp; lower for performance).
+	var rscale := _audio_slider_row(vbox, tr("Render Scale"), GraphicsSettings.render_scale, 0.5, 1.0, 0.05)
+	rscale.value_changed.connect(func(v: float): GraphicsSettings.set_render_scale(v))
 
 	# Advanced Graphics Toggles
 	var gpu_parts := CheckButton.new()
@@ -552,6 +565,11 @@ func _on_level_completed() -> void:
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
+	# Surface what the Adaptive AI Director learned this level and how it answered
+	# — so the player SEES the enemy adapting, not just feels it.
+	var assess := AIDirector.assessment()
+	if assess != "":
+		win_title.text += "\n\n" + assess
 	if GameState.has_next_level() and not _auto_advance_armed:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
@@ -567,7 +585,7 @@ func _process(delta: float) -> void:
 	_update_fps(delta)
 	if _damage_alpha > 0.0:
 		_damage_alpha = maxf(0.0, _damage_alpha - delta * 1.5)
-		damage_overlay.color.a = _damage_alpha
+		damage_overlay.color.a = _damage_alpha * GraphicsSettings.flash_intensity
 	if _toast_time > 0.0:
 		_toast_time = maxf(0.0, _toast_time - delta)
 		toast.modulate.a = clampf(_toast_time, 0.0, 1.0) # hold full, then fade
@@ -604,7 +622,13 @@ func _process(delta: float) -> void:
 			if _overlord_cd <= 0.0:
 				_overlord_cd = randf_range(30.0, 50.0)
 				if _overlord_time <= 0.0:
-					_overlord_say(OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()])
+					# Prefer a profile-aware jab from the Adaptive AI Director (it
+					# references how you're actually playing); fall back to the
+					# generic taunt pool when it's still calibrating.
+					var line: String = AIDirector.taunt() if randf() < 0.6 else ""
+					if line == "":
+						line = OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()]
+					_overlord_say(line)
 	if _hit_flash > 0.0:
 		_hit_flash = maxf(0.0, _hit_flash - delta * 5.0)
 		var pop := 1.0 + _hit_flash * 0.5
@@ -620,7 +644,7 @@ func _process(delta: float) -> void:
 	if _kill_flash > 0.0:
 		_kill_flash = maxf(0.0, _kill_flash - delta * 3.2)
 		if _kill_edge:
-			_kill_edge.modulate.a = _kill_flash * 0.45
+			_kill_edge.modulate.a = _kill_flash * 0.45 * GraphicsSettings.flash_intensity
 		if _kill_x:
 			_kill_x.modulate.a = clampf(_kill_flash * 1.4, 0.0, 1.0)
 			var kpop := 0.7 + (1.0 - _kill_flash) * 0.6
@@ -632,7 +656,7 @@ func _process(delta: float) -> void:
 		_vig_time += delta
 		var danger := clampf((0.4 - _hp_ratio) / 0.4, 0.0, 1.0)
 		var a := danger * (0.55 + 0.3 * sin(_vig_time * 5.0)) if danger > 0.0 else 0.0
-		_low_vig.modulate.a = a
+		_low_vig.modulate.a = a * GraphicsSettings.flash_intensity
 
 ## Dynamic reticle: widens while moving/firing, tightens when aiming/still.
 func _update_crosshair(delta: float) -> void:

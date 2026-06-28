@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://csynthprobe0001"]
+
+[ext_resource type="Script" path="res://tests/synth_probe.gd" id="1_p"]
+
+[node name="SynthProbe" type="Node"]
+script = ExtResource("1_p")

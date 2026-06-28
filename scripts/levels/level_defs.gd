@@ -38,9 +38,34 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "neon", "crucible", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "neon", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
+
+## Terrain / environmental hazard descriptor for a level, used by the campaign map
+## to flag and colour hazard sectors and to enrich the sector intel. Reads the
+## level's own hazard beds: a `water` bed → deep water, any other → molten lava.
+static func level_hazard(id: String) -> Dictionary:
+	var def := get_def(id)
+	# Only flag a sector when the hazard SEA covers most of the floor — i.e. a level
+	# you balance across on walkways, where falling in is the defining danger. Lots
+	# of levels have decorative lava channels; those shouldn't all read as hazards or
+	# the warning means nothing. Compare the biggest bed against the floor footprint.
+	var floor_sz: Vector2 = def.get("floor_size", Vector2(40.0, 40.0))
+	var floor_area: float = floor_sz.x * floor_sz.y
+	var max_area := 0.0
+	var is_water := false
+	for b in def.get("lava", []):
+		var s: Vector2 = (b as Dictionary).get("size", Vector2(8.0, 3.0))
+		var a := s.x * s.y
+		if a > max_area:
+			max_area = a
+			is_water = (b as Dictionary).get("water", false)
+	if floor_area <= 0.0 or max_area < floor_area * 0.45:
+		return {"hazard": false, "color": Color(0.5, 0.7, 0.9), "tag": "", "label": ""}
+	if is_water:
+		return {"hazard": true, "color": Color(0.3, 0.65, 1.0), "tag": "WATER", "label": "DEEP WATER — don't fall in"}
+	return {"hazard": true, "color": Color(1.0, 0.45, 0.15), "tag": "LAVA", "label": "MOLTEN LAVA — don't fall in"}
 
 ## Chapter index a level belongs to, or -1 (e.g. sandbox levels / custom order).
 static func chapter_index_of(id: String) -> int:
@@ -430,6 +455,11 @@ static func _neon() -> Dictionary:
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
 			{"type": "hunter", "pos": Vector3(-8, 0.5, -4)},
+			# GUNSLINGER duelists holding the arcade lanes.
+			{"type": "gunslinger", "pos": Vector3(12, 0.5, 4)},
+			{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10), "trigger": 16},
+			# A BREAKER hammer-drone bobbing over the lanes.
+			{"type": "breaker", "pos": Vector3(0, 3.5, 8), "trigger": 18},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
 			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
@@ -535,6 +565,11 @@ static func _sublevel() -> Dictionary:
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
+			# OPTICON cutting-units and a ROLLER — the sublevel's own custodial fleet,
+			# turned hostile.
+			{"type": "optic", "pos": Vector3(8, 0.5, 4)},
+			{"type": "optic", "pos": Vector3(-8, 0.5, -6), "trigger": 14},
+			{"type": "roller", "pos": Vector3(0, 0.5, -10), "trigger": 18},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 8), "trigger": 16},
 			{"type": "reaper", "pos": Vector3(10, 0.5, 10), "trigger": 14},
 			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
@@ -1502,9 +1537,12 @@ static func _assembly() -> Dictionary:
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and striders/mech press in — fight to the reactor.
 		"enemies": [
-			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
-			{"type": "android", "pos": Vector3(6, 0.5, -6)},
+			# Fresh off the line: WAR-BOTS, all grins until they lock on.
+			{"type": "warbot", "pos": Vector3(-6, 0.5, -6)},
+			{"type": "warbot", "pos": Vector3(6, 0.5, -6)},
+			{"type": "android", "pos": Vector3(0, 0.5, -8)},
 			{"type": "strider", "pos": Vector3(0, 0.5, 8)},
+			{"type": "warbot", "pos": Vector3(10, 0.5, 10), "trigger": 24},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
 			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
@@ -1518,6 +1556,12 @@ static func _assembly() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26},
 			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28},
 			{"type": "skitter", "pos": Vector3(0, 0.5, -16), "count": 6, "trigger": 22},
+			# Fresh off the line: an ENFORCER squad and a RIPPER minigun platform.
+			{"type": "enforcer", "pos": Vector3(8, 0.5, -14), "trigger": 24},
+			{"type": "enforcer", "pos": Vector3(-8, 0.5, 14), "trigger": 26},
+			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28},
+			# A WHIRLWIND buzzsaw drone screaming off the overhead line.
+			{"type": "whirlwind", "pos": Vector3(6, 3.5, 6), "trigger": 22},
 		],
 	}
 
@@ -2393,6 +2437,7 @@ static func _lava_world() -> Dictionary:
 	return {
 		"name": "Vulcan Forge — The Molten Sea",
 		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
+		"music": "music_lava",
 		"sign": "VULCAN FORGE — DO NOT FALL",
 		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
 		"tasks": [
@@ -2422,7 +2467,7 @@ static func _lava_world() -> Dictionary:
 		],
 		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 22.0},
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 16.0},
 		],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
@@ -2430,13 +2475,18 @@ static func _lava_world() -> Dictionary:
 		],
 		"enemies": [
 			{"type": "magma", "pos": Vector3(-8, 3, -15)},
-			{"type": "seeker", "pos": Vector3(0, 3, -2)},
-			{"type": "magma", "pos": Vector3(14, 3, -5)},
 			{"type": "magma", "pos": Vector3(6, 3, 6)},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
+			{"type": "magma", "pos": Vector3(14, 3, -5), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
 			{"type": "magma", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "magma", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
+			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 		],
 	}
 
@@ -2446,6 +2496,7 @@ static func _water_world() -> Dictionary:
 	return {
 		"name": "Tidecore Basin — The Flooded Reactor",
 		"objective": "Cross the gantries over the flooded reactor and reach the lift",
+		"music": "music_water",
 		"sign": "TIDECORE BASIN — DEEP WATER",
 		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY"],
 		"tasks": [
@@ -2475,7 +2526,7 @@ static func _water_world() -> Dictionary:
 		],
 		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)),
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 12.0,
+			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
 				"color": Color(0.2, 0.55, 0.95)},
 		],
 		"lore": [
@@ -2484,12 +2535,21 @@ static func _water_world() -> Dictionary:
 		],
 		"enemies": [
 			{"type": "fishbot", "pos": Vector3(-8, 3, -15)},
-			{"type": "seeker", "pos": Vector3(0, 3, -2)},
-			{"type": "fishbot", "pos": Vector3(14, 3, -5)},
 			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11)},
+			# RAZORFIN sharks lurk under the surface and breach at you on the gantries.
+			{"type": "shark", "pos": Vector3(-4, 0, -8)},
+			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
+			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
+			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 22},
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
+			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 		],
 	}

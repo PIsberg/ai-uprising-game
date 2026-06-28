@@ -190,3 +190,6 @@ func _process(delta: float) -> void:
 		var d := body.get_node_or_null("Damageable") as Damageable
 		if d and d.is_alive():
 			d.apply_damage(damage_per_tick, self)
+			if body.is_in_group("player"):
+				GameState.teach_once("hazard_in",
+					"⚠ You're in the %s — get back onto the walkway!" % ("water" if water else "molten sea"))

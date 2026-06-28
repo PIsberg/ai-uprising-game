@@ -51,30 +51,54 @@ func launch(velocity: Vector3, shooter: Node, damage: float, splash_radius: floa
 ## A glowing world-space trail of embers streaming off the round.
 func _make_trail() -> void:
 	var p := CPUParticles3D.new()
-	p.amount = 22
-	p.lifetime = 0.45
+	p.amount = 32
+	p.lifetime = 0.5
 	p.local_coords = false
 	p.spread = 6.0
 	p.initial_velocity_min = 0.0
 	p.initial_velocity_max = 0.4
 	p.gravity = Vector3.ZERO
-	p.scale_amount_min = 0.5
-	p.scale_amount_max = 1.0
+	p.scale_amount_min = 0.6
+	p.scale_amount_max = 1.2
 	var curve := Curve.new()
 	curve.add_point(Vector2(0.0, 1.0)); curve.add_point(Vector2(1.0, 0.0))
 	p.scale_amount_curve = curve
 	var mesh := SphereMesh.new()
-	mesh.radius = 0.06; mesh.height = 0.12; mesh.radial_segments = 6; mesh.rings = 3
+	mesh.radius = 0.07; mesh.height = 0.14; mesh.radial_segments = 6; mesh.rings = 3
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.albedo_color = trail_color
 	mat.emission_enabled = true
 	mat.emission = trail_color
-	mat.emission_energy_multiplier = 5.0
+	mat.emission_energy_multiplier = 7.0
 	mesh.material = mat
 	p.mesh = mesh
 	add_child(p)
+	# A bright glowing head riding the nose so the round reads as a hot energy bolt,
+	# not just a trail of embers.
+	var head := MeshInstance3D.new()
+	var hsm := SphereMesh.new()
+	hsm.radius = 0.12; hsm.height = 0.24; hsm.radial_segments = 8; hsm.rings = 5
+	var hmat := StandardMaterial3D.new()
+	hmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hmat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	hmat.albedo_color = Color(trail_color.r, trail_color.g, trail_color.b, 0.7)
+	hmat.emission_enabled = true
+	hmat.emission = trail_color.lerp(Color.WHITE, 0.4)
+	hmat.emission_energy_multiplier = 6.0
+	hsm.material = hmat
+	head.mesh = hsm
+	head.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(head)
+	var hl := OmniLight3D.new()
+	hl.light_color = trail_color
+	hl.light_energy = 2.2
+	hl.omni_range = 3.0
+	hl.shadow_enabled = false
+	head.add_child(hl)
 
 ## A fat, slow-rising column of grey smoke streaming off the round — the
 ## unmistakable read of a missile in flight. Lives in world space so it hangs in

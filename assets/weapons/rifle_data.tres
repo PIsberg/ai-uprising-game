@@ -30,6 +30,7 @@ mag_size = 30
 reserve_max = 240
 reload_time = 2.0
 muzzle_flash_scene = ExtResource("3_mf")
+muzzle_scale = 1.05
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
 sound_id = "rifle"

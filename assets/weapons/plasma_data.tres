@@ -28,6 +28,7 @@ projectile_speed = 55.0
 splash_radius = 4.5
 splash_damage = 60.0
 muzzle_flash_scene = ExtResource("2_mf")
+muzzle_scale = 1.5
 sound_id = "plasma"
 slide_kick = 0.0
 viewmodel_color = Color(0.2, 0.45, 0.55, 1)

@@ -15,8 +15,8 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="AI Uprising"
-config/version="1.0.0"
 config/description="A 3D realistic first-person shooter — humans fight back against rogue AI."
+config/version="1.0.0"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 boot_splash/show_image=false
@@ -28,6 +28,7 @@ GameState="*res://scripts/autoload/game_state.gd"
 AudioBus="*res://scripts/autoload/audio_bus.gd"
 SoundSynth="*res://scripts/autoload/sound_synth.gd"
 GraphicsSettings="*res://scripts/autoload/graphics_settings.gd"
+AIDirector="*res://scripts/autoload/ai_director.gd"
 
 [display]
 

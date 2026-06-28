@@ -7,6 +7,7 @@ export.cfg
 
 # Local export output
 build/
+dist/
 
 # Level-editor scratch artifacts. The real dev levels in dev_levels/*.lvl are
 # tracked; these are regenerated on demand by the editor:

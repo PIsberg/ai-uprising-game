@@ -1,6 +1,6 @@
 # AI Uprising
 
-A 3D first-person shooter built in **Godot 4.7** (Forward+). The machines we trusted turned on us — fight back through an 18-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, leaping skitters, siege mechs, and towering bosses, narrated by cinematic cutscenes and scored by adaptive synth music.
+A 3D first-person shooter built in **Godot 4.7** (Forward+). The machines we trusted turned on us — fight back through a 20-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, leaping skitters, siege mechs, and towering bosses — including hazard arenas fought on catwalks over a molten sea — against an enemy AI that adapts to how you play, narrated by cinematic cutscenes and scored by adaptive synth music.
 
 Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cutscenes — is **generated in code or from compact data**, so the whole project is tiny, fully version-controllable as text, and trivial to validate headlessly.
 
@@ -98,21 +98,24 @@ Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, 
 | Interact / pick up | `E` | X |
 | Pause | `Esc` | Start |
 
+**Testing cheats** (type the word — no console needed): on the main menu, type **`warp`** for a direct level-select that also unlocks the full bestiary and arsenal; **in-game**, type **`god`** to toggle invincibility (tops you off to full health), and type it again to turn it off.
+
 Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra), and master/SFX/music volume are all in **Settings** (main menu and in-game pause). It also includes independent toggles for advanced features (GPU Particles, Volumetric Noise Shafts, Triplanar Damage, Puddle Ripples, and Advanced Post-Process FX), which persist to `user://settings.cfg`.
 
 ---
 
 ## What's in it
 
-- **18-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command), each opening with a **cinematic briefing** and gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault) behind an animated **portal**.
-- **15 wieldable weapons** — the starter pistol, SMG, rifle and shotgun, then a heavy/energy tier: *Tesla* beam, *Arc-Coil* burst, *Plasma*, *Nova* scatter, piercing *Gauss Lance*, *Twin-Rail*, homing *Swarm Launcher*, rocket *Devastator*, chain-lightning *Tempest Coil*, *Singularity Cannon*, and the *OMEGA-X Annihilator*. Hitscan & projectile, ADS, recoil, charge/volley/slug alt-fires, per-weapon viewmodels, and piercing / splash / cluster / homing / chain-lightning mechanics — plus **two throwable grenades** (a frag and a *Singularity* gravity-well grenade that herds a pack into one knot; cycle with `H`).
-- **25 enemy types** including **5 bosses** — the recon **drone**, infantry **android**, leaping **spider**, hopping **skitter** swarms, heavy **mech**, suppressing **gunner**, **sniper** sentry (charged beam), kamikaze **seeker**, flying **raptor**, shielded **bulwark brute**, healer **mender**, and the new fierce pair: the **Ravager** (a leaping ground-slammer) and the **Warmech** (a long-range siege walker) — up to the **Terminator**, sky-dropping **Colossus**, hovering **Overseer**, **Titan**, and **Archon** bosses. Every hostile has a discoverable **bestiary** entry.
+- **20-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command) — plus two **hazard arenas**, the **Vulcan Forge** molten sea and the **Tidecore Basin** flooded reactor, where you balance on narrow catwalks over a sea that cooks you if you fall in. Each opens with a **cinematic briefing** and is gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault, **assassinate a high-value target**) behind an animated **portal**.
+- **17 wieldable weapons** — the starter pistol, SMG, rifle and shotgun, then a heavy/energy tier: *Tesla* beam, *Arc-Coil* burst, *Plasma*, *Nova* scatter, piercing *Gauss Lance*, *Twin-Rail*, homing *Swarm Launcher*, rocket *Devastator*, chain-lightning *Tempest Coil*, *Singularity Cannon*, and the *OMEGA-X Annihilator*. Hitscan & projectile, ADS, recoil, charge/volley/slug alt-fires, per-weapon viewmodels, and piercing / splash / cluster / homing / chain-lightning mechanics — plus **two throwable grenades** (a frag and a *Singularity* gravity-well grenade that herds a pack into one knot; cycle with `H`).
+- **39 enemy types** including **5 bosses** — the recon **drone**, infantry **android**, leaping **spider**, hopping **skitter** swarms, heavy **mech**, suppressing **gunner**, **sniper** sentry (charged beam), kamikaze **seeker**, flying **raptor**, shielded **bulwark brute**, healer **mender**, the fierce **Ravager** (a leaping ground-slammer) and **Warmech** (a long-range siege walker), plus the hazard-world flyers — the molten **Magma Wraith** and the robotic-fish **Angler Unit** (Blender-weaponised) — up to the **Terminator**, sky-dropping **Colossus**, hovering **Overseer**, **Titan**, and **Archon** bosses. Every hostile has a discoverable **bestiary** entry, and the elite-affix system can up-tier any spawn (shielded / volatile / swift / warden / splitter).
+- **Adaptive AI Director — the enemy *learns you*.** The rogue AI is an intelligence, so it fights like one: a director quietly profiles **how you play** — camp or keep moving, brawl up close or snipe from range, headshot rate, which gun you lean on — and **counters it** through the Elite affix system. Snipe from afar and it fields **SWIFT** rushers to close the gap; out-aim it and it fields **WARDEN** units you can't stagger (so you must *dodge*, not suppress); spam one weapon and it fields **SHIELDED** armour that shrugs it off. The overlord's taunts read your actual behaviour back to you (*"You like your distance. I'm closing it."*, *"The Shotgun again. I've patched for it."*). The read resets each level, so every sector re-reads you fresh.
 - **Game feel** — trauma camera shake, dynamic FOV, dash/slide, recoil, tracers, muzzle flash & smoke, ejected casings, surface-aware impacts, **bullet-hole + scorch decals**, debris, oil/spark sprays on robots, hit-stop, enemy flinch/stagger/last-stand, death topples.
 - **Premium Graphics Upgrades (Forward+)** — GPU-accelerated sparks and debris with rigid body collision physics, volumetric noise-animated light shafts (god-rays), triplanar metal shell shading on robots displaying exposed glowing electrical damage grids, dynamic hexagonal-grid energy shields with real-time hit ripple distortion on the Brute and Archon boss, procedural wind waves & concentric rain drip puddles, and anamorphic blue/cyan lens flares combined with fisheye speed-warp barrel distortion during high-velocity dashes/sprints. **Godot 4.7** adds soft **AreaLight3D** ceiling luminaires, HDR-punch emissives, improved clearcoat metal, and velocity-stretched GPU particles.
 - **Mood** — themed per-level lighting + fog, cinematic post (vignette / chromatic aberration / film grain / sharpen), AgX tonemap, glow, SSAO/SSIL/SSR, soft shadows, ambient dust, **adaptive combat music** (the score swells in a fight), and an "area cleared" slow-mo.
 - **Cutscenes** — a **comic-panel story intro** (peaceful green-eyed helper robots → the signal → they arm and turn red) and a reusable, choreographed cutscene system used for the per-level briefings, which preview each level's *new* hostiles before you drop in.
-- **Meta & tools** — an interactive holographic **campaign map** (serpentine route, per-sector intel panel listing each level's hostiles + objective, boss markers, mouse *and* keyboard/controller navigation); a turning-3D **enemy codex** unlocked as you meet each hostile (strengths, weaknesses, counter-weapons); a between-levels **Armory** shop where run score buys permanent weapon upgrades *and* consumable field supplies (ammo / grenades / health applied on your next deploy); a **Gun Range** + **Horde** survival sandbox; and a built-in **level editor** (`--editor`) that authors levels as plain data with a live marker preview, full gizmos, and one-click playtest.
-- **Systems** — EASY/NORMAL/HARD scaling, save/checkpoint + Continue, score combos & end-of-level grade, kill feed, radar, objective waypoint, boss bar, directional damage indicator, 4-tier graphics (LOW/MEDIUM/HIGH/ULTRA) that actually change render scale/AA/shadows/effects, and full keyboard-mouse **and** gamepad support.
+- **Meta & tools** — an interactive holographic **campaign map** (serpentine route, per-sector intel panel listing each level's hostiles + objective, boss markers, mouse *and* keyboard/controller navigation); a turning-3D **enemy codex** unlocked as you meet each hostile (strengths, weaknesses, counter-weapons); a **weapon codex** detailing every gun's class, stats and role with comparison bars; a between-levels **Armory** shop where run score buys permanent weapon upgrades *and* consumable field supplies (ammo / grenades / health applied on your next deploy); a **Gun Range** + **Horde** survival sandbox; and a built-in **level editor** (`--editor`) that authors levels as plain data with a live marker preview, full gizmos, and one-click playtest.
+- **Systems** — EASY/NORMAL/HARD scaling, save/checkpoint + Continue, score combos & end-of-level grade, kill feed, radar, objective waypoint, boss bar, directional damage indicator, first-encounter coaching toasts, an accessibility **screen-shake** scale, 4-tier graphics (LOW/MEDIUM/HIGH/ULTRA) that actually change render scale/AA/shadows/effects, and full keyboard-mouse **and** gamepad support.
 
 ---
 
@@ -131,6 +134,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 - **`SoundSynth`** — synthesizes all audio procedurally into a stream table on `_ready`.
 - **`AudioBus`** — Master / Music / SFX buses, a 3D player pool, plays synth-or-sampled sounds, themed music per level, and **adaptive combat intensity**.
 - **`GraphicsSettings`** — LOW/MEDIUM/HIGH/ULTRA quality tiers (render scale, AA, shadow filtering, screen-space effects) plus FOV, sensitivity, invert-Y, FPS-cap, and independent toggles for advanced GPU particles, volumetric light shafts, triplanar robot damage, puddle ripples, and advanced post-processing.
+- **`AIDirector`** — the **adaptive enemy intelligence**: profiles the player's playstyle (mobility, engagement range, accuracy, headshot rate, weapon focus) from the same shot/hit events the grade tracks, and feeds that read into Elite affix selection (the swarm counters how you fight) and the overlord's taunts. Reset each level.
 
 ---
 
@@ -147,6 +151,15 @@ Each level registers a **task checklist** with `GameState` (`kill_all`, `key`, `
 
 ### Enemies
 All enemies extend **`EnemyBase`** (`scripts/enemies/enemy_base.gd`), a `CharacterBody3D` with a state machine (`IDLE → PATROL → ALERT → CHASE → ATTACK → STAGGER → DEAD`), perception (sight cone + hearing + squad alerting), navmesh pathing with a straight-line fallback, and shared reactions: hit-flash, **flinch & poise/stagger**, **oil/spark sprays**, wounded "last stand," battle-damage smoke/sparks, and a death **topple + lasting scorch**. Each archetype subclasses it and overrides movement/attack — e.g. the drone & seeker fly (`_apply_gravity`/`_move_toward` overrides), the spider does a telegraphed **leap-pounce**, the sniper charges a beam you dodge by breaking line of sight, the brute's **frontal shield** absorbs damage via a `modify_incoming_damage` hook on `Damageable` (so you must flank), and bosses use the HUD boss bar with phase-scaled attacks.
+
+### The Adaptive AI Director
+The premise is that you're fighting an *intelligence*, so the enemy doesn't just scale — it **adapts to you**. **`AIDirector`** (`scripts/autoload/ai_director.gd`) builds a live profile of your playstyle from events the game already fires:
+- **mobility** — sampled from your ground speed (camper ↔ runner),
+- **range_pref** — the distance of your hits (point-blank brawler ↔ long-range sniper),
+- **accuracy** & **headshot_rate** — from `register_shot` / `report_player_hit`,
+- **weapon focus** — which gun you favour.
+
+That read feeds two systems. `Elite.maybe_apply` asks the director for a **counter affix** so ~70% of elite spawns are chosen to punish your current style — precise aim → **WARDEN** (unstaggerable, forces dodging), fighting at range → **SWIFT** (rushers close the gap), one-weapon reliance → **SHIELDED** (armour that resists it). And the HUD's overlord taunts pull **profile-aware lines** that name what you're doing. Below a small sample threshold the director stays neutral (random affixes, generic taunts) so a fresh level never pre-judges you; the profile resets on every `reset_level_stats`. Logic is unit-checked headlessly by `tests/ai_director_probe.tscn`.
 
 ### Weapons
 A weapon is a **`WeaponData`** resource (`.tres`: damage, fire mode, recoil, ammo, projectile/hitscan, pierce, FX, sounds) plus a viewmodel scene driven by `weapon.gd`. `weapon.gd` handles the firing ray/projectile, headshots, piercing, recoil, reloads, ADS, and all the muzzle/tracer/impact/heat FX. A **`WeaponManager`** on the player holds the arsenal and carries unlocked weapons across levels.
@@ -170,13 +183,13 @@ scenes/
   ui/                  # main_menu, hud, campaign_map, encyclopedia (bestiary)
   editor/              # built-in level editor
   player/              # player + viewmodel
-  weapons/             # 15 weapons + projectiles + grenades
-  enemies/             # 25 enemy/boss scenes
+  weapons/             # 17 weapons + projectiles + grenades
+  enemies/             # 39 enemy/boss scenes
   levels/              # level_<id>.tscn (LevelBuilder + Player + HUD)
   cutscene/            # comic_intro, level_briefing (+ Armory shop)
   props/ pickups/ fx/  # breakable props, pickups, impact/explosion/tracer FX
 scripts/
-  autoload/            # GameState, AudioBus, SoundSynth, GraphicsSettings
+  autoload/            # GameState, AudioBus, SoundSynth, GraphicsSettings, AIDirector
   player/ weapons/     # player controller, weapon + weapon_data + manager
   enemies/             # enemy_base + one script per archetype
   systems/             # damageable, portal, objective devices, pickups, spawner, enemy_codex

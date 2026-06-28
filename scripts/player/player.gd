@@ -56,15 +56,17 @@ func notify_pickup(text: String) -> void:
 @export var grenade_cooldown: float = 0.7
 const GRENADE_SCENE := preload("res://scenes/weapons/grenade.tscn")
 const VORTEX_SCENE := preload("res://scenes/weapons/grenade_vortex.tscn")
-enum GrenadeType { FRAG, VORTEX }
+const EMP_SCENE := preload("res://scenes/weapons/grenade_emp.tscn")
+enum GrenadeType { FRAG, VORTEX, EMP }
 ## Per-type loadout. FRAG is the workhorse; VORTEX is the rare "herd-then-delete"
 ## special — fewer carried, picked up later. Cycle with the grenade-cycle key.
 var grenade_kinds := [
 	{"type": GrenadeType.FRAG, "scene": GRENADE_SCENE, "name": "FRAG", "color": Color(1.0, 0.72, 0.2), "max": 3},
 	{"type": GrenadeType.VORTEX, "scene": VORTEX_SCENE, "name": "VORTEX", "color": Color(0.66, 0.4, 1.0), "max": 2},
+	{"type": GrenadeType.EMP, "scene": EMP_SCENE, "name": "EMP", "color": Color(0.35, 0.8, 1.0), "max": 2},
 ]
 var grenade_type: int = 0                  # index into grenade_kinds
-var grenade_counts := [3, 1]               # current count per kind (parallel to grenade_kinds)
+var grenade_counts := [3, 1, 2]            # current count per kind (parallel to grenade_kinds)
 var grenades: int = 3                       # mirror of the selected kind's count (HUD + back-compat)
 var _grenade_cd: float = 0.0
 
@@ -272,7 +274,20 @@ func _handle_low_health(delta: float) -> void:
 	elif _breath and _breath.playing:
 		_breath.stop()
 
+# --- cheat: type "god" during play to toggle invincibility (testing aid) ---
+const GOD_WORD := "god"
+var _god: bool = false
+var _cheat_buf := ""
+
 func _input(event: InputEvent) -> void:
+	# Cheat keyword buffer runs even while dead, so you can flip it on at any time.
+	if event is InputEventKey and event.pressed and not event.echo:
+		var u := (event as InputEventKey).unicode
+		if u != 0:
+			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(GOD_WORD.length())
+			if _cheat_buf == GOD_WORD:
+				_cheat_buf = ""
+				_toggle_god()
 	if _dead:
 		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -399,7 +414,7 @@ func _handle_dash(delta: float) -> void:
 		velocity.x = _dash_dir.x * dash_speed
 		velocity.z = _dash_dir.z * dash_speed
 		if _dash_time <= 0.0:
-			hp.invulnerable = false
+			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
 		return
 	# Track taps every frame so the double-tap window stays accurate; a quick
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
@@ -422,6 +437,17 @@ func _handle_dash(delta: float) -> void:
 		_fov_kick = 9.0
 		shake(0.22)
 		AudioBus.play_synth_at("grenade_throw", global_position, -8.0, 1.5)
+
+## GOD-mode cheat: flip the player's invulnerability. Topped up to full health on
+## enable so a near-dead tester is instantly safe. Feedback via the HUD toast
+## (the pickup_message signal) and a chirp.
+func _toggle_god() -> void:
+	_god = not _god
+	hp.invulnerable = _god
+	if _god and hp.has_method("heal"):
+		hp.heal(hp.max_health)
+	pickup_message.emit("☢ GOD MODE: " + ("ON — invincible" if _god else "OFF"))
+	AudioBus.play_synth_ui("pickup_health", -4.0, 1.7 if _god else 0.8)
 
 ## Returns a world-space dodge direction when a movement key is double-tapped
 ## within the window, else Vector3.ZERO. Updates the tap tracker every call.
@@ -632,7 +658,8 @@ func _handle_camera_feel(delta: float) -> void:
 	# Trauma model: shake decays linearly but is applied squared, so it ramps
 	# off sharply for a punchy, non-lingering kick (Vlambeer-style).
 	_shake_amount = maxf(0.0, _shake_amount - delta * 1.6)
-	var trauma := _shake_amount * _shake_amount
+	# Accessibility: scale all camera shake by the player's Screen Shake setting.
+	var trauma := _shake_amount * _shake_amount * GraphicsSettings.screen_shake
 	var shake_y := (randf() * 2.0 - 1.0) * trauma * 0.08
 	camera.position.y = _camera_base_y + bob + _land_offset + shake_y
 	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08

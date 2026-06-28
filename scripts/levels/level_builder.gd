@@ -44,6 +44,15 @@ const ENEMY_SCENES := {
 	"server": preload("res://scenes/enemies/server.tscn"),
 	"magma": preload("res://scenes/enemies/magma.tscn"),
 	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
+	"warbot": preload("res://scenes/enemies/warbot.tscn"),
+	"enforcer": preload("res://scenes/enemies/enforcer.tscn"),
+	"ripper": preload("res://scenes/enemies/ripper.tscn"),
+	"optic": preload("res://scenes/enemies/optic.tscn"),
+	"roller": preload("res://scenes/enemies/roller.tscn"),
+	"shark": preload("res://scenes/enemies/shark.tscn"),
+	"gunslinger": preload("res://scenes/enemies/gunslinger.tscn"),
+	"whirlwind": preload("res://scenes/enemies/whirlwind.tscn"),
+	"breaker": preload("res://scenes/enemies/breaker.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
@@ -1338,8 +1347,13 @@ func _strip_lava_overlaps(def: Dictionary) -> void:
 			continue
 		var kept := []
 		for e in arr:
-			if e is Dictionary and e.has("pos") and _pos_in_lava(e["pos"], beds, 0.6):
-				continue # inside a bed → drop it
+			# Only floor-level clutter is dropped: an item raised onto a walkway /
+			# platform (y >= 1.0) bridges the bed on purpose — e.g. pickups on the
+			# catwalks of the lava/water arenas — so it must survive.
+			if e is Dictionary and e.has("pos"):
+				var p: Vector3 = e["pos"]
+				if p.y < 1.0 and _pos_in_lava(p, beds, 0.6):
+					continue # inside a bed at floor level → drop it
 			kept.append(e)
 		def[key] = kept
 

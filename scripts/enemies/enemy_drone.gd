@@ -175,12 +175,19 @@ func _fall_dead(delta: float) -> void:
 	if is_on_floor() or _fall_time > 4.0:
 		_explode_on_impact()
 
+## Beefier flyer variants (magma / fishbot) set this so they leave a supply drop
+## like ground specials do — basic recon drones stay loot-free (they're plentiful).
+## The drop is landed safely on a walkway by _drop_loot's hazard relocation.
+@export var drops_loot: bool = false
+
 func _on_died(_source: Node) -> void:
 	if _dying:
 		return
 	_dying = true
 	set_state(State.DEAD)
 	GameState.add_kill(score_value, _kill_label())
+	if drops_loot:
+		_drop_loot()
 	# Stop colliding with the player / shots, but keep hitting the world so it lands.
 	collision_layer = 0
 	collision_mask = 1

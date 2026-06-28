@@ -31,6 +31,7 @@ mag_size = 24
 reserve_max = 210
 reload_time = 1.8
 muzzle_flash_scene = ExtResource("3_mf")
+muzzle_scale = 1.15
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
 tracer_color = Color(1, 0.7, 0.25, 1)

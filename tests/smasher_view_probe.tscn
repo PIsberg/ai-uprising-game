@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cr5wnw8bqgpum"]
+
+[ext_resource type="Script" path="res://tests/smasher_view_probe.gd" id="1_p"]
+
+[node name="SmasherViewProbe" type="Node3D"]
+script = ExtResource("1_p")

@@ -838,20 +838,24 @@ func _energy_beam_flash(from: Vector3, to: Vector3) -> void:
 	var col := data.tracer_color
 	var root := Node3D.new()
 	scene.add_child(root)
-	root.add_child(_beam_tube(from, to, 0.07, Color(col.r, col.g, col.b, 0.5), col, 5.0))
-	root.add_child(_beam_tube(from, to, 0.022, Color(1, 1, 1, 0.95), col.lerp(Color.WHITE, 0.6), 11.0))
+	root.add_child(_beam_tube(from, to, 0.09, Color(col.r, col.g, col.b, 0.5), col, 6.0))
+	root.add_child(_beam_tube(from, to, 0.028, Color(1, 1, 1, 0.95), col.lerp(Color.WHITE, 0.6), 13.0))
 	# End blooms — an emissive orb + a light at the muzzle and at the impact.
 	for end_pt in [from, to]:
-		var orb := _glow_orb(col, 0.12)
+		var orb := _glow_orb(col, 0.14)
 		root.add_child(orb)
 		orb.global_position = end_pt
 		var l := OmniLight3D.new()
 		l.light_color = col
-		l.light_energy = 4.0
-		l.omni_range = 3.5
+		l.light_energy = 5.0
+		l.omni_range = 4.0
 		orb.add_child(l)
 	if data.arc_fx:
 		_spawn_arc_overlay(root, from, to, col)
+	# A shock-ring punched into the impact plane — the energy bolt's bite.
+	var bolt_dir := (to - from)
+	if bolt_dir.length() > 0.01:
+		_spawn_impact_ring(to, bolt_dir.normalized(), col)
 	# Fade the whole flash out fast (a snap, not a lingering beam).
 	var tw := root.create_tween().set_parallel(true)
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -927,6 +931,40 @@ func _spawn_arc_overlay(root: Node3D, from: Vector3, to: Vector3, col: Color) ->
 			p += Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 2.0 * amp
 		root.add_child(_beam_tube(prev, p, 0.014, Color(1, 1, 1, 0.9), col.lerp(Color.WHITE, 0.4), 9.0))
 		prev = p
+
+## An additive ring that snaps out flat against the impact surface and fades — the
+## shockwave of an energy bolt biting in. Detached so it outlives the flash.
+func _spawn_impact_ring(at: Vector3, dir: Vector3, col: Color) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.05
+	tm.outer_radius = 0.12
+	tm.rings = 6
+	tm.ring_segments = 16
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = col.lerp(Color.WHITE, 0.3)
+	mat.emission_energy_multiplier = 8.0
+	tm.material = mat
+	var mi := MeshInstance3D.new()
+	mi.mesh = tm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Torus lies in its local XZ plane (axis +Y); face it along the bolt so the ring
+	# sits flat on the struck surface, lifted slightly off to avoid z-fighting.
+	var up := Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
+	mi.transform = Transform3D(Basis.looking_at(dir, up) * Basis(Vector3.RIGHT, PI * 0.5), at - dir * 0.03)
+	scene.add_child(mi)
+	var tw := mi.create_tween().set_parallel(true)
+	tw.tween_property(mi, "scale", Vector3.ONE * 6.0, 0.22).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.22)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.22)
+	tw.chain().tween_callback(mi.queue_free)
 
 ## A brief gout of flame + smoke blooming off the muzzle when a heavy splash
 ## round (the rocket) launches — the back-pressure of the firing tube. A short

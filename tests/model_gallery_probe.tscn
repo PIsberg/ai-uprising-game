@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://btybedqh3s7ae"]
+
+[ext_resource type="Script" path="res://tests/model_gallery_probe.gd" id="1_p"]
+
+[node name="ModelGalleryProbe" type="Node3D"]
+script = ExtResource("1_p")

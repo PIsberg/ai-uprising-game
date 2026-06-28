@@ -28,6 +28,7 @@ projectile_speed = 34.0
 splash_radius = 2.2
 splash_damage = 14.0
 muzzle_flash_scene = ExtResource("2_mf")
+muzzle_scale = 1.4
 sound_id = "rocket"
 slide_kick = 0.0
 viewmodel_color = Color(1, 0.55, 0.25, 1)

@@ -19,6 +19,7 @@ func announce_boss(boss: Node) -> void:
 ## Called by Damageable when the player damages something. Drives combat feedback.
 func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
 	register_hit()
+	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
 	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
 	# the punch that separates a good-feeling shooter from a flat one. A kill
@@ -375,9 +376,11 @@ func reset_level_stats() -> void:
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
+	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
 	stat_shots += 1
+	AIDirector.note_shot() # feed the adaptive director (shot count + weapon focus)
 
 func register_hit() -> void:
 	stat_hits += 1
@@ -451,6 +454,32 @@ func reset_run() -> void:
 	supply_ammo = 0
 	supply_grenades = 0
 	supply_health = 0.0
+	_taught.clear()
+
+# ---------- first-encounter teaching ----------
+## The game has a lot of systems players otherwise learn by dying — elite affixes,
+## hazard seas. The first time one matters, the HUD pops a one-off coaching toast
+## (each shown once per run). The HUD listens on `teach_hint`.
+signal teach_hint(text: String)
+var _taught: Dictionary = {}
+const ELITE_HINTS := {
+	"shielded": "◆ ELITE · SHIELDED — heavy armour. Flank it or bring a bigger gun.",
+	"volatile": "◆ ELITE · VOLATILE — detonates on death. Don't be standing next to it.",
+	"swift": "◆ ELITE · SWIFT — fast mover. Lead your shots.",
+	"warden": "◆ ELITE · WARDEN — can't be staggered. Dodge it, don't trade.",
+	"splitter": "◆ ELITE · SPLITTER — splits into skitters on death. Watch the spawn.",
+}
+
+## Emit a coaching hint the first time `key` comes up this run (idempotent).
+func teach_once(key: String, text: String) -> void:
+	if text == "" or _taught.has(key):
+		return
+	_taught[key] = true
+	teach_hint.emit(text)
+
+## Convenience: teach an elite affix the first time the player meets one.
+func teach_elite(kind: String) -> void:
+	teach_once("elite_" + kind, ELITE_HINTS.get(kind, ""))
 
 ## Brief slow-motion payoff (e.g. boss death, area clear) AND the primitive
 ## behind the per-hit combat punch. A guard token means overlapping freezes
