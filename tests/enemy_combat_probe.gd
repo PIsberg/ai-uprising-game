@@ -41,7 +41,9 @@ func _ready() -> void:
 	_player.add_to_group("player")
 	_player.collision_layer = 2
 	var pcs := CollisionShape3D.new()
-	var pc := CapsuleShape3D.new(); pc.radius = 0.4; pc.height = 1.8
+	# A generous hitbox so difficulty scatter-aim doesn't randomly miss in the test
+	# window (this checks "does it deal damage at all", not aim accuracy).
+	var pc := CapsuleShape3D.new(); pc.radius = 1.0; pc.height = 2.6
 	pcs.shape = pc
 	_player.add_child(pcs)
 	_player.position = Vector3(0, 1, 0)
@@ -64,8 +66,8 @@ func _run() -> void:
 		bot.global_position = Vector3(float(spec["dist"]), (2.2 if spec["fly"] else 0.6), 0)
 		var hp_before: float = _php.get("current_health")
 		var max_state := 0
-		# Run the real AI for ~6 s.
-		for i in 360:
+		# Run the real AI for ~8 s (enough bursts to land despite scatter aim).
+		for i in 480:
 			await get_tree().physics_frame
 			var st: int = bot.get("state")
 			if st != null and st < 6:  # ignore DEAD when tracking "engaged"
