@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_dog.gd" id="1_dog"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" uid="uid://c1wxpvibbbk1l" path="res://assets/models/robots/robot_dog.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://b0l2vrvpgekna" path="res://assets/models/robots/robot_dog_v2.glb" id="4_model"]
 
 [sub_resource type="BoxShape3D" id="Box_col"]
 size = Vector3(0.9, 1.0, 1.9)
@@ -23,7 +23,7 @@ menace_glow = 0.0
 eye_glow = 0.0
 anim_walk = ""
 fit_height = 0.95
-fit_yaw_deg = 180.0
+fit_yaw_deg = 90.0
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
 

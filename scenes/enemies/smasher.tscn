@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Material" uid="uid://b0mat0glowred001" path="res://assets/materials/glow_red.tres" id="3_gr"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="4_rm"]
-[ext_resource type="PackedScene" uid="uid://c02e0aq5wmt" path="res://assets/models/robots/George_smasher.glb" id="5_model"]
+[ext_resource type="PackedScene" uid="uid://sh563cxhkfdo" path="res://assets/models/robots/rusty_claws_robot.glb" id="5_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 2.4
@@ -26,15 +26,13 @@ shape = SubResource("CapsuleShape3D_1")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("4_rm")
-tint = Color(0.72, 0.76, 0.86, 1)
 menace_color = Color(1, 0.14, 0.1, 1)
 anim_walk = "Walk"
-anim_attack = "Punch"
-anim_stagger = "HitRecieve_2"
 walk_speed_scale = 1.1
+fit_height = 10.0
+fit_yaw_deg = 180.0
 
 [node name="Mesh" parent="Model" instance=ExtResource("5_model")]
-transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, 0, 0)
 
 [node name="Head" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 0)

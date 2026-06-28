@@ -36,7 +36,7 @@ const ENTRIES := {
 		"weapons": ["AR-7 Pulse Rifle", "PL-1 Plasma Launcher", "MK-VII Longshot"],
 	},
 	"fishbot": {
-		"scene": "res://scenes/enemies/fishbot.tscn", "name": "ANGLER UNIT", "scale": 1.0, "y": 1.6,
+		"scene": "res://scenes/enemies/fishbot.tscn", "name": "ANGLER UNIT", "scale": 1.0, "y": 1.6, "light": 0.5,
 		"desc": "A robotic deep-sea fish that prowls the flooded basins — finned, darting and trailing bubbles, spitting pressurised water bolts.",
 		"strengths": ["Very fast and darting — hard to track", "Harasses you across the gantries from any angle"],
 		"weaknesses": ["Fragile — a solid hit drops it", "Predictable swim-in to harpoon range"],
@@ -50,7 +50,7 @@ const ENTRIES := {
 		"weapons": ["AR-7 Pulse Rifle", "GEM-2 Twin Rail", "MK-VII Longshot"],
 	},
 	"enforcer": {
-		"scene": "res://scenes/enemies/enforcer.tscn", "name": "ENFORCER", "scale": 1.0, "y": 0.0,
+		"scene": "res://scenes/enemies/enforcer.tscn", "name": "ENFORCER", "scale": 1.0, "y": 0.0, "light": 1.6,
 		"desc": "The AI's armoured riot trooper — a sleek police-frame android bracing a heavy scifi rifle. Holds its ground at range, fires measured bursts, and shrugs off chip damage.",
 		"strengths": ["Tougher and better armoured than an android", "Accurate burst fire at long range", "Holds position behind cover"],
 		"weaknesses": ["Slow to reposition — flank it", "Headshots still drop it fast"],
@@ -71,21 +71,21 @@ const ENTRIES := {
 		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "VK-7 Tesla Projector"],
 	},
 	"roller": {
-		"scene": "res://scenes/enemies/roller.tscn", "name": "ROLLER", "scale": 1.0, "y": 0.0,
+		"scene": "res://scenes/enemies/roller.tscn", "name": "ROLLER", "scale": 1.0, "y": 0.0, "light": 1.6,
 		"desc": "A monowheel brawler — a heavy drum balanced on one fat wheel, whipping spring-arms. It rolls in fast and rams, knocking you back. Tougher than a hound but slower to turn.",
 		"strengths": ["Closes distance in a fast roll", "Tanky — soaks a lot before it drops", "Rams hard and knocks you off balance"],
 		"weaknesses": ["No ranged attack — kite it", "Wide turning circle — circle-strafe it"],
 		"weapons": ["SG-12 Breacher", "GRK-X Devastator", "NV-X Nova Scatter"],
 	},
 	"shark": {
-		"scene": "res://scenes/enemies/shark.tscn", "name": "RAZORFIN", "scale": 1.0, "y": 1.3,
+		"scene": "res://scenes/enemies/shark.tscn", "name": "RAZORFIN", "scale": 1.0, "y": 1.3, "light": 0.5,
 		"desc": "A robotic shark that prowls BELOW the flooded basin, showing only a wake as it stalks the gantries. When it strikes it BREACHES — rocketing up out of the water in an arc to snap at you, then crashing back under. Hard to hit while submerged.",
 		"strengths": ["Lurks underwater where shots can't reach", "Breaches in a fast arc that's tough to dodge on a narrow gantry", "Snaps for heavy damage at the top of a leap"],
 		"weaknesses": ["Exposed and committed at the apex of a breach — punish it there", "Predictable arc once it launches"],
 		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "AR-7 Pulse Rifle"],
 	},
 	"gunslinger": {
-		"scene": "res://scenes/enemies/gunslinger.tscn", "name": "GUNSLINGER", "scale": 1.0, "y": 0.0,
+		"scene": "res://scenes/enemies/gunslinger.tscn", "name": "GUNSLINGER", "scale": 1.0, "y": 0.0, "light": 1.6,
 		"desc": "A brass steampunk automaton with a heavy revolver arm. It fires single, hard-hitting slugs on a slow cadence and dances aside between shots. Punishing if you stand still — bait it into a wasted shot, then close in.",
 		"strengths": ["Heavy single slugs hurt", "Strafes constantly between shots", "Long engagement range"],
 		"weaknesses": ["Slow cadence — exploit the gap after a shot", "Modest health"],
@@ -99,7 +99,7 @@ const ENTRIES := {
 		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "MK-VII Longshot"],
 	},
 	"breaker": {
-		"scene": "res://scenes/enemies/breaker.tscn", "name": "BREAKER", "scale": 1.0, "y": 1.3,
+		"scene": "res://scenes/enemies/breaker.tscn", "name": "BREAKER", "scale": 1.0, "y": 1.3, "yaw": 90.0,
 		"desc": "A hovering bronze sphere-bot built around a glowing core, dragging a massive piston hammer. It floats in, bobbing, then dives to slam you before drifting back up. Pure melee — shoot it down before it closes.",
 		"strengths": ["Floats above the fight and dives to smash", "Hammer slam hits hard", "Tougher than a recon drone"],
 		"weaknesses": ["No ranged attack — punish it at range", "Slow, glowing, easy to track"],

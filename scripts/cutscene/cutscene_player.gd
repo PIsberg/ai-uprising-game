@@ -34,7 +34,7 @@ func _ready() -> void:
 	_build_camera()
 	_build_overlay()
 	_build_set()
-	set_process_unhandled_input(true)
+	set_process_input(true)
 	_play.call_deferred()
 
 # ---------- overridable by a specific cutscene ----------
@@ -315,10 +315,14 @@ func _autofocus(focus: Vector3) -> void:
 	_cam_attr.dof_blur_near_distance = clampf(dist * 0.25, 0.2, 1.5)
 	_cam_attr.dof_blur_near_transition = _cam_attr.dof_blur_near_distance
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not _running or _skipped:
+# Skip on any press. Uses _input (not _unhandled_input) so nothing layered in the
+# scene can swallow it first, and drops the old `_running` gate so a press during
+# the opening fade isn't lost — _play() (deferred from _ready) sees _skipped on
+# its first loop and ends the timeline at once.
+func _input(event: InputEvent) -> void:
+	if _skipped:
 		return
-	if (event is InputEventKey and event.pressed) \
+	if (event is InputEventKey and event.pressed and not event.echo) \
 			or (event is InputEventMouseButton and event.pressed) \
 			or (event is InputEventJoypadButton and event.pressed):
 		_skipped = true

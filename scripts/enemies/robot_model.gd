@@ -127,10 +127,14 @@ func _apply_fit() -> void:
 	if h > 0.0001:
 		var s := fit_height / h
 		var c := ab.get_center()
-		var oy := -ab.position.y * s if fit_ground else -c.y * s
-		_mesh.transform = Transform3D(
-			Basis.from_euler(Vector3(0, deg_to_rad(fit_yaw_deg), 0)).scaled(Vector3(s, s, s)),
-			Vector3(-c.x * s, oy, -c.z * s))
+		# Centre the chassis on x/z (feet on the floor for ground units). The centre
+		# offset must be carried through the SAME scale+yaw basis, or the recentring
+		# won't cancel: a model with an off-origin pivot (e.g. Sketchfab exports nest
+		# a big translate) yawed 180° would otherwise land ~2*offset away.
+		var basis := Basis.from_euler(Vector3(0, deg_to_rad(fit_yaw_deg), 0)).scaled(Vector3(s, s, s))
+		var rc := basis * c # scaled + yawed centre
+		var oy := -ab.position.y * s if fit_ground else -rc.y
+		_mesh.transform = Transform3D(basis, Vector3(-rc.x, oy, -rc.z))
 	_mesh_base = _mesh.transform
 	_mesh.visible = true
 

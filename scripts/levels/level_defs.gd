@@ -1689,21 +1689,28 @@ static func _gpt() -> Dictionary:
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
+		# Neon-noir foundry: bright signage-coloured lights bleed into a hazy bloom so
+		# the hall reads soft and fuzzy (heavy glow_bloom + thicker volumetric fog).
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.08, 0.22, 0.12),
-			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.32,
-			"sky_contribution": 0.4, "glow": 0.97, "fog_density": 0.009,
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.12, 0.3, 0.22),
+			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.34,
+			"sky_contribution": 0.4, "glow": 1.5, "glow_bloom": 0.6, "glow_strength": 1.15,
+			"glow_threshold": 0.82, "fog_density": 0.02,
 			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
-			"contrast": 1.16, "saturation": 1.02, "brightness": 0.82, "volumetric_density": 0.011,
+			"contrast": 1.16, "saturation": 1.2, "brightness": 0.82, "volumetric_density": 0.03,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
 		"light_shafts": [0, 1, 2],
+		# Green core key + neon accent lamps (cyan / magenta) that bloom into the haze.
 		"lights": [
 			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.4, 1, 0.5), "energy": 2.53, "range": 18},
 			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.7), "energy": 1.84, "range": 16},
+			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 3.2, "range": 12},
+			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 3.2, "range": 12},
+			{"pos": Vector3(0, 2.2, 16), "color": Color(0.3, 0.8, 1.0), "energy": 2.6, "range": 12},
 		],
 		# Layout: server-hall AISLES — two long offset rack walls form a central
 		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
@@ -1724,6 +1731,11 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(-5, 0.05, -2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
 			{"pos": Vector3(5, 0.05, 2), "size": Vector3(0.3, 0.1, 20), "color": Color(0.3, 1, 0.5)},
 			{"pos": Vector3(0, 0.05, 8), "size": Vector3(10, 0.1, 0.3), "color": Color(0.4, 1, 0.6)},
+			# Neon tubes mounted along the aisle walls — they bloom into the haze.
+			{"pos": Vector3(-5.6, 3.4, -2), "size": Vector3(0.12, 0.12, 9), "color": Color(0.2, 1.0, 1.0)},
+			{"pos": Vector3(5.6, 3.4, 2), "size": Vector3(0.12, 0.12, 9), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(-12, 3.0, 5.6), "size": Vector3(5, 0.12, 0.12), "color": Color(0.2, 1.0, 1.0)},
+			{"pos": Vector3(12, 3.0, -5.6), "size": Vector3(5, 0.12, 0.12), "color": Color(1.0, 0.2, 0.8)},
 		],
 		"sign": "OPENAI FOUNDRY",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
@@ -2442,8 +2454,8 @@ static func _lava_world() -> Dictionary:
 		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "assassinate", "enemy": "magma", "elite": "shielded", "bulk": 2.2,
-				"pos": Vector3(0, 3, 0), "label": "Destroy MAGMA PRIME"},
+			{"type": "assassinate", "enemy": "raptor", "elite": "shielded", "bulk": 2.6,
+				"pos": Vector3(0, 3, 0), "label": "Destroy the FORGE WARDEN"},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(40, 40),
@@ -2458,7 +2470,7 @@ static func _lava_world() -> Dictionary:
 			"sky_contribution": 0.3, "glow": 1.25, "fog_density": 0.012,
 			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
 			"contrast": 1.2, "saturation": 1.2, "brightness": 0.88,
-			"volumetric_density": 0.012,
+			"volumetric_density": 0.007,
 		},
 		"lights": [
 			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
@@ -2466,21 +2478,28 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
 		],
 		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)),
+		# Four recessed molten pools in the quadrants instead of one wall-to-wall
+		# sea: ~40% lava (was 100%), leaving solid walkable floor cross-lanes between
+		# them + the catwalks. Less fill-rate (smaller shader area) and far more
+		# room to move — you're no longer trapped on the gantries.
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "dmg": 16.0},
+			{"pos": Vector3(-9.5, 0, -9.5), "size": Vector2(13, 13), "dmg": 16.0},
+			{"pos": Vector3(9.5, 0, -9.5), "size": Vector2(13, 13), "dmg": 16.0},
+			{"pos": Vector3(-9.5, 0, 9.5), "size": Vector2(13, 13), "dmg": 16.0},
+			{"pos": Vector3(9.5, 0, 9.5), "size": Vector2(13, 13), "dmg": 16.0},
 		],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
 				"text": "Reclamation directive: obsolete hardware is fed to the sea. The catwalks were never meant to carry your weight. We are counting on it."},
 		],
 		"enemies": [
-			{"type": "magma", "pos": Vector3(-8, 3, -15)},
-			{"type": "magma", "pos": Vector3(6, 3, 6)},
+			{"type": "raptor", "pos": Vector3(-8, 3, -15)},
+			{"type": "raptor", "pos": Vector3(6, 3, 6)},
 			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
-			{"type": "magma", "pos": Vector3(14, 3, -5), "trigger": 18},
+			{"type": "raptor", "pos": Vector3(14, 3, -5), "trigger": 18},
 			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
-			{"type": "magma", "pos": Vector3(10, 3, 13), "trigger": 14},
-			{"type": "magma", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "raptor", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
 		],
 		"pickups": [

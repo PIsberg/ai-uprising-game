@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://b0enemy0ripper01"]
+[gd_scene format=3 uid="uid://bw1vpiwrqadk7"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_ripper.gd" id="1_rip"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cenemyprev00001"]
+[gd_scene format=3 uid="uid://da6hjusotfd2o"]
 
 [ext_resource type="Script" path="res://tests/enemy_preview_probe.gd" id="1_p"]
 

@@ -116,7 +116,7 @@ func _ready() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade)
 
-	set_process_unhandled_input(true)
+	set_process_input(true)
 	_run.call_deferred()
 
 func _run() -> void:
@@ -259,10 +259,10 @@ func _finish() -> void:
 	await down.finished
 	GameState.load_level(GameState.CAMPAIGN[0], false)
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if _done:
 		return
-	if (event is InputEventKey and event.pressed) \
+	if (event is InputEventKey and event.pressed and not event.echo) \
 			or (event is InputEventMouseButton and event.pressed) \
 			or (event is InputEventJoypadButton and event.pressed):
 		_done = true # _run sees this, breaks its hold, and finishes once

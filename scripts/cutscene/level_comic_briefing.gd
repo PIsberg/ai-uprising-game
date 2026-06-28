@@ -357,7 +357,7 @@ func _ready() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade)
 
-	set_process_unhandled_input(true)
+	set_process_input(true)
 	_setup_briefing.call_deferred()
 
 func _setup_briefing() -> void:
@@ -553,10 +553,10 @@ func _finish() -> void:
 	else:
 		GameState.load_level(GameState.current_level_path, false)
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if _done:
 		return
-	if (event is InputEventKey and event.pressed) \
+	if (event is InputEventKey and event.pressed and not event.echo) \
 			or (event is InputEventMouseButton and event.pressed) \
 			or (event is InputEventJoypadButton and event.pressed):
 		_finish()

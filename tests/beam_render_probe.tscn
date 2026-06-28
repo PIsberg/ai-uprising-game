@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cbeamrender001"]
+[gd_scene format=3 uid="uid://doctqf02sc441"]
 
 [ext_resource type="Script" path="res://tests/beam_render_probe.gd" id="1_p"]
 

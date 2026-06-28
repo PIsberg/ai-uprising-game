@@ -6,9 +6,10 @@ extends EnemyBase
 ## SMASHER: it charges the player down, hammers with an overhead fist-smash, and
 ## ground-slams a shockwave when you crowd it. Bring the boss bar + an entrance.
 ##
-## Visuals: the Blender-welded "George_smasher" heavy mech (RobotModel on $Model
-## drives Walk/Punch/HitRecieve clips); the pulsing Reactor weak-point and the
-## red visor spotlight are scene markers layered on top.
+## Visuals: the high-detail "rusty_claws_robot" — a battered, clawed humanoid
+## hulk (RobotModel auto-fits it to 10 m on $Model; the model is rig-less, so it
+## leans rather than playing clips). The pulsing Reactor weak-point and the red
+## visor spotlight are scene markers layered on top.
 
 @export var boss_name: String = "BEHEMOTH-X"   ## Shown on the HUD boss bar.
 @export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the wake-roar entrance, boss bar + AI.

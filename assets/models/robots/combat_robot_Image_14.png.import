@@ -2,13 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cop5bduptyelb"
+uid="uid://c8nf2wiy1657u"
 path="res://.godot/imported/combat_robot_Image_14.png-0bc8b860980f807a67d146d1e3d6180d.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "504857c7a031f0d7837c1a976e5601d3"
 }
 
 [deps]
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
