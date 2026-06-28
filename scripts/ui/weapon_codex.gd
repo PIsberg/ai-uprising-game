@@ -49,6 +49,13 @@ var _subvp: SubViewport
 var _turntable: Node3D
 var _cam: Camera3D
 var _model: Node3D
+# Auto-firing preview: the muzzle node lifted with the viewmodel, plus the live
+# WeaponData, so the Codex can spawn the gun's real muzzle flash on a timer.
+var _muzzle: Node3D
+var _cur_data: WeaponData
+var _fire_cd: float = 0.8
+var _model_base_pos: Vector3 = Vector3.ZERO
+var _recoil_kick: float = 0.0
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -250,6 +257,7 @@ func _show_model(scene_path: String) -> void:
 	if _model and is_instance_valid(_model):
 		_model.queue_free()
 		_model = null
+	_muzzle = null
 	_turntable.rotation = Vector3.ZERO
 	var ps := load(scene_path) as PackedScene
 	if ps == null:
@@ -262,6 +270,9 @@ func _show_model(scene_path: String) -> void:
 		_model = vm
 		_turntable.add_child(vm)
 		_frame_model()
+		# weapon.gd resolves its muzzle the same way: a direct "Muzzle" child of
+		# the viewmodel. Lift it so the preview can fire from the barrel tip.
+		_muzzle = vm.get_node_or_null("Muzzle")
 	w.free()
 
 func _frame_model() -> void:
@@ -276,6 +287,9 @@ func _frame_model() -> void:
 	# spins from here so every angle shows.
 	_cam.position = Vector3(dist * 0.82, dist * 0.34, dist * 0.42)
 	_cam.look_at(Vector3.ZERO, Vector3.UP)
+	# Remember the framed rest position so the recoil kick can spring back to it.
+	_model_base_pos = _model.position
+	_recoil_kick = 0.0
 
 func _model_aabb(root: Node3D) -> AABB:
 	var merged := AABB()
@@ -295,6 +309,80 @@ func _model_aabb(root: Node3D) -> AABB:
 func _process(delta: float) -> void:
 	if _turntable:
 		_turntable.rotation.y += delta * 0.8
+	# Spring the viewmodel back from its recoil kick.
+	if _model and is_instance_valid(_model):
+		_recoil_kick = move_toward(_recoil_kick, 0.0, delta * 0.35)
+		_model.position = _model_base_pos + Vector3(0.0, 0.0, _recoil_kick)
+	# Auto-fire the previewed weapon on a calm cadence so its muzzle flash, tint
+	# and recoil read at a glance — a live check that each gun's FX is wired right.
+	_fire_cd -= delta
+	if _fire_cd <= 0.0:
+		_fire_cd = 1.4
+		_fire_preview()
+
+## Fire the current weapon in the preview: a recoil kick (scaled by recoil_pitch)
+## plus a burst of muzzle flashes (3 for AUTO/BURST guns, 1 otherwise).
+func _fire_preview() -> void:
+	if _cur_data == null or not is_instance_valid(_muzzle):
+		return
+	_recoil_kick = clampf(0.008 + _cur_data.recoil_pitch * 0.004, 0.01, 0.045)
+	var shots := 1
+	if _cur_data.fire_mode == WeaponData.FireMode.AUTO or _cur_data.fire_mode == WeaponData.FireMode.BURST:
+		shots = 3
+	_fire_burst(shots)
+
+func _fire_burst(n: int) -> void:
+	for i in n:
+		if _cur_data == null or not is_instance_valid(_muzzle):
+			return
+		_spawn_flash()
+		if i < n - 1:
+			await get_tree().create_timer(0.09).timeout
+
+## Spawn the weapon's own muzzle flash at the barrel tip — same tint + size_mult
+## weapon.gd uses — so the Codex shows the real per-weapon blast. Energy/beam guns
+## carry no flash scene, so they get a tinted bloom instead.
+func _spawn_flash() -> void:
+	if _cur_data == null or not is_instance_valid(_muzzle):
+		return
+	var fs: PackedScene = _cur_data.muzzle_flash_scene
+	if fs != null:
+		var m := fs.instantiate()
+		if "tint_color" in m:
+			m.tint_color = _cur_data.tracer_color
+			m.size_mult = _cur_data.muzzle_scale
+		_muzzle.add_child(m)
+	else:
+		_spawn_energy_bloom()
+
+func _spawn_energy_bloom() -> void:
+	var col := _cur_data.tracer_color
+	var orb := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	var r := 0.05 * maxf(_cur_data.muzzle_scale, 0.6)
+	sm.radius = r; sm.height = r * 2.0; sm.radial_segments = 10; sm.rings = 6
+	orb.mesh = sm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 9.0
+	orb.material_override = mat
+	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_muzzle.add_child(orb)
+	var light := OmniLight3D.new()
+	light.light_color = col
+	light.light_energy = 5.0
+	light.omni_range = 2.5
+	orb.add_child(light)
+	var tw := orb.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(orb, "scale", Vector3.ONE * 2.2, 0.18)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.tween_property(light, "light_energy", 0.0, 0.18)
+	tw.chain().tween_callback(orb.queue_free)
 
 func _title_label(text: String) -> Label:
 	var l := Label.new()
@@ -359,6 +447,9 @@ func _refresh() -> void:
 		return
 	var d: WeaponData = _weapons[_index]["data"]
 	var id: String = _weapons[_index]["id"]
+	# Drive the firing preview; fire shortly after a switch so it's responsive.
+	_cur_data = d
+	_fire_cd = 0.6
 	_name_lbl.text = d.display_name
 	_class_lbl.text = "%s · %s%s" % [
 		FIRE_NAMES[clampi(d.fire_mode, 0, 3)], DMG_NAMES[clampi(d.damage_type, 0, 1)],

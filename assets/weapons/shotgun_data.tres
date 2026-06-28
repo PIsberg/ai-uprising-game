@@ -28,6 +28,7 @@ mag_size = 6
 reserve_max = 48
 reload_time = 2.6
 muzzle_flash_scene = ExtResource("3_mf")
+muzzle_scale = 1.8
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
 sound_id = "shotgun"

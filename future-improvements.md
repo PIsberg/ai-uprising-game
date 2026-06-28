@@ -74,6 +74,11 @@ The input map is fixed in `project.godot`. A rebinding screen in Settings
 - ✅ **Spinning 3D weapon preview shipped** — lifts each weapon's `Viewmodel` node
   into a SubViewport turntable (no `blaster-*.glb` mapping needed; the in-game guns
   are procedural meshes).
+- ✅ **Auto-firing preview shipped** — the turntable now fires on a calm cadence,
+  spawning each gun's real `muzzle_flash_scene` at the `Muzzle` tip (same
+  `tracer_color` tint + `muzzle_scale` size weapon.gd uses) with a recoil kick
+  scaled by `recoil_pitch`, and a tinted bloom for beam guns with no flash scene.
+  Doubles as a live check that per-weapon FX values are wired right.
 - Optional "weapons discovered as you pick them up" gating (needs a persistent
   `discovered_weapons` like the bestiary's `discovered_enemies`).
 

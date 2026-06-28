@@ -171,6 +171,32 @@ const LEVEL_COMIC_DEFS := {
 			{"kind": "glow", "u": 0.2, "v": 0.5, "size": 100, "color": C_BLUE} # Holo text
 		],
 		"weather": "digital"
+	},
+	# --- Act III hazard arenas. Bespoke briefing FX + flavour now; the images
+	# reuse the closest-matching panels (molten foundry / coolant vault) until
+	# dedicated level_lava.png / level_water.png art is drawn — drop those files
+	# in and they take over automatically (see _setup_briefing fallback). ---
+	"lava_world": {
+		"image": "res://assets/comics/level_lava.png", # bespoke art (optional)
+		"fallback_image": "res://assets/comics/level_crucible.png", # molten-foundry panel until then
+		"fx": [
+			{"kind": "glow", "u": 0.5, "v": 0.78, "size": 150, "color": C_WARM}, # Molten sea
+			{"kind": "glow", "u": 0.3, "v": 0.55, "size": 44, "color": C_RED}, # Forge-walker eye
+			{"kind": "glow", "u": 0.72, "v": 0.5, "size": 40, "color": C_RED}, # Forge-walker eye 2
+			{"kind": "muzzle", "u": 0.18, "v": 0.66, "size": 70, "color": C_BLUE} # Player weapon
+		],
+		"weather": "sparks"
+	},
+	"water_world": {
+		"image": "res://assets/comics/level_water.png", # bespoke art (optional)
+		"fallback_image": "res://assets/comics/level_mistral.png", # coolant-vault panel until then
+		"fx": [
+			{"kind": "glow", "u": 0.5, "v": 0.74, "size": 140, "color": C_CYAN}, # Flooded reactor pool
+			{"kind": "glow", "u": 0.34, "v": 0.46, "size": 42, "color": C_RED}, # Diver-drone sensor
+			{"kind": "glow", "u": 0.7, "v": 0.52, "size": 38, "color": C_RED}, # Gantry turret eye
+			{"kind": "muzzle", "u": 0.2, "v": 0.7, "size": 64, "color": C_BLUE} # Player weapon
+		],
+		"weather": "rain"
 	}
 }
 
@@ -192,6 +218,8 @@ const TAGLINES := {
 	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
 	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
 	"archon": "The Mind Cathedral. Behind every machine that ever hunted you was one brain giving the orders — ARCHON. It hangs in the dark, shielded, and it does not fight. It deploys. Tear through everything it spits out, crack the shield, and put a round through the thought that started all of this.",
+	"lava_world": "Vulcan Forge. The machines tapped the planet's own heart for power — a molten sea they pour war-frames out of. The only road across is a lattice of catwalks over the glow. One slip and the Forge takes back its iron, you included.",
+	"water_world": "Tidecore Basin. They flooded the reactor to cool a mind that never sleeps, and drowned the sublevels with it. Cross the gantries above the black water — what's under the surface still has power, and it is waiting for the lights to find you.",
 }
 
 var _atlas: AtlasTexture
@@ -342,10 +370,14 @@ func _setup_briefing() -> void:
 
 	var comic_cfg: Dictionary = LEVEL_COMIC_DEFS.get(lid, LEVEL_COMIC_DEFS["01"])
 	var img_path: String = comic_cfg.get("image", "res://assets/comics/level_01.png")
+	if not ResourceLoader.exists(img_path):
+		# Prefer a per-level themed fallback (e.g. hazard levels reuse the closest
+		# existing panel) before the generic level_01 catch-all.
+		img_path = comic_cfg.get("fallback_image", "res://assets/comics/level_01.png")
 	if ResourceLoader.exists(img_path):
 		_img.texture = load(img_path)
 	else:
-		# Fallback to level_01.png if specific level image doesn't exist
+		# Final catch-all if neither the bespoke nor themed image exists.
 		_img.texture = load("res://assets/comics/level_01.png")
 
 	# Aspect ratio sizing
