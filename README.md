@@ -98,6 +98,8 @@ Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, 
 | Interact / pick up | `E` | X |
 | Pause | `Esc` | Start |
 
+**Testing cheats** (type the word — no console needed): on the main menu, type **`warp`** for a direct level-select that also unlocks the full bestiary and arsenal; **in-game**, type **`god`** to toggle invincibility (tops you off to full health), and type it again to turn it off.
+
 Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra), and master/SFX/music volume are all in **Settings** (main menu and in-game pause). It also includes independent toggles for advanced features (GPU Particles, Volumetric Noise Shafts, Triplanar Damage, Puddle Ripples, and Advanced Post-Process FX), which persist to `user://settings.cfg`.
 
 ---
