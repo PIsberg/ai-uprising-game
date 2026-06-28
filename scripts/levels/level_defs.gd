@@ -210,11 +210,16 @@ static func _nexus() -> Dictionary:
 			"weather": "rain",     # storm rolling over the ruined city
 			"lightning": true,
 		},
-		# Rooftop vantage + a stair of rubble slabs down into the street.
+		# Rooftop vantage + a stair of rubble slabs down into the street, plus a
+		# collapsed-slab island mid-yard you can climb for a sightline over the cars.
 		"platforms": [
 			{"pos": Vector3(-17, 1.8, -17), "size": Vector3(10, 3.6, 9)},
 			{"pos": Vector3(-11, 1.1, -11), "size": Vector3(5, 2.2, 5)},
 			{"pos": Vector3(-7, 0.5, -7), "size": Vector3(4.5, 1.0, 4.5)},
+			{"pos": Vector3(7, 1.0, -2), "size": Vector3(6, 2.0, 6)},
+		],
+		"ramps": [
+			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
 		"buildings": [
@@ -249,6 +254,12 @@ static func _nexus() -> Dictionary:
 			{"type": "crate", "pos": Vector3(-9, 0, 8)},
 			{"type": "fence", "pos": Vector3(-13, 0, -2), "yaw": 90},
 			{"type": "lamp", "pos": Vector3(12, 0, -10)},
+			# War-torn street detail: rubble piles, a toppled hydrant, sandbag line.
+			{"type": "rubble", "pos": Vector3(-2, 0, 8)},
+			{"type": "rubble", "pos": Vector3(11, 0, 2)},
+			{"type": "sandbags", "pos": Vector3(0, 0, 6), "yaw": 20},
+			{"type": "dead_tree", "pos": Vector3(-14, 0, 10)},
+			{"type": "hydrant", "pos": Vector3(13, 0, -6)},
 		],
 		# The machine line advancing from the nexus, like the comic.
 		"enemies": [
@@ -743,6 +754,16 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(-15, 1.5, 15), "size": Vector3(3, 3, 3)},
 			{"pos": Vector3(15, 1.5, -15), "size": Vector3(3, 3, 3)},
 		],
+		# Two raised holdout decks on opposite flanks — high ground to fall back to
+		# and rain fire from when the floor gets overrun, each reached by a ramp.
+		"platforms": [
+			{"pos": Vector3(-18, 2.6, 12), "size": Vector3(9, 0.5, 8), "color": Color(0.2, 0.2, 0.26)},
+			{"pos": Vector3(18, 2.6, -12), "size": Vector3(9, 0.5, 8), "color": Color(0.2, 0.2, 0.26)},
+		],
+		"ramps": [
+			{"pos": Vector3(-18, 1.3, 5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(18, 1.3, -5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 180},
+		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.35, 0.08, 36), "color": Color(1, 0.35, 0.25)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(36, 0.08, 0.35), "color": Color(1, 0.35, 0.25)},
@@ -773,6 +794,13 @@ static func _horde() -> Dictionary:
 			{"type": "crate", "pos": Vector3(18, 0, 0)},
 			{"type": "lamp", "pos": Vector3(-20, 0, 20)},
 			{"type": "lamp", "pos": Vector3(20, 0, -20), "yaw": 180},
+			# Sandbag nests + barriers thicken the cover so the floor fight has texture.
+			{"type": "sandbags", "pos": Vector3(-6, 0, 12), "yaw": 0},
+			{"type": "sandbags", "pos": Vector3(6, 0, -12), "yaw": 0},
+			{"type": "barrier", "pos": Vector3(12, 0, 4), "yaw": 90},
+			{"type": "barrier", "pos": Vector3(-12, 0, -4), "yaw": 90},
+			{"type": "crate_stack", "pos": Vector3(-18, 2.85, 12)},
+			{"type": "crate_stack", "pos": Vector3(18, 2.85, -12)},
 		],
 		# Eight perimeter gates the waves pour in from.
 		"horde_spawns": [
@@ -826,6 +854,15 @@ static func _range() -> Dictionary:
 		"walls": [
 			{"pos": Vector3(-9.5, 0.55, 18), "size": Vector3(9, 1.1, 0.7)},
 			{"pos": Vector3(9.5, 0.55, 18), "size": Vector3(9, 1.1, 0.7)},
+		],
+		# An elevated overwatch deck behind the line — climb the ramp to test the
+		# long-range guns looking straight down all four lanes.
+		"platforms": [
+			{"pos": Vector3(0, 2.2, 30), "size": Vector3(16, 0.5, 5), "color": Color(0.16, 0.18, 0.22)},
+		],
+		"ramps": [
+			{"pos": Vector3(-13, 1.1, 28), "size": Vector3(3.5, 0.5, 6), "pitch": 20, "yaw": 0},
+			{"pos": Vector3(13, 1.1, 28), "size": Vector3(3.5, 0.5, 6), "pitch": 20, "yaw": 0},
 		],
 		# Distance markers painted across the lanes every ten metres.
 		"accents": [
