@@ -39,7 +39,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 1.08, -1.05)
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2_dmg")
-max_health = 150.0
+max_health = 200.0
+armor = 2.0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 radius = 0.55

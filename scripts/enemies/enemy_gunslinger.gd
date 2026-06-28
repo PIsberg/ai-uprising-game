@@ -8,8 +8,8 @@ extends EnemyAndroid
 func _ready() -> void:
 	super._ready()
 	max_health = 130.0
-	move_speed = 4.8
-	turn_speed = 8.0
+	move_speed = 6.2      # lean, nimble duelist — quicker than a standard android
+	turn_speed = 9.5
 	attack_range = 32.0
 	preferred_range = 18.0
 	hitscan_damage = 26.0

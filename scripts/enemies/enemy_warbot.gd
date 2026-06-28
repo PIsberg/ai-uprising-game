@@ -21,15 +21,17 @@ var _angry_now: bool = false
 
 func _ready() -> void:
 	super._ready()
-	# A sturdier mid-tier grunt than the android.
-	max_health = 150.0
-	move_speed = 4.6
-	turn_speed = 7.5
+	# A thick-armored bruiser grunt — bulkier and tankier than the android, and a
+	# step slower for the weight.
+	max_health = 200.0
+	move_speed = 4.4
+	turn_speed = 7.0
 	attack_range = 24.0
 	preferred_range = 11.0
-	score_value = 185
+	score_value = 210
 	hp.max_health = max_health
 	hp.current_health = max_health
+	hp.armor = 2.0
 	_build_weapons()
 	_build_face()
 

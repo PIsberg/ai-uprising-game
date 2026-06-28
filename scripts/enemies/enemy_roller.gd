@@ -7,7 +7,7 @@ extends EnemyDog
 func _ready() -> void:
 	super._ready()
 	bite_damage = 24.0
-	max_health = 150.0
+	max_health = 175.0    # a heavy steel drum — soaks more than a hound
 	move_speed = 8.0
 	turn_speed = 7.5
 	attack_range = 3.4
