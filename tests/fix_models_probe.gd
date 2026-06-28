@@ -6,8 +6,7 @@ extends Node3D
 
 const OUT_DIR := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private/4fbdff7a-4323-435c-af31-9542c7153dc8/scratchpad/"
 const MODELS := [
-	"combat_steampunk", "steampunk_robot", "reaper_whirlwind",
-	"robot_dog", "utility_robot", "robot_minigun",
+	"_tmp/combat_z45", "_tmp/combat_zneg45",
 ]
 
 var _cam: Camera3D
@@ -68,6 +67,6 @@ func _run() -> void:
 		await get_tree().process_frame
 		await get_tree().create_timer(0.2).timeout
 		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png(OUT_DIR + "fm_" + name + ".png")
+		get_viewport().get_texture().get_image().save_png(OUT_DIR + "fm_" + name.replace("/", "_") + ".png")
 		print("SAVED ", name, " maxd=", maxd, " size=", aabb.size)
 	get_tree().quit()

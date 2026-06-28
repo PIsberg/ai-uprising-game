@@ -5,8 +5,7 @@ extends Node3D
 
 const OUT_DIR := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private/4fbdff7a-4323-435c-af31-9542c7153dc8/scratchpad/"
 const SCENES := [
-	"enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"terminator", "reaper", "dog",
+	"whirlwind", "breaker",
 ]
 
 var _cam: Camera3D

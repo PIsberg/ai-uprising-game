@@ -458,6 +458,8 @@ static func _neon() -> Dictionary:
 			# GUNSLINGER duelists holding the arcade lanes.
 			{"type": "gunslinger", "pos": Vector3(12, 0.5, 4)},
 			{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10), "trigger": 16},
+			# A BREAKER hammer-drone bobbing over the lanes.
+			{"type": "breaker", "pos": Vector3(0, 3.5, 8), "trigger": 18},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
 			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
@@ -1558,6 +1560,8 @@ static func _assembly() -> Dictionary:
 			{"type": "enforcer", "pos": Vector3(8, 0.5, -14), "trigger": 24},
 			{"type": "enforcer", "pos": Vector3(-8, 0.5, 14), "trigger": 26},
 			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28},
+			# A WHIRLWIND buzzsaw drone screaming off the overhead line.
+			{"type": "whirlwind", "pos": Vector3(6, 3.5, 6), "trigger": 22},
 		],
 	}
 

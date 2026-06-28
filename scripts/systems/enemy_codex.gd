@@ -16,6 +16,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"magma", "fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
+	"whirlwind", "breaker",
 	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
 ]
 
@@ -89,6 +90,20 @@ const ENTRIES := {
 		"strengths": ["Heavy single slugs hurt", "Strafes constantly between shots", "Long engagement range"],
 		"weaknesses": ["Slow cadence — exploit the gap after a shot", "Modest health"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "ARC-9 Gauss Lance"],
+	},
+	"whirlwind": {
+		"scene": "res://scenes/enemies/whirlwind.tscn", "name": "WHIRLWIND", "scale": 1.0, "y": 1.3,
+		"desc": "A hovering buzzsaw drone: a red core slung between two long whirling blade-arms. It floats over the field, then dives in to rake you with its spinning arms before pulling back up out of reach.",
+		"strengths": ["Airborne — harder to pin than ground units", "Dives in fast for melee rakes", "Erratic flight"],
+		"weaknesses": ["No ranged attack — keep it at bay", "Falls to sustained fire"],
+		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "MK-VII Longshot"],
+	},
+	"breaker": {
+		"scene": "res://scenes/enemies/breaker.tscn", "name": "BREAKER", "scale": 1.0, "y": 1.3,
+		"desc": "A hovering bronze sphere-bot built around a glowing core, dragging a massive piston hammer. It floats in, bobbing, then dives to slam you before drifting back up. Pure melee — shoot it down before it closes.",
+		"strengths": ["Floats above the fight and dives to smash", "Hammer slam hits hard", "Tougher than a recon drone"],
+		"weaknesses": ["No ranged attack — punish it at range", "Slow, glowing, easy to track"],
+		"weapons": ["MK-VII Longshot", "GRK-X Devastator", "AR-7 Pulse Rifle"],
 	},
 	"android": {
 		"scene": "res://scenes/enemies/android.tscn", "name": "INFANTRY ANDROID", "scale": 1.0, "y": 0.0,
