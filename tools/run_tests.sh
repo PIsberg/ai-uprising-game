@@ -21,6 +21,8 @@ PROBES=(
   res://tests/shark_breach_probe.tscn
   res://tests/tesla_beam_probe.tscn
   res://tests/god_cheat_probe.tscn
+  res://tests/enemy_combat_probe.tscn
+  res://tests/projectile_fx_probe.tscn
 )
 
 echo "== importing project =="
