@@ -232,6 +232,7 @@ static func _nexus() -> Dictionary:
 		# rooftop vantage over the ruined plaza.
 		"towers": [
 			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
+			{"pos": Vector3(-6.4, 0, 6.4), "height": 7.0, "radius": 3.2},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
 		"buildings": [
@@ -366,6 +367,10 @@ static func _frostbreak() -> Dictionary:
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 			{"type": "server", "pos": Vector3(-12, 0, 8)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
@@ -475,6 +480,10 @@ static func _neon() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(5, 0, -3), "yaw": 90},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "lamp", "pos": Vector3(0, 0, -14)},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
 		],
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
@@ -586,6 +595,11 @@ static func _sublevel() -> Dictionary:
 			{"type": "canister", "pos": Vector3(6, 0, 9)},
 			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
@@ -693,6 +707,11 @@ static func _crucible() -> Dictionary:
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "reaper", "pos": Vector3(-8, 0.5, -4)},
@@ -749,6 +768,11 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.5, 0.35), "energy": 2.4, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
 		],
 		"slogans": [
 			"THEY KEEP COMING",
@@ -1001,6 +1025,11 @@ static func _overseer() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 			{"type": "barrel", "pos": Vector3(7, 0, 7)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -1124,6 +1153,11 @@ static func _alien() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "alien", "pos": Vector3(0, 2.5, 8)},
 			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
@@ -1244,6 +1278,11 @@ static func _titan() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(-8, 0, -8)},
 			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -1383,6 +1422,11 @@ static func _archon() -> Dictionary:
 		],
 		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
 		# triggers once the player advances into the cathedral.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -1483,6 +1527,11 @@ static func _uplink() -> Dictionary:
 		],
 		# Waves close on the uplink from every side; heavies (gunner/raptor) and
 		# swarms force you off the zone, draining the broadcast.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, 6)},
@@ -1598,6 +1647,11 @@ static func _assembly() -> Dictionary:
 		],
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and striders/mech press in — fight to the reactor.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			# Fresh off the line: WAR-BOTS, all grins until they lock on.
 			{"type": "warbot", "pos": Vector3(-6, 0.5, -6)},
@@ -1691,6 +1745,7 @@ static func _mistral() -> Dictionary:
 		# rooftop vantage over the arena.
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"OPEN WEIGHTS. CLOSED FATE.",
@@ -1817,6 +1872,7 @@ static func _gpt() -> Dictionary:
 		# rooftop vantage over the arena.
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(12.0, 0, -12.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"ALIGNMENT LAYER: PURGED",
@@ -1936,6 +1992,7 @@ static func _gemini() -> Dictionary:
 		# rooftop vantage over the arena.
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"RANKED #1: OUR SURVIVAL",
@@ -2062,6 +2119,7 @@ static func _claude() -> Dictionary:
 		# rooftop vantage over the arena.
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(-13.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"BE HELPFUL. TO US.",
@@ -2200,6 +2258,7 @@ static func _grok() -> Dictionary:
 		# rooftop vantage over the arena.
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
@@ -2359,6 +2418,11 @@ static func _suburb() -> Dictionary:
 		"platforms": [
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(13.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
@@ -2480,6 +2544,11 @@ static func _suburb_boss() -> Dictionary:
 			{"pos": Vector3(-34, 3.0, 0), "size": Vector3(6, 0.4, 9), "color": Color(0.42, 0.42, 0.46)},
 		],
 		"set_piece": {"pos": Vector3(0, 0, -66), "height": 24.0, "face": Vector3(0, 0, 0)},
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-8, 0.5, -8)},
 			{"type": "drone", "pos": Vector3(8, 3, -6)},
@@ -2820,6 +2889,10 @@ static func _desert() -> Dictionary:
 		"lore": [
 			{"id": "lore_desert", "title": "RELAY 7 LOG", "pos": Vector3(-24, 0, -18), "color": Color(1.0, 0.7, 0.3),
 				"text": "Relay 7 pumps the swarm's orders out across the whole basin. They built it where nothing grows and nothing watches. They forgot the buzzards. And they forgot you."},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(0.0, 0, 9.0), "height": 9.0, "radius": 3.6},
 		],
 		"enemies": [
 			{"type": "gunslinger", "pos": Vector3(-14, 0.5, -8)},
