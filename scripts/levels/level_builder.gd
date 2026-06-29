@@ -1017,8 +1017,11 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 		# Corner landing, flush-topped at the segment height, so the player can turn.
 		_add_collider_box(c - Vector3(0, 0.2, 0), Vector3(3.8, 0.4, 3.8), MAT_PROP)
 		prev = c
-	# Top vantage, accent-edged, at the final corner.
-	_add_collider_box(prev - Vector3(0, 0.2, 0), Vector3(5.2, 0.4, 5.2), _color_material(accent))
+	# Centered rooftop vantage capping the column — covers the final landing so the
+	# player steps straight onto it, and gives sky-bridges a predictable target at
+	# (base.x, height, base.z).
+	_add_collider_box(base + Vector3(0, height, 0),
+		Vector3(radius * 2.5, 0.4, radius * 2.5), _color_material(accent))
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):

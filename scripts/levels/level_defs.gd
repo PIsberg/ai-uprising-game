@@ -230,6 +230,10 @@ static func _nexus() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
 		# rooftop vantage over the ruined plaza.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
 			{"pos": Vector3(-6.4, 0, 6.4), "height": 7.0, "radius": 3.2},
@@ -596,6 +600,10 @@ static func _sublevel() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(12.0, 9.2, -12.0), "to": Vector3(0.0, 7.2, 13.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1},
@@ -708,6 +716,10 @@ static func _crucible() -> Dictionary:
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(-0.0, 7.2, -17.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
@@ -770,6 +782,10 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(16, 5, -16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(17.0, 9.2, 0.0), "to": Vector3(-0.0, 7.2, -17.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
@@ -1026,6 +1042,10 @@ static func _overseer() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(7, 0, 7)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
@@ -1154,6 +1174,10 @@ static func _alien() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
@@ -1280,6 +1304,10 @@ static func _titan() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
@@ -1423,6 +1451,10 @@ static func _archon() -> Dictionary:
 		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
 		# triggers once the player advances into the cathedral.
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
@@ -1528,6 +1560,10 @@ static func _uplink() -> Dictionary:
 		# Waves close on the uplink from every side; heavies (gunner/raptor) and
 		# swarms force you off the zone, draining the broadcast.
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
@@ -1648,6 +1684,10 @@ static func _assembly() -> Dictionary:
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and striders/mech press in — fight to the reactor.
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
@@ -1743,6 +1783,10 @@ static func _mistral() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2},
@@ -1870,6 +1914,10 @@ static func _gpt() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(12.0, 7.2, -12.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 			{"pos": Vector3(12.0, 0, -12.0), "height": 7.0, "radius": 3.2},
@@ -1990,6 +2038,10 @@ static func _gemini() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
@@ -2117,6 +2169,10 @@ static func _claude() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-13.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 			{"pos": Vector3(-13.0, 0, 0.0), "height": 7.0, "radius": 3.2},
@@ -2256,6 +2312,10 @@ static func _grok() -> Dictionary:
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
@@ -2419,6 +2479,10 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(13.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(13.0, 0, 0.0), "height": 7.0, "radius": 3.1},
@@ -2545,6 +2609,10 @@ static func _suburb_boss() -> Dictionary:
 		],
 		"set_piece": {"pos": Vector3(0, 0, -66), "height": 24.0, "face": Vector3(0, 0, 0)},
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
