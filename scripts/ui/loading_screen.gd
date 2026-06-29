@@ -26,6 +26,7 @@ const TIPS := [
 	"Out of ammo mid-fight? Switch to another loaded weapon instead of reloading — the swap is faster and can be the difference between living and dying.",
 	"Every gun has a role — check the Weapon Codex from the main menu.",
 	"Hunt the marked high-value target to clear an assassination sector.",
+	"The Tesla Projector shreds up close but has almost no reach — get in tight and it leaves you exposed to melee smashers. Stay mobile and back off before they close.",
 ]
 
 var _spinner: Control

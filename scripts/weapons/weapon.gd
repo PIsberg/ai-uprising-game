@@ -697,7 +697,7 @@ func _update_beam(delta: float) -> void:
 	if data == null or data.fire_mode != WeaponData.FireMode.BEAM:
 		return
 	if not _beam_wanted or _reloading or mag <= 0 or _active_camera == null or not visible:
-		if _beam:
+		if is_instance_valid(_beam):
 			_beam.deactivate()
 		_beam_tick = 0.0 # first tick lands the instant the trigger is pressed
 		return
@@ -740,10 +740,17 @@ func _update_beam(delta: float) -> void:
 	fired.emit(self)
 
 func _ensure_beam() -> void:
-	if _beam:
+	if is_instance_valid(_beam):
 		return
+	# Parent the bolt to the WORLD scene, not the weapon. Every other effect
+	# (tracers, energy flash, hit pops) lives in current_scene; the beam used to
+	# hang off the weapon viewmodel, which couples it to that subtree's visibility
+	# and could leave the lightning invisible in actual play. Keep it in the world.
 	_beam = ElectricBeam.new()
-	add_child(_beam)
+	var host: Node = get_tree().current_scene
+	if host == null:
+		host = get_tree().root
+	host.add_child(_beam)
 	if data:
 		_beam.set_color(data.tracer_color)
 
@@ -1253,10 +1260,17 @@ func on_unequip() -> void:
 	_burst_remaining = 0
 	_trigger_held_last = false
 	_beam_wanted = false
-	if _beam:
+	if is_instance_valid(_beam):
 		_beam.deactivate()
 	# Holster reload: top the mag back up in the background while it's stowed, over
 	# the normal reload time. Coming back to a backup and swapping out again can't
 	# hand you a fresh mag instantly — the reload has to actually finish first.
 	if not _reloading and reserve > 0 and mag < eff_mag_size():
 		start_reload()
+
+## The beam bolt lives in the world scene (not under us), so free it ourselves
+## when this weapon leaves the tree rather than leaking it.
+func _exit_tree() -> void:
+	if is_instance_valid(_beam):
+		_beam.queue_free()
+	_beam = null
