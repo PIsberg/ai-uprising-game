@@ -182,6 +182,7 @@ const LEVEL_MUSIC := {
 
 var _nav_region: NavigationRegion3D
 var _env: Environment
+var _tower_count: int = 0   ## cycles rooftop-pickup kind across a level's towers
 
 func _ready() -> void:
 	var def := _resolve_def()
@@ -1022,6 +1023,20 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 	# (base.x, height, base.z).
 	_add_collider_box(base + Vector3(0, height, 0),
 		Vector3(radius * 2.5, 0.4, radius * 2.5), _color_material(accent))
+
+	# Make the high ground worth taking: crouch-cover blocks at the roof edges plus
+	# a hovering pickup over the centre (kind cycles across the level's towers).
+	var roof_y := height + 0.2
+	for off in [Vector3(radius * 0.85, 0, -radius * 0.35), Vector3(-radius * 0.7, 0, radius * 0.65)]:
+		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
+			Vector3(1.4, 1.2, 0.7), MAT_PROP_B)
+	const ROOF_LOOT := ["health", "ammo", "overclock"]
+	var pk: PackedScene = PICKUP_SCENES.get(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
+	if pk:
+		var loot := pk.instantiate() as Node3D
+		add_child(loot)
+		loot.global_position = base + Vector3(0, roof_y + 0.9, 0)
+	_tower_count += 1
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):
