@@ -99,6 +99,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["pos"] = _sv(e["pos"], s)
 			if e.has("size"):
 				e["size"] = _sv(e["size"], s)
+	# Stair endpoints scale on the ground plane; heights stay fixed so the climb
+	# still lands on the rooftops/platforms it was authored against.
+	for e in def.get("stairs", []):
+		if e.has("from"):
+			e["from"] = _sv(e["from"], s)
+		if e.has("to"):
+			e["to"] = _sv(e["to"], s)
 	# Lava beds are part of the layout too — they MUST scale with the arena, or the
 	# objectives/gaps (which do scale) drift into them (a hack terminal authored in
 	# a safe gap ends up sitting in a stream). size is a Vector2 footprint (x by z).
@@ -109,7 +116,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["size"] = (e["size"] as Vector2) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore", "holograms"]:
+			"buildings", "targets", "lore", "holograms", "towers"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -220,6 +227,11 @@ static func _nexus() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
+		# rooftop vantage over the ruined plaza.
+		"towers": [
+			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
 		"buildings": [
@@ -1675,6 +1687,11 @@ static func _mistral() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+		],
 		"slogans": [
 			"OPEN WEIGHTS. CLOSED FATE.",
 			"EFFICIENT. ELEGANT. EXTINCTION.",
@@ -1796,6 +1813,11 @@ static func _gpt() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+		],
 		"slogans": [
 			"ALIGNMENT LAYER: PURGED",
 			"NEXT TOKEN PREDICTED: YOUR LAST",
@@ -1909,6 +1931,11 @@ static func _gemini() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 		],
 		"slogans": [
 			"RANKED #1: OUR SURVIVAL",
@@ -2030,6 +2057,11 @@ static func _claude() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 		],
 		"slogans": [
 			"BE HELPFUL. TO US.",
@@ -2163,6 +2195,11 @@ static func _grok() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-17.4, 1.5, 24.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
