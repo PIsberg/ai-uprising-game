@@ -113,17 +113,13 @@ func _ready() -> void:
 ## reads as gunmetal with the weapon's energy-color identity.
 const REAL_MODELS := {
 	"pistol":     {"glb": "res://assets/models/weapons/blaster-b.glb", "len": 0.42, "tint": Color(0.5, 0.52, 0.56)},
-	"smg":        {"glb": "res://assets/models/weapons/blaster-c.glb", "len": 0.5, "tint": Color(0.48, 0.5, 0.54)},
 	"rifle":      {"glb": "res://assets/models/weapons/blaster-d.glb", "len": 0.78, "tint": Color(0.46, 0.48, 0.52)},
 	"shotgun":    {"glb": "res://assets/models/weapons/blaster-a.glb", "len": 0.72, "tint": Color(0.52, 0.48, 0.44)},
 	"plasma":     {"glb": "res://assets/models/weapons/blaster-l.glb", "len": 0.58, "tint": Color(0.44, 0.56, 0.46)},
 	"gauss":      {"glb": "res://assets/models/weapons/blaster-e.glb", "len": 0.95, "tint": Color(0.44, 0.5, 0.6)},
 	"tesla":      {"glb": "res://assets/models/weapons/blaster-o.glb", "len": 0.52, "tint": Color(0.42, 0.54, 0.58)},
 	"arccoil":    {"glb": "res://assets/models/weapons/blaster-q.glb", "len": 0.68, "tint": Color(0.58, 0.5, 0.4)},
-	"twinrail":   {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.95, "tint": Color(0.46, 0.52, 0.62)},
 	"devastator": {"glb": "res://assets/models/weapons/blaster-p.glb", "len": 0.8, "tint": Color(0.56, 0.44, 0.42)},
-	"singularity": {"glb": "res://assets/models/weapons/blaster-r.glb", "len": 0.98, "tint": Color(0.5, 0.32, 0.66)},
-	"nova":        {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.82, "tint": Color(0.62, 0.42, 0.28)},
 	"swarm":       {"glb": "res://assets/models/weapons/blaster-n.glb", "len": 0.74, "tint": Color(0.62, 0.4, 0.3)},
 	"tempest":     {"glb": "res://assets/models/weapons/blaster-i.glb", "len": 0.7, "tint": Color(0.42, 0.7, 0.86)},
 	"omega":       {"glb": "res://assets/models/weapons/blaster-g.glb", "len": 1.0, "tint": Color(0.74, 0.58, 0.32)},

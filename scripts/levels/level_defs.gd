@@ -775,8 +775,7 @@ static func _horde() -> Dictionary:
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 0, -12), "color": Color(0.4, 1, 0.55)},
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(12, 0, 12), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.7, 0.35, 1)},
-			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(18, 0, 0), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.45, 0.85, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 6), "color": Color(1, 0.55, 0.25)},
 		],
 		"pickups": [
@@ -871,24 +870,22 @@ static func _range() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -12), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 			{"pos": Vector3(0, 0.05, -22), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 		],
-		# The WHOLE arsenal racked along the firing line — all 15 of GameState.
-		# ALL_WEAPONS, evenly spaced across the proven span (incl. the Tempest Coil
-		# and the OMEGA-X). Keep this in sync when a weapon is added.
+		# The WHOLE arsenal racked along the firing line — all 13 of GameState.
+		# ALL_WEAPONS plus the magnum/sniper sidearms, evenly spaced across the span.
+		# Keep this in sync when a weapon is added or cut.
 		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-13.5, 0, 21), "color": Color(0.8, 0.85, 0.9)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-10.9, 0, 21), "color": Color(0.6, 0.7, 0.85)},
-			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8.4, 0, 21), "color": Color(0.45, 0.65, 1)},
-			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-10.9, 0, 21), "color": Color(0.45, 0.65, 1)},
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-8.4, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(1, 0.85, 0.4)},
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-3.2, 0, 21), "color": Color(0.4, 1, 0.55)},
 			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-0.6, 0, 21), "color": Color(0.55, 0.8, 1)},
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(1.9, 0, 21), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(1, 0.75, 0.35)},
-			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(7.1, 0, 21), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(7.1, 0, 21), "color": Color(0.5, 0.7, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(9.6, 0, 21), "color": Color(1, 0.4, 0.35)},
 			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(12.2, 0, 21), "color": Color(0.45, 0.85, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(14.8, 0, 21), "color": Color(1, 0.55, 0.25)},
-			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(17.4, 0, 21), "color": Color(1, 0.55, 0.2)},
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(19.9, 0, 21), "color": Color(0.7, 0.35, 1)},
 			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.8, 0.35)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
@@ -1041,7 +1038,7 @@ static func _alien() -> Dictionary:
 		"floor_color": Color(0.06, 0.11, 0.08),
 		"spawn": Vector3(-30, 0.6, -30),
 		"exit": Vector3(30, 1.5, 30),
-		"weapon": {"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(-24, 0, -18), "color": Color(1, 0.55, 0.2)},
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-24, 0, -18), "color": Color(0.4, 1, 0.55)},
 		"env": {
 			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.75, 1.0, 0.8),
@@ -1163,8 +1160,8 @@ static func _titan() -> Dictionary:
 		"exit": Vector3(34, 1.5, 34),
 		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-28, 0, -22), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(28, 0, -22), "color": Color(0.7, 0.35, 1)},
-			{"scene": "res://scenes/weapons/nova.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.2)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(28, 0, -22), "color": Color(0.45, 0.85, 1)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(0, 0, 24), "color": Color(0.4, 1, 0.55)},
 		],
 		"env": {
 			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
@@ -1290,7 +1287,7 @@ static func _archon() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.45, 0.9, 1)},
-			{"scene": "res://scenes/weapons/singularity.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.7, 0.35, 1)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.45, 0.85, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(-22, 0, 16), "color": Color(1, 0.55, 0.25)},
 			# The finale ultimate, sat right by the spawn — a cluster-carpet for the siege.
 			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(-22, 0, -22), "color": Color(1, 0.78, 0.35)},
@@ -1513,7 +1510,7 @@ static func _assembly() -> Dictionary:
 		"exit": Vector3(28, 1.5, 28),
 		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.5, 0.6, 1)},
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.55, 0.8, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.25)},
 		],
 		"env": {
@@ -1738,7 +1735,7 @@ static func _gpt() -> Dictionary:
 		"floor_size": Vector2(44, 44),
 		"spawn": Vector3(-18, 0.6, -18),
 		"exit": Vector3(18, 1.5, 18),
-		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.4, 0.95, 0.55)},
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.45, 0.65, 1)},
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
@@ -1872,7 +1869,7 @@ static func _gemini() -> Dictionary:
 		"floor_size": Vector2(50, 50),
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
-		"weapon": {"scene": "res://scenes/weapons/twinrail.tscn", "pos": Vector3(-16, 0, -12), "color": Color(0.45, 0.65, 1)},
+		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-16, 0, -12), "color": Color(0.55, 0.8, 1)},
 		"env": {
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
 			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
@@ -2606,7 +2603,7 @@ static func _water_world() -> Dictionary:
 		"floor_color": Color(0.03, 0.06, 0.08),
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
-		"weapon": {"scene": "res://scenes/weapons/smg.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.3, 0.7, 1.0)},
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.45, 0.65, 1)},
 		"env": {
 			"sky_top": Color(0.02, 0.05, 0.1), "sky_horizon": Color(0.06, 0.2, 0.34),
 			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.25, 0.4),

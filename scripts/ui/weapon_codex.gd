@@ -8,20 +8,16 @@ extends Control
 ## Short dossier per weapon, keyed by scene-file basename.
 const DOSSIER := {
 	"pistol": "Reliable M9 sidearm — deep reserve and clean headshots. Your fallback when everything else runs dry.",
-	"smg": "TKN-9 Spitter. Hoses a room with a fast, low-damage spray. Shreds swarms up close; wasteful at range.",
-	"rifle": "AR-7 Pulse Rifle — the do-everything automatic: accurate, controllable, effective at every range.",
+	"rifle": "AR-7 Pulse Rifle — the do-everything full-auto: accurate, controllable, effective at every range.",
 	"shotgun": "SG-12 Breacher. A wall of pellets that deletes anything point-blank. SLUG alt collapses it into one heavy round.",
 	"magnum": ".50 Maelstrom hand cannon — enormous per-shot damage and headshots, slow and unforgiving.",
-	"tesla": "VK-7 Tesla Projector. A continuous electric beam that melts armour the longer you hold it on a target.",
+	"tesla": "VK-7 Tesla Projector. A vicious close-range arc that shreds armour — but almost no reach, so it leaves you wide open to melee. Get in, zap, get out.",
 	"arccoil": "CL-3 Arc Coil — a short-range electric burst that chains between bunched-up machines.",
 	"sniper": "MK-VII Longshot. One-shot precision at any distance. CHARGE for a boosted round; weak up close.",
 	"plasma": "PL-1 Plasma Launcher — lobbed plasma bolts with splash. Area denial that cooks clustered foes.",
-	"twinrail": "GEM-2 Twin Rail. Paired laser rails that pierce a whole line of enemies. Line them up.",
-	"nova": "NV-X Nova Scatter — an energy shotgun: a bright, piercing fan of bolts for close-to-mid crowds.",
 	"gauss": "ARC-9 Gauss Lance. A coil-gun spike that punches clean through a rank of machines.",
 	"swarm": "SW-7 Swarm Launcher — fires homing micro-missiles that hunt down whatever you mark.",
 	"tempest": "TPX-9 Tempest Coil. Chain lightning that leaps from target to target across a pack.",
-	"singularity": "VOID-9 Singularity Cannon — births a gravity well that drags a crowd into one knot, then deletes it.",
 	"devastator": "GRK-X Devastator. A heavy rocket launcher: big splash, slow reload. Bring it to a horde.",
 	"omega": "OMEGA-X Annihilator — the ultimate. Everything, dialled to maximum. Earn it, then end things.",
 }
