@@ -16,10 +16,12 @@ extends Node3D
 @export var tint: Color = Color.WHITE ## Multiplies the model's albedo (variant recolor).
 @export var menace_glow: float = 1.0 ## Scales the red damage-blink flare (0 disables).
 @export var menace_color: Color = Color(1.0, 0.16, 0.1)
-## Always-on glowing optic: a bright emissive iris mounted at each EyeLight, so
-## the robot reads as a live, hostile machine in normal play (not just when hit).
-## Scan-pulses gently and fades on death. 0 disables.
-@export var eye_glow: float = 1.0
+## Optional glowing optic: a bright emissive iris mounted at each EyeLight. It
+## reads as a live machine, but on most models the solid sphere looked like a
+## stray "orange ball" floating on the chassis, so it's OFF by default now —
+## the EyeLight still casts its coloured glow. Opt a specific enemy back in by
+## setting eye_glow > 0 on its RobotModel. Scan-pulses gently; fades on death.
+@export var eye_glow: float = 0.0
 @export var eye_energy: float = 5.5 ## Base emission of the optic iris.
 @export var eye_radius: float = 0.0 ## Iris radius; 0 = auto from model size.
 @export var anim_idle: String = "Idle"
