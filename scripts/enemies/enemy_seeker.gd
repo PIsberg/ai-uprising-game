@@ -8,7 +8,7 @@ extends EnemyBase
 @export var intercept_height: float = 1.0 ## Flies toward the player's chest height.
 @export var detonate_radius: float = 2.2
 @export var blast_radius: float = 4.2
-@export var blast_damage: float = 48.0
+@export var blast_damage: float = 40.0
 
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 

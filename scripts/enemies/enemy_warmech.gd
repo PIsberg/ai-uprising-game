@@ -10,7 +10,7 @@ extends EnemyBase
 const SHELL := preload("res://scenes/weapons/projectile_warmech.tscn")
 
 @export var shell_speed: float = 26.0
-@export var shell_damage: float = 15.0
+@export var shell_damage: float = 34.0
 @export var salvo_count: int = 3
 @export var salvo_interval: float = 0.22
 @export var windup: float = 0.7
@@ -25,14 +25,14 @@ var _charge: MeshInstance3D = null
 
 func _ready() -> void:
 	super._ready()
-	max_health = 420.0           # a wall — priority kill, not a tank-and-spank
+	max_health = 380.0           # a wall — priority kill, not a tank-and-spank
 	move_speed = 2.8             # siege crawl
 	turn_speed = 4.5
 	sight_range = 50.0
 	sight_angle_deg = 200.0
 	attack_range = 44.0
 	preferred_range = 26.0       # holds at long range and shells you
-	attack_cooldown = 3.8
+	attack_cooldown = 3.2
 	score_value = 360
 	head_radius = 0.8
 	stagger_threshold = 320.0    # only a heavy hit rocks it (plays HitRecieve)
