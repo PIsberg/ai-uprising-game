@@ -1820,16 +1820,21 @@ func _build_floor_seams(def: Dictionary) -> void:
 	var spacing := 6.5
 	var xs: Array[float] = []
 	var zs: Array[float] = []
+	# Batched: the whole tech-grid lattice is hundreds of identical thin strips, so
+	# collect them per-material and draw each material in one MultiMesh call instead
+	# of one MeshInstance per strip (visually identical; ~120 draws -> 3).
+	var dark_boxes: Array = []
+	var glow_boxes: Array = []
 	var x := -fs.x * 0.5 + spacing
 	while x < fs.x * 0.5 - 1.0:
-		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.16, 0.016, fs.y - 1.4), dark)
-		_seam_strip(Vector3(x, 0.013, 0), Vector3(0.045, 0.018, fs.y - 1.4), glow)
+		dark_boxes.append({"pos": Vector3(x, 0.008, 0), "size": Vector3(0.16, 0.016, fs.y - 1.4)})
+		glow_boxes.append({"pos": Vector3(x, 0.013, 0), "size": Vector3(0.045, 0.018, fs.y - 1.4)})
 		xs.append(x)
 		x += spacing
 	var z := -fs.y * 0.5 + spacing
 	while z < fs.y * 0.5 - 1.0:
-		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.16), dark)
-		_seam_strip(Vector3(0, 0.013, z), Vector3(fs.x - 1.4, 0.018, 0.045), glow)
+		dark_boxes.append({"pos": Vector3(0, 0.008, z), "size": Vector3(fs.x - 1.4, 0.016, 0.16)})
+		glow_boxes.append({"pos": Vector3(0, 0.013, z), "size": Vector3(fs.x - 1.4, 0.018, 0.045)})
 		zs.append(z)
 		z += spacing
 	# Brighter "data node" pips where the grid lines cross — a touch of polish
@@ -1840,9 +1845,13 @@ func _build_floor_seams(def: Dictionary) -> void:
 	node.emission_enabled = true
 	node.emission = tc
 	node.emission_energy_multiplier = 3.2
+	var node_boxes: Array = []
 	for nx in xs:
 		for nz in zs:
-			_seam_strip(Vector3(nx, 0.015, nz), Vector3(0.22, 0.02, 0.22), node)
+			node_boxes.append({"pos": Vector3(nx, 0.015, nz), "size": Vector3(0.22, 0.02, 0.22)})
+	_box_multimesh(dark_boxes, dark, false)
+	_box_multimesh(glow_boxes, glow, false)
+	_box_multimesh(node_boxes, node, false)
 
 func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	var mi := MeshInstance3D.new()
@@ -1853,6 +1862,30 @@ func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	mi.position = pos
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+## Draw many identical-material boxes in a single MultiMesh draw call instead of
+## one MeshInstance3D each — a visually-free draw-call cut for the dense decorative
+## lattices the builder scatters (floor seams, skyline, etc.). Each box entry is
+## {pos, size, yaw?}; a unit cube is scaled per instance, so varying sizes are fine.
+func _box_multimesh(boxes: Array, mat: Material, cast_shadow: bool) -> void:
+	if boxes.is_empty():
+		return
+	var cube := BoxMesh.new()
+	cube.size = Vector3.ONE
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = cube
+	mm.instance_count = boxes.size()
+	for i in boxes.size():
+		var b: Dictionary = boxes[i]
+		var basis := Basis(Vector3.UP, b.get("yaw", 0.0)).scaled(b["size"])
+		mm.set_instance_transform(i, Transform3D(basis, b["pos"]))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadow \
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mmi)
 
 ## Dark mirror-finish puddles on the floor — cheap, and they pay off the SSR
 ## pass with real reflections of the emissive strips and robot glow.
@@ -2794,34 +2827,29 @@ func _build_skyline(def: Dictionary) -> void:
 	win_mat.emission_enabled = true
 	win_mat.emission = win_col
 	win_mat.emission_energy_multiplier = 1.8
+	# The whole backdrop ring (22 towers + their 44 window slits) is pure scenery
+	# with shadows off, so batch each material into one MultiMesh draw instead of 66
+	# MeshInstances (visually identical — same boxes, positions, rotations).
+	var bodies: Array = []
+	var windows: Array = []
 	var steps := 22
 	for s in steps:
 		var ang := TAU * s / steps + randf_range(-0.06, 0.06)
 		var dist := base + randf_range(26.0, 60.0)
 		var w := randf_range(6.0, 14.0)
 		var h := randf_range(8.0, 30.0)
-		var mi := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(w, h, w)
-		bm.material = body_mat
-		mi.mesh = bm
-		mi.position = Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
-		mi.rotation.y = randf_range(0.0, PI)
-		# Pure backdrop: 22 towers drawn into the sun's shadow cascades would be
-		# the most expensive shadows in the game for silhouettes nobody reads.
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mi)
-		# Lit window slits: thin emissive columns punched through the tower so
-		# a glowing seam shows on both faces — reads as windows from any angle.
+		var yaw := randf_range(0.0, PI)
+		var pos := Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
+		bodies.append({"pos": pos, "size": Vector3(w, h, w), "yaw": yaw})
+		# Lit window slits: thin emissive columns punched through the tower so a
+		# glowing seam shows on both faces. Local offset is rotated into world space.
 		for _j in 2:
-			var strip := MeshInstance3D.new()
-			var sm := BoxMesh.new()
-			sm.size = Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14)
-			sm.material = win_mat
-			strip.mesh = sm
-			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
-			strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mi.add_child(strip)
+			var lx := randf_range(-0.4, 0.4) * w
+			var ly := randf_range(-0.15, 0.1) * h
+			var wp := pos + Vector3(cos(yaw) * lx, ly, sin(yaw) * lx)
+			windows.append({"pos": wp, "size": Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14), "yaw": yaw})
+	_box_multimesh(bodies, body_mat, false)
+	_box_multimesh(windows, win_mat, false)
 
 ## A starfield dome over open-sky levels: one MultiMesh of billboarded points
 ## at far distance, brightness-varied so the night sky reads as real depth
