@@ -182,6 +182,7 @@ const LEVEL_MUSIC := {
 
 var _nav_region: NavigationRegion3D
 var _env: Environment
+var _tower_count: int = 0   ## cycles rooftop-pickup kind across a level's towers
 
 func _ready() -> void:
 	var def := _resolve_def()
@@ -194,6 +195,8 @@ func _ready() -> void:
 	_build_wall_details(def)
 	_build_buildings(def)
 	_build_ramps(def)
+	_build_stairs(def)
+	_build_towers(def)
 	_build_platforms(def)
 	_build_props(def)
 	_build_hero(def)
@@ -964,6 +967,76 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 	body.add_child(mi)
 	body.add_child(cs)
 	add_child(body)
+
+## Connect two points with a ramp the player can walk straight up — `from` (low)
+## to `to` (high). Length and pitch are solved so the surface lands exactly on
+## both ends, so rooftop access and multi-tier routes can be authored as plain
+## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
+func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.0, thickness: float = 0.5) -> void:
+	var delta := to - from
+	var horiz := Vector2(delta.x, delta.z).length()
+	var length := sqrt(horiz * horiz + delta.y * delta.y)
+	if length < 0.2:
+		return
+	# +Z is the ramp's low end (it tilts down under a positive pitch), so aim it
+	# back toward `from`; the high (-Z) end then meets `to`.
+	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
+	var pitch := rad_to_deg(atan2(delta.y, horiz))
+	_add_ramp((from + to) * 0.5, Vector3(width, thickness, length), pitch, yaw)
+
+func _build_stairs(def: Dictionary) -> void:
+	for s in def.get("stairs", []):
+		_add_ramp_between(s["from"], s["to"], s.get("width", 3.0))
+
+## Climbable tower: a central column "building" with a square-spiral ramp wrapping
+## up its outside to a top vantage platform — the player's route into the vertical
+## layer. Reachability is guaranteed by construction (each ramp is solved to land
+## on the next corner landing). Opt-in via def "towers": [{pos, height?, radius?}].
+func _build_towers(def: Dictionary) -> void:
+	for t in def.get("towers", []):
+		_build_tower(t["pos"], t.get("height", 8.0), t.get("radius", 3.6), _theme_color(def))
+
+func _build_tower(base: Vector3, height: float, radius: float, accent: Color) -> void:
+	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
+	n = max(n, 1)
+	var rise := height / float(n)
+	# Four corners of the spiral footprint (the ramp runs corner-to-corner).
+	var corners := [
+		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
+		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
+	]
+	# Central column — the structure the player climbs around. Kept well inside the
+	# spiral radius so the ramp + landings wrap clear of it with walking room.
+	_add_collider_box(base + Vector3(0, height * 0.5, 0),
+		Vector3(radius * 0.62, height, radius * 0.62), _color_material(accent.darkened(0.7)))
+
+	var prev: Vector3 = base + corners[0]   # ground start, y = 0
+	for i in range(1, n + 1):
+		var c: Vector3 = base + corners[i % 4]
+		c.y = rise * float(i)
+		_add_ramp_between(prev, c, 3.0)
+		# Corner landing, flush-topped at the segment height, so the player can turn.
+		_add_collider_box(c - Vector3(0, 0.2, 0), Vector3(3.8, 0.4, 3.8), MAT_PROP)
+		prev = c
+	# Centered rooftop vantage capping the column — covers the final landing so the
+	# player steps straight onto it, and gives sky-bridges a predictable target at
+	# (base.x, height, base.z).
+	_add_collider_box(base + Vector3(0, height, 0),
+		Vector3(radius * 2.5, 0.4, radius * 2.5), _color_material(accent))
+
+	# Make the high ground worth taking: crouch-cover blocks at the roof edges plus
+	# a hovering pickup over the centre (kind cycles across the level's towers).
+	var roof_y := height + 0.2
+	for off in [Vector3(radius * 0.85, 0, -radius * 0.35), Vector3(-radius * 0.7, 0, radius * 0.65)]:
+		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
+			Vector3(1.4, 1.2, 0.7), MAT_PROP_B)
+	const ROOF_LOOT := ["health", "ammo", "overclock"]
+	var pk: PackedScene = PICKUP_SCENES.get(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
+	if pk:
+		var loot := pk.instantiate() as Node3D
+		add_child(loot)
+		loot.global_position = base + Vector3(0, roof_y + 0.9, 0)
+	_tower_count += 1
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):

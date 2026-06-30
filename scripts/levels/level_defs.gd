@@ -99,6 +99,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["pos"] = _sv(e["pos"], s)
 			if e.has("size"):
 				e["size"] = _sv(e["size"], s)
+	# Stair endpoints scale on the ground plane; heights stay fixed so the climb
+	# still lands on the rooftops/platforms it was authored against.
+	for e in def.get("stairs", []):
+		if e.has("from"):
+			e["from"] = _sv(e["from"], s)
+		if e.has("to"):
+			e["to"] = _sv(e["to"], s)
 	# Lava beds are part of the layout too — they MUST scale with the arena, or the
 	# objectives/gaps (which do scale) drift into them (a hack terminal authored in
 	# a safe gap ends up sitting in a stream). size is a Vector2 footprint (x by z).
@@ -109,7 +116,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["size"] = (e["size"] as Vector2) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore", "holograms"]:
+			"buildings", "targets", "lore", "holograms", "towers"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -220,6 +227,16 @@ static func _nexus() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
+		# rooftop vantage over the ruined plaza.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
+			{"pos": Vector3(-6.4, 0, 6.4), "height": 7.0, "radius": 3.2},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
 		"buildings": [
@@ -354,6 +371,10 @@ static func _frostbreak() -> Dictionary:
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 			{"type": "server", "pos": Vector3(-12, 0, 8)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
@@ -463,6 +484,10 @@ static func _neon() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(5, 0, -3), "yaw": 90},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "lamp", "pos": Vector3(0, 0, -14)},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
 		],
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
@@ -574,6 +599,15 @@ static func _sublevel() -> Dictionary:
 			{"type": "canister", "pos": Vector3(6, 0, 9)},
 			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(12.0, 9.2, -12.0), "to": Vector3(0.0, 7.2, 13.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
@@ -681,6 +715,15 @@ static func _crucible() -> Dictionary:
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(-0.0, 7.2, -17.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "reaper", "pos": Vector3(-8, 0.5, -4)},
@@ -737,6 +780,15 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.5, 0.35), "energy": 2.4, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(0.5, 0.65, 1), "energy": 2.0, "range": 20},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(17.0, 9.2, 0.0), "to": Vector3(-0.0, 7.2, -17.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 7.0, "radius": 3.1},
 		],
 		"slogans": [
 			"THEY KEEP COMING",
@@ -989,6 +1041,15 @@ static func _overseer() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 			{"type": "barrel", "pos": Vector3(7, 0, 7)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -1112,6 +1173,15 @@ static func _alien() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "alien", "pos": Vector3(0, 2.5, 8)},
 			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
@@ -1232,6 +1302,15 @@ static func _titan() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(-8, 0, -8)},
 			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -1371,6 +1450,15 @@ static func _archon() -> Dictionary:
 		],
 		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
 		# triggers once the player advances into the cathedral.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -1471,6 +1559,15 @@ static func _uplink() -> Dictionary:
 		],
 		# Waves close on the uplink from every side; heavies (gunner/raptor) and
 		# swarms force you off the zone, draining the broadcast.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, 6)},
@@ -1586,6 +1683,15 @@ static func _assembly() -> Dictionary:
 		],
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and striders/mech press in — fight to the reactor.
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			# Fresh off the line: WAR-BOTS, all grins until they lock on.
 			{"type": "warbot", "pos": Vector3(-6, 0.5, -6)},
@@ -1674,6 +1780,16 @@ static func _mistral() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"OPEN WEIGHTS. CLOSED FATE.",
@@ -1796,6 +1912,16 @@ static func _gpt() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(12.0, 7.2, -12.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(12.0, 0, -12.0), "height": 7.0, "radius": 3.2},
+		],
 		"slogans": [
 			"ALIGNMENT LAYER: PURGED",
 			"NEXT TOKEN PREDICTED: YOUR LAST",
@@ -1909,6 +2035,16 @@ static func _gemini() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"RANKED #1: OUR SURVIVAL",
@@ -2030,6 +2166,16 @@ static func _claude() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-13.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(-13.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"BE HELPFUL. TO US.",
@@ -2163,6 +2309,16 @@ static func _grok() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-17.4, 1.5, 24.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
+		# rooftop vantage over the arena.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
@@ -2322,6 +2478,15 @@ static func _suburb() -> Dictionary:
 		"platforms": [
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(13.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(13.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
@@ -2443,6 +2608,15 @@ static func _suburb_boss() -> Dictionary:
 			{"pos": Vector3(-34, 3.0, 0), "size": Vector3(6, 0.4, 9), "color": Color(0.42, 0.42, 0.46)},
 		],
 		"set_piece": {"pos": Vector3(0, 0, -66), "height": 24.0, "face": Vector3(0, 0, 0)},
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+		],
+		"towers": [
+			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
+		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-8, 0.5, -8)},
 			{"type": "drone", "pos": Vector3(8, 3, -6)},
@@ -2783,6 +2957,10 @@ static func _desert() -> Dictionary:
 		"lore": [
 			{"id": "lore_desert", "title": "RELAY 7 LOG", "pos": Vector3(-24, 0, -18), "color": Color(1.0, 0.7, 0.3),
 				"text": "Relay 7 pumps the swarm's orders out across the whole basin. They built it where nothing grows and nothing watches. They forgot the buzzards. And they forgot you."},
+		],
+		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		"towers": [
+			{"pos": Vector3(0.0, 0, 9.0), "height": 9.0, "radius": 3.6},
 		],
 		"enemies": [
 			{"type": "gunslinger", "pos": Vector3(-14, 0.5, -8)},
