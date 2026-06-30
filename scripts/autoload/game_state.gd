@@ -73,6 +73,39 @@ func difficulty_config() -> Dictionary:
 func difficulty_label() -> String:
 	return difficulty_config().get("label", "NORMAL")
 
+# ---------------------------------------------------------------------
+# Campaign progression scaling. The difficulty tiers above are STATIC — they
+# hit level 1 and the finale identically. But the player accrues permanent
+# power across a run (armory damage +8%/rank, +40 max-HP med-kits, the whole
+# weak→strong arsenal, overclock/overdrive), so without a counter-ramp the
+# back half of the campaign trivializes once you're funded. This gentle ramp
+# scales enemy DURABILITY (and, slightly, attack cadence) with how deep you
+# are in the campaign, sized to roughly offset that creep — NOT to spike late
+# levels. It stacks on top of the difficulty tier and only applies inside the
+# campaign (custom/range/horde test maps are untouched).
+# ---------------------------------------------------------------------
+
+## 0.0 on the first campaign level → 1.0 on the finale; -1.0 if the current
+## level isn't part of the campaign (so the ramp no-ops off-campaign).
+func campaign_progress() -> float:
+	var camp := campaign()
+	var idx := camp.find(current_level_path)
+	if idx < 0:
+		return -1.0
+	return float(idx) / maxf(1.0, float(camp.size() - 1))
+
+## Multipliers layered on top of difficulty_config() for the current campaign
+## depth. Health ramps to +40% by the finale (offsetting the +40% armory damage
+## cap and weapon-tier creep); attacks tighten by up to 12% so late robots stay
+## on the trigger. Returns 1.0s off-campaign.
+func campaign_health_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else 1.0 + p * 0.40
+
+func campaign_cadence_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else 1.0 - p * 0.12
+
 ## Campaign order. The player advances through these via the "Continue" button
 ## on the level-complete screen.
 const CAMPAIGN: Array[String] = [

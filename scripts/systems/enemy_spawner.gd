@@ -59,3 +59,9 @@ func _apply_difficulty(e: Node3D) -> void:
 	eb._cooldown_mult *= cfg.get("cooldown_mult", 1.0)
 	eb._speed_mult *= cfg.get("speed_mult", 1.0)
 	eb.reaction_time *= cfg.get("reaction_mult", 1.0) # not clobbered (no subclass sets it)
+	# Campaign-depth ramp: enemies get tougher (and a touch faster on the trigger)
+	# the deeper you are, sized to offset the player's permanent power creep so
+	# late levels don't trivialize. No-ops off-campaign (returns 1.0).
+	if gs.has_method("campaign_health_mult"):
+		eb._health_mult *= gs.campaign_health_mult()
+		eb._cooldown_mult *= gs.campaign_cadence_mult()
