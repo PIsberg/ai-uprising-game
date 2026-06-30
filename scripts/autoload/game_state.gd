@@ -106,6 +106,20 @@ func campaign_cadence_mult() -> float:
 	var p := campaign_progress()
 	return 1.0 if p < 0.0 else 1.0 - p * 0.12
 
+## Boss enemy type tokens (matched against a spawner's scene path). Bosses are
+## hand-tuned, one-off HP bags with scripted phases, so they're EXEMPT from the
+## campaign depth ramp above — that ramp exists to counter player creep on the
+## long tail of regular enemies; stacking it onto a 3000-HP boss (on top of the
+## difficulty tier) would just make the climax a slog. They still scale with the
+## difficulty tier's health_mult like everything else.
+const BOSS_TYPES := ["colossus", "titan", "overseer", "archon", "terminator", "smasher"]
+
+func is_boss_scene(path: String) -> bool:
+	for b in BOSS_TYPES:
+		if b in path:
+			return true
+	return false
+
 ## Campaign order. The player advances through these via the "Continue" button
 ## on the level-complete screen.
 const CAMPAIGN: Array[String] = [
@@ -225,6 +239,17 @@ const SUPPLY_DEFS := {
 	"grenades": {"label": "GRENADE PACK", "amount": 1,  "cost": 600},
 	"health":   {"label": "MED-KIT",      "amount": 40, "cost": 750},
 }
+## MED-KITs are the only PERMANENT, repeatable max-HP source, and uncapped they
+## let a score-rich player tank to 300-500+ HP — the dominant unbounded purchase
+## that outpaces any enemy tuning. Cap the bonus at +160 (4 kits → 260 HP max):
+## a generous survivability ceiling that's still bounded, so durability stays a
+## meaningful choice instead of a money-dump win button. Ammo/grenades stay
+## uncapped (consumed in play; they don't break the power curve).
+const SUPPLY_HEALTH_CAP := 160.0
+
+## True once max-HP MED-KITs are banked to the cap (armory shows MAXED, no buy).
+func supply_health_maxed() -> bool:
+	return supply_health >= SUPPLY_HEALTH_CAP
 var supply_ammo: int = 0        # permanent bonus reserve added to every weapon each deploy
 var supply_grenades: int = 0    # permanent bonus frag grenades carried each deploy
 var supply_health: float = 0.0  # permanent bonus max+current HP each deploy
@@ -236,12 +261,14 @@ func buy_supply(k: String) -> bool:
 	var cost := int(SUPPLY_DEFS[k]["cost"])
 	if score < cost:
 		return false
+	if k == "health" and supply_health_maxed():
+		return false # max-HP banked to the cap — don't take score for a no-op
 	score -= cost
 	var amt = SUPPLY_DEFS[k]["amount"]
 	match k:
 		"ammo": supply_ammo += int(amt)
 		"grenades": supply_grenades += int(amt)
-		"health": supply_health += float(amt)
+		"health": supply_health = minf(SUPPLY_HEALTH_CAP, supply_health + float(amt))
 	save_progress()
 	return true
 
@@ -250,6 +277,8 @@ func can_buy_anything() -> bool:
 	if can_buy_any_upgrade():
 		return true
 	for k in SUPPLY_DEFS:
+		if k == "health" and supply_health_maxed():
+			continue # capped — not a real choice anymore
 		if score >= int(SUPPLY_DEFS[k]["cost"]):
 			return true
 	return false

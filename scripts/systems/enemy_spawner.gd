@@ -61,7 +61,11 @@ func _apply_difficulty(e: Node3D) -> void:
 	eb.reaction_time *= cfg.get("reaction_mult", 1.0) # not clobbered (no subclass sets it)
 	# Campaign-depth ramp: enemies get tougher (and a touch faster on the trigger)
 	# the deeper you are, sized to offset the player's permanent power creep so
-	# late levels don't trivialize. No-ops off-campaign (returns 1.0).
-	if gs.has_method("campaign_health_mult"):
+	# late levels don't trivialize. No-ops off-campaign. Bosses are exempt — they're
+	# hand-tuned HP bags and the tier mult already scales them; ramping on top would
+	# turn the climax into a slog.
+	var is_boss: bool = enemy_scene != null and gs.has_method("is_boss_scene") \
+			and gs.is_boss_scene(enemy_scene.resource_path)
+	if not is_boss and gs.has_method("campaign_health_mult"):
 		eb._health_mult *= gs.campaign_health_mult()
 		eb._cooldown_mult *= gs.campaign_cadence_mult()
