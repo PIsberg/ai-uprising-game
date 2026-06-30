@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://cmantleprobe1"]
+[ext_resource type="Script" path="res://tools/mantle_probe.gd" id="1_m"]
+[node name="MantleProbe" type="Node3D"]
+script = ExtResource("1_m")
