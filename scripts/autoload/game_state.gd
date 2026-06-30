@@ -49,7 +49,7 @@ const DIFFICULTY_CONFIG := {
 		# fight — just a forgiving one (clearly easier than NORMAL).
 		"health_mult": 0.5, "cooldown_mult": 1.6, "speed_mult": 0.62,
 		"enemy_count_mult": 0.5, "pickup_mult": 1.8, "aim_spread_deg": 12.0,
-		"reaction_mult": 2.6, # slow to open fire — gives you a beat
+		"reaction_mult": 2.0, # slow to open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
@@ -382,7 +382,7 @@ func _process(delta: float) -> void:
 
 signal overclock_changed(seconds_left: float)
 
-const OVERCLOCK_MULT := 4.0
+const OVERCLOCK_MULT := 3.0
 const OVERCLOCK_DURATION := 10.0
 var overclock_left: float = 0.0
 

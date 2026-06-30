@@ -40,17 +40,17 @@ const MINION_SCENES := {
 }
 
 ## Wave roster per phase (1/2/3). Each phase pours out a bigger, meaner mix; from
-## phase 2 on a MENDER rides along to repair the legion under your fire, and
+## phase 3 a MENDER rides along to repair the legion under your fire, and
 ## SKITTER swarms flood the floor to pin you while the heavies close in.
 const WAVES := {
 	1: ["drone", "skitter", "skitter", "android", "android", "skitter", "drone", "spider"],
-	2: ["android", "skitter", "skitter", "spider", "strider", "seeker", "mender", "skitter", "drone", "skitter", "android", "brute", "spider"],
-	3: ["brute", "skitter", "strider", "skitter", "spider", "mender", "seeker", "skitter", "mech", "skitter", "strider", "android", "seeker", "skitter", "drone", "spider", "android"],
+	2: ["android", "skitter", "skitter", "spider", "strider", "seeker", "skitter", "drone", "android", "brute"],
+	3: ["brute", "skitter", "strider", "skitter", "spider", "mender", "seeker", "skitter", "mech", "strider", "android", "seeker", "drone"],
 }
 
 ## How long the core stays exposed (and ARCHON stays vulnerable) after a wave is
 ## cleared, before it re-shields and spawns the next one. Shrinks with phase.
-const EXPOSE_WINDOW := {1: 7.0, 2: 5.5, 3: 4.0}
+const EXPOSE_WINDOW := {1: 7.0, 2: 6.0, 3: 5.0}
 
 # Cyan = shielded / computing. Hot orange = exposed / overloading.
 const COL_SHIELD := Color(0.35, 0.8, 1.0)
