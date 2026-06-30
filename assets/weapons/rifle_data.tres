@@ -35,4 +35,5 @@ impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
 sound_id = "rifle"
 slide_kick = 0.0
+tracer_color = Color(1.0, 0.78, 0.35, 1)
 viewmodel_color = Color(0.3, 0.32, 0.36, 1)
