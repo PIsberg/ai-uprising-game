@@ -182,6 +182,7 @@ const LEVEL_MUSIC := {
 
 var _nav_region: NavigationRegion3D
 var _env: Environment
+var _tower_count: int = 0   ## cycles rooftop-pickup kind across a level's towers
 
 func _ready() -> void:
 	var def := _resolve_def()
@@ -194,6 +195,8 @@ func _ready() -> void:
 	_build_wall_details(def)
 	_build_buildings(def)
 	_build_ramps(def)
+	_build_stairs(def)
+	_build_towers(def)
 	_build_platforms(def)
 	_build_props(def)
 	_build_hero(def)
@@ -964,6 +967,76 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 	body.add_child(mi)
 	body.add_child(cs)
 	add_child(body)
+
+## Connect two points with a ramp the player can walk straight up — `from` (low)
+## to `to` (high). Length and pitch are solved so the surface lands exactly on
+## both ends, so rooftop access and multi-tier routes can be authored as plain
+## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
+func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.0, thickness: float = 0.5) -> void:
+	var delta := to - from
+	var horiz := Vector2(delta.x, delta.z).length()
+	var length := sqrt(horiz * horiz + delta.y * delta.y)
+	if length < 0.2:
+		return
+	# +Z is the ramp's low end (it tilts down under a positive pitch), so aim it
+	# back toward `from`; the high (-Z) end then meets `to`.
+	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
+	var pitch := rad_to_deg(atan2(delta.y, horiz))
+	_add_ramp((from + to) * 0.5, Vector3(width, thickness, length), pitch, yaw)
+
+func _build_stairs(def: Dictionary) -> void:
+	for s in def.get("stairs", []):
+		_add_ramp_between(s["from"], s["to"], s.get("width", 3.0))
+
+## Climbable tower: a central column "building" with a square-spiral ramp wrapping
+## up its outside to a top vantage platform — the player's route into the vertical
+## layer. Reachability is guaranteed by construction (each ramp is solved to land
+## on the next corner landing). Opt-in via def "towers": [{pos, height?, radius?}].
+func _build_towers(def: Dictionary) -> void:
+	for t in def.get("towers", []):
+		_build_tower(t["pos"], t.get("height", 8.0), t.get("radius", 3.6), _theme_color(def))
+
+func _build_tower(base: Vector3, height: float, radius: float, accent: Color) -> void:
+	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
+	n = max(n, 1)
+	var rise := height / float(n)
+	# Four corners of the spiral footprint (the ramp runs corner-to-corner).
+	var corners := [
+		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
+		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
+	]
+	# Central column — the structure the player climbs around. Kept well inside the
+	# spiral radius so the ramp + landings wrap clear of it with walking room.
+	_add_collider_box(base + Vector3(0, height * 0.5, 0),
+		Vector3(radius * 0.62, height, radius * 0.62), _color_material(accent.darkened(0.7)))
+
+	var prev: Vector3 = base + corners[0]   # ground start, y = 0
+	for i in range(1, n + 1):
+		var c: Vector3 = base + corners[i % 4]
+		c.y = rise * float(i)
+		_add_ramp_between(prev, c, 3.0)
+		# Corner landing, flush-topped at the segment height, so the player can turn.
+		_add_collider_box(c - Vector3(0, 0.2, 0), Vector3(3.8, 0.4, 3.8), MAT_PROP)
+		prev = c
+	# Centered rooftop vantage capping the column — covers the final landing so the
+	# player steps straight onto it, and gives sky-bridges a predictable target at
+	# (base.x, height, base.z).
+	_add_collider_box(base + Vector3(0, height, 0),
+		Vector3(radius * 2.5, 0.4, radius * 2.5), _color_material(accent))
+
+	# Make the high ground worth taking: crouch-cover blocks at the roof edges plus
+	# a hovering pickup over the centre (kind cycles across the level's towers).
+	var roof_y := height + 0.2
+	for off in [Vector3(radius * 0.85, 0, -radius * 0.35), Vector3(-radius * 0.7, 0, radius * 0.65)]:
+		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
+			Vector3(1.4, 1.2, 0.7), MAT_PROP_B)
+	const ROOF_LOOT := ["health", "ammo", "overclock"]
+	var pk: PackedScene = PICKUP_SCENES.get(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
+	if pk:
+		var loot := pk.instantiate() as Node3D
+		add_child(loot)
+		loot.global_position = base + Vector3(0, roof_y + 0.9, 0)
+	_tower_count += 1
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):
@@ -1747,16 +1820,21 @@ func _build_floor_seams(def: Dictionary) -> void:
 	var spacing := 6.5
 	var xs: Array[float] = []
 	var zs: Array[float] = []
+	# Batched: the whole tech-grid lattice is hundreds of identical thin strips, so
+	# collect them per-material and draw each material in one MultiMesh call instead
+	# of one MeshInstance per strip (visually identical; ~120 draws -> 3).
+	var dark_boxes: Array = []
+	var glow_boxes: Array = []
 	var x := -fs.x * 0.5 + spacing
 	while x < fs.x * 0.5 - 1.0:
-		_seam_strip(Vector3(x, 0.008, 0), Vector3(0.16, 0.016, fs.y - 1.4), dark)
-		_seam_strip(Vector3(x, 0.013, 0), Vector3(0.045, 0.018, fs.y - 1.4), glow)
+		dark_boxes.append({"pos": Vector3(x, 0.008, 0), "size": Vector3(0.16, 0.016, fs.y - 1.4)})
+		glow_boxes.append({"pos": Vector3(x, 0.013, 0), "size": Vector3(0.045, 0.018, fs.y - 1.4)})
 		xs.append(x)
 		x += spacing
 	var z := -fs.y * 0.5 + spacing
 	while z < fs.y * 0.5 - 1.0:
-		_seam_strip(Vector3(0, 0.008, z), Vector3(fs.x - 1.4, 0.016, 0.16), dark)
-		_seam_strip(Vector3(0, 0.013, z), Vector3(fs.x - 1.4, 0.018, 0.045), glow)
+		dark_boxes.append({"pos": Vector3(0, 0.008, z), "size": Vector3(fs.x - 1.4, 0.016, 0.16)})
+		glow_boxes.append({"pos": Vector3(0, 0.013, z), "size": Vector3(fs.x - 1.4, 0.018, 0.045)})
 		zs.append(z)
 		z += spacing
 	# Brighter "data node" pips where the grid lines cross — a touch of polish
@@ -1767,9 +1845,13 @@ func _build_floor_seams(def: Dictionary) -> void:
 	node.emission_enabled = true
 	node.emission = tc
 	node.emission_energy_multiplier = 3.2
+	var node_boxes: Array = []
 	for nx in xs:
 		for nz in zs:
-			_seam_strip(Vector3(nx, 0.015, nz), Vector3(0.22, 0.02, 0.22), node)
+			node_boxes.append({"pos": Vector3(nx, 0.015, nz), "size": Vector3(0.22, 0.02, 0.22)})
+	_box_multimesh(dark_boxes, dark, false)
+	_box_multimesh(glow_boxes, glow, false)
+	_box_multimesh(node_boxes, node, false)
 
 func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	var mi := MeshInstance3D.new()
@@ -1780,6 +1862,30 @@ func _seam_strip(pos: Vector3, size: Vector3, mat: Material) -> void:
 	mi.position = pos
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+## Draw many identical-material boxes in a single MultiMesh draw call instead of
+## one MeshInstance3D each — a visually-free draw-call cut for the dense decorative
+## lattices the builder scatters (floor seams, skyline, etc.). Each box entry is
+## {pos, size, yaw?}; a unit cube is scaled per instance, so varying sizes are fine.
+func _box_multimesh(boxes: Array, mat: Material, cast_shadow: bool) -> void:
+	if boxes.is_empty():
+		return
+	var cube := BoxMesh.new()
+	cube.size = Vector3.ONE
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = cube
+	mm.instance_count = boxes.size()
+	for i in boxes.size():
+		var b: Dictionary = boxes[i]
+		var basis := Basis(Vector3.UP, b.get("yaw", 0.0)).scaled(b["size"])
+		mm.set_instance_transform(i, Transform3D(basis, b["pos"]))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadow \
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mmi)
 
 ## Dark mirror-finish puddles on the floor — cheap, and they pay off the SSR
 ## pass with real reflections of the emissive strips and robot glow.
@@ -2721,34 +2827,29 @@ func _build_skyline(def: Dictionary) -> void:
 	win_mat.emission_enabled = true
 	win_mat.emission = win_col
 	win_mat.emission_energy_multiplier = 1.8
+	# The whole backdrop ring (22 towers + their 44 window slits) is pure scenery
+	# with shadows off, so batch each material into one MultiMesh draw instead of 66
+	# MeshInstances (visually identical — same boxes, positions, rotations).
+	var bodies: Array = []
+	var windows: Array = []
 	var steps := 22
 	for s in steps:
 		var ang := TAU * s / steps + randf_range(-0.06, 0.06)
 		var dist := base + randf_range(26.0, 60.0)
 		var w := randf_range(6.0, 14.0)
 		var h := randf_range(8.0, 30.0)
-		var mi := MeshInstance3D.new()
-		var bm := BoxMesh.new()
-		bm.size = Vector3(w, h, w)
-		bm.material = body_mat
-		mi.mesh = bm
-		mi.position = Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
-		mi.rotation.y = randf_range(0.0, PI)
-		# Pure backdrop: 22 towers drawn into the sun's shadow cascades would be
-		# the most expensive shadows in the game for silhouettes nobody reads.
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mi)
-		# Lit window slits: thin emissive columns punched through the tower so
-		# a glowing seam shows on both faces — reads as windows from any angle.
+		var yaw := randf_range(0.0, PI)
+		var pos := Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
+		bodies.append({"pos": pos, "size": Vector3(w, h, w), "yaw": yaw})
+		# Lit window slits: thin emissive columns punched through the tower so a
+		# glowing seam shows on both faces. Local offset is rotated into world space.
 		for _j in 2:
-			var strip := MeshInstance3D.new()
-			var sm := BoxMesh.new()
-			sm.size = Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14)
-			sm.material = win_mat
-			strip.mesh = sm
-			strip.position = Vector3(randf_range(-0.4, 0.4) * w, randf_range(-0.15, 0.1) * h, 0)
-			strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mi.add_child(strip)
+			var lx := randf_range(-0.4, 0.4) * w
+			var ly := randf_range(-0.15, 0.1) * h
+			var wp := pos + Vector3(cos(yaw) * lx, ly, sin(yaw) * lx)
+			windows.append({"pos": wp, "size": Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14), "yaw": yaw})
+	_box_multimesh(bodies, body_mat, false)
+	_box_multimesh(windows, win_mat, false)
 
 ## A starfield dome over open-sky levels: one MultiMesh of billboarded points
 ## at far distance, brightness-varied so the night sky reads as real depth
