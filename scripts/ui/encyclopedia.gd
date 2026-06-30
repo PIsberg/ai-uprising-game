@@ -10,6 +10,14 @@ var _turntable: Node3D
 var _bot: Node3D
 var _camera: Camera3D
 var _strike_accum: float = 0.0
+# Stage lights, kept so each entry can dim/brighten them (some chassis read too
+# dark, some — like the glowing shark — too hot under the shared rig).
+var _key: SpotLight3D
+var _fill: OmniLight3D
+var _rim: OmniLight3D
+var _key_e: float = 5.0
+var _fill_e: float = 2.0
+var _rim_e: float = 1.6
 
 var _types: Array = []   # discovered codex types, in roster order
 var _index: int = 0
@@ -65,29 +73,36 @@ func _build_lights() -> void:
 	_camera.current = true
 	_camera.fov = 40.0
 	add_child(_camera)
-	var key := SpotLight3D.new()
-	key.position = Vector3(2.6, 5.0, 4.5)
-	add_child(key)
-	key.look_at(Vector3(0, 1.0, 0), Vector3.UP)
-	key.light_color = Color(1.0, 0.96, 0.92)
-	key.light_energy = 5.0 # toned down — 9.0 blew out emissive units (raptor)
-	key.spot_range = 24.0
-	key.spot_angle = 48.0
-	key.shadow_enabled = true
-	var fill := OmniLight3D.new()
-	fill.position = Vector3(-3.5, 3.0, 3.0)
-	fill.light_color = Color(0.45, 0.55, 0.8)
-	fill.light_energy = 2.0
-	fill.omni_range = 16.0
-	add_child(fill)
+	_key = SpotLight3D.new()
+	_key.position = Vector3(2.6, 5.0, 4.5)
+	add_child(_key)
+	_key.look_at(Vector3(0, 1.0, 0), Vector3.UP)
+	_key.light_color = Color(1.0, 0.96, 0.92)
+	_key.light_energy = _key_e # toned down — 9.0 blew out emissive units (raptor)
+	_key.spot_range = 24.0
+	_key.spot_angle = 48.0
+	_key.shadow_enabled = true
+	_fill = OmniLight3D.new()
+	_fill.position = Vector3(-3.5, 3.0, 3.0)
+	_fill.light_color = Color(0.45, 0.55, 0.8)
+	_fill.light_energy = _fill_e
+	_fill.omni_range = 16.0
+	add_child(_fill)
 	# Cool, gentle back-rim. (A hot red rim here reflected off the dais as a
 	# distracting "orange ring" on the floor — keep it dim and cool.)
-	var rim := OmniLight3D.new()
-	rim.position = Vector3(0, 2.6, -3.5)
-	rim.light_color = Color(0.5, 0.62, 0.9)
-	rim.light_energy = 1.6
-	rim.omni_range = 12.0
-	add_child(rim)
+	_rim = OmniLight3D.new()
+	_rim.position = Vector3(0, 2.6, -3.5)
+	_rim.light_color = Color(0.5, 0.62, 0.9)
+	_rim.light_energy = _rim_e
+	_rim.omni_range = 12.0
+	add_child(_rim)
+
+## Scale the stage lights for the selected entry: dim glowing units, brighten
+## dark ones. `light` defaults to 1.0 (the tuned baseline).
+func _apply_light(mult: float) -> void:
+	if _key: _key.light_energy = _key_e * mult
+	if _fill: _fill.light_energy = _fill_e * mult
+	if _rim: _rim.light_energy = _rim_e * mult
 
 ## A dark reflective dais the model turns on, with a glowing accent ring.
 func _build_stage() -> void:
@@ -274,6 +289,7 @@ func _spawn_model(entry: Dictionary) -> void:
 		_bot.queue_free()
 		_bot = null
 	_turntable.rotation = Vector3.ZERO
+	_apply_light(float(entry.get("light", 1.0)))
 	var path: String = entry.get("scene", "")
 	if path == "":
 		return
@@ -284,7 +300,9 @@ func _spawn_model(entry: Dictionary) -> void:
 	if "preview" in bot:
 		bot.preview = true # bosses: show idle only, skip their boot/wave logic
 	_turntable.add_child(bot)
-	bot.rotation.y = PI # face the camera (+Z)
+	# Face the camera (+Z); per-entry `yaw` turns a model that reads better at an
+	# angle (e.g. the breaker's side-on hammer profile).
+	bot.rotation.y = PI + deg_to_rad(float(entry.get("yaw", 0.0)))
 	bot.scale = Vector3.ONE * float(entry.get("scale", 1.0))
 	bot.position = Vector3(0, float(entry.get("y", 0.0)), 0)
 	if bot.has_method("set_physics_process"):

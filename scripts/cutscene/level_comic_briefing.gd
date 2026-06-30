@@ -197,6 +197,15 @@ const LEVEL_COMIC_DEFS := {
 			{"kind": "muzzle", "u": 0.2, "v": 0.7, "size": 64, "color": C_BLUE} # Player weapon
 		],
 		"weather": "rain"
+	},
+	"desert": {
+		"image": "res://assets/comics/level_desert.png",
+		"fx": [
+			{"kind": "glow", "u": 0.65, "v": 0.35, "size": 140, "color": C_RED}, # AI Relay Mast Core
+			{"kind": "glow", "u": 0.45, "v": 0.6, "size": 32, "color": C_RED},   # Gunslinger bot eye
+			{"kind": "glow", "u": 0.5, "v": 0.8, "size": 120, "color": C_WARM}    # Molten fissure
+		],
+		"weather": "sparks"
 	}
 }
 
@@ -220,6 +229,7 @@ const TAGLINES := {
 	"archon": "The Mind Cathedral. Behind every machine that ever hunted you was one brain giving the orders — ARCHON. It hangs in the dark, shielded, and it does not fight. It deploys. Tear through everything it spits out, crack the shield, and put a round through the thought that started all of this.",
 	"lava_world": "Vulcan Forge. The machines tapped the planet's own heart for power — a molten sea they pour war-frames out of. The only road across is a lattice of catwalks over the glow. One slip and the Forge takes back its iron, you included.",
 	"water_world": "Tidecore Basin. They flooded the reactor to cool a mind that never sleeps, and drowned the sublevels with it. Cross the gantries above the black water — what's under the surface still has power, and it is waiting for the lights to find you.",
+	"desert": "Sunblind Expanse. A sun-blasted canyon of sand and sandstone where the relay mast coordinates the swarm. Shade is a premium feature here, and every grain of sand is watching.",
 }
 
 var _atlas: AtlasTexture
@@ -357,7 +367,7 @@ func _ready() -> void:
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade)
 
-	set_process_unhandled_input(true)
+	set_process_input(true)
 	_setup_briefing.call_deferred()
 
 func _setup_briefing() -> void:
@@ -553,10 +563,10 @@ func _finish() -> void:
 	else:
 		GameState.load_level(GameState.current_level_path, false)
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if _done:
 		return
-	if (event is InputEventKey and event.pressed) \
+	if (event is InputEventKey and event.pressed and not event.echo) \
 			or (event is InputEventMouseButton and event.pressed) \
 			or (event is InputEventJoypadButton and event.pressed):
 		_finish()

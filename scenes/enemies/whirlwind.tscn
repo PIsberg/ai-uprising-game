@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://b0enemy0whirlwd1"]
+[gd_scene format=3 uid="uid://bw1vpnvkshhw7"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_whirlwind.gd" id="1_whirl"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

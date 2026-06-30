@@ -113,17 +113,13 @@ func _ready() -> void:
 ## reads as gunmetal with the weapon's energy-color identity.
 const REAL_MODELS := {
 	"pistol":     {"glb": "res://assets/models/weapons/blaster-b.glb", "len": 0.42, "tint": Color(0.5, 0.52, 0.56)},
-	"smg":        {"glb": "res://assets/models/weapons/blaster-c.glb", "len": 0.5, "tint": Color(0.48, 0.5, 0.54)},
 	"rifle":      {"glb": "res://assets/models/weapons/blaster-d.glb", "len": 0.78, "tint": Color(0.46, 0.48, 0.52)},
 	"shotgun":    {"glb": "res://assets/models/weapons/blaster-a.glb", "len": 0.72, "tint": Color(0.52, 0.48, 0.44)},
 	"plasma":     {"glb": "res://assets/models/weapons/blaster-l.glb", "len": 0.58, "tint": Color(0.44, 0.56, 0.46)},
 	"gauss":      {"glb": "res://assets/models/weapons/blaster-e.glb", "len": 0.95, "tint": Color(0.44, 0.5, 0.6)},
 	"tesla":      {"glb": "res://assets/models/weapons/blaster-o.glb", "len": 0.52, "tint": Color(0.42, 0.54, 0.58)},
 	"arccoil":    {"glb": "res://assets/models/weapons/blaster-q.glb", "len": 0.68, "tint": Color(0.58, 0.5, 0.4)},
-	"twinrail":   {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.95, "tint": Color(0.46, 0.52, 0.62)},
 	"devastator": {"glb": "res://assets/models/weapons/blaster-p.glb", "len": 0.8, "tint": Color(0.56, 0.44, 0.42)},
-	"singularity": {"glb": "res://assets/models/weapons/blaster-r.glb", "len": 0.98, "tint": Color(0.5, 0.32, 0.66)},
-	"nova":        {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.82, "tint": Color(0.62, 0.42, 0.28)},
 	"swarm":       {"glb": "res://assets/models/weapons/blaster-n.glb", "len": 0.74, "tint": Color(0.62, 0.4, 0.3)},
 	"tempest":     {"glb": "res://assets/models/weapons/blaster-i.glb", "len": 0.7, "tint": Color(0.42, 0.7, 0.86)},
 	"omega":       {"glb": "res://assets/models/weapons/blaster-g.glb", "len": 1.0, "tint": Color(0.74, 0.58, 0.32)},
@@ -697,7 +693,7 @@ func _update_beam(delta: float) -> void:
 	if data == null or data.fire_mode != WeaponData.FireMode.BEAM:
 		return
 	if not _beam_wanted or _reloading or mag <= 0 or _active_camera == null or not visible:
-		if _beam:
+		if is_instance_valid(_beam):
 			_beam.deactivate()
 		_beam_tick = 0.0 # first tick lands the instant the trigger is pressed
 		return
@@ -740,10 +736,17 @@ func _update_beam(delta: float) -> void:
 	fired.emit(self)
 
 func _ensure_beam() -> void:
-	if _beam:
+	if is_instance_valid(_beam):
 		return
+	# Parent the bolt to the WORLD scene, not the weapon. Every other effect
+	# (tracers, energy flash, hit pops) lives in current_scene; the beam used to
+	# hang off the weapon viewmodel, which couples it to that subtree's visibility
+	# and could leave the lightning invisible in actual play. Keep it in the world.
 	_beam = ElectricBeam.new()
-	add_child(_beam)
+	var host: Node = get_tree().current_scene
+	if host == null:
+		host = get_tree().root
+	host.add_child(_beam)
 	if data:
 		_beam.set_color(data.tracer_color)
 
@@ -1253,10 +1256,17 @@ func on_unequip() -> void:
 	_burst_remaining = 0
 	_trigger_held_last = false
 	_beam_wanted = false
-	if _beam:
+	if is_instance_valid(_beam):
 		_beam.deactivate()
 	# Holster reload: top the mag back up in the background while it's stowed, over
 	# the normal reload time. Coming back to a backup and swapping out again can't
 	# hand you a fresh mag instantly — the reload has to actually finish first.
 	if not _reloading and reserve > 0 and mag < eff_mag_size():
 		start_reload()
+
+## The beam bolt lives in the world scene (not under us), so free it ourselves
+## when this weapon leaves the tree rather than leaking it.
+func _exit_tree() -> void:
+	if is_instance_valid(_beam):
+		_beam.queue_free()
+	_beam = null

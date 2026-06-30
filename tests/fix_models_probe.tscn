@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cfixmodelsprobe1"]
+[gd_scene format=3 uid="uid://csiaruphm61cc"]
 
 [ext_resource type="Script" path="res://tests/fix_models_probe.gd" id="1_p"]
 

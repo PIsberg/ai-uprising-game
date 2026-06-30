@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_reaper.gd" id="1_rea"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" uid="uid://bojdyp2oog84e" path="res://assets/models/robots/quaternius_bot_fierce.glb" id="4_model"]
+[ext_resource type="PackedScene" uid="uid://d1vjnu6ultm0x" path="res://assets/models/robots/another_robot.glb" id="4_model"]
 
 [sub_resource type="CapsuleShape3D" id="Capsule_col"]
 radius = 0.4
@@ -20,13 +20,12 @@ shape = SubResource("Capsule_col")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("3_rm")
-anim_idle = "CharacterArmature|Idle"
-anim_walk = "CharacterArmature|Run"
-anim_attack = "CharacterArmature|Shoot"
-anim_stagger = ""
+anim_walk = "Run"
 walk_speed_scale = 1.7
-tint = Color(1, 0.42, 0.4, 1)
+tint = Color(0.62, 0.64, 0.7, 1)
 menace_color = Color(1, 0.15, 0.1, 1)
+fit_height = 1.8
+fit_yaw_deg = 180.0
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
 transform = Transform3D(-5.0, 0, 0, 0, 5.0, 0, 0, 0, -5.0, 0, 0, 0)

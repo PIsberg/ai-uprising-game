@@ -4,7 +4,7 @@ extends Node
 ## Run windowed: godot --path . --quit-after 600 res://tests/briefing_view.tscn
 
 const SCENE := preload("res://scenes/cutscene/level_comic_briefing.tscn")
-const LEVELS := ["gpt", "mistral", "suburb_boss"]
+const LEVELS := ["gpt", "mistral", "suburb_boss", "desert"]
 
 func _ready() -> void:
 	for id in LEVELS:

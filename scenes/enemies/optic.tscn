@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://b0enemy0optic001"]
+[gd_scene format=3 uid="uid://bw1vpf4vi7lk7"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_optic.gd" id="1_opt"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

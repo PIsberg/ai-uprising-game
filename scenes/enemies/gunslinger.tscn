@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://b0enemy0gunsling1"]
+[gd_scene format=3 uid="uid://cw6ixhubj8x1c"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_gunslinger.gd" id="1_gun"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]

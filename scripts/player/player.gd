@@ -19,6 +19,8 @@ func notify_pickup(text: String) -> void:
 @export var jump_velocity: float = 7.5
 @export var coyote_time: float = 0.1 ## Grace to still jump just after stepping off a ledge.
 @export var jump_buffer_time: float = 0.12 ## Grace for a jump pressed just before landing.
+@export var sprint_jump_mult: float = 1.3 ## Jump boost after a sustained sprint (running jump).
+@export var sprint_jump_charge: float = 0.5 ## Seconds of full-speed sprinting needed to bank the boost.
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
@@ -587,6 +589,7 @@ func _apply_gravity(delta: float) -> void:
 
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
+var _sprint_charge: float = 0.0 ## Banked sprint time for the higher running jump.
 
 ## Coyote time + jump buffering so jumps land when the player MEANT them: you can
 ## still jump a hair after walking off a ledge, and a jump pressed just before
@@ -596,12 +599,23 @@ func _handle_jump(delta: float) -> void:
 		_coyote = coyote_time
 	else:
 		_coyote = maxf(0.0, _coyote - delta)
+	# Bank sprint time while running on the ground; a sustained sprint lets the
+	# next jump launch higher (a running jump). Reset the instant you stop
+	# sprinting on the ground; held through the air so the launch keeps the boost.
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	if is_on_floor() and Input.is_action_pressed("sprint") and not _is_crouching and hspeed > walk_speed:
+		_sprint_charge = minf(sprint_jump_charge, _sprint_charge + delta)
+	elif is_on_floor():
+		_sprint_charge = 0.0
 	if Input.is_action_just_pressed("jump"):
 		_jump_buffer = jump_buffer_time
 	else:
 		_jump_buffer = maxf(0.0, _jump_buffer - delta)
 	if _jump_buffer > 0.0 and _coyote > 0.0 and not _is_crouching:
-		velocity.y = jump_velocity
+		var vy := jump_velocity
+		if _sprint_charge >= sprint_jump_charge:
+			vy *= sprint_jump_mult # running jump — clears wider gaps / higher ledges
+		velocity.y = vy
 		_jump_buffer = 0.0
 		_coyote = 0.0
 

@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://csqaedor8um0p"
-path="res://.godot/imported/level_archon.png-8ab2a94ef6db6c5a90a0aa87edb3aeec.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/comics/level_archon.png"
-dest_files=["res://.godot/imported/level_archon.png-8ab2a94ef6db6c5a90a0aa87edb3aeec.ctex"]
 
 [params]
 

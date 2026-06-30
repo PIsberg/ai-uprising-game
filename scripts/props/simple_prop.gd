@@ -27,6 +27,9 @@ func _build() -> void:
 		"rock": _rock(1.0)
 		"boulder": _rock(1.9)
 		"rubble": _rubble()
+		"cactus": _cactus()
+		"palm": _palm()
+		"dune": _dune()
 		"river": _water(Vector3(4, 0.08, 16), Color(0.18, 0.4, 0.55, 0.7))
 		"pond": _pond()
 		"barrier": _barrier()
@@ -48,13 +51,13 @@ func _build() -> void:
 ## _surface_of(); unlisted kinds fall back to concrete (the default in weapon.gd).
 func _surface_group() -> String:
 	match kind:
-		"pine", "dead_tree", "log", "stump", "bench", "crate_stack":
+		"pine", "dead_tree", "log", "stump", "bench", "crate_stack", "palm":
 			return "surf_wood"
 		"rock", "boulder", "pillar", "statue", "planter":
 			return "surf_stone"
 		"hydrant", "dumpster":
 			return "surf_metal"
-		"sandbags":
+		"sandbags", "cactus", "dune":
 			return "surf_dirt"
 		_:
 			return "surf_concrete" # barriers etc. -> concrete thud
@@ -227,6 +230,76 @@ func _rubble() -> void:
 	for i in 8:
 		var s := randf_range(0.15, 0.4)
 		_box(Vector3(s, s * 0.7, s * 1.2), Color.BLACK, Vector3(randf_range(-0.7, 0.7), s * 0.35, randf_range(-0.7, 0.7)), Vector3(randf_range(-0.3, 0.3), randf() * TAU, randf_range(-0.3, 0.3)), grey)
+
+# ---------- desert flora ----------
+
+## A saguaro cactus: a tall ribbed green trunk with one or two upturned arms and a
+## sun-bleached bloom on top. Solid trunk collider so it blocks fire + paths.
+func _cactus() -> void:
+	var flesh := _mat(Color(0.21, 0.43, 0.26), 0.85)
+	var h := randf_range(2.4, 3.8)
+	# Trunk (slightly tapered, ribbed look from the 8-segment cylinder).
+	_cyl(0.26, 0.32, h, Color.BLACK, Vector3(0, h * 0.5, 0), flesh)
+	_sphere(0.27, Color.BLACK, Vector3(0, h, 0), flesh) # rounded crown
+	# 0–2 arms: a short elbow out, then a vertical limb up — the classic silhouette.
+	var arms := randi_range(0, 2)
+	for i in arms:
+		var side := 1.0 if (i == 0) else -1.0
+		var ay := randf_range(h * 0.4, h * 0.62)
+		var reach := randf_range(0.5, 0.75)
+		var elbow := _cyl(0.13, 0.15, reach, Color.BLACK, Vector3(side * reach * 0.5, ay, 0), flesh)
+		elbow.rotation = Vector3(0, 0, side * deg_to_rad(80.0))
+		var limb_h := randf_range(0.7, 1.2)
+		_cyl(0.12, 0.15, limb_h, Color.BLACK, Vector3(side * reach, ay + limb_h * 0.5, 0), flesh)
+		_sphere(0.14, Color.BLACK, Vector3(side * reach, ay + limb_h, 0), flesh)
+	# A few pale blossoms on the crown.
+	if randf() < 0.6:
+		for j in randi_range(1, 3):
+			_sphere(0.07, Color.BLACK, Vector3(randf_range(-0.18, 0.18), h + randf_range(-0.05, 0.12), randf_range(-0.18, 0.18)), _mat(Color(0.95, 0.85, 0.55), 0.6, 0.0, true))
+	_collide_cyl(0.34, h, h * 0.5)
+
+## A palm tree: a tall leaning tan trunk with stacked rings and a crown of long
+## drooping fronds, plus a couple of coconuts. Solid trunk collider.
+func _palm() -> void:
+	var bark := _mat(Color(0.45, 0.33, 0.2), 0.95)
+	var frond := _mat(Color(0.2, 0.42, 0.18), 0.8)
+	var h := randf_range(4.5, 6.5)
+	var lean := randf_range(-0.12, 0.12)
+	# Trunk: stacked tapering segments that lean slightly, so the crown is offset.
+	var segs := 6
+	for i in segs:
+		var t := float(i) / segs
+		var r := lerpf(0.26, 0.16, t)
+		var seg := _cyl(r * 0.92, r, h / segs + 0.06, Color.BLACK, Vector3(lean * t * h, h * (t + 0.5 / segs), 0), bark)
+	var top := Vector3(lean * h, h - 0.1, 0)
+	# A green boss at the crown base hides the trunk/frond join and fills the centre.
+	_sphere(0.3, Color.BLACK, top + Vector3(0, 0.05, 0), frond)
+	# Crown: two rings of long fronds — an inner ring lifting up, an outer ring
+	# drooping under its own weight — so the canopy reads full from any angle.
+	var blades := 7
+	for ring in 2:
+		var droop := 52.0 if ring == 0 else 22.0   # outer ring droops more
+		var length := 2.4 if ring == 0 else 1.7
+		var off := 0.0 if ring == 0 else PI / blades
+		for i in blades:
+			var a := TAU * i / blades + off + randf_range(-0.12, 0.12)
+			var ln := length * randf_range(0.85, 1.1)
+			var f := _box(Vector3(0.18, 0.05, ln), Color.BLACK, top + Vector3(sin(a) * ln * 0.42, 0.02, cos(a) * ln * 0.42), Vector3(deg_to_rad(droop + randf_range(-6.0, 6.0)), a, 0), frond)
+	# Coconuts clustered under the crown.
+	for j in randi_range(2, 4):
+		var a2 := randf() * TAU
+		_sphere(0.13, Color.BLACK, top + Vector3(sin(a2) * 0.22, -0.18, cos(a2) * 0.22), _mat(Color(0.3, 0.22, 0.13)))
+	_collide_cyl(0.26, h, h * 0.5)
+
+## A low sand dune mound — decorative desert relief (no collider; you walk over the
+## edge of it visually). Built from a couple of flattened sand spheres.
+func _dune() -> void:
+	var sand := _mat(Color(0.82, 0.66, 0.4), 1.0)
+	var s := randf_range(2.2, 3.6)
+	var m := _sphere(s, Color.BLACK, Vector3(0, -s * 0.55, 0), sand)
+	m.scale = Vector3(1.0, 0.32, randf_range(0.8, 1.3))
+	var m2 := _sphere(s * 0.7, Color.BLACK, Vector3(randf_range(-0.8, 0.8), -s * 0.4, randf_range(-0.8, 0.8)), sand)
+	m2.scale = Vector3(1.0, 0.3, 1.0)
 
 # ---------- water ----------
 

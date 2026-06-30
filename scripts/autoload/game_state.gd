@@ -91,6 +91,7 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_sublevel.tscn",
 	"res://scenes/levels/level_frostbreak.tscn",
 	"res://scenes/levels/level_water_world.tscn",
+	"res://scenes/levels/level_desert.tscn",
 	"res://scenes/levels/level_neon.tscn",
 	"res://scenes/levels/level_crucible.tscn",
 	"res://scenes/levels/level_lava_world.tscn",
@@ -128,20 +129,16 @@ func unlock_weapon(scene_path: String) -> void:
 ## number keys 1-9 always run weak→strong, and the HUD carousel reads it for slots.
 const WEAPON_ORDER: Array[String] = [
 	"res://scenes/weapons/pistol.tscn",      # M9 Sidearm — starter
-	"res://scenes/weapons/smg.tscn",         # TKN-9 Spitter
-	"res://scenes/weapons/rifle.tscn",       # AR-7 Pulse Rifle
+	"res://scenes/weapons/rifle.tscn",       # AR-7 Pulse Rifle — the full-auto
 	"res://scenes/weapons/shotgun.tscn",     # SG-12 Breacher
 	"res://scenes/weapons/magnum.tscn",      # .50 Maelstrom
-	"res://scenes/weapons/tesla.tscn",       # VK-7 Tesla Projector (electric beam)
+	"res://scenes/weapons/tesla.tscn",       # VK-7 Tesla Projector (close-range arc)
 	"res://scenes/weapons/arccoil.tscn",     # CL-3 Arc Coil (electric burst)
 	"res://scenes/weapons/sniper.tscn",      # MK-VII Longshot
 	"res://scenes/weapons/plasma.tscn",      # PL-1 Plasma Launcher
-	"res://scenes/weapons/twinrail.tscn",    # GEM-2 Twin Rail (laser)
-	"res://scenes/weapons/nova.tscn",        # NV-X Nova Scatter
-	"res://scenes/weapons/gauss.tscn",       # ARC-9 Gauss Lance (laser)
+	"res://scenes/weapons/gauss.tscn",       # ARC-9 Gauss Lance (piercing laser)
 	"res://scenes/weapons/swarm.tscn",       # SW-7 Swarm Launcher
 	"res://scenes/weapons/tempest.tscn",     # TPX-9 Tempest Coil (chain lightning)
-	"res://scenes/weapons/singularity.tscn", # VOID-9 Singularity Cannon
 	"res://scenes/weapons/devastator.tscn",  # GRK-X Devastator
 	"res://scenes/weapons/omega.tscn",       # OMEGA-X Annihilator — ultimate
 ]
@@ -157,18 +154,14 @@ func weapon_power_rank(scene_path: String) -> int:
 ## weakest → strongest, the same order the rack uses.
 const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/pistol.tscn",
-	"res://scenes/weapons/smg.tscn",
 	"res://scenes/weapons/rifle.tscn",
 	"res://scenes/weapons/shotgun.tscn",
 	"res://scenes/weapons/tesla.tscn",
 	"res://scenes/weapons/arccoil.tscn",
 	"res://scenes/weapons/plasma.tscn",
-	"res://scenes/weapons/twinrail.tscn",
-	"res://scenes/weapons/nova.tscn",
 	"res://scenes/weapons/gauss.tscn",
 	"res://scenes/weapons/swarm.tscn",
 	"res://scenes/weapons/tempest.tscn",
-	"res://scenes/weapons/singularity.tscn",
 	"res://scenes/weapons/devastator.tscn",
 	"res://scenes/weapons/omega.tscn",
 ]

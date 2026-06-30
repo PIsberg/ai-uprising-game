@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://butq7bk2afdhy"
-path="res://.godot/imported/level_titan.png-3fd1b3ff1f421b0959fd9cf61406cfee.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/comics/level_titan.png"
-dest_files=["res://.godot/imported/level_titan.png-3fd1b3ff1f421b0959fd9cf61406cfee.ctex"]
 
 [params]
 

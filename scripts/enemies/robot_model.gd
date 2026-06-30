@@ -16,10 +16,12 @@ extends Node3D
 @export var tint: Color = Color.WHITE ## Multiplies the model's albedo (variant recolor).
 @export var menace_glow: float = 1.0 ## Scales the red damage-blink flare (0 disables).
 @export var menace_color: Color = Color(1.0, 0.16, 0.1)
-## Always-on glowing optic: a bright emissive iris mounted at each EyeLight, so
-## the robot reads as a live, hostile machine in normal play (not just when hit).
-## Scan-pulses gently and fades on death. 0 disables.
-@export var eye_glow: float = 1.0
+## Optional glowing optic: a bright emissive iris mounted at each EyeLight. It
+## reads as a live machine, but on most models the solid sphere looked like a
+## stray "orange ball" floating on the chassis, so it's OFF by default now —
+## the EyeLight still casts its coloured glow. Opt a specific enemy back in by
+## setting eye_glow > 0 on its RobotModel. Scan-pulses gently; fades on death.
+@export var eye_glow: float = 0.0
 @export var eye_energy: float = 5.5 ## Base emission of the optic iris.
 @export var eye_radius: float = 0.0 ## Iris radius; 0 = auto from model size.
 @export var anim_idle: String = "Idle"
@@ -127,10 +129,14 @@ func _apply_fit() -> void:
 	if h > 0.0001:
 		var s := fit_height / h
 		var c := ab.get_center()
-		var oy := -ab.position.y * s if fit_ground else -c.y * s
-		_mesh.transform = Transform3D(
-			Basis.from_euler(Vector3(0, deg_to_rad(fit_yaw_deg), 0)).scaled(Vector3(s, s, s)),
-			Vector3(-c.x * s, oy, -c.z * s))
+		# Centre the chassis on x/z (feet on the floor for ground units). The centre
+		# offset must be carried through the SAME scale+yaw basis, or the recentring
+		# won't cancel: a model with an off-origin pivot (e.g. Sketchfab exports nest
+		# a big translate) yawed 180° would otherwise land ~2*offset away.
+		var basis := Basis.from_euler(Vector3(0, deg_to_rad(fit_yaw_deg), 0)).scaled(Vector3(s, s, s))
+		var rc := basis * c # scaled + yawed centre
+		var oy := -ab.position.y * s if fit_ground else -rc.y
+		_mesh.transform = Transform3D(basis, Vector3(-rc.x, oy, -rc.z))
 	_mesh_base = _mesh.transform
 	_mesh.visible = true
 

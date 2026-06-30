@@ -3,15 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bmhu1semy5tf2"
-path="res://.godot/imported/level_assembly.png-1cd4ad1722632ffc2c18978af1d35819.ctex"
-metadata={
-"vram_texture": false
-}
+valid=false
 
 [deps]
 
 source_file="res://assets/comics/level_assembly.png"
-dest_files=["res://.godot/imported/level_assembly.png-1cd4ad1722632ffc2c18978af1d35819.ctex"]
 
 [params]
 

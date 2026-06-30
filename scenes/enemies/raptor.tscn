@@ -24,14 +24,15 @@ anim_idle = "CharacterArmature|Idle"
 anim_walk = ""
 anim_attack = "CharacterArmature|Shoot"
 anim_stagger = ""
-menace_color = Color(1, 0.2, 0.14, 1)
+tint = Color(0.5, 0.56, 0.66, 1)
+menace_color = Color(0.3, 0.7, 1, 1)
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
 transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 0, -0.2, 0)
 
 [node name="EyeLight" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.5)
-light_color = Color(1, 0.22, 0.15, 1)
+light_color = Color(0.3, 0.85, 1, 1)
 light_energy = 1.2
 omni_range = 5.0
 

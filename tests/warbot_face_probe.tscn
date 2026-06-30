@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cwarbotface001"]
+[gd_scene format=3 uid="uid://beea4jahcqvlg"]
 
 [ext_resource type="Script" path="res://tests/warbot_face_probe.gd" id="1_p"]
 

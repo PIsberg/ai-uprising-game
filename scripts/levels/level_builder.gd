@@ -42,7 +42,6 @@ const ENEMY_SCENES := {
 	"smasher": preload("res://scenes/enemies/smasher.tscn"),
 	"dog": preload("res://scenes/enemies/dog.tscn"),
 	"server": preload("res://scenes/enemies/server.tscn"),
-	"magma": preload("res://scenes/enemies/magma.tscn"),
 	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
 	"warbot": preload("res://scenes/enemies/warbot.tscn"),
 	"enforcer": preload("res://scenes/enemies/enforcer.tscn"),
@@ -85,6 +84,9 @@ const PROP_SCENES := {
 	"stump": preload("res://scenes/props/stump.tscn"),
 	"rock": preload("res://scenes/props/rock.tscn"),
 	"boulder": preload("res://scenes/props/boulder.tscn"),
+	"cactus": preload("res://scenes/props/cactus.tscn"),
+	"palm": preload("res://scenes/props/palm.tscn"),
+	"dune": preload("res://scenes/props/dune.tscn"),
 	"rubble": preload("res://scenes/props/rubble.tscn"),
 	"river": preload("res://scenes/props/river.tscn"),
 	"pond": preload("res://scenes/props/pond.tscn"),
@@ -341,9 +343,11 @@ func _build_environment(def: Dictionary) -> void:
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.glow_intensity = e.get("glow", 0.62)
-	env.glow_strength = 0.9
-	env.glow_bloom = 0.05
-	env.glow_hdr_threshold = 1.25 # low enough that enemy emissives halo in the dark
+	env.glow_strength = e.get("glow_strength", 0.9)
+	# Bloom bleed: levels can crank this for a hazy neon-noir look where bright
+	# signs/lights smear into a fuzzy glow (default keeps edges crisp).
+	env.glow_bloom = e.get("glow_bloom", 0.05)
+	env.glow_hdr_threshold = e.get("glow_threshold", 1.25) # low enough that enemy emissives halo in the dark
 	env.glow_hdr_scale = 1.0
 	# Soft filmic halo around emissives — narrow kernel keeps the scene crisp.
 	env.set("glow_levels/3", 1.0)
