@@ -525,6 +525,13 @@ func _process(delta: float) -> void:
 	if _bob:
 		_bob.position.y = hover_height + sin(_t * 1.3) * 0.18
 		_bob.rotation.y += delta * 0.25
+		# Organic breathing: the cortex swells and settles on two slightly-detuned
+		# rhythms and gives a slow nod/sway, so the brain reads as a living, thinking
+		# mind instead of a rigid prop spinning in place.
+		var breathe := 1.0 + sin(_t * 0.9) * 0.035
+		_bob.scale = Vector3(breathe, 1.0 + sin(_t * 0.9 + 1.1) * 0.025, breathe)
+		_bob.rotation.x = sin(_t * 0.7) * 0.05
+		_bob.rotation.z = sin(_t * 0.55) * 0.04
 	for i in _rings.size():
 		var ring := _rings[i]
 		if is_instance_valid(ring):

@@ -19,6 +19,7 @@ const MUZZLES := [
 
 var _summon_cd: float = 0.0
 var _arriving: bool = false
+var _hover_t: float = 0.0   ## drives the idle vertical hover bob
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
@@ -115,14 +116,25 @@ func _apply_gravity(_delta: float) -> void:
 	pass
 
 func _move_toward(dest: Vector3, delta: float) -> void:
-	var ty: float = (target.global_position.y if target else 0.0) + fly_height
-	var to := Vector3(dest.x, ty, dest.z) - global_position
-	var flat := Vector3(to.x, 0.0, to.z)
+	var flat := Vector3(dest.x - global_position.x, 0.0, dest.z - global_position.z)
 	if flat.length() > 0.05:
 		var d := flat.normalized()
 		velocity.x = move_toward(velocity.x, d.x * move_speed, 8.0 * delta)
 		velocity.z = move_toward(velocity.z, d.z * move_speed, 8.0 * delta)
-	velocity.y = move_toward(velocity.y, (ty - global_position.y) * 4.0, 20.0 * delta)
+	# Altitude (velocity.y) is owned by the hover servo in _physics_process so the
+	# gunship floats with the same idle bob whether it's repositioning or holding.
+
+## Hover servo: always pulls the gunship toward its flight altitude plus a slow
+## vertical bob, so it bobs with life instead of holding a dead-still height when
+## it strafes in place. Runs after the base AI/move so it's the sole y authority.
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if state == State.DEAD or _arriving:
+		return
+	_hover_t += delta
+	var base_y: float = (target.global_position.y if target else 0.0) + fly_height
+	var goal := base_y + sin(_hover_t * 1.7) * 0.55   # gentle ±0.55 m float
+	velocity.y = clampf((goal - global_position.y) * 3.5, -6.0, 6.0)
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:

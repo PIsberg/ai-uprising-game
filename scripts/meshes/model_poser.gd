@@ -8,12 +8,13 @@ extends RefCounted
 ## (preserving world transform), and rotate the pivot so the arms hang in a
 ## natural, slightly forward combat-ready stance instead.
 
-## Lower the TITAN's raised arms into a natural resting stance.
+## Lower the TITAN's raised arms into a natural resting stance, and return the two
+## shoulder pivot nodes ({"R":.., "L":..}) so a caller can swing them in a gait.
 ## `mesh_root` is the instanced GLB scene root whose direct children are the
 ## ~120 "group####" MeshInstance3D parts (in the GLB's own local space).
-static func pose_giant_robot_arms(mesh_root: Node3D) -> void:
+static func pose_giant_robot_arms(mesh_root: Node3D) -> Dictionary:
 	if mesh_root == null:
-		return
+		return {}
 	# Region thresholds in the GLB's local space (see tests/titan_pose_probe.gd
 	# for the part dump these were derived from). Arms sit outboard of the torso
 	# half-width and above mid-thigh; legs/hips fall below y_floor and are skipped.
@@ -36,8 +37,37 @@ static func pose_giant_robot_arms(mesh_root: Node3D) -> void:
 			left_parts.append(mi)
 	# Shoulder pivots, placed at each arm's actual root so the upper arm rotates
 	# about the shoulder rather than translating.
-	_swing_limb(mesh_root, right_parts, Vector3(0.60, 1.12, 0.10), Vector3(deg_to_rad(-74.0), 0.0, deg_to_rad(8.0)), "ArmPivotR")
-	_swing_limb(mesh_root, left_parts, Vector3(-0.62, 1.10, 0.28), Vector3(deg_to_rad(-6.0), 0.0, deg_to_rad(16.0)), "ArmPivotL")
+	var rp := _swing_limb(mesh_root, right_parts, Vector3(0.60, 1.12, 0.10), Vector3(deg_to_rad(-74.0), 0.0, deg_to_rad(8.0)), "ArmPivotR")
+	var lp := _swing_limb(mesh_root, left_parts, Vector3(-0.62, 1.10, 0.28), Vector3(deg_to_rad(-6.0), 0.0, deg_to_rad(16.0)), "ArmPivotL")
+	return {"R": rp, "L": lp}
+
+## Bucket the TITAN's lower-leg parts into two hip pivots ({"R":.., "L":..}) so a
+## caller can swing them in a stride. Mirrors the arm bucketing but for parts
+## BELOW the hip line, split by side; the central pelvis column is left in place.
+## Run AFTER pose_giant_robot_arms (the arm parts are reparented away by then, so
+## they won't be re-bucketed). Pivots sit at the hip joint so the whole leg swings
+## about the hip rather than sliding.
+static func rig_giant_robot_legs(mesh_root: Node3D) -> Dictionary:
+	if mesh_root == null:
+		return {}
+	const Y_HIP := -0.70     # parts below this are leg, not pelvis/torso
+	const X_SIDE := 0.15     # |x| beyond this picks a side; inside stays (pelvis)
+	var right_parts: Array[Node3D] = []
+	var left_parts: Array[Node3D] = []
+	for child in mesh_root.get_children():
+		if not (child is MeshInstance3D):
+			continue
+		var mi := child as MeshInstance3D
+		var c: Vector3 = mi.transform * mi.get_aabb().get_center()
+		if c.y >= Y_HIP:
+			continue
+		if c.x > X_SIDE:
+			right_parts.append(mi)
+		elif c.x < -X_SIDE:
+			left_parts.append(mi)
+	var rp := _swing_limb(mesh_root, right_parts, Vector3(0.33, -0.72, 0.0), Vector3.ZERO, "LegPivotR")
+	var lp := _swing_limb(mesh_root, left_parts, Vector3(-0.33, -0.72, 0.0), Vector3.ZERO, "LegPivotL")
+	return {"R": rp, "L": lp}
 
 ## For a RIGGED model whose clips bake the arms up, attach an ArmRelaxModifier to
 ## its Skeleton3D so the named bones get a fixed downward nudge after every clip.
@@ -63,9 +93,9 @@ static func _find_skeleton(n: Node) -> Skeleton3D:
 
 ## Reparent `parts` under a fresh pivot at `pivot_local` (in mesh_root space) and
 ## apply `euler` rotation, keeping each part's world transform across the move.
-static func _swing_limb(mesh_root: Node3D, parts: Array[Node3D], pivot_local: Vector3, euler: Vector3, pivot_name: String) -> void:
+static func _swing_limb(mesh_root: Node3D, parts: Array[Node3D], pivot_local: Vector3, euler: Vector3, pivot_name: String) -> Node3D:
 	if parts.is_empty():
-		return
+		return null
 	var pivot := Node3D.new()
 	pivot.name = pivot_name
 	pivot.position = pivot_local
@@ -73,3 +103,4 @@ static func _swing_limb(mesh_root: Node3D, parts: Array[Node3D], pivot_local: Ve
 	for p in parts:
 		p.reparent(pivot, true)   # keep global transform
 	pivot.rotation = euler
+	return pivot

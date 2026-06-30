@@ -22,10 +22,20 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 6.0
-	# Lower the model's raised arms into a natural stance (the GLB has no rig).
+	# The GLB has no rig, so build a procedural gait from its loose parts: pose the
+	# arms into a natural stance, then bucket arms + legs into pivot nodes we swing
+	# each frame (see _drive_gait). Without this PROMETHEUS-0 just slides forward
+	# statue-stiff; with it, it strides — legs swinging, arms counter-pumping.
 	var mesh := get_node_or_null("Model/Mesh") as Node3D
 	if mesh:
-		ModelPoser.pose_giant_robot_arms(mesh)
+		var arms := ModelPoser.pose_giant_robot_arms(mesh)
+		var legs := ModelPoser.rig_giant_robot_legs(mesh)
+		_arm_r = arms.get("R") as Node3D
+		_arm_l = arms.get("L") as Node3D
+		_leg_r = legs.get("R") as Node3D
+		_leg_l = legs.get("L") as Node3D
+		if _arm_r: _arm_r_base = _arm_r.rotation
+		if _arm_l: _arm_l_base = _arm_l.rotation
 
 # ---------------------------------------------------------------------------
 # Signature mechanic — PHASE-BLINK HIT-AND-RUN
@@ -40,6 +50,18 @@ func _ready() -> void:
 
 @export var blink_cooldown: float = 7.0  ## Base seconds between phase-blinks (shortens as it loses health).
 var _blink_cd: float = 4.0
+
+# Procedural gait: pivots (built in _ready) holding the rigless model's limb
+# parts, swung each frame off the inherited _walk_phase. The legs stride about
+# the hip; the arms counter-pump on top of their posed resting rotation.
+var _arm_r: Node3D
+var _arm_l: Node3D
+var _leg_r: Node3D
+var _leg_l: Node3D
+var _arm_r_base: Vector3
+var _arm_l_base: Vector3
+const STRIDE_MAX := 0.42   ## peak hip swing (radians) at full speed
+const ARM_SWING := 0.5     ## arm counter-swing as a fraction of the leg stride
 ## After a blink the beam doesn't fire INSTANTLY — it charges for this long first
 ## (a readable tell at the new angle) so the reposition is a threat you can react
 ## to, not a free hit. Without it the blink-onto-flank + immediate on-target beam
@@ -49,12 +71,34 @@ var _blink_beam_delay: float = 0.0
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	_drive_gait()
 	if _blink_cd > 0.0:
 		_blink_cd -= delta
 	if _blink_beam_delay > 0.0:
 		_blink_beam_delay -= delta
 		if _blink_beam_delay <= 0.0:
 			_begin_beam() # tell finished — now the sweep fires
+
+## Swing the rigless model's limbs into a stride. Driven by the inherited
+## _walk_phase (which advances faster the quicker it moves), scaled by how fast
+## it's actually travelling so the gait blends from an idle sway to a full stride.
+func _drive_gait() -> void:
+	if _leg_r == null and _arm_r == null:
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var moving := clampf(speed / maxf(move_speed, 0.1), 0.0, 1.0)
+	var stride := sin(_walk_phase) * STRIDE_MAX * moving
+	# A faint idle breath keeps the arms alive when it's planted and bombarding.
+	var idle := sin(_walk_phase) * 0.03 * (1.0 - moving)
+	if _leg_r:
+		_leg_r.rotation.x = stride
+	if _leg_l:
+		_leg_l.rotation.x = -stride
+	# Arms counter-pump the legs (opposite phase), layered on their posed base.
+	if _arm_r:
+		_arm_r.rotation = _arm_r_base + Vector3(-stride * ARM_SWING + idle, 0.0, 0.0)
+	if _arm_l:
+		_arm_l.rotation = _arm_l_base + Vector3(stride * ARM_SWING + idle, 0.0, 0.0)
 
 ## Inject the blink ahead of the inherited artillery/beam/slam decision.
 func _choose_attack(dist: float) -> void:
