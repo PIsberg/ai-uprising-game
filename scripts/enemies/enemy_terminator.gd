@@ -304,9 +304,14 @@ func _process(delta: float) -> void:
 	# A subtler whole-body sway layered on the rig: lean into movement, recoil
 	# rocks it back. The rig now does the leg stomp, so the wrapper bob is light.
 	if _model:
-		_model.position.y = _model_base_y - absf(sin(_walk_phase)) * amp * 0.03
-		_model.rotation.x = amp * 0.05 - recoil * 0.12
-		_model.rotation.y = deg_to_rad(model_yaw_deg)
+		# The combat_robot GLB is rigless (no AnimationPlayer), so this wrapper
+		# motion IS the whole gait: a heavy two-beat bob (the chassis drops
+		# onto each foot), a lateral weight shift, a torso counter-twist, and
+		# an aggressive forward hunch that leans harder the faster it closes.
+		_model.position.y = _model_base_y - absf(sin(_walk_phase)) * amp * 0.07
+		_model.rotation.x = amp * 0.10 - recoil * 0.12          # forward stomp hunch
+		_model.rotation.z = sin(_walk_phase) * amp * 0.06       # lateral weight shift
+		_model.rotation.y = deg_to_rad(model_yaw_deg) + sin(_walk_phase) * amp * 0.045  # torso counter-twist
 	if _eye_glow:
 		var flare := _entrance * 6.0 # eyes blaze brighter while powering up
 		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare + _beam_charge * 10.0

@@ -37,7 +37,9 @@ texture = ExtResource("9_tex")
 anim_walk = "Walk"
 anim_attack = "Shoot"
 anim_stagger = "HitRecieve_2"
-walk_speed_scale = 1.1
+walk_speed_scale = 0.85
+lean_max = 0.18
+bank_max = 0.12
 
 [node name="Mesh" parent="Model" instance=ExtResource("8_model")]
 transform = Transform3D(-1.85, 0, 0, 0, 1.85, 0, 0, 0, -1.85, 0, 0, 0)

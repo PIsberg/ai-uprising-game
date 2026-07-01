@@ -28,9 +28,13 @@ shape = SubResource("CapsuleShape3D_1")
 script = ExtResource("4_rm")
 menace_color = Color(1, 0.14, 0.1, 1)
 anim_walk = "Walk"
-walk_speed_scale = 1.1
+anim_attack = "Punch"
+anim_stagger = "HitRecieve_2"
+walk_speed_scale = 1.5
 fit_height = 10.0
 fit_yaw_deg = 180.0
+lean_max = 0.24
+bank_max = 0.3
 
 [node name="Mesh" parent="Model" instance=ExtResource("5_model")]
 
