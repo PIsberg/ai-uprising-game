@@ -311,7 +311,7 @@ func _refresh() -> void:
 		var count := int(_supply_banked(k) / float(amt)) if float(amt) != 0.0 else 0
 		(sc["queued"] as Label).text = ("✓ OWNED ×%d" % count) if count > 0 else ""
 		var sbuy: Button = sc["buy"]
-		var maxed := k == "health" and GameState.supply_health_maxed()
+		var maxed: bool = k == "health" and GameState.supply_health_maxed()
 		if maxed:
 			sbuy.disabled = true
 			sbuy.text = "★ MAXED"
