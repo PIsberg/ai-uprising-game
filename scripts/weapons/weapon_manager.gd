@@ -33,6 +33,16 @@ var _sway_offset: Vector3 = Vector3.ZERO
 var _sway_rotation: Vector3 = Vector3.ZERO
 var _mouse_input: Vector2 = Vector2.ZERO
 
+# Viewmodel recoil kick: a spring-damped impulse so the GUN visibly punches back
+# and the muzzle climbs on every shot (the camera kick is separate). Velocity is
+# integrated against a stiff spring for a snappy, Vlambeer-y settle.
+var _kick_pos: Vector3 = Vector3.ZERO
+var _kick_rot: Vector3 = Vector3.ZERO
+var _kick_pos_vel: Vector3 = Vector3.ZERO
+var _kick_rot_vel: Vector3 = Vector3.ZERO
+const KICK_STIFFNESS := 220.0   # spring constant (snap-back speed)
+const KICK_DAMPING := 22.0      # critical-ish damping (no wobble)
+
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
 
@@ -244,11 +254,17 @@ func _process(delta: float) -> void:
 		_bob_time = 0.0
 		_bob_offset = _bob_offset.lerp(Vector3.ZERO, 8.0 * delta)
 
-	# Apply final position and rotation
-	position = target_pos + _sway_offset + _bob_offset
-	rotation.x = _sway_rotation.x
-	rotation.y = _sway_rotation.y
-	rotation.z = _sway_rotation.z
+	# Spring the recoil kick back to rest (snappy, lightly underdamped for punch).
+	_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * delta
+	_kick_pos += _kick_pos_vel * delta
+	_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * delta
+	_kick_rot += _kick_rot_vel * delta
+
+	# Apply final position and rotation (sway + bob + recoil kick)
+	position = target_pos + _sway_offset + _bob_offset + _kick_pos
+	rotation.x = _sway_rotation.x + _kick_rot.x
+	rotation.y = _sway_rotation.y + _kick_rot.y
+	rotation.z = _sway_rotation.z + _kick_rot.z
 
 
 func _on_fired(_w: Weapon) -> void:
@@ -262,6 +278,12 @@ func _on_fired(_w: Weapon) -> void:
 	# Punchy per-shot camera trauma, scaled by the weapon's recoil weight.
 	if shooter and shooter.has_method("shake"):
 		shooter.shake(clampf(0.18 + current.data.recoil_pitch * 0.05, 0.0, 0.6))
+	# Punch the GUN itself: a velocity impulse the spring then settles — the
+	# viewmodel jolts back (+Z, toward the player), lifts and the muzzle climbs,
+	# with a touch of random yaw/roll so repeat fire never looks metronomic.
+	var rw: float = current.data.recoil_pitch
+	_kick_pos_vel += Vector3(randf_range(-0.06, 0.06), 0.14, 0.85 + 0.45 * rw)
+	_kick_rot_vel += Vector3(1.4 + 0.8 * rw, randf_range(-0.22, 0.22), randf_range(-0.45, 0.45))
 
 func _equip(index: int) -> void:
 	if index == current_index or index < 0 or index >= weapons.size():

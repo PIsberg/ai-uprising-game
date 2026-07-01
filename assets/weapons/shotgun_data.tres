@@ -35,4 +35,5 @@ sound_id = "shotgun"
 has_pump_action = true
 pump_throw = 0.1
 slide_kick = 0.0
+tracer_color = Color(1.0, 0.65, 0.3, 1)
 viewmodel_color = Color(0.35, 0.3, 0.18, 1)

@@ -31,4 +31,5 @@ muzzle_flash_scene = ExtResource("2_mf")
 muzzle_scale = 1.5
 sound_id = "plasma"
 slide_kick = 0.0
+tracer_color = Color(0.3, 0.85, 0.7, 1)
 viewmodel_color = Color(0.2, 0.45, 0.55, 1)
