@@ -1166,17 +1166,24 @@ func _shed_panel(toward: Vector3) -> void:
 ## pool: those stay where the level placed them.
 func _drop_loot() -> void:
 	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0)
-	if score_value < 250 and randf() > drop_chance * mult:
-		return
-	# Rare prize first, then bias toward health when the player is actually
-	# hurt, ammo otherwise.
-	var overclock_w := 0.18 if score_value >= 250 else 0.04
-	var health_w := 0.2
+	# Read the player's health up front: it gates a low-HP PITY DROP (a safety net
+	# so low-kill objective levels can't spiral into an unrecoverable starve) and
+	# biases the loot toward health when you're hurt.
+	var hp_frac := 1.0
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
-		var d := player.get_node_or_null("Damageable")
-		if d and d.max_health > 0.0:
-			health_w = lerpf(0.2, 0.6, 1.0 - d.current_health / d.max_health)
+		var pd := player.get_node_or_null("Damageable")
+		if pd and pd.max_health > 0.0:
+			hp_frac = pd.current_health / pd.max_health
+	var desperate := hp_frac <= 0.3
+	# Anchors (score >= 250) always drop; grunts roll drop_chance — UNLESS the
+	# player is desperate, in which case every kill is guaranteed to leave something.
+	if not desperate and score_value < 250 and randf() > drop_chance * mult:
+		return
+	# Rare prize first, then bias toward health when the player is actually
+	# hurt, ammo otherwise. A desperate player is flooded with health.
+	var overclock_w := 0.18 if score_value >= 250 else 0.04
+	var health_w := 0.9 if desperate else lerpf(0.2, 0.6, 1.0 - hp_frac)
 	# The rare prize is a coin-flip between OVERCLOCK (damage) and OVERDRIVE
 	# (rapid-fire + speed) so both powerups show up across a run.
 	var prize: PackedScene = PICKUP_OVERDRIVE if randf() < 0.5 else PICKUP_OVERCLOCK

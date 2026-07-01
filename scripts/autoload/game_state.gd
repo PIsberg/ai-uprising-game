@@ -49,7 +49,7 @@ const DIFFICULTY_CONFIG := {
 		# fight — just a forgiving one (clearly easier than NORMAL).
 		"health_mult": 0.5, "cooldown_mult": 1.6, "speed_mult": 0.62,
 		"enemy_count_mult": 0.5, "pickup_mult": 1.8, "aim_spread_deg": 12.0,
-		"reaction_mult": 2.6, # slow to open fire — gives you a beat
+		"reaction_mult": 2.0, # slow to open fire — gives you a beat
 	},
 	Difficulty.NORMAL: {
 		"label": "NORMAL",
@@ -72,6 +72,53 @@ func difficulty_config() -> Dictionary:
 
 func difficulty_label() -> String:
 	return difficulty_config().get("label", "NORMAL")
+
+# ---------------------------------------------------------------------
+# Campaign progression scaling. The difficulty tiers above are STATIC — they
+# hit level 1 and the finale identically. But the player accrues permanent
+# power across a run (armory damage +8%/rank, +40 max-HP med-kits, the whole
+# weak→strong arsenal, overclock/overdrive), so without a counter-ramp the
+# back half of the campaign trivializes once you're funded. This gentle ramp
+# scales enemy DURABILITY (and, slightly, attack cadence) with how deep you
+# are in the campaign, sized to roughly offset that creep — NOT to spike late
+# levels. It stacks on top of the difficulty tier and only applies inside the
+# campaign (custom/range/horde test maps are untouched).
+# ---------------------------------------------------------------------
+
+## 0.0 on the first campaign level → 1.0 on the finale; -1.0 if the current
+## level isn't part of the campaign (so the ramp no-ops off-campaign).
+func campaign_progress() -> float:
+	var camp := campaign()
+	var idx := camp.find(current_level_path)
+	if idx < 0:
+		return -1.0
+	return float(idx) / maxf(1.0, float(camp.size() - 1))
+
+## Multipliers layered on top of difficulty_config() for the current campaign
+## depth. Health ramps to +40% by the finale (offsetting the +40% armory damage
+## cap and weapon-tier creep); attacks tighten by up to 12% so late robots stay
+## on the trigger. Returns 1.0s off-campaign.
+func campaign_health_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else 1.0 + p * 0.40
+
+func campaign_cadence_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else 1.0 - p * 0.12
+
+## Boss enemy type tokens (matched against a spawner's scene path). Bosses are
+## hand-tuned, one-off HP bags with scripted phases, so they're EXEMPT from the
+## campaign depth ramp above — that ramp exists to counter player creep on the
+## long tail of regular enemies; stacking it onto a 3000-HP boss (on top of the
+## difficulty tier) would just make the climax a slog. They still scale with the
+## difficulty tier's health_mult like everything else.
+const BOSS_TYPES := ["colossus", "titan", "overseer", "archon", "terminator", "smasher"]
+
+func is_boss_scene(path: String) -> bool:
+	for b in BOSS_TYPES:
+		if b in path:
+			return true
+	return false
 
 ## Campaign order. The player advances through these via the "Continue" button
 ## on the level-complete screen.
@@ -192,6 +239,17 @@ const SUPPLY_DEFS := {
 	"grenades": {"label": "GRENADE PACK", "amount": 1,  "cost": 600},
 	"health":   {"label": "MED-KIT",      "amount": 40, "cost": 750},
 }
+## MED-KITs are the only PERMANENT, repeatable max-HP source, and uncapped they
+## let a score-rich player tank to 300-500+ HP — the dominant unbounded purchase
+## that outpaces any enemy tuning. Cap the bonus at +160 (4 kits → 260 HP max):
+## a generous survivability ceiling that's still bounded, so durability stays a
+## meaningful choice instead of a money-dump win button. Ammo/grenades stay
+## uncapped (consumed in play; they don't break the power curve).
+const SUPPLY_HEALTH_CAP := 160.0
+
+## True once max-HP MED-KITs are banked to the cap (armory shows MAXED, no buy).
+func supply_health_maxed() -> bool:
+	return supply_health >= SUPPLY_HEALTH_CAP
 var supply_ammo: int = 0        # permanent bonus reserve added to every weapon each deploy
 var supply_grenades: int = 0    # permanent bonus frag grenades carried each deploy
 var supply_health: float = 0.0  # permanent bonus max+current HP each deploy
@@ -203,12 +261,14 @@ func buy_supply(k: String) -> bool:
 	var cost := int(SUPPLY_DEFS[k]["cost"])
 	if score < cost:
 		return false
+	if k == "health" and supply_health_maxed():
+		return false # max-HP banked to the cap — don't take score for a no-op
 	score -= cost
 	var amt = SUPPLY_DEFS[k]["amount"]
 	match k:
 		"ammo": supply_ammo += int(amt)
 		"grenades": supply_grenades += int(amt)
-		"health": supply_health += float(amt)
+		"health": supply_health = minf(SUPPLY_HEALTH_CAP, supply_health + float(amt))
 	save_progress()
 	return true
 
@@ -217,6 +277,8 @@ func can_buy_anything() -> bool:
 	if can_buy_any_upgrade():
 		return true
 	for k in SUPPLY_DEFS:
+		if k == "health" and supply_health_maxed():
+			continue # capped — not a real choice anymore
 		if score >= int(SUPPLY_DEFS[k]["cost"]):
 			return true
 	return false
@@ -320,7 +382,7 @@ func _process(delta: float) -> void:
 
 signal overclock_changed(seconds_left: float)
 
-const OVERCLOCK_MULT := 4.0
+const OVERCLOCK_MULT := 3.0
 const OVERCLOCK_DURATION := 10.0
 var overclock_left: float = 0.0
 

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cbalprobe001"]
+
+[ext_resource type="Script" path="res://tools/balance_probe.gd" id="1_bp"]
+
+[node name="BalanceProbe" type="Node"]
+script = ExtResource("1_bp")

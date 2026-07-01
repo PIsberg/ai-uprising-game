@@ -40,16 +40,27 @@ func _ready() -> void:
 
 @export var blink_cooldown: float = 7.0  ## Base seconds between phase-blinks (shortens as it loses health).
 var _blink_cd: float = 4.0
+## After a blink the beam doesn't fire INSTANTLY — it charges for this long first
+## (a readable tell at the new angle) so the reposition is a threat you can react
+## to, not a free hit. Without it the blink-onto-flank + immediate on-target beam
+## was effectively undodgeable.
+const BLINK_BEAM_TELL := 0.55
+var _blink_beam_delay: float = 0.0
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	if _blink_cd > 0.0:
 		_blink_cd -= delta
+	if _blink_beam_delay > 0.0:
+		_blink_beam_delay -= delta
+		if _blink_beam_delay <= 0.0:
+			_begin_beam() # tell finished — now the sweep fires
 
 ## Inject the blink ahead of the inherited artillery/beam/slam decision.
 func _choose_attack(dist: float) -> void:
-	# A blink/beam/slam already in flight locks out new actions (mirrors Colossus).
-	if _beam_time > 0.0 or _slam_windup > 0.0:
+	# A blink/beam/slam (or a charging post-blink beam) already in flight locks out
+	# new actions (mirrors Colossus).
+	if _beam_time > 0.0 or _slam_windup > 0.0 or _blink_beam_delay > 0.0:
 		return
 	if _try_blink(dist):
 		return

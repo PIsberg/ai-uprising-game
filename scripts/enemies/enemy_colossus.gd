@@ -69,7 +69,7 @@ var _slam_windup: float = 0.0
 
 func _ready() -> void:
 	super._ready()
-	max_health = 3200.0
+	max_health = 2400.0
 	stagger_threshold = 100000.0 # a colossus shrugs off small-arms; never stunlocked
 	move_speed = 2.2
 	turn_speed = 1.6

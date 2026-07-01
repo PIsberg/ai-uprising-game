@@ -72,7 +72,11 @@ var _beam_charge: float = 0.0               ## 0..1, drives the eye turning gree
 
 func _ready() -> void:
 	super._ready()
-	max_health = 560.0  # toned down from 700 — APEX read a little too strong
+	# Was 560 (toned down from 700 for FEEL — it hit too hard). But that left it
+	# the weakest boss by ~3x, dying in ~5s — it read as an elite, not a boss.
+	# Raise only the HP for a proper boss-length fight; its (already-toned) low
+	# damage is unchanged, so it lasts longer without hitting harder.
+	max_health = 900.0
 	stagger_threshold = 200.0 # heavy boss: only big/sustained hits stagger it
 	move_speed = 6.8
 	turn_speed = 9.0

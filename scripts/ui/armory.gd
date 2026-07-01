@@ -311,9 +311,15 @@ func _refresh() -> void:
 		var count := int(_supply_banked(k) / float(amt)) if float(amt) != 0.0 else 0
 		(sc["queued"] as Label).text = ("✓ OWNED ×%d" % count) if count > 0 else ""
 		var sbuy: Button = sc["buy"]
-		sbuy.disabled = not afford
-		sbuy.text = "BUY  %d cr" % price if afford else "NEED %d cr" % price
-		(sc["box"] as StyleBoxFlat).border_color = sa if afford else Color(sa.r, sa.g, sa.b, 0.35)
+		var maxed: bool = k == "health" and GameState.supply_health_maxed()
+		if maxed:
+			sbuy.disabled = true
+			sbuy.text = "★ MAXED"
+			(sc["box"] as StyleBoxFlat).border_color = sa
+		else:
+			sbuy.disabled = not afford
+			sbuy.text = "BUY  %d cr" % price if afford else "NEED %d cr" % price
+			(sc["box"] as StyleBoxFlat).border_color = sa if afford else Color(sa.r, sa.g, sa.b, 0.35)
 
 func _supply_banked(k: String) -> float:
 	match k:

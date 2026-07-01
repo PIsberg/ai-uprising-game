@@ -104,6 +104,7 @@ func _on_body_entered(body: Node) -> void:
 						w.add_ammo(amount)
 			var got_grenade := false
 			var got_vortex := false
+			var got_emp := false
 			if body.has_method("add_grenade"):
 				body.add_grenade(1, 0)   # 0 = Player.GrenadeType.FRAG (plain int avoids a class-load cycle)
 				got_grenade = true
@@ -111,9 +112,16 @@ func _on_body_entered(body: Node) -> void:
 				if randf() < 0.3:
 					body.add_grenade(1, 1)   # 1 = Player.GrenadeType.VORTEX
 					got_vortex = true
+				# EMP is the strongest crowd-control but had NO restock path (fixed 2
+				# per run) while frags renew freely. Give it a rare trickle so it stays
+				# precious but isn't strictly finite. add_grenade clamps to the carry max.
+				elif randf() < 0.12:
+					body.add_grenade(1, 2)   # 2 = Player.GrenadeType.EMP
+					got_emp = true
 			if body.has_method("notify_pickup"):
 				var extra := ""
 				if got_vortex: extra = " · +1 VORTEX"
+				elif got_emp: extra = " · +1 EMP"
 				elif got_grenade: extra = " · +1 GRENADE"
 				body.notify_pickup("+%d AMMO" % amount + extra)
 			AudioBus.play_synth_at("pickup_ammo", global_position, -2.0)
