@@ -102,6 +102,15 @@ var _is_crouching: bool = false
 var _dash_time: float = 0.0
 var _dash_cd: float = 0.0
 var _dash_dir: Vector3 = Vector3.ZERO
+
+var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights the landing)
+
+# Ledge mantling: pull up onto a ledge you're cresting instead of scraping down it.
+@export_group("Mantle")
+@export var mantle_min_h: float = 0.7  ## lowest ledge worth a mantle (below this you just step up)
+@export var mantle_max_h: float = 1.7  ## highest ledge you can pull yourself onto
+@export var mantle_reach: float = 0.95 ## how far ahead the ledge face can be
+var _mantle_cd: float = 0.0
 var _sliding: bool = false
 var _slide_time: float = 0.0
 var _fov_base: float = 0.0
@@ -316,8 +325,11 @@ func _physics_process(delta: float) -> void:
 	_handle_jump(delta)
 	_handle_grenade(delta)
 	_handle_stance(delta)
+	_handle_mantle(delta)
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
+	if not is_on_floor():
+		_fall_speed = -velocity.y   # peak downward speed this fall (read on landing)
 	move_and_slide()
 	_update_dof()
 	_check_landing()
@@ -619,6 +631,66 @@ func _handle_jump(delta: float) -> void:
 		_jump_buffer = 0.0
 		_coyote = 0.0
 
+## Ledge mantle: when you're cresting a ledge that's just above step height — at
+## the apex of a jump or falling against it while pushing forward — pull yourself
+## up and over instead of scraping down the wall. Auto-triggers (no extra button)
+## so the new verticality flows. Gives exactly enough upward boost to clear the
+## lip plus a forward carry onto the platform.
+func _handle_mantle(delta: float) -> void:
+	_mantle_cd = maxf(0.0, _mantle_cd - delta)
+	if is_on_floor() or _mantle_cd > 0.0 or _dash_time > 0.0 or _sliding or _is_crouching:
+		return
+	if velocity.y > 2.0:
+		return  # still rocketing up — mantle at the apex or on the way down
+	var fwd := -global_transform.basis.z
+	fwd.y = 0.0
+	if fwd.length() < 0.01:
+		return
+	fwd = fwd.normalized()
+	# Only when actually heading into the wall: pressing forward, or carrying into it.
+	var into := Vector2(velocity.x, velocity.z).dot(Vector2(fwd.x, fwd.z))
+	if not Input.is_action_pressed("move_forward") and into < 1.0:
+		return
+	var space := get_world_3d().direct_space_state
+	# 1) A wall face right in front, around chest height.
+	var chest := global_position + Vector3.UP * 0.8
+	var wq := PhysicsRayQueryParameters3D.create(chest, chest + fwd * mantle_reach)
+	wq.collision_mask = 0b0000001  # world
+	wq.exclude = [get_rid()]
+	var wh := space.intersect_ray(wq)
+	if wh.is_empty() or absf((wh["normal"] as Vector3).y) > 0.4:
+		return  # no wall, or it's a slope/floor — not a ledge face
+	# 2) A walkable ledge TOP within mantle height, just past the face.
+	var top := global_position + Vector3.UP * (mantle_max_h + 0.4) + fwd * (mantle_reach + 0.25)
+	var dq := PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * (mantle_max_h + 0.6))
+	dq.collision_mask = 0b0000001
+	dq.exclude = [get_rid()]
+	var dh := space.intersect_ray(dq)
+	if dh.is_empty() or (dh["normal"] as Vector3).y < 0.6:
+		return  # nothing to stand on, or too steep to count as a ledge
+	var ledge_pos: Vector3 = dh["position"]
+	var h := ledge_pos.y - global_position.y
+	if h < mantle_min_h or h > mantle_max_h:
+		return
+	# 3) Headroom above the ledge so we don't haul up into a crawlspace.
+	var clear_from := Vector3(ledge_pos.x, ledge_pos.y + 0.1, ledge_pos.z)
+	var cq := PhysicsRayQueryParameters3D.create(clear_from, clear_from + Vector3.UP * (stand_height * 0.9))
+	cq.collision_mask = 0b0000001
+	cq.exclude = [get_rid()]
+	if not space.intersect_ray(cq).is_empty():
+		return
+	# Pull up: just enough upward velocity to crest the lip with margin, plus a
+	# forward carry so you flow onto the platform instead of catching the edge.
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	velocity.y = sqrt(2.0 * g * (h + 0.35))
+	var carry := maxf(walk_speed, into + 2.0)
+	velocity.x = fwd.x * carry
+	velocity.z = fwd.z * carry
+	_mantle_cd = 0.55
+	_fov_kick = maxf(_fov_kick, 4.0)
+	shake(0.12)
+	AudioBus.play_synth_at("footstep", global_position, -5.0, 0.7)
+
 func _handle_stance(delta: float) -> void:
 	var wants_crouch := Input.is_action_pressed("crouch") or _sliding
 	# Block uncrouch if something overhead
@@ -689,9 +761,17 @@ func _handle_camera_feel(delta: float) -> void:
 
 func _check_landing() -> void:
 	if is_on_floor() and not _was_on_floor:
-		_land_offset = -land_kick
-		AudioBus.play_synth_at("footstep", global_position, -7.0, 0.85)
+		# Weight the landing by how hard you hit: a hop barely dips the camera, a
+		# long drop slams it down with a deep thud and a kick of shake — so the new
+		# verticality (towers, sky-bridges) actually feels high.
+		var impact := clampf(_fall_speed / 16.0, 0.0, 1.0)   # ~16 m/s = full slam
+		_land_offset = -land_kick * (0.4 + impact * 1.5)
+		AudioBus.play_synth_at("footstep", global_position, lerpf(-10.0, -2.0, impact), lerpf(0.95, 0.65, impact))
+		if impact > 0.45:
+			shake(0.12 + impact * 0.24)
+			_fov_kick = maxf(_fov_kick, impact * 5.0)
 	_was_on_floor = is_on_floor()
+	_fall_speed = 0.0
 
 func _handle_footsteps(delta: float) -> void:
 	if not is_on_floor():
