@@ -33,3 +33,4 @@ sound_id = "plasma"
 slide_kick = 0.07
 tracer_color = Color(1, 0.8, 0.35, 1)
 viewmodel_color = Color(0.9, 0.65, 0.25, 1)
+recoil_return = 0.7

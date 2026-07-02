@@ -36,10 +36,27 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var close_mult: float = 1.0 ## Damage multiplier at point-blank (<1 = penalized up close).
 @export var far_mult: float = 1.0   ## Damage multiplier out at range_m (<1 = penalized at distance).
 
+@export_group("Accuracy")
+## Sustained fire blooms the cone: each shot adds bloom_per_shot (0..1 of the
+## way to fully bloomed), decaying at bloom_recovery per second once you let
+## off. Fully bloomed spread = spread_deg * bloom_max_mult. ADS bloom is halved
+## (a braced gun climbs slower). Single-shot guns leave bloom_per_shot at 0.
+@export var bloom_per_shot: float = 0.0
+@export var bloom_max_mult: float = 2.2 ## Spread multiplier when fully bloomed.
+@export var bloom_recovery: float = 2.4 ## Bloom fraction shed per second at rest.
+@export var move_spread_mult: float = 1.5 ## Spread multiplier at full run speed (1 = ignore movement).
+@export var air_spread_mult: float = 1.8 ## Extra multiplier while airborne.
+@export var first_shot_mult: float = 1.0 ## Spread multiplier on a cold first shot (<1 = marksman reward).
+@export var first_shot_delay: float = 0.5 ## Seconds without firing before first-shot accuracy re-arms.
+
 @export_group("Recoil")
 @export var recoil_pitch: float = 0.9
 @export var recoil_yaw: float = 0.3
 @export var recoil_recovery: float = 9.0
+## Fraction of each kick the camera settles back from on its own (0 = the old
+## permanent climb, 1 = returns fully to the pre-shot aim). The settle speed is
+## recoil_recovery.
+@export var recoil_return: float = 0.85
 
 @export_group("Ammo")
 @export var mag_size: int = 18
