@@ -2077,7 +2077,7 @@ const ENV_NUMS := {
 	"brightness": [0.5, 1.5, 0.02, 1.0], "contrast": [0.5, 1.8, 0.02, 1.0],
 	"saturation": [0.0, 2.0, 0.02, 1.0], "sky_energy": [0.0, 4.0, 0.1, 1.0],
 }
-const TASK_TYPES := ["kill_all", "key", "destroy_core", "collect_shards",
+const TASK_TYPES := ["kill_all", "kill_quota", "key", "destroy_core", "collect_shards",
 	"hack_terminal", "sabotage", "survive", "hold_zone"]
 
 func _refresh_inspector() -> void:

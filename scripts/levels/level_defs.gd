@@ -137,6 +137,10 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			for p in t["points"]:
 				pp.append(_sv(p, s))
 			t["points"] = pp
+		# Reinforcement waves triggered by the task land at authored spots too.
+		for r in t.get("reinforce", []):
+			if r.has("pos"):
+				r["pos"] = _sv(r["pos"], s)
 	return def
 
 ## Scale a position/span on the ground plane; heights are sacred.
@@ -190,6 +194,10 @@ static func _nexus() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "key", "pos": Vector3(-4, 0, 2), "label": "Recover the access keycard"},
+			# The card unlocks the gate grid — hacking it trips the tower's alarm.
+			{"type": "hack_terminal", "id": "gates", "after": "key", "pos": Vector3(4, 0, -6), "seconds": 3.0,
+				"label": "Unlock the sector gate grid", "color": Color(1.0, 0.45, 0.3),
+				"reinforce": [{"type": "spider", "count": 3, "pos": Vector3(0, 0, -10)}]},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
@@ -324,7 +332,11 @@ static func _frostbreak() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "assassinate", "enemy": "brute", "elite": "warden", "bulk": 2.4,
-				"pos": Vector3(2, 0, 2), "label": "Hunt down the FROST WARDEN"},
+				"pos": Vector3(2, 0, 2), "label": "Hunt down the FROST WARDEN",
+				"reinforce": [{"type": "seeker", "count": 3, "pos": Vector3(0, 0, 0)}]},
+			# The warden carried the relay's thaw codes — bring the uplink back online.
+			{"type": "hack_terminal", "id": "thaw", "after": "hvt", "pos": Vector3(-8, 0, -8), "seconds": 4.0,
+				"label": "Thaw the relay uplink", "color": Color(0.5, 0.9, 1.0)},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(48, 48),
@@ -435,7 +447,11 @@ static func _neon() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "hold_zone", "pos": Vector3(0, 0, 8), "seconds": 14.0, "radius": 4.0,
-				"color": Color(1.0, 0.3, 0.9), "label": "Hold the broadcast booth"},
+				"color": Color(1.0, 0.3, 0.9), "label": "Hold the broadcast booth",
+				"reinforce": [{"type": "raptor", "count": 2, "pos": Vector3(0, 0, -8)}]},
+			# Your pirate broadcast drew out the arcade's undefeated champion.
+			{"type": "assassinate", "after": "hold", "enemy": "raptor", "elite": "swift", "bulk": 2.0,
+				"pos": Vector3(0, 0, -12), "label": "Take down the ARCADE CHAMPION"},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(44, 44),
@@ -670,6 +686,16 @@ static func _crucible() -> Dictionary:
 		"objective": "Survive the foundry floor and reach the pour-gate",
 		"tasks": [
 			{"type": "kill_all"},
+			# The gauntlet: claim three forge rings in sequence, each hotter than
+			# the last, each ring waking the next batch off the line.
+			{"type": "hold_zone", "id": "ring1", "pos": Vector3(-12, 0, -12), "seconds": 10.0, "radius": 4.0,
+				"color": Color(1.0, 0.55, 0.2), "label": "Claim the first forge ring",
+				"reinforce": [{"type": "gunner", "count": 2, "pos": Vector3(-12, 0, -6)}]},
+			{"type": "hold_zone", "id": "ring2", "after": "ring1", "pos": Vector3(12, 0, -12), "seconds": 10.0, "radius": 4.0,
+				"color": Color(1.0, 0.4, 0.15), "label": "Claim the second forge ring",
+				"reinforce": [{"type": "mauler", "count": 2, "pos": Vector3(12, 0, -6)}]},
+			{"type": "hold_zone", "id": "ring3", "after": "ring2", "pos": Vector3(0, 0, 12), "seconds": 12.0, "radius": 4.0,
+				"color": Color(1.0, 0.25, 0.1), "label": "Claim the crucible heart"},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(46, 46),
@@ -1113,7 +1139,10 @@ static func _alien() -> Dictionary:
 		"objective": "Sever the off-world beacon and survive the welcoming party",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0},
+			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0,
+				"reinforce": [{"type": "alien", "count": 4, "pos": Vector3(0, 0, 10)}]},
+			# Breaking the beacon doesn't end the call — something answers it.
+			{"type": "survive", "after": "core", "seconds": 30.0, "label": "Survive the Hollow's answer"},
 		],
 		"music": "music_grok",
 		"open_sky": true,
@@ -1243,6 +1272,9 @@ static func _titan() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "survive", "label": "Survive the intelligence explosion", "seconds": 45.0},
+			# Weathering the burst exposes the anchor holding the singularity open.
+			{"type": "destroy_core", "id": "anchor", "after": "survive", "pos": Vector3(0, 0, 18), "health": 340.0,
+				"color": Color(1.0, 0.5, 0.9), "label": "Collapse the singularity anchor"},
 		],
 		"music": "music_grok",
 		"open_sky": true,
@@ -1505,7 +1537,12 @@ static func _uplink() -> Dictionary:
 		"name": "Skybridge Uplink — Broadcast",
 		"objective": "Hold the uplink and broadcast the counter-signal",
 		"tasks": [
-			{"type": "hold_zone", "label": "Hold the uplink — broadcast the counter-signal", "pos": Vector3(0, 0, 0), "seconds": 14.0, "radius": 5.5, "color": Color(0.4, 0.85, 1.0)},
+			{"type": "hold_zone", "id": "uplink", "label": "Hold the uplink — broadcast the counter-signal", "pos": Vector3(0, 0, 0), "seconds": 14.0, "radius": 5.5, "color": Color(0.4, 0.85, 1.0),
+				"reinforce": [{"type": "seeker", "count": 3, "pos": Vector3(0, 0, 8)}]},
+			# The counter-signal is too weak to clear the jamming — run the relay chain.
+			{"type": "key", "after": "uplink", "pos": Vector3(-18, 0, 14), "label": "Recover the signal booster"},
+			{"type": "hold_zone", "id": "boost", "after": "key", "pos": Vector3(16, 0, -16), "seconds": 8.0, "radius": 4.5,
+				"color": Color(0.6, 1.0, 0.9), "label": "Boost the counter-signal"},
 			{"type": "kill_all"},
 		],
 		"music": "music_grok",
@@ -1618,7 +1655,11 @@ static func _assembly() -> Dictionary:
 		"objective": "Overload the assembly reactor and purge the plant",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18)},
+			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18),
+				"reinforce": [{"type": "android", "count": 6, "pos": Vector3(0, 0, 8)}]},
+			# The dying reactor dumps its power into one last production run.
+			{"type": "kill_quota", "id": "batch", "after": "sabotage", "count": 6,
+				"label": "Scrap the emergency batch"},
 		],
 		"music": "music_grok",
 		"open_sky": false,
@@ -1750,7 +1791,14 @@ static func _mistral() -> Dictionary:
 		"objective": "Thaw out the Mistral Cryo-Core and reach the cyan beacon",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the cryo-core reactor", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			# The reactor sits behind cryo shielding — vent both coolant pumps to
+			# expose it, and expect the maintenance swarm to object.
+			{"type": "sabotage", "id": "pump_a", "pos": Vector3(-14, 0, 4), "seconds": 3.0,
+				"label": "Vent coolant pump WEST", "color": Color(0.5, 0.9, 1.0)},
+			{"type": "sabotage", "id": "pump_b", "pos": Vector3(14, 0, 4), "seconds": 3.0,
+				"label": "Vent coolant pump EAST", "color": Color(0.5, 0.9, 1.0),
+				"reinforce": [{"type": "skitter", "count": 4, "pos": Vector3(0, 0, 8)}]},
+			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(48, 48),
@@ -1867,7 +1915,12 @@ static func _gpt() -> Dictionary:
 		"objective": "Purge the GPT Foundry and reach the green beacon",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6)},
+			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6),
+				"reinforce": [{"type": "android", "count": 3, "pos": Vector3(0, 0, 2)}]},
+			# The hack cracks the model vault open — grab the weights and go.
+			{"type": "collect_shards", "id": "weights", "after": "hack_terminal",
+				"label": "Exfiltrate the weight fragments",
+				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)]},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(44, 44),
@@ -2011,7 +2064,10 @@ static func _gemini() -> Dictionary:
 			{"type": "kill_all"},
 			# Keep shard points clear of the (±15,±15) corner blocks — two of
 			# them used to spawn inside the geometry and were uncollectable.
-			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -10), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(10, 0, 16), Vector3(0, 0, 18)]},
+			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -10), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(10, 0, 16), Vector3(0, 0, 18)],
+				"reinforce": [{"type": "seeker", "count": 4, "pos": Vector3(0, 0, 0)}]},
+			# Pulling the last shard trips the nexus purge — ride it out.
+			{"type": "survive", "after": "shards", "seconds": 25.0, "label": "Survive the purge protocol"},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(50, 50),
@@ -2127,6 +2183,10 @@ static func _claude() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9)},
+			# The card starts the decryption; the vault's guardians converge on it.
+			{"type": "hold_zone", "id": "decrypt", "after": "key", "pos": Vector3(-12, 0, 10), "seconds": 12.0, "radius": 4.0,
+				"color": Color(1.0, 0.75, 0.35), "label": "Decrypt the constitutional vault",
+				"reinforce": [{"type": "sentinel", "count": 2, "pos": Vector3(-12, 0, 4)}]},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(42, 42),
@@ -2275,7 +2335,12 @@ static func _grok() -> Dictionary:
 		"objective": "Destroy the GROK war-machines and extract",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the GROK mainframe", "pos": Vector3(0, 0, 16), "color": Color(1.0, 0.3, 0.2), "health": 300.0},
+			# The mainframe's handler prowls the site; drop it to expose the racks —
+			# and brace for the hounds it whistles up on its way down.
+			{"type": "assassinate", "enemy": "hunter", "elite": "warden", "bulk": 2.2,
+				"pos": Vector3(8, 0, -8), "label": "Eliminate the GROK enforcer",
+				"reinforce": [{"type": "dog", "count": 3, "pos": Vector3(0, 0, 8)}]},
+			{"type": "destroy_core", "after": "hvt", "label": "Destroy the GROK mainframe", "pos": Vector3(0, 0, 16), "color": Color(1.0, 0.3, 0.2), "health": 300.0},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(58, 58),
@@ -2414,7 +2479,11 @@ static func _suburb() -> Dictionary:
 			{"type": "kill_all"},
 			# On the spawn-side bank (the flood canal below splits the map at x=0;
 			# tasks are NOT auto-relocated out of hazard beds, so keep it dry).
-			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(-9, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15)},
+			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(-9, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15),
+				"reinforce": [{"type": "dog", "count": 3, "pos": Vector3(-6, 0, -4)}]},
+			# The blast scrambles the evac net — pull the codes before you leave.
+			# (Spawn-side bank like the relay: the flood canal at x=0 stays wet.)
+			{"type": "key", "after": "sabotage", "pos": Vector3(-16, 0, 10), "label": "Grab the evac codes"},
 		],
 		"open_sky": true,
 		"streets": true,
@@ -2740,7 +2809,10 @@ static func _lava_world() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "assassinate", "enemy": "raptor", "elite": "shielded", "bulk": 2.6,
-				"pos": Vector3(0, 3, 0), "label": "Destroy the FORGE WARDEN"},
+				"pos": Vector3(0, 3, 0), "label": "Destroy the FORGE WARDEN",
+				"reinforce": [{"type": "raptor", "count": 3, "pos": Vector3(0, 3, 0)}]},
+			# The warden's death vents the forge — the floor answers in fire.
+			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Survive the forge's fury"},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(40, 40),
@@ -2843,7 +2915,10 @@ static func _water_world() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "assassinate", "enemy": "fishbot", "elite": "swift", "bulk": 2.2,
-				"pos": Vector3(0, 3, 0), "label": "Harpoon the ANGLER LEVIATHAN"},
+				"pos": Vector3(0, 3, 0), "label": "Harpoon the ANGLER LEVIATHAN",
+				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(0, 3, 0)}]},
+			# The leviathan's death roils the basin — its school comes up angry.
+			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge"},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(40, 40),
@@ -2937,7 +3012,11 @@ static func _desert() -> Dictionary:
 		],
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0},
+			{"type": "destroy_core", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0,
+				"reinforce": [{"type": "strider", "count": 3, "pos": Vector3(10, 0, 10)}]},
+			# The mast's last transmission called in the cavalry — hold until the
+			# sandstorm swallows their signal.
+			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike"},
 		],
 		"open_sky": true,
 		"floor_size": Vector2(66, 66),

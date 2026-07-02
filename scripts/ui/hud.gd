@@ -812,8 +812,10 @@ func _render_objective() -> void:
 		return
 	var parts: Array = []
 	for t in GameState.level_tasks:
-		var line: String = "%s %s" % ["✔" if t["done"] else "▢", tr(t["label"])]
-		if not t["done"] and t.get("goal", 0.0) > 0.0:
+		# ✔ done · ▢ live · ◇ a later stage whose objects aren't in the world yet
+		var glyph: String = "✔" if t["done"] else ("◇" if t.get("staged", false) else "▢")
+		var line: String = "%s %s" % [glyph, tr(t["label"])]
+		if not t["done"] and not t.get("staged", false) and t.get("goal", 0.0) > 0.0:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
 	objective_label.text = "   ".join(PackedStringArray(parts))

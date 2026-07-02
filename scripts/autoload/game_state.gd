@@ -809,12 +809,23 @@ func reset_tasks() -> void:
 
 ## `goal` > 0 gives the task a progress meter (e.g. shards collected, seconds
 ## held); the HUD shows it as (n/goal) and the task auto-completes at goal.
-func register_task(id: String, label: String, goal: float = 0.0) -> void:
+## `staged` marks a later mission stage: it counts toward the exit lock and is
+## listed on the HUD (dimmed glyph), but its objects don't exist yet — the level
+## unstages it when its prerequisites complete.
+func register_task(id: String, label: String, goal: float = 0.0, staged: bool = false) -> void:
 	for t in level_tasks:
 		if t["id"] == id:
 			return
-	level_tasks.append({"id": id, "label": label, "done": false, "progress": 0.0, "goal": goal})
+	level_tasks.append({"id": id, "label": label, "done": false, "progress": 0.0, "goal": goal, "staged": staged})
 	tasks_changed.emit()
+
+## A staged task's prerequisites are done — it just went live in the world.
+func unstage_task(id: String) -> void:
+	for t in level_tasks:
+		if t["id"] == id and t.get("staged", false):
+			t["staged"] = false
+			tasks_changed.emit()
+			return
 
 func complete_task(id: String) -> void:
 	for t in level_tasks:
