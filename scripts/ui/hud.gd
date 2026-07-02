@@ -171,7 +171,9 @@ func _ready() -> void:
 	GameState.score_changed.connect(func(s): score_label.text = tr("Score: %d") % s)
 	score_label.text = "Score: 0"
 	objective_label.text = "Eliminate the AI and reach the green beacon"
-	GameState.player_died.connect(func(): game_over_menu.visible = true)
+	GameState.player_died.connect(func():
+		_fill_death_recap()
+		game_over_menu.visible = true)
 	GameState.level_completed.connect(_on_level_completed)
 	# Hit-marker: pivot the crosshair around its centre so it can pop on a hit.
 	crosshair.pivot_offset = crosshair.size * 0.5
@@ -819,6 +821,73 @@ func _render_objective() -> void:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
 	objective_label.text = "   ".join(PackedStringArray(parts))
+
+## Per-killer coaching for the death screen: the lesson that would have saved
+## you, matched to what actually got you. Falls back to rotating general tips.
+const DEATH_TIPS := {
+	"DOG": "K-9s lunge in straight lines — strafe sideways and they sail past.",
+	"SNIPER": "Snipers paint you before firing — break line of sight, then close in.",
+	"MECH": "Heavies turn slowly — circle them and work the back armor.",
+	"WARMECH": "Heavies turn slowly — circle them and work the back armor.",
+	"DRONE": "Drones are paper — flick up and burst them before they mass.",
+	"SPIDER": "Spiders swarm — fall back to a choke point so they bunch up.",
+	"BRUTE": "Brutes telegraph the charge — dash THROUGH it, not away from it.",
+	"HUNTER": "Hunters flank in pairs — keep a wall on one side and check the map.",
+	"STRIDER": "Striders stagger when a leg takes fire — kneecap them, then finish.",
+	"FLOOD": "Deep water drowns fast — cross at the bridges, not the banks.",
+	"MOLTEN": "The glow means death — lava kills faster than any robot. Take the long way.",
+	"GUNNER": "Gunners spin up before the stream — use the wind-up to reposition.",
+	"SEEKER": "Seekers detonate on contact — shoot them at range, never backpedal.",
+	"RAPTOR": "Raptors pounce off walls — fight them in the open, not in alleys.",
+}
+const DEATH_TIPS_GENERIC := [
+	"An empty trigger reloads by itself — but a weapon swap is even faster.",
+	"Kills restore health — when you're hurt, push harder, not further away.",
+	"The reticle shows your true spread: stand still and aim for laser accuracy.",
+	"Sprint and dash break most target tracking — keep moving between shots.",
+	"Watch the minimap reds: you hear a flank before you see it.",
+	"Finishing an objective often trips an alarm — reload BEFORE you interact.",
+]
+var _recap_label: Label = null
+var _tip_label: Label = null
+
+## Fill the game-over panel with the story of this death: who got you, how far
+## you made it, and one tip that addresses exactly that. Dying becomes a lesson
+## instead of a dead end.
+func _fill_death_recap() -> void:
+	var vbox := game_over_menu.get_node_or_null("VBox")
+	if vbox == null:
+		return
+	if _recap_label == null:
+		_recap_label = Label.new()
+		_recap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_recap_label.add_theme_font_size_override("font_size", 13)
+		_recap_label.add_theme_color_override("font_color", Color(0.85, 0.55, 0.5))
+		vbox.add_child(_recap_label)
+		vbox.move_child(_recap_label, 1) # right under TERMINATED
+		_tip_label = Label.new()
+		_tip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_tip_label.add_theme_font_size_override("font_size", 12)
+		_tip_label.add_theme_color_override("font_color", Color(0.75, 0.78, 0.85))
+		vbox.add_child(_tip_label)
+		vbox.move_child(_tip_label, 2)
+	var killer := GameState.last_killer
+	var done := 0
+	for t in GameState.level_tasks:
+		if t["done"]:
+			done += 1
+	var head := ("Taken down by %s" % killer) if killer != "" else "K.I.A."
+	_recap_label.text = "%s  ·  %d kills  ·  objectives %d/%d" % [
+		head, GameState.kills, done, GameState.level_tasks.size()]
+	var tip: String = ""
+	for k in DEATH_TIPS:
+		if killer.contains(k):
+			tip = DEATH_TIPS[k]
+			break
+	if tip == "":
+		tip = DEATH_TIPS_GENERIC[randi() % DEATH_TIPS_GENERIC.size()]
+	_tip_label.text = "TIP: %s" % tip
 
 func _show_toast(text: String) -> void:
 	toast.text = text

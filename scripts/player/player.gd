@@ -197,6 +197,13 @@ func _ready() -> void:
 	hp.health_changed.connect(_on_health_changed)
 	hp.died.connect(_on_died)
 	hp.damaged.connect(_on_hp_damaged)
+	# Health on kill: aggression is survival. Without any mid-fight recovery a
+	# 100 HP pool just attrits to zero (playtests died at first contact); every
+	# kill now restores a sliver, scaled by the target's worth — pushing INTO
+	# the fight is how you stay alive, which is exactly the game's tempo.
+	GameState.enemy_killed.connect(func(points, _lbl):
+		if not _dead and hp:
+			hp.heal(clampf(2.0 + points / 50.0, 3.0, 10.0)))
 
 ## Pour any bought ammo crates into every weapon's reserve. Persistent for the
 ## run — re-applied each deploy (not cleared), so the reserve bonus carries on.
@@ -1166,10 +1173,23 @@ func _floor_surface() -> String:
 func _on_health_changed(cur: float, max_: float) -> void:
 	health_changed.emit(cur, max_)
 
-func _on_died(_source: Node) -> void:
+## Damageable hook: campaign warmup on incoming damage (×0.65 on the opening
+## level, ×1.0 by ~25% depth) so the first levels teach instead of execute.
+func modify_incoming_damage(amount: float, _source) -> float:
+	return amount * GameState.campaign_incoming_mult()
+
+func _on_died(source: Node) -> void:
 	if _dead:
 		return
 	_dead = true
+	# Name the killer for the death-recap screen (dying should teach something).
+	var killer := ""
+	if source is EnemyBase:
+		killer = (source as EnemyBase)._kill_label()
+	elif source is LavaHazard:
+		killer = "THE FLOOD" if (source as LavaHazard).water else "MOLTEN GROUND"
+	elif source != null and source.has_method("_kill_label"):
+		killer = source.call("_kill_label")
 	if _grappling:
 		_end_grapple() # the tether visual must not outlive you
 	died.emit()
@@ -1181,4 +1201,4 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
 	tw.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	GameState.on_player_died()
+	GameState.on_player_died(killer)

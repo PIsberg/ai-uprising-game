@@ -72,7 +72,8 @@ func _validate_defs() -> void:
 			var pts: Array = []
 			if t.has("pos"):
 				pts.append(t["pos"])
-			pts.append_array(t.get("points", []))
+			for sp in t.get("points", []):
+				pts.append(sp["pos"] if sp is Dictionary else sp)
 			for r in t.get("reinforce", []):
 				if r.has("pos"):
 					pts.append(r["pos"])

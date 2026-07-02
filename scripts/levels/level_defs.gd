@@ -133,9 +133,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		if t.has("pos"):
 			t["pos"] = _sv(t["pos"], s)
 		if t.has("points"):
+			# Editor-authored points are {"pos": ...} dicts; hand-authored are Vector3.
 			var pp: Array = []
 			for p in t["points"]:
-				pp.append(_sv(p, s))
+				if p is Dictionary:
+					p["pos"] = _sv(p.get("pos", Vector3.ZERO), s)
+					pp.append(p)
+				else:
+					pp.append(_sv(p, s))
 			t["points"] = pp
 		# Reinforcement waves triggered by the task land at authored spots too.
 		for r in t.get("reinforce", []):
@@ -310,11 +315,15 @@ static func _nexus() -> Dictionary:
 		],
 		# The machine line advancing from the nexus, like the comic.
 		"enemies": [
+			# Tutorial pacing: first contact is the spider pack + ONE shooter.
+			# Everything else wakes on approach (trigger = wake radius) — seven
+			# hostiles used to converge on the drop-in before the player had
+			# fired a shot, which is how first-time playtests ended in 15 s.
 			{"type": "spider", "pos": Vector3(0, 0, -1), "count": 3},
 			{"type": "android", "pos": Vector3(-3, 0, 5)},
-			{"type": "android", "pos": Vector3(6, 0, 3)},
-			{"type": "drone", "pos": Vector3(2, 0, 2)},
-			{"type": "drone", "pos": Vector3(9, 0, 9)},
+			{"type": "android", "pos": Vector3(6, 0, 3), "trigger": 14},
+			{"type": "drone", "pos": Vector3(2, 0, 2), "trigger": 14},
+			{"type": "drone", "pos": Vector3(9, 0, 9), "trigger": 16},
 			{"type": "spider", "pos": Vector3(5, 0, 10), "count": 3, "trigger": 16},
 			{"type": "android", "pos": Vector3(10, 0, 14), "trigger": 16},
 			# South-east of the fire trench's end — its old spot (4,0,13) was INSIDE
@@ -2502,7 +2511,9 @@ static func _suburb() -> Dictionary:
 			"physical_sky": true, "turbidity": 8.0,
 			"sky_top": Color(0.2, 0.32, 0.55), "sky_horizon": Color(0.95, 0.6, 0.38),
 			"ground": Color(0.12, 0.12, 0.13), "fog": Color(0.62, 0.5, 0.42),
-			"ambient": Color(0.72, 0.76, 0.9), "ambient_energy": 0.6,
+			# ambient_energy 0.6 -> 0.85: at dusk the street level rendered near-black
+			# and hostiles vanished against the asphalt (playtest screenshots).
+			"ambient": Color(0.72, 0.76, 0.9), "ambient_energy": 0.85,
 			"sky_contribution": 0.85, "glow": 0.92, "fog_density": 0.004,
 			"sun_color": Color(1.0, 0.85, 0.6), "sun_energy": 1.7, "sun_rot": Vector3(-22, -55, 0),
 			# Gentle dusk grade — keep the sunset natural, no heavy crush.
@@ -2620,6 +2631,12 @@ static func _suburb() -> Dictionary:
 		# streets. The SNIPER now holds the SE rooftop deck, overwatching the
 		# bridge — clear it, or climb the yard stair and take the roof.
 		"enemies": [
+			# Opening wave: light infantry only. `trigger` is a WAKE radius — the
+			# enemy spawns when the player gets that close — so later waves get
+			# SMALLER rings: infantry wake at 14-20 m, dogs at 16, heavies only
+			# when the player pushes right up to their lairs (12-14). A playtest
+			# with the starter pistol died at minute one when heavies and dogs
+			# woke together with the first androids.
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
 			{"type": "android", "pos": Vector3(13, 0.5, 8), "trigger": 16},
@@ -2629,13 +2646,13 @@ static func _suburb() -> Dictionary:
 			{"type": "spider", "pos": Vector3(6, 0.5, -10), "trigger": 18},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},
 			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
-			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 22},
-			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
-			{"type": "strider", "pos": Vector3(-16, 0.5, 10), "trigger": 24},
-			{"type": "sniper", "pos": Vector3(7, 4.9, 15), "trigger": 26},
-			# A K-9 HUNTER pack bursts from the yards mid-fight.
-			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 18},
-			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 18},
+			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 13},
+			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 13},
+			{"type": "strider", "pos": Vector3(-16, 0.5, 10), "trigger": 12},
+			{"type": "sniper", "pos": Vector3(7, 4.9, 15), "trigger": 14},
+			# A K-9 HUNTER pack bursts from the yards mid-fight (second wave).
+			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 16},
+			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 16},
 			{"type": "dog", "pos": Vector3(8, 0.5, -8), "trigger": 22},
 		],
 		"pickups": [
