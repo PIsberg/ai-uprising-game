@@ -169,6 +169,12 @@ func _test_rifle_bloom_and_cone() -> void:
 		w.try_fire(true, false, _cam, _player)
 		angles.append_array(_new_hole_angles(before, origin, fwd))
 		await get_tree().physics_frame
+	# Read the LIVE cone right at the end of the dump, before recovery kicks in
+	# (bloom only starts decaying 0.1 s after the last shot). This is the
+	# deterministic "bloom is real" gate: the old check compared the mean of two
+	# 6-shot random samples (each deviation is randf() inside the cone), which
+	# fails on an unlucky roll — it did exactly that on CI.
+	var live_cone: float = w.spread_now(false, _player)
 	var d: WeaponData = w.data
 	var cone := d.spread_deg * d.bloom_max_mult + 0.3 # + decal-lift slack
 	_check("rifle shots land", angles.size() >= 20, "decals=%d" % angles.size())
@@ -176,7 +182,9 @@ func _test_rifle_bloom_and_cone() -> void:
 		"peak=%.2f° max=%.2f°" % [_peak(angles), cone])
 	var early := _mean(angles.slice(1, 7)) # skip the cold first shot
 	var late := _mean(angles.slice(angles.size() - 6))
-	_check("rifle bloom opens", late > early * 1.1, "early=%.2f° late=%.2f°" % [early, late])
+	_check("rifle bloom opens", live_cone > d.spread_deg * 1.1,
+		"live=%.2f° base=%.2f° (decal telemetry: early=%.2f° late=%.2f°)" % [
+			live_cone, d.spread_deg, early, late])
 
 ## Cold single taps land tighter than the warm-fire average.
 func _test_rifle_first_shot() -> void:
