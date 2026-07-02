@@ -34,7 +34,8 @@ const LIGHTS := {
 const CHANCE := [0.05, 0.1, 0.16]
 
 static func roll_chance() -> float:
-	return CHANCE[clampi(GameState.difficulty, 0, CHANCE.size() - 1)]
+	return CHANCE[clampi(GameState.difficulty, 0, CHANCE.size() - 1)] \
+		* GameState.campaign_elite_mult()
 
 static func maybe_apply(enemy: Node3D, chance: float = -1.0) -> void:
 	var eb := enemy as EnemyBase

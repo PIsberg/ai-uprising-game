@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://cobjhudcap001"]
+[ext_resource type="Script" path="res://tools/objective_hud_capture.gd" id="1_p"]
+[node name="ObjectiveHudCapture" type="Node"]
+script = ExtResource("1_p")

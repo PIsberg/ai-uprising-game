@@ -106,6 +106,24 @@ func campaign_cadence_mult() -> float:
 	var p := campaign_progress()
 	return 1.0 if p < 0.0 else 1.0 - p * 0.12
 
+## Elite affix odds ramp in over the first third of the campaign: the opening
+## level rolls ZERO elites (a shielded spider against the starter pistol ended a
+## playtest at first contact), full odds from ~1/3 depth on. Off-campaign
+## (horde, custom, warp) elites roll at full strength.
+func campaign_elite_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else clampf(p * 3.0, 0.0, 1.0)
+
+## Onboarding warmup — the mirror of the late-campaign toughness ramp: damage
+## the PLAYER takes eases in from ×0.65 on the opening level to ×1.0 by ~25%
+## campaign depth. Playtests with the starter pistol died inside 20 s of first
+## contact at full incoming damage; this buys the opening levels room to teach
+## movement and aim without changing enemy counts or behavior. Off-campaign
+## modes take full damage.
+func campaign_incoming_mult() -> float:
+	var p := campaign_progress()
+	return 1.0 if p < 0.0 else lerpf(0.65, 1.0, clampf(p * 4.0, 0.0, 1.0))
+
 ## Boss enemy type tokens (matched against a spawner's scene path). Bosses are
 ## hand-tuned, one-off HP bags with scripted phases, so they're EXEMPT from the
 ## campaign depth ramp above — that ramp exists to counter player creep on the
@@ -785,7 +803,10 @@ func advance_level() -> void:
 		set_state(State.MENU)
 		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
-func on_player_died() -> void:
+var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
+
+func on_player_died(killer: String = "") -> void:
+	last_killer = killer
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
@@ -809,12 +830,23 @@ func reset_tasks() -> void:
 
 ## `goal` > 0 gives the task a progress meter (e.g. shards collected, seconds
 ## held); the HUD shows it as (n/goal) and the task auto-completes at goal.
-func register_task(id: String, label: String, goal: float = 0.0) -> void:
+## `staged` marks a later mission stage: it counts toward the exit lock and is
+## listed on the HUD (dimmed glyph), but its objects don't exist yet — the level
+## unstages it when its prerequisites complete.
+func register_task(id: String, label: String, goal: float = 0.0, staged: bool = false) -> void:
 	for t in level_tasks:
 		if t["id"] == id:
 			return
-	level_tasks.append({"id": id, "label": label, "done": false, "progress": 0.0, "goal": goal})
+	level_tasks.append({"id": id, "label": label, "done": false, "progress": 0.0, "goal": goal, "staged": staged})
 	tasks_changed.emit()
+
+## A staged task's prerequisites are done — it just went live in the world.
+func unstage_task(id: String) -> void:
+	for t in level_tasks:
+		if t["id"] == id and t.get("staged", false):
+			t["staged"] = false
+			tasks_changed.emit()
+			return
 
 func complete_task(id: String) -> void:
 	for t in level_tasks:

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c8gallerycap01"]
+
+[ext_resource type="Script" path="res://tools/capture_gallery.gd" id="1"]
+
+[node name="CaptureGallery" type="Node3D"]
+script = ExtResource("1")

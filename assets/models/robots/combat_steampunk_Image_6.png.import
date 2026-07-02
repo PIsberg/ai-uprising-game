@@ -2,13 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c66obcioy1n4l"
+uid="uid://cq8k3wbsvpw0c"
 path="res://.godot/imported/combat_steampunk_Image_6.png-d0661afdda885d716a51137b144f5b5e.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "eccc22d831fb2b817060c22d591b38b3"
 }
 
 [deps]
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

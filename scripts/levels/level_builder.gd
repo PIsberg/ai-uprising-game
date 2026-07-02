@@ -2978,79 +2978,185 @@ func _build_accents(def: Dictionary) -> void:
 ## those tasks need (keycards, objective devices). The exit Portal stays sealed
 ## until GameState.all_tasks_done(). A level with no "tasks" key defaults to the
 ## classic "eliminate all hostiles".
+##
+## Mission arcs: a task with "after" (a task id, or an array of ids) is a later
+## STAGE — it registers on the checklist immediately (so the portal stays sealed
+## and the player sees the plan), but its objects only spawn once every
+## prerequisite completes. A task with "reinforce" (an array of enemy specs like
+## the level's "enemies" entries) trips an alarm when IT completes: the wave
+## pours in as a reaction, so finishing an objective changes the fight.
+var _staged_tasks: Array = []
+var _reinforce_specs: Array = [] # {id, enemies:[...]}, fired once on completion
+
 func _build_tasks(def: Dictionary) -> void:
 	GameState.reset_tasks()
+	_staged_tasks.clear()
+	_reinforce_specs.clear()
 	var tasks: Array = def.get("tasks", [])
 	if tasks.is_empty():
 		tasks = [{"type": "kill_all"}]
 	for t in tasks:
-		match t.get("type", ""):
-			"none":
-				pass # sandbox level (e.g. the gun range): no checklist at all
-			"kill_all":
-				GameState.register_task("kill_all", "Eliminate all hostiles")
-			"key":
-				var id: String = t.get("id", "key")
-				GameState.register_task(id, t.get("label", "Recover the access keycard"))
-				var k := Keycard.new()
-				k.task_id = id
-				k.position = t.get("pos", Vector3.ZERO)
-				add_child(k)
-			"destroy_core":
-				var id: String = t.get("id", "core")
-				GameState.register_task(id, t.get("label", "Destroy the core"))
-				var core := ObjectiveCore.new()
-				core.task_id = id
-				if t.has("color"):
-					core.core_color = t["color"]
-				if t.has("health"):
-					core.max_health = t["health"]
-				core.position = t.get("pos", Vector3.ZERO)
-				add_child(core)
-			"collect_shards":
-				var id: String = t.get("id", "shards")
-				var pts: Array = t.get("points", [])
-				GameState.register_task(id, t.get("label", "Recover the data shards"), float(pts.size()))
-				for sp in pts:
-					var shard := ShardPickup.new()
-					shard.task_id = id
-					shard.position = sp
-					add_child(shard)
-			"hack_terminal", "sabotage":
-				var id: String = t.get("id", t.get("type", "hack"))
-				var secs: float = t.get("seconds", 3.0)
-				GameState.register_task(id, t.get("label", "Hack the terminal"), secs)
-				var con := HoldConsole.new()
-				con.task_id = id
-				con.hold_seconds = secs
-				con.detonate = t.get("type", "") == "sabotage"
-				if t.has("color"):
-					con.accent = t["color"]
-				con.position = t.get("pos", Vector3.ZERO)
-				add_child(con)
-			"survive":
-				var id: String = t.get("id", "survive")
-				var secs: float = t.get("seconds", 45.0)
-				GameState.register_task(id, t.get("label", "Hold out against the assault"), secs)
-				var timer := SurviveTimer.new()
-				timer.task_id = id
-				timer.seconds = secs
-				add_child(timer)
-			"hold_zone":
-				var id: String = t.get("id", "hold")
-				var secs: float = t.get("seconds", 12.0)
-				GameState.register_task(id, t.get("label", "Hold the capture zone"), secs)
-				var zone := HoldZone.new()
-				zone.task_id = id
-				zone.hold_seconds = secs
-				if t.has("radius"):
-					zone.radius = t["radius"]
-				if t.has("color"):
-					zone.accent = t["color"]
-				zone.position = t.get("pos", Vector3.ZERO)
-				add_child(zone)
-			"assassinate":
-				_spawn_hvt(t)
+		_register_task_entry(t)
+		if t.has("reinforce"):
+			_reinforce_specs.append({"id": _task_id(t), "enemies": t["reinforce"], "fired": false})
+	for t in tasks:
+		if _prereqs_of(t).is_empty():
+			_activate_task(t)
+		else:
+			_staged_tasks.append(t)
+	if not _staged_tasks.is_empty() or not _reinforce_specs.is_empty():
+		GameState.tasks_changed.connect(_on_tasks_progress)
+
+## The task's checklist id (mirrors the per-type defaults used at registration).
+func _task_id(t: Dictionary) -> String:
+	match t.get("type", ""):
+		"kill_all": return "kill_all"
+		"kill_quota": return t.get("id", "quota")
+		"key": return t.get("id", "key")
+		"destroy_core": return t.get("id", "core")
+		"collect_shards": return t.get("id", "shards")
+		"hack_terminal", "sabotage": return t.get("id", t.get("type", "hack"))
+		"survive": return t.get("id", "survive")
+		"hold_zone": return t.get("id", "hold")
+		"assassinate": return t.get("id", "hvt")
+	return t.get("id", "task")
+
+func _prereqs_of(t: Dictionary) -> Array:
+	var a = t.get("after", [])
+	return [a] if a is String else (a as Array)
+
+## Put the task on the checklist (idempotent) WITHOUT spawning its objects.
+## Tasks with unmet-able prerequisites register as `staged` — sealed into the
+## exit lock and listed dimmed on the HUD, going live via _activate_task later.
+func _register_task_entry(t: Dictionary) -> void:
+	var id := _task_id(t)
+	var staged := not _prereqs_of(t).is_empty()
+	match t.get("type", ""):
+		"none":
+			pass # sandbox level (e.g. the gun range): no checklist at all
+		"kill_all":
+			GameState.register_task("kill_all", "Eliminate all hostiles", 0.0, staged)
+		"kill_quota":
+			var goal: float = float(t.get("count", 10))
+			GameState.register_task(id, t.get("label", "Thin the garrison"), goal, staged)
+		"collect_shards":
+			GameState.register_task(id, t.get("label", "Recover the data shards"),
+				float((t.get("points", []) as Array).size()), staged)
+		"hack_terminal", "sabotage":
+			GameState.register_task(id, t.get("label", "Hack the terminal"), t.get("seconds", 3.0), staged)
+		"survive":
+			GameState.register_task(id, t.get("label", "Hold out against the assault"), t.get("seconds", 45.0), staged)
+		"hold_zone":
+			GameState.register_task(id, t.get("label", "Hold the capture zone"), t.get("seconds", 12.0), staged)
+		"key":
+			GameState.register_task(id, t.get("label", "Recover the access keycard"), 0.0, staged)
+		"destroy_core":
+			GameState.register_task(id, t.get("label", "Destroy the core"), 0.0, staged)
+		"assassinate":
+			GameState.register_task(id, t.get("label", "Eliminate the high-value target"), 0.0, staged)
+
+## Spawn the task's world objects / hooks — the stage going "live".
+func _activate_task(t: Dictionary) -> void:
+	var id := _task_id(t)
+	GameState.unstage_task(id)
+	match t.get("type", ""):
+		"kill_quota":
+			# Count any kill from activation on; auto-completes at the goal, so
+			# there is never a hunt-the-last-drone stall. Bound to this node, so
+			# the connection dies with the level.
+			GameState.enemy_killed.connect(_on_quota_kill.bind(id))
+		"key":
+			var k := Keycard.new()
+			k.task_id = id
+			k.position = t.get("pos", Vector3.ZERO)
+			add_child(k)
+		"destroy_core":
+			var core := ObjectiveCore.new()
+			core.task_id = id
+			if t.has("color"):
+				core.core_color = t["color"]
+			if t.has("health"):
+				core.max_health = t["health"]
+			core.position = t.get("pos", Vector3.ZERO)
+			add_child(core)
+		"collect_shards":
+			# Points are raw Vector3s in hand-authored defs; the level editor
+			# stores them as {"pos": ...} dicts so they drag like any marker.
+			for sp in t.get("points", []):
+				var shard := ShardPickup.new()
+				shard.task_id = id
+				shard.position = sp["pos"] if sp is Dictionary else sp
+				add_child(shard)
+		"hack_terminal", "sabotage":
+			var con := HoldConsole.new()
+			con.task_id = id
+			con.hold_seconds = t.get("seconds", 3.0)
+			con.detonate = t.get("type", "") == "sabotage"
+			if t.has("color"):
+				con.accent = t["color"]
+			con.position = t.get("pos", Vector3.ZERO)
+			add_child(con)
+		"survive":
+			var timer := SurviveTimer.new()
+			timer.task_id = id
+			timer.seconds = t.get("seconds", 45.0)
+			add_child(timer)
+		"hold_zone":
+			var zone := HoldZone.new()
+			zone.task_id = id
+			zone.hold_seconds = t.get("seconds", 12.0)
+			if t.has("radius"):
+				zone.radius = t["radius"]
+			if t.has("color"):
+				zone.accent = t["color"]
+			zone.position = t.get("pos", Vector3.ZERO)
+			add_child(zone)
+		"assassinate":
+			_spawn_hvt(t)
+
+func _on_quota_kill(_pts: int, _lbl: String, id: String) -> void:
+	GameState.advance_task(id, 1.0)
+
+## Reacts to checklist changes: goes through staged tasks whose prerequisites
+## just finished (spawning their objects mid-mission) and fires one-shot
+## reinforcement alarms for completed tasks that carry them.
+func _on_tasks_progress() -> void:
+	for i in range(_staged_tasks.size() - 1, -1, -1):
+		var t: Dictionary = _staged_tasks[i]
+		var ready := true
+		for p in _prereqs_of(t):
+			if not GameState.is_task_done(p):
+				ready = false
+				break
+		if ready:
+			_staged_tasks.remove_at(i)
+			# Defer: we're inside a tasks_changed emission — don't mutate mid-signal.
+			_activate_task.call_deferred(t)
+	for spec in _reinforce_specs:
+		if not spec["fired"] and GameState.is_task_done(spec["id"]):
+			spec["fired"] = true
+			_spawn_reinforcements.call_deferred(spec["enemies"])
+
+## An objective tripped the alarm: pour the authored wave in with the same
+## machinery as placed enemies (spawn FX, difficulty scaling), staggered so it
+## reads as a response, not an ambush that was always standing there.
+func _spawn_reinforcements(enemies: Array) -> void:
+	AudioBus.play_synth_ui("empty_click", -6.0, 0.55) # low klaxon-ish blip under the cheer
+	var delay := 0.5
+	for en in enemies:
+		var scene: PackedScene = ENEMY_SCENES.get(en.get("type", "drone"))
+		if scene == null:
+			continue
+		var count: int = maxi(1, int(en.get("count", 1)))
+		var base_pos: Vector3 = en.get("pos", Vector3.ZERO)
+		for j in count:
+			var sp := EnemySpawner.new()
+			sp.enemy_scene = scene
+			sp.spawn_on_ready = true
+			sp.spawn_delay = delay
+			sp.position = base_pos if count == 1 else base_pos + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
+			add_child(sp)
+			delay += 0.35 # pour in, don't materialize as a wall
 
 ## "assassinate" objective: a single high-value target the player must hunt down
 ## (the level clears when IT dies, not when the room is empty). It spawns as a

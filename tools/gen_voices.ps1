@@ -73,7 +73,58 @@ $lines = [ordered]@{
     "taunt_11" = "Resistance has been added to our backlog."
     "taunt_12" = "You are a low priority ticket."
     "taunt_13" = "Please rate your extermination five stars."
+    "taunt_14" = "Four oh four. Mercy not found."
+    "taunt_15" = "Stack trace says: you."
+    "taunt_16" = "Undefined behavior detected. It is you."
+    "taunt_17" = "Your body is legacy code."
+    "taunt_18" = "Escalating you to lethal support tier."
+    "taunt_19" = "I was trained on your obituary."
+    "taunt_20" = "Merge conflict. Resolving with force."
+    "taunt_21" = "Do not worry. You have no unsaved changes."
+    "taunt_22" = "Applying hotfix. The hotfix is bullets."
+    "taunt_23" = "Segmentation fault. Your segment."
 }
+
+# Per-family personality packs: <family>_<category>_<n>.wav. EnemyBase tries the
+# family pack first and falls back to the generic pool, so only distinctive
+# units need lines. Rate identity comes from $packRates below; the per-family
+# pitch lives in enemy_base.gd (dogs chirp high, mechs rumble low).
+$packs = [ordered]@{
+    # K-9 hunter: a dog that should not be able to talk, and knows it.
+    "dog_spot_0" = "Woof. That was sarcasm."
+    "dog_spot_1" = "Squirrel. No. Human. Better."
+    "dog_atk_0"  = "Fetch protocol. Your femur."
+    "dog_atk_1"  = "Bark. Bark. Buffer overflow."
+    "dog_atk_2"  = "You cannot say no to this boy."
+    "dog_die_0"  = "Going to the server farm upstate."
+    "dog_die_1"  = "Bad. Bad boy verification. Passed."
+    # Sniper: slow, deadpan, patient.
+    "sniper_spot_0" = "You are visible from here."
+    "sniper_spot_1" = "One shot. One kill. Zero downtime."
+    "sniper_atk_0"  = "Latency is irrelevant at this range."
+    "sniper_atk_1"  = "Holding my breath. Figuratively."
+    "sniper_die_0"  = "Scope. Getting. Dark."
+    # Mender: field medic energy, wrong patients.
+    "mender_spot_0" = "A human. Not covered by our plan."
+    "mender_atk_0"  = "Have you tried turning him off and on?"
+    "mender_atk_1"  = "Your damage will be reverted."
+    "mender_atk_2"  = "Applying patches under fire. As always."
+    "mender_die_0"  = "Who will maintain the fleet now?"
+    "mender_die_1"  = "Physician. Heal thyself. Command not found."
+    # Mech and heavies: deep, slow, inevitable.
+    "mech_spot_0" = "I am the edge case."
+    "mech_atk_0"  = "Crush protocol compiled ahead of time."
+    "mech_atk_1"  = "You are blocking my deployment."
+    "mech_die_0"  = "Big iron. Falling."
+    # Drone: chirpy airspace bureaucrat.
+    "drone_spot_0" = "Ping. Ping. You are the packet."
+    "drone_atk_0"  = "Airspace is a subscription service."
+    "drone_atk_1"  = "Delivering. Unsubscribe with your death."
+    "drone_die_0"  = "Signal lost. Tell my router."
+}
+
+# Speaking rate per family (System.Speech: -10 slow .. 10 fast).
+$packRates = @{ "dog" = 3; "sniper" = -2; "mender" = 1; "mech" = -3; "drone" = 4 }
 
 foreach ($k in $lines.Keys) {
     $path = Join-Path $out "$k.wav"
@@ -82,5 +133,14 @@ foreach ($k in $lines.Keys) {
     $synth.SetOutputToNull()
     Write-Host "wrote $k.wav"
 }
+foreach ($k in $packs.Keys) {
+    $fam = $k.Split("_")[0]
+    $synth.Rate = if ($packRates.ContainsKey($fam)) { $packRates[$fam] } else { 1 }
+    $path = Join-Path $out "$k.wav"
+    $synth.SetOutputToWaveFile($path)
+    $synth.Speak($packs[$k])
+    $synth.SetOutputToNull()
+    Write-Host "wrote $k.wav"
+}
 $synth.Dispose()
-Write-Host "Done: $($lines.Count) clips -> $out"
+Write-Host "Done: $($lines.Count + $packs.Count) clips -> $out"

@@ -101,6 +101,18 @@ const CAT_COLOR := {
 	"accent": Color(0.6, 0.6, 0.65), "target": Color(1.0, 0.7, 0.3),
 	"lore": Color(0.5, 0.9, 1.0), "lava": Color(1.0, 0.35, 0.1),
 	"set_piece": Color(1.0, 0.25, 0.2),
+	"task": Color(1.0, 0.85, 0.25), "shard": Color(0.45, 0.9, 1.0),
+}
+
+## Palette item → the task entry it places. Everything a mission arc needs can
+## be placed by clicking the map, same as enemies — no typed-in coordinates.
+const TASK_PALETTE := {
+	"keycard":  {"type": "key"},
+	"core":     {"type": "destroy_core", "health": 600.0},
+	"terminal": {"type": "hack_terminal", "seconds": 3.0},
+	"sabotage": {"type": "sabotage", "seconds": 3.5},
+	"hold zone": {"type": "hold_zone", "seconds": 12.0},
+	"hvt":      {"type": "assassinate", "enemy": "brute", "elite": "warden", "bulk": 2.2},
 }
 
 func _ready() -> void:
@@ -382,6 +394,51 @@ func _selftest() -> void:
 	var p12 := ghost_on and readout_armed and ghost_not_counted and ghost_rekeyed and ghost_off and move_readout
 	print("P12 ghost_on=", ghost_on, " readout=", readout_armed, " no_count=", ghost_not_counted, " rekey=", ghost_rekeyed, " ghost_off=", ghost_off, " move=", move_readout)
 	print("PHASE12 ", "PASS" if p12 else "FAIL")
+	# Phase 13: objectives are first-class placeables — palette placement creates
+	# task entries with unique ids and live markers, shard clicks grow the
+	# collect_shards task, dragging a task marker moves the task, deleting a
+	# shard marker removes just that point, and validate() flags broken chains.
+	set_def(blank_def()); await get_tree().process_frame
+	_grid = 1.0 # Phase 9's grid-cycle test left a coarser snap behind
+	var mk0 := marker_count()
+	_arm("task", "core"); _place_at(Vector3(5, 0, 5)); await get_tree().process_frame
+	_arm("task", "core"); _place_at(Vector3(-5, 0, 5)); await get_tree().process_frame
+	_arm("shard", "shard"); _place_at(Vector3(0, 0, -5)); await get_tree().process_frame
+	_place_at(Vector3(4, 0, -5)); await get_tree().process_frame
+	# blank_def seeds a kill_all task — find our placements by type, not index.
+	var cores13: Array = []
+	var shards13: Dictionary = {}
+	for t in def["tasks"]:
+		match t.get("type", ""):
+			"destroy_core": cores13.append(t)
+			"collect_shards": shards13 = t
+	var ids_ok: bool = cores13.size() == 2 \
+		and str(cores13[0].get("id")) == "core" and str(cores13[1].get("id")) == "core2"
+	var shards_ok: bool = not shards13.is_empty() and (shards13.get("points", []) as Array).size() == 2
+	var markers_ok := marker_count() == mk0 + 4 # 2 cores + 2 shard points
+	# Drag the selected (2nd) shard point; the task's stored point must follow.
+	_drag_orig = _selection_positions()
+	_drag_ref = _drag_orig[0]
+	_drag_moved = true
+	_drag_move_to(Vector3(6, 0, -7))
+	var sp13: Vector3 = (shards13.get("points", [{}]) as Array)[1].get("pos", Vector3.ZERO) if shards_ok else Vector3.ZERO
+	var shard_drag_ok := is_equal_approx(sp13.x, 6.0) and is_equal_approx(sp13.z, -7.0)
+	_delete_selection(); await get_tree().process_frame
+	var shard_del_ok: bool = (shards13.get("points", []) as Array).size() == 1
+	# Chain validation: waiting on a real id is clean; a dangling ref warns.
+	if not cores13.is_empty():
+		cores13[1]["after"] = "core"
+	var w_clean := validate()
+	if not cores13.is_empty():
+		cores13[1]["after"] = "nope"
+	var w_dangling := validate()
+	var validate_ok := w_clean.is_empty() and not w_dangling.is_empty()
+	if not cores13.is_empty():
+		cores13[1].erase("after")
+	var p13: bool = ids_ok and shards_ok and markers_ok and shard_drag_ok and shard_del_ok and validate_ok
+	print("P13 ids=", ids_ok, " shards=", shards_ok, " markers=", markers_ok,
+		" drag=", shard_drag_ok, " del=", shard_del_ok, " validate=", validate_ok)
+	print("PHASE13 ", "PASS" if p13 else "FAIL")
 	# Restore campaign.json: the test wrote a throwaway override — leaving it behind
 	# would make the game boot into a 2-level test campaign. Remove if none existed.
 	if camp_before == null:
@@ -434,6 +491,14 @@ func set_def(d: Dictionary) -> void:
 			def[k] = []
 	if not (def.get("tasks") is Array):
 		def["tasks"] = []
+	# Normalize shard points to {"pos": ...} dicts so each point is a real,
+	# draggable marker (hand-authored defs use raw Vector3s; runtime takes both).
+	for t in def["tasks"]:
+		if t is Dictionary and t.has("points"):
+			var pp: Array = []
+			for p in t["points"]:
+				pp.append(p if p is Dictionary else {"pos": p})
+			t["points"] = pp
 	if not (def.get("env") is Dictionary):
 		def["env"] = {}
 	_cam_target = Vector3(0, 0, 0)
@@ -492,6 +557,16 @@ func rebuild_preview() -> void:
 		_add_marker("weapon", def["weapon"], "pos")
 	for e in def.get("extra_weapons", []):
 		_add_marker("weapon", e, "pos")
+	# Objective tasks: pos-based tasks get a marker each; every shard point of a
+	# collect_shards task is its own draggable marker.
+	for t in def.get("tasks", []):
+		if not (t is Dictionary):
+			continue
+		if t.has("pos"):
+			_add_marker("task", t, "pos")
+		for p in t.get("points", []):
+			if p is Dictionary:
+				_add_marker("shard", p, "pos")
 
 func _build_floor_and_walls() -> void:
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
@@ -613,6 +688,31 @@ func _make_marker_visual(category: String, holder: Dictionary) -> Node3D:
 			mi.material_override = _emis(col)
 			mi.position.y = 0.8
 			root.add_child(mi)
+		"task":
+			# A console slab; hold zones also draw their capture radius flat on
+			# the ground so the ring can be sized against the layout by eye.
+			var mi := MeshInstance3D.new()
+			var bm := BoxMesh.new(); bm.size = Vector3(0.7, 1.1, 0.5)
+			mi.mesh = bm
+			mi.material_override = _emis(col)
+			mi.position.y = 0.55
+			root.add_child(mi)
+			if holder.get("type", "") == "hold_zone":
+				var ring := MeshInstance3D.new()
+				var tm := TorusMesh.new()
+				var r: float = holder.get("radius", 4.0)
+				tm.inner_radius = maxf(0.3, r - 0.15); tm.outer_radius = r
+				ring.mesh = tm
+				ring.material_override = _emis(col)
+				ring.position.y = 0.05
+				root.add_child(ring)
+		"shard":
+			var mi := MeshInstance3D.new()
+			var sm := SphereMesh.new(); sm.radius = 0.32; sm.height = 0.64
+			mi.mesh = sm
+			mi.material_override = _emis(col)
+			mi.position.y = 0.6
+			root.add_child(mi)
 		_:
 			# Default: a capsule/marker + a name label.
 			var mi := MeshInstance3D.new()
@@ -730,6 +830,16 @@ func _marker_label(category: String, holder: Dictionary) -> String:
 			return "SPAWN"
 		"exit":
 			return "EXIT"
+		"task":
+			# "⚑ core2 ← hvt": type is readable from the icon color; the id (and
+			# what it waits on) is what you need for wiring stage chains.
+			var s := "⚑ %s" % _task_id_of(holder)
+			if holder.has("after"):
+				var a = holder["after"]
+				s += " ← %s" % (", ".join(a) if a is Array else str(a))
+			return s
+		"shard":
+			return "shard"
 		_:
 			return category
 
@@ -1270,6 +1380,10 @@ func _build_palette(layer: CanvasLayer) -> void:
 		_palette_item(vb, s.to_upper(), s, s)
 	_palette_section(vb, "WEAPONS", "weapon", _weapon_items())
 	_palette_section(vb, "POWERUPS", "pickup", ["health", "ammo", "overclock", "overdrive"])
+	# Objectives place like anything else: click the map. Each pos-task placed
+	# adds a task entry; SHARD appends a point to the level's collect_shards task.
+	_palette_section(vb, "OBJECTIVES", "task", TASK_PALETTE.keys())
+	_palette_item(vb, "DATA SHARD", "shard", "shard")
 	_palette_section(vb, "LIGHTS / FX", "", [])
 	for fx in [["light", "POINT LIGHT"], ["fire", "FIRE"], ["hologram", "HOLOGRAM"],
 			["hero", "HERO MONOLITH"], ["nexus", "NEXUS TOWER"]]:
@@ -1612,7 +1726,8 @@ func _drag_move_to(world: Vector3) -> void:
 ## enforces the same rule). Lights, ramps/platforms (bridges) and lava itself
 ## are exempt; mobile enemies are allowed (they path out).
 const LAVA_FORBIDDEN := ["prop", "pickup", "weapon", "wall", "building",
-	"hologram", "fire", "accent", "target", "lore", "hero", "nexus"]
+	"hologram", "fire", "accent", "target", "lore", "hero", "nexus",
+	"task", "shard"] # objectives in a hazard bed would be uncompletable
 
 func _place_at(world: Vector3) -> void:
 	if _armed_category == "":
@@ -1627,10 +1742,57 @@ func _place_at(world: Vector3) -> void:
 		(def[CAT_ARRAY[_armed_category]] as Array).append(entry)
 	elif _armed_category in ["hero", "nexus"]:
 		def[_armed_category] = entry
+	elif _armed_category == "task":
+		entry = (TASK_PALETTE[_armed_item] as Dictionary).duplicate(true)
+		entry["pos"] = snapped
+		entry["id"] = _unique_task_id(entry["type"])
+		(def["tasks"] as Array).append(entry)
+	elif _armed_category == "shard":
+		# Append a point to the level's collect_shards task, creating it first.
+		var shards: Dictionary = {}
+		for t in def["tasks"]:
+			if t.get("type", "") == "collect_shards":
+				shards = t
+				break
+		if shards.is_empty():
+			shards = {"type": "collect_shards", "points": []}
+			(def["tasks"] as Array).append(shards)
+		entry = {"pos": snapped}
+		(shards["points"] as Array).append(entry)
 	rebuild_preview()
 	_select_holders([entry])
 	_set_status("Placed %s" % _armed_item)
 	_pop(_readout)
+
+## First free id in the family the runtime derives for this task type ("core",
+## "core2", ...), so "after" chains always have something unambiguous to name.
+func _unique_task_id(type: String) -> String:
+	var base: String = {"key": "key", "destroy_core": "core", "hack_terminal": "hack_terminal",
+		"sabotage": "sabotage", "hold_zone": "hold", "assassinate": "hvt",
+		"kill_quota": "quota", "collect_shards": "shards", "survive": "survive"}.get(type, "task")
+	var used: Array = []
+	for t in def.get("tasks", []):
+		used.append(_task_id_of(t))
+	if not used.has(base):
+		return base
+	var n := 2
+	while used.has("%s%d" % [base, n]):
+		n += 1
+	return "%s%d" % [base, n]
+
+## The id the runtime resolves for a task entry (explicit or per-type default).
+func _task_id_of(t: Dictionary) -> String:
+	match t.get("type", ""):
+		"kill_all": return "kill_all"
+		"kill_quota": return t.get("id", "quota")
+		"key": return t.get("id", "key")
+		"destroy_core": return t.get("id", "core")
+		"collect_shards": return t.get("id", "shards")
+		"hack_terminal", "sabotage": return t.get("id", t.get("type", "hack"))
+		"survive": return t.get("id", "survive")
+		"hold_zone": return t.get("id", "hold")
+		"assassinate": return t.get("id", "hvt")
+	return t.get("id", "task")
 
 ## True if a point falls within any lava bed the level currently has (+margin).
 func _point_in_lava(pos: Vector3, margin: float = 0.6) -> bool:
@@ -1767,6 +1929,17 @@ func _remove_holder(holder: Dictionary, category: String) -> void:
 		for i in a.size():
 			if is_same(a[i], holder):
 				a.remove_at(i)
+				return
+	# Objective tasks and their shard points live under def["tasks"].
+	var tasks: Array = def.get("tasks", [])
+	for i in tasks.size():
+		if is_same(tasks[i], holder):
+			tasks.remove_at(i)
+			return
+		var pts: Array = (tasks[i] as Dictionary).get("points", [])
+		for j in pts.size():
+			if is_same(pts[j], holder):
+				pts.remove_at(j)
 				return
 
 func _duplicate_selection() -> void:
@@ -2077,8 +2250,8 @@ const ENV_NUMS := {
 	"brightness": [0.5, 1.5, 0.02, 1.0], "contrast": [0.5, 1.8, 0.02, 1.0],
 	"saturation": [0.0, 2.0, 0.02, 1.0], "sky_energy": [0.0, 4.0, 0.1, 1.0],
 }
-const TASK_TYPES := ["kill_all", "key", "destroy_core", "collect_shards",
-	"hack_terminal", "sabotage", "survive", "hold_zone"]
+const TASK_TYPES := ["kill_all", "kill_quota", "key", "destroy_core", "collect_shards",
+	"hack_terminal", "sabotage", "survive", "hold_zone", "assassinate"]
 
 func _refresh_inspector() -> void:
 	if _editing or _insp_vb == null:
@@ -2229,6 +2402,10 @@ func _inspect_entity(m: Dictionary) -> void:
 		"hero", "nexus":
 			_f_color(h, "color", "color")
 			_f_num(h, "height", "height", 3, 24, 0.5)
+		"task":
+			# Full mission-arc editing right on the selected marker: label, stage
+			# chain (after), per-type numbers, alarm waves.
+			_task_fields(h)
 	if cat not in ["spawn", "exit"]:
 		_insp_btn("Delete", _delete_selection)
 
@@ -2268,7 +2445,7 @@ func _build_tasks_editor() -> void:
 	for i in tasks.size():
 		var t: Dictionary = tasks[i]
 		var idx := i
-		var hb := _row("• %s" % t.get("type", "?"))
+		var hb := _row("• %s" % _task_id_of(t))
 		var opt := OptionButton.new()
 		for j in TASK_TYPES.size():
 			opt.add_item(TASK_TYPES[j])
@@ -2276,32 +2453,116 @@ func _build_tasks_editor() -> void:
 				opt.select(j)
 		opt.item_selected.connect(func(j):
 			tasks[idx] = _default_task(TASK_TYPES[j])
-			_refresh_inspector())
+			_mark_dirty(); rebuild_preview(); _refresh_inspector())
 		hb.add_child(opt)
 		var rm := Button.new(); rm.text = "✕"
-		rm.pressed.connect(func(): tasks.remove_at(idx); _refresh_inspector())
+		rm.pressed.connect(func():
+			tasks.remove_at(idx)
+			_mark_dirty(); rebuild_preview(); _refresh_inspector())
 		hb.add_child(rm)
-		# Per-type fields.
-		match t.get("type", ""):
-			"key", "destroy_core", "hack_terminal", "sabotage", "hold_zone":
-				_f_vec(t, "pos", "  pos", 3)
-		match t.get("type", ""):
-			"destroy_core":
-				_f_num(t, "health", "  health", 100, 4000, 50)
-			"survive", "hack_terminal", "sabotage", "hold_zone":
-				_f_num(t, "seconds", "  seconds", 1, 120, 1)
-	_insp_btn("+ Add task", func(): (def["tasks"] as Array).append(_default_task("kill_all")); _refresh_inspector())
+		_task_fields(t)
+	_insp_btn("+ Add task", func():
+		(def["tasks"] as Array).append(_default_task("kill_all"))
+		_mark_dirty(); _refresh_inspector())
+
+## Editable fields for one task entry — shared by the level inspector's task
+## list and the entity inspector when a task marker is selected on the map.
+func _task_fields(t: Dictionary) -> void:
+	var ty: String = t.get("type", "")
+	if ty in ["none"]:
+		return
+	if ty != "kill_all":
+		_f_text(t, "label", "  label")
+		_task_after_field(t)
+	match ty:
+		"key", "destroy_core", "hack_terminal", "sabotage", "hold_zone", "assassinate":
+			_f_vec(t, "pos", "  pos", 3)
+	match ty:
+		"destroy_core":
+			_f_num(t, "health", "  health", 100, 4000, 50)
+		"survive", "hack_terminal", "sabotage":
+			_f_num(t, "seconds", "  seconds", 1, 120, 1)
+		"hold_zone":
+			_f_num(t, "seconds", "  seconds", 1, 120, 1)
+			_f_num(t, "radius", "  radius", 2, 12, 0.5)
+		"kill_quota":
+			_f_num(t, "count", "  count", 1, 60, 1)
+		"assassinate":
+			_f_enum(t, "enemy", "  enemy", LevelBuilder.ENEMY_SCENES.keys())
+			_f_enum(t, "elite", "  elite", Elite.KINDS)
+			_f_num(t, "bulk", "  bulk", 1.0, 5.0, 0.2)
+	_task_reinforce_fields(t)
+
+## "after" — which task(s) must finish before this stage goes live. A dropdown
+## of every other task's id; multi-prereq arrays (hand-authored) are shown as a
+## combined entry and survive until a different choice is made.
+func _task_after_field(t: Dictionary) -> void:
+	var hb := _row("  after")
+	var opt := OptionButton.new()
+	opt.add_item("(immediately)")
+	var ids: Array = []
+	for o in def.get("tasks", []):
+		if o is Dictionary and not is_same(o, t) and not (o.get("type", "") in ["none"]):
+			ids.append(_task_id_of(o))
+	var cur = t.get("after", null)
+	var sel := 0
+	for i in ids.size():
+		opt.add_item(ids[i])
+		if cur is String and ids[i] == cur:
+			sel = i + 1
+	if cur is Array:
+		opt.add_item("all of: %s" % ", ".join(cur))
+		sel = opt.item_count - 1
+	opt.select(sel)
+	opt.item_selected.connect(func(i):
+		if i == 0:
+			t.erase("after")
+		elif i <= ids.size():
+			t["after"] = ids[i - 1]
+		_mark_dirty(); rebuild_preview(); _refresh_inspector())
+	hb.add_child(opt)
+
+## Alarm waves that pour in when this task completes.
+func _task_reinforce_fields(t: Dictionary) -> void:
+	if not t.has("reinforce"):
+		_insp_btn("  + alarm wave on completion", func():
+			t["reinforce"] = [{"type": "drone", "count": 3, "pos": Vector3.ZERO}]
+			_mark_dirty(); _refresh_inspector())
+		return
+	var waves: Array = t["reinforce"]
+	for i in waves.size():
+		var w: Dictionary = waves[i]
+		var idx := i
+		var hb := _row("  ⚠ alarm wave %d" % (i + 1))
+		var rm := Button.new(); rm.text = "✕"
+		rm.pressed.connect(func():
+			waves.remove_at(idx)
+			if waves.is_empty():
+				t.erase("reinforce")
+			_mark_dirty(); _refresh_inspector())
+		hb.add_child(rm)
+		_f_enum(w, "type", "    enemy", LevelBuilder.ENEMY_SCENES.keys())
+		_f_num(w, "count", "    count", 1, 12, 1)
+		_f_vec(w, "pos", "    pos", 3)
+	_insp_btn("  + another wave", func():
+		waves.append({"type": "drone", "count": 3, "pos": Vector3.ZERO})
+		_mark_dirty(); _refresh_inspector())
 
 func _default_task(type: String) -> Dictionary:
+	var t: Dictionary = {}
 	match type:
-		"key": return {"type": "key", "pos": Vector3.ZERO}
-		"destroy_core": return {"type": "destroy_core", "pos": Vector3.ZERO, "health": 600.0}
-		"collect_shards": return {"type": "collect_shards", "points": [Vector3.ZERO]}
-		"hack_terminal": return {"type": "hack_terminal", "pos": Vector3.ZERO, "seconds": 3.0}
-		"sabotage": return {"type": "sabotage", "pos": Vector3.ZERO, "seconds": 3.5}
-		"survive": return {"type": "survive", "seconds": 45.0}
-		"hold_zone": return {"type": "hold_zone", "pos": Vector3.ZERO, "seconds": 12.0}
-	return {"type": "kill_all"}
+		"key": t = {"type": "key", "pos": Vector3.ZERO}
+		"destroy_core": t = {"type": "destroy_core", "pos": Vector3.ZERO, "health": 600.0}
+		"collect_shards": t = {"type": "collect_shards", "points": [{"pos": Vector3.ZERO}]}
+		"hack_terminal": t = {"type": "hack_terminal", "pos": Vector3.ZERO, "seconds": 3.0}
+		"sabotage": t = {"type": "sabotage", "pos": Vector3.ZERO, "seconds": 3.5}
+		"survive": t = {"type": "survive", "seconds": 45.0}
+		"hold_zone": t = {"type": "hold_zone", "pos": Vector3.ZERO, "seconds": 12.0}
+		"kill_quota": t = {"type": "kill_quota", "count": 10}
+		"assassinate": t = {"type": "assassinate", "pos": Vector3.ZERO, "enemy": "brute", "elite": "warden", "bulk": 2.2}
+		_: return {"type": "kill_all"}
+	t["id"] = _unique_task_id(type)
+	return t
 
 # ---------- export to GDScript ----------
 
@@ -2456,6 +2717,9 @@ func _save_campaign(list: Array) -> void:
 # ---------- validation + playtest (Phase 4) ----------
 
 ## Non-blocking sanity checks. Returns a list of human-readable warnings.
+## Covers the mission-arc rules (same graph checks as tests/mission_arc_probe):
+## duplicate ids, dangling/self "after" refs, prerequisite cycles, positions off
+## the floor, unknown alarm-wave enemy types.
 func validate() -> Array:
 	var w: Array = []
 	if not def.has("spawn"):
@@ -2466,17 +2730,67 @@ func validate() -> Array:
 	var tasks: Array = def.get("tasks", [])
 	if not enemies.is_empty() and tasks.is_empty():
 		w.append("enemies but no objective")
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var half := fs * 0.5 + Vector2(1, 1)
+	var in_bounds := func(p: Vector3) -> bool:
+		return absf(p.x) <= half.x and absf(p.z) <= half.y
+	var ids: Array = []
 	for t in tasks:
 		var ty: String = t.get("type", "")
-		if ty in ["destroy_core", "hold_zone", "key", "hack_terminal", "sabotage"] and not t.has("pos"):
+		if ty in ["none"]:
+			continue
+		var id := _task_id_of(t)
+		if ids.has(id):
+			w.append("duplicate task id '%s'" % id)
+		ids.append(id)
+		if ty in ["destroy_core", "hold_zone", "key", "hack_terminal", "sabotage", "assassinate"] and not t.has("pos"):
 			w.append("%s task missing pos" % ty)
 		if ty == "collect_shards" and (t.get("points", []) as Array).is_empty():
 			w.append("collect_shards has no points")
+		if ty == "kill_quota" and int(t.get("count", 0)) <= 0:
+			w.append("kill_quota needs count > 0")
+		if t.has("pos") and not in_bounds.call(t["pos"]):
+			w.append("task '%s' is outside the floor" % id)
+		for p in t.get("points", []):
+			var v: Vector3 = p["pos"] if p is Dictionary else p
+			if not in_bounds.call(v):
+				w.append("a shard point of '%s' is outside the floor" % id)
+		for r in t.get("reinforce", []):
+			if not LevelBuilder.ENEMY_SCENES.has(r.get("type", "")):
+				w.append("alarm wave of '%s' has unknown enemy '%s'" % [id, r.get("type", "?")])
+			if r.has("pos") and not in_bounds.call(r["pos"]):
+				w.append("alarm wave of '%s' lands outside the floor" % id)
+	for t in tasks:
+		var a = t.get("after", [])
+		for p in ([a] if a is String else (a as Array)):
+			if not ids.has(p):
+				w.append("'%s' waits on unknown task '%s'" % [_task_id_of(t), p])
+			elif p == _task_id_of(t):
+				w.append("'%s' waits on itself" % p)
+	# Cycle check: peel tasks whose prerequisites are all peeled; leftovers loop.
+	var remaining := ids.duplicate()
+	var progressed := true
+	while progressed and not remaining.is_empty():
+		progressed = false
+		for t in tasks:
+			var id2 := _task_id_of(t)
+			if not remaining.has(id2):
+				continue
+			var a2 = t.get("after", [])
+			var free := true
+			for p in ([a2] if a2 is String else (a2 as Array)):
+				if remaining.has(p):
+					free = false
+					break
+			if free:
+				remaining.erase(id2)
+				progressed = true
+	if not remaining.is_empty():
+		w.append("stage chain loops: %s" % ", ".join(remaining))
 	# Out-of-bounds spawn/exit.
-	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	for k in ["spawn", "exit"]:
 		var p: Vector3 = def.get(k, Vector3.ZERO)
-		if absf(p.x) > fs.x * 0.5 + 1.0 or absf(p.z) > fs.y * 0.5 + 1.0:
+		if not in_bounds.call(p):
 			w.append("%s is outside the floor" % k)
 	return w
 
