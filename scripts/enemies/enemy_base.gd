@@ -302,15 +302,40 @@ func set_state(new_state: State) -> void:
 	state_changed.emit(new_state)
 	_on_enter_state(new_state)
 
+## Vocal identity: pitch multiplier per enemy family (on top of the RobotVoice
+## bus shift) — dogs and drones chirp, heavies rumble. Families not listed
+## speak at the stock pitch.
+const VOICE_PITCH := {
+	"dog": 1.35, "drone": 1.22, "spider": 1.18, "skitter": 1.25, "seeker": 1.2,
+	"vacuum": 1.15, "mender": 1.08,
+	"mech": 0.82, "warmech": 0.78, "brute": 0.85, "colossus": 0.72,
+	"titan": 0.7, "archon": 0.75, "overseer": 0.78, "terminator": 0.8,
+	"mauler": 0.85, "smasher": 0.8,
+}
+
+## The family key for voice packs/pitch: the class name minus the Enemy prefix
+## ("EnemyDog" -> "dog"), same derivation as the kill-feed label.
+func _voice_family() -> String:
+	var s: Script = get_script()
+	var n: String = String(s.get_global_name()) if s else ""
+	return n.replace("Enemy", "").to_lower()
+
 ## Speak a TTS robot voice line of the given category (see AudioBus voice
-## clips). Chance-gated here, globally cooldown-gated in AudioBus.
+## clips). Chance-gated HERE (one roll), then the family personality pack
+## ("dog_atk") is tried before the shared pool, so distinctive units get their
+## own jokes and everyone else falls back to the common lines. Family pitch
+## keeps the same clip from sounding cloned across unit types.
 func _speak(category: String, chance: float = 1.0) -> void:
-	if not has_node("/root/AudioBus"):
+	if randf() > chance or not has_node("/root/AudioBus"):
 		return
 	var ab: Node = get_node("/root/AudioBus")
 	if ab.has_method("play_voice_at"):
 		var src: Node3D = eye if eye != null else self
-		ab.play_voice_at(category, src.global_position, chance)
+		var fam := _voice_family()
+		var pitch: float = VOICE_PITCH.get(fam, 1.0)
+		if ab.play_voice_at("%s_%s" % [fam, category], src.global_position, 1.0, 2.0, pitch):
+			return
+		ab.play_voice_at(category, src.global_position, 1.0, 2.0, pitch)
 
 ## Brief reaction the instant this enemy first registers the player: a short
 ## comms blip and a bright flare at the eye.

@@ -204,7 +204,16 @@ func _setup_broadcast_bus() -> void:
 const VOICE_POOL_SIZE := 4
 const VOICE_DIR := "res://assets/audio/voice/"
 ## Category -> clip count. Keys match the wav prefixes from gen_voices.ps1.
-const VOICE_CATEGORIES := {"spot": 8, "atk": 9, "hurt": 6, "die": 16, "taunt": 14}
+const VOICE_CATEGORIES := {
+	"spot": 8, "atk": 9, "hurt": 6, "die": 16, "taunt": 24,
+	# Per-family personality packs (EnemyBase tries "<family>_<cat>" first and
+	# falls back to the generic pool above). Counts mirror tools/gen_voices.ps1.
+	"dog_spot": 2, "dog_atk": 3, "dog_die": 2,
+	"sniper_spot": 2, "sniper_atk": 2, "sniper_die": 1,
+	"mender_spot": 1, "mender_atk": 3, "mender_die": 2,
+	"mech_spot": 1, "mech_atk": 2, "mech_die": 1,
+	"drone_spot": 1, "drone_atk": 2, "drone_die": 1,
+}
 
 var _voice_pool: Array[AudioStreamPlayer3D] = []
 var _voice_next: int = 0
@@ -252,14 +261,14 @@ func _index_voice_clips() -> void:
 ## line actually played. `chance` rolls the dice first so callers can say
 ## "sometimes"; the global cooldown then keeps overlapping squads coherent.
 ## Death lines bypass the cooldown — a kill should always get its payoff.
-func play_voice_at(category: String, position: Vector3, chance: float = 1.0, volume_db: float = 2.0) -> bool:
+func play_voice_at(category: String, position: Vector3, chance: float = 1.0, volume_db: float = 2.0, pitch: float = 1.0) -> bool:
 	if suppress_world_sfx or randf() > chance:
 		return false
 	var clips: Array = _voice_clips.get(category, [])
 	if clips.is_empty():
 		return false
 	var now := Time.get_ticks_msec() / 1000.0
-	if category != "die" and now < _voice_cooldown_until:
+	if not category.ends_with("die") and now < _voice_cooldown_until:
 		return false
 	_voice_cooldown_until = now + randf_range(1.6, 2.8)
 	var idx := randi() % clips.size()
@@ -271,8 +280,9 @@ func play_voice_at(category: String, position: Vector3, chance: float = 1.0, vol
 	p.stream = clips[idx]
 	p.global_position = position
 	p.volume_db = volume_db
-	# Per-robot pitch wobble on top of the bus shift so units don't sound cloned.
-	p.pitch_scale = randf_range(0.92, 1.12)
+	# Family pitch identity (dogs chirp, mechs rumble) with a per-bark wobble on
+	# top of the bus shift so units don't sound cloned.
+	p.pitch_scale = pitch * randf_range(0.92, 1.12)
 	p.play()
 	return true
 
