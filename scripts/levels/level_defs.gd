@@ -322,7 +322,11 @@ static func _nexus() -> Dictionary:
 			{"type": "drone", "pos": Vector3(9, 0, 9)},
 			{"type": "spider", "pos": Vector3(5, 0, 10), "count": 3, "trigger": 16},
 			{"type": "android", "pos": Vector3(10, 0, 14), "trigger": 16},
-			{"type": "mech", "pos": Vector3(4, 0, 13), "trigger": 18},
+			# South-east of the fire trench's end — its old spot (4,0,13) was INSIDE
+			# the south trench bed (enemies are not auto-relocated out of hazard
+			# beds): it stood stranded in fire on carved-out navmesh, unreachable
+			# for the survival-probe bot and reading as jank in real play.
+			{"type": "mech", "pos": Vector3(7, 0, 17), "trigger": 18},
 		],
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8, 0, -4), "color": Color(0.4, 0.7, 1.0)},
 	}
