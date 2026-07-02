@@ -3080,10 +3080,12 @@ func _activate_task(t: Dictionary) -> void:
 			core.position = t.get("pos", Vector3.ZERO)
 			add_child(core)
 		"collect_shards":
+			# Points are raw Vector3s in hand-authored defs; the level editor
+			# stores them as {"pos": ...} dicts so they drag like any marker.
 			for sp in t.get("points", []):
 				var shard := ShardPickup.new()
 				shard.task_id = id
-				shard.position = sp
+				shard.position = sp["pos"] if sp is Dictionary else sp
 				add_child(shard)
 		"hack_terminal", "sabotage":
 			var con := HoldConsole.new()

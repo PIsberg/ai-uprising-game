@@ -133,9 +133,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		if t.has("pos"):
 			t["pos"] = _sv(t["pos"], s)
 		if t.has("points"):
+			# Editor-authored points are {"pos": ...} dicts; hand-authored are Vector3.
 			var pp: Array = []
 			for p in t["points"]:
-				pp.append(_sv(p, s))
+				if p is Dictionary:
+					p["pos"] = _sv(p.get("pos", Vector3.ZERO), s)
+					pp.append(p)
+				else:
+					pp.append(_sv(p, s))
 			t["points"] = pp
 		# Reinforcement waves triggered by the task land at authored spots too.
 		for r in t.get("reinforce", []):
