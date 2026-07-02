@@ -40,3 +40,6 @@ arc_fx = true
 sound_id = "rifle"
 slide_kick = 0.0
 viewmodel_color = Color(1, 0.75, 0.35, 1)
+bloom_per_shot = 0.06
+bloom_max_mult = 2.0
+first_shot_mult = 0.7

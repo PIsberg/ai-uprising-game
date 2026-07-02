@@ -39,3 +39,6 @@ sound_id = "plasma"
 slide_kick = 0.06
 viewmodel_color = Color(0.55, 0.8, 1.0, 1)
 ads_fov = 42.0
+move_spread_mult = 1.8
+air_spread_mult = 2.2
+recoil_return = 0.9

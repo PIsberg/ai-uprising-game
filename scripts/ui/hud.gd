@@ -678,25 +678,19 @@ func _build_grapple_hint() -> void:
 	_grapple_hint.visible = false
 	crosshair.add_child(_grapple_hint)
 
-## Dynamic reticle: widens while moving/firing, tightens when aiming/still.
-## Rests at a per-weapon base spread (a shotgun's cone reads wide and open even
-## standing still; a sniper/railgun sits near a pinpoint) instead of one curve
-## shared by every gun, and eases toward zero on aim by that weapon's own
-## aim_spread_mult (a sniper goes pinpoint; a shotgun barely tightens).
+## Dynamic reticle driven by the weapon's REAL live cone (Weapon.spread_now):
+## base per-gun spread opened by fire bloom and movement, tightened by ADS and
+## the cold first-shot bonus — the gap on screen is the truth of where rounds
+## can land, not a cosmetic approximation of it.
 func _update_crosshair(delta: float) -> void:
-	var base := 1.0
-	var aim_mult := 0.25
-	if _current_weapon and _current_weapon.data:
-		base = clampf(_current_weapon.data.spread_deg * 2.6, 1.0, 20.0)
-		aim_mult = _current_weapon.data.aim_spread_mult
-	var target := base
+	var target := 1.0
+	if _current_weapon and is_instance_valid(_current_weapon) and _current_weapon.data:
+		var shooter: Node = null
+		if GameState.current_state == GameState.State.PLAYING and _player_ref and is_instance_valid(_player_ref):
+			shooter = _player_ref
+		var live: float = _current_weapon.spread_now(Input.is_action_pressed("aim"), shooter)
+		target = clampf(live * 2.6, 0.6, 26.0)
 	if GameState.current_state == GameState.State.PLAYING and _player_ref and is_instance_valid(_player_ref):
-		var speed := Vector2(_player_ref.velocity.x, _player_ref.velocity.z).length()
-		target += clampf(speed / 9.0, 0.0, 1.0) * 8.0
-		if Input.is_action_pressed("fire"):
-			target += 5.0
-		if Input.is_action_pressed("aim"):
-			target *= aim_mult
 		if _grapple_hint:
 			_grapple_hint.visible = bool(_player_ref.get("_grapple_valid"))
 	elif _grapple_hint:
