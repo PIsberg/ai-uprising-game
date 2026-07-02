@@ -73,6 +73,12 @@ var _beam_wanted: bool = false
 var _beam_tick: float = 0.0
 var _beam_pop: int = 0
 
+# Spread bloom: sustained fire opens the cone toward spread_deg * bloom_max_mult;
+# letting off the trigger bleeds it back down. _since_shot also arms the cold
+# first-shot accuracy bonus.
+var _bloom: float = 0.0
+var _since_shot: float = 999.0
+
 # Barrel heat: rises with every shot, bleeds off when you stop. The muzzle tip
 # glows from a dull ember to a fierce orange as you mag-dump.
 var _heat: float = 0.0
@@ -162,16 +168,36 @@ func _apply_real_model() -> bool:
 	# Barrel tip = front face of the fitted model, slightly proud of it.
 	if muzzle:
 		muzzle.position.z = 0.18 - cfg["len"] - 0.03
-	# Realistic worn-gunmetal skin over the kit's flat plastic albedo.
+	# Realistic worn-gunmetal skin over the kit's flat plastic albedo. Surfaces
+	# the kit painted saturated (grips, vents, sight dots) become emissive
+	# accents in the weapon's energy colour instead — every gun carries its own
+	# glow identity, readable in the rack and in the dark.
 	var tint: Color = cfg["tint"]
+	var accent: Color = data.tracer_color if data else Color(0.5, 0.8, 1.0)
 	for n in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
 		if mi.mesh == null:
 			continue
 		for i in mi.mesh.get_surface_count():
-			var m := mi.mesh.surface_get_material(i)
-			mi.set_surface_override_material(i, _gunmetal_material(m as BaseMaterial3D, tint))
+			var m := mi.mesh.surface_get_material(i) as BaseMaterial3D
+			if m and m.albedo_color.s > 0.35 and m.albedo_color.v > 0.25:
+				mi.set_surface_override_material(i, _energy_accent_material(accent))
+			else:
+				mi.set_surface_override_material(i, _gunmetal_material(m, tint))
 	return true
+
+## Emissive accent for the kit's saturated detail surfaces: lit from within in
+## the weapon's tracer colour, at an energy low enough to glow without blowing
+## out to white under bloom.
+func _energy_accent_material(col: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(col.r * 0.4, col.g * 0.4, col.b * 0.4)
+	mat.metallic = 0.4
+	mat.roughness = 0.35
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 1.4
+	return mat
 
 ## A procedural worn-gunmetal PBR material. The Kenney kit ships flat white plastic
 ## with a single albedo per surface; multiplying by the weapon's `tint` and dropping
@@ -182,14 +208,18 @@ func _apply_real_model() -> bool:
 func _gunmetal_material(src: BaseMaterial3D, tint: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	var base := (src.albedo_color if src != null else Color.WHITE)
-	mat.albedo_color = (base * tint).darkened(0.4)
-	mat.metallic = 0.92
+	# darkened(0.25): with no reflection probes indoors, metal reads by its
+	# albedo — the old 0.4 drop left every gun a black silhouette at the range.
+	mat.albedo_color = (base * tint).darkened(0.25)
+	mat.metallic = 0.88
 	mat.metallic_specular = 0.6
-	mat.roughness = 0.55                                  # noise scales this down -> worn 0..0.55
+	mat.roughness = 0.5                                   # noise scales this down -> worn 0..0.5
 	mat.roughness_texture = _gunmetal_rough()
 	mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	mat.uv1_triplanar = true                              # map noise without relying on kit UVs
-	mat.uv1_scale = Vector3(2.2, 2.2, 2.2)
+	# Fine grain: big patches read as camo blotches up close on the viewmodel;
+	# a tight scale reads as brushed/worn machining instead.
+	mat.uv1_scale = Vector3(5.5, 5.5, 5.5)
 	mat.clearcoat_enabled = true
 	mat.clearcoat = 0.4
 	mat.clearcoat_roughness = 0.2
@@ -281,6 +311,9 @@ func _build_heat_glow() -> void:
 func _process(delta: float) -> void:
 	_update_heat(delta)
 	_update_beam(delta)
+	_since_shot += delta
+	if _bloom > 0.0 and data and _since_shot > 0.1:
+		_bloom = maxf(0.0, _bloom - data.bloom_recovery * delta)
 	if _cooldown > 0.0:
 		_cooldown -= delta
 	if _reloading:
@@ -441,11 +474,10 @@ func _do_shot() -> void:
 	if _active_camera == null or data == null:
 		return
 	GameState.register_shot() # accuracy stat for the end-of-level grade
-	var spread := deg_to_rad(data.spread_deg)
-	if _active_aiming:
-		spread *= data.aim_spread_mult
+	var spread := deg_to_rad(spread_now(_active_aiming, _active_shooter))
 	if _alt_tight:
 		spread = 0.0 # alt-fire shots are laser-accurate
+	_register_spread_shot(_active_aiming)
 	var origin := _active_camera.global_position
 	var base_dir := -_active_camera.global_transform.basis.z
 	for _i in (1 if _alt_slug else data.pellets):
@@ -468,12 +500,43 @@ func _do_shot() -> void:
 	_play_fire_anim()
 	fired.emit(self)
 
+## The live cone half-angle in degrees: base spread opened by bloom and
+## movement, tightened by ADS and a cold first shot. The HUD reticle reads this
+## too, so the crosshair always shows the real cone.
+func spread_now(aiming: bool, shooter: Node = null) -> float:
+	if data == null:
+		return 0.0
+	var s := data.spread_deg
+	if aiming:
+		s *= data.aim_spread_mult
+	s *= 1.0 + _bloom * (data.bloom_max_mult - 1.0)
+	if shooter is CharacterBody3D:
+		var body := shooter as CharacterBody3D
+		var hspeed := Vector2(body.velocity.x, body.velocity.z).length()
+		s *= lerpf(1.0, data.move_spread_mult, clampf(hspeed / 8.0, 0.0, 1.0))
+		if not body.is_on_floor():
+			s *= data.air_spread_mult
+	if _since_shot >= data.first_shot_delay:
+		s *= data.first_shot_mult
+	return s
+
+## Book-keeping per trigger pull: bloom the cone (ADS blooms at half rate — a
+## braced gun climbs slower) and reset the first-shot clock.
+func _register_spread_shot(aiming: bool) -> void:
+	_since_shot = 0.0
+	if data.bloom_per_shot > 0.0:
+		_bloom = minf(1.0, _bloom + data.bloom_per_shot * (0.5 if aiming else 1.0))
+
+## Deflect `dir` by up to max_angle: uniform azimuth around the shot line, with
+## a center-weighted (linear) radial falloff. The rotation axis is built
+## perpendicular to the shot so the sampled angle always lands in full — the old
+## random-3D-axis rotation shrank and skewed the cone unpredictably.
 func _scattered(dir: Vector3, max_angle: float) -> Vector3:
 	if max_angle <= 0.0:
 		return dir
-	var rand_axis := Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5).normalized()
-	var angle := randf() * max_angle
-	return dir.rotated(rand_axis, angle).normalized()
+	var ref := Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
+	var axis := dir.cross(ref).normalized().rotated(dir, randf() * TAU)
+	return dir.rotated(axis, randf() * max_angle).normalized()
 
 func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 	var space := get_world_3d().direct_space_state
@@ -659,7 +722,9 @@ func _spawn_bullet_hole(pos: Vector3, normal: Vector3) -> void:
 		holes[0].queue_free()
 	var d := Decal.new()
 	d.add_to_group("bullet_hole")
-	d.texture_albedo = ScorchMark._scorch_texture() # radial burn doubles as a scar
+	# The impact FX's punched-hole texture (dark centre, cratered rim, radial
+	# cracks) — reads as a bullet hole, where the old scorch read as a smudge.
+	d.texture_albedo = preload("res://scripts/fx/impact.gd")._bullet_hole_texture()
 	var s := randf_range(0.14, 0.24)
 	d.size = Vector3(s, 0.35, s)
 	d.cull_mask = 1

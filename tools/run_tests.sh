@@ -24,6 +24,7 @@ PROBES=(
   res://tests/enemy_combat_probe.tscn
   res://tests/projectile_fx_probe.tscn
   res://tests/warbot_face_probe.tscn
+  res://tests/gun_range_probe.tscn
 )
 
 echo "== importing project =="
