@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c8bosslanding01"]
+
+[ext_resource type="Script" path="res://tools/capture_boss_landing.gd" id="1"]
+
+[node name="CaptureBossLanding" type="Node3D"]
+script = ExtResource("1")
