@@ -33,3 +33,4 @@ tracer_color = Color(1.0, 0.55, 0.2, 1)
 sound_id = "rocket"
 slide_kick = 0.0
 viewmodel_color = Color(1, 0.35, 0.3, 1)
+recoil_return = 0.75

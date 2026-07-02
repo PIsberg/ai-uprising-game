@@ -201,10 +201,18 @@ func _process(delta: float) -> void:
 		current.try_fire(trigger, aiming, camera, shooter)
 		current.try_alt_fire(Input.is_action_pressed("alt_fire"), delta, camera, shooter)
 
-	# Recoil recovery
-	if recoil_target:
-		_recoil_pitch = lerpf(_recoil_pitch, 0.0, (current.data.recoil_recovery if current and current.data else 9.0) * delta)
-		_recoil_yaw = lerpf(_recoil_yaw, 0.0, (current.data.recoil_recovery if current and current.data else 9.0) * delta)
+	# Recoil recovery: _recoil_pitch/_recoil_yaw hold the portion of applied
+	# kick that still owes the camera a settle-back. Bleed it off and counter-
+	# rotate the head by the same amount, so a burst climbs then returns toward
+	# the pre-shot aim instead of walking the view up permanently.
+	if recoil_target and (absf(_recoil_pitch) > 0.00001 or absf(_recoil_yaw) > 0.00001):
+		var rk := clampf((current.data.recoil_recovery if current and current.data else 9.0) * delta, 0.0, 1.0)
+		var dp := _recoil_pitch * rk
+		var dy := _recoil_yaw * rk
+		recoil_target.rotation.x = clampf(recoil_target.rotation.x - dp, -1.55, 1.55)
+		recoil_target.rotation.y -= dy
+		_recoil_pitch -= dp
+		_recoil_yaw -= dy
 
 	# ADS Update
 	var aiming := Input.is_action_pressed("aim") and current != null
@@ -276,11 +284,16 @@ func _process(delta: float) -> void:
 func _on_fired(_w: Weapon) -> void:
 	if current == null or current.data == null:
 		return
-	_recoil_pitch += deg_to_rad(current.data.recoil_pitch)
-	_recoil_yaw += deg_to_rad(current.data.recoil_yaw) * (1.0 if randf() > 0.5 else -1.0)
+	# One kick per shot; recoil_return of it is banked so _process can settle the
+	# camera back. The yaw sign is rolled once, so the recovery undoes the same
+	# direction the camera was actually kicked (two rolls used to desync them).
+	var pitch_kick := deg_to_rad(current.data.recoil_pitch)
+	var yaw_kick := deg_to_rad(current.data.recoil_yaw) * (1.0 if randf() > 0.5 else -1.0)
+	_recoil_pitch += pitch_kick * current.data.recoil_return
+	_recoil_yaw += yaw_kick * current.data.recoil_return
 	if recoil_target:
-		recoil_target.rotation.x = clampf(recoil_target.rotation.x + deg_to_rad(current.data.recoil_pitch), -1.55, 1.55)
-		recoil_target.rotation.y += deg_to_rad(current.data.recoil_yaw) * (1.0 if randf() > 0.5 else -1.0)
+		recoil_target.rotation.x = clampf(recoil_target.rotation.x + pitch_kick, -1.55, 1.55)
+		recoil_target.rotation.y += yaw_kick
 	# Punchy per-shot camera trauma, scaled by the weapon's recoil weight.
 	if shooter and shooter.has_method("shake"):
 		shooter.shake(clampf(0.18 + current.data.recoil_pitch * 0.05, 0.0, 0.6))

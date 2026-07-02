@@ -39,3 +39,7 @@ slide_kick = 0.06
 viewmodel_color = Color(0.22, 0.24, 0.28, 1)
 ads_position_offset = Vector3(0.0, 0.02, 0.12)
 ads_fov = 20.0
+move_spread_mult = 2.0
+air_spread_mult = 2.5
+first_shot_mult = 0.5
+recoil_return = 0.9

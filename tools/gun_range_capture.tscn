@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3 uid="uid://cgunrangecap01"]
+[ext_resource type="Script" path="res://tools/gun_range_capture.gd" id="1_p"]
+[node name="GunRangeCapture" type="Node3D"]
+script = ExtResource("1_p")
