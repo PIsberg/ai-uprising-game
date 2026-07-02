@@ -53,6 +53,17 @@ func _run() -> void:
 		print("%-14s | %4d (settled %3d) | %7.0f | %4d | %4d | %s" % [
 			id, peak, settled, peak_hp, hpacks, ammo, comp])
 		holder.free()
+		# EnemySpawner (wave/AI-director spawns) parents new enemies to
+		# get_tree().current_scene, not to whatever node loaded the level. In real
+		# play that's correct since the level IS the current scene, but here the
+		# probe's own root stays current_scene for the whole run, so wave-spawned
+		# enemies were never under holder at all — holder.free() didn't touch them
+		# and they piled up forever (peak counts + composition kept growing level
+		# after level). Free every "enemy"-tagged node explicitly, regardless of
+		# who parented it, so each level starts from an empty roster.
+		for e in get_tree().get_nodes_in_group("enemy"):
+			if is_instance_valid(e):
+				e.free()
 		await get_tree().process_frame
 	print("=== PROBE DONE ===")
 

@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://d5k8n3m9x2wqr"]
+[ext_resource type="Script" path="res://tools/perf_timing.gd" id="1"]
+[node name="PerfTiming" type="Node"]
+script = ExtResource("1")

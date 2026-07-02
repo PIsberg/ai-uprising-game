@@ -16,6 +16,7 @@ var _vig_time: float = 0.0
 @onready var _cross_left: ColorRect = $CrosshairCenter/Left
 @onready var _cross_right: ColorRect = $CrosshairCenter/Right
 var _cross_spread: float = 0.0
+var _current_weapon: Weapon ## So the crosshair can read the real per-gun spread instead of one generic curve.
 var _player_ref: Node3D
 var _mag: int = 1
 var _prev_mag: int = 1
@@ -138,6 +139,7 @@ func _ready() -> void:
 	GameState.boss_spawned.connect(_on_boss_spawned)
 	_style_health_bar()
 	_build_fps_label()
+	_build_grapple_hint()
 	_build_ammo_block()
 	_build_overclock_label()
 	GameState.overclock_changed.connect(_on_overclock_changed)
@@ -658,16 +660,47 @@ func _process(delta: float) -> void:
 		var a := danger * (0.55 + 0.3 * sin(_vig_time * 5.0)) if danger > 0.0 else 0.0
 		_low_vig.modulate.a = a * GraphicsSettings.flash_intensity
 
+var _grapple_hint: Label = null ## Small cyan pip under the crosshair when a grapple anchor is in range.
+
+## A subtle "you can grapple this" cue: a small cyan diamond just below the
+## reticle, shown while the player's throttled anchor probe reads valid. Sits
+## under CrosshairCenter so it inherits the reticle's screen position for free.
+func _build_grapple_hint() -> void:
+	_grapple_hint = Label.new()
+	_grapple_hint.text = "◆"
+	_grapple_hint.add_theme_font_size_override("font_size", 13)
+	_grapple_hint.add_theme_color_override("font_color", Color(0.35, 0.9, 1.0, 0.85))
+	_grapple_hint.add_theme_constant_override("outline_size", 3)
+	_grapple_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
+	_grapple_hint.set_anchors_preset(Control.PRESET_CENTER)
+	_grapple_hint.position = Vector2(-6, 20)
+	_grapple_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_grapple_hint.visible = false
+	crosshair.add_child(_grapple_hint)
+
 ## Dynamic reticle: widens while moving/firing, tightens when aiming/still.
+## Rests at a per-weapon base spread (a shotgun's cone reads wide and open even
+## standing still; a sniper/railgun sits near a pinpoint) instead of one curve
+## shared by every gun, and eases toward zero on aim by that weapon's own
+## aim_spread_mult (a sniper goes pinpoint; a shotgun barely tightens).
 func _update_crosshair(delta: float) -> void:
-	var target := 1.0 # extra px the ticks push outward
+	var base := 1.0
+	var aim_mult := 0.25
+	if _current_weapon and _current_weapon.data:
+		base = clampf(_current_weapon.data.spread_deg * 2.6, 1.0, 20.0)
+		aim_mult = _current_weapon.data.aim_spread_mult
+	var target := base
 	if GameState.current_state == GameState.State.PLAYING and _player_ref and is_instance_valid(_player_ref):
 		var speed := Vector2(_player_ref.velocity.x, _player_ref.velocity.z).length()
-		target = 1.0 + clampf(speed / 9.0, 0.0, 1.0) * 9.0
+		target += clampf(speed / 9.0, 0.0, 1.0) * 8.0
 		if Input.is_action_pressed("fire"):
-			target += 6.0
+			target += 5.0
 		if Input.is_action_pressed("aim"):
-			target *= 0.25
+			target *= aim_mult
+		if _grapple_hint:
+			_grapple_hint.visible = bool(_player_ref.get("_grapple_valid"))
+	elif _grapple_hint:
+		_grapple_hint.visible = false
 	_cross_spread = lerpf(_cross_spread, target, clampf(14.0 * delta, 0.0, 1.0))
 	var s := _cross_spread
 	# Base tick rect is the 5..12 px gap from centre; shift it out by `s`.
@@ -921,6 +954,7 @@ func _on_ammo_changed(mag: int, reserve: int) -> void:
 	_refresh_ammo_visual(reserve)
 
 func _on_weapon_changed(w: Weapon) -> void:
+	_current_weapon = w
 	if w and w.data:
 		weapon_label.text = w.data.display_name
 		_mag_size = maxi(1, w.eff_mag_size()) # upgrades grow the bar's full scale

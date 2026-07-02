@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dxk8n2q6m4v9t"]
+[ext_resource type="Script" path="res://tests/mantle_kick_probe.gd" id="1"]
+[node name="MantleKickProbe" type="Node3D"]
+script = ExtResource("1")

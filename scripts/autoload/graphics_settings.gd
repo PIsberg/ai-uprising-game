@@ -62,6 +62,18 @@ var flash_intensity: float = 1.0
 ## softer in the distance). Lets you keep effects low for perf without the blur.
 var render_scale: float = 1.0
 
+## Named color-grade presets applied by the post-process shader: [tint (R,G,B),
+## contrast, saturation]. NEUTRAL is a no-op; the rest each push a distinct mood.
+enum ColorGrade { NEUTRAL, COLD_STEEL, WARM_AMBER, HIGH_CONTRAST }
+const COLOR_GRADE_LABELS := ["Neutral", "Cold Steel", "Warm Amber", "High Contrast"]
+const COLOR_GRADE_PARAMS := {
+	ColorGrade.NEUTRAL:       {"tint": Color(1.0, 1.0, 1.0), "contrast": 1.0, "saturation": 1.0},
+	ColorGrade.COLD_STEEL:    {"tint": Color(0.9, 0.97, 1.06), "contrast": 1.08, "saturation": 0.88},
+	ColorGrade.WARM_AMBER:    {"tint": Color(1.08, 0.98, 0.85), "contrast": 1.05, "saturation": 1.05},
+	ColorGrade.HIGH_CONTRAST: {"tint": Color(1.0, 1.0, 1.0), "contrast": 1.28, "saturation": 1.15},
+}
+var color_grade: ColorGrade = ColorGrade.NEUTRAL
+
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
 const SETTINGS_PATH := "user://settings.cfg"
@@ -218,6 +230,12 @@ func set_flash_intensity(v: float) -> void:
 func set_render_scale(v: float) -> void:
 	render_scale = clampf(v, 0.5, 1.0)
 	_apply_viewport()
+	_save_settings()
+
+## Switches the color-grade preset live and persists it.
+func set_color_grade(v: int) -> void:
+	color_grade = clampi(v, 0, ColorGrade.size() - 1) as ColorGrade
+	_apply_to_live_post_process()
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
@@ -548,6 +566,7 @@ func _load_settings() -> void:
 		screen_shake = float(cf.get_value("graphics_adv", "screen_shake", 1.0))
 		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
 		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
+		color_grade = clampi(int(cf.get_value("graphics_adv", "color_grade", ColorGrade.NEUTRAL)), 0, ColorGrade.size() - 1) as ColorGrade
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -573,5 +592,6 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "screen_shake", screen_shake)
 	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
 	cf.set_value("video", "render_scale", render_scale)
+	cf.set_value("graphics_adv", "color_grade", int(color_grade))
 
 	cf.save(SETTINGS_PATH)

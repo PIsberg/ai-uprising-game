@@ -73,6 +73,8 @@ func _build_extra_settings() -> void:
 	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
 	_settings.add_child(post_proc)
 
+	_add_color_grade_row()
+
 	var area_lights := CheckButton.new()
 	area_lights.text = tr("Soft Area Lights (HIGH/ULTRA)")
 	area_lights.custom_minimum_size = Vector2(360, 44)
@@ -130,6 +132,25 @@ func _build_extra_settings() -> void:
 	# Keep the Back button at the bottom of the panel.
 	if back:
 		_settings.move_child(back, _settings.get_child_count() - 1)
+
+## Color-grade picker: an OptionButton over GraphicsSettings' named presets,
+## applied live so you can preview the mood shift without leaving the menu.
+func _add_color_grade_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Color Grade")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for label in GraphicsSettings.COLOR_GRADE_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = int(GraphicsSettings.color_grade)
+	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_color_grade(idx))
+	row.add_child(lbl)
+	row.add_child(opt)
+	_settings.add_child(row)
 
 ## Language picker: an OptionButton of the available locales. Changing it applies
 ## the locale immediately and reloads the menu so every runtime-built label

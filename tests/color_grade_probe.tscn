@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c8m4wjf6bqvpx"]
+[ext_resource type="Script" path="res://tests/color_grade_probe.gd" id="1"]
+[node name="ColorGradeProbe" type="Node3D"]
+script = ExtResource("1")

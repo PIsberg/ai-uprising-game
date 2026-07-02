@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dw6h9x2k4n8pt"]
+[ext_resource type="Script" path="res://tests/wallrun_probe.gd" id="1"]
+[node name="WallRunProbe" type="Node3D"]
+script = ExtResource("1")

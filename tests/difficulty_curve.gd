@@ -15,6 +15,13 @@ const THREAT := {
 	"dog": 9.8, "server": 12.6,
 	"colossus": 105.0, "titan": 93.0, "overseer": 59.5, "archon": 95.0,
 	"terminator": 32.0, "smasher": 120.0,
+	# Measured via enemy_eval_probe.tscn. shark's live DPS reads 0 there — its
+	# breach attack needs an actual water surface to trigger, which the eval rig's
+	# dry flat plane doesn't provide — so its figure is hand-derived instead:
+	# bite_damage 28 / ~2.9s average breach cycle (enemy_shark.gd) + hp/40.
+	"fishbot": 21.8, "shark": 13.0,
+	"warbot": 23.0, "enforcer": 9.0, "ripper": 15.0, "whirlwind": 28.7,
+	"optic": 7.1, "roller": 16.4, "gunslinger": 7.6, "breaker": 25.5,
 }
 
 func _ready() -> void:

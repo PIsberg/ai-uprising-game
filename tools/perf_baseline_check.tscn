@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c9m3x7k2n5wpq"]
+[ext_resource type="Script" path="res://tools/perf_baseline_check.gd" id="1"]
+[node name="PerfBaselineCheck" type="Node"]
+script = ExtResource("1")
