@@ -306,12 +306,22 @@ func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node)
 			_active_shooter = shooter
 			_active_aiming = aiming
 		elif just_pressed and mag <= 0 and not _reloading:
-			_play_empty()
+			if reserve > 0:
+				start_reload()
+			else:
+				_play_empty()
 		return
 	if _reloading or _cooldown > 0.0 or data == null:
 		return
 	if mag <= 0:
-		if just_pressed:
+		# Pulling the trigger on an empty mag reloads by itself when there are
+		# rounds in reserve — dry-clicking mid-brawl because you forgot R is
+		# friction, not challenge. (Playtest: died at first contact with 84
+		# rounds in reserve and an empty pistol.) Truly dry guns still click;
+		# the manager's auto-switch covers those.
+		if trigger_down and reserve > 0:
+			start_reload()
+		elif just_pressed:
 			_play_empty()
 		return
 	match data.fire_mode:
