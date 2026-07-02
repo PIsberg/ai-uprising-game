@@ -814,13 +814,24 @@ func _beveled_box(size: Vector3) -> BeveledBoxMesh:
 	bm.bevel = clampf(min_d * 0.06, 0.01, 0.08)
 	return bm
 
+static var _color_mat_cache: Dictionary = {}
+
 ## A simple opaque PBR material from a colour — used for tinted floors and the
 ## suburban house bodies (so outdoor levels don't read as grey metal boxes).
+## Cached by (color, roughness): callers ask for the same handful of colours
+## across dozens of individual props/platforms/walls per level, and a fresh
+## StandardMaterial3D per call gives every one of those objects a distinct
+## material resource — which stops Godot's renderer from batching them,
+## turning cheap identical props into their own separate draw call each.
 func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3D:
+	var key := "%s|%.3f" % [color, roughness]
+	if _color_mat_cache.has(key):
+		return _color_mat_cache[key]
 	var m := StandardMaterial3D.new()
 	m.albedo_color = color
 	m.roughness = roughness
 	m.metallic = 0.0
+	_color_mat_cache[key] = m
 	return m
 
 static var _asphalt_mat: StandardMaterial3D = null
@@ -966,7 +977,9 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 	cs.shape = bs
 	body.add_child(mi)
 	body.add_child(cs)
-	add_child(body)
+	# Under the navmesh region so the ramp SURFACE bakes as a walkable route —
+	# see _add_collider_box: ramps/stairs/towers were invisible to pathfinding.
+	(_nav_region if _nav_region else self).add_child(body)
 
 ## Connect two points with a ramp the player can walk straight up — `from` (low)
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
@@ -1045,8 +1058,13 @@ func _build_platforms(def: Dictionary) -> void:
 			mat = _color_material(p["color"])
 		_add_collider_box(p["pos"], p["size"], mat)
 
-## A solid collidable box under the builder root (not the navmesh) — used for
-## elevated rooftops/overpasses the player can stand on.
+## A solid collidable box parented under the navmesh region so its walkable TOP
+## bakes into the navmesh — platforms, tower landings and bridge decks are
+## real routes (enemies chase across them, and a deck bridging a hazard keeps
+## the two banks nav-connected). These used to sit under the builder root,
+## which left every elevated surface in the game invisible to pathfinding:
+## enemies could never follow you up a ramp or across a bridge, and a
+## platform crossing over lava/water read as a hard navmesh split.
 func _add_collider_box(center: Vector3, size: Vector3, mat: Material) -> void:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
@@ -1061,7 +1079,7 @@ func _add_collider_box(center: Vector3, size: Vector3, mat: Material) -> void:
 	cs.shape = bs
 	body.add_child(mi)
 	body.add_child(cs)
-	add_child(body)
+	(_nav_region if _nav_region else self).add_child(body)
 
 # ---------- destructible props ----------
 
@@ -1708,6 +1726,22 @@ func _build_cover_trim(def: Dictionary) -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	atw.tween_property(accent_mat, "emission_energy_multiplier", 1.0, 2.4) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# One shared pip material for every cover box in the level (was built fresh
+	# per box in _dress_cover_box before), and per-box backplate/slat/band/pip
+	# elements are collected here and batched via _box_multimesh once at the
+	# end — a level can have dozens of cover crates, each previously adding 13
+	# individual draw calls (4 corner posts stay individual: they're beveled,
+	# and _box_multimesh's shared unit cube would flatten that chamfer).
+	var pip_mat := StandardMaterial3D.new()
+	pip_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pip_mat.albedo_color = col
+	pip_mat.emission_enabled = true
+	pip_mat.emission = col
+	pip_mat.emission_energy_multiplier = 4.0
+	var backplates: Array = []
+	var slats: Array = []
+	var bands: Array = []
+	var pips: Array = []
 	for w in def.get("walls", []):
 		var pos: Vector3 = w["pos"]
 		var size: Vector3 = w["size"]
@@ -1731,13 +1765,18 @@ func _build_cover_trim(def: Dictionary) -> void:
 		# barriers and tall maze dividers keep just the rim (a big grille/pip row
 		# would read wrong on a 7-14 m wall).
 		if density > 0.0 and size.y <= 4.5 and maxf(size.x, size.z) <= 4.0 and minf(size.x, size.z) >= 1.0:
-			_dress_cover_box(pos, size, col, accent_mat)
+			_dress_cover_box(pos, size, accent_mat, backplates, slats, bands, pips)
+	_box_multimesh(backplates, MAT_SEAM, false)
+	_box_multimesh(slats, MAT_TRIM, false)
+	_box_multimesh(bands, accent_mat, false)
+	_box_multimesh(pips, pip_mat, false)
 
 ## Turns a bare cover block into a piece of machinery: four dark corner posts (a
 ## framed-cabinet read), a recessed vent grille on the face toward the arena
 ## centre, a near-flush theme-coloured accent groove around the body, and a row
 ## of bright status pips beside the grille. All visual-only (no colliders).
-func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color, accent: Material) -> void:
+func _dress_cover_box(pos: Vector3, size: Vector3, accent: Material,
+		backplates: Array, slats_out: Array, bands: Array, pips: Array) -> void:
 	var half := size * 0.5
 	# Front = the face toward the arena centre (origin) — what the player approaches.
 	var to_origin := Vector3(0, pos.y, 0) - pos
@@ -1760,18 +1799,15 @@ func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color, accent: Materia
 			_add_detail_mesh(post, Vector3(pos.x + sx * (half.x - post_w * 0.4), pos.y, pos.z + sz * (half.z - post_w * 0.4)), 0.0)
 
 	# 2) Recessed vent grille (dark backplate + horizontal slats) on the front face.
+	# Collected into the caller's shared arrays and drawn as one MultiMesh per
+	# element type across the whole level, instead of one draw call per box —
+	# a level can have dozens of cover crates, each contributing 6 of these.
 	var grille_w := minf(width * 1.4, width * 2.0 - 0.5)
-	var back := BoxMesh.new()
-	back.size = Vector3(grille_w, size.y * 0.5, 0.04)
-	back.material = MAT_SEAM
-	_add_detail_mesh(back, face_center + Vector3(0, -size.y * 0.05, 0), face_yaw)
+	backplates.append({"pos": face_center + Vector3(0, -size.y * 0.05, 0), "size": Vector3(grille_w, size.y * 0.5, 0.04), "yaw": face_yaw})
 	var n_slats := 5
 	for i in n_slats:
 		var sy := -size.y * 0.05 + (float(i) / float(n_slats - 1) - 0.5) * size.y * 0.42
-		var slat := BoxMesh.new()
-		slat.size = Vector3(grille_w - 0.1, 0.05, 0.07)
-		slat.material = MAT_TRIM
-		_add_detail_mesh(slat, face_center + Vector3(0, sy, 0) + face_n * 0.02, face_yaw)
+		slats_out.append({"pos": face_center + Vector3(0, sy, 0) + face_n * 0.02, "size": Vector3(grille_w - 0.1, 0.05, 0.07), "yaw": face_yaw})
 
 	# 3) Theme accent groove around all four faces, at mid-body, near flush.
 	#    Uses the shared breathing material so all cover pulses in sync.
@@ -1780,24 +1816,12 @@ func _dress_cover_box(pos: Vector3, size: Vector3, theme: Color, accent: Materia
 		var nx := absf(nrm.x) > 0.5
 		var bd := half.x if nx else half.z
 		var bw := (half.z if nx else half.x) * 2.0 - post_w * 2.2
-		var band := BoxMesh.new()
-		band.size = Vector3(bw, 0.05, 0.015)
-		band.material = accent
-		_add_detail_mesh(band, pos + nrm * (bd + 0.006) + Vector3(0, band_dy, 0), 0.0 if nx else PI * 0.5)
+		bands.append({"pos": pos + nrm * (bd + 0.006) + Vector3(0, band_dy, 0), "size": Vector3(bw, 0.05, 0.015), "yaw": 0.0 if nx else PI * 0.5})
 
 	# 4) Status pips: a short row of bright theme-coloured lights by the grille top.
-	var pip := StandardMaterial3D.new()
-	pip.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	pip.albedo_color = theme
-	pip.emission_enabled = true
-	pip.emission = theme
-	pip.emission_energy_multiplier = 4.0
 	var tangent := Vector3(0, 0, 1) if on_x else Vector3(1, 0, 0)
 	for i in 3:
-		var dot := BoxMesh.new()
-		dot.size = Vector3(0.12, 0.12, 0.05)
-		dot.material = pip
-		_add_detail_mesh(dot, face_center + tangent * (width - 0.35 - float(i) * 0.28) + Vector3(0, half.y - 0.3, 0) + face_n * 0.02, face_yaw)
+		pips.append({"pos": face_center + tangent * (width - 0.35 - float(i) * 0.28) + Vector3(0, half.y - 0.3, 0) + face_n * 0.02, "size": Vector3(0.12, 0.12, 0.05), "yaw": face_yaw})
 
 ## Panel seams ruled across interior floors: thin recess-dark strips every few
 ## metres in both axes. Breaks the monotony of a large single-material slab and
@@ -2031,6 +2055,19 @@ func _facility_wall_fittings(fs: Vector2, density: float) -> void:
 		{"c": Vector3(hx - 0.55, 0, 0), "n": Vector3(-1, 0, 0), "len": fs.y, "yaw": -PI * 0.5},
 	]
 	var step := 9.0 / maxf(density, 0.34)
+	# Collected per shared-material batch instead of one MeshInstance3D per
+	# fitting — a facility wall can carry dozens of vents/LEDs/blinkenlights,
+	# each previously its own draw call. Batched via _box_multimesh (the same
+	# technique the floor tech-grid already uses). Junction boxes/server plates
+	# stay individual: they use _beveled_box, and _box_multimesh's shared unit
+	# cube would flatten their chamfered edges.
+	var vent_frames: Array = []
+	var vent_slats: Array = []
+	var leds: Dictionary = {}   # palette index -> Array of box dicts
+	var dots: Dictionary = {}   # palette index -> Array of box dicts
+	var led_palette := [Color(0.3, 1, 0.4), Color(1, 0.7, 0.2), Color(1, 0.3, 0.3)]
+	var dot_palette := [Color(0.3, 1, 0.45), Color(0.3, 0.7, 1), Color(1, 0.75, 0.2), Color(1, 0.35, 0.3)]
+
 	for w in walls:
 		var c: Vector3 = w["c"]
 		var n: Vector3 = w["n"]
@@ -2043,24 +2080,17 @@ func _facility_wall_fittings(fs: Vector2, density: float) -> void:
 			var base := c + along * x
 			match k % 4:
 				0:  # vent grille at chest height
-					var vent := BoxMesh.new()
-					vent.size = Vector3(1.1, 0.8, 0.12)
-					vent.material = MAT_TRIM
-					_add_detail_mesh(vent, base + n * 0.08 + Vector3(0, 2.0, 0), yaw)
+					vent_frames.append({"pos": base + n * 0.08 + Vector3(0, 2.0, 0), "size": Vector3(1.1, 0.8, 0.12), "yaw": yaw})
 					for s in 3:
-						var slat := BoxMesh.new()
-						slat.size = Vector3(0.95, 0.07, 0.05)
-						slat.material = MAT_PROP
-						_add_detail_mesh(slat, base + n * 0.12 + Vector3(0, 1.78 + s * 0.22, 0), yaw)
+						vent_slats.append({"pos": base + n * 0.12 + Vector3(0, 1.78 + s * 0.22, 0), "size": Vector3(0.95, 0.07, 0.05), "yaw": yaw})
 				1:  # junction box with a small status LED
 					var jb := _beveled_box(Vector3(0.5, 0.65, 0.22))
 					jb.material = MAT_PROP_B
 					_add_detail_mesh(jb, base + n * 0.11 + Vector3(0, 1.7, 0), yaw)
-					var led_col: Color = [Color(0.3, 1, 0.4), Color(1, 0.7, 0.2), Color(1, 0.3, 0.3)][k % 3]
-					var led := BoxMesh.new()
-					led.size = Vector3(0.09, 0.09, 0.05)
-					led.material = _emissive_material(led_col, 2.4)
-					_add_detail_mesh(led, base + n * 0.2 + Vector3(0, 1.86, 0), yaw)
+					var li := k % 3
+					if not leds.has(li):
+						leds[li] = []
+					leds[li].append({"pos": base + n * 0.2 + Vector3(0, 1.86, 0), "size": Vector3(0.09, 0.09, 0.05), "yaw": yaw})
 				2:  # conduit riser up the wall with bracket bumps
 					var pipe := CylinderMesh.new()
 					pipe.top_radius = 0.07
@@ -2077,20 +2107,26 @@ func _facility_wall_fittings(fs: Vector2, density: float) -> void:
 					var plate := _beveled_box(Vector3(1.3, 1.4, 0.12))
 					plate.material = MAT_SEAM
 					_add_detail_mesh(plate, base + n * 0.08 + Vector3(0, 2.2, 0), yaw)
-					var palette := [Color(0.3, 1, 0.45), Color(0.3, 0.7, 1), Color(1, 0.75, 0.2), Color(1, 0.35, 0.3)]
 					for row in 4:
 						for coli in 3:
 							# A scattered on/off + colour pattern so panels read distinct.
 							if (row * 3 + coli + k) % 4 == 0:
 								continue
-							var dot := BoxMesh.new()
-							dot.size = Vector3(0.1, 0.1, 0.04)
-							dot.material = _emissive_material(palette[(row + coli + k) % palette.size()], 2.6)
+							var di := (row + coli + k) % dot_palette.size()
+							if not dots.has(di):
+								dots[di] = []
 							var dx := lerpf(-0.42, 0.42, coli / 2.0)
 							var dy := lerpf(1.72, 2.68, row / 3.0)
-							_add_detail_mesh(dot, base + n * 0.16 + along * dx + Vector3(0, dy, 0), yaw)
+							dots[di].append({"pos": base + n * 0.16 + along * dx + Vector3(0, dy, 0), "size": Vector3(0.1, 0.1, 0.04), "yaw": yaw})
 			x += step
 			k += 1
+
+	_box_multimesh(vent_frames, MAT_TRIM, false)
+	_box_multimesh(vent_slats, MAT_PROP, false)
+	for li in leds:
+		_box_multimesh(leds[li], _emissive_material(led_palette[li], 2.4), false)
+	for di in dots:
+		_box_multimesh(dots[di], _emissive_material(dot_palette[di], 2.6), false)
 
 ## Painted hazard chevrons inset from the perimeter — emissive caution stripes
 ## that catch the level's lighting and sell an industrial deck. A ">" of two
@@ -2145,7 +2181,14 @@ func _strut(a: Vector3, b: Vector3, radius: float, mat: Material) -> void:
 	add_child(mi)
 
 ## A cached unshaded-ish emissive material (panel LEDs, hazard paint, hot cables).
+static var _emissive_mat_cache: Dictionary = {}
+
+## Cached by (color, energy) — same reasoning as _color_material: detail passes
+## request the same handful of LED/blinkenlight colours across many fittings.
 func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
+	var key := "%s|%.2f" % [color, energy]
+	if _emissive_mat_cache.has(key):
+		return _emissive_mat_cache[key]
 	var m := StandardMaterial3D.new()
 	m.albedo_color = color
 	m.roughness = 0.6
@@ -2153,6 +2196,7 @@ func _emissive_material(color: Color, energy: float) -> StandardMaterial3D:
 	m.emission_enabled = true
 	m.emission = color
 	m.emission_energy_multiplier = energy
+	_emissive_mat_cache[key] = m
 	return m
 
 ## Scatter volumetric-billboard trees across an outdoor level (def "trees": N).

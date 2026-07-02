@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://c4h7k9m2n6qwt"]
+[ext_resource type="Script" path="res://tests/enemy_proj_hit_probe.gd" id="1"]
+[node name="EnemyProjHitProbe" type="Node3D"]
+script = ExtResource("1")

@@ -111,6 +111,45 @@ var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights 
 @export var mantle_max_h: float = 1.7  ## highest ledge you can pull yourself onto
 @export var mantle_reach: float = 0.95 ## how far ahead the ledge face can be
 var _mantle_cd: float = 0.0
+
+# Wall-running: sprint at a vertical wall while airborne to latch on and run
+# along it (gravity eased, not cancelled), then jump off it for extra height/
+# distance — or chain into another wall. No extra button: it engages the
+# instant you're airborne, fast enough, and closing on a wall face.
+@export_group("Wall Run")
+@export var wall_run_speed: float = 8.5
+@export var wall_run_duration: float = 1.0 ## max seconds attached before gravity wins
+@export var wall_run_gravity: float = 7.0 ## eased fall rate while attached (vs. full gravity)
+@export var wall_run_min_speed: float = 3.0 ## horizontal speed needed to latch on
+@export var wall_jump_speed: float = 8.5 ## push-off velocity away from the wall
+@export var wall_run_reattach_cd: float = 0.35 ## grace before the same/next wall can grab you again
+var _wall_running: bool = false
+var _wall_run_time: float = 0.0
+var _wall_run_cd: float = 0.0
+var _wall_normal: Vector3 = Vector3.ZERO
+var _wall_run_dir: Vector3 = Vector3.ZERO
+var _wall_lean: float = 0.0 ## smoothed camera roll into the wall while running
+
+# Grapple hook: fire an energy tether (C / gamepad LB) at world geometry and
+# winch toward it, keeping momentum on release — the fling is the payoff.
+# Completes the traversal kit: dash covers ground, wall-run covers walls,
+# mantle covers ledges, the grapple covers everything you can SEE.
+@export_group("Grapple")
+@export var grapple_range: float = 45.0
+@export var grapple_winch_speed: float = 24.0 ## top pull speed along the tether
+@export var grapple_winch_accel: float = 55.0 ## how hard the winch reels you in
+@export var grapple_min_dist: float = 2.6 ## auto-release when this close to the anchor
+@export var grapple_cooldown: float = 0.7
+var _grappling: bool = false
+var _grapple_point: Vector3 = Vector3.ZERO
+var _grapple_cd: float = 0.0
+var _grapple_valid: bool = false ## HUD reticle cue: a grapple anchor is in range right now.
+var _gv_t: float = 0.0 ## throttle for the validity raycast
+var _tether: Node3D = null
+var _tether_beam: MeshInstance3D = null
+var _tether_core: MeshInstance3D = null
+var _tether_orb: MeshInstance3D = null
+
 var _sliding: bool = false
 var _slide_time: float = 0.0
 var _fov_base: float = 0.0
@@ -143,6 +182,7 @@ func _ready() -> void:
 	_fov_base = camera.fov
 	_register_dash_action()
 	_register_melee_action()
+	_register_grapple_action()
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -211,9 +251,16 @@ func _update_dof() -> void:
 ## Sprint speed-warp: feed the post shader a 0..1 value that radial-streaks the
 ## screen edges the faster you run.
 func _handle_speed_warp(delta: float) -> void:
-	var speed := Vector2(velocity.x, velocity.z).length()
+	# Grapple pulls are often mostly vertical, so measure full 3D speed there;
+	# ground states keep the horizontal read (falling shouldn't streak).
+	var speed := velocity.length() if _grappling else Vector2(velocity.x, velocity.z).length()
 	var sprinting := Input.is_action_pressed("sprint") and is_on_floor() and not _is_crouching
-	var target := clampf(speed / sprint_speed, 0.0, 1.0) if sprinting else 0.0
+	# Dashing (20 m/s), wall-running (8.5 m/s, near sprint speed) and the grapple
+	# winch (24 m/s) are at least as fast as a sprint, but previously never
+	# triggered the radial streak — only grounded sprinting did, so the fastest
+	# movement states looked static.
+	var fast_state := sprinting or _dash_time > 0.0 or _wall_running or _grappling
+	var target := clampf(speed / sprint_speed, 0.0, 1.0) if fast_state else 0.0
 	# OVERDRIVE keeps the radial speed-streaks up the whole time it's active.
 	if GameState.overdrive_active():
 		target = maxf(target, 0.55)
@@ -240,8 +287,13 @@ func _apply_user_settings() -> void:
 func update_post_process_settings() -> void:
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	if gs and _post_overlay and _post_overlay.material is ShaderMaterial:
+		var sm := _post_overlay.material as ShaderMaterial
 		var enabled := bool(gs.get("advanced_post_process_enabled"))
-		(_post_overlay.material as ShaderMaterial).set_shader_parameter("advanced_post_process_enabled", enabled)
+		sm.set_shader_parameter("advanced_post_process_enabled", enabled)
+		var params: Dictionary = gs.COLOR_GRADE_PARAMS.get(gs.color_grade, {})
+		sm.set_shader_parameter("grade_tint", params.get("tint", Color.WHITE))
+		sm.set_shader_parameter("grade_contrast", params.get("contrast", 1.0))
+		sm.set_shader_parameter("grade_saturation", params.get("saturation", 1.0))
 
 var _hurt_cd: float = 0.0
 
@@ -326,6 +378,8 @@ func _physics_process(delta: float) -> void:
 	_handle_grenade(delta)
 	_handle_stance(delta)
 	_handle_mantle(delta)
+	_handle_wall_run(delta)
+	_handle_grapple(delta)
 	_handle_movement(delta)
 	_handle_camera_feel(delta)
 	if not is_on_floor():
@@ -356,6 +410,23 @@ func _register_melee_action() -> void:
 		var pad := InputEventJoypadButton.new()
 		pad.button_index = JOY_BUTTON_B
 		InputMap.action_add_event("melee", pad)
+
+var _wh_kick_tween: Tween ## Tracks the last dash/landing viewmodel kick so overlapping kicks don't fight over weapon_holder.position.
+
+## A quick viewmodel punch on weapon_holder (dash/landing) — snapshots the
+## current position as "home", kicks out to it, then springs back. Melee has
+## its own inline version of this same pattern; kept separate since kicks that
+## land close together (e.g. a hard fall right after a dash) would otherwise
+## fight over weapon_holder.position if they shared one tween.
+func _kick_weapon_holder(offset: Vector3, out_time: float, back_time: float) -> void:
+	if weapon_holder == null:
+		return
+	if _wh_kick_tween and _wh_kick_tween.is_valid():
+		_wh_kick_tween.kill()
+	var home := weapon_holder.position
+	_wh_kick_tween = create_tween()
+	_wh_kick_tween.tween_property(weapon_holder, "position", home + offset, out_time)
+	_wh_kick_tween.tween_property(weapon_holder, "position", home, back_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 ## Frontal shove: a cone-of-influence kick that damages + knocks back every
 ## hostile right in front of you, on a short cooldown. Your get-off-me button.
@@ -451,6 +522,10 @@ func _handle_dash(delta: float) -> void:
 		_fov_kick = 9.0
 		shake(0.22)
 		AudioBus.play_synth_at("grenade_throw", global_position, -8.0, 1.5)
+		# The gun lags behind the sudden lunge (a snap-back drag toward the player,
+		# opposite the melee jab's forward punch) so the dash reads in first person
+		# instead of just being a camera/velocity trick.
+		_kick_weapon_holder(Vector3(0, -0.03, 0.1), 0.05, 0.24)
 
 ## GOD-mode cheat: flip the player's invulnerability. Topped up to full health on
 ## enable so a near-dead tester is instantly safe. Feedback via the HUD toast
@@ -596,6 +671,10 @@ func add_grenade(amount: int = 1, kind: int = GrenadeType.FRAG) -> void:
 	_sync_grenades()
 
 func _apply_gravity(delta: float) -> void:
+	if _wall_running:
+		return  # _update_wall_run owns velocity.y with its own eased fall rate
+	if _grappling:
+		return  # the winch is taut — _update_grapple owns the pull
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 
@@ -681,6 +760,9 @@ func _handle_mantle(delta: float) -> void:
 		return
 	# Pull up: just enough upward velocity to crest the lip with margin, plus a
 	# forward carry so you flow onto the platform instead of catching the edge.
+	_wall_running = false  # a mantle takes priority over an in-progress wall-run
+	if _grappling:
+		_end_grapple() # grapple to a ledge lip → crest it instead of winching into the face
 	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 	velocity.y = sqrt(2.0 * g * (h + 0.35))
 	var carry := maxf(walk_speed, into + 2.0)
@@ -690,6 +772,258 @@ func _handle_mantle(delta: float) -> void:
 	_fov_kick = maxf(_fov_kick, 4.0)
 	shake(0.12)
 	AudioBus.play_synth_at("footstep", global_position, -5.0, 0.7)
+	# The gun dips down and forward as if bracing/hauling on the ledge, then
+	# springs back up as you crest it — previously a mantle was a pure camera +
+	# velocity trick with no viewmodel read at all.
+	_kick_weapon_holder(Vector3(0, -0.09, 0.05), 0.1, 0.32)
+
+## Wall-run: airborne, moving fast enough and closing on a side wall latches you
+## onto it — you run along the surface with eased (not zero) gravity until the
+## timer runs out, the wall ends, or you jump off it for a wall-jump. Mirrors
+## the mantle's raycast-a-wall-face approach so it reads as the same movement
+## "language" as the rest of the traversal kit.
+func _handle_wall_run(delta: float) -> void:
+	_wall_run_cd = maxf(0.0, _wall_run_cd - delta)
+	if _wall_running:
+		if _dash_time > 0.0 or _sliding:
+			_end_wall_run()  # dash/slide take over velocity — don't fight them
+			return
+		_update_wall_run(delta)
+		return
+	if is_on_floor() or _wall_run_cd > 0.0 or _dash_time > 0.0 or _sliding or _is_crouching:
+		return
+	if velocity.y > 2.0:
+		return  # still rocketing up off a jump — let the arc peak first
+	if Vector2(velocity.x, velocity.z).length() < wall_run_min_speed:
+		return
+	var normal := _find_wall_side()
+	if normal != Vector3.ZERO:
+		_start_wall_run(normal)
+
+## Raycasts to each side at chest height for a roughly-vertical wall face within
+## reach. Returns its surface normal, or ZERO if neither side has one.
+func _find_wall_side() -> Vector3:
+	var origin := global_position + Vector3.UP * 0.9
+	var space := get_world_3d().direct_space_state
+	for side_dir in [global_transform.basis.x, -global_transform.basis.x]:
+		var q := PhysicsRayQueryParameters3D.create(origin, origin + side_dir * 0.85)
+		q.collision_mask = 0b0000001  # world
+		q.exclude = [get_rid()]
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty() and absf((hit["normal"] as Vector3).y) < 0.35:
+			return hit["normal"]
+	return Vector3.ZERO
+
+func _start_wall_run(normal: Vector3) -> void:
+	_wall_running = true
+	_wall_run_time = wall_run_duration
+	_wall_normal = normal
+	# Run along whichever tangent direction is closer to the speed you hit the
+	# wall with, so approaching at an angle carries you forward along it
+	# instead of stalling dead against the surface.
+	var tangent := normal.cross(Vector3.UP).normalized()
+	if tangent.dot(Vector3(velocity.x, 0.0, velocity.z)) < 0.0:
+		tangent = -tangent
+	_wall_run_dir = tangent
+	velocity.y = maxf(velocity.y, 1.5)  # a little hop onto the surface
+	_fov_kick = maxf(_fov_kick, 5.0)
+	shake(0.1)
+	AudioBus.play_synth_at("footstep", global_position, -6.0, 1.05)
+
+func _update_wall_run(delta: float) -> void:
+	_wall_run_time -= delta
+	var jump_pressed := Input.is_action_just_pressed("jump")
+	# Re-probe the wall each frame: running off the end of it (or it curving
+	# away) drops you rather than leaving you glued in mid-air.
+	var origin := global_position + Vector3.UP * 0.9
+	var q := PhysicsRayQueryParameters3D.create(origin, origin - _wall_normal * 0.85)
+	q.collision_mask = 0b0000001
+	q.exclude = [get_rid()]
+	var still_attached := not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+	if is_on_floor() or _wall_run_time <= 0.0 or not still_attached or jump_pressed:
+		if jump_pressed and not is_on_floor():
+			_wall_jump()
+		else:
+			_end_wall_run()
+		return
+	velocity.x = _wall_run_dir.x * wall_run_speed
+	velocity.z = _wall_run_dir.z * wall_run_speed
+	velocity.y = maxf(velocity.y - wall_run_gravity * delta, -3.0)
+	_wall_lean = move_toward(_wall_lean, 1.0, 6.0 * delta)
+
+func _end_wall_run() -> void:
+	_wall_running = false
+	_wall_run_cd = wall_run_reattach_cd
+
+## Kicks you off the wall (out along its normal + up + a carry along the run
+## direction) instead of just detaching — the payoff for timing the jump.
+func _wall_jump() -> void:
+	_wall_running = false
+	_wall_run_cd = wall_run_reattach_cd
+	velocity = _wall_normal * wall_jump_speed + Vector3.UP * (jump_velocity * 0.95) + _wall_run_dir * (wall_run_speed * 0.4)
+	_fov_kick = maxf(_fov_kick, 8.0)
+	shake(0.2)
+	AudioBus.play_synth_at("footstep", global_position, -3.0, 1.3)
+
+## Registers the grapple action (C + gamepad LB) at runtime, same pattern as
+## dash/melee — no project input-map edit needed.
+func _register_grapple_action() -> void:
+	if not InputMap.has_action("grapple"):
+		InputMap.add_action("grapple")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_C
+		InputMap.action_add_event("grapple", ev)
+		var pad := InputEventJoypadButton.new()
+		pad.button_index = JOY_BUTTON_LEFT_SHOULDER
+		InputMap.action_add_event("grapple", pad)
+
+## Grapple hook: press to fire an energy tether at whatever world geometry the
+## crosshair is on (within range); the winch reels you toward the anchor,
+## preserving momentum on release so you can fling off the top of the arc.
+## Release by pressing again, jumping (adds a pop), dashing, or arriving.
+func _handle_grapple(delta: float) -> void:
+	_grapple_cd = maxf(0.0, _grapple_cd - delta)
+	if _grappling:
+		if _dash_time > 0.0 or _sliding:
+			_end_grapple() # dash/slide own velocity — the tether lets go
+			return
+		_update_grapple(delta)
+		return
+	# HUD reticle cue: throttled probe for "an anchor is under the crosshair".
+	_gv_t -= delta
+	if _gv_t <= 0.0:
+		_gv_t = 0.12
+		_grapple_valid = _grapple_cd <= 0.0 and not _grapple_ray().is_empty()
+	if _grapple_cd > 0.0 or not Input.is_action_just_pressed("grapple"):
+		return
+	var hit := _grapple_ray()
+	if hit.is_empty():
+		AudioBus.play_synth_ui("empty_click", -10.0, 1.5) # dry click: nothing in range
+		return
+	_grappling = true
+	_wall_running = false # tether overrides an in-progress wall-run
+	_grapple_point = hit["position"]
+	_grapple_valid = false
+	_build_tether()
+	_fov_kick = maxf(_fov_kick, 6.0)
+	shake(0.15)
+	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.9) # launcher snap
+	AudioBus.play_synth_at("impact_metal", _grapple_point, -6.0, 1.4)   # anchor bite
+
+## Camera-forward world-geometry ray for the grapple (empty Dictionary = no anchor).
+func _grapple_ray() -> Dictionary:
+	var origin := camera.global_position
+	var q := PhysicsRayQueryParameters3D.create(origin, origin - camera.global_transform.basis.z * grapple_range)
+	q.collision_mask = 0b0000001 # world only — robots are not zip-line posts
+	q.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(q)
+
+func _update_grapple(delta: float) -> void:
+	var to := _grapple_point - global_position
+	var dist := to.length()
+	var jump_pressed := Input.is_action_just_pressed("jump")
+	if dist <= grapple_min_dist or Input.is_action_just_pressed("grapple") or jump_pressed:
+		if jump_pressed:
+			velocity.y = maxf(velocity.y, jump_velocity * 0.9) # release pop off the arc
+			_fov_kick = maxf(_fov_kick, 6.0)
+		_end_grapple()
+		return
+	# Winch: accelerate along the tether toward the anchor. Existing sideways
+	# momentum is kept (not cancelled), so approaches curve into a swing and a
+	# late release flings you — that carry is the whole point of the hook.
+	var dir := to / dist
+	velocity = velocity.move_toward(dir * grapple_winch_speed, grapple_winch_accel * delta)
+	_wall_lean = 0.0
+	_update_tether()
+
+func _end_grapple() -> void:
+	_grappling = false
+	_grapple_cd = grapple_cooldown
+	if is_instance_valid(_tether):
+		_tether.queue_free()
+	_tether = null
+	AudioBus.play_synth_at("footstep", global_position, -8.0, 1.6)
+
+## The visible tether: a thin additive cyan energy beam from low-right of the
+## camera (a wrist launcher) to the anchor, plus a glow orb biting the surface.
+## Parented to the player (top_level, world-space) so it can never outlive us.
+func _build_tether() -> void:
+	_tether = Node3D.new()
+	_tether.top_level = true
+	add_child(_tether)
+	var col := Color(0.35, 0.9, 1.0)
+	# Double-layer beam like the weapons' energy-beam flash: a fat translucent
+	# glow tube wrapping a white-hot core — a single hair-thin additive tube
+	# washed out to invisible against bright surfaces.
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.055
+	cm.bottom_radius = 0.055
+	cm.height = 1.0
+	cm.radial_segments = 8
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.55)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 6.0
+	cm.material = mat
+	_tether_beam = MeshInstance3D.new()
+	_tether_beam.mesh = cm
+	_tether_beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_tether.add_child(_tether_beam)
+	var core_mesh := CylinderMesh.new()
+	core_mesh.top_radius = 0.02
+	core_mesh.bottom_radius = 0.02
+	core_mesh.height = 1.0
+	core_mesh.radial_segments = 6
+	var core_mat := StandardMaterial3D.new()
+	core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	core_mat.albedo_color = Color(1, 1, 1)
+	core_mat.emission_enabled = true
+	core_mat.emission = col.lerp(Color.WHITE, 0.6)
+	core_mat.emission_energy_multiplier = 12.0
+	core_mesh.material = core_mat
+	_tether_core = MeshInstance3D.new()
+	_tether_core.mesh = core_mesh
+	_tether_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_tether.add_child(_tether_core)
+	var sm := SphereMesh.new()
+	sm.radius = 0.22; sm.height = 0.44; sm.radial_segments = 8; sm.rings = 5
+	var omat := mat.duplicate() as StandardMaterial3D
+	omat.albedo_color = Color(col.r, col.g, col.b, 0.9)
+	omat.emission_energy_multiplier = 9.0
+	sm.material = omat
+	_tether_orb = MeshInstance3D.new()
+	_tether_orb.mesh = sm
+	_tether_orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_tether.add_child(_tether_orb)
+	# A light at the anchor so the bite point reads on the wall itself.
+	var l := OmniLight3D.new()
+	l.light_color = col
+	l.light_energy = 3.0
+	l.omni_range = 4.0
+	_tether_orb.add_child(l)
+	_update_tether()
+
+func _update_tether() -> void:
+	if _tether_beam == null or not is_instance_valid(_tether_beam):
+		return
+	# From a wrist-launcher point low-right of the view to the anchor.
+	var from: Vector3 = camera.global_position \
+		+ camera.global_transform.basis.x * 0.32 - camera.global_transform.basis.y * 0.28
+	var d := _grapple_point - from
+	var l := maxf(0.001, d.length())
+	var dn := d / l
+	var up := Vector3.UP if absf(dn.y) < 0.99 else Vector3.RIGHT
+	# Local-space Y stretch (basis * scale, NOT .scaled() which is global-space)
+	# so the unit cylinder spans exactly from wrist to anchor.
+	var basis := Basis.looking_at(dn, up) * Basis(Vector3.RIGHT, PI * 0.5) * Basis.from_scale(Vector3(1.0, l, 1.0))
+	_tether_beam.global_transform = Transform3D(basis, (from + _grapple_point) * 0.5)
+	if _tether_core and is_instance_valid(_tether_core):
+		_tether_core.global_transform = _tether_beam.global_transform
+	_tether_orb.global_position = _grapple_point
 
 func _handle_stance(delta: float) -> void:
 	var wants_crouch := Input.is_action_pressed("crouch") or _sliding
@@ -713,8 +1047,8 @@ func _current_speed() -> float:
 	return walk_speed * mult
 
 func _handle_movement(delta: float) -> void:
-	# Dash and slide fully own the horizontal velocity while active.
-	if _dash_time > 0.0 or _sliding:
+	# Dash, slide, wall-run and the grapple winch fully own velocity while active.
+	if _dash_time > 0.0 or _sliding or _wall_running or _grappling:
 		return
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -753,11 +1087,24 @@ func _handle_camera_feel(delta: float) -> void:
 	# they never interfere with mouse look pitch.
 	var local_vel := global_transform.basis.inverse() * velocity
 	var lean := clampf(-local_vel.x / sprint_speed, -1.0, 1.0) * deg_to_rad(strafe_tilt_deg)
+	if not _wall_running:
+		_wall_lean = move_toward(_wall_lean, 0.0, 6.0 * delta)
+	# Bank hard toward the wall while running along it — the clearest visual
+	# tell that you're latched on (leans the opposite way to a normal strafe).
+	var wall_side_sign := signf(global_transform.basis.x.dot(_wall_normal)) if _wall_running else 0.0
+	lean += wall_side_sign * _wall_lean * deg_to_rad(14.0)
 	_cam_roll = lerpf(_cam_roll, lean, 7.0 * delta)
 	var roll_max := deg_to_rad(max_shake_roll_deg)
 	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max
 	camera.rotation.x = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
 	camera.rotation.y = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
+	# The gun banks with the camera during a wall-run instead of staying dead-level
+	# while the world visibly tilts around it. WeaponManager (the script on
+	# weapon_holder itself) overwrites rotation.z every frame with its own
+	# sway/kick, so this feeds its external_roll input rather than assigning
+	# weapon_holder.rotation.z directly (which would just get erased).
+	if weapon_holder and "external_roll" in weapon_holder:
+		weapon_holder.external_roll = lerpf(weapon_holder.external_roll, wall_side_sign * _wall_lean * deg_to_rad(10.0), 8.0 * delta)
 
 func _check_landing() -> void:
 	if is_on_floor() and not _was_on_floor:
@@ -770,6 +1117,7 @@ func _check_landing() -> void:
 		if impact > 0.45:
 			shake(0.12 + impact * 0.24)
 			_fov_kick = maxf(_fov_kick, impact * 5.0)
+			_kick_weapon_holder(Vector3(0, -0.05 - impact * 0.07, 0), 0.05, 0.22)
 	_was_on_floor = is_on_floor()
 	_fall_speed = 0.0
 
@@ -822,6 +1170,8 @@ func _on_died(_source: Node) -> void:
 	if _dead:
 		return
 	_dead = true
+	if _grappling:
+		_end_grapple() # the tether visual must not outlive you
 	died.emit()
 	# Lock out further play: stop the weapon (and any input it reads) entirely.
 	if weapon_holder:

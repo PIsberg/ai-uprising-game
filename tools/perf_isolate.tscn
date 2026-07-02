@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://e7n9m2k5x8wqs"]
+[ext_resource type="Script" path="res://tools/perf_isolate.gd" id="1"]
+[node name="PerfIsolate" type="Node"]
+script = ExtResource("1")

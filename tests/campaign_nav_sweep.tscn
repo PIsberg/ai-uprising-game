@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dqx4h8n2m5wto"]
+[ext_resource type="Script" path="res://tests/campaign_nav_sweep.gd" id="1"]
+[node name="CampaignNavSweep" type="Node3D"]
+script = ExtResource("1")

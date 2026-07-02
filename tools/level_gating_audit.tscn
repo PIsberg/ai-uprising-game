@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://h5k2n8m4x7wqv"]
+[ext_resource type="Script" path="res://tools/level_gating_audit.gd" id="1"]
+[node name="LevelGatingAudit" type="Node"]
+script = ExtResource("1")

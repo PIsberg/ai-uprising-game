@@ -142,7 +142,11 @@ func _build_obstacle() -> void:
 		Vector3(-hx, 0, -hz), Vector3(hx, 0, -hz),
 		Vector3(hx, 0, hz), Vector3(-hx, 0, hz),
 	])
-	obs.height = 2.0
+	# Kept low (well under the ~1.2m catwalk deck height) so the carve only
+	# removes the open bed at floor level — a bridge/exit-island platform laid
+	# directly over a bed (lava_world's exit island sits above one) keeps its
+	# own navmesh instead of being eaten by this hazard's obstacle.
+	obs.height = 0.9
 	obs.affect_navigation_mesh = true   # carve the static bake
 	obs.avoidance_enabled = false       # static carve only; no RVO jitter
 	add_child(obs)

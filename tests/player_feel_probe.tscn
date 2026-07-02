@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://dj7m2n9k4x8qs"]
+[ext_resource type="Script" path="res://tests/player_feel_probe.gd" id="1"]
+[node name="PlayerFeelProbe" type="Node3D"]
+script = ExtResource("1")

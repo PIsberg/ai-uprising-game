@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://b7n4k9x3m6qws"]
+[ext_resource type="Script" path="res://tools/perf_bisect.gd" id="1"]
+[node name="PerfBisect" type="Node"]
+script = ExtResource("1")

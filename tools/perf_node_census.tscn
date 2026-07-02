@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://f4n8k2m6x9wqt"]
+[ext_resource type="Script" path="res://tools/perf_node_census.gd" id="1"]
+[node name="PerfNodeCensus" type="Node"]
+script = ExtResource("1")

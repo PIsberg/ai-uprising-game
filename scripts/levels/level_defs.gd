@@ -217,6 +217,14 @@ static func _nexus() -> Dictionary:
 			"weather": "rain",     # storm rolling over the ruined city
 			"lightning": true,
 		},
+		# Burning fuel trenches — the tutorial's routing device. One cuts the
+		# south lane so the exit approach bends east through the nexus plaza;
+		# one cuts the east flank so you can't skirt the fight along the wall.
+		# Both carve the navmesh, so the machine line uses the same lanes.
+		"lava": [
+			{"pos": Vector3(-6, 0, 14), "size": Vector2(20, 3.5), "dmg": 10.0},
+			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 16), "dmg": 10.0},
+		],
 		# Rooftop vantage + a stair of rubble slabs down into the street, plus a
 		# collapsed-slab island mid-yard you can climb for a sightline over the cars.
 		"platforms": [
@@ -224,6 +232,10 @@ static func _nexus() -> Dictionary:
 			{"pos": Vector3(-11, 1.1, -11), "size": Vector3(5, 2.2, 5)},
 			{"pos": Vector3(-7, 0.5, -7), "size": Vector3(4.5, 1.0, 4.5)},
 			{"pos": Vector3(7, 1.0, -2), "size": Vector3(6, 2.0, 6)},
+			# Collapsed slab bridging the east fire trench off the mid-yard island —
+			# a mantle-height (1.6 m) climbing shortcut across the fire line for
+			# players who spot it; the official route stays the plaza lane.
+			{"pos": Vector3(12.5, 1.4, -2), "size": Vector3(6, 0.4, 3)},
 		],
 		"ramps": [
 			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
@@ -233,6 +245,14 @@ static func _nexus() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
+			# Collapsed-slab ramps chaining the rooftop spawn down the rubble
+			# cascade to the street — the drops between slabs exceed the nav
+			# step height, so without these the roof was a navmesh island
+			# (fine to jump off, but enemies couldn't push up and any nav
+			# query from the spawn read as disconnected).
+			{"from": Vector3(-11.5, 2.2, -11.5), "to": Vector3(-13.2, 3.6, -13.2), "width": 3.0},
+			{"from": Vector3(-7.2, 1.0, -7.2), "to": Vector3(-9.2, 2.2, -9.2), "width": 3.0},
+			{"from": Vector3(-3.6, 0, -3.6), "to": Vector3(-5.4, 1.0, -5.4), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
@@ -270,13 +290,15 @@ static func _nexus() -> Dictionary:
 			{"type": "crate", "pos": Vector3(2, 0, -6)},
 			{"type": "crate", "pos": Vector3(-9, 0, 8)},
 			{"type": "fence", "pos": Vector3(-13, 0, -2), "yaw": 90},
-			{"type": "lamp", "pos": Vector3(12, 0, -10)},
+			# Lamp + hydrant nudged off the east fire trench's footprint (floor
+			# clutter inside a bed is auto-dropped — rehomed instead of lost).
+			{"type": "lamp", "pos": Vector3(10, 0, -12)},
 			# War-torn street detail: rubble piles, a toppled hydrant, sandbag line.
 			{"type": "rubble", "pos": Vector3(-2, 0, 8)},
 			{"type": "rubble", "pos": Vector3(11, 0, 2)},
 			{"type": "sandbags", "pos": Vector3(0, 0, 6), "yaw": 20},
 			{"type": "dead_tree", "pos": Vector3(-14, 0, 10)},
-			{"type": "hydrant", "pos": Vector3(13, 0, -6)},
+			{"type": "hydrant", "pos": Vector3(10.5, 0, -6)},
 		],
 		# The machine line advancing from the nexus, like the comic.
 		"enemies": [
@@ -2390,7 +2412,9 @@ static func _suburb() -> Dictionary:
 		"objective": "Clear the streets of Maple Grove and reach the beacon",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(0, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15)},
+			# On the spawn-side bank (the flood canal below splits the map at x=0;
+			# tasks are NOT auto-relocated out of hazard beds, so keep it dry).
+			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(-9, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15)},
 		],
 		"open_sky": true,
 		"streets": true,
@@ -2426,11 +2450,26 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(7, 2.2, 15), "size": Vector3(7, 4.4, 7), "color": Color(0.8, 0.74, 0.62), "roof_color": Color(0.36, 0.18, 0.14)},
 			{"pos": Vector3(20, 2.2, 15), "size": Vector3(7, 4.4, 7), "color": Color(0.6, 0.64, 0.7), "roof_color": Color(0.24, 0.2, 0.22)},
 		],
+		# The flood canal below is THE routing device: it splits the estate in two
+		# at x=0, and the only ways east are the raised bridge at z=8 (framed by
+		# the gatepost walls here) or climbing the west tower and crossing the
+		# sky-bridge — a low road and a high road instead of a straight sprint.
 		"walls": [
 			{"pos": Vector3(-3, 0.6, -2), "size": Vector3(3.2, 1.2, 1.6)},
 			{"pos": Vector3(9, 0.6, 6), "size": Vector3(3.2, 1.2, 1.6)},
 			{"pos": Vector3(-12, 0.7, 8), "size": Vector3(5, 1.4, 1)},
 			{"pos": Vector3(14, 0.7, -8), "size": Vector3(1, 1.4, 5)},
+			# Canal-lock gateposts framing the bridge crossing (too tall to mantle).
+			{"pos": Vector3(-6.5, 1.5, 5.8), "size": Vector3(1.2, 3.0, 1.2)},
+			{"pos": Vector3(-6.5, 1.5, 10.2), "size": Vector3(1.2, 3.0, 1.2)},
+			{"pos": Vector3(6.5, 1.5, 5.8), "size": Vector3(1.2, 3.0, 1.2)},
+			{"pos": Vector3(6.5, 1.5, 10.2), "size": Vector3(1.2, 3.0, 1.2)},
+		],
+		# Storm-drain canal, burst since the uprising: deep water down the middle
+		# of the estate. Carves the navmesh (enemies use the crossings too) and
+		# drowns a swimmer, so the player reads it as a hard route boundary.
+		"lava": [
+			{"pos": Vector3(0, 0, 0), "size": Vector2(8, 64), "water": true, "dmg": 8.0},
 		],
 		"accents": [
 			{"pos": Vector3(-15, 0.06, 0), "size": Vector3(3, 0.06, 0.35), "color": Color(1, 0.85, 0.2)},
@@ -2438,25 +2477,28 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(5, 0.06, 0), "size": Vector3(3, 0.06, 0.35), "color": Color(1, 0.85, 0.2)},
 			{"pos": Vector3(15, 0.06, 0), "size": Vector3(3, 0.06, 0.35), "color": Color(1, 0.85, 0.2)},
 		],
+		# Props formerly in the canal footprint (|x| < 4.6 at floor level) are
+		# rehomed onto the banks — the builder would auto-drop them, but moving
+		# them keeps the dressing instead of silently losing it.
 		"props": [
-			{"type": "car", "pos": Vector3(-2, 0, 4), "yaw": 12},
+			{"type": "car", "pos": Vector3(-6.5, 0, 1), "yaw": 12},
 			{"type": "car", "pos": Vector3(8, 0, -3), "yaw": -20},
 			{"type": "fence", "pos": Vector3(-13.5, 0, 0), "yaw": 90},
 			{"type": "fence", "pos": Vector3(13.5, 0, 0), "yaw": 90},
-			{"type": "fence", "pos": Vector3(0, 0, 11), "yaw": 0},
+			{"type": "fence", "pos": Vector3(-11, 0, 12), "yaw": 0},
 			{"type": "barrel", "pos": Vector3(-2, 0, -6)},
-			{"type": "barrel", "pos": Vector3(5, 0, 8)},
+			{"type": "barrel", "pos": Vector3(12, 0, 9)},
 			{"type": "crate", "pos": Vector3(-9, 0, -3)},
 			{"type": "crate", "pos": Vector3(11, 0, 3)},
 			{"type": "lamp", "pos": Vector3(-10, 0, 4)},
 			{"type": "lamp", "pos": Vector3(10, 0, -4), "yaw": 180},
-			{"type": "lamp", "pos": Vector3(0, 0, 8)},
-			{"type": "canister", "pos": Vector3(-5, 0, 10)},
+			{"type": "lamp", "pos": Vector3(-9.5, 0, 10.5)},
+			{"type": "canister", "pos": Vector3(-11.5, 0, 10)},
 			{"type": "canister", "pos": Vector3(12, 0, -2)},
 			# Front-yard trees between the houses — suburbs need greenery.
 			{"type": "tree", "pos": Vector3(-13.5, 0, -13)},
 			{"type": "tree", "pos": Vector3(13.5, 0, 13)},
-			{"type": "tree_small", "pos": Vector3(0.5, 0, -12)},
+			{"type": "tree_small", "pos": Vector3(6.5, 0, -12)},
 			{"type": "tree_small", "pos": Vector3(-14, 0, 12.5)},
 			{"type": "tree_small", "pos": Vector3(14, 0, -12.5)},
 		],
@@ -2477,37 +2519,54 @@ static func _suburb() -> Dictionary:
 		],
 		"platforms": [
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
+			# The canal bridge deck — the low crossing. Above the hazard carve
+			# height, so it keeps its navmesh and enemies use it too.
+			{"pos": Vector3(0, 1.55, 8), "size": Vector3(9, 0.35, 4.4), "color": Color(0.45, 0.45, 0.5)},
+			# Rooftop deck on the SE house — a climbable overwatch over the
+			# canal's east bank, reached by the yard stair below.
+			{"pos": Vector3(7, 4.55, 15), "size": Vector3(7.2, 0.3, 7.2), "color": Color(0.36, 0.3, 0.3)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
-		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		# Sky-bridges: an upper traversal route linking the tower rooftops —
+		# with the canal below, the tower climb is now the HIGH crossing.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(13.0, 7.2, 0.0), "width": 3.5},
+			# Bridge approaches: solved ramps from each bank up onto the deck.
+			{"from": Vector3(-8.5, 0, 8), "to": Vector3(-4.2, 1.72, 8), "width": 4.0},
+			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.2, 1.72, 8), "width": 4.0},
+			# Yard stair up to the SE rooftop deck.
+			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.6), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(13.0, 0, 0.0), "height": 7.0, "radius": 3.1},
 		],
+		# Enemy spots rehomed around the new canal/bridge geometry (nothing at
+		# floor level inside the canal or under the approach stairs), and the
+		# handful that were buried inside house footprints pulled out onto the
+		# streets. The SNIPER now holds the SE rooftop deck, overwatching the
+		# bridge — clear it, or climb the yard stair and take the roof.
 		"enemies": [
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
-			{"type": "android", "pos": Vector3(10, 0.5, 8), "trigger": 16},
+			{"type": "android", "pos": Vector3(13, 0.5, 8), "trigger": 16},
 			{"type": "spider", "pos": Vector3(-10, 0.5, -6), "trigger": 14},
 			{"type": "drone", "pos": Vector3(12, 3, -10), "trigger": 18},
 			{"type": "android", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
-			{"type": "spider", "pos": Vector3(8, 0.5, 12), "trigger": 18},
+			{"type": "spider", "pos": Vector3(6, 0.5, -10), "trigger": 18},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},
 			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
 			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 22},
 			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 22},
-			{"type": "strider", "pos": Vector3(-18, 0.5, 14), "trigger": 24},
-			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+			{"type": "strider", "pos": Vector3(-16, 0.5, 10), "trigger": 24},
+			{"type": "sniper", "pos": Vector3(7, 4.9, 15), "trigger": 26},
 			# A K-9 HUNTER pack bursts from the yards mid-fight.
-			{"type": "dog", "pos": Vector3(-8, 0.5, 8), "trigger": 18},
-			{"type": "dog", "pos": Vector3(8, 0.5, 8), "trigger": 18},
-			{"type": "dog", "pos": Vector3(0, 0.5, 14), "trigger": 22},
+			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 18},
+			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 18},
+			{"type": "dog", "pos": Vector3(8, 0.5, -8), "trigger": 22},
 		],
 		"pickups": [
-			{"type": "health", "pos": Vector3(-22, 0, -16)},
+			{"type": "health", "pos": Vector3(-25, 0, -16)},
 			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
 			{"type": "ammo", "pos": Vector3(10, 0, -6)},
 			{"type": "health", "pos": Vector3(16, 0, 10)},
@@ -2718,11 +2777,15 @@ static func _lava_world() -> Dictionary:
 			{"type": "pillar", "pos": Vector3(9.5, 0, 9.5)},
 			{"type": "pillar", "pos": Vector3(-9.5, 0, 9.5)},
 			{"type": "canister", "pos": Vector3(-16, 1.6, -13)},
-			{"type": "crate_stack", "pos": Vector3(-14, 1.6, -16)},
+			# Off the spawn/exit islands, not on top of them: a stacked crate prop is
+			# tall enough that its flat top exceeds the navmesh's step tolerance from
+			# the platform surface, fragmenting those tiny islands into disconnected
+			# navmesh polygons (broke the spawn->exit path — see campaign_nav_sweep).
+			{"type": "crate_stack", "pos": Vector3(-19, 0, -19)},
 			{"type": "barrel", "pos": Vector3(15, 1.6, -16)},
 			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
 			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
-			{"type": "crate_stack", "pos": Vector3(13, 1.6, 13)},
+			{"type": "crate_stack", "pos": Vector3(17.5, 0, 18)},
 			{"type": "barrel", "pos": Vector3(-8, 1.6, 11)},
 			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
 			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
@@ -2750,6 +2813,16 @@ static func _lava_world() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(10, 3, 13), "trigger": 14},
 			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+			# Roster was a steep difficulty dip vs. the level before it and the TITAN
+			# boss after (see tests/difficulty_curve.tscn) — more of the same aerial
+			# gauntlet enemies, not new ground types, to keep the hazard-crossing
+			# identity and avoid new catwalk-placement risk.
+			{"type": "raptor", "pos": Vector3(-13, 3, 8), "trigger": 16},
+			{"type": "raptor", "pos": Vector3(8, 3, -6), "trigger": 20},
+			{"type": "raptor", "pos": Vector3(-4, 3, 14), "trigger": 22},
+			{"type": "raptor", "pos": Vector3(12, 3, -12), "trigger": 24},
+			{"type": "seeker", "pos": Vector3(-10, 3, -12), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(8, 3, 4), "trigger": 20},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},

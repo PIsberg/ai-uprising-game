@@ -46,6 +46,12 @@ const KICK_DAMPING := 22.0      # critical-ish damping (no wobble)
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
 
+## External roll (radians), e.g. the player's wall-run lean. This node's own
+## _process() sets rotation.z every frame (sway + kick), which would silently
+## erase any direct rotation.z write from outside — so external callers feed
+## it in here instead and it's folded into the same final assignment below.
+var external_roll: float = 0.0
+
 
 func _ready() -> void:
 	_register_alt_fire_action()
@@ -264,7 +270,7 @@ func _process(delta: float) -> void:
 	position = target_pos + _sway_offset + _bob_offset + _kick_pos
 	rotation.x = _sway_rotation.x + _kick_rot.x
 	rotation.y = _sway_rotation.y + _kick_rot.y
-	rotation.z = _sway_rotation.z + _kick_rot.z
+	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll
 
 
 func _on_fired(_w: Weapon) -> void:

@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://g8n2m5k9x3wqu"]
+[ext_resource type="Script" path="res://tools/perf_ingame_fps.gd" id="1"]
+[node name="PerfIngameFps" type="Node"]
+script = ExtResource("1")

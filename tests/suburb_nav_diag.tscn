@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://k3m7n2q9x5wvt"]
+[ext_resource type="Script" path="res://tests/suburb_nav_diag.gd" id="1"]
+[node name="SuburbNavDiag" type="Node3D"]
+script = ExtResource("1")

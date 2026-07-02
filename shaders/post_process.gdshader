@@ -13,6 +13,14 @@ uniform float speed_warp : hint_range(0.0, 1.0) = 0.0; // sprint: radial streak 
 uniform float low_health : hint_range(0.0, 1.0) = 0.0; // critical: pulsing red rim + drained color
 uniform bool advanced_post_process_enabled = true;
 
+// Color grade: a lift/gamma/gain style tint + contrast + saturation trim, picked
+// from a named preset in GraphicsSettings so the whole game can shift mood
+// (cold sci-fi steel, warm amber war-film, punchy high-contrast) without
+// touching per-level environments.
+uniform vec3 grade_tint : source_color = vec3(1.0, 1.0, 1.0);
+uniform float grade_contrast : hint_range(0.5, 1.5) = 1.0;
+uniform float grade_saturation : hint_range(0.0, 1.5) = 1.0;
+
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
 	p += dot(p, p + 34.345);
@@ -81,6 +89,13 @@ void fragment() {
 		}
 		col += flare;
 	}
+
+	// Color grade: contrast pivots around mid-grey, saturation blends toward
+	// luminance, tint multiplies the result — cheap but reads as a real LUT pass.
+	col = (col - 0.5) * grade_contrast + 0.5;
+	float luma = dot(col, vec3(0.299, 0.587, 0.114));
+	col = mix(vec3(luma), col, grade_saturation);
+	col *= grade_tint;
 
 	// Vignette.
 	float vig = smoothstep(vignette_softness, vignette_softness - 0.5, r2 * 1.4);
