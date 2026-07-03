@@ -214,19 +214,12 @@ func _process(delta: float) -> void:
 		_recoil_pitch -= dp
 		_recoil_yaw -= dy
 
-	# ADS Update
+	# ADS Update. camera.fov is NOT written here — the player's camera-feel pass
+	# is the single fov writer and pulls ads_blend()/ads_target_fov() from us.
+	# (Two competing writers used to reset each other every frame, which capped
+	# the RMB zoom at a sliver of the intended ads_fov.)
 	var aiming := Input.is_action_pressed("aim") and current != null
 	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, 10.0 * delta)
-	
-	if camera:
-		var target_fov := current.data.ads_fov if (aiming and current.data) else _base_fov
-		# Speed-of-motion FOV: widen when sprinting (but never while aiming).
-		if not aiming and shooter is CharacterBody3D:
-			var hspeed := Vector2(shooter.velocity.x, shooter.velocity.z).length()
-			var sprinting := Input.is_action_pressed("sprint")
-			var widen := clampf(hspeed / 9.0, 0.0, 1.0) * (8.0 if sprinting else 3.0)
-			target_fov += widen
-		camera.fov = lerpf(camera.fov, target_fov, 8.0 * delta)
 	
 	var ads_offset := Vector3.ZERO
 	if current and current.data:
@@ -280,6 +273,17 @@ func _process(delta: float) -> void:
 	rotation.y = _sway_rotation.y + _kick_rot.y
 	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll
 
+
+## How far into aim-down-sights we are (0 hip → 1 fully aimed). The player's
+## camera-feel pass blends its fov toward ads_target_fov() by this amount.
+func ads_blend() -> float:
+	return clampf(_current_ads_lerp, 0.0, 1.0)
+
+## The equipped weapon's zoom fov (falls back to the base fov when unarmed).
+func ads_target_fov() -> float:
+	if current and current.data:
+		return current.data.ads_fov
+	return _base_fov
 
 func _on_fired(_w: Weapon) -> void:
 	if current == null or current.data == null:

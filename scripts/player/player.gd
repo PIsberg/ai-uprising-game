@@ -282,6 +282,9 @@ func _apply_user_settings() -> void:
 	if gs == null:
 		return
 	if "fov" in gs:
+		# _handle_camera_feel recomputes camera.fov from _fov_base every tick,
+		# so the user's setting must land on the base, not just the camera.
+		_fov_base = gs.fov
 		camera.fov = gs.fov
 	if "sensitivity" in gs:
 		_look_sens_mult = gs.sensitivity
@@ -1072,8 +1075,20 @@ func _handle_movement(delta: float) -> void:
 func _handle_camera_feel(delta: float) -> void:
 	# Dash/slide FOV punch, easing back to the base FOV.
 	_fov_kick = move_toward(_fov_kick, 0.0, 28.0 * delta)
-	camera.fov = _fov_base + _fov_kick
+	# Single camera.fov writer: user base fov → RMB aim zoom (pulled from the
+	# weapon manager) → sprint speed widen → dash kick. The weapon manager used
+	# to write camera.fov too, and the two writers reset each other every frame,
+	# capping the RMB zoom at a sliver of the weapon's ads_fov.
+	var fov := _fov_base
+	var ads := 0.0
+	if weapon_holder and weapon_holder.has_method("ads_blend"):
+		ads = weapon_holder.ads_blend()
+		fov = lerpf(fov, weapon_holder.ads_target_fov(), ads)
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+	# Speed-of-motion widen (suppressed while aiming so the zoom holds steady).
+	var widen := clampf(horizontal_speed / 9.0, 0.0, 1.0) \
+		* (8.0 if Input.is_action_pressed("sprint") else 3.0)
+	camera.fov = fov + (widen * (1.0 - ads)) + _fov_kick
 	if is_on_floor() and horizontal_speed > 0.5:
 		_bob_phase += delta * bob_frequency * (horizontal_speed / walk_speed)
 	else:
