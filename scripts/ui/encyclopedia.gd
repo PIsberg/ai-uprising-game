@@ -307,6 +307,12 @@ func _spawn_model(entry: Dictionary) -> void:
 	bot.position = Vector3(0, float(entry.get("y", 0.0)), 0)
 	if bot.has_method("set_physics_process"):
 		bot.set_physics_process(false) # no AI; RobotModel still idles the clip
+	# Kill live emitters (thruster exhaust, muzzle embers): on a static pedestal
+	# the frozen puffs read as stray glowing balls stuck to the chassis.
+	for p in bot.find_children("*", "CPUParticles3D", true, false):
+		(p as CPUParticles3D).emitting = false
+	for p in bot.find_children("*", "GPUParticles3D", true, false):
+		(p as GPUParticles3D).emitting = false
 	_bot = bot
 	_frame_model(bot)
 	# RobotModel finishes sizing the chassis over the next frame or two, so the

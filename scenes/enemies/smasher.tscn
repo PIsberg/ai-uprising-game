@@ -11,8 +11,8 @@ radius = 2.4
 height = 10.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_reactor"]
-radius = 0.95
-height = 1.9
+radius = 0.6
+height = 1.2
 material = ExtResource("3_gr")
 
 [node name="Smasher" type="CharacterBody3D" groups=["enemy"]]
@@ -51,7 +51,7 @@ spot_range = 34.0
 spot_angle = 24.0
 
 [node name="Reactor" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5, -1.35)
 mesh = SubResource("SphereMesh_reactor")
 
 [node name="ReactorLight" type="OmniLight3D" parent="Reactor"]

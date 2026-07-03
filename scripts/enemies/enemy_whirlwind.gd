@@ -5,6 +5,9 @@ extends EnemyDrone
 ## spinning arms before pulling back up. No ranged attack — it kills up close.
 
 @export var slash_damage: float = 22.0
+@export var spin_speed: float = 7.5 ## rad/s — the buzzsaw whirl
+
+var _spin_mesh: Node3D
 
 func _ready() -> void:
 	super._ready()
@@ -20,6 +23,15 @@ func _ready() -> void:
 	drops_loot = true
 	hp.max_health = max_health
 	hp.current_health = max_health
+	_spin_mesh = get_node_or_null("Model/Mesh")
+
+## A WHIRLWIND has to whirl: spin the blade-arm chassis like a buzzsaw. The
+## static model's drooping blade-arms read as a broken, tipped-over wreck
+## (in play and on the codex pedestal alike); spinning sells the design.
+## _process, not physics, so the codex preview (physics disabled) spins too.
+func _process(delta: float) -> void:
+	if _spin_mesh and state != State.DEAD:
+		_spin_mesh.rotation.y += spin_speed * delta
 
 ## Spinning-blade melee instead of the drone's projectile.
 func _perform_attack() -> void:
