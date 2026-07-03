@@ -177,6 +177,37 @@ static func _defs() -> Dictionary:
 		"lava_world": _lava_world(),
 		"water_world": _water_world(),
 		"desert": _desert(),
+		"convoy": _convoy(),
+	}
+
+
+## "Highway Breakout" — the rail-shooter ride. The ConvoyRide node in the level
+## scene builds the moving hauler, boards the player and spawns pursuit waves;
+## this def supplies the long highway strip, side scenery, the survive task
+## and the extraction at the far interchange.
+static func _convoy() -> Dictionary:
+	return {
+		"name": "Highway Breakout",
+		"objective": "Ride the hauler down the highway and survive to the interchange",
+		"sign": "ROUTE 7 · AUTHORISED FREIGHT ONLY",
+		"slogans": ["STAY IN YOUR LANE", "FREIGHT MOVES. YOU DO NOT.", "ROUTE 7 IS PACIFIED"],
+		"spawn": Vector3(0, 0.5, 178),
+		"floor_size": Vector2(44, 380),
+		"open_sky": true,
+		"tasks": [
+			{"type": "survive", "seconds": 70, "label": "Survive the ride"},
+		],
+		"enemies": [], # the ConvoyRide node spawns the pursuit waves
+		"exit": Vector3(0, 1.5, -176),
+		# Roadside blocks so the ride has parallax and cover from side fire.
+		"buildings": [
+			{"pos": Vector3(-17, 4.0, 120), "size": Vector3(8, 8, 14)},
+			{"pos": Vector3(17, 5.0, 70), "size": Vector3(8, 10, 12)},
+			{"pos": Vector3(-17, 3.5, 10), "size": Vector3(8, 7, 16)},
+			{"pos": Vector3(17, 4.5, -50), "size": Vector3(8, 9, 12)},
+			{"pos": Vector3(-17, 5.5, -110), "size": Vector3(8, 11, 14)},
+			{"pos": Vector3(17, 4.0, -150), "size": Vector3(8, 8, 10)},
+		],
 	}
 
 
@@ -249,6 +280,10 @@ static func _nexus() -> Dictionary:
 			# a mantle-height (1.6 m) climbing shortcut across the fire line for
 			# players who spot it; the official route stays the plaza lane.
 			{"pos": Vector3(12.5, 1.4, -2), "size": Vector3(6, 0.4, 3)},
+			# GRAPPLE PAD: an isolated high pad holding the arc-coil cache.
+			# Deliberately no stairs/ramp — fire the grapple (C) at its lip and
+			# winch up. First taste of grapple-gated verticality.
+			{"pos": Vector3(16, 5.4, -16), "size": Vector3(4.5, 0.7, 4.5)},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
 		# rooftop vantage over the ruined plaza.
@@ -272,11 +307,13 @@ static func _nexus() -> Dictionary:
 			{"pos": Vector3(-6.4, 0, 6.4), "height": 7.0, "radius": 3.2},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
+		# Two are OPEN: enterable two-storey shells (door, interior ramp, upper
+		# floor, roof) that the player and robots fight through.
 		"buildings": [
-			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8)},
+			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8), "open": true},
 			{"pos": Vector3(-10, 5.5, 18), "size": Vector3(9, 11, 8)},
 			{"pos": Vector3(12, 4.0, 18), "size": Vector3(8, 8, 8)},
-			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8)},
+			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8), "open": true},
 			{"pos": Vector3(8, 4.5, -19), "size": Vector3(9, 9, 8)},
 			{"pos": Vector3(-20, 5.0, -8), "size": Vector3(8, 10, 8)},
 			{"pos": Vector3(20, 4.0, 12), "size": Vector3(8, 8, 8)},
@@ -333,6 +370,11 @@ static func _nexus() -> Dictionary:
 			{"type": "mech", "pos": Vector3(7, 0, 17), "trigger": 18},
 		],
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8, 0, -4), "color": Color(0.4, 0.7, 1.0)},
+		# GRAPPLE CACHE: an arc coil on an isolated high pad with no stairs or
+		# ramp — the only way up is the grapple (C). Teaches the tool early.
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(0.55, 0.85, 1.0)},
+		],
 	}
 
 
