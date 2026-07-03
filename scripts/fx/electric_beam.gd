@@ -41,25 +41,29 @@ static var _flare_tex: Texture2D = null
 
 func _ready() -> void:
 	top_level = true # world-space: endpoints are global positions
-	# Bright arc material shared by all jitter segments.
+	# Bright arc material shared by all jitter segments. ADDITIVE: alpha-blend
+	# made the bolt DARKEN bright backgrounds (it read as a grey smudge against
+	# a lit wall — "tesla doesn't shoot any beam"); additive can only glow.
 	_mat = StandardMaterial3D.new()
 	_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	_mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
 	_mat.emission_enabled = true
 	_mat.emission = color
-	_mat.emission_energy_multiplier = 7.0
-	# Softer, wider core the arcs dance around.
+	_mat.emission_energy_multiplier = 10.0
+	# Softer, wider core the arcs dance around (additive for the same reason).
 	_core_mat = StandardMaterial3D.new()
 	_core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_core_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_core_mat.albedo_color = Color(color.r, color.g, color.b, 0.28)
+	_core_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_core_mat.albedo_color = Color(color.r, color.g, color.b, 0.5)
 	_core_mat.emission_enabled = true
 	_core_mat.emission = color
-	_core_mat.emission_energy_multiplier = 3.0
+	_core_mat.emission_energy_multiplier = 5.0
 	_core_mesh = CylinderMesh.new()
-	_core_mesh.top_radius = 0.032
-	_core_mesh.bottom_radius = 0.046
+	_core_mesh.top_radius = 0.055
+	_core_mesh.bottom_radius = 0.075
 	_core_mesh.height = 1.0
 	_core_mesh.radial_segments = 8
 	_core_mesh.material = _core_mat
@@ -79,8 +83,8 @@ func _ready() -> void:
 	_glow_mat.emission = color
 	_glow_mat.emission_energy_multiplier = 1.6
 	var glow_mesh := CylinderMesh.new()
-	glow_mesh.top_radius = 0.13
-	glow_mesh.bottom_radius = 0.16
+	glow_mesh.top_radius = 0.20
+	glow_mesh.bottom_radius = 0.25
 	glow_mesh.height = 1.0
 	glow_mesh.radial_segments = 10
 	glow_mesh.material = _glow_mat
@@ -100,8 +104,8 @@ func _ready() -> void:
 	_hot_mat.emission = _hot_tint()
 	_hot_mat.emission_energy_multiplier = 12.0
 	var hot_mesh := CylinderMesh.new()
-	hot_mesh.top_radius = 0.008
-	hot_mesh.bottom_radius = 0.012
+	hot_mesh.top_radius = 0.016
+	hot_mesh.bottom_radius = 0.022
 	hot_mesh.height = 1.0
 	hot_mesh.radial_segments = 6
 	hot_mesh.material = _hot_mat
@@ -111,7 +115,7 @@ func _ready() -> void:
 	_hot_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_hot_core)
 	_arc_mesh = BoxMesh.new()
-	_arc_mesh.size = Vector3(0.02, 0.02, 1.0)
+	_arc_mesh.size = Vector3(0.042, 0.042, 1.0)
 	_arc_mesh.material = _mat
 	for _i in SEGMENTS:
 		var seg := MeshInstance3D.new()
@@ -166,7 +170,7 @@ func _ready() -> void:
 	_muzzle_flare = _make_flare(0.5)
 	_muzzle_flare_mat = _muzzle_flare.get_surface_override_material(0)
 	add_child(_muzzle_flare)
-	_impact_flare = _make_flare(0.9)
+	_impact_flare = _make_flare(0.6)
 	_impact_flare_mat = _impact_flare.get_surface_override_material(0)
 	add_child(_impact_flare)
 
@@ -226,7 +230,7 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 	var throb := 1.0 + 0.25 * sin(_time * 38.0)
 	_stretch_between(_core, from, to)
 	_core.visible = true
-	_core_mat.emission_energy_multiplier = 4.5 * throb
+	_core_mat.emission_energy_multiplier = 7.0 * throb
 	# Fat outer halo runs the whole bolt and breathes with the throb.
 	_stretch_between(_glow, from, to)
 	_glow.visible = true
@@ -243,7 +247,10 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 		var p := from + dir * (dist * t)
 		if i < _arcs.size() - 1:
 			# Sag envelope: zero jitter at the muzzle and the hit, widest mid-beam.
-			var amp := 0.24 * sin(PI * t) * minf(dist * 0.2, 1.0)
+			# Wide enough that the crackle clears the view axis in first person —
+			# the fired beam runs almost straight away from the camera, so without
+			# off-axis excursion it collapses into a couple of on-screen pixels.
+			var amp := 0.45 * sin(PI * t) * minf(dist * 0.25, 1.0)
 			p += Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5) * 2.0 * amp
 		_stretch_between(_arcs[i], prev, p)
 		_arcs[i].visible = true
@@ -268,7 +275,9 @@ func update_beam(from: Vector3, to: Vector3, hit_something: bool) -> void:
 	_muzzle_light.global_position = from
 	_muzzle_light.light_energy = randf_range(1.8, 2.8)
 	_impact_light.global_position = to - dir * 0.1
-	_impact_light.light_energy = randf_range(3.5, 6.0) if hit_something else 0.0
+	# Kept modest: a hotter impact light blows the whole hit area out to white
+	# and the beam disappears into its own bloom.
+	_impact_light.light_energy = randf_range(2.0, 3.2) if hit_something else 0.0
 	_sparks.global_position = to
 	_sparks.direction = -dir
 	_sparks.emitting = hit_something
@@ -332,6 +341,10 @@ func _stretch_between(mi: MeshInstance3D, a: Vector3, b: Vector3) -> void:
 		basis = basis * Basis(Vector3.RIGHT, PI * 0.5) * Basis.from_scale(Vector3(1, l, 1))
 	else:
 		basis = basis * Basis.from_scale(Vector3(1, 1, l))
+	# Frustum-culling escape hatch: a near-axial beam (fired straight away from
+	# the camera) got culled for the firing player while side-on cameras still
+	# saw it. Give every segment a fat cull margin so it always draws.
+	mi.extra_cull_margin = maxf(mi.extra_cull_margin, l)
 	mi.global_transform = Transform3D(basis, (a + b) * 0.5)
 
 ## Tint everything (called once by the weapon from its tracer_color).
@@ -340,7 +353,7 @@ func set_color(c: Color) -> void:
 	if _mat:
 		_mat.albedo_color = Color(c.r, c.g, c.b, 0.9)
 		_mat.emission = c
-		_core_mat.albedo_color = Color(c.r, c.g, c.b, 0.28)
+		_core_mat.albedo_color = Color(c.r, c.g, c.b, 0.5) # keep in sync with _ready
 		_core_mat.emission = c
 		_impact_light.light_color = c
 		_muzzle_light.light_color = c

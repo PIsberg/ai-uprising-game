@@ -147,6 +147,7 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_mistral.tscn",
 	"res://scenes/levels/level_suburb.tscn",
 	"res://scenes/levels/level_suburb_boss.tscn",
+	"res://scenes/levels/level_convoy.tscn", # rail-shooter ride: fight from a moving hauler
 	"res://scenes/levels/level_claude.tscn",
 	"res://scenes/levels/level_grok.tscn",
 	"res://scenes/levels/level_uplink.tscn",
@@ -187,6 +188,7 @@ var controls_taught: bool = false
 func unlock_weapon(scene_path: String) -> void:
 	if not unlocked_weapons.has(scene_path):
 		unlocked_weapons.append(scene_path)
+	discover_weapon(scene_path) # unlocked = held: reveal its codex dossier too
 
 ## The single source of truth for weapon power, weakest → strongest. EVERY weapon
 ## in the game appears here exactly once (incl. the sniper/magnum that aren't part
@@ -626,13 +628,15 @@ func go_to_level(path: String, reset: bool = false) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress()
+	# Starting the game routes through the loading screen too — the cutscene
+	# scripts preload full-page comic art, which otherwise stalls on a frozen menu.
 	var lid := level_id_from_path(path)
 	if lid == "01":
-		get_tree().change_scene_to_file(INTRO_CUTSCENE)
+		_enter_level_scene(INTRO_CUTSCENE)
 	elif CUTSCENE_FOR_LEVEL.has(lid):
-		get_tree().change_scene_to_file(CUTSCENE_FOR_LEVEL[lid])
+		_enter_level_scene(CUTSCENE_FOR_LEVEL[lid])
 	else:
-		get_tree().change_scene_to_file(LEVEL_BRIEFING)
+		_enter_level_scene(LEVEL_BRIEFING)
 
 ## "res://scenes/levels/level_gpt.tscn" -> "gpt"; level_suburb_boss -> "suburb_boss".
 func level_id_from_path(path: String) -> String:
@@ -663,7 +667,7 @@ func discovered_enemy_count() -> int:
 
 ## Record an encounter; persists immediately when something new is learned.
 func discover_enemy(t: String) -> void:
-	if t == "" or discovered_enemies.has(t):
+	if t == "" or discovered_enemies.has(t) or not EnemyCodex.has(t):
 		return
 	discovered_enemies[t] = true
 	_save_bestiary()
@@ -678,16 +682,20 @@ func discover_all_enemies() -> void:
 	if changed:
 		_save_bestiary()
 
-## Mark every hostile a campaign level fields as discovered — called the moment
-## the player actually drops into the playable level (covers the comic-intro
-## level 1 and every briefing-entered level alike).
-func _discover_level_enemies(path: String) -> void:
-	var lid := level_id_from_path(path)
-	var def := LevelDefs.get_def(lid)
-	for e in def.get("enemies", []):
-		var t: String = e.get("type", "")
-		if t != "" and EnemyCodex.has(t):
-			discover_enemy(t)
+## Which weapons the player has ever actually held. Gates the Weapon Codex the
+## same way the bestiary gates the Encyclopedia; persisted alongside it.
+## Registered by the WeaponManager when a weapon lands in the rack (covers the
+## base loadout, pickups and the warp cheat's full-arsenal grant alike).
+var discovered_weapons: Dictionary = {}
+
+func is_weapon_discovered(scene_path: String) -> bool:
+	return discovered_weapons.has(scene_path)
+
+func discover_weapon(scene_path: String) -> void:
+	if scene_path == "" or discovered_weapons.has(scene_path):
+		return
+	discovered_weapons[scene_path] = true
+	_save_bestiary()
 
 func _load_bestiary() -> void:
 	var cf := ConfigFile.new()
@@ -695,10 +703,13 @@ func _load_bestiary() -> void:
 		return
 	for t in cf.get_value("bestiary", "discovered", []):
 		discovered_enemies[str(t)] = true
+	for w in cf.get_value("bestiary", "weapons", []):
+		discovered_weapons[str(w)] = true
 
 func _save_bestiary() -> void:
 	var cf := ConfigFile.new()
 	cf.set_value("bestiary", "discovered", discovered_enemies.keys())
+	cf.set_value("bestiary", "weapons", discovered_weapons.keys())
 	cf.save(BESTIARY_PATH)
 
 ## Load a specific level. `reset` wipes score/kills (used for replays); campaign
@@ -715,7 +726,9 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress() # checkpoint at the start of every campaign level
-		_discover_level_enemies(scene_path) # unlock these hostiles' codex entries
+	# Codex entries are NOT pre-unlocked from the level roster here — hostiles
+	# register themselves the first time the player actually meets one (enemy
+	# engages or dies, see EnemyBase). The warp cheat still unlocks everything.
 	# A custom editor level is JSON data (.lvl), not a scene — build it through
 	# level_custom.tscn (same mechanism as the editor playtest / --level boot),
 	# otherwise change_scene_to_file fails on the data file and leaves a black screen.
@@ -728,7 +741,8 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		_enter_level_scene(scene_path)
 
 ## Switch to the loading screen, which paints a frame and then changes to
-## `target` (the heavy level scene). Keeps the grey-window stall off-screen.
+## `target` (a heavy level scene, or the cutscene/briefing leading into one).
+## Keeps the grey-window stall off-screen.
 func _enter_level_scene(target: String) -> void:
 	pending_scene = target
 	get_tree().change_scene_to_file(LOADING_SCREEN)

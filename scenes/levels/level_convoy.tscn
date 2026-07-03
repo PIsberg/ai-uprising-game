@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://b0lvl0convoy01"]
+
+[ext_resource type="Script" path="res://scripts/levels/level_builder.gd" id="1_build"]
+[ext_resource type="PackedScene" uid="uid://b0player00001" path="res://scenes/player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://b0ui0hud0001" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/levels/convoy_ride.gd" id="4_ride"]
+
+[node name="LevelConvoy" type="Node3D"]
+script = ExtResource("1_build")
+level_id = "convoy"
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 178)
+
+[node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="ConvoyRide" type="Node3D" parent="."]
+script = ExtResource("4_ride")

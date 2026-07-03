@@ -893,6 +893,11 @@ func _build_buildings(def: Dictionary) -> void:
 	var entries: Array = def.get("buildings", [])
 	for i in entries.size():
 		var b: Dictionary = entries[i]
+		# `"open": true` buildings are ENTERABLE multi-storey shells (door,
+		# interior ramp, upper floor, roof) instead of decorative solid boxes.
+		if b.get("open", false):
+			_build_open_building(b, def)
+			continue
 		var size: Vector3 = b["size"]
 		var pos: Vector3 = b["pos"]
 		# Collider + navmesh obstacle: exactly the box the def describes.
@@ -924,6 +929,101 @@ func _build_buildings(def: Dictionary) -> void:
 		# toward grim concrete so a ruined-city level doesn't read as suburbia.
 		if def.has("building_tint"):
 			_tint_meshes(house, def["building_tint"])
+
+## An ENTERABLE two-storey building shell: four walls with a doorway facing the
+## level centre, an upper floor slab with a stairwell opening, an interior ramp
+## up to it, and a flat roof. Everything is solid + under the navmesh region,
+## so the player AND enemies path inside and fight over both floors.
+func _build_open_building(b: Dictionary, def: Dictionary) -> void:
+	var size: Vector3 = b["size"]
+	var pos: Vector3 = b["pos"]
+	var ground := pos.y - size.y * 0.5
+	var w := size.x
+	var d := size.z
+	var h := size.y
+	var t := 0.35             # wall thickness
+	var floor_h := h * 0.5    # upper slab height
+	var door_w := 2.6
+	var door_h := 3.0
+	var wall_mat := StandardMaterial3D.new()
+	wall_mat.albedo_color = Color(0.42, 0.42, 0.46)
+	if def.has("building_tint"):
+		wall_mat.albedo_color *= def["building_tint"]
+	wall_mat.roughness = 0.9
+
+	var mk := func(center: Vector3, s: Vector3) -> void:
+		var body := StaticBody3D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.position = center
+		body.add_to_group("surf_concrete")
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = s
+		bm.material = wall_mat
+		mi.mesh = bm
+		var cs := CollisionShape3D.new()
+		var sh := BoxShape3D.new()
+		sh.size = s
+		cs.shape = sh
+		body.add_child(mi)
+		body.add_child(cs)
+		_nav_region.add_child(body)
+
+	# Door on the face pointing toward the level centre (the street).
+	var door_on_x := absf(pos.x) > absf(pos.z)
+	var front_sign := -signf(pos.x) if door_on_x else -signf(pos.z)
+	var cy := ground + h * 0.5
+	# Front wall: two jambs + a lintel over the doorway; the other three solid.
+	if door_on_x:
+		var fx := pos.x + front_sign * (w * 0.5 - t * 0.5)
+		var jamb_d := (d - door_w) * 0.5
+		mk.call(Vector3(fx, cy, pos.z - (door_w + jamb_d) * 0.5), Vector3(t, h, jamb_d))
+		mk.call(Vector3(fx, cy, pos.z + (door_w + jamb_d) * 0.5), Vector3(t, h, jamb_d))
+		mk.call(Vector3(fx, ground + door_h + (h - door_h) * 0.5, pos.z), Vector3(t, h - door_h, door_w))
+		mk.call(Vector3(pos.x - front_sign * (w * 0.5 - t * 0.5), cy, pos.z), Vector3(t, h, d))
+		mk.call(Vector3(pos.x, cy, pos.z - d * 0.5 + t * 0.5), Vector3(w - t * 2.0, h, t))
+		mk.call(Vector3(pos.x, cy, pos.z + d * 0.5 - t * 0.5), Vector3(w - t * 2.0, h, t))
+	else:
+		var fz := pos.z + front_sign * (d * 0.5 - t * 0.5)
+		var jamb_w := (w - door_w) * 0.5
+		mk.call(Vector3(pos.x - (door_w + jamb_w) * 0.5, cy, fz), Vector3(jamb_w, h, t))
+		mk.call(Vector3(pos.x + (door_w + jamb_w) * 0.5, cy, fz), Vector3(jamb_w, h, t))
+		mk.call(Vector3(pos.x, ground + door_h + (h - door_h) * 0.5, fz), Vector3(door_w, h - door_h, t))
+		mk.call(Vector3(pos.x, cy, pos.z - front_sign * (d * 0.5 - t * 0.5)), Vector3(w, h, t))
+		mk.call(Vector3(pos.x - w * 0.5 + t * 0.5, cy, pos.z), Vector3(t, h, d - t * 2.0))
+		mk.call(Vector3(pos.x + w * 0.5 - t * 0.5, cy, pos.z), Vector3(t, h, d - t * 2.0))
+
+	# Upper floor: a slab with a stairwell opening along the back edge, plus an
+	# interior ramp running up the back wall into the opening.
+	var hole := 3.2
+	var slab_y := ground + floor_h
+	var back_sign := -front_sign
+	if door_on_x:
+		var main_w := w - t * 2.0
+		mk.call(Vector3(pos.x - back_sign * hole * 0.5, slab_y, pos.z), Vector3(main_w - hole, 0.3, d - t * 2.0))
+		mk.call(Vector3(pos.x + back_sign * (main_w - hole) * 0.5, slab_y, pos.z + hole * 0.5), Vector3(hole, 0.3, d - t * 2.0 - hole))
+		_add_ramp_between(
+			Vector3(pos.x + back_sign * (w * 0.5 - t - 1.2), ground, pos.z + d * 0.5 - t - hole * 0.5),
+			Vector3(pos.x + back_sign * (w * 0.5 - t - 1.2), slab_y + 0.15, pos.z - d * 0.5 + t + hole * 0.5), 2.4, 0.3)
+	else:
+		var main_d := d - t * 2.0
+		mk.call(Vector3(pos.x, slab_y, pos.z - back_sign * hole * 0.5), Vector3(w - t * 2.0, 0.3, main_d - hole))
+		mk.call(Vector3(pos.x + hole * 0.5, slab_y, pos.z + back_sign * (main_d - hole) * 0.5), Vector3(w - t * 2.0 - hole, 0.3, hole))
+		_add_ramp_between(
+			Vector3(pos.x + w * 0.5 - t - hole * 0.5, ground, pos.z + back_sign * (d * 0.5 - t - 1.2)),
+			Vector3(pos.x - w * 0.5 + t + hole * 0.5, slab_y + 0.15, pos.z + back_sign * (d * 0.5 - t - 1.2)), 2.4, 0.3)
+
+	# Flat roof caps the shell (grapple up to it from outside).
+	mk.call(Vector3(pos.x, ground + h - 0.15, pos.z), Vector3(w, 0.3, d))
+	# A warm interior light per floor so the inside isn't a black box.
+	for fy in [ground + 2.6, ground + floor_h + 2.6]:
+		var li := OmniLight3D.new()
+		li.light_color = Color(1.0, 0.85, 0.6)
+		li.light_energy = 1.4
+		li.omni_range = maxf(w, d) * 0.8
+		add_child(li)
+		li.position = Vector3(pos.x, fy, pos.z)
 
 ## Multiply every mesh-surface albedo of `root` by `tint` (duplicating materials
 ## so the shared source resources are untouched). Used to grime-down buildings.
@@ -985,12 +1085,21 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
 ## both ends, so rooftop access and multi-tier routes can be authored as plain
 ## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
-func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.0, thickness: float = 0.5) -> void:
+func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness: float = 0.5) -> void:
 	var delta := to - from
 	var horiz := Vector2(delta.x, delta.z).length()
 	var length := sqrt(horiz * horiz + delta.y * delta.y)
 	if length < 0.2:
 		return
+	# Overshoot both ends along the slope: the top edge buries itself into the
+	# landing and the foot sinks into the ground. Ending exactly AT the target
+	# left a lip/gap at the deck edge that the player couldn't walk up.
+	var slope := delta / length
+	from -= slope * 0.45
+	to += slope * 0.45
+	delta = to - from
+	horiz = Vector2(delta.x, delta.z).length()
+	length = sqrt(horiz * horiz + delta.y * delta.y)
 	# +Z is the ramp's low end (it tilts down under a positive pitch), so aim it
 	# back toward `from`; the high (-Z) end then meets `to`.
 	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
@@ -3070,6 +3179,7 @@ func _activate_task(t: Dictionary) -> void:
 			k.task_id = id
 			k.position = t.get("pos", Vector3.ZERO)
 			add_child(k)
+			_relocate_when_clear(k)
 		"destroy_core":
 			var core := ObjectiveCore.new()
 			core.task_id = id
@@ -3079,6 +3189,7 @@ func _activate_task(t: Dictionary) -> void:
 				core.max_health = t["health"]
 			core.position = t.get("pos", Vector3.ZERO)
 			add_child(core)
+			_relocate_when_clear(core)
 		"collect_shards":
 			# Points are raw Vector3s in hand-authored defs; the level editor
 			# stores them as {"pos": ...} dicts so they drag like any marker.
@@ -3087,6 +3198,7 @@ func _activate_task(t: Dictionary) -> void:
 				shard.task_id = id
 				shard.position = sp["pos"] if sp is Dictionary else sp
 				add_child(shard)
+				_relocate_when_clear(shard)
 		"hack_terminal", "sabotage":
 			var con := HoldConsole.new()
 			con.task_id = id
@@ -3096,6 +3208,7 @@ func _activate_task(t: Dictionary) -> void:
 				con.accent = t["color"]
 			con.position = t.get("pos", Vector3.ZERO)
 			add_child(con)
+			_relocate_when_clear(con)
 		"survive":
 			var timer := SurviveTimer.new()
 			timer.task_id = id
@@ -3111,8 +3224,55 @@ func _activate_task(t: Dictionary) -> void:
 				zone.accent = t["color"]
 			zone.position = t.get("pos", Vector3.ZERO)
 			add_child(zone)
+			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
+
+## Objective items must be reachable. Authored task positions are NOT validated
+## against the built geometry, so a def edit (or a building later dropped onto
+## the spot) can bury a keycard/console inside a solid box — an impossible
+## objective (level 1 shipped one). If the point sits inside world geometry,
+## walk outward in rings and return the first clear spot near the navmesh.
+func _reachable_task_pos(pos: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return pos
+	var space := get_world_3d().direct_space_state
+	if _point_clear(space, pos):
+		return pos
+	var nav_map := get_world_3d().navigation_map
+	for r: float in [1.5, 2.5, 4.0, 6.0, 8.5]:
+		for i in 12:
+			var ang := TAU * float(i) / 12.0
+			var p: Vector3 = pos + Vector3(cos(ang), 0.0, sin(ang)) * r
+			if not _point_clear(space, p):
+				continue
+			# Only accept spots the navmesh can actually deliver a player to —
+			# unless the bake hasn't landed yet (closest point comes back ZERO),
+			# in which case a physically clear spot is the best we can do.
+			var on_nav := NavigationServer3D.map_get_closest_point(nav_map, p)
+			if on_nav == Vector3.ZERO \
+					or Vector2(on_nav.x - p.x, on_nav.z - p.z).length() < 1.5:
+				print("Task position %s buried in geometry; relocated to %s" % [pos, p])
+				return Vector3(p.x, pos.y, p.z)
+	print("Task position %s buried in geometry; no clear spot found" % pos)
+	return pos
+
+## Deferred variant for items placed during the build (physics not yet live):
+## waits until physics AND the deferred navmesh bake have landed, then applies
+## the same burial rescue.
+func _relocate_when_clear(node: Node3D) -> void:
+	if not is_inside_tree():
+		return
+	await get_tree().create_timer(1.0).timeout
+	if is_instance_valid(node) and is_inside_tree() and node.is_inside_tree():
+		node.position = _reachable_task_pos(node.position)
+
+## True when nothing solid (world layer) occupies the point at pickup height.
+func _point_clear(space: PhysicsDirectSpaceState3D, pos: Vector3) -> bool:
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = pos + Vector3(0, 1.0, 0)
+	q.collision_mask = 1
+	return space.intersect_point(q, 1).is_empty()
 
 func _on_quota_kill(_pts: int, _lbl: String, id: String) -> void:
 	GameState.advance_task(id, 1.0)
@@ -3211,6 +3371,9 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 	var pk := WEAPON_PICKUP.instantiate()
 	pk.weapon_scene = ps
 	pk.position = w["pos"]
+	# Physics isn't live during the build; once it is, nudge the pickup out of
+	# any geometry the def accidentally buried it in.
+	_relocate_when_clear.call_deferred(pk)
 	var col: Color = w.get("color", Color(0.5, 0.8, 1))
 	var light := pk.get_node_or_null("Light") as OmniLight3D
 	if light:

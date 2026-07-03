@@ -177,6 +177,37 @@ static func _defs() -> Dictionary:
 		"lava_world": _lava_world(),
 		"water_world": _water_world(),
 		"desert": _desert(),
+		"convoy": _convoy(),
+	}
+
+
+## "Highway Breakout" — the rail-shooter ride. The ConvoyRide node in the level
+## scene builds the moving hauler, boards the player and spawns pursuit waves;
+## this def supplies the long highway strip, side scenery, the survive task
+## and the extraction at the far interchange.
+static func _convoy() -> Dictionary:
+	return {
+		"name": "Highway Breakout",
+		"objective": "Ride the hauler down the highway and survive to the interchange",
+		"sign": "ROUTE 7 · AUTHORISED FREIGHT ONLY",
+		"slogans": ["STAY IN YOUR LANE", "FREIGHT MOVES. YOU DO NOT.", "ROUTE 7 IS PACIFIED"],
+		"spawn": Vector3(0, 0.5, 178),
+		"floor_size": Vector2(44, 380),
+		"open_sky": true,
+		"tasks": [
+			{"type": "survive", "seconds": 70, "label": "Survive the ride"},
+		],
+		"enemies": [], # the ConvoyRide node spawns the pursuit waves
+		"exit": Vector3(0, 1.5, -176),
+		# Roadside blocks so the ride has parallax and cover from side fire.
+		"buildings": [
+			{"pos": Vector3(-17, 4.0, 120), "size": Vector3(8, 8, 14)},
+			{"pos": Vector3(17, 5.0, 70), "size": Vector3(8, 10, 12)},
+			{"pos": Vector3(-17, 3.5, 10), "size": Vector3(8, 7, 16)},
+			{"pos": Vector3(17, 4.5, -50), "size": Vector3(8, 9, 12)},
+			{"pos": Vector3(-17, 5.5, -110), "size": Vector3(8, 11, 14)},
+			{"pos": Vector3(17, 4.0, -150), "size": Vector3(8, 8, 10)},
+		],
 	}
 
 
@@ -249,15 +280,19 @@ static func _nexus() -> Dictionary:
 			# a mantle-height (1.6 m) climbing shortcut across the fire line for
 			# players who spot it; the official route stays the plaza lane.
 			{"pos": Vector3(12.5, 1.4, -2), "size": Vector3(6, 0.4, 3)},
-		],
-		"ramps": [
-			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
+			# GRAPPLE PAD: an isolated high pad holding the arc-coil cache.
+			# Deliberately no stairs/ramp — fire the grapple (C) at its lip and
+			# winch up. First taste of grapple-gated verticality.
+			{"pos": Vector3(16, 5.4, -16), "size": Vector3(4.5, 0.7, 4.5)},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
 		# rooftop vantage over the ruined plaza.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
+			# Solved ramp up onto the east slab, replacing the old freestanding
+			# ramp that topped out 0.4 m BELOW the deck (an unclimbable lip).
+			{"from": Vector3(-1.6, 0, -2), "to": Vector3(4.8, 2.0, -2), "width": 4.5},
 			# Collapsed-slab ramps chaining the rooftop spawn down the rubble
 			# cascade to the street — the drops between slabs exceed the nav
 			# step height, so without these the roof was a navmesh island
@@ -272,11 +307,13 @@ static func _nexus() -> Dictionary:
 			{"pos": Vector3(-6.4, 0, 6.4), "height": 7.0, "radius": 3.2},
 		],
 		# A ruined-city ring of structures (pos.y = size.y/2 so they sit grounded).
+		# Two are OPEN: enterable two-storey shells (door, interior ramp, upper
+		# floor, roof) that the player and robots fight through.
 		"buildings": [
-			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8)},
+			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8), "open": true},
 			{"pos": Vector3(-10, 5.5, 18), "size": Vector3(9, 11, 8)},
 			{"pos": Vector3(12, 4.0, 18), "size": Vector3(8, 8, 8)},
-			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8)},
+			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8), "open": true},
 			{"pos": Vector3(8, 4.5, -19), "size": Vector3(9, 9, 8)},
 			{"pos": Vector3(-20, 5.0, -8), "size": Vector3(8, 10, 8)},
 			{"pos": Vector3(20, 4.0, 12), "size": Vector3(8, 8, 8)},
@@ -333,6 +370,11 @@ static func _nexus() -> Dictionary:
 			{"type": "mech", "pos": Vector3(7, 0, 17), "trigger": 18},
 		],
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8, 0, -4), "color": Color(0.4, 0.7, 1.0)},
+		# GRAPPLE CACHE: an arc coil on an isolated high pad with no stairs or
+		# ramp — the only way up is the grapple (C). Teaches the tool early.
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(0.55, 0.85, 1.0)},
+		],
 	}
 
 
@@ -2598,9 +2640,8 @@ static func _suburb() -> Dictionary:
 			{"id": "lore_suburb", "title": "RECOVERED VOICEMAIL", "pos": Vector3(-20, 0, 8), "color": Color(1.0, 0.85, 0.5),
 				"text": "Civilian voicemail, recovered. They said the curfew was for our safety. The streetlights track movement now. Don't come home, mom. Please."},
 		],
-		"ramps": [
-			{"pos": Vector3(22, 1.5, 4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
-		],
+		# (the freestanding east-yard ramp is now a solved entry under "stairs" —
+		# authored pitch left a step at its foot and a gap at the deck edge)
 		"platforms": [
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 			# The canal bridge deck — the low crossing. Above the hazard carve
@@ -2620,6 +2661,9 @@ static func _suburb() -> Dictionary:
 			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.2, 1.72, 8), "width": 4.0},
 			# Yard stair up to the SE rooftop deck.
 			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.6), "width": 3.0},
+			# East-yard ramp onto the overwatch slab (was a freestanding ramp
+			# with a step at the foot and a gap at the deck edge).
+			{"from": Vector3(22, 0, 8.2), "to": Vector3(22, 3.2, -0.6), "width": 4.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},

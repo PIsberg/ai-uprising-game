@@ -66,10 +66,23 @@ func _ready() -> void:
 	_build_ui()
 	_refresh()
 
+## The default kit every operative carries — always listed even before the
+## first deploy has registered it as held.
+const STANDARD_ISSUE := [
+	"res://scenes/weapons/pistol.tscn",
+	"res://scenes/weapons/sniper.tscn",
+	"res://scenes/weapons/magnum.tscn",
+]
+
 ## Read each weapon's WeaponData off its scene without entering the tree.
+## Only weapons the player has actually held appear (plus the standard-issue
+## kit); the rest stay classified until recovered — or until the warp cheat
+## hands the full arsenal over.
 func _load_weapons() -> void:
 	var dmg := 1.0; var rof := 1.0; var mag := 1.0; var rng := 1.0
 	for path in GameState.WEAPON_ORDER:
+		if not (GameState.is_weapon_discovered(path) or STANDARD_ISSUE.has(path)):
+			continue
 		var ps := load(path) as PackedScene
 		if ps == null:
 			continue
@@ -100,7 +113,8 @@ func _build_ui() -> void:
 	add_child(title)
 
 	var sub := Label.new()
-	sub.text = "The full arsenal. ◂ ▸ to browse · Esc to go back."
+	sub.text = "Recovered arsenal — %d of %d. ◂ ▸ to browse · Esc to go back." \
+		% [_weapons.size(), GameState.WEAPON_ORDER.size()]
 	sub.position = Vector2(50, 78)
 	sub.add_theme_color_override("font_color", Color(0.55, 0.7, 0.8))
 	add_child(sub)

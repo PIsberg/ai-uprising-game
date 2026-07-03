@@ -5,8 +5,15 @@ extends EnemyBase
 
 @export var proj_speed: float = 34.0
 @export var proj_damage: float = 18.0
+## Every few volleys it LOBS A BOMB instead: an arcing charge that lands at
+## your feet and detonates a beat later — camping one spot near a sentinel
+## is no longer safe, but the blinking fuse gives you time to move.
+@export var bomb_damage: float = 30.0
+@export var bomb_every: int = 3
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
+
+var _volley_n: int = 0
 
 
 func _ready() -> void:
@@ -31,6 +38,13 @@ func _perform_attack() -> void:
 	if scene == null:
 		return
 	var origin: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP
+	_volley_n += 1
+	if _volley_n % bomb_every == 0:
+		EnemyBomb.lob_at(scene, origin, target.global_position, 1.1, bomb_damage)
+		recoil = 1.0
+		_muzzle_flash()
+		AudioBus.play_synth_at("plasma_fire", origin, -2.0, 0.6)
+		return
 	var proj := PROJECTILE.instantiate()
 	scene.add_child(proj)
 	(proj as Node3D).global_position = origin

@@ -75,12 +75,15 @@ func _build_weapons() -> void:
 		barrel.rotation.x = deg_to_rad(90.0) # cylinder Y-axis -> forward (-Z)
 		barrel.position = Vector3(0, 0, -0.4)
 		arm.add_child(barrel)
+		# Muzzle lens recessed into the barrel mouth — a full glowing sphere out
+		# on the tip read as a stray "orange ball" on the chassis (esp. in the
+		# codex, where the bot idles on a pedestal).
 		var tip := MeshInstance3D.new()
 		var sm := SphereMesh.new()
-		sm.radius = 0.1; sm.height = 0.2
+		sm.radius = 0.055; sm.height = 0.11
 		tip.mesh = sm
 		tip.material_override = glow
-		tip.position = Vector3(0, 0, -0.82)
+		tip.position = Vector3(0, 0, -0.78)
 		arm.add_child(tip)
 
 ## Two faces on the screen — a green happy one and a red angry one — toggled by
