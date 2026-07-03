@@ -634,6 +634,11 @@ func _build_geometry(def: Dictionary) -> void:
 	elif def.has("floor_color"):
 		floor_mat = _color_material(def["floor_color"], 0.95)
 		floor_surf = "surf_dirt" if def.get("open_sky", false) else "surf_concrete"
+	# Rain-slick pass: storm levels get a wet ground sheen via Godot 4.7's
+	# reworked clearcoat (energy-conserving + reflection-probe aware) — a thin
+	# glossy water film over the rough base so lights/sky streak across the lot.
+	if str((def.get("env", {}) as Dictionary).get("weather", "")) == "rain":
+		floor_mat = _wet_variant(floor_mat)
 	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf)
 	# Perimeter walls — weathered concrete outdoors, panels indoors.
 	var wall_mat: Material = MAT_WALL_OUT if def.get("open_sky", false) else MAT_WALL
@@ -833,6 +838,22 @@ func _color_material(color: Color, roughness: float = 0.85) -> StandardMaterial3
 	m.metallic = 0.0
 	_color_mat_cache[key] = m
 	return m
+
+## Wet-weather copy of a ground material: a thin water film as a glossy
+## clearcoat lacquer over the unchanged rough base (4.7 clearcoat is energy-
+## conserving, so the sheen doesn't blow out the albedo). The shared source
+## material is never mutated.
+func _wet_variant(mat: Material) -> Material:
+	var sm := mat as StandardMaterial3D
+	if sm == null:
+		return mat
+	var wet := sm.duplicate() as StandardMaterial3D
+	wet.clearcoat_enabled = true
+	wet.clearcoat = 0.85
+	wet.clearcoat_roughness = 0.14
+	wet.roughness = minf(wet.roughness, 0.62) # damp base under the film
+	wet.metallic_specular = 0.7 # stronger dielectric reflection off the water film
+	return wet
 
 static var _asphalt_mat: StandardMaterial3D = null
 

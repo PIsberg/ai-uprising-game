@@ -147,6 +147,8 @@ func _detonate(hit_player: bool) -> void:
 		var fx := BIG_BLAST.instantiate()
 		scene.add_child(fx)
 		(fx as Node3D).global_position = global_position
+		# Kamikaze pop chars the deck it went off over.
+		ScorchDecal.spawn(scene, global_position, radius * 0.5)
 	if has_node("/root/AudioBus"):
 		AudioBus.play_synth_at("explosion", global_position, 5.0, 0.7)
 	# AoE: hurt the player + any nearby machines.

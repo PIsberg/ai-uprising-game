@@ -444,6 +444,7 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 	get_tree().current_scene.add_child(fx)
 	fx.global_position = pos
 	fx.scale = Vector3.ONE * clampf(radius / 8.0, 1.0, 4.0)
+	ScorchDecal.spawn(get_tree().current_scene, pos, clampf(radius * 0.25, 2.0, 6.0))
 	var player := get_tree().get_first_node_in_group("player")
 	var q := PhysicsShapeQueryParameters3D.new()
 	var s := SphereShape3D.new()

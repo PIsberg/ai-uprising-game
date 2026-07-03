@@ -85,6 +85,8 @@ func _explode() -> void:
 	var exp_fx := EXPLOSION_SCENE.instantiate()
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = pos
+	# Lasting mark: charred ground under the blast.
+	ScorchDecal.spawn(get_tree().current_scene, pos, splash_radius * 0.55)
 	
 	queue_free()
 
