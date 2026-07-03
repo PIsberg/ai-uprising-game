@@ -2763,10 +2763,14 @@ func _build_weather(def: Dictionary) -> void:
 ## Storm lightning (opt-in via env "lightning": true, or automatic in "rain"
 ## weather): a hidden sky light periodically double-flashes the whole scene, with
 ## a thunderclap rolling in a beat later. The "reactive world lighting" cue.
+var _storm_base: float = 24.0 ## arena half-extent; strikes land just past the wall
+
 func _build_lightning(def: Dictionary) -> void:
 	var e: Dictionary = def.get("env", {})
 	if not (bool(e.get("lightning", false)) or str(e.get("weather", "")) in ["rain", "storm"]):
 		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	_storm_base = maxf(fs.x, fs.y) * 0.5
 	var flash := DirectionalLight3D.new()
 	flash.light_color = Color(0.82, 0.86, 1.0)
 	flash.light_energy = 0.0
@@ -2784,17 +2788,95 @@ func _schedule_lightning(flash: DirectionalLight3D) -> void:
 		_schedule_lightning(flash))
 
 func _lightning_strike(flash: DirectionalLight3D) -> void:
+	# Ground the flash in the world: pick where THIS strike lands on the
+	# skyline, aim the fill light from that bearing (so shadows and highlights
+	# agree with the bolt you can see), and roll the thunder in later the
+	# further away it hit. Turns "the screen blinked" into "lightning struck
+	# over there".
+	var bearing := randf() * TAU
+	# Just past the arena wall: close enough to render through fog/exposure and
+	# dominate the sky (a 100 m strike reads as a distant flicker; a 30 m one
+	# reads as THE STORM IS HERE), with the wall hiding the ground contact.
+	var dist := _storm_base + randf_range(5.0, 20.0)
+	var ground := Vector3(sin(bearing) * dist, 0.0, cos(bearing) * dist)
+	flash.rotation_degrees = Vector3(randf_range(-68, -48), rad_to_deg(bearing) + 180.0, 0)
+	_spawn_bolt(ground)
 	# A quick double-flicker — the characteristic stutter of a real strike.
 	var tw := flash.create_tween()
 	tw.tween_property(flash, "light_energy", randf_range(3.0, 5.0), 0.04)
 	tw.tween_property(flash, "light_energy", 0.5, 0.06)
 	tw.tween_property(flash, "light_energy", randf_range(2.0, 4.0), 0.04)
 	tw.tween_property(flash, "light_energy", 0.0, 0.28)
-	# Thunder rolls in after the flash (sound is slower than light).
-	var d := get_tree().create_timer(randf_range(0.6, 1.8))
+	# Thunder rolls in after the flash — later and softer for distant strikes.
+	var delay := 0.35 + dist * randf_range(0.010, 0.016)
+	var d := get_tree().create_timer(delay)
 	d.timeout.connect(func() -> void:
 		if has_node("/root/AudioBus"):
-			AudioBus.play_synth_ui("thunder", -3.0, randf_range(0.9, 1.1)))
+			AudioBus.play_synth_ui("thunder", -3.0 - dist * 0.02, randf_range(0.9, 1.1)))
+
+## The visible strike: a jagged additive-emissive bolt from cloud height down
+## to the skyline point, with one mid-height fork, flashing out in ~0.3 s.
+## ~15 thin boxes for a third of a second every 5-13 s — negligible cost.
+func _spawn_bolt(ground: Vector3) -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Plain alpha blend, NOT additive: fog attenuates additive surfaces toward
+	# zero (they can't blend toward the fog colour), so a distant additive bolt
+	# vanishes into a bright storm sky. An opaque-white alpha surface with fog
+	# disabled stays a hard bright channel at any range — like the real thing.
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.disable_fog = true
+	mat.albedo_color = Color(0.85, 0.9, 1.0, 0.95)
+	mat.emission_enabled = true
+	mat.emission = Color(0.75, 0.85, 1.0)
+	mat.emission_energy_multiplier = 6.0
+	# Distant strikes need a fatter core to survive perspective + exposure —
+	# at 100 m a 1 m column is a dozen faint pixels; the glow halo of real
+	# lightning reads metres wide from that far.
+	var w_mult := 1.0 + ground.length() * 0.028
+	# Main channel: wanders sideways on the way down, straightens near the hit.
+	var top := ground + Vector3(randf_range(-22, 22), randf_range(55, 75), randf_range(-22, 22))
+	var pts: Array[Vector3] = []
+	var n := 11
+	for i in n + 1:
+		var t := float(i) / n
+		var p := top.lerp(ground, t)
+		if i > 0 and i < n:
+			var wobble := 6.0 * (1.0 - absf(t - 0.5) * 1.2)
+			p += Vector3(randf_range(-wobble, wobble), 0, randf_range(-wobble, wobble))
+		pts.append(p)
+	for i in n:
+		var w := lerpf(1.1, 0.5, float(i) / n) * w_mult # tapers toward the ground
+		_bolt_segment(root, pts[i], pts[i + 1], w, mat)
+	# One fork: leaves the channel mid-height and dies in the air.
+	var fi := 3 + randi() % 4
+	var fp: Vector3 = pts[fi]
+	for j in 3:
+		var fq := fp + Vector3(randf_range(-9, 9), randf_range(-11, -6), randf_range(-9, 9))
+		_bolt_segment(root, fp, fq, 0.45 * w_mult, mat)
+		fp = fq
+	var tw := root.create_tween().set_parallel(true)
+	tw.tween_property(mat, "albedo_color:a", 0.0, randf_range(0.25, 0.4)).set_delay(0.06)
+	tw.tween_property(mat, "emission_energy_multiplier", 0.0, randf_range(0.25, 0.4)).set_delay(0.06)
+	tw.chain().tween_callback(root.queue_free)
+
+func _bolt_segment(parent: Node3D, a: Vector3, b: Vector3, w: float, mat: Material) -> void:
+	var l := a.distance_to(b)
+	if l < 0.01:
+		return
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(w, l, w)
+	bm.material = mat
+	mi.mesh = bm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+	var dn := (b - a) / l
+	var up := Vector3.UP if absf(dn.y) < 0.9 else Vector3.RIGHT
+	mi.global_transform = Transform3D(
+		Basis.looking_at(dn, up) * Basis(Vector3.RIGHT, PI * 0.5), (a + b) * 0.5)
 
 ## Burning wreck fires (opt-in via def "fires"): each is a flickering flame, a
 ## buoyant smoke column that rises and lingers, a spray of embers, and a
