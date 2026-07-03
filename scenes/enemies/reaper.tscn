@@ -20,8 +20,7 @@ shape = SubResource("Capsule_col")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("3_rm")
-anim_walk = "Run"
-walk_speed_scale = 1.7
+anim_walk = ""
 tint = Color(0.62, 0.64, 0.7, 1)
 menace_color = Color(1, 0.15, 0.1, 1)
 fit_height = 1.8
