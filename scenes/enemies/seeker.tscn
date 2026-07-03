@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cru0ti7g5r10d" path="res://assets/models/robots/Enemy_EyeDrone.gltf" id="4_model"]
 
 [sub_resource type="SphereShape3D" id="Shape_seeker"]
-radius = 0.45
+radius = 0.7
 
 [node name="Seeker" type="CharacterBody3D" groups=["enemy"]]
 collision_layer = 4
@@ -25,7 +25,7 @@ anim_attack = ""
 anim_stagger = "Hit"
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
-transform = Transform3D(-0.7, 0, 0, 0, 0.7, 0, 0, 0, -0.7, 0, 1, 0)
+transform = Transform3D(-1.2, 0, 0, 0, 1.2, 0, 0, 0, -1.2, 0, 1, 0)
 
 [node name="Eye" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, -0.3)
