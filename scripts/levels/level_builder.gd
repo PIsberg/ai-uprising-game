@@ -3177,8 +3177,9 @@ func _activate_task(t: Dictionary) -> void:
 		"key":
 			var k := Keycard.new()
 			k.task_id = id
-			k.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
+			k.position = t.get("pos", Vector3.ZERO)
 			add_child(k)
+			_relocate_when_clear(k)
 		"destroy_core":
 			var core := ObjectiveCore.new()
 			core.task_id = id
@@ -3186,16 +3187,18 @@ func _activate_task(t: Dictionary) -> void:
 				core.core_color = t["color"]
 			if t.has("health"):
 				core.max_health = t["health"]
-			core.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
+			core.position = t.get("pos", Vector3.ZERO)
 			add_child(core)
+			_relocate_when_clear(core)
 		"collect_shards":
 			# Points are raw Vector3s in hand-authored defs; the level editor
 			# stores them as {"pos": ...} dicts so they drag like any marker.
 			for sp in t.get("points", []):
 				var shard := ShardPickup.new()
 				shard.task_id = id
-				shard.position = _reachable_task_pos(sp["pos"] if sp is Dictionary else sp)
+				shard.position = sp["pos"] if sp is Dictionary else sp
 				add_child(shard)
+				_relocate_when_clear(shard)
 		"hack_terminal", "sabotage":
 			var con := HoldConsole.new()
 			con.task_id = id
@@ -3203,8 +3206,9 @@ func _activate_task(t: Dictionary) -> void:
 			con.detonate = t.get("type", "") == "sabotage"
 			if t.has("color"):
 				con.accent = t["color"]
-			con.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
+			con.position = t.get("pos", Vector3.ZERO)
 			add_child(con)
+			_relocate_when_clear(con)
 		"survive":
 			var timer := SurviveTimer.new()
 			timer.task_id = id
@@ -3218,8 +3222,9 @@ func _activate_task(t: Dictionary) -> void:
 				zone.radius = t["radius"]
 			if t.has("color"):
 				zone.accent = t["color"]
-			zone.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
+			zone.position = t.get("pos", Vector3.ZERO)
 			add_child(zone)
+			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
 
@@ -3229,6 +3234,8 @@ func _activate_task(t: Dictionary) -> void:
 ## objective (level 1 shipped one). If the point sits inside world geometry,
 ## walk outward in rings and return the first clear spot near the navmesh.
 func _reachable_task_pos(pos: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return pos
 	var space := get_world_3d().direct_space_state
 	if _point_clear(space, pos):
 		return pos
@@ -3245,17 +3252,19 @@ func _reachable_task_pos(pos: Vector3) -> Vector3:
 			var on_nav := NavigationServer3D.map_get_closest_point(nav_map, p)
 			if on_nav == Vector3.ZERO \
 					or Vector2(on_nav.x - p.x, on_nav.z - p.z).length() < 1.5:
-				push_warning("Task position %s buried in geometry; relocated to %s" % [pos, p])
+				print("Task position %s buried in geometry; relocated to %s" % [pos, p])
 				return Vector3(p.x, pos.y, p.z)
-	push_warning("Task position %s buried in geometry; no clear spot found" % pos)
+	print("Task position %s buried in geometry; no clear spot found" % pos)
 	return pos
 
 ## Deferred variant for items placed during the build (physics not yet live):
 ## waits until physics AND the deferred navmesh bake have landed, then applies
 ## the same burial rescue.
 func _relocate_when_clear(node: Node3D) -> void:
+	if not is_inside_tree():
+		return
 	await get_tree().create_timer(1.0).timeout
-	if is_instance_valid(node):
+	if is_instance_valid(node) and is_inside_tree() and node.is_inside_tree():
 		node.position = _reachable_task_pos(node.position)
 
 ## True when nothing solid (world layer) occupies the point at pickup height.
