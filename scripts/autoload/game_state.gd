@@ -626,13 +626,15 @@ func go_to_level(path: String, reset: bool = false) -> void:
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress()
+	# Starting the game routes through the loading screen too — the cutscene
+	# scripts preload full-page comic art, which otherwise stalls on a frozen menu.
 	var lid := level_id_from_path(path)
 	if lid == "01":
-		get_tree().change_scene_to_file(INTRO_CUTSCENE)
+		_enter_level_scene(INTRO_CUTSCENE)
 	elif CUTSCENE_FOR_LEVEL.has(lid):
-		get_tree().change_scene_to_file(CUTSCENE_FOR_LEVEL[lid])
+		_enter_level_scene(CUTSCENE_FOR_LEVEL[lid])
 	else:
-		get_tree().change_scene_to_file(LEVEL_BRIEFING)
+		_enter_level_scene(LEVEL_BRIEFING)
 
 ## "res://scenes/levels/level_gpt.tscn" -> "gpt"; level_suburb_boss -> "suburb_boss".
 func level_id_from_path(path: String) -> String:
@@ -728,7 +730,8 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		_enter_level_scene(scene_path)
 
 ## Switch to the loading screen, which paints a frame and then changes to
-## `target` (the heavy level scene). Keeps the grey-window stall off-screen.
+## `target` (a heavy level scene, or the cutscene/briefing leading into one).
+## Keeps the grey-window stall off-screen.
 func _enter_level_scene(target: String) -> void:
 	pending_scene = target
 	get_tree().change_scene_to_file(LOADING_SCREEN)
