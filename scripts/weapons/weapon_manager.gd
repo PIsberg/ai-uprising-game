@@ -123,6 +123,9 @@ func _instantiate_weapon(scene: PackedScene) -> Weapon:
 	w.fired.connect(_on_fired)
 	w.ammo_changed.connect(func(m, r): ammo_changed.emit(m, r))
 	weapons.append(w)
+	# A weapon that lands in the rack has been HELD — unlock its codex dossier
+	# (persists across runs; covers base loadout, pickups and the warp arsenal).
+	GameState.discover_weapon(scene.resource_path)
 	return w
 
 ## Reorder the rack weakest→strongest by GameState.weapon_power_rank, keeping the

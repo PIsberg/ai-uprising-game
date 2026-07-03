@@ -337,9 +337,19 @@ func _speak(category: String, chance: float = 1.0) -> void:
 			return
 		ab.play_voice_at(category, src.global_position, 1.0, 2.0, pitch)
 
+## The bestiary key for this chassis (EnemyAndroid -> "android"), elite prefix
+## excluded. Matches EnemyCodex.ORDER; unknown keys are ignored by GameState.
+func codex_key() -> String:
+	var s: Script = get_script()
+	var n: String = String(s.get_global_name()) if s else ""
+	return n.replace("Enemy", "").to_lower()
+
 ## Brief reaction the instant this enemy first registers the player: a short
 ## comms blip and a bright flare at the eye.
 func _alert() -> void:
+	# A hostile that has locked onto you counts as ENCOUNTERED — this (plus
+	# dying, for ones sniped before they notice) unlocks its codex entry.
+	GameState.discover_enemy(codex_key())
 	var src: Node3D = eye if eye != null else self
 	if has_node("/root/AudioBus"):
 		var ab: Node = get_node("/root/AudioBus")
@@ -1041,6 +1051,7 @@ func _on_died(_source: Node) -> void:
 	set_state(State.DEAD)
 	# Dying gasp — bypasses the global voice cooldown so kills get their payoff.
 	_speak("die", 0.45)
+	GameState.discover_enemy(codex_key()) # killed before it ever alerted still counts
 	GameState.add_kill(score_value, _kill_label())
 	# Satisfying slow-mo crunch on heftier player kills (bosses do their own,
 	# bigger one; regular drones/androids stay snappy so swarms don't stutter).
