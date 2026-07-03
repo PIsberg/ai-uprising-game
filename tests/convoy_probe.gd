@@ -36,15 +36,20 @@ func _run() -> void:
 		boarded = absf(rel.x) <= 3.2 and rel.z >= -6.5 and rel.z <= 7.0 \
 			and brute.global_position.y >= 1.0
 		print("brute deck-relative pos=%s boarded=%s" % [rel, boarded])
-		# Friendly fire: enemy-sourced hits bounce off enemies; source-less
-		# (environmental) damage must still land.
+		# Friendly fire: hits from ANOTHER enemy bounce off; source-less
+		# (environmental) damage must still land. (Self-damage is deliberately
+		# allowed — kamikaze mechanics — so the source must be a distinct foe.)
+		var foe := Node3D.new()
+		foe.add_to_group("enemy")
+		get_tree().current_scene.add_child(foe)
 		var hp = brute.get("hp")
 		var before: float = hp.current_health
-		hp.apply_damage(50.0, brute)
+		hp.apply_damage(50.0, foe)
 		var blocked: bool = hp.current_health == before
 		hp.apply_damage(50.0, null)
 		ff_ok = blocked and hp.current_health < before
 		print("friendly-fire blocked=%s env-damage lands=%s" % [blocked, hp.current_health < before])
+		foe.queue_free()
 	# --- zipline / demo-platform loop ---
 	var plats: Array = ride.get("_platforms")
 	var plat_ok: bool = plats.size() == 2

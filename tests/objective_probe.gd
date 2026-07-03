@@ -45,14 +45,17 @@ func _run() -> void:
 	lvl2.queue_free()
 	await _wait(0.3)
 
-	# --- Level 1: keycard task ---
+	# --- Level 1: single gate-lever task (the simplified tutorial objective) ---
 	var lvl3: Node = load("res://scenes/levels/level_01.tscn").instantiate()
 	get_tree().root.add_child(lvl3)
 	await _wait(1.3)
-	var has_key := _has_task("key")
-	var keycards := get_tree().get_nodes_in_group("keycard")
-	print("LEVEL01 key_task=%s keycard_nodes=%d" % [has_key, keycards.size()])
-	if not has_key or keycards.is_empty():
+	var has_gates := _has_task("gates")
+	var consoles := 0
+	for c in lvl3.get_children():
+		if c is HoldConsole:
+			consoles += 1
+	print("LEVEL01 gates_task=%s consoles=%d tasks=%d" % [has_gates, consoles, GameState.level_tasks.size()])
+	if not has_gates or consoles == 0 or GameState.level_tasks.size() != 1:
 		ok = false
 
 	print("RESULT ", "PASS" if ok else "FAIL")

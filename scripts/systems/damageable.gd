@@ -22,9 +22,12 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	if source != null and not is_instance_valid(source):
 		source = null
 	
-	# Enemies should not take damage from enemy fire
+	# Enemies should not take damage from OTHER enemies' fire. Self-damage stays
+	# allowed — kamikaze mechanics (the mauler's overload pop) kill their owner
+	# via apply_damage(self) and must keep working.
 	var victim := get_parent()
-	if victim and victim.is_in_group("enemy") and source and source.is_in_group("enemy"):
+	if victim and source and source != victim \
+			and victim.is_in_group("enemy") and source.is_in_group("enemy"):
 		return
 	if invulnerable or current_health <= 0.0:
 		var parent := get_parent()
