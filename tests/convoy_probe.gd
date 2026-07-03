@@ -45,9 +45,52 @@ func _run() -> void:
 		hp.apply_damage(50.0, null)
 		ff_ok = blocked and hp.current_health < before
 		print("friendly-fire blocked=%s env-damage lands=%s" % [blocked, hp.current_health < before])
+	# --- zipline / demo-platform loop ---
+	var plats: Array = ride.get("_platforms")
+	var plat_ok: bool = plats.size() == 2
+	var p0: Dictionary = plats[0]
+	var anchor: Node3D = p0["anchor"]
+	# Outbound zip: winch the player from the truck to the platform.
+	player.call("zipline_to", anchor)
+	await get_tree().create_timer(3.0).timeout
+	var flat := Vector2(player.global_position.x - anchor.global_position.x,
+		player.global_position.z - anchor.global_position.z)
+	var on_platform := player.global_position.y > 5.0 and flat.length() < 6.0
+	print("zip out: player=%s anchor=%s on_platform=%s" % [player.global_position, anchor.global_position, on_platform])
+	# Detonate with the swarm converging on the player: flyers must die en masse.
+	var live_before := _live_enemies()
+	ride.call("_on_detonator", player, p0)
+	await get_tree().create_timer(2.0).timeout
+	var live_after := _live_enemies()
+	var boom_ok: bool = p0["spent"] and live_after <= live_before - 4
+	print("boom: enemies alive %d -> %d spent=%s" % [live_before, live_after, p0["spent"]])
+	# Clear the battlefield first: a boarded brute WILL slam the player off the
+	# tail mid-check — fair combat, but this leg asserts the zip, not the fight.
+	for e in get_tree().get_nodes_in_group("enemy"):
+		(e as Node).queue_free()
+	await get_tree().physics_frame
+	# Return zip: the anchor is riding the still-moving truck.
+	player.call("zipline_to", ride.get("_truck_anchor"))
+	await get_tree().create_timer(4.0).timeout
+	var back := absf(player.global_position.z - truck.global_position.z) < 8.0 \
+		and player.global_position.y > 0.9
+	print("zip back: player=%s truck_z=%.1f back=%s" % [player.global_position, truck.global_position.z, back])
+	# Pursuit gun-trucks: at least one spawned by now, with a live crew.
+	var vehicles: Array = ride.get("_vehicles")
+	var veh_ok := vehicles.size() >= 1
+	print("pursuit vehicles=%d" % vehicles.size())
 	print("truck moved %.1fm (z %.1f -> %.1f)" % [moved, z0, z1])
 	print("player aboard=%s (p=%s truck_z=%.1f)" % [rides, player.global_position, truck.global_position.z])
 	print("enemies spawned=%d" % enemies)
-	var ok := moved > 15.0 and rides and enemies >= 2 and boarded and ff_ok
+	var ok := moved > 15.0 and rides and enemies >= 2 and boarded and ff_ok \
+		and plat_ok and on_platform and boom_ok and back and veh_ok
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+func _live_enemies() -> int:
+	var n := 0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var hp = e.get("hp")
+		if hp and hp.is_alive():
+			n += 1
+	return n
