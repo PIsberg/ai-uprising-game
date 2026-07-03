@@ -24,9 +24,10 @@ const LEVEL_COMIC_DEFS := {
 	"convoy": {
 		"image": "res://assets/comics/level_convoy.png",
 		"fx": [
-			{"kind": "glow", "u": 0.5, "v": 0.55, "size": 120, "color": C_RED}, # Engine core / headlight glow
-			{"kind": "glow", "u": 0.72, "v": 0.42, "size": 40, "color": C_RED}, # Pursuit flyer eye glow
-			{"kind": "muzzle", "u": 0.28, "v": 0.65, "size": 60, "color": C_BLUE} # Player defensive fire
+			{"kind": "glow", "u": 0.19, "v": 0.17, "size": 52, "color": C_RED}, # Lead pursuit flyer optics
+			{"kind": "glow", "u": 0.85, "v": 0.40, "size": 40, "color": C_RED}, # Flanking flyer optics
+			{"kind": "glow", "u": 0.80, "v": 0.72, "size": 64, "color": C_WARM}, # Hauler headlights
+			{"kind": "muzzle", "u": 0.36, "v": 0.63, "size": 60, "color": C_BLUE} # Player defensive fire off the span
 		],
 		"weather": "sparks"
 	},

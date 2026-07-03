@@ -122,6 +122,14 @@ func _build_highway_scenery() -> void:
 	barrier_mat.albedo_color = Color(0.3, 0.3, 0.3)
 	barrier_mat.roughness = 0.9
 	
+	# Shared emissive lamp-head material — the glowing fixture is what makes a
+	# streetlight read as lit at night (the OmniLight itself is invisible).
+	var lamp_mat := StandardMaterial3D.new()
+	lamp_mat.albedo_color = light_color
+	lamp_mat.emission_enabled = true
+	lamp_mat.emission = light_color
+	lamp_mat.emission_energy_multiplier = 3.5
+	
 	for z in range(int(end_z) - 30, int(start_z) + 30, 28):
 		for side in [-10.5, 10.5]:
 			# Streetlight Post
@@ -135,22 +143,32 @@ func _build_highway_scenery() -> void:
 			post.position = Vector3(side, 3.75, z)
 			add_child(post)
 			
-			# Streetlight Arm
+			# Streetlight Arm — reaches from the post toward the roadway.
+			var toward_road := 1.0 if side < 0 else -1.0
 			var arm := MeshInstance3D.new()
 			var am := BoxMesh.new()
-			am.size = Vector3(2.6 * (1.0 if side < 0 else -1.0), 0.16, 0.16)
+			am.size = Vector3(2.6, 0.16, 0.16)
 			am.material = post_mat
 			arm.mesh = am
-			arm.position = Vector3(side - 1.3 * (1.0 if side < 0 else -1.0), 7.5, z)
+			arm.position = Vector3(side + 1.3 * toward_road, 7.5, z)
 			add_child(arm)
 			
-			# Streetlight Light Source
+			# Streetlight Light Source — hangs off the arm tip, over the lanes.
 			var light := OmniLight3D.new()
 			light.light_color = light_color
 			light.light_energy = 2.4
 			light.omni_range = 16.0
-			light.position = Vector3(side - 2.6 * (1.0 if side < 0 else -1.0), 7.2, z)
+			light.position = Vector3(side + 2.6 * toward_road, 7.2, z)
 			add_child(light)
+			
+			# Lamp head at the arm tip, just above the light source.
+			var lamp := MeshInstance3D.new()
+			var lm := BoxMesh.new()
+			lm.size = Vector3(0.55, 0.14, 0.32)
+			lm.material = lamp_mat
+			lamp.mesh = lm
+			lamp.position = Vector3(side + 2.45 * toward_road, 7.42, z)
+			add_child(lamp)
 			
 			# Concrete Jersey Barrier along sides
 			var barrier := MeshInstance3D.new()
@@ -229,6 +247,11 @@ func _physics_process(delta: float) -> void:
 		_wave_t = wave_interval
 		_spawn_wave()
 
+## Heavies too slow to chase a 5.5 m/s truck from the roadside — they drop
+## straight onto the deck as boarders instead, forcing close-quarters fights
+## around the cargo cover boxes.
+const BOARDERS := ["brute", "mech"]
+
 func _spawn_wave() -> void:
 	var wave: Array = WAVES[_wave_i % WAVES.size()]
 	_wave_i += 1
@@ -238,7 +261,13 @@ func _spawn_wave() -> void:
 		if scene == null:
 			continue
 		var e := scene.instantiate() as Node3D
-		var side := -1.0 if i % 2 == 0 else 1.0
-		# Flank spawns slightly behind the truck so pursuit reads as a chase.
-		e.position = Vector3(side * randf_range(9.0, 14.0), 0.6, tz + randf_range(4.0, 16.0))
+		if wave[i] in BOARDERS:
+			# Deck boarding drop: released above the front half of the bed so
+			# the truck's forward travel during the fall lands them mid-deck.
+			e.position = _truck.global_position \
+				+ Vector3(randf_range(-1.5, 1.5), 3.0, randf_range(-4.4, -1.4))
+		else:
+			var side := -1.0 if i % 2 == 0 else 1.0
+			# Flank spawns slightly behind the truck so pursuit reads as a chase.
+			e.position = Vector3(side * randf_range(9.0, 14.0), 0.6, tz + randf_range(4.0, 16.0))
 		get_tree().current_scene.add_child(e)

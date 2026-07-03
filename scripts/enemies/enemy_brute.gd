@@ -17,7 +17,7 @@ func _ready() -> void:
 	add_to_group("shield_enemies")
 	_build_shield()
 	super._ready()
-	max_health = 280.0
+	max_health = 200.0 # the shield already soaks 90% frontal — raw HP stays modest so flanking pays off fast
 	move_speed = 2.0 # lumbering — slow enough that you can circle out and flank it
 	turn_speed = 1.8 # turns slowly — circle to its unshielded sides/back to flank it
 	sight_range = 40.0

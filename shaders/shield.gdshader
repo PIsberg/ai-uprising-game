@@ -28,7 +28,9 @@ float hex_grid(vec2 p) {
 // Noise/FBM generator functions for lightning path distortion
 vec2 hash22(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
-	return 2.0 * fract(sin(p) * 43758.5453123);
+	// Signed gradients in [-1, 1] — an unsigned hash biases every dot product
+	// positive and pushes the bolt permanently off one edge of the shield.
+	return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
 }
 
 float noise(vec2 p) {

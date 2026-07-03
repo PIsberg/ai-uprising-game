@@ -591,7 +591,7 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 		_approach_angle = randf() * TAU
 		var side := Vector3(-dir.z, 0.0, dir.x) * (1.0 if randf() < 0.5 else -1.0)
 		# Combine sideways and forward/backward escape direction:
-		var escape_dir = (side + dir * 0.25).normalized()
+		var escape_dir := (side + dir * 0.25).normalized()
 		_recovery_timer = 0.4 # Run the recovery state for 0.4 seconds
 		_recovery_dir = escape_dir
 
