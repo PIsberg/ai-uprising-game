@@ -11,12 +11,14 @@ extends Node3D
 @export var wave_interval: float = 11.0
 
 const WAVES: Array = [
-	["drone", "drone"],
-	["raptor", "drone"],
-	["dog", "dog", "drone"],
-	["raptor", "raptor"],
-	["strider", "drone", "drone"],
-	["seeker", "seeker", "raptor"],
+	["drone", "drone", "raptor"],
+	["raptor", "drone", "seeker"],
+	["dog", "dog", "drone", "seeker"],
+	["raptor", "raptor", "breaker"],
+	["strider", "drone", "drone", "mender"],
+	["seeker", "seeker", "raptor", "brute"],
+	["mech", "drone", "drone", "seeker"],
+	["brute", "breaker", "raptor", "drone"],
 ]
 const SCENES := {
 	"drone": preload("res://scenes/enemies/drone.tscn"),
@@ -24,6 +26,10 @@ const SCENES := {
 	"dog": preload("res://scenes/enemies/dog.tscn"),
 	"strider": preload("res://scenes/enemies/strider.tscn"),
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
+	"breaker": preload("res://scenes/enemies/breaker.tscn"),
+	"mender": preload("res://scenes/enemies/mender.tscn"),
+	"brute": preload("res://scenes/enemies/brute.tscn"),
+	"mech": preload("res://scenes/enemies/mech.tscn"),
 }
 
 var _truck: AnimatableBody3D
@@ -34,6 +40,7 @@ var _arrived: bool = false
 
 func _ready() -> void:
 	_build_truck()
+	_build_highway_scenery()
 	_board_player.call_deferred()
 
 func _build_truck() -> void:
@@ -72,6 +79,12 @@ func _build_truck() -> void:
 	mk.call(Vector3(-3.0, 1.6, 0), Vector3(0.4, 0.7, 12.0), dark)        # left rail
 	mk.call(Vector3(3.0, 1.6, 0), Vector3(0.4, 0.7, 12.0), dark)         # right rail
 	mk.call(Vector3(0, 2.6, -7.6), Vector3(5.0, 2.6, 2.4), metal)        # cab block
+	
+	# Cargo cover boxes on the flatbed for cover:
+	mk.call(Vector3(-1.7, 1.8, -1.8), Vector3(1.3, 1.1, 1.3), dark)      # front-left cover
+	mk.call(Vector3(1.7, 1.9, 2.2), Vector3(1.4, 1.3, 1.4), metal)       # back-right cover
+	mk.call(Vector3(0, 1.75, 4.2), Vector3(1.1, 1.0, 1.1), dark)         # back-center cover
+
 	# Wheels: six dark cylinders (visual only).
 	for wz in [-4.5, 0.0, 4.5]:
 		for sx in [-2.6, 2.6]:
@@ -96,6 +109,98 @@ func _build_truck() -> void:
 		hl.rotation.x = -0.08
 		hl.rotation.y = PI
 		_truck.add_child(hl)
+
+func _build_highway_scenery() -> void:
+	var light_color := Color(1.0, 0.62, 0.22) # Amber sodium highway glow
+	var metal_color := Color(0.22, 0.24, 0.28)
+	var post_mat := StandardMaterial3D.new()
+	post_mat.albedo_color = metal_color
+	post_mat.metallic = 0.8
+	post_mat.roughness = 0.35
+	
+	var barrier_mat := StandardMaterial3D.new()
+	barrier_mat.albedo_color = Color(0.3, 0.3, 0.3)
+	barrier_mat.roughness = 0.9
+	
+	for z in range(int(end_z) - 30, int(start_z) + 30, 28):
+		for side in [-10.5, 10.5]:
+			# Streetlight Post
+			var post := MeshInstance3D.new()
+			var pm := CylinderMesh.new()
+			pm.top_radius = 0.08
+			pm.bottom_radius = 0.12
+			pm.height = 7.5
+			pm.material = post_mat
+			post.mesh = pm
+			post.position = Vector3(side, 3.75, z)
+			add_child(post)
+			
+			# Streetlight Arm
+			var arm := MeshInstance3D.new()
+			var am := BoxMesh.new()
+			am.size = Vector3(2.6 * (1.0 if side < 0 else -1.0), 0.16, 0.16)
+			am.material = post_mat
+			arm.mesh = am
+			arm.position = Vector3(side - 1.3 * (1.0 if side < 0 else -1.0), 7.5, z)
+			add_child(arm)
+			
+			# Streetlight Light Source
+			var light := OmniLight3D.new()
+			light.light_color = light_color
+			light.light_energy = 2.4
+			light.omni_range = 16.0
+			light.position = Vector3(side - 2.6 * (1.0 if side < 0 else -1.0), 7.2, z)
+			add_child(light)
+			
+			# Concrete Jersey Barrier along sides
+			var barrier := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(0.6, 0.9, 5.0)
+			bm.material = barrier_mat
+			barrier.mesh = bm
+			barrier.position = Vector3(side * 0.88, 0.45, z + randf_range(-1.0, 1.0))
+			barrier.rotation.y = randf_range(-0.06, 0.06)
+			add_child(barrier)
+			
+	# Spawn a few overhead highway sign gantries for scale
+	for gz in [120.0, 30.0, -60.0, -140.0]:
+		# Left pillar
+		var p1 := MeshInstance3D.new()
+		var pm := CylinderMesh.new()
+		pm.top_radius = 0.16
+		pm.bottom_radius = 0.16
+		pm.height = 9.5
+		pm.material = post_mat
+		p1.mesh = pm
+		p1.position = Vector3(-11.0, 4.75, gz)
+		add_child(p1)
+		
+		# Right pillar
+		var p2 := MeshInstance3D.new()
+		p2.mesh = pm
+		p2.position = Vector3(11.0, 4.75, gz)
+		add_child(p2)
+		
+		# Crossbeam
+		var beam := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(22.0, 0.4, 0.4)
+		bm.material = post_mat
+		beam.mesh = bm
+		beam.position = Vector3(0, 9.5, gz)
+		add_child(beam)
+		
+		# Sign board
+		var board := MeshInstance3D.new()
+		var bmesh := BoxMesh.new()
+		bmesh.size = Vector3(7.0, 2.0, 0.15)
+		var board_mat := StandardMaterial3D.new()
+		board_mat.albedo_color = Color(0.08, 0.26, 0.14) # Highway Green
+		board_mat.roughness = 0.75
+		bmesh.material = board_mat
+		board.mesh = bmesh
+		board.position = Vector3(-2.2, 8.2, gz)
+		add_child(board)
 
 func _board_player() -> void:
 	await get_tree().create_timer(0.6).timeout
