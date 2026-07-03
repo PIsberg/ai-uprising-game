@@ -53,6 +53,23 @@ func _build_shield() -> void:
 	shield.rotation_degrees = Vector3(0, 15, 6) # canted like a shield braced on the forearm
 	rig.add_child(shield)
 
+	# Solid metal backing plate: always-visible physical shield behind the energy
+	# face, so the carried shield reads even where the fancy shader washes out.
+	var plate := MeshInstance3D.new()
+	plate.name = "ShieldPlate"
+	var pm := BeveledBoxMesh.new()
+	pm.size = Vector3(1.15, 1.6, 0.06)
+	pm.bevel = 0.03
+	plate.mesh = pm
+	plate.position = Vector3(-0.60, 1.2, -0.68)
+	plate.rotation_degrees = Vector3(0, 15, 6)
+	var pmat := StandardMaterial3D.new()
+	pmat.albedo_color = Color(0.16, 0.18, 0.22)
+	pmat.metallic = 0.85
+	pmat.roughness = 0.35
+	plate.material_override = pmat
+	rig.add_child(plate)
+
 	# Glowing shield rim so the protected face reads at a glance.
 	var rim := MeshInstance3D.new()
 	rim.name = "ShieldRim"
@@ -71,6 +88,18 @@ func _apply_shield_material() -> void:
 	if shield == null or rim == null:
 		return
 	
+	# The glowing energy sheet reads in BOTH paths — the fresnel hex face alone
+	# was near-invisible head-on, which read as "the brute lost its shield".
+	var rmat := StandardMaterial3D.new()
+	rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	rmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	rmat.albedo_color = Color(0.3, 0.7, 1.0, 0.4)
+	rmat.emission_enabled = true
+	rmat.emission = Color(0.35, 0.75, 1.0)
+	rmat.emission_energy_multiplier = 2.5
+	rim.material_override = rmat
+	rim.visible = true
+
 	var use_shader := bool(GraphicsSettings.get("robot_triplanar_enabled"))
 	if use_shader:
 		var sm := ShaderMaterial.new()
@@ -81,24 +110,13 @@ func _apply_shield_material() -> void:
 		sm.set_shader_parameter("grid_intensity", 0.45)
 		_shield_mat = sm
 		shield.material_override = sm
-		rim.visible = false
 	else:
 		var smat := StandardMaterial3D.new()
 		smat.albedo_color = Color(0.18, 0.2, 0.24)
 		smat.metallic = 0.8
 		smat.roughness = 0.3
 		shield.material_override = smat
-		
-		var rmat := StandardMaterial3D.new()
-		rmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		rmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		rmat.albedo_color = Color(0.3, 0.7, 1.0, 0.5)
-		rmat.emission_enabled = true
-		rmat.emission = Color(0.35, 0.75, 1.0)
-		rmat.emission_energy_multiplier = 2.5
 		_shield_mat = rmat
-		rim.material_override = rmat
-		rim.visible = true
 
 func update_shield_settings() -> void:
 	_apply_shield_material()
