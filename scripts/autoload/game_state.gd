@@ -147,6 +147,7 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_mistral.tscn",
 	"res://scenes/levels/level_suburb.tscn",
 	"res://scenes/levels/level_suburb_boss.tscn",
+	"res://scenes/levels/level_convoy.tscn", # rail-shooter ride: fight from a moving hauler
 	"res://scenes/levels/level_claude.tscn",
 	"res://scenes/levels/level_grok.tscn",
 	"res://scenes/levels/level_uplink.tscn",
