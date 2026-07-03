@@ -82,6 +82,32 @@ func _process(delta: float) -> void:
 		_mesh.position.y = _mesh_home_y + sin(_bob_phase) * 0.12
 	if _light:
 		_light.light_energy = _light_base + sin(_bob_phase * 1.5) * _light_base * 0.3
+	_magnet(delta)
+
+const MAGNET_RANGE := 3.4
+const MAGNET_KINDS: Array[Kind] = [Kind.HEALTH, Kind.AMMO]
+
+## Supply magnetism: health/ammo drops drift to a nearby player instead of
+## demanding a pixel-perfect walk-over mid-firefight. Only combat drops chase —
+## weapon racks and powerups are deliberate placements and stay put. Health
+## won't chase a full-health player (collection would refuse it and the pack
+## would ride their heels forever).
+func _magnet(delta: float) -> void:
+	if _taken or kind not in MAGNET_KINDS:
+		return
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if p == null:
+		return
+	if kind == Kind.HEALTH:
+		var d = p.get_node_or_null("Damageable")
+		if d == null or d.current_health >= d.max_health:
+			return
+	var to: Vector3 = p.global_position + Vector3.UP * 0.8 - global_position
+	var dist := to.length()
+	if dist > MAGNET_RANGE or dist < 0.05:
+		return
+	var speed := lerpf(9.0, 2.5, dist / MAGNET_RANGE) # snappier the closer it gets
+	global_position += to / dist * speed * delta
 
 func _on_body_entered(body: Node) -> void:
 	if _taken or not body.is_in_group("player"):

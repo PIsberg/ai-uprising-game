@@ -510,6 +510,7 @@ func _handle_dash(delta: float) -> void:
 		velocity.z = _dash_dir.z * dash_speed
 		if _dash_time <= 0.0:
 			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
+			collision_mask |= 4     # solid to enemies again (depenetration shoves us clear)
 		return
 	# Track taps every frame so the double-tap window stays accurate; a quick
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
@@ -528,6 +529,10 @@ func _handle_dash(delta: float) -> void:
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
 		hp.invulnerable = true
+		# Phase THROUGH enemies while the i-frames run: solid enemies can corner
+		# and body-block you, so the dash is the escape tool — a dodge that
+		# bounces off the brute it's dodging is no dodge at all.
+		collision_mask &= ~4
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
