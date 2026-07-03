@@ -250,14 +250,14 @@ static func _nexus() -> Dictionary:
 			# players who spot it; the official route stays the plaza lane.
 			{"pos": Vector3(12.5, 1.4, -2), "size": Vector3(6, 0.4, 3)},
 		],
-		"ramps": [
-			{"pos": Vector3(2, 0.5, -2), "size": Vector3(4, 0.5, 5), "pitch": 20, "yaw": 90},
-		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) up to a
 		# rooftop vantage over the ruined plaza.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
+			# Solved ramp up onto the east slab, replacing the old freestanding
+			# ramp that topped out 0.4 m BELOW the deck (an unclimbable lip).
+			{"from": Vector3(-1.6, 0, -2), "to": Vector3(4.8, 2.0, -2), "width": 4.5},
 			# Collapsed-slab ramps chaining the rooftop spawn down the rubble
 			# cascade to the street — the drops between slabs exceed the nav
 			# step height, so without these the roof was a navmesh island
@@ -2598,9 +2598,8 @@ static func _suburb() -> Dictionary:
 			{"id": "lore_suburb", "title": "RECOVERED VOICEMAIL", "pos": Vector3(-20, 0, 8), "color": Color(1.0, 0.85, 0.5),
 				"text": "Civilian voicemail, recovered. They said the curfew was for our safety. The streetlights track movement now. Don't come home, mom. Please."},
 		],
-		"ramps": [
-			{"pos": Vector3(22, 1.5, 4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
-		],
+		# (the freestanding east-yard ramp is now a solved entry under "stairs" —
+		# authored pitch left a step at its foot and a gap at the deck edge)
 		"platforms": [
 			{"pos": Vector3(22, 3.0, -3), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 			# The canal bridge deck — the low crossing. Above the hazard carve
@@ -2620,6 +2619,9 @@ static func _suburb() -> Dictionary:
 			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.2, 1.72, 8), "width": 4.0},
 			# Yard stair up to the SE rooftop deck.
 			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.6), "width": 3.0},
+			# East-yard ramp onto the overwatch slab (was a freestanding ramp
+			# with a step at the foot and a gap at the deck edge).
+			{"from": Vector3(22, 0, 8.2), "to": Vector3(22, 3.2, -0.6), "width": 4.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
