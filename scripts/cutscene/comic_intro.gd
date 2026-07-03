@@ -1,8 +1,9 @@
 extends Control
-## Campaign opener as a motion-comic: the three panels of the intro page slide in
-## one at a time (page-turn → reveal → hold) with animated FX layered over the
-## art — glowing muzzle fire, enemy laser beams, pulsing red eyes / hologram
-## glow — then we drop into level 1. Any key/click/button skips.
+## Campaign opener as a motion-comic: the three panels of the intro page slide
+## into place one after another and STAY, assembling the full comic page on
+## screen, with animated FX layered over the art — glowing muzzle fire, enemy
+## laser beams, pulsing red eyes / hologram glow — then we drop into level 1.
+## Any key/click/button skips.
 ##
 ## The source art is one tall page (1696×2528) holding three stacked panels; we
 ## show each via an AtlasTexture region. FX are placed in NORMALISED panel coords
@@ -16,7 +17,9 @@ const PANELS: Array = [
 	Rect2(28, 852, 1640, 802),
 	Rect2(28, 1690, 1640, 812),
 ]
-const PANEL_HOLD := 2.6  ## Seconds each panel lingers after flashing in.
+const PANEL_STAGGER := 1.1  ## Delay between one panel landing and the next sliding in.
+const PAGE_HOLD := 5.2      ## How long the completed page lingers before the drop.
+const GUTTER := 14.0        ## Vertical gap between the stacked panels.
 
 const C_WARM := Color(1.0, 0.82, 0.45)   # ballistic muzzle fire
 const C_BLUE := Color(0.5, 0.8, 1.0)     # the hero's energy weapon / holograms
@@ -50,13 +53,10 @@ const PANEL_FX: Array = [
 	],
 ]
 
-var _atlas: AtlasTexture
-var _panel_root: Control
-var _img: TextureRect
-var _fx_layer: Control
+var _panel_roots: Array = []  # one {root, fx} Control pair per panel, in reading order
 var _fade: ColorRect
 var _add_mat: CanvasItemMaterial
-var _fx: Array = []        # live FX node records for the current panel
+var _fx: Array = []        # live FX node records (accumulates as panels land)
 var _t: float = 0.0
 var _done := false
 
@@ -75,28 +75,30 @@ func _ready() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	# Panel root is sized/positioned to the fitted image each panel; the image and
-	# its FX live inside it so FX track the art exactly.
-	_panel_root = Control.new()
-	_panel_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel_root.modulate.a = 0.0
-	add_child(_panel_root)
+	# One root per panel — all three share the screen and assemble into the full
+	# comic page. Each root holds its image + FX layer so FX track the art exactly.
+	for i in PANELS.size():
+		var root := Control.new()
+		root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.modulate.a = 0.0
+		add_child(root)
 
-	_atlas = AtlasTexture.new()
-	_atlas.atlas = COMIC
-	_atlas.region = PANELS[0]
-	_img = TextureRect.new()
-	_img.texture = _atlas
-	_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_img.stretch_mode = TextureRect.STRETCH_SCALE
-	_img.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel_root.add_child(_img)
+		var atlas := AtlasTexture.new()
+		atlas.atlas = COMIC
+		atlas.region = PANELS[i]
+		var img := TextureRect.new()
+		img.texture = atlas
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_SCALE
+		img.set_anchors_preset(Control.PRESET_FULL_RECT)
+		img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(img)
 
-	_fx_layer = Control.new()
-	_fx_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel_root.add_child(_fx_layer)
+		var fxl := Control.new()
+		fxl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		fxl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(fxl)
+		_panel_roots.append({"root": root, "fx": fxl})
 
 	var hint := Label.new()
 	hint.text = "Skip  ▸"
@@ -120,65 +122,73 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	_layout_page()
 	var up := create_tween()
 	up.tween_property(_fade, "color:a", 0.0, 0.5)
 	await up.finished
+	# The panels slide into their slots in reading order and STAY, building up
+	# the complete page; then the finished page holds before the drop.
 	for i in PANELS.size():
 		if _done:
 			break
-		_show_panel(i)
-		# Page-turn: the new panel slides in from the right while fading up — no
-		# white flash, no switch blip. Reads like turning to the next comic page.
-		var target: Vector2 = _panel_root.position
-		var slide := get_viewport_rect().size.x * 0.32
-		_panel_root.position = target + Vector2(slide, 0.0)
-		_panel_root.modulate.a = 0.0
-		var rev := create_tween().set_parallel(true)
-		rev.tween_property(_panel_root, "position", target, 0.5) \
-			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		rev.tween_property(_panel_root, "modulate:a", 1.0, 0.35) \
-			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		await _wait(PANEL_HOLD)
+		_reveal_panel(i)
+		await _wait(PANEL_STAGGER)
+	if not _done:
+		await _wait(PAGE_HOLD)
 	_finish()
 
-## Lay out the panel image to fit the screen (aspect-preserved, centred) and build
-## its FX in that fitted rect.
-func _show_panel(i: int) -> void:
-	_atlas.region = PANELS[i]
-	var region: Rect2 = PANELS[i]
-	var margin := Vector2(60, 30)
+## Fit the three stacked panels (plus gutters) to the screen, aspect-preserved
+## and centred — the same layout as the source comic page.
+func _layout_page() -> void:
+	var margin := Vector2(60, 26)
 	var avail := get_viewport_rect().size - margin * 2.0
-	var aspect := region.size.x / region.size.y
-	var w := avail.x
-	var h := w / aspect
-	if h > avail.y:
-		h = avail.y
-		w = h * aspect
-	_panel_root.position = margin + (avail - Vector2(w, h)) * 0.5
-	_panel_root.size = Vector2(w, h)
-	_build_fx(PANEL_FX[i], Vector2(w, h))
+	var aspect := PANELS[0].size.x / PANELS[0].size.y  # all three strips match
+	var ph := (avail.y - GUTTER * 2.0) / 3.0
+	var pw := ph * aspect
+	if pw > avail.x:
+		pw = avail.x
+		ph = pw / aspect
+	var page_h := ph * 3.0 + GUTTER * 2.0
+	var top := margin + (avail - Vector2(pw, page_h)) * 0.5
+	for i in _panel_roots.size():
+		var root: Control = _panel_roots[i]["root"]
+		root.position = top + Vector2(0.0, (ph + GUTTER) * float(i))
+		root.size = Vector2(pw, ph)
 
-func _build_fx(specs: Array, panel_size: Vector2) -> void:
-	for c in _fx_layer.get_children():
-		c.queue_free()
-	_fx.clear()
+## Slide panel `i` into its slot (from alternating sides) while fading up, and
+## light its FX. The panel remains on screen afterwards.
+func _reveal_panel(i: int) -> void:
+	var root: Control = _panel_roots[i]["root"]
+	var target := root.position
+	var slide := get_viewport_rect().size.x * 0.22 * (1.0 if i % 2 == 0 else -1.0)
+	root.position = target + Vector2(slide, 0.0)
+	var rev := create_tween().set_parallel(true)
+	rev.tween_property(root, "position", target, 0.5) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	rev.tween_property(root, "modulate:a", 1.0, 0.35) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_build_fx(i)
+
+func _build_fx(i: int) -> void:
+	var layer: Control = _panel_roots[i]["fx"]
+	var panel_size: Vector2 = _panel_roots[i]["root"].size
 	# Scale FX sizes (authored against a ~1280px-wide panel) to the fitted width.
 	var s := panel_size.x / 1280.0
-	for spec in specs:
+	for spec in PANEL_FX[i]:
 		match spec.get("kind", "glow"):
 			"laser":
-				_make_laser(
+				_make_laser(layer,
 					Vector2(spec["a"]) * panel_size,
 					Vector2(spec["b"]) * panel_size,
 					spec["color"], s)
 			_:
-				_make_flare(
+				_make_flare(layer,
 					Vector2(spec["u"], spec["v"]) * panel_size,
 					float(spec["size"]) * s, spec["color"],
 					spec["kind"] == "muzzle", float(spec.get("freq", 5.0)))
 
 ## A camera-flat additive glow sprite (muzzle flash / eye / hologram bloom).
-func _make_flare(pos: Vector2, size: float, color: Color, muzzle: bool, freq: float) -> void:
+func _make_flare(layer: Control, pos: Vector2, size: float, color: Color, muzzle: bool, freq: float) -> void:
 	var tr := TextureRect.new()
 	tr.texture = _flare_texture()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -190,12 +200,12 @@ func _make_flare(pos: Vector2, size: float, color: Color, muzzle: bool, freq: fl
 	tr.modulate = color
 	tr.material = _add_mat
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fx_layer.add_child(tr)
+	layer.add_child(tr)
 	_fx.append({"node": tr, "muzzle": muzzle, "freq": freq, "phase": randf() * TAU,
 		"base": Vector2(size, size) * 0.5})
 
 ## A flickering beam: a wide soft glow with a thin white-hot core, A→B.
-func _make_laser(a: Vector2, b: Vector2, color: Color, s: float) -> void:
+func _make_laser(layer: Control, a: Vector2, b: Vector2, color: Color, s: float) -> void:
 	var d := b - a
 	var length := d.length()
 	var ang := d.angle()
@@ -207,7 +217,7 @@ func _make_laser(a: Vector2, b: Vector2, color: Color, s: float) -> void:
 	glow.rotation = ang
 	glow.material = _add_mat
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fx_layer.add_child(glow)
+	layer.add_child(glow)
 	var core := ColorRect.new()
 	core.color = Color(1.0, 0.6, 0.5, 0.95)
 	core.size = Vector2(length, 3.5 * s)
@@ -216,9 +226,9 @@ func _make_laser(a: Vector2, b: Vector2, color: Color, s: float) -> void:
 	core.rotation = ang
 	core.material = _add_mat
 	core.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fx_layer.add_child(core)
+	layer.add_child(core)
 	# A bright bloom where the beam is emitted.
-	_make_flare(a, 44.0 * s, color, true, 11.0)
+	_make_flare(layer, a, 44.0 * s, color, true, 11.0)
 	_fx.append({"laser": true, "glow": glow, "core": core, "phase": randf() * TAU})
 
 func _process(delta: float) -> void:
