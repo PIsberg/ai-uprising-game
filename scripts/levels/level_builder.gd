@@ -985,12 +985,21 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
 ## both ends, so rooftop access and multi-tier routes can be authored as plain
 ## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
-func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.0, thickness: float = 0.5) -> void:
+func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness: float = 0.5) -> void:
 	var delta := to - from
 	var horiz := Vector2(delta.x, delta.z).length()
 	var length := sqrt(horiz * horiz + delta.y * delta.y)
 	if length < 0.2:
 		return
+	# Overshoot both ends along the slope: the top edge buries itself into the
+	# landing and the foot sinks into the ground. Ending exactly AT the target
+	# left a lip/gap at the deck edge that the player couldn't walk up.
+	var slope := delta / length
+	from -= slope * 0.45
+	to += slope * 0.45
+	delta = to - from
+	horiz = Vector2(delta.x, delta.z).length()
+	length = sqrt(horiz * horiz + delta.y * delta.y)
 	# +Z is the ramp's low end (it tilts down under a positive pitch), so aim it
 	# back toward `from`; the high (-Z) end then meets `to`.
 	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
@@ -3068,7 +3077,7 @@ func _activate_task(t: Dictionary) -> void:
 		"key":
 			var k := Keycard.new()
 			k.task_id = id
-			k.position = t.get("pos", Vector3.ZERO)
+			k.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
 			add_child(k)
 		"destroy_core":
 			var core := ObjectiveCore.new()
@@ -3077,7 +3086,7 @@ func _activate_task(t: Dictionary) -> void:
 				core.core_color = t["color"]
 			if t.has("health"):
 				core.max_health = t["health"]
-			core.position = t.get("pos", Vector3.ZERO)
+			core.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
 			add_child(core)
 		"collect_shards":
 			# Points are raw Vector3s in hand-authored defs; the level editor
@@ -3085,7 +3094,7 @@ func _activate_task(t: Dictionary) -> void:
 			for sp in t.get("points", []):
 				var shard := ShardPickup.new()
 				shard.task_id = id
-				shard.position = sp["pos"] if sp is Dictionary else sp
+				shard.position = _reachable_task_pos(sp["pos"] if sp is Dictionary else sp)
 				add_child(shard)
 		"hack_terminal", "sabotage":
 			var con := HoldConsole.new()
@@ -3094,7 +3103,7 @@ func _activate_task(t: Dictionary) -> void:
 			con.detonate = t.get("type", "") == "sabotage"
 			if t.has("color"):
 				con.accent = t["color"]
-			con.position = t.get("pos", Vector3.ZERO)
+			con.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
 			add_child(con)
 		"survive":
 			var timer := SurviveTimer.new()
@@ -3109,10 +3118,49 @@ func _activate_task(t: Dictionary) -> void:
 				zone.radius = t["radius"]
 			if t.has("color"):
 				zone.accent = t["color"]
-			zone.position = t.get("pos", Vector3.ZERO)
+			zone.position = _reachable_task_pos(t.get("pos", Vector3.ZERO))
 			add_child(zone)
 		"assassinate":
 			_spawn_hvt(t)
+
+## Objective items must be reachable. Authored task positions are NOT validated
+## against the built geometry, so a def edit (or a building later dropped onto
+## the spot) can bury a keycard/console inside a solid box — an impossible
+## objective (level 1 shipped one). If the point sits inside world geometry,
+## walk outward in rings and return the first clear spot near the navmesh.
+func _reachable_task_pos(pos: Vector3) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	if _point_clear(space, pos):
+		return pos
+	var nav_map := get_world_3d().navigation_map
+	for r: float in [1.5, 2.5, 4.0, 6.0, 8.5]:
+		for i in 12:
+			var ang := TAU * float(i) / 12.0
+			var p: Vector3 = pos + Vector3(cos(ang), 0.0, sin(ang)) * r
+			if not _point_clear(space, p):
+				continue
+			# Only accept spots the navmesh can actually deliver a player to.
+			var on_nav := NavigationServer3D.map_get_closest_point(nav_map, p)
+			if Vector2(on_nav.x - p.x, on_nav.z - p.z).length() < 1.5:
+				push_warning("Task position %s buried in geometry; relocated to %s" % [pos, p])
+				return Vector3(p.x, pos.y, p.z)
+	push_warning("Task position %s buried in geometry; no clear spot found" % pos)
+	return pos
+
+## Deferred variant for items placed during the build (physics not yet live):
+## waits two physics frames, then applies the same burial rescue.
+func _relocate_when_clear(node: Node3D) -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if is_instance_valid(node):
+		node.position = _reachable_task_pos(node.position)
+
+## True when nothing solid (world layer) occupies the point at pickup height.
+func _point_clear(space: PhysicsDirectSpaceState3D, pos: Vector3) -> bool:
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = pos + Vector3(0, 1.0, 0)
+	q.collision_mask = 1
+	return space.intersect_point(q, 1).is_empty()
 
 func _on_quota_kill(_pts: int, _lbl: String, id: String) -> void:
 	GameState.advance_task(id, 1.0)
@@ -3211,6 +3259,9 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 	var pk := WEAPON_PICKUP.instantiate()
 	pk.weapon_scene = ps
 	pk.position = w["pos"]
+	# Physics isn't live during the build; once it is, nudge the pickup out of
+	# any geometry the def accidentally buried it in.
+	_relocate_when_clear.call_deferred(pk)
 	var col: Color = w.get("color", Color(0.5, 0.8, 1))
 	var light := pk.get_node_or_null("Light") as OmniLight3D
 	if light:

@@ -38,8 +38,32 @@ func _spawn() -> void:
 	# current_scene is at the world origin, so local == global here. Setting the
 	# position before a *deferred* add_child avoids the "parent is busy setting
 	# up children" failure when spawning during the level's own _ready().
-	e.position = global_position
+	e.position = _clear_spawn_pos()
 	get_tree().current_scene.add_child.call_deferred(e)
+
+## Authored spawn points aren't validated against the built level, so one can
+## land inside a building/prop box — the enemy is stuck in solid geometry and
+## kill_all objectives become impossible. Nudge such a point to the nearest
+## clear spot (physics is live by spawn time: spawns are delayed/triggered).
+func _clear_spawn_pos() -> Vector3:
+	var pos := global_position
+	var space := get_world_3d().direct_space_state
+	if _point_clear(space, pos):
+		return pos
+	for r: float in [2.0, 3.5, 5.5, 8.0]:
+		for i in 10:
+			var ang := TAU * float(i) / 10.0
+			var p: Vector3 = pos + Vector3(cos(ang), 0.0, sin(ang)) * r
+			if _point_clear(space, p):
+				push_warning("Enemy spawn %s buried in geometry; relocated to %s" % [pos, p])
+				return p
+	return pos
+
+func _point_clear(space: PhysicsDirectSpaceState3D, pos: Vector3) -> bool:
+	var q := PhysicsPointQueryParameters3D.new()
+	q.position = pos + Vector3(0, 1.0, 0)
+	q.collision_mask = 1
+	return space.intersect_point(q, 1).is_empty()
 
 ## Scale this enemy's strength to the campaign difficulty BEFORE it enters the
 ## tree, so EnemyBase._ready reads the adjusted stats. Set on the export fields
