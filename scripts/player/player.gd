@@ -112,6 +112,19 @@ var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights 
 @export var mantle_reach: float = 0.95 ## how far ahead the ledge face can be
 var _mantle_cd: float = 0.0
 
+# Step-up assist: CharacterBody3D has no automatic step climbing, so even a few
+# centimetres of lip — a curb, a stray prop, or (the case this was built for)
+# the seam where two ramp-wedge collisions meet at a spiral tower's corner
+# pivot — reads as a solid wall and stops the player dead. When walking and
+# blocked by something no taller than step_height, hop smoothly up onto it
+# instead of scraping to a halt against it. Anything taller is mantle's job.
+@export_group("Step Assist")
+@export var step_height: float = 0.3 ## Tallest lip climbed automatically while walking.
+const STEP_FORWARD_PROBE := 0.4 ## How far ahead (along intended motion) the step probe reaches once lifted.
+const STEP_SKIN := 0.05 ## Extra downward reach past step_height so the landing probe doesn't fall just short of the surface.
+var _pre_step_pos: Vector3 = Vector3.ZERO ## global_position snapshotted just before move_and_slide(), for the probes to start from.
+var _pre_step_grounded: bool = false ## Was is_on_floor() true just before move_and_slide() ran this tick.
+
 # Wall-running: sprint at a vertical wall while airborne to latch on and run
 # along it (gravity eased, not cancelled), then jump off it for extra height/
 # distance — or chain into another wall. No extra button: it engages the
@@ -449,7 +462,10 @@ func _physics_process(delta: float) -> void:
 	_handle_camera_feel(delta)
 	if not is_on_floor():
 		_fall_speed = -velocity.y   # peak downward speed this fall (read on landing)
+	_pre_step_pos = global_position
+	_pre_step_grounded = is_on_floor()
 	move_and_slide()
+	_try_step_up()
 	_update_dof()
 	_check_landing()
 	_handle_footsteps(delta)
@@ -1178,6 +1194,73 @@ func _handle_movement(delta: float) -> void:
 		var f := friction if is_on_floor() else air_acceleration
 		velocity.x = move_toward(velocity.x, 0.0, f * delta)
 		velocity.z = move_toward(velocity.z, 0.0, f * delta)
+
+## The step-up assist: after move_and_slide() has already tried (and failed) to
+## carry you across a low lip, probe up/forward/down for a walkable landing
+## within step_height and, if found, lift the body onto it. Guarded hard
+## against every other movement state that fully owns velocity — dash, slide,
+## grapple (incl. zipline, which just sets _grappling), wall-run. Mantle needs
+## no explicit guard: it only ever fires while airborne, and this requires
+## on_floor() true both before AND after the move — so mid-mantle (or the
+## instant it launches you) this simply can't engage. Cheap: the expensive
+## test_move probes only ever run once we've confirmed we're actually blocked.
+func _try_step_up() -> void:
+	if _dash_time > 0.0 or _sliding or _grappling or _wall_running:
+		return
+	if not _pre_step_grounded or not is_on_floor():
+		return
+	if velocity.y > 0.1:
+		return  # rising — a jump/launch, not a walk into a lip
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input_dir.length() < 0.1:
+		return  # no horizontal intent to climb toward
+	var move_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Only bother probing if we actually got stopped — normal walking (or a ramp
+	# slope, which just redirects velocity, not blocks horizontal progress) never
+	# reaches the probes at all.
+	var moved := Vector2(global_position.x - _pre_step_pos.x, global_position.z - _pre_step_pos.z).length()
+	var intended := Vector2(velocity.x, velocity.z).length() * get_physics_process_delta_time()
+	if not is_on_wall() and (intended < 0.01 or moved > intended * 0.6):
+		return
+	_step_climb(move_dir)
+
+## Up → forward → down test_move probe from the pre-move position. Three cheap
+## sweeps, only ever run once _try_step_up has confirmed we're blocked.
+func _step_climb(move_dir: Vector3) -> void:
+	var xf := global_transform
+	xf.origin = _pre_step_pos
+	var col := KinematicCollision3D.new()
+	# 1) Up: clear the lip height (or less, if something's directly overhead).
+	var up_travel := Vector3.UP * step_height
+	if test_move(xf, up_travel, col):
+		up_travel = col.get_travel()
+	if up_travel.y < 0.02:
+		return  # nothing gained overhead — likely a low ceiling, not a step
+	xf.origin += up_travel
+	# 2) Forward: nudge along the intended direction, just enough to clear over
+	# the lip and land on whatever's past it.
+	var fwd_travel := move_dir * STEP_FORWARD_PROBE
+	if test_move(xf, fwd_travel, col):
+		fwd_travel = col.get_travel()
+	if Vector2(fwd_travel.x, fwd_travel.z).length() < 0.02:
+		return  # blocked immediately even lifted — a real wall, not a step
+	xf.origin += fwd_travel
+	# 3) Down: settle onto the step surface. Must find one within reach, and it
+	# must be walkable — never assist onto anything steeper than a normal floor.
+	var down_travel := Vector3.DOWN * (step_height + STEP_SKIN)
+	if not test_move(xf, down_travel, col):
+		return  # no floor within reach below — would strand the player in midair
+	if col.get_angle() > floor_max_angle:
+		return  # too steep to stand on — not a legitimate step
+	xf.origin += col.get_travel()
+	var lift := xf.origin.y - _pre_step_pos.y
+	if lift <= 0.005:
+		return  # no net gain — the "step" was actually level ground
+	global_position.y += lift
+	# Absorb the instant vertical snap into the same landing-camera smoothing
+	# _check_landing already drives (_land_offset lerps back to 0 in
+	# _handle_camera_feel) so a step reads as a smooth rise, not a teleport jolt.
+	_land_offset -= lift
 
 func _handle_camera_feel(delta: float) -> void:
 	# Dash/slide FOV punch, easing back to the base FOV.
