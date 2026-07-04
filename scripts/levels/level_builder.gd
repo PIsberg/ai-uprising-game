@@ -1139,15 +1139,16 @@ const RAMP_TOP_EMBED := 0.4    # flat run-out past the true top point, into the 
 const PLAYER_CLEARANCE_M := 2.2   # player capsule (1.8 m, see player.tscn) + margin
 
 func _build_ramps(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	for r in def.get("ramps", []):
-		_add_ramp(r["pos"], r["size"], r.get("pitch", 24.0), r.get("yaw", 0.0))
+		_add_ramp(r["pos"], r["size"], r.get("pitch", 24.0), r.get("yaw", 0.0), fs)
 
 ## Author-facing ramp: a center/size/pitch/yaw box, as placed by def "ramps"
 ## entries. Recovers the true walking-surface endpoints (the box's TOP face at
 ## each end, not its centerline — see the root-cause note above) and builds
 ## the actual geometry via the shared wedge (no more box-center-vs-surface
 ## drift).
-func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float) -> void:
+func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float, floor_size: Vector2 = Vector2(1e6, 1e6)) -> void:
 	var b := Basis(Vector3.UP, deg_to_rad(yaw_deg)) * Basis(Vector3.RIGHT, deg_to_rad(pitch_deg))
 	var half_len := size.z * 0.5
 	var half_thick := size.y * 0.5
@@ -1160,6 +1161,28 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float)
 		var tmp := foot
 		foot = top
 		top = tmp
+	# Several def ramps are authored with the foot a little ABOVE the floor
+	# (e.g. the shared vantage-deck ramp's foot sits at y=0.23), leaving the
+	# wedge's knife edge hovering (RAMP_FOOT_SINK only sinks it 0.05) — an
+	# 18 cm mid-air toe ramp_probe flagged at t=0 on every level reusing the
+	# def. Extend the walking line along its own slope until it meets the
+	# ground plane: the surface plane is unchanged, the ramp just reaches the
+	# floor. Elevated ramps (foot on a deck/platform) are left alone.
+	# Stop just ABOVE the floor plane (0.05, inside step-assist noise), cap the
+	# reach at 0.6 m, and skip the extension entirely when the extended toe
+	# would land within 1.2 m of the arena perimeter: one level's vantage ramp
+	# is authored with its foot already brushing the boundary wall, and any
+	# extension buried the toe inside the wall (ramp_probe flagged the buried
+	# tip, not the ramp). A hover next to a wall stays as authored.
+	if foot.y > 0.07 and foot.y < 0.6:
+		var line := foot - top
+		var horiz_run := Vector2(line.x, line.z).length()
+		if line.y < -0.05 and horiz_run > 0.1:
+			var t := (foot.y - 0.05) / -line.y
+			t = minf(t, 0.6 / horiz_run)
+			var ext := foot + line * t
+			if absf(ext.x) < floor_size.x * 0.5 - 1.2 and absf(ext.z) < floor_size.y * 0.5 - 1.2:
+				foot = ext
 	_build_ramp_wedge(foot, top, size.x, size.y, "DefRamp")
 
 ## Connect two points with a ramp the player can walk straight up — `from` (low)
@@ -1261,9 +1284,26 @@ func _build_stairs(def: Dictionary) -> void:
 ## on the next corner landing). Opt-in via def "towers": [{pos, height?, radius?}].
 func _build_towers(def: Dictionary) -> void:
 	for t in def.get("towers", []):
-		_build_tower(t["pos"], t.get("height", 8.0), t.get("radius", 3.6), _theme_color(def))
+		var pos: Vector3 = t["pos"]
+		var height: float = t.get("height", 8.0)
+		# Sky-bridges leave this tower's roof and slope away — near the roof
+		# their underside is inevitably close above whatever spiral segments
+		# sit on the side they exit over (both bridge and spiral are pinned to
+		# `height` there; ramp_probe flagged the top segment on every bridged
+		# tower). The exit direction is authored (it aims at another rooftop),
+		# but the spiral's PHASE is ours to pick — collect the exit direction
+		# so _build_tower can put its highest segments on the far side.
+		var exit_dir := Vector3.ZERO
+		for s in def.get("stairs", []):
+			var f: Vector3 = s["from"]
+			if Vector2(f.x - pos.x, f.z - pos.z).length() <= t.get("radius", 3.6) and f.y >= height - 0.5:
+				var d: Vector3 = s["to"] - f
+				d.y = 0.0
+				if d.length() > 0.01:
+					exit_dir += d.normalized()
+		_build_tower(pos, height, t.get("radius", 3.6), _theme_color(def), exit_dir)
 
-func _build_tower(base: Vector3, height: float, radius: float, accent: Color) -> void:
+func _build_tower(base: Vector3, height: float, radius: float, accent: Color, bridge_exit: Vector3 = Vector3.ZERO) -> void:
 	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
 	n = max(n, 1)
 	var rise := height / float(n)
@@ -1309,14 +1349,30 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
 		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
 	]
+	# Spiral phase (see _build_towers): rotate the corner ordering so the FINAL
+	# segment — the one whose surface sits within head height of the roof — runs
+	# along the side of the square pointing most AWAY from the sky-bridge exit.
+	# Reachability is unaffected: the spiral is the same shape, just started a
+	# quarter-turn (or more) around, and the roof cap covers whichever corner
+	# the last landing ends on.
+	var phase := 0
+	if bridge_exit.length() > 0.01:
+		var best_dot := INF
+		var exit_n := bridge_exit.normalized()
+		for p in range(4):
+			var edge_mid: Vector3 = (corners[(n - 1 + p) % 4] + corners[(n + p) % 4]) * 0.5
+			var dp := edge_mid.normalized().dot(exit_n)
+			if dp < best_dot:
+				best_dot = dp
+				phase = p
 	# Central column — the structure the player climbs around. Kept well inside the
 	# spiral radius so the ramp + landings wrap clear of it with walking room.
 	_add_collider_box(base + Vector3(0, height * 0.5, 0),
 		Vector3(radius * 0.62, height, radius * 0.62), _color_material(accent.darkened(0.7)), "TwrColumn")
 
-	var prev: Vector3 = base + corners[0]   # ground start, y = 0
+	var prev: Vector3 = base + corners[phase]   # ground start, y = 0
 	for i in range(1, n + 1):
-		var c: Vector3 = base + corners[i % 4]
+		var c: Vector3 = base + corners[(i + phase) % 4]
 		c.y = rise * float(i)
 		# Aim the ramp to TOP OUT at the landing's NEAR edge, not its centre: a
 		# centre-aimed ramp is still LANDING_HALF*slope below deck-top where the
@@ -1353,7 +1409,7 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 		# residual so the tower's overall geometry (landing/roof thickness,
 		# neighbouring-tower clearance) doesn't need re-deriving.
 		if i < n:
-			var next_c: Vector3 = base + corners[(i + 1) % 4]
+			var next_c: Vector3 = base + corners[(i + 1 + phase) % 4]
 			var dir_out := next_c - c
 			dir_out.y = 0.0
 			dir_out = dir_out.normalized()
