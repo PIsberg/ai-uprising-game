@@ -642,7 +642,7 @@ func _build_geometry(def: Dictionary) -> void:
 	# glossy water film over the rough base so lights/sky streak across the lot.
 	if str((def.get("env", {}) as Dictionary).get("weather", "")) == "rain":
 		floor_mat = _wet_variant(floor_mat)
-	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf)
+	_add_box(Vector3(0, -0.2, 0), Vector3(fs.x, 0.4, fs.y), floor_mat, floor_surf, "", "ArenaFloor")
 	# Perimeter walls — weathered concrete outdoors, panels indoors. Normally
 	# WALL_HEIGHT, but a climbable tower (def "towers", see _build_tower) can
 	# reach well past that — ramp_probe (once its own floor/ceiling mix-up was
@@ -661,10 +661,10 @@ func _build_geometry(def: Dictionary) -> void:
 	for t in def.get("towers", []):
 		room_h = maxf(room_h, float((t as Dictionary).get("height", 8.0)) + PLAYER_CLEARANCE_M + 0.3)
 	var wall_mat: Material = MAT_WALL_OUT if def.get("open_sky", false) else MAT_WALL
-	_add_box(Vector3(0, room_h * 0.5, -hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete")
-	_add_box(Vector3(0, room_h * 0.5, hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete")
-	_add_box(Vector3(-hx, room_h * 0.5, 0), Vector3(1.0, room_h, fs.y), wall_mat, "surf_concrete")
-	_add_box(Vector3(hx, room_h * 0.5, 0), Vector3(1.0, room_h, fs.y), wall_mat, "surf_concrete")
+	_add_box(Vector3(0, room_h * 0.5, -hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete", "", "ArenaWallN")
+	_add_box(Vector3(0, room_h * 0.5, hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete", "", "ArenaWallS")
+	_add_box(Vector3(-hx, room_h * 0.5, 0), Vector3(1.0, room_h, fs.y), wall_mat, "surf_concrete", "", "ArenaWallW")
+	_add_box(Vector3(hx, room_h * 0.5, 0), Vector3(1.0, room_h, fs.y), wall_mat, "surf_concrete", "", "ArenaWallE")
 	if not def.get("open_sky", false):
 		# Tagged "level_ceiling" (in addition to the usual surf_metal footstep
 		# group) so tests/ramp_probe can tell "the room's overhead cap" apart
@@ -679,7 +679,7 @@ func _build_geometry(def: Dictionary) -> void:
 	# crates/machinery don't read as copies of one box.
 	var cover_i := 0
 	for w in def.get("walls", []):
-		_add_box(w["pos"], w["size"], MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B, "surf_metal")
+		_add_box(w["pos"], w["size"], MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B, "surf_metal", "", "DefWall")
 		cover_i += 1
 
 # ---------- wall detailing ----------
@@ -818,8 +818,10 @@ func _build_gi(def: Dictionary) -> void:
 	rp.update_mode = ReflectionProbe.UPDATE_ONCE
 	add_child(rp)
 
-func _add_box(center: Vector3, size: Vector3, mat: Material, surface: String = "surf_concrete", extra_group: String = "") -> void:
+func _add_box(center: Vector3, size: Vector3, mat: Material, surface: String = "surf_concrete", extra_group: String = "", debug_name: String = "") -> void:
 	var body := StaticBody3D.new()
+	if debug_name != "":
+		body.name = debug_name   # readable in ramp_probe "hit <name>" output
 	body.collision_layer = 1
 	body.collision_mask = 0
 	body.position = center
@@ -1183,6 +1185,23 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float,
 			var ext := foot + line * t
 			if absf(ext.x) < floor_size.x * 0.5 - 1.2 and absf(ext.z) < floor_size.y * 0.5 - 1.2:
 				foot = ext
+	# The opposite authoring slip also exists: several (scaled) levels reuse a
+	# vantage-deck def whose ramp FOOT sits nearly flush against the arena's
+	# boundary wall — the walking line starts EMBEDDED in the wall (ramp_probe:
+	# STUCK at t~0 hitting ArenaWall*). A player can still mount the ramp from
+	# the side, but the bottom half-metre is dead space pinned to a wall. Pull
+	# the line's start up the slope until a player capsule clears the wall's
+	# inner face (wall half-thickness 0.5 + capsule 0.35 + margin).
+	var inner_x := floor_size.x * 0.5 - 1.0
+	var inner_z := floor_size.y * 0.5 - 1.0
+	var dirv := top - foot
+	var t_clear := 0.0
+	if absf(foot.x) > inner_x and absf(dirv.x) > 0.01 and signf(dirv.x) != signf(foot.x):
+		t_clear = maxf(t_clear, (absf(foot.x) - inner_x) / absf(dirv.x))
+	if absf(foot.z) > inner_z and absf(dirv.z) > 0.01 and signf(dirv.z) != signf(foot.z):
+		t_clear = maxf(t_clear, (absf(foot.z) - inner_z) / absf(dirv.z))
+	if t_clear > 0.0 and t_clear < 0.5:
+		foot += dirv * t_clear
 	_build_ramp_wedge(foot, top, size.x, size.y, "DefRamp")
 
 ## Connect two points with a ramp the player can walk straight up — `from` (low)
