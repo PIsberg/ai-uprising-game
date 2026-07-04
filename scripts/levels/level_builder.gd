@@ -964,6 +964,13 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 	var h := size.y
 	var t := 0.35             # wall thickness
 	var floor_h := h * 0.5    # upper slab height
+	# The interior ramp's horizontal run is aligned entirely under the slab's
+	# stairwell opening (see the ramp calls below — their z-span matches the
+	# hole's), so nothing overhangs it before the upper floor; the binding
+	# headroom check is just "is each storey tall enough" for a player plus the
+	# ramp's own top embed. Enforce it here rather than trusting `h` per level.
+	assert(floor_h >= PLAYER_CLEARANCE_M + RAMP_TOP_EMBED + 0.3,
+		"open building storey too short for ramp headroom: floor_h=%.2f m" % floor_h)
 	var door_w := 2.6
 	var door_h := 3.0
 	var wall_mat := StandardMaterial3D.new()
@@ -1078,54 +1085,140 @@ func _merged_aabb(root: Node3D) -> AABB:
 # These are player-reachable surfaces. They're added under the builder root (NOT
 # the navmesh region) so the ground navmesh ignores them — enemies stay on the
 # street while the player can climb for a vantage on the big foe.
+#
+# ROOT-CAUSE NOTE (ramp lip bug): the old implementation built a ramp as a
+# TILTED BOX (BoxShape3D) whose `center` was the point given by callers, but
+# the walkable surface is the box's TOP face, which sits +size.y/2 away from
+# that center along the box's local up (rotated by pitch) — not at `center`
+# itself. _add_ramp_between "solved" pitch/length from two SURFACE endpoints
+# (from=ground, to=landing) and then fed their MIDPOINT straight in as the box
+# center, so the actual top face ended up offset from the intended line by
+# roughly (thickness/2)*cos(pitch) vertically. The 0.45 m slope overshoot was
+# meant to bury the ends, but it overshoots ALONG THE SLOPE, so at the top it
+# pushes the surface even HIGHER above the landing (a poke-up ridge right where
+# the player finishes climbing) while at the foot the (thickness/2)*cos(pitch)
+# term partially cancels the burial, leaving a residual few-centimetre step —
+# both are exactly the kind of lip CharacterBody3D can't climb (Godot 4 has no
+# step-up). Fix: stop deriving the walkable face from a rotated box at all.
+# _build_ramp_wedge below authors the TOP FACE directly through the true
+# ground/landing points (a straight line, by construction, no offset to get
+# wrong), with the foot sunk RAMP_FOOT_SINK below ground (guaranteed overlap,
+# never floating) and the top continuing flush at landing height for
+# RAMP_TOP_EMBED metres (buries into the landing instead of poking above it).
+const RAMP_FOOT_SINK := 0.05   # foot sits this far below the true ground point
+const RAMP_TOP_EMBED := 0.4    # flat run-out past the true top point, into the landing
+const PLAYER_CLEARANCE_M := 2.2   # player capsule (1.8 m, see player.tscn) + margin
 
 func _build_ramps(def: Dictionary) -> void:
 	for r in def.get("ramps", []):
 		_add_ramp(r["pos"], r["size"], r.get("pitch", 24.0), r.get("yaw", 0.0))
 
+## Author-facing ramp: a center/size/pitch/yaw box, as placed by def "ramps"
+## entries. Recovers the true walking-surface endpoints (the box's TOP face at
+## each end, not its centerline — see the root-cause note above) and builds
+## the actual geometry via the shared wedge (no more box-center-vs-surface
+## drift).
 func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float) -> void:
 	var b := Basis(Vector3.UP, deg_to_rad(yaw_deg)) * Basis(Vector3.RIGHT, deg_to_rad(pitch_deg))
-	var body := StaticBody3D.new()
-	body.collision_layer = 1
-	body.collision_mask = 0
-	body.transform = Transform3D(b, center)
-	var mi := MeshInstance3D.new()
-	mi.mesh = _beveled_box(size)
-	mi.mesh.material = MAT_PROP
-	var cs := CollisionShape3D.new()
-	var bs := BoxShape3D.new()
-	bs.size = size
-	cs.shape = bs
-	body.add_child(mi)
-	body.add_child(cs)
-	# Under the navmesh region so the ramp SURFACE bakes as a walkable route —
-	# see _add_collider_box: ramps/stairs/towers were invisible to pathfinding.
-	(_nav_region if _nav_region else self).add_child(body)
+	var half_len := size.z * 0.5
+	var half_thick := size.y * 0.5
+	# +Z is the low end under a positive pitch (matches _add_ramp_between's
+	# convention below); offset by +thickness/2 along local up to land on the
+	# TOP face, not the centerline.
+	var foot := center + b * Vector3(0, half_thick, half_len)
+	var top := center + b * Vector3(0, half_thick, -half_len)
+	if foot.y > top.y:
+		var tmp := foot
+		foot = top
+		top = tmp
+	_build_ramp_wedge(foot, top, size.x, size.y)
 
 ## Connect two points with a ramp the player can walk straight up — `from` (low)
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
 ## both ends, so rooftop access and multi-tier routes can be authored as plain
 ## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
 func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness: float = 0.5) -> void:
+	_build_ramp_wedge(from, to, width, thickness)
+
+## Shared ramp geometry. Builds the COLLISION as a wedge (ConvexPolygonShape3D)
+## whose top face runs exactly through `from` (foot, ground level) and `to`
+## (top, landing level) — a straight line by construction, so there is no lip
+## to derive or get wrong. The foot is a knife edge (zero thickness) sunk
+## RAMP_FOOT_SINK below `from`; the top keeps full thickness and runs flush for
+## RAMP_TOP_EMBED metres past `to` to bury into the landing. The VISUAL mesh
+## doesn't need to match the collision 1:1 (per the task: a plain beveled box
+## is fine as long as it's sunk so no gap shows) — reusing the old rotated-box
+## mesh, sunk half a thickness plus a small margin, is simpler and safer than
+## hand-rolling a new mesh's triangle winding.
+func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: float) -> void:
 	var delta := to - from
-	var horiz := Vector2(delta.x, delta.z).length()
-	var length := sqrt(horiz * horiz + delta.y * delta.y)
-	if length < 0.2:
+	var horiz := Vector3(delta.x, 0.0, delta.z)
+	var run := horiz.length()
+	if run < 0.05 and absf(delta.y) < 0.05:
 		return
-	# Overshoot both ends along the slope: the top edge buries itself into the
-	# landing and the foot sinks into the ground. Ending exactly AT the target
-	# left a lip/gap at the deck edge that the player couldn't walk up.
-	var slope := delta / length
-	from -= slope * 0.45
-	to += slope * 0.45
-	delta = to - from
-	horiz = Vector2(delta.x, delta.z).length()
-	length = sqrt(horiz * horiz + delta.y * delta.y)
-	# +Z is the ramp's low end (it tilts down under a positive pitch), so aim it
-	# back toward `from`; the high (-Z) end then meets `to`.
-	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
-	var pitch := rad_to_deg(atan2(delta.y, horiz))
-	_add_ramp((from + to) * 0.5, Vector3(width, thickness, length), pitch, yaw)
+	var fwd := horiz.normalized() if run > 0.001 else Vector3.FORWARD
+	var right := fwd.cross(Vector3.UP)
+	if right.length() < 0.001:
+		right = Vector3.RIGHT
+	right = right.normalized() * (width * 0.5)
+
+	var foot := from - Vector3.UP * RAMP_FOOT_SINK
+	var top := to
+	var tab := to + fwd * RAMP_TOP_EMBED
+
+	# Width (and thickness) taper from ZERO at the foot up to full width by
+	# RAMP_WIDTH_TAPER metres along the climb, instead of carrying the full
+	# width all the way to the foot. Two ramps meeting at a right angle (a
+	# spiral tower's corners) otherwise each keep their FULL width right up to
+	# the shared corner point — so the departing ramp's near-foot cross-section
+	# (a flat line at ~corner height, spanning its whole width) directly
+	# overhangs the arriving ramp's still-lower approach with only sub-metre
+	# clearance (found by tests/ramp_probe: a genuine head-bonk at almost every
+	# tower corner — distinct from, and in addition to, the foot/top lip this
+	# function already fixes). Tapering to a point removes that overhanging
+	# shelf; for an ordinary (non-crossing) ramp it's imperceptible — just a
+	# few centimetres of pointed toe right at ground/landing level.
+	var taper_t := minf(run * 0.35, 1.8) / run if run > 0.01 else 1.0
+	var taper_pt := from.lerp(to, taper_t)
+
+	var pts := PackedVector3Array()
+	pts.append(foot)   # single point: zero width AND thickness at the foot
+	for p in [taper_pt, top, tab]:
+		pts.append(p + right)
+		pts.append(p - right)
+	for p in [taper_pt - Vector3.UP * thickness, top - Vector3.UP * thickness, tab - Vector3.UP * thickness]:
+		pts.append(p + right)
+		pts.append(p - right)
+
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	# Tagged for tests/ramp_probe — see level_builder root-cause note above.
+	body.add_to_group("ramp_surface")
+	body.set_meta("ramp_from", from)
+	body.set_meta("ramp_to", to)
+	body.set_meta("ramp_width", width)
+	var cs := CollisionShape3D.new()
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = pts
+	cs.shape = shape
+	body.add_child(cs)
+
+	var length := sqrt(run * run + delta.y * delta.y)
+	if length > 0.05:
+		var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
+		var pitch := rad_to_deg(atan2(delta.y, run))
+		var vb := Basis(Vector3.UP, deg_to_rad(yaw)) * Basis(Vector3.RIGHT, deg_to_rad(pitch))
+		var sink := thickness * 0.5 + 0.05
+		var mi := MeshInstance3D.new()
+		mi.mesh = _beveled_box(Vector3(width, thickness, length))
+		mi.mesh.material = MAT_PROP
+		mi.transform = Transform3D(vb, (from + to) * 0.5 - Vector3.UP * sink)
+		body.add_child(mi)
+
+	# Under the navmesh region so the ramp SURFACE bakes as a walkable route —
+	# see _add_collider_box: ramps/stairs/towers were invisible to pathfinding.
+	(_nav_region if _nav_region else self).add_child(body)
 
 func _build_stairs(def: Dictionary) -> void:
 	for s in def.get("stairs", []):
@@ -1143,6 +1236,29 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
 	n = max(n, 1)
 	var rise := height / float(n)
+	# Same-corner loops (4 segments apart, one full lap) land directly above one
+	# another — enforce PLAYER_CLEARANCE_M of headroom between them rather than
+	# just trusting the ~2.4 m segment-rise constant above to stay generous.
+	# (With that constant, rise is always close to 2.4 m so 4*rise ~= 9.6 m —
+	# comfortably clear — but this fails loudly instead of shipping a
+	# head-bonking tower if it's ever retuned.)
+	assert(4.0 * rise >= PLAYER_CLEARANCE_M,
+		"tower spiral stacks loops too tight for player headroom: rise=%.2f m" % rise)
+	# THE REAL "ramp under a floor/landing" bug lives here, not in loop-vs-loop
+	# stacking: every corner landing (and the final rooftop cap) is a flat deck
+	# that has to overhang BACK over the ramp segment it's meeting, to give a
+	# flat turning platform. The ramp is still climbing under that overhang —
+	# at `D` metres back from the corner its surface is `D * slope` below the
+	# corner height. If the deck is too thin, its underside stays ABOVE that
+	# still-rising surface out near the overhang's far edge, leaving a
+	# low-ceiling pocket (confirmed by tests/ramp_probe: a genuine head-bonk a
+	# player's-height's worth short of every corner, not just at big radii).
+	# Solve deck thickness from the segment's own slope so the underside always
+	# sinks below the ramp line across the WHOLE overhang, with a margin.
+	var corner_spacing := radius * 2.0   # horizontal run of one spiral segment
+	var slope := rise / corner_spacing
+	const LANDING_HALF := 1.9   # landing footprint is 3.8 x 3.8 — keep in sync below
+	var landing_t := maxf(0.4, LANDING_HALF * slope + 0.25)
 	# Four corners of the spiral footprint (the ramp runs corner-to-corner).
 	var corners := [
 		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
@@ -1158,18 +1274,38 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 		var c: Vector3 = base + corners[i % 4]
 		c.y = rise * float(i)
 		_add_ramp_between(prev, c, 3.0)
-		# Corner landing, flush-topped at the segment height, so the player can turn.
-		_add_collider_box(c - Vector3(0, 0.2, 0), Vector3(3.8, 0.4, 3.8), MAT_PROP)
+		# Corner landing, flush-topped at the segment height, so the player can
+		# turn. Thickness solved above so its underside clears the still-rising
+		# ramp across the full overhang (see the note above the loop).
+		_add_collider_box(c - Vector3(0, landing_t * 0.5, 0), Vector3(3.8, landing_t, 3.8), MAT_PROP)
 		prev = c
 	# Centered rooftop vantage capping the column — covers the final landing so the
 	# player steps straight onto it, and gives sky-bridges a predictable target at
-	# (base.x, height, base.z).
-	_add_collider_box(base + Vector3(0, height, 0),
-		Vector3(radius * 2.5, 0.4, radius * 2.5), _color_material(accent))
+	# (base.x, height, base.z). Top face flush at `height`, exactly matching the
+	# corner-landing convention above (top = c.y) — it used to sit 0.2 m proud of
+	# that, which overlaps the final corner landing's footprint and left a small
+	# hidden step right at the last stride onto the roof.
+	#
+	# Size: it used to be radius*2.5 across (half-width radius*1.25) — BIGGER
+	# than the spiral's own radius. Every segment runs at a constant `radius`
+	# from the axis, so a roof that wide sits over the ENTIRE spiral footprint,
+	# not just the final corner — meaning it can overhang segments that are
+	# still far below roof height (found by tests/ramp_probe: overhangs on
+	# EARLY/MID segments, not just the last one). Thickness can't buy that
+	# back generically (it would have to approach the tower's full height near
+	# the base). So the roof is sized to radius*1.8 instead — big enough to
+	# comfortably cap the central column (radius*0.62) plus the cover props at
+	# up to radius*0.85 — but no longer reaching out to where the spiral
+	# itself runs, so it only overhangs the final approach near its own corner,
+	# same as an ordinary corner landing (solved the same way, below).
+	var roof_half := radius * 0.9
+	var roof_t := maxf(0.4, roof_half * slope + 0.25)
+	_add_collider_box(base + Vector3(0, height - roof_t * 0.5, 0),
+		Vector3(roof_half * 2.0, roof_t, roof_half * 2.0), _color_material(accent))
 
 	# Make the high ground worth taking: crouch-cover blocks at the roof edges plus
 	# a hovering pickup over the centre (kind cycles across the level's towers).
-	var roof_y := height + 0.2
+	var roof_y := height
 	for off in [Vector3(radius * 0.85, 0, -radius * 0.35), Vector3(-radius * 0.7, 0, radius * 0.65)]:
 		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
 			Vector3(1.4, 1.2, 0.7), MAT_PROP_B)
