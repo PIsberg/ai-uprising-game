@@ -58,7 +58,20 @@ func _run() -> void:
 	var min_hp := 1e9
 	var gate_alive := false
 	var gate_kills := 0
+	var last_pos := Vector3.ZERO
+	var stuck_ticks := 0
 	while GameState.kills < KILL_TARGET and t < TIME_LIMIT:
+		var current_pos := _player.global_position
+		if last_pos.distance_to(current_pos) < 0.01:
+			stuck_ticks += 1
+		else:
+			stuck_ticks = 0
+		last_pos = current_pos
+		if stuck_ticks > 3:
+			Input.action_press("jump")
+			await get_tree().create_timer(0.15).timeout
+			Input.action_release("jump")
+			stuck_ticks = 0
 		if t >= GATE_TIME and gate_kills == 0:
 			gate_alive = _player.hp.is_alive()
 			gate_kills = GameState.kills
@@ -118,6 +131,8 @@ func _nearest_spawner() -> Node3D:
 	var best: Node3D = null
 	var bd := 1e9
 	for s in get_tree().root.find_children("*", "EnemySpawner", true, false):
+		if s.get("_spawned"):
+			continue
 		var d: float = _player.global_position.distance_to((s as Node3D).global_position)
 		if d < bd:
 			bd = d
