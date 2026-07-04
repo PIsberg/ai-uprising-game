@@ -603,6 +603,11 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 const INTRO_CUTSCENE := "res://scenes/cutscene/comic_intro.tscn"
 const LEVEL_BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
 const UPRISING_REVEAL := "res://scenes/cutscene/uprising_reveal.tscn"
+## The finale's post-campaign victory sequence (procedural cutscene ->
+## "Global Defense Net" broadcast -> credits), reached only when advance_level()
+## runs out of campaign levels. It returns to main_menu.tscn itself once it
+## ends or is skipped (see victory_cutscene.gd / credits.gd).
+const VICTORY_CUTSCENE := "res://scenes/cutscene/victory_cutscene.tscn"
 ## Scene that builds a custom editor level from a .lvl data file (via
 ## `custom_level_path`). Campaign entries / paths ending in `.lvl` route here
 ## instead of being change_scene'd directly (a .lvl is JSON data, not a scene).
@@ -812,10 +817,13 @@ func advance_level() -> void:
 	if has_next_level():
 		go_to_level(campaign()[level_index + 1], false)
 	else:
-		# Campaign finished — clear the checkpoint and return to the main menu.
+		# Campaign finished — clear the checkpoint exactly as before, but hand off
+		# to the victory sequence (cutscene + broadcast + credits) instead of
+		# dropping straight to the main menu. That sequence returns to
+		# main_menu.tscn itself once it ends or is skipped.
 		clear_save()
 		set_state(State.MENU)
-		get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
+		get_tree().change_scene_to_file(VICTORY_CUTSCENE)
 
 var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
 

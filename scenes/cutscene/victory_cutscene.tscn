@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/cutscene/victory_cutscene.gd" id="1"]
+
+[node name="VictoryCutscene" type="Node3D"]
+script = ExtResource("1")
