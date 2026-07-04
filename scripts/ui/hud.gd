@@ -28,6 +28,7 @@ var _cross_time: float = 0.0
 @onready var pause_graphics: Button = $PauseMenu/VBox/PauseGraphics
 @onready var pause_volume: HSlider = $PauseMenu/VBox/PauseVolumeRow/PauseVolume
 @onready var game_over_menu: Control = $GameOverMenu
+@onready var game_over_restart_btn: Button = $GameOverMenu/VBox/Restart
 @onready var win_menu: Control = $WinMenu
 @onready var win_title: Label = $WinMenu/VBox/Title
 @onready var win_continue: Button = $WinMenu/VBox/Continue
@@ -187,6 +188,7 @@ func _ready() -> void:
 	GameState.enemy_killed.connect(_on_enemy_killed)
 	GameState.objective_blocked.connect(_show_toast)
 	GameState.teach_hint.connect(_show_toast) # one-off coaching toasts (elite affixes, hazards)
+	GameState.checkpoint_set.connect(func(): _show_toast("⚑ CHECKPOINT"))
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
@@ -749,12 +751,13 @@ func _update_crosshair(delta: float) -> void:
 	crosshair.modulate = col
 
 func _unhandled_input(event: InputEvent) -> void:
-	# On the game-over screen, SPACE retries the level (matches the button label).
+	# On the game-over screen, SPACE retries (matches the button label) — a
+	# checkpoint respawn if one's been set this level, else the old full reload.
 	if game_over_menu.visible:
 		var k := event as InputEventKey
 		if k and k.pressed and not k.echo and k.keycode == KEY_SPACE:
 			get_viewport().set_input_as_handled()
-			_on_restart_pressed()
+			_on_death_restart_pressed()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 \
 			and GameState.from_editor:
@@ -915,6 +918,11 @@ func _fill_death_recap() -> void:
 	if tip == "":
 		tip = DEATH_TIPS_GENERIC[randi() % DEATH_TIPS_GENERIC.size()]
 	_tip_label.text = "TIP: %s" % tip
+	# The button (and SPACE) read differently depending on whether there's a
+	# mid-level checkpoint to come back to, so the player knows what they're
+	# about to get before they press it.
+	if game_over_restart_btn:
+		game_over_restart_btn.text = "RESPAWN (SPACE)" if GameState.has_checkpoint() else "TRY AGAIN (SPACE)"
 
 func _show_toast(text: String) -> void:
 	toast.text = text
@@ -1344,3 +1352,16 @@ func _on_pause_volume_changed(value: float) -> void:
 
 func _on_restart_pressed() -> void:
 	GameState.load_level(GameState.current_level_path if GameState.current_level_path != "" else "res://scenes/levels/level_01.tscn")
+
+## The GAME OVER screen's "TRY AGAIN (SPACE)" — a checkpoint respawn in place if
+## a mid-level checkpoint has been set (see GameState's checkpoint section: a
+## finished task or a boss reveal), otherwise the same full level reload as
+## before. The pause menu's "Restart" stays wired to _on_restart_pressed() above
+## unconditionally — that's the deliberate full-restart escape hatch, so
+## bailing on a checkpoint you don't like is always one menu away.
+func _on_death_restart_pressed() -> void:
+	if GameState.has_checkpoint():
+		game_over_menu.visible = false # no scene reload this time — the HUD stays up
+		GameState.respawn_at_checkpoint()
+	else:
+		_on_restart_pressed()

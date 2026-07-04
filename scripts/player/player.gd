@@ -44,6 +44,8 @@ func notify_pickup(text: String) -> void:
 @export var land_kick: float = 0.18
 @export var strafe_tilt_deg: float = 1.4 ## Camera roll when strafing, for weight.
 @export var max_shake_roll_deg: float = 2.6 ## Peak rotational kick at full trauma.
+@export var hit_kick_amount: float = 0.05 ## Lateral camera punch (m), AWAY from the hit source, at full-fraction damage.
+@export var hit_kick_roll_deg: float = 3.0 ## Camera roll punch (deg) at full-fraction damage, same sense as the lateral kick.
 
 @export_group("Dash & Slide")
 @export var dash_speed: float = 20.0
@@ -89,6 +91,8 @@ var _camera_base_y: float = 0.0
 var _land_offset: float = 0.0
 var _shake_amount: float = 0.0
 var _cam_roll: float = 0.0
+var _hit_kick_pos: float = 0.0  ## Signed lateral camera offset from a directional hit; eases to 0 in _handle_camera_feel.
+var _hit_kick_roll: float = 0.0 ## Signed camera roll from the same hit; eases to 0 alongside it.
 
 ## External camera shake (e.g. a boss entrance). 0..~1.
 func shake(amount: float) -> void:
@@ -371,17 +375,55 @@ func update_post_process_settings() -> void:
 		sm.set_shader_parameter("grade_saturation", params.get("saturation", 1.0))
 
 var _hurt_cd: float = 0.0
+## Fraction of max HP a single hit must take to count as BIG (triggers the
+## micro hit-stop below, not just the directional camera punch).
+const BIG_HIT_FRAC := 0.25
 
-func _on_hp_damaged(amount: float, _source: Node) -> void:
+func _on_hp_damaged(amount: float, source: Node) -> void:
 	# Every hit lands as a camera kick, scaled with the bite taken.
 	shake(clampf(0.3 + amount * 0.025, 0.3, 0.95))
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
+	var frac := (amount / hp.max_health) if hp and hp.max_health > 0.0 else 0.0
+	_apply_hit_kick(source, frac)
+	# Micro hit-stop: a ~50ms Engine.time_scale dip, BIG hits only, so it reads
+	# as "that one really landed" instead of nausea-inducing on every graze.
+	# Reuses GameState's existing combat hit-stop primitive (same one per-kill
+	# hits already use) rather than a new freeze system; it's rate-limited
+	# there so a horde can't stutter the game into a slideshow. Safe even if
+	# this hit is the killing blow: GameState.set_state(GAME_OVER) forces
+	# Engine.time_scale back to 1.0 the instant on_player_died runs (see
+	# set_state), so a death mid-dip can never leave slow-mo stuck on.
+	if frac >= BIG_HIT_FRAC:
+		GameState.combat_hitstop(0.3, 0.05)
 	# A grunt/impact on getting hit — throttled so rapid fire doesn't stack into
 	# a drone, and pitched down slightly the harder the hit.
 	if _hurt_cd <= 0.0 and hp and hp.current_health > 0.0:
 		_hurt_cd = 0.22
 		var pitch := clampf(1.12 - amount * 0.012, 0.82, 1.12) + randf_range(-0.04, 0.04)
 		AudioBus.play_synth_ui("player_hurt", -4.0, pitch)
+
+## Directional camera punch AWAY from the hit source — a locational thump layered
+## on top of the undirected shake trauma above, so a hit reads not just as
+## "ouch" but "ouch, from THERE" (the HUD's damage_indicator wedges already do
+## this for the 2D readout; this is the 3D camera-feel counterpart). Reuses the
+## same spring-and-ease idiom the rest of camera feel uses (_land_offset,
+## _fov_kick): set once here as an impulse, eased back to zero every frame in
+## _handle_camera_feel. Scaled by the damage fraction and by the Screen Shake
+## accessibility setting, same as the rest of the shake.
+func _apply_hit_kick(source: Node, damage_frac: float) -> void:
+	if not (source is Node3D):
+		return
+	var rel: Vector3 = (source as Node3D).global_position - global_position
+	var flat := Vector2(rel.x, rel.z)
+	if flat.length() < 0.05:
+		return
+	var right := Vector2(cos(rotation.y), -sin(rotation.y))
+	var side := flat.normalized().dot(right) # -1 (hit from the left) .. +1 (from the right)
+	var punch := clampf(damage_frac, 0.0, 1.0) * GraphicsSettings.screen_shake
+	if punch <= 0.001 or absf(side) < 0.05:
+		return
+	_hit_kick_pos = -signf(side) * hit_kick_amount * punch # kick away from the hit
+	_hit_kick_roll = -signf(side) * deg_to_rad(hit_kick_roll_deg) * punch
 
 # ---------- low-health state: red pulse on screen + heavy breathing ----------
 
@@ -1293,8 +1335,12 @@ func _handle_camera_feel(delta: float) -> void:
 	# Accessibility: scale all camera shake by the player's Screen Shake setting.
 	var trauma := _shake_amount * _shake_amount * GraphicsSettings.screen_shake
 	var shake_y := (randf() * 2.0 - 1.0) * trauma * 0.08
+	# Directional hit-kick (see _apply_hit_kick): set as a one-shot impulse on a
+	# hit, springs back to 0 here — same ease-out idiom as _land_offset above.
+	_hit_kick_pos = lerpf(_hit_kick_pos, 0.0, 9.0 * delta)
+	_hit_kick_roll = lerpf(_hit_kick_roll, 0.0, 9.0 * delta)
 	camera.position.y = _camera_base_y + bob + _land_offset + shake_y
-	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08
+	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08 + _hit_kick_pos
 	# Rotational shake + strafe lean, applied to the camera (not the head) so
 	# they never interfere with mouse look pitch.
 	var local_vel := global_transform.basis.inverse() * velocity
@@ -1307,7 +1353,7 @@ func _handle_camera_feel(delta: float) -> void:
 	lean += wall_side_sign * _wall_lean * deg_to_rad(14.0)
 	_cam_roll = lerpf(_cam_roll, lean, 7.0 * delta)
 	var roll_max := deg_to_rad(max_shake_roll_deg)
-	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max
+	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max + _hit_kick_roll
 	camera.rotation.x = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
 	camera.rotation.y = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
 	# The gun banks with the camera during a wall-run instead of staying dead-level
@@ -1402,8 +1448,85 @@ func _on_died(source: Node) -> void:
 	if weapon_holder:
 		weapon_holder.process_mode = Node.PROCESS_MODE_DISABLED
 	# Fall over: the view rolls onto its side and sinks to the deck as you drop.
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
-	tw.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	# Tracked so a mid-level checkpoint respawn (see respawn_from_checkpoint) can
+	# kill it before it finishes fighting the head back to a normal pose.
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill()
+	_death_tween = create_tween().set_parallel(true)
+	_death_tween.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_death_tween.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
+	_death_tween.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	GameState.on_player_died(killer)
+
+# ---------------------------------------------------------------------
+# Mid-level checkpoint respawn (see GameState's checkpoint section). GameState
+# owns WHEN a checkpoint is taken (task completion / boss reveal) and WHERE the
+# blob is stored; this is just the player-side snapshot/restore of its own
+# transform, health and loadout.
+# ---------------------------------------------------------------------
+
+var _death_tween: Tween = null
+const RESPAWN_MIN_HEALTH_FRAC := 0.5 ## Respawn HP is floored here even if the checkpoint was taken low — never hand the player straight back into a killing blow.
+const RESPAWN_GRACE_TIME := 1.5 ## Brief post-respawn invulnerability so you get a beat to reorient before anything can tag you again.
+
+## Everything needed to respawn here later without a scene reload: transform,
+## HP (as a fraction of max — floored on the way back in), and per-weapon
+## ammo + grenades, so a checkpoint after a long fight doesn't hand back an
+## empty gun.
+func checkpoint_snapshot() -> Dictionary:
+	# Keyed by scene_file_path, not array index — the rack RE-SORTS weak→strong
+	# on every pickup (WeaponManager._sort_by_power), so an index recorded now
+	# could point at a different weapon by the time of a later respawn.
+	var ammo := {}
+	if weapon_holder and "weapons" in weapon_holder:
+		for w in weapon_holder.weapons:
+			ammo[w.scene_file_path] = {"mag": w.mag, "reserve": w.reserve}
+	return {
+		"position": global_position,
+		"rotation_y": rotation.y,
+		"head_rotation_x": head.rotation.x if head else 0.0,
+		"health_frac": (hp.current_health / hp.max_health) if hp and hp.max_health > 0.0 else 1.0,
+		"ammo": ammo,
+		"grenade_counts": grenade_counts.duplicate(),
+		"grenade_type": grenade_type,
+	}
+
+## Come back at the checkpoint IN PLACE — same player instance, same world;
+## nothing else about the level is touched (see GameState.respawn_at_checkpoint
+## for why: undoing kills on a death would make bosses/arenas farmable).
+func respawn_from_checkpoint(data: Dictionary) -> void:
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill() # stop the fall-over mid-flight — respawn snaps the head back
+	_dead = false
+	velocity = Vector3.ZERO
+	global_position = data.get("position", global_position)
+	rotation.y = data.get("rotation_y", rotation.y)
+	if head:
+		head.rotation = Vector3(float(data.get("head_rotation_x", 0.0)), 0.0, 0.0)
+		# _handle_stance() re-drives head.position.y from the collider height every
+		# frame; snap it back to a sane value now so there's no one-frame pop from
+		# the death sink (0.32) before that catches up.
+		head.position.y = stand_height - 0.2
+	if weapon_holder:
+		weapon_holder.process_mode = Node.PROCESS_MODE_INHERIT
+	if hp:
+		var frac: float = maxf(float(data.get("health_frac", 1.0)), RESPAWN_MIN_HEALTH_FRAC)
+		hp.current_health = clampf(frac * hp.max_health, 1.0, hp.max_health)
+		hp.health_changed.emit(hp.current_health, hp.max_health) # heal() no-ops at 0 HP, so set + emit directly
+		hp.invulnerable = true # brief spawn grace — see RESPAWN_GRACE_TIME
+		var grace := get_tree().create_timer(RESPAWN_GRACE_TIME)
+		grace.timeout.connect(func():
+			if is_instance_valid(self):
+				hp.invulnerable = _god) # respect god-mode if it was toggled independently
+	if weapon_holder and "weapons" in weapon_holder:
+		var ammo: Dictionary = data.get("ammo", {})
+		for w in weapon_holder.weapons:
+			if ammo.has(w.scene_file_path):
+				var a: Dictionary = ammo[w.scene_file_path]
+				w.mag = int(a.get("mag", w.mag))
+				w.reserve = int(a.get("reserve", w.reserve))
+		if weapon_holder.current and weapon_holder.has_signal("ammo_changed"):
+			weapon_holder.ammo_changed.emit(weapon_holder.current.mag, weapon_holder.current.reserve)
+	grenade_counts = (data.get("grenade_counts", grenade_counts) as Array).duplicate()
+	grenade_type = int(data.get("grenade_type", grenade_type))
+	_sync_grenades()

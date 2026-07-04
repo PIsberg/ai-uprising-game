@@ -15,6 +15,7 @@ signal level_graded(grade: String, stats: Dictionary) ## Level cleared — end-s
 
 func announce_boss(boss: Node) -> void:
 	boss_spawned.emit(boss)
+	set_checkpoint() # boss arena entered — sane restart point for a death mid-fight
 
 ## Called by Damageable when the player damages something. Drives combat feedback.
 func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
@@ -530,6 +531,7 @@ func reset_run() -> void:
 	supply_grenades = 0
 	supply_health = 0.0
 	_taught.clear()
+	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------
 ## The game has a lot of systems players otherwise learn by dying — elite affixes,
@@ -720,6 +722,7 @@ func _save_bestiary() -> void:
 ## Load a specific level. `reset` wipes score/kills (used for replays); campaign
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
+	clear_checkpoint() # a fresh build of the level — any mid-level checkpoint is stale
 	current_level_path = scene_path
 	var found := campaign().find(scene_path)
 	if found != -1:
@@ -880,6 +883,10 @@ func complete_task(id: String) -> void:
 			# "Area cleared" cinematic beat when the last hostile drops.
 			if id == "kill_all":
 				hit_stop(0.45, 0.6)
+			# A finished task is the level's natural beat (kill-all, keycard, core, …)
+			# — checkpoint here so a later death resumes at this progress instead of
+			# the level's very start.
+			set_checkpoint()
 			return
 
 ## Set a progress task's value; auto-completes when it reaches the goal.
@@ -924,6 +931,53 @@ func incomplete_task_labels() -> Array:
 		if not t["done"]:
 			out.append(t["label"])
 	return out
+
+# ---------------------------------------------------------------------
+# Mid-level checkpoint. A LIGHTWEIGHT, IN-MEMORY respawn point — no disk write
+# (see save_progress() above for the real per-LEVEL save). Long/boss levels
+# used to answer every death with a full level reload; this lets a death
+# resume from the last task completed or boss arena entered instead. World
+# state is left exactly as the death found it — enemy health/positions,
+# dropped loot and completed tasks are NOT reset — only the player comes back.
+# That's deliberate: undoing kills on a death would let a boss (or a whole
+# arena) be farmed down for free by dying on purpose. Cleared on every fresh
+# level load so a stale checkpoint can never leak into the next level.
+# ---------------------------------------------------------------------
+
+signal checkpoint_set ## HUD pops a small "CHECKPOINT" toast.
+
+## Opaque blob built by Player.checkpoint_snapshot(); {} means "none yet" — a
+## death before the first checkpoint falls back to the old full level reload.
+var checkpoint: Dictionary = {}
+
+func has_checkpoint() -> bool:
+	return not checkpoint.is_empty()
+
+func clear_checkpoint() -> void:
+	checkpoint.clear()
+
+## Snapshot the player's respawn state right now. Called on every task
+## completion (a level's natural beats — kill-alls, keycards, core
+## destructions, …) and when a boss arena is announced, so mid-level and boss
+## fights always get a sane restart point instead of only the level's start.
+func set_checkpoint() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if player == null or not player.has_method("checkpoint_snapshot"):
+		return
+	checkpoint = player.checkpoint_snapshot()
+	checkpoint_set.emit()
+
+## Respawn the CURRENT player instance at the checkpoint in place — no scene
+## reload. Falls back to a full level reload if there's no checkpoint or no
+## player to respawn (defensive; the HUD only calls this when has_checkpoint()
+## is already true).
+func respawn_at_checkpoint() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if not has_checkpoint() or player == null or not player.has_method("respawn_from_checkpoint"):
+		load_level(current_level_path, false)
+		return
+	set_state(State.PLAYING)
+	player.respawn_from_checkpoint(checkpoint)
 
 # ---------------------------------------------------------------------
 # Difficulty scaling. Levels call apply_level_scaling(self) at the end of
