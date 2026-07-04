@@ -61,6 +61,19 @@ var flash_intensity: float = 1.0
 ## upscaling); below 1.0 renders at a lower internal res and FSR2-upscales (faster,
 ## softer in the distance). Lets you keep effects low for perf without the blur.
 var render_scale: float = 1.0
+## Accessibility: brightness multiplier applied on top of whatever a level (or
+## the cutscene player) already authored for Environment.adjustment_brightness.
+## 1.0 = no change. Read by apply_to_environment() (see _apply_brightness),
+## which remembers each Environment's authored base value in metadata so this
+## never clobbers a level's own cinematic grading — it only scales it.
+var brightness: float = 1.0
+## Accessibility: HUD reads this before showing overlord taunt subtitles and
+## arcade kill callouts (HEADSHOT / streak words). On by default. NOTE: hud.gd
+## is owned by another agent — see report for the exact one-line reads to add.
+var combat_callouts_enabled: bool = true
+## Accessibility: whether floating damage numbers pop on hit. On by default.
+## NOTE: scripts/systems/damageable.gd is the read site — see report handoff.
+var damage_numbers_enabled: bool = true
 
 ## Named color-grade presets applied by the post-process shader: [tint (R,G,B),
 ## contrast, saturation]. NEUTRAL is a no-op; the rest each push a distinct mood.
@@ -90,9 +103,191 @@ const LANGUAGES := [
 ]
 var language: String = "en"
 
+# ---------- key rebinding ----------
+#
+# Ordering guarantee: InputMap actions come from three sources —
+#   1) project.godot [input] — present the instant the engine boots, before
+#      any script runs.
+#   2) GameState._setup_gamepad_bindings() — runs in GameState._ready(). Per
+#      project.godot's [autoload] order (GameState, AudioBus, SoundSynth,
+#      GraphicsSettings, AIDirector), GameState is always initialized BEFORE
+#      GraphicsSettings, so its gamepad defaults are already in InputMap by
+#      the time we get here.
+#   3) player.gd / weapon_manager.gd — register "dash"/"melee"/"grapple" and
+#      "alt_fire" lazily, guarded by `if not InputMap.has_action(...)`, only
+#      once their owning node (Player / WeaponManager) enters the tree (i.e.
+#      once a level actually loads — NOT at main-menu time).
+#
+# apply_keybinds() (called from _ready below, synchronously, no defer needed —
+# InputMap doesn't need a live viewport/window) closes the gap for (3) itself:
+# for every action we know how to rebind, if InputMap doesn't have it yet we
+# add it right now with its factory-default (or saved override) events. That
+# pre-empts player.gd/weapon_manager.gd's own lazy registration — their guard
+# sees the action already exists and no-ops — so a saved override for melee/
+# grapple/alt_fire is already live even if the rebind screen is opened (or the
+# game just boots to the main menu) before any level has ever been played.
+
+## Rebindable actions shown on the rebind screen, in display order. A few
+## (melee/grapple/alt_fire) aren't in project.godot at all — see the ordering
+## note above for why apply_keybinds() still handles them safely.
+const KEYBIND_ACTIONS := [
+	{"action": "move_forward", "label": "Move Forward"},
+	{"action": "move_back", "label": "Move Back"},
+	{"action": "move_left", "label": "Move Left"},
+	{"action": "move_right", "label": "Move Right"},
+	{"action": "jump", "label": "Jump"},
+	{"action": "sprint", "label": "Sprint"},
+	{"action": "crouch", "label": "Crouch"},
+	{"action": "dash", "label": "Dash"},
+	{"action": "melee", "label": "Melee Shove"},
+	{"action": "grapple", "label": "Grapple Hook"},
+	{"action": "fire", "label": "Fire"},
+	{"action": "aim", "label": "Aim Down Sight"},
+	{"action": "alt_fire", "label": "Weapon Alt-Fire"},
+	{"action": "reload", "label": "Reload"},
+	{"action": "interact", "label": "Interact"},
+	{"action": "grenade", "label": "Throw Grenade"},
+	{"action": "grenade_cycle", "label": "Cycle Grenade Type"},
+	{"action": "weapon_1", "label": "Weapon Slot 1"},
+	{"action": "weapon_2", "label": "Weapon Slot 2"},
+	{"action": "weapon_3", "label": "Weapon Slot 3"},
+	{"action": "weapon_4", "label": "Weapon Slot 4"},
+	{"action": "weapon_next", "label": "Next Weapon"},
+	{"action": "weapon_prev", "label": "Previous Weapon"},
+	{"action": "pause", "label": "Pause"},
+]
+
+## action -> Array[InputEvent] the player has customized. Absent = factory
+## default (see _factory_default_events). Persisted to settings.cfg — InputEvent
+## is a plain built-in Resource (no external UID), so ConfigFile round-trips it
+## the same way project.godot itself stores bindings.
+var keybind_overrides: Dictionary = {}
+
+func _key(physical_keycode: int) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.physical_keycode = physical_keycode
+	return e
+
+func _mouse_btn(button_index: int) -> InputEventMouseButton:
+	var e := InputEventMouseButton.new()
+	e.button_index = button_index
+	return e
+
+func _joy_btn(button_index: int) -> InputEventJoypadButton:
+	var e := InputEventJoypadButton.new()
+	e.button_index = button_index
+	return e
+
+func _joy_axis(axis: int, value: float) -> InputEventJoypadMotion:
+	var e := InputEventJoypadMotion.new()
+	e.axis = axis
+	e.axis_value = value
+	return e
+
+## The factory-default event set for a rebindable action — mirrors exactly
+## what project.godot + GameState._setup_gamepad_bindings + player.gd +
+## weapon_manager.gd would otherwise set up between them. This is the "Reset
+## to Defaults" baseline and the fallback whenever no override is saved.
+func _factory_default_events(action: String) -> Array:
+	match action:
+		"move_forward": return [_key(KEY_W), _joy_axis(JOY_AXIS_LEFT_Y, -1.0)]
+		"move_back": return [_key(KEY_S), _joy_axis(JOY_AXIS_LEFT_Y, 1.0)]
+		"move_left": return [_key(KEY_A), _joy_axis(JOY_AXIS_LEFT_X, -1.0)]
+		"move_right": return [_key(KEY_D), _joy_axis(JOY_AXIS_LEFT_X, 1.0)]
+		"jump": return [_key(KEY_SPACE), _joy_btn(JOY_BUTTON_A)]
+		"sprint": return [_key(KEY_SHIFT), _joy_btn(JOY_BUTTON_LEFT_STICK)]
+		"crouch": return [_key(KEY_CTRL), _joy_btn(JOY_BUTTON_B)]
+		"dash": return [_key(KEY_Q), _joy_btn(JOY_BUTTON_RIGHT_STICK)]
+		"melee": return [_key(KEY_F), _joy_btn(JOY_BUTTON_B)]
+		"grapple": return [_key(KEY_C), _joy_btn(JOY_BUTTON_LEFT_SHOULDER)]
+		"fire": return [_mouse_btn(MOUSE_BUTTON_LEFT), _joy_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)]
+		"aim": return [_mouse_btn(MOUSE_BUTTON_RIGHT), _joy_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)]
+		"alt_fire": return [_key(KEY_V), _mouse_btn(MOUSE_BUTTON_XBUTTON1)]
+		"reload": return [_key(KEY_R), _joy_btn(JOY_BUTTON_X)]
+		"interact": return [_key(KEY_E), _joy_btn(JOY_BUTTON_X)]
+		"grenade": return [_key(KEY_G), _joy_btn(JOY_BUTTON_Y)]
+		"grenade_cycle": return [_key(KEY_H)]
+		"weapon_1": return [_key(KEY_1)]
+		"weapon_2": return [_key(KEY_2)]
+		"weapon_3": return [_key(KEY_3)]
+		"weapon_4": return [_key(KEY_4)]
+		"weapon_next": return [_mouse_btn(MOUSE_BUTTON_WHEEL_DOWN), _joy_btn(JOY_BUTTON_RIGHT_SHOULDER)]
+		"weapon_prev": return [_mouse_btn(MOUSE_BUTTON_WHEEL_UP), _joy_btn(JOY_BUTTON_LEFT_SHOULDER)]
+		"pause": return [_key(KEY_ESCAPE), _joy_btn(JOY_BUTTON_START)]
+		_: return []
+
+## Applies every keybindable action's events onto the live InputMap: the saved
+## override if the player customized it, otherwise the factory default. Also
+## registers any action InputMap doesn't have yet (melee/grapple/alt_fire
+## before their first level load) — see the ordering note above.
+func apply_keybinds() -> void:
+	for entry in KEYBIND_ACTIONS:
+		var action: String = entry["action"]
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var events: Array = keybind_overrides.get(action, _factory_default_events(action))
+		InputMap.action_erase_events(action)
+		for e in events:
+			InputMap.action_add_event(action, e)
+
+func _events_match(a: InputEvent, b: InputEvent) -> bool:
+	if a is InputEventKey and b is InputEventKey:
+		return (a as InputEventKey).physical_keycode == (b as InputEventKey).physical_keycode
+	if a is InputEventMouseButton and b is InputEventMouseButton:
+		return (a as InputEventMouseButton).button_index == (b as InputEventMouseButton).button_index
+	if a is InputEventJoypadButton and b is InputEventJoypadButton:
+		return (a as InputEventJoypadButton).button_index == (b as InputEventJoypadButton).button_index
+	return false
+
+## Rebinds one "slot" of an action to a freshly captured event: the kb/mouse
+## slot (is_gamepad_slot=false) replaces any existing InputEventKey/
+## InputEventMouseButton on the action while leaving gamepad events alone; the
+## gamepad slot (is_gamepad_slot=true) replaces any existing
+## InputEventJoypadButton while leaving kb/mouse/axis events alone.
+##
+## Conflict policy: SWAP. If another rebindable action already uses the exact
+## same event, it's silently stripped from that action (never left ambiguous
+## between two actions) and its name is returned so the UI can toast it.
+func rebind_action(action: String, is_gamepad_slot: bool, new_event: InputEvent) -> Array[String]:
+	var stolen: Array[String] = []
+	for other in KEYBIND_ACTIONS:
+		var oa: String = other["action"]
+		if oa == action or not InputMap.has_action(oa):
+			continue
+		for e in InputMap.action_get_events(oa):
+			if _events_match(e, new_event):
+				InputMap.action_erase_event(oa, e)
+				keybind_overrides[oa] = InputMap.action_get_events(oa).duplicate()
+				stolen.append(other["label"])
+
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	var kept: Array = []
+	for e in InputMap.action_get_events(action):
+		if is_gamepad_slot:
+			if not (e is InputEventJoypadButton):
+				kept.append(e)
+		else:
+			if e is InputEventJoypadButton or e is InputEventJoypadMotion:
+				kept.append(e)
+	kept.append(new_event)
+	InputMap.action_erase_events(action)
+	for e in kept:
+		InputMap.action_add_event(action, e)
+	keybind_overrides[action] = kept.duplicate()
+	_save_settings()
+	return stolen
+
+## Wipes every saved override and restores factory-default binds everywhere.
+func reset_keybinds_to_default() -> void:
+	keybind_overrides.clear()
+	apply_keybinds()
+	_save_settings()
+
 func _ready() -> void:
 	_load_settings()
 	TranslationServer.set_locale(language)
+	apply_keybinds() # after GameState's default gamepad injection — see ordering note above
 	_apply_viewport.call_deferred()
 	_apply_hdr_output.call_deferred()
 	Engine.max_fps = max_fps
@@ -230,6 +425,26 @@ func set_flash_intensity(v: float) -> void:
 func set_render_scale(v: float) -> void:
 	render_scale = clampf(v, 0.5, 1.0)
 	_apply_viewport()
+	_save_settings()
+
+## Accessibility: brightness multiplier (0.5..1.5) on top of each Environment's
+## own authored adjustment_brightness. Re-tiers the live level's environment
+## immediately, same as a quality change.
+func set_brightness(v: float) -> void:
+	brightness = clampf(v, 0.5, 1.5)
+	_apply_to_live_environment()
+	_save_settings()
+
+## Accessibility: HUD polls this before popping overlord taunt subtitles /
+## arcade kill callouts. See the report for the hud.gd handoff read sites.
+func set_combat_callouts_enabled(v: bool) -> void:
+	combat_callouts_enabled = v
+	_save_settings()
+
+## Accessibility: Damageable polls this before spawning a floating damage
+## number. See the report for the damageable.gd handoff read site.
+func set_damage_numbers_enabled(v: bool) -> void:
+	damage_numbers_enabled = v
 	_save_settings()
 
 ## Switches the color-grade preset live and persists it.
@@ -537,10 +752,21 @@ func apply_to_environment(env: Environment, open_sky: bool) -> void:
 			if not env.has_meta("glow_base"):
 				env.set_meta("glow_base", env.glow_intensity)
 			env.glow_intensity = 0.3
+	_apply_brightness(env)
 
 func _restore_glow(env: Environment) -> void:
 	if env.has_meta("glow_base"):
 		env.glow_intensity = env.get_meta("glow_base")
+
+## Accessibility brightness slider: scales whatever adjustment_brightness a
+## level (or the cutscene player) already authored, remembering that authored
+## value in metadata the first time so repeated calls (quality changes, slider
+## drags) never compound on themselves.
+func _apply_brightness(env: Environment) -> void:
+	if not env.has_meta("brightness_base"):
+		env.set_meta("brightness_base", env.adjustment_brightness if env.adjustment_enabled else 1.0)
+	env.adjustment_enabled = true
+	env.adjustment_brightness = float(env.get_meta("brightness_base")) * brightness
 
 func _load_settings() -> void:
 	var cf := ConfigFile.new()
@@ -567,6 +793,11 @@ func _load_settings() -> void:
 		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
 		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
 		color_grade = clampi(int(cf.get_value("graphics_adv", "color_grade", ColorGrade.NEUTRAL)), 0, ColorGrade.size() - 1) as ColorGrade
+		brightness = clampf(float(cf.get_value("display", "brightness", 1.0)), 0.5, 1.5)
+		combat_callouts_enabled = bool(cf.get_value("accessibility", "combat_callouts", true))
+		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
+		var raw_overrides = cf.get_value("keybinds", "overrides", {})
+		keybind_overrides = raw_overrides if raw_overrides is Dictionary else {}
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -593,5 +824,9 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
 	cf.set_value("video", "render_scale", render_scale)
 	cf.set_value("graphics_adv", "color_grade", int(color_grade))
+	cf.set_value("display", "brightness", brightness)
+	cf.set_value("accessibility", "combat_callouts", combat_callouts_enabled)
+	cf.set_value("accessibility", "damage_numbers", damage_numbers_enabled)
+	cf.set_value("keybinds", "overrides", keybind_overrides)
 
 	cf.save(SETTINGS_PATH)

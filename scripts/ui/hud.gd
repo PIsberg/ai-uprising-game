@@ -469,6 +469,8 @@ func _build_overlord_label() -> void:
 func _overlord_say(line: String) -> void:
 	if _overlord_label == null or line == "":
 		return
+	if not GraphicsSettings.combat_callouts_enabled:
+		return
 	_overlord_label.text = "▌ " + tr(line)
 	_overlord_time = 4.2
 	AudioBus.play_synth_ui("overlord_glitch", -9.0, randf_range(0.95, 1.08))
@@ -483,6 +485,8 @@ func _on_combo_changed(combo: int, mult: float) -> void:
 			tier = i
 	if tier > _last_streak_tier and tier >= 0:
 		_last_streak_tier = tier
+		if not GraphicsSettings.combat_callouts_enabled:
+			return # tier still advances (re-arm logic intact), just no popup/sting
 		_streak_label.text = String(STREAK_TIERS[tier]["word"])
 		_streak_alpha = 1.0
 		_streak_pop = 1.0
@@ -1280,7 +1284,7 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	_hit_crit = crit
 	if killed:
 		_kill_flash = 1.0
-	if crit:
+	if crit and GraphicsSettings.combat_callouts_enabled:
 		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
 		_headshot_alpha = 1.0
 		_headshot_pop = 1.0
@@ -1294,7 +1298,7 @@ func _on_enemy_killed(score: int, label: String) -> void:
 	# cumulative streak tiers.
 	_multikill += 1
 	_multikill_cd = MULTIKILL_WINDOW
-	if _multikill >= 2 and _multikill_label:
+	if _multikill >= 2 and _multikill_label and GraphicsSettings.combat_callouts_enabled:
 		var w: String = MULTIKILL_WORDS[mini(_multikill, MULTIKILL_WORDS.size() - 1)]
 		_multikill_label.text = "%s ×%d" % [w, _multikill]
 		_multikill_alpha = 1.0
