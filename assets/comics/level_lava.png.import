@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dff4gtqqihq5h"
-valid=false
+uid="uid://dtfihdixbuqph"
+path="res://.godot/imported/level_lava.png-12a843f1c910380fb0972a6900ee5b6e.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/comics/level_lava.png"
+dest_files=["res://.godot/imported/level_lava.png-12a843f1c910380fb0972a6900ee5b6e.ctex"]
 
 [params]
 

@@ -129,6 +129,36 @@ func _build_extra_settings() -> void:
 
 	_add_language_row()
 
+	# Accessibility: brightness multiplier on top of whatever a level authored
+	# for its own Environment.adjustment_brightness (see GraphicsSettings._apply_brightness).
+	var brightness_slider := _add_slider_row("Brightness", 0.5, 1.5, 0.05, GraphicsSettings.brightness)
+	brightness_slider.value_changed.connect(func(v: float): GraphicsSettings.set_brightness(v))
+
+	# Accessibility: overlord taunt subtitles + arcade kill callouts (HEADSHOT,
+	# streak words) — the HUD reads GraphicsSettings.combat_callouts_enabled
+	# before popping them (see report for the exact hud.gd read sites).
+	var callouts := CheckButton.new()
+	callouts.text = tr("Combat Callouts")
+	callouts.custom_minimum_size = Vector2(360, 44)
+	callouts.button_pressed = GraphicsSettings.combat_callouts_enabled
+	callouts.toggled.connect(func(p: bool): GraphicsSettings.set_combat_callouts_enabled(p))
+	_settings.add_child(callouts)
+
+	# Accessibility: floating damage numbers — Damageable reads
+	# GraphicsSettings.damage_numbers_enabled (see report for the read site).
+	var dmg_numbers := CheckButton.new()
+	dmg_numbers.text = tr("Damage Numbers")
+	dmg_numbers.custom_minimum_size = Vector2(360, 44)
+	dmg_numbers.button_pressed = GraphicsSettings.damage_numbers_enabled
+	dmg_numbers.toggled.connect(func(p: bool): GraphicsSettings.set_damage_numbers_enabled(p))
+	_settings.add_child(dmg_numbers)
+
+	var rebind_btn := Button.new()
+	rebind_btn.custom_minimum_size = Vector2(360, 48)
+	rebind_btn.text = tr("Rebind Controls")
+	rebind_btn.pressed.connect(_on_rebind_controls_pressed)
+	_settings.add_child(rebind_btn)
+
 	# Keep the Back button at the bottom of the panel.
 	if back:
 		_settings.move_child(back, _settings.get_child_count() - 1)
@@ -205,15 +235,28 @@ func _show_panel(which: Control) -> void:
 	_controls.visible = which == _controls
 	if _levels_panel:
 		_levels_panel.visible = which == _levels_panel
+	if _keybind_panel:
+		_keybind_panel.visible = which == _keybind_panel
 
 # --- cheat: type "warp" anywhere on the menu for a direct level select ---
 
 const CHEAT_WORD := "warp"
 var _cheat_buf := ""
 var _levels_panel: VBoxContainer
+var _keybind_panel: KeybindPanel
 var _diff_btns: Array[Button] = []
 
 func _input(event: InputEvent) -> void:
+	# While the rebind screen is actively capturing a key/button, ESC belongs
+	# to it (cancel-capture) — don't also snap the whole menu back to Main.
+	# Both checks matter: KeybindPanel may run its _input before or after ours
+	# depending on tree order, so guard on its still-capturing state AND on
+	# whether it already marked the event handled (it does for every capture
+	# outcome, including cancel).
+	if get_viewport().is_input_handled():
+		return
+	if _keybind_panel and _keybind_panel.visible and _keybind_panel.is_capturing():
+		return
 	var k := event as InputEventKey
 	if k == null or not k.pressed or k.echo:
 		return
@@ -406,3 +449,14 @@ func _on_volume_changed(value: float) -> void:
 
 func _on_settings_back_pressed() -> void:
 	_show_panel(_main)
+
+## Lazily builds the rebind screen (same lazy-build idiom as _build_level_select)
+## and shows it. Built as its own class (scripts/ui/keybind_panel.gd) rather
+## than inline like the slider rows above it — it needs its own _input capture
+## state machine, which would clutter this file's simple settings idiom.
+func _on_rebind_controls_pressed() -> void:
+	if _keybind_panel == null:
+		_keybind_panel = KeybindPanel.new()
+		_keybind_panel.back_pressed.connect(func(): _show_panel(_settings))
+		$Center/VBox.add_child(_keybind_panel)
+	_show_panel(_keybind_panel)

@@ -28,6 +28,14 @@ func _ready() -> void:
 	streams["impact_stone"] = _impact_stone(0.14)
 	streams["drone_hum"] = _drone_hum(1.2)
 	streams["mech_step"] = _mech_step(0.32)
+	# Continuous locomotion audio: short, quiet one-shot ticks (NOT loops) so
+	# moving enemies read as active without a per-enemy looping player. Light/
+	# heavy servo-step variants for ground chassis, a soft rotor tick for
+	# flyers. Deliberately smaller and quieter than mech_step, which stays
+	# reserved for the big scripted boss stomps.
+	streams["servo_step_light"] = _servo_step(0.09, 1450.0, false)
+	streams["servo_step_heavy"] = _servo_step(0.14, 620.0, true)
+	streams["rotor_whir"] = _rotor_whir(0.16)
 	streams["pickup_health"] = _chime(0.3, 660.0, 990.0)
 	streams["pickup_ammo"] = _pickup_clink(0.22)
 	streams["explosion"] = _explosion(0.7)
@@ -861,6 +869,50 @@ func _pickup_clink(duration: float) -> AudioStreamWAV:
 		var ring := sin(phase) * 0.3
 		var s := (randf() * 2.0 - 1.0) * (c1 * 0.7 + c2 * 0.6) + ring * (c1 + c2)
 		_write(bytes, i, tanh(s))
+	return _to_stream(bytes)
+
+## Short, quiet mechanical footfall/servo tick for enemy locomotion (the
+## continuous-movement audio budget in enemy_base.gd) — a light tonal click for
+## small/fast chassis, a duller lower-pitched thump for heavy ones. Both stay
+## well under mech_step's volume/length since this fires every stride, on
+## multiple enemies, rather than as a one-off boss beat.
+func _servo_step(duration: float, hz: float, heavy: bool) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var lp := 0.0
+	var ring_decay: float = 26.0 if heavy else 55.0
+	var tick_decay: float = 70.0 if heavy else 130.0
+	var ring_amp: float = 0.4 if heavy else 0.22
+	var tick_amp: float = 0.5 if heavy else 0.35
+	var out_amp: float = 0.55 if heavy else 0.4
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * ring_decay)
+		ph += TAU * hz / SR
+		var ring := sin(ph) * ring_amp * env
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.5)
+		var tick := lp * exp(-t * tick_decay) * tick_amp
+		_write(bytes, i, tanh(ring + tick) * out_amp)
+	return _to_stream(bytes)
+
+## Soft rotor/servo hum tick for flying enemies' locomotion audio: a brief
+## filtered blade-whoosh with a faint tonal thrum underneath, swelling in and
+## fading out with no hard edges (it's a repeating tick, not a sustained loop).
+func _rotor_whir(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := sin(PI * (t / duration))
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.22)
+		ph += TAU * 210.0 / SR
+		var thrum := sin(ph) * 0.25
+		_write(bytes, i, (lp * 0.5 + thrum) * env * 0.32)
 	return _to_stream(bytes)
 
 func _mech_step(duration: float) -> AudioStreamWAV:

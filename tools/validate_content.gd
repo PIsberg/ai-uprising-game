@@ -18,6 +18,9 @@ func _initialize() -> void:
 		"res://scripts/cutscene/level_briefing.gd",
 		"res://scripts/cutscene/level_comic_briefing.gd",
 		"res://scripts/cutscene/uprising_reveal.gd",
+		"res://scripts/cutscene/victory_cutscene.gd",
+		"res://scripts/cutscene/victory_transmission.gd",
+		"res://scripts/ui/credits.gd",
 		"res://scripts/autoload/game_state.gd",
 	]
 	for p in scripts:
@@ -49,6 +52,8 @@ func _initialize() -> void:
 		"res://scenes/levels/level_neon.tscn",
 		"res://scenes/cutscene/uprising_reveal.tscn",
 		"res://scenes/cutscene/level_comic_briefing.tscn",
+		"res://scenes/cutscene/victory_cutscene.tscn",
+		"res://scenes/ui/credits.tscn",
 	]
 	for p in scenes:
 		var ps = load(p)

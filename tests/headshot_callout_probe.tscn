@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0probe0headshotcallout"]
+
+[ext_resource type="Script" path="res://tests/headshot_callout_probe.gd" id="1_p"]
+
+[node name="HeadshotCalloutProbe" type="Node"]
+script = ExtResource("1_p")

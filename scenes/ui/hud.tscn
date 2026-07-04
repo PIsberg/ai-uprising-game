@@ -389,7 +389,7 @@ text = "Main Menu"
 [connection signal="pressed" from="PauseMenu/VBox/PauseGraphics" to="." method="_on_pause_graphics_pressed"]
 [connection signal="value_changed" from="PauseMenu/VBox/PauseVolumeRow/PauseVolume" to="." method="_on_pause_volume_changed"]
 [connection signal="pressed" from="PauseMenu/VBox/Quit" to="." method="_on_quit_pressed"]
-[connection signal="pressed" from="GameOverMenu/VBox/Restart" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="GameOverMenu/VBox/Restart" to="." method="_on_death_restart_pressed"]
 [connection signal="pressed" from="GameOverMenu/VBox/Quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="WinMenu/VBox/Continue" to="." method="_on_continue_pressed"]
 [connection signal="pressed" from="WinMenu/VBox/Restart" to="." method="_on_restart_pressed"]

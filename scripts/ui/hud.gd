@@ -28,6 +28,7 @@ var _cross_time: float = 0.0
 @onready var pause_graphics: Button = $PauseMenu/VBox/PauseGraphics
 @onready var pause_volume: HSlider = $PauseMenu/VBox/PauseVolumeRow/PauseVolume
 @onready var game_over_menu: Control = $GameOverMenu
+@onready var game_over_restart_btn: Button = $GameOverMenu/VBox/Restart
 @onready var win_menu: Control = $WinMenu
 @onready var win_title: Label = $WinMenu/VBox/Title
 @onready var win_continue: Button = $WinMenu/VBox/Continue
@@ -62,6 +63,11 @@ var _hit_x: Control = null
 var _streak_label: Label = null
 var _streak_alpha: float = 0.0
 var _streak_pop: float = 0.0
+# Headshot callout — punches in on every crit hit (frequent, so it fades fast
+# and just re-pops on rapid re-triggers rather than stacking/queueing).
+var _headshot_label: Label = null
+var _headshot_alpha: float = 0.0
+var _headshot_pop: float = 0.0
 # Rapid multi-kill callouts (N kills inside a short window — distinct from the
 # cumulative streak tiers above). AI-themed words.
 const MULTIKILL_WORDS := ["", "", "DOUBLE TAP", "BATCH DELETE", "MASS UNINSTALL", "FORK BOMB", "KILL -9 ALL"]
@@ -182,6 +188,7 @@ func _ready() -> void:
 	GameState.enemy_killed.connect(_on_enemy_killed)
 	GameState.objective_blocked.connect(_show_toast)
 	GameState.teach_hint.connect(_show_toast) # one-off coaching toasts (elite affixes, hazards)
+	GameState.checkpoint_set.connect(func(): _show_toast("⚑ CHECKPOINT"))
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
@@ -190,6 +197,7 @@ func _ready() -> void:
 	_build_kill_confirm()
 	_build_combo_label()
 	_build_streak_label()
+	_build_headshot_label()
 	_build_multikill_label()
 	_build_overlord_label()
 	_build_pause_audio()
@@ -400,6 +408,26 @@ func _build_streak_label() -> void:
 	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_streak_label)
 
+## Small gold callout that punches in on a headshot — sits just below the
+## streak word so a crit landed mid-streak doesn't overlap it. Fades quickly
+## (headshots are common; it should read as a tick, not linger like a milestone).
+func _build_headshot_label() -> void:
+	_headshot_label = Label.new()
+	_headshot_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_headshot_label.anchor_left = 0.5
+	_headshot_label.anchor_right = 0.5
+	_headshot_label.position = Vector2(0, 234)
+	_headshot_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_headshot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_headshot_label.add_theme_font_size_override("font_size", 30)
+	_headshot_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	_headshot_label.add_theme_constant_override("outline_size", 7)
+	_headshot_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_headshot_label.text = "HEADSHOT" # arcade-style callout word; kept raw like the streak/multikill words, not tr()'d
+	_headshot_label.modulate.a = 0.0
+	_headshot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_headshot_label)
+
 ## Gold multi-kill callout that punches in when you drop several enemies fast.
 func _build_multikill_label() -> void:
 	_multikill_label = Label.new()
@@ -441,6 +469,8 @@ func _build_overlord_label() -> void:
 func _overlord_say(line: String) -> void:
 	if _overlord_label == null or line == "":
 		return
+	if not GraphicsSettings.combat_callouts_enabled:
+		return
 	_overlord_label.text = "▌ " + tr(line)
 	_overlord_time = 4.2
 	AudioBus.play_synth_ui("overlord_glitch", -9.0, randf_range(0.95, 1.08))
@@ -455,6 +485,8 @@ func _on_combo_changed(combo: int, mult: float) -> void:
 			tier = i
 	if tier > _last_streak_tier and tier >= 0:
 		_last_streak_tier = tier
+		if not GraphicsSettings.combat_callouts_enabled:
+			return # tier still advances (re-arm logic intact), just no popup/sting
 		_streak_label.text = String(STREAK_TIERS[tier]["word"])
 		_streak_alpha = 1.0
 		_streak_pop = 1.0
@@ -605,6 +637,13 @@ func _process(delta: float) -> void:
 		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
 		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
 		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _headshot_label:
+		# Quicker fade than the streak word (~0.8s) since headshots land often.
+		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
+		_headshot_pop = move_toward(_headshot_pop, 0.0, delta * 4.5)
+		_headshot_label.modulate.a = clampf(_headshot_alpha, 0.0, 1.0)
+		_headshot_label.scale = Vector2.ONE * (1.0 + _headshot_pop * 0.5)
+		_headshot_label.pivot_offset = _headshot_label.size * 0.5
 	if _multikill_label:
 		# The rolling window closes -> the multi-kill count resets.
 		if _multikill_cd > 0.0:
@@ -716,12 +755,13 @@ func _update_crosshair(delta: float) -> void:
 	crosshair.modulate = col
 
 func _unhandled_input(event: InputEvent) -> void:
-	# On the game-over screen, SPACE retries the level (matches the button label).
+	# On the game-over screen, SPACE retries (matches the button label) — a
+	# checkpoint respawn if one's been set this level, else the old full reload.
 	if game_over_menu.visible:
 		var k := event as InputEventKey
 		if k and k.pressed and not k.echo and k.keycode == KEY_SPACE:
 			get_viewport().set_input_as_handled()
-			_on_restart_pressed()
+			_on_death_restart_pressed()
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 \
 			and GameState.from_editor:
@@ -882,6 +922,11 @@ func _fill_death_recap() -> void:
 	if tip == "":
 		tip = DEATH_TIPS_GENERIC[randi() % DEATH_TIPS_GENERIC.size()]
 	_tip_label.text = "TIP: %s" % tip
+	# The button (and SPACE) read differently depending on whether there's a
+	# mid-level checkpoint to come back to, so the player knows what they're
+	# about to get before they press it.
+	if game_over_restart_btn:
+		game_over_restart_btn.text = "RESPAWN (SPACE)" if GameState.has_checkpoint() else "TRY AGAIN (SPACE)"
 
 func _show_toast(text: String) -> void:
 	toast.text = text
@@ -1239,6 +1284,10 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	_hit_crit = crit
 	if killed:
 		_kill_flash = 1.0
+	if crit and GraphicsSettings.combat_callouts_enabled:
+		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
+		_headshot_alpha = 1.0
+		_headshot_pop = 1.0
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
@@ -1249,7 +1298,7 @@ func _on_enemy_killed(score: int, label: String) -> void:
 	# cumulative streak tiers.
 	_multikill += 1
 	_multikill_cd = MULTIKILL_WINDOW
-	if _multikill >= 2 and _multikill_label:
+	if _multikill >= 2 and _multikill_label and GraphicsSettings.combat_callouts_enabled:
 		var w: String = MULTIKILL_WORDS[mini(_multikill, MULTIKILL_WORDS.size() - 1)]
 		_multikill_label.text = "%s ×%d" % [w, _multikill]
 		_multikill_alpha = 1.0
@@ -1307,3 +1356,16 @@ func _on_pause_volume_changed(value: float) -> void:
 
 func _on_restart_pressed() -> void:
 	GameState.load_level(GameState.current_level_path if GameState.current_level_path != "" else "res://scenes/levels/level_01.tscn")
+
+## The GAME OVER screen's "TRY AGAIN (SPACE)" — a checkpoint respawn in place if
+## a mid-level checkpoint has been set (see GameState's checkpoint section: a
+## finished task or a boss reveal), otherwise the same full level reload as
+## before. The pause menu's "Restart" stays wired to _on_restart_pressed() above
+## unconditionally — that's the deliberate full-restart escape hatch, so
+## bailing on a checkpoint you don't like is always one menu away.
+func _on_death_restart_pressed() -> void:
+	if GameState.has_checkpoint():
+		game_over_menu.visible = false # no scene reload this time — the HUD stays up
+		GameState.respawn_at_checkpoint()
+	else:
+		_on_restart_pressed()

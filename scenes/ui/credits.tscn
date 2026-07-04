@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/credits.gd" id="1_credits"]
+[ext_resource type="FontFile" path="res://assets/fonts/Orbitron.ttf" id="2_font"]
+
+[sub_resource type="Theme" id="Theme_1"]
+default_font = ExtResource("2_font")
+default_font_size = 22
+
+[node name="Credits" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = SubResource("Theme_1")
+script = ExtResource("1_credits")

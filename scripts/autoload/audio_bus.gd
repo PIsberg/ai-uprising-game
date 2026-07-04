@@ -30,7 +30,10 @@ func _ready() -> void:
 		p.max_distance = 80.0
 		p.unit_size = 4.0
 		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-		p.bus = "SFX"
+		# Routed through "SFXReverb" (not "SFX" directly) so every positional
+		# world sound — footsteps, weapon impacts, enemy locomotion ticks —
+		# picks up the level's environmental reverb. See _setup_reverb_bus.
+		p.bus = "SFXReverb"
 		add_child(p)
 		_pool.append(p)
 	# Non-positional players for music + UI/broadcast. process_mode ALWAYS so the
@@ -86,6 +89,7 @@ func _setup_buses() -> void:
 	_ensure_bus("Music")
 	_ensure_bus("SFX")
 	_ensure_master_limiter()
+	_setup_reverb_bus()
 	# Start the looping theme once, unconditionally — NOT as a side effect of a
 	# bus being freshly created (which silently skipped music whenever the buses
 	# already existed). Deferred so SoundSynth's _ready has built its streams.
@@ -112,6 +116,49 @@ func _ensure_master_limiter() -> void:
 	var lim := AudioEffectHardLimiter.new()
 	lim.ceiling_db = -1.0
 	AudioServer.add_bus_effect(master, lim)
+
+# ---------- environmental reverb (positional world SFX only) ----------
+# A dedicated "SFXReverb" bus that the _pool players (footsteps, weapon
+# impacts/tracers, pickups, enemy locomotion ticks — every play_at/play_synth_at
+# call) route through, sitting between them and "SFX". Music, Broadcast, UI and
+# the ambience bed all send straight to "SFX" and never pass through this bus,
+# so corridors/interiors can ring without smearing the score or menu blips.
+const REVERB_INDOOR := {"room_size": 0.42, "damping": 0.2, "wet": 0.22}
+const REVERB_OUTDOOR := {"room_size": 0.9, "damping": 0.85, "wet": 0.05}
+
+func _setup_reverb_bus() -> void:
+	if AudioServer.get_bus_index("SFXReverb") != -1:
+		return
+	var idx := AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, "SFXReverb")
+	AudioServer.set_bus_send(idx, "SFX") # still scaled by the SFX slider + Master limiter
+	var rv := AudioEffectReverb.new()
+	rv.room_size = REVERB_OUTDOOR["room_size"]
+	rv.damping = REVERB_OUTDOOR["damping"]
+	rv.wet = REVERB_OUTDOOR["wet"]
+	AudioServer.add_bus_effect(idx, rv)
+
+## Switch the positional-SFX reverb between a tight, ringy indoor room and a
+## faint, dry outdoor space. Levels call this once at build time from the same
+## indoor/outdoor signal that already picks the ambience bed (def "open_sky").
+func set_reverb_environment(indoor: bool) -> void:
+	var p: Dictionary = REVERB_INDOOR if indoor else REVERB_OUTDOOR
+	set_reverb_wet(p["wet"], p["room_size"], p["damping"])
+
+## Cheap direct setter so cutscenes/specific levels can hand-tune the room feel
+## beyond the two stock presets above (wet 0..1).
+func set_reverb_wet(wet: float, room_size: float = 0.5, damping: float = 0.5) -> void:
+	var idx := AudioServer.get_bus_index("SFXReverb")
+	if idx < 0:
+		return
+	for i in AudioServer.get_bus_effect_count(idx):
+		var fx := AudioServer.get_bus_effect(idx, i)
+		if fx is AudioEffectReverb:
+			(fx as AudioEffectReverb).room_size = room_size
+			(fx as AudioEffectReverb).damping = damping
+			(fx as AudioEffectReverb).wet = clampf(wet, 0.0, 1.0)
+			return
 
 # ---------- per-bus volume (persisted to user://settings.cfg) ----------
 

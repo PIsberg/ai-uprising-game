@@ -25,6 +25,12 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	# Force max detail: bullet-mark decals (this probe's whole measurement
+	# channel) are gated below MEDIUM detail (BulletMark.spawn), and a stale
+	# local settings.cfg can otherwise leave a headless run on LOW. Same fix as
+	# level_detail_probe.
+	if has_node("/root/GraphicsSettings"):
+		get_node("/root/GraphicsSettings").set_quality(2) # HIGH
 	var lvl: Node = load("res://scenes/levels/level_range.tscn").instantiate()
 	add_child(lvl)
 	var hud := lvl.get_node_or_null("HUD")

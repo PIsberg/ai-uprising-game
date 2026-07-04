@@ -3,11 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbew1vqxnxpbs"
-valid=false
+path="res://.godot/imported/level_convoy.png-a32012f6ba317c918a560f5060c80c19.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/comics/level_convoy.png"
+dest_files=["res://.godot/imported/level_convoy.png-a32012f6ba317c918a560f5060c80c19.ctex"]
 
 [params]
 

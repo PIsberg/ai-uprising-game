@@ -11,6 +11,15 @@ extends EnemyBase
 @export var projectile_speed: float = 35.0
 @export var projectile_damage: float = 10.0
 
+## Melee flyer variants (the hammer-swinging BREAKER) set this true when spawned
+## somewhere a perma-hug reads badly (e.g. the convoy deck): after landing an
+## attack the flyer is forced into a hard peel-off instead of camping
+## preferred_range forever, so it reads as a hit-and-run pass rather than a
+## permanent chest-to-chest hover. Off by default — the ranged drone/raptor family
+## never sets it, since standing at preferred_range IS their intended behavior.
+@export var standoff: bool = false
+var _standoff_retreat_t: float = 0.0
+
 var _hover_phase: float = 0.0
 var _strafe_dir: float = 1.0
 var _strafe_change_timer: float = 0.0
@@ -133,7 +142,10 @@ func _state_attack(delta: float) -> void:
 	to_target.y = 0
 	var dist := to_target.length()
 	var forward_pull: float = 0.0
-	if dist > preferred_range * 1.1:
+	if standoff and _standoff_retreat_t > 0.0:
+		_standoff_retreat_t -= delta
+		forward_pull = -1.4  # forced peel-off after landing a hit — a pass, not a perma-hug
+	elif dist > preferred_range * 1.1:
 		forward_pull = 1.0
 	elif dist < preferred_range * 0.85:
 		forward_pull = -1.0
@@ -154,6 +166,8 @@ func _state_attack(delta: float) -> void:
 	if _attack_timer <= 0.0:
 		_perform_attack()
 		_attack_timer = attack_interval()
+		if standoff:
+			_standoff_retreat_t = randf_range(1.3, 2.0)
 
 func _physics_process(delta: float) -> void:
 	if _dying:

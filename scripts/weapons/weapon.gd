@@ -721,35 +721,11 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 	if t.has_method("setup"):
 		t.setup(from, to, data.tracer_color)
 
-# Persistent bullet scars on world geometry. Capped: the oldest hole is
-# recycled once the budget is full, so mag-dumping never piles up decals.
-const MAX_BULLET_HOLES := 36
-
+## Persistent bullet scars on world geometry — delegates to the shared
+## BulletMark utility (scripts/fx/bullet_mark.gd) so hitscan AND projectile
+## impacts (projectile.gd) draw from ONE capped pool instead of two.
 func _spawn_bullet_hole(pos: Vector3, normal: Vector3) -> void:
-	var tree := get_tree()
-	var holes := tree.get_nodes_in_group("bullet_hole")
-	if holes.size() >= MAX_BULLET_HOLES:
-		holes[0].queue_free()
-	var d := Decal.new()
-	d.add_to_group("bullet_hole")
-	# The impact FX's punched-hole texture (dark centre, cratered rim, radial
-	# cracks) — reads as a bullet hole, where the old scorch read as a smudge.
-	d.texture_albedo = preload("res://scripts/fx/impact.gd")._bullet_hole_texture()
-	var s := randf_range(0.14, 0.24)
-	d.size = Vector3(s, 0.35, s)
-	d.cull_mask = 1
-	tree.current_scene.add_child(d)
-	# Project along the surface normal (Decal boxes project down local -Y).
-	var up := normal.normalized()
-	var x := up.cross(Vector3.FORWARD)
-	if x.length_squared() < 0.01:
-		x = up.cross(Vector3.RIGHT)
-	x = x.normalized()
-	d.global_transform = Transform3D(Basis(x, up, x.cross(up)).rotated(up, randf() * TAU), pos + up * 0.02)
-	var tw := d.create_tween()
-	tw.tween_interval(8.0)
-	tw.tween_property(d, "modulate:a", 0.0, 2.0)
-	tw.tween_callback(d.queue_free)
+	BulletMark.spawn(get_tree().current_scene, pos, normal)
 
 func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") -> void:
 	if data.impact_scene == null:
@@ -826,7 +802,9 @@ func _ensure_beam() -> void:
 		_beam.set_color(data.tracer_color)
 
 ## Classify a hit surface from collider groups (enemies/destructibles read metal).
-func _surface_of(col: Node, is_enemy: bool) -> String:
+## Static (no instance state used) so projectile.gd's world-hit path can share
+## the exact same classification instead of duplicating it (Weapon._surface_of).
+static func _surface_of(col: Node, is_enemy: bool) -> String:
 	if is_enemy or col.is_in_group("surf_metal"):
 		return "metal"
 	if col.is_in_group("surf_wood"):
@@ -839,12 +817,13 @@ func _surface_of(col: Node, is_enemy: bool) -> String:
 
 ## Pick the bullet-impact sound for a classified surface so each material reads
 ## distinctly (wood thocks, stone cracks, metal clinks). Dirt reuses the concrete
-## thud at a lower pitch (set by the caller).
+## thud at a lower pitch (set by the caller). Static for the same reason as
+## _surface_of above — shared with projectile.gd.
 const _IMPACT_SOUND := {
 	"metal": "impact_metal", "wood": "impact_wood", "stone": "impact_stone",
 	"concrete": "impact_concrete", "dirt": "impact_concrete",
 }
-func _impact_sound_for(surf: String) -> String:
+static func _impact_sound_for(surf: String) -> String:
 	return _IMPACT_SOUND.get(surf, "impact_concrete")
 
 ## Bleeds barrel heat off over time and drives the muzzle-tip glow from it.

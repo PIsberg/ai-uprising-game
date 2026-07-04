@@ -61,6 +61,8 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 ## are a distinct gold "crit" (with a !) so precision is visibly rewarded. This
 ## is the single damage-number system (the HUD no longer spawns a second one).
 func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool = false) -> void:
+	if not GraphicsSettings.damage_numbers_enabled:
+		return
 	if amount < 1.0:
 		return
 	var scene := get_tree().current_scene

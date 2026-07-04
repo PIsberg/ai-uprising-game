@@ -1,0 +1,20 @@
+# Godot writes its own text formats with LF; pin them so core.autocrlf=true
+# on Windows doesn't flag every editor re-save as a phantom modification.
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.import text eol=lf
+*.uid text eol=lf
+*.cfg text eol=lf
+*.godot text eol=lf
+project.godot text eol=lf
+
+# Binary assets — never normalize.
+*.png binary
+*.jpg binary
+*.gif binary
+*.glb binary
+*.fbx binary
+*.wav binary
+*.ogg binary
+*.ttf binary

@@ -1,8 +1,11 @@
 extends Node
-## Headless check of dash phase-through: during the dash's i-frame window the
-## player's collision mask drops the enemy layer (bit 4) so a dodge can pass
-## THROUGH a body-blocking brute, and both mask and vulnerability restore
-## cleanly when the dash ends.
+## Headless check of dash phase-through. Player<->enemy collision is no longer
+## hard at all (the player's resting collision_mask is world-only, 1 — enemies
+## were always mask=1 too, so neither side ever solidly collided with the
+## other); a soft separation push stands in for it instead (see player.gd
+## _update_enemy_separation). During the dash's i-frame window that push is
+## suspended so a dodge can pass THROUGH a body-blocking brute, and both the
+## push and invulnerability restore cleanly when the dash ends.
 ##   godot --headless --path . --audio-driver Dummy res://tests/dash_probe.tscn
 
 func _ready() -> void:
@@ -14,18 +17,18 @@ func _run() -> void:
 	await get_tree().create_timer(2.0).timeout
 	var player := get_tree().get_first_node_in_group("player") as CharacterBody3D
 	var fails := 0
-	if player.collision_mask != 5:
-		print("FAIL: resting mask %d != 5 (world+enemy)" % player.collision_mask)
+	if player.collision_mask != 1:
+		print("FAIL: resting mask %d != 1 (world only — no hard enemy collision)" % player.collision_mask)
 		fails += 1
 	Input.action_press("dash")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	Input.action_release("dash")
-	var mid_mask: int = player.collision_mask
 	var mid_invuln: bool = player.get("hp").invulnerable
-	print("mid-dash mask=%d invulnerable=%s" % [mid_mask, mid_invuln])
-	if mid_mask & 4 != 0:
-		print("FAIL: enemy bit still set mid-dash")
+	var mid_push: Vector3 = player.get("_separation_push")
+	print("mid-dash invulnerable=%s separation_push=%s" % [mid_invuln, mid_push])
+	if mid_push != Vector3.ZERO:
+		print("FAIL: soft enemy-separation push not suspended mid-dash")
 		fails += 1
 	if not mid_invuln:
 		print("FAIL: no i-frames mid-dash")
@@ -33,8 +36,8 @@ func _run() -> void:
 	# Wait out the dash and confirm everything restores.
 	await get_tree().create_timer(float(player.get("dash_duration")) + 0.3).timeout
 	print("post-dash mask=%d invulnerable=%s" % [player.collision_mask, player.get("hp").invulnerable])
-	if player.collision_mask != 5:
-		print("FAIL: mask not restored after dash")
+	if player.collision_mask != 1:
+		print("FAIL: mask changed after dash (should always stay world-only)")
 		fails += 1
 	if player.get("hp").invulnerable:
 		print("FAIL: i-frames stuck on after dash")

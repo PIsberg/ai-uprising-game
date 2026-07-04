@@ -44,6 +44,8 @@ func notify_pickup(text: String) -> void:
 @export var land_kick: float = 0.18
 @export var strafe_tilt_deg: float = 1.4 ## Camera roll when strafing, for weight.
 @export var max_shake_roll_deg: float = 2.6 ## Peak rotational kick at full trauma.
+@export var hit_kick_amount: float = 0.05 ## Lateral camera punch (m), AWAY from the hit source, at full-fraction damage.
+@export var hit_kick_roll_deg: float = 3.0 ## Camera roll punch (deg) at full-fraction damage, same sense as the lateral kick.
 
 @export_group("Dash & Slide")
 @export var dash_speed: float = 20.0
@@ -89,6 +91,8 @@ var _camera_base_y: float = 0.0
 var _land_offset: float = 0.0
 var _shake_amount: float = 0.0
 var _cam_roll: float = 0.0
+var _hit_kick_pos: float = 0.0  ## Signed lateral camera offset from a directional hit; eases to 0 in _handle_camera_feel.
+var _hit_kick_roll: float = 0.0 ## Signed camera roll from the same hit; eases to 0 alongside it.
 
 ## External camera shake (e.g. a boss entrance). 0..~1.
 func shake(amount: float) -> void:
@@ -111,6 +115,19 @@ var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights 
 @export var mantle_max_h: float = 1.7  ## highest ledge you can pull yourself onto
 @export var mantle_reach: float = 0.95 ## how far ahead the ledge face can be
 var _mantle_cd: float = 0.0
+
+# Step-up assist: CharacterBody3D has no automatic step climbing, so even a few
+# centimetres of lip — a curb, a stray prop, or (the case this was built for)
+# the seam where two ramp-wedge collisions meet at a spiral tower's corner
+# pivot — reads as a solid wall and stops the player dead. When walking and
+# blocked by something no taller than step_height, hop smoothly up onto it
+# instead of scraping to a halt against it. Anything taller is mantle's job.
+@export_group("Step Assist")
+@export var step_height: float = 0.3 ## Tallest lip climbed automatically while walking.
+const STEP_FORWARD_PROBE := 0.4 ## How far ahead (along intended motion) the step probe reaches once lifted.
+const STEP_SKIN := 0.05 ## Extra downward reach past step_height so the landing probe doesn't fall just short of the surface.
+var _pre_step_pos: Vector3 = Vector3.ZERO ## global_position snapshotted just before move_and_slide(), for the probes to start from.
+var _pre_step_grounded: bool = false ## Was is_on_floor() true just before move_and_slide() ran this tick.
 
 # Wall-running: sprint at a vertical wall while airborne to latch on and run
 # along it (gravity eased, not cancelled), then jump off it for extra height/
@@ -173,6 +190,58 @@ const STEP_INTERVAL_CROUCH := 1.6
 @export var melee_knockback: float = 13.0
 @export var melee_cooldown: float = 0.85
 var _melee_cd: float = 0.0
+
+# ---------- soft enemy separation ----------
+# Enemies only ever masked the world (layer 1) — the player used to also mask
+# THEM (mask=5), so the player's own move_and_slide depenetrated against every
+# enemy body it touched. That meant an enemy walking into the player shoved the
+# PLAYER around every frame: awful in general, and on the convoy's moving flatbed
+# a boarded brute could shove the player clean off the deck. Enemy melee damage
+# is attack_range-based (enemy_base.gd), never physics-contact-based, so nothing
+# actually depends on hard collision here. This replaces it with a cheap soft
+# push: a sphere probe against the enemy layer each frame, one shape query, push
+# strength ramping with how deep an enemy is inside the probe and capped well
+# below anything that could snap/launch the player. A deep press from something
+# big (a brute planted on you) resists hard enough to cancel a walk; a graze from
+# a wandering enemy is a gentle nudge. Suspended during the dash's i-frame window
+# so the dash keeps phasing clean through.
+@export_group("Soft Enemy Separation")
+@export var separation_radius: float = 1.2 ## Sphere probe radius, centred on the capsule's mid-torso.
+@export var separation_max_speed: float = 6.0 ## Hard cap on the push, m/s.
+var _separation_push: Vector3 = Vector3.ZERO
+
+## Sphere-probes the enemy layer around the player and builds this frame's soft
+## push-away velocity into _separation_push (added onto velocity in
+## _physics_process, right before move_and_slide).
+func _update_enemy_separation() -> void:
+	_separation_push = Vector3.ZERO
+	if _dash_time > 0.0:
+		return  # i-frames: the dash phases clean through, no push at all
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = separation_radius
+	q.shape = sh
+	q.transform = Transform3D(Basis(), global_position + Vector3.UP * 0.9)
+	q.collision_mask = 0b0000100 # enemy layer only
+	q.collide_with_areas = false
+	var hits := space.intersect_shape(q, 8)
+	var push := Vector3.ZERO
+	for h in hits:
+		var col := h.get("collider") as Node3D
+		if col == null or col == self:
+			continue
+		var away := global_position - col.global_position
+		away.y = 0.0
+		var dist := away.length()
+		var dir := away / dist if dist > 0.05 else Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized()
+		# 0 at the probe's edge, 1 when the two origins coincide — squared so a
+		# graze barely registers and only a deep press ramps up hard.
+		var depth := clampf(1.0 - dist / separation_radius, 0.0, 1.0)
+		push += dir * (depth * depth)
+	var strength := push.length()
+	if strength > 0.001:
+		_separation_push = (push / strength) * minf(strength, 1.0) * separation_max_speed
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -306,17 +375,55 @@ func update_post_process_settings() -> void:
 		sm.set_shader_parameter("grade_saturation", params.get("saturation", 1.0))
 
 var _hurt_cd: float = 0.0
+## Fraction of max HP a single hit must take to count as BIG (triggers the
+## micro hit-stop below, not just the directional camera punch).
+const BIG_HIT_FRAC := 0.25
 
-func _on_hp_damaged(amount: float, _source: Node) -> void:
+func _on_hp_damaged(amount: float, source: Node) -> void:
 	# Every hit lands as a camera kick, scaled with the bite taken.
 	shake(clampf(0.3 + amount * 0.025, 0.3, 0.95))
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
+	var frac := (amount / hp.max_health) if hp and hp.max_health > 0.0 else 0.0
+	_apply_hit_kick(source, frac)
+	# Micro hit-stop: a ~50ms Engine.time_scale dip, BIG hits only, so it reads
+	# as "that one really landed" instead of nausea-inducing on every graze.
+	# Reuses GameState's existing combat hit-stop primitive (same one per-kill
+	# hits already use) rather than a new freeze system; it's rate-limited
+	# there so a horde can't stutter the game into a slideshow. Safe even if
+	# this hit is the killing blow: GameState.set_state(GAME_OVER) forces
+	# Engine.time_scale back to 1.0 the instant on_player_died runs (see
+	# set_state), so a death mid-dip can never leave slow-mo stuck on.
+	if frac >= BIG_HIT_FRAC:
+		GameState.combat_hitstop(0.3, 0.05)
 	# A grunt/impact on getting hit — throttled so rapid fire doesn't stack into
 	# a drone, and pitched down slightly the harder the hit.
 	if _hurt_cd <= 0.0 and hp and hp.current_health > 0.0:
 		_hurt_cd = 0.22
 		var pitch := clampf(1.12 - amount * 0.012, 0.82, 1.12) + randf_range(-0.04, 0.04)
 		AudioBus.play_synth_ui("player_hurt", -4.0, pitch)
+
+## Directional camera punch AWAY from the hit source — a locational thump layered
+## on top of the undirected shake trauma above, so a hit reads not just as
+## "ouch" but "ouch, from THERE" (the HUD's damage_indicator wedges already do
+## this for the 2D readout; this is the 3D camera-feel counterpart). Reuses the
+## same spring-and-ease idiom the rest of camera feel uses (_land_offset,
+## _fov_kick): set once here as an impulse, eased back to zero every frame in
+## _handle_camera_feel. Scaled by the damage fraction and by the Screen Shake
+## accessibility setting, same as the rest of the shake.
+func _apply_hit_kick(source: Node, damage_frac: float) -> void:
+	if not (source is Node3D):
+		return
+	var rel: Vector3 = (source as Node3D).global_position - global_position
+	var flat := Vector2(rel.x, rel.z)
+	if flat.length() < 0.05:
+		return
+	var right := Vector2(cos(rotation.y), -sin(rotation.y))
+	var side := flat.normalized().dot(right) # -1 (hit from the left) .. +1 (from the right)
+	var punch := clampf(damage_frac, 0.0, 1.0) * GraphicsSettings.screen_shake
+	if punch <= 0.001 or absf(side) < 0.05:
+		return
+	_hit_kick_pos = -signf(side) * hit_kick_amount * punch # kick away from the hit
+	_hit_kick_roll = -signf(side) * deg_to_rad(hit_kick_roll_deg) * punch
 
 # ---------- low-health state: red pulse on screen + heavy breathing ----------
 
@@ -391,10 +498,16 @@ func _physics_process(delta: float) -> void:
 	_handle_wall_run(delta)
 	_handle_grapple(delta)
 	_handle_movement(delta)
+	_update_enemy_separation()
+	velocity.x += _separation_push.x
+	velocity.z += _separation_push.z
 	_handle_camera_feel(delta)
 	if not is_on_floor():
 		_fall_speed = -velocity.y   # peak downward speed this fall (read on landing)
+	_pre_step_pos = global_position
+	_pre_step_grounded = is_on_floor()
 	move_and_slide()
+	_try_step_up()
 	_update_dof()
 	_check_landing()
 	_handle_footsteps(delta)
@@ -510,7 +623,6 @@ func _handle_dash(delta: float) -> void:
 		velocity.z = _dash_dir.z * dash_speed
 		if _dash_time <= 0.0:
 			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
-			collision_mask |= 4     # solid to enemies again (depenetration shoves us clear)
 		return
 	# Track taps every frame so the double-tap window stays accurate; a quick
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
@@ -529,10 +641,11 @@ func _handle_dash(delta: float) -> void:
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
 		hp.invulnerable = true
-		# Phase THROUGH enemies while the i-frames run: solid enemies can corner
-		# and body-block you, so the dash is the escape tool — a dodge that
-		# bounces off the brute it's dodging is no dodge at all.
-		collision_mask &= ~4
+		# The i-frame window also suspends the soft enemy-separation push (see
+		# _update_enemy_separation): enemies have no hard collision with the player
+		# at all any more, but the soft push alone can still resist a beeline through
+		# a planted brute, and the dash is the escape tool — a dodge that bounces off
+		# the thing it's dodging is no dodge at all.
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
@@ -1124,6 +1237,73 @@ func _handle_movement(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, f * delta)
 		velocity.z = move_toward(velocity.z, 0.0, f * delta)
 
+## The step-up assist: after move_and_slide() has already tried (and failed) to
+## carry you across a low lip, probe up/forward/down for a walkable landing
+## within step_height and, if found, lift the body onto it. Guarded hard
+## against every other movement state that fully owns velocity — dash, slide,
+## grapple (incl. zipline, which just sets _grappling), wall-run. Mantle needs
+## no explicit guard: it only ever fires while airborne, and this requires
+## on_floor() true both before AND after the move — so mid-mantle (or the
+## instant it launches you) this simply can't engage. Cheap: the expensive
+## test_move probes only ever run once we've confirmed we're actually blocked.
+func _try_step_up() -> void:
+	if _dash_time > 0.0 or _sliding or _grappling or _wall_running:
+		return
+	if not _pre_step_grounded or not is_on_floor():
+		return
+	if velocity.y > 0.1:
+		return  # rising — a jump/launch, not a walk into a lip
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if input_dir.length() < 0.1:
+		return  # no horizontal intent to climb toward
+	var move_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	# Only bother probing if we actually got stopped — normal walking (or a ramp
+	# slope, which just redirects velocity, not blocks horizontal progress) never
+	# reaches the probes at all.
+	var moved := Vector2(global_position.x - _pre_step_pos.x, global_position.z - _pre_step_pos.z).length()
+	var intended := Vector2(velocity.x, velocity.z).length() * get_physics_process_delta_time()
+	if not is_on_wall() and (intended < 0.01 or moved > intended * 0.6):
+		return
+	_step_climb(move_dir)
+
+## Up → forward → down test_move probe from the pre-move position. Three cheap
+## sweeps, only ever run once _try_step_up has confirmed we're blocked.
+func _step_climb(move_dir: Vector3) -> void:
+	var xf := global_transform
+	xf.origin = _pre_step_pos
+	var col := KinematicCollision3D.new()
+	# 1) Up: clear the lip height (or less, if something's directly overhead).
+	var up_travel := Vector3.UP * step_height
+	if test_move(xf, up_travel, col):
+		up_travel = col.get_travel()
+	if up_travel.y < 0.02:
+		return  # nothing gained overhead — likely a low ceiling, not a step
+	xf.origin += up_travel
+	# 2) Forward: nudge along the intended direction, just enough to clear over
+	# the lip and land on whatever's past it.
+	var fwd_travel := move_dir * STEP_FORWARD_PROBE
+	if test_move(xf, fwd_travel, col):
+		fwd_travel = col.get_travel()
+	if Vector2(fwd_travel.x, fwd_travel.z).length() < 0.02:
+		return  # blocked immediately even lifted — a real wall, not a step
+	xf.origin += fwd_travel
+	# 3) Down: settle onto the step surface. Must find one within reach, and it
+	# must be walkable — never assist onto anything steeper than a normal floor.
+	var down_travel := Vector3.DOWN * (step_height + STEP_SKIN)
+	if not test_move(xf, down_travel, col):
+		return  # no floor within reach below — would strand the player in midair
+	if col.get_angle() > floor_max_angle:
+		return  # too steep to stand on — not a legitimate step
+	xf.origin += col.get_travel()
+	var lift := xf.origin.y - _pre_step_pos.y
+	if lift <= 0.005:
+		return  # no net gain — the "step" was actually level ground
+	global_position.y += lift
+	# Absorb the instant vertical snap into the same landing-camera smoothing
+	# _check_landing already drives (_land_offset lerps back to 0 in
+	# _handle_camera_feel) so a step reads as a smooth rise, not a teleport jolt.
+	_land_offset -= lift
+
 func _handle_camera_feel(delta: float) -> void:
 	# Dash/slide FOV punch, easing back to the base FOV.
 	_fov_kick = move_toward(_fov_kick, 0.0, 28.0 * delta)
@@ -1155,8 +1335,12 @@ func _handle_camera_feel(delta: float) -> void:
 	# Accessibility: scale all camera shake by the player's Screen Shake setting.
 	var trauma := _shake_amount * _shake_amount * GraphicsSettings.screen_shake
 	var shake_y := (randf() * 2.0 - 1.0) * trauma * 0.08
+	# Directional hit-kick (see _apply_hit_kick): set as a one-shot impulse on a
+	# hit, springs back to 0 here — same ease-out idiom as _land_offset above.
+	_hit_kick_pos = lerpf(_hit_kick_pos, 0.0, 9.0 * delta)
+	_hit_kick_roll = lerpf(_hit_kick_roll, 0.0, 9.0 * delta)
 	camera.position.y = _camera_base_y + bob + _land_offset + shake_y
-	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08
+	camera.position.x = bob_x + (randf() * 2.0 - 1.0) * trauma * 0.08 + _hit_kick_pos
 	# Rotational shake + strafe lean, applied to the camera (not the head) so
 	# they never interfere with mouse look pitch.
 	var local_vel := global_transform.basis.inverse() * velocity
@@ -1169,7 +1353,7 @@ func _handle_camera_feel(delta: float) -> void:
 	lean += wall_side_sign * _wall_lean * deg_to_rad(14.0)
 	_cam_roll = lerpf(_cam_roll, lean, 7.0 * delta)
 	var roll_max := deg_to_rad(max_shake_roll_deg)
-	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max
+	camera.rotation.z = _cam_roll + (randf() * 2.0 - 1.0) * trauma * roll_max + _hit_kick_roll
 	camera.rotation.x = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
 	camera.rotation.y = (randf() * 2.0 - 1.0) * trauma * roll_max * 0.6
 	# The gun banks with the camera during a wall-run instead of staying dead-level
@@ -1264,8 +1448,85 @@ func _on_died(source: Node) -> void:
 	if weapon_holder:
 		weapon_holder.process_mode = Node.PROCESS_MODE_DISABLED
 	# Fall over: the view rolls onto its side and sinks to the deck as you drop.
-	var tw := create_tween().set_parallel(true)
-	tw.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
-	tw.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	# Tracked so a mid-level checkpoint respawn (see respawn_from_checkpoint) can
+	# kill it before it finishes fighting the head back to a normal pose.
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill()
+	_death_tween = create_tween().set_parallel(true)
+	_death_tween.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_death_tween.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
+	_death_tween.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	GameState.on_player_died(killer)
+
+# ---------------------------------------------------------------------
+# Mid-level checkpoint respawn (see GameState's checkpoint section). GameState
+# owns WHEN a checkpoint is taken (task completion / boss reveal) and WHERE the
+# blob is stored; this is just the player-side snapshot/restore of its own
+# transform, health and loadout.
+# ---------------------------------------------------------------------
+
+var _death_tween: Tween = null
+const RESPAWN_MIN_HEALTH_FRAC := 0.5 ## Respawn HP is floored here even if the checkpoint was taken low — never hand the player straight back into a killing blow.
+const RESPAWN_GRACE_TIME := 1.5 ## Brief post-respawn invulnerability so you get a beat to reorient before anything can tag you again.
+
+## Everything needed to respawn here later without a scene reload: transform,
+## HP (as a fraction of max — floored on the way back in), and per-weapon
+## ammo + grenades, so a checkpoint after a long fight doesn't hand back an
+## empty gun.
+func checkpoint_snapshot() -> Dictionary:
+	# Keyed by scene_file_path, not array index — the rack RE-SORTS weak→strong
+	# on every pickup (WeaponManager._sort_by_power), so an index recorded now
+	# could point at a different weapon by the time of a later respawn.
+	var ammo := {}
+	if weapon_holder and "weapons" in weapon_holder:
+		for w in weapon_holder.weapons:
+			ammo[w.scene_file_path] = {"mag": w.mag, "reserve": w.reserve}
+	return {
+		"position": global_position,
+		"rotation_y": rotation.y,
+		"head_rotation_x": head.rotation.x if head else 0.0,
+		"health_frac": (hp.current_health / hp.max_health) if hp and hp.max_health > 0.0 else 1.0,
+		"ammo": ammo,
+		"grenade_counts": grenade_counts.duplicate(),
+		"grenade_type": grenade_type,
+	}
+
+## Come back at the checkpoint IN PLACE — same player instance, same world;
+## nothing else about the level is touched (see GameState.respawn_at_checkpoint
+## for why: undoing kills on a death would make bosses/arenas farmable).
+func respawn_from_checkpoint(data: Dictionary) -> void:
+	if _death_tween and _death_tween.is_valid():
+		_death_tween.kill() # stop the fall-over mid-flight — respawn snaps the head back
+	_dead = false
+	velocity = Vector3.ZERO
+	global_position = data.get("position", global_position)
+	rotation.y = data.get("rotation_y", rotation.y)
+	if head:
+		head.rotation = Vector3(float(data.get("head_rotation_x", 0.0)), 0.0, 0.0)
+		# _handle_stance() re-drives head.position.y from the collider height every
+		# frame; snap it back to a sane value now so there's no one-frame pop from
+		# the death sink (0.32) before that catches up.
+		head.position.y = stand_height - 0.2
+	if weapon_holder:
+		weapon_holder.process_mode = Node.PROCESS_MODE_INHERIT
+	if hp:
+		var frac: float = maxf(float(data.get("health_frac", 1.0)), RESPAWN_MIN_HEALTH_FRAC)
+		hp.current_health = clampf(frac * hp.max_health, 1.0, hp.max_health)
+		hp.health_changed.emit(hp.current_health, hp.max_health) # heal() no-ops at 0 HP, so set + emit directly
+		hp.invulnerable = true # brief spawn grace — see RESPAWN_GRACE_TIME
+		var grace := get_tree().create_timer(RESPAWN_GRACE_TIME)
+		grace.timeout.connect(func():
+			if is_instance_valid(self):
+				hp.invulnerable = _god) # respect god-mode if it was toggled independently
+	if weapon_holder and "weapons" in weapon_holder:
+		var ammo: Dictionary = data.get("ammo", {})
+		for w in weapon_holder.weapons:
+			if ammo.has(w.scene_file_path):
+				var a: Dictionary = ammo[w.scene_file_path]
+				w.mag = int(a.get("mag", w.mag))
+				w.reserve = int(a.get("reserve", w.reserve))
+		if weapon_holder.current and weapon_holder.has_signal("ammo_changed"):
+			weapon_holder.ammo_changed.emit(weapon_holder.current.mag, weapon_holder.current.reserve)
+	grenade_counts = (data.get("grenade_counts", grenade_counts) as Array).duplicate()
+	grenade_type = int(data.get("grenade_type", grenade_type))
+	_sync_grenades()

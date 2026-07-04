@@ -106,3 +106,50 @@ HDR Display Output,HDR Display Output,Salida HDR de pantalla,Sortie d'affichage 
 Aim Assist (Gamepad),Aim Assist (Gamepad),Asistencia de puntería (mando),Visée assistée (manette),Zielhilfe (Gamepad),Auxílio de mira (comando)
 NEW BEST,NEW BEST,NUEVO RÉCORD,NOUVEAU RECORD,NEUER REKORD,NOVO RECORDE
 Best %s,Best %s,Mejor %s,Meilleur %s,Bestleistung %s,Melhor %s
+Brightness,Brightness,Brillo,Luminosité,Helligkeit,Brilho
+Combat Callouts,Combat Callouts,Alertas de combate,Alertes de combat,Kampfansagen,Alertas de combate
+Damage Numbers,Damage Numbers,Números de daño,Chiffres de dégâts,Schadenszahlen,Números de dano
+Rebind Controls,Rebind Controls,Reasignar controles,Réaffecter les touches,Steuerung neu belegen,Remapear controles
+"Click a bind, then press the new key/button. ESC cancels.","Click a bind, then press the new key/button. ESC cancels.","Haz clic en una asignación y pulsa la nueva tecla/botón. ESC cancela.","Cliquez sur une touche, puis appuyez sur la nouvelle touche/bouton. ÉCHAP annule.","Klicke auf eine Belegung und drücke dann die neue Taste/den neuen Knopf. ESC bricht ab.","Clique numa tecla e pressione a nova tecla/botão. ESC cancela."
+Reset to Defaults,Reset to Defaults,Restablecer valores predeterminados,Réinitialiser par défaut,Auf Standard zurücksetzen,Repor padrões
+Rebind,Rebind,Reasignar,Réaffecter,Neu belegen,Remapear
+Mouse L,Mouse L,Ratón Izq,Souris G,Maus Links,Rato Esq
+Mouse R,Mouse R,Ratón Der,Souris D,Maus Rechts,Rato Dir
+Mouse M,Mouse M,Ratón Medio,Souris M,Maus Mitte,Rato Meio
+Wheel Up,Wheel Up,Rueda Arriba,Molette Haut,Rad Hoch,Roda Cima
+Wheel Down,Wheel Down,Rueda Abajo,Molette Bas,Rad Runter,Roda Baixo
+Mouse 4,Mouse 4,Ratón 4,Souris 4,Maus 4,Rato 4
+Mouse 5,Mouse 5,Ratón 5,Souris 5,Maus 5,Rato 5
+Mouse %d,Mouse %d,Ratón %d,Souris %d,Maus %d,Rato %d
+Start,Start,Start,Start,Start,Start
+Pad %d,Pad %d,Mando %d,Manette %d,Pad %d,Controle %d
+Trigger,Trigger,Gatillo,Gâchette,Abzug,Gatilho
+Stick,Stick,Palanca,Stick,Stick,Analógico
+Move Forward,Move Forward,Avanzar,Avancer,Vorwärts,Avançar
+Move Back,Move Back,Retroceder,Reculer,Rückwärts,Recuar
+Move Left,Move Left,Mover izquierda,Aller à gauche,Nach links,Mover à esquerda
+Move Right,Move Right,Mover derecha,Aller à droite,Nach rechts,Mover à direita
+Jump,Jump,Saltar,Sauter,Springen,Saltar
+Sprint,Sprint,Correr,Sprinter,Sprinten,Correr
+Crouch,Crouch,Agacharse,S'accroupir,Ducken,Agachar
+Dash,Dash,Impulso,Ruée,Sprintstoß,Investida
+Melee Shove,Melee Shove,Empujón cuerpo a cuerpo,Poussée au corps à corps,Nahkampf-Stoß,Empurrão corpo a corpo
+Grapple Hook,Grapple Hook,Gancho de agarre,Grappin,Enterhaken,Gancho de escalada
+Fire,Fire,Disparar,Tirer,Feuern,Atirar
+Aim Down Sight,Aim Down Sight,Apuntar,Viser,Zielen,Mirar
+Weapon Alt-Fire,Weapon Alt-Fire,Disparo alternativo,Tir alternatif,Alt-Feuer,Disparo alternativo
+Reload,Reload,Recargar,Recharger,Nachladen,Recarregar
+Interact,Interact,Interactuar,Interagir,Interagieren,Interagir
+Throw Grenade,Throw Grenade,Lanzar granada,Lancer une grenade,Granate werfen,Lançar granada
+Cycle Grenade Type,Cycle Grenade Type,Cambiar tipo de granada,Changer de type de grenade,Granatentyp wechseln,Alternar tipo de granada
+Weapon Slot 1,Weapon Slot 1,Arma 1,Arme 1,Waffe 1,Arma 1
+Weapon Slot 2,Weapon Slot 2,Arma 2,Arme 2,Waffe 2,Arma 2
+Weapon Slot 3,Weapon Slot 3,Arma 3,Arme 3,Waffe 3,Arma 3
+Weapon Slot 4,Weapon Slot 4,Arma 4,Arme 4,Waffe 4,Arma 4
+Next Weapon,Next Weapon,Arma siguiente,Arme suivante,Nächste Waffe,Próxima arma
+Previous Weapon,Previous Weapon,Arma anterior,Arme précédente,Vorherige Waffe,Arma anterior
+Pause,Pause,Pausa,Pause,Pause,Pausa
+"Press a key/button for ""%s"" — ESC to cancel.","Press a key/button for ""%s"" — ESC to cancel.","Pulsa una tecla/botón para ""%s"" — ESC cancela.","Appuyez sur une touche/bouton pour « %s » — ÉCHAP annule.","Drücke eine Taste/einen Knopf für „%s“ — ESC bricht ab.","Pressione uma tecla/botão para ""%s"" — ESC cancela."
+"Bound ""%s"" to %s.","Bound ""%s"" to %s.","""%s"" asignado a %s.","« %s » associé à %s.","„%s“ auf %s gelegt.","""%s"" vinculado a %s."
+"Bound ""%s"" to %s — removed from: %s","Bound ""%s"" to %s — removed from: %s","""%s"" asignado a %s — quitado de: %s","« %s » associé à %s — retiré de : %s","„%s“ auf %s gelegt — entfernt von: %s","""%s"" vinculado a %s — removido de: %s"
+All controls reset to defaults.,All controls reset to defaults.,Todos los controles restablecidos.,Toutes les commandes ont été réinitialisées.,Alle Steuerungen wurden zurückgesetzt.,Todos os controles foram redefinidos.
