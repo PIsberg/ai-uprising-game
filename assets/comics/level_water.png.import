@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnncyulomx4ej"
-valid=false
+uid="uid://5ah8ln36glse"
+path="res://.godot/imported/level_water.png-a73254c666db1c8510c801c58056b2fc.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/comics/level_water.png"
+dest_files=["res://.godot/imported/level_water.png-a73254c666db1c8510c801c58056b2fc.ctex"]
 
 [params]
 

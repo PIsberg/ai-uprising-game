@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bbkxayq5evu85"
-valid=false
+uid="uid://dm8khkf1iympn"
+path="res://.godot/imported/level_desert.png-1911a78b02ffb0719f869831c5c1dbae.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/comics/level_desert.png"
+dest_files=["res://.godot/imported/level_desert.png-1911a78b02ffb0719f869831c5c1dbae.ctex"]
 
 [params]
 
