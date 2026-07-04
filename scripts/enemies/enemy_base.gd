@@ -80,6 +80,9 @@ var _scan_timer: float = 0.0
 var _scan_dir: float = 1.0
 var _has_last_known: bool = false
 var _stuck_time: float = 0.0 ## Seconds spent commanded to move but barely moving (wall-pinned).
+var _recovery_timer: float = 0.0
+var _recovery_dir: Vector3 = Vector3.ZERO
+var _path_recalc_timer: float = 0.0
 
 # Hit-flash: a per-instance overlay so we never mutate the shared .tres materials.
 var _mesh_instances: Array[MeshInstance3D] = []
@@ -537,7 +540,22 @@ func _state_stagger(_delta: float) -> void:
 		set_state(State.CHASE if target else State.ALERT)
 
 func _move_toward(dest: Vector3, delta: float) -> void:
-	nav_agent.target_position = dest
+	var spd := chase_speed()
+
+	# If we are in stuck recovery phase, force move in the recovery direction
+	if _recovery_timer > 0.0:
+		_recovery_timer -= delta
+		velocity.x = move_toward(velocity.x, _recovery_dir.x * spd * 1.25, 20.0 * delta)
+		velocity.z = move_toward(velocity.z, _recovery_dir.z * spd * 1.25, 20.0 * delta)
+		_face_dir(_recovery_dir, delta)
+		return
+
+	# Path calculation throttling: only update target position if destination moved or timer expired
+	_path_recalc_timer -= delta
+	if _path_recalc_timer <= 0.0 or nav_agent.target_position.distance_to(dest) > 1.5:
+		nav_agent.target_position = dest
+		_path_recalc_timer = randf_range(0.15, 0.25)
+
 	var dir: Vector3
 	if nav_agent.is_navigation_finished():
 		# Either we've genuinely arrived, or no nav path exists yet (navmesh
@@ -554,26 +572,28 @@ func _move_toward(dest: Vector3, delta: float) -> void:
 		dir = next - global_position
 		dir.y = 0.0
 		dir = dir.normalized()
-	var spd := chase_speed()
+
 	velocity.x = move_toward(velocity.x, dir.x * spd, 20.0 * delta)
 	velocity.z = move_toward(velocity.z, dir.z * spd, 20.0 * delta)
 	_face_dir(dir, delta)
-	# Stuck recovery: commanded to move but the body isn't actually going
-	# anywhere (pinned on a wall/prop, path point unreachable). After ~0.9s,
-	# break out: pick a fresh flank lane, sidestep hard, and force a replan —
-	# instead of grinding the wall forever.
+
+	# Stuck recovery check: commanded to move but the body isn't actually going
+	# anywhere (pinned on a wall/prop, path point unreachable). After ~0.8s,
+	# break out and commit to a sidestep phase.
 	var actual := get_real_velocity()
 	if Vector2(actual.x, actual.z).length() < spd * 0.2:
 		_stuck_time += delta
 	else:
 		_stuck_time = maxf(0.0, _stuck_time - delta * 2.0)
-	if _stuck_time > 0.9:
+
+	if _stuck_time > 0.8:
 		_stuck_time = 0.0
 		_approach_angle = randf() * TAU
 		var side := Vector3(-dir.z, 0.0, dir.x) * (1.0 if randf() < 0.5 else -1.0)
-		velocity += side * spd * 1.3
-		if target:
-			nav_agent.target_position = target.global_position
+		# Combine sideways and forward/backward escape direction:
+		var escape_dir := (side + dir * 0.25).normalized()
+		_recovery_timer = 0.4 # Run the recovery state for 0.4 seconds
+		_recovery_dir = escape_dir
 
 ## Effective pursuit speed — wounded enemies frenzy and rush faster (up to +45%).
 ## A near-death robot fighting harder: faster, hungrier, glowing with overload.

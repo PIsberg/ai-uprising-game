@@ -315,6 +315,8 @@ func _explode(pos: Vector3) -> void:
 		# Scale heavy blasts up with their splash so big rounds feel weighty.
 		if big:
 			(blast as Node3D).scale = Vector3.ONE * clampf(_splash_radius / 4.0, 1.0, 2.2)
+			# Heavy ordnance chars the ground where it lands.
+			ScorchDecal.spawn(scene, pos, _splash_radius * 0.5)
 		var flash := OmniLight3D.new()
 		flash.light_color = trail_color
 		flash.light_energy = 6.0 if not big else 10.0

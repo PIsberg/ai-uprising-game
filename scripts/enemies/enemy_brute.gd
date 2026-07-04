@@ -17,7 +17,7 @@ func _ready() -> void:
 	add_to_group("shield_enemies")
 	_build_shield()
 	super._ready()
-	max_health = 280.0
+	max_health = 200.0 # the shield already soaks 90% frontal — raw HP stays modest so flanking pays off fast
 	move_speed = 2.0 # lumbering — slow enough that you can circle out and flank it
 	turn_speed = 1.8 # turns slowly — circle to its unshielded sides/back to flank it
 	sight_range = 40.0
@@ -40,8 +40,8 @@ func _build_shield() -> void:
 	var rig := Node3D.new()
 	rig.name = "ShieldRig"
 	add_child(rig)
-	# A tower shield HELD IN THE LEFT HAND (the brute's -X side), angled across the
-	# front so it still covers the head-on arc — while the RIGHT arm stays free to
+	# A tower shield HELD IN THE RIGHT HAND (the brute's +X side), angled across the
+	# front so it still covers the head-on arc — while the LEFT arm stays free to
 	# slam. Offset + tilted so it reads as carried, not a centred barn-door wall.
 	var shield := MeshInstance3D.new()
 	shield.name = "ShieldSlab"
@@ -49,8 +49,8 @@ func _build_shield() -> void:
 	shm.size = Vector3(1.15, 1.6, 0.14)
 	shm.bevel = 0.04
 	shield.mesh = shm
-	shield.position = Vector3(-0.62, 1.2, -0.74)
-	shield.rotation_degrees = Vector3(0, 15, 6) # canted like a shield braced on the forearm
+	shield.position = Vector3(0.62, 1.2, -0.74)
+	shield.rotation_degrees = Vector3(0, -15, -6) # canted like a shield braced on the forearm
 	rig.add_child(shield)
 
 	# Solid metal backing plate: always-visible physical shield behind the energy
@@ -61,8 +61,8 @@ func _build_shield() -> void:
 	pm.size = Vector3(1.15, 1.6, 0.06)
 	pm.bevel = 0.03
 	plate.mesh = pm
-	plate.position = Vector3(-0.60, 1.2, -0.68)
-	plate.rotation_degrees = Vector3(0, 15, 6)
+	plate.position = Vector3(0.60, 1.2, -0.68)
+	plate.rotation_degrees = Vector3(0, -15, -6)
 	var pmat := StandardMaterial3D.new()
 	pmat.albedo_color = Color(0.16, 0.18, 0.22)
 	pmat.metallic = 0.85
@@ -76,8 +76,8 @@ func _build_shield() -> void:
 	var rm := BoxMesh.new()
 	rm.size = Vector3(1.25, 1.7, 0.05)
 	rim.mesh = rm
-	rim.position = Vector3(-0.65, 1.2, -0.79)
-	rim.rotation_degrees = Vector3(0, 15, 6)
+	rim.position = Vector3(0.65, 1.2, -0.79)
+	rim.rotation_degrees = Vector3(0, -15, -6)
 	rig.add_child(rim)
 	
 	_apply_shield_material()

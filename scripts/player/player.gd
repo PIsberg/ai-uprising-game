@@ -510,6 +510,7 @@ func _handle_dash(delta: float) -> void:
 		velocity.z = _dash_dir.z * dash_speed
 		if _dash_time <= 0.0:
 			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
+			collision_mask |= 4     # solid to enemies again (depenetration shoves us clear)
 		return
 	# Track taps every frame so the double-tap window stays accurate; a quick
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
@@ -528,6 +529,10 @@ func _handle_dash(delta: float) -> void:
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
 		hp.invulnerable = true
+		# Phase THROUGH enemies while the i-frames run: solid enemies can corner
+		# and body-block you, so the dash is the escape tool — a dodge that
+		# bounces off the brute it's dodging is no dodge at all.
+		collision_mask &= ~4
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
@@ -770,6 +775,8 @@ func _handle_mantle(delta: float) -> void:
 		return
 	# Pull up: just enough upward velocity to crest the lip with margin, plus a
 	# forward carry so you flow onto the platform instead of catching the edge.
+	if _grappling and _zip_anchor != null:
+		return # a scripted zipline owns the ride — don't crest random lips mid-cable
 	_wall_running = false  # a mantle takes priority over an in-progress wall-run
 	if _grappling:
 		_end_grapple() # grapple to a ledge lip → crest it instead of winching into the face
@@ -802,6 +809,8 @@ func _handle_wall_run(delta: float) -> void:
 		return
 	if is_on_floor() or _wall_run_cd > 0.0 or _dash_time > 0.0 or _sliding or _is_crouching:
 		return
+	if _grappling and _zip_anchor != null:
+		return  # a scripted zipline owns the ride — don't latch passing pillars
 	if velocity.y > 2.0:
 		return  # still rocketing up off a jump — let the arc peak first
 	if Vector2(velocity.x, velocity.z).length() < wall_run_min_speed:
@@ -920,6 +929,31 @@ func _handle_grapple(delta: float) -> void:
 	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.9) # launcher snap
 	AudioBus.play_synth_at("impact_metal", _grapple_point, -6.0, 1.4)   # anchor bite
 
+## Scripted zipline (convoy demo platforms): latch the grapple tether onto a
+## (possibly MOVING) anchor node and winch until arrival — same feel and tether
+## as the grapple, but the point tracks the anchor and needs no crosshair hit.
+## Jump/grapple/dash still release early, so the ride is never a cage.
+var _zip_anchor: Node3D = null
+
+func zipline_to(anchor: Node3D) -> void:
+	if _dead or anchor == null or not is_instance_valid(anchor):
+		return
+	if _grappling:
+		_end_grapple()
+	_grappling = true
+	_wall_running = false
+	_zip_anchor = anchor
+	_grapple_point = anchor.global_position
+	_grapple_valid = false
+	# Launch pop: shed ground momentum and hop clear of deck clutter (cargo
+	# boxes, rails) so the winch doesn't drag you INTO it and wedge.
+	velocity = Vector3.UP * 4.5
+	_build_tether()
+	_fov_kick = maxf(_fov_kick, 6.0)
+	shake(0.15)
+	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.9) # launcher snap
+	AudioBus.play_synth_at("impact_metal", _grapple_point, -6.0, 1.4)   # anchor bite
+
 ## Camera-forward world-geometry ray for the grapple (empty Dictionary = no anchor).
 func _grapple_ray() -> Dictionary:
 	var origin := camera.global_position
@@ -929,25 +963,43 @@ func _grapple_ray() -> Dictionary:
 	return get_world_3d().direct_space_state.intersect_ray(q)
 
 func _update_grapple(delta: float) -> void:
+	# A zipline anchor can move (the truck) — track it every frame.
+	if _zip_anchor != null:
+		if is_instance_valid(_zip_anchor):
+			_grapple_point = _zip_anchor.global_position
+		else:
+			_zip_anchor = null
 	var to := _grapple_point - global_position
 	var dist := to.length()
 	var jump_pressed := Input.is_action_just_pressed("jump")
-	if dist <= grapple_min_dist or Input.is_action_just_pressed("grapple") or jump_pressed:
+	# Ziplines ride all the way in (the anchor may be fleeing on the truck);
+	# the free-form grapple keeps its early let-go for fling jumps.
+	var min_d := 1.2 if _zip_anchor != null else grapple_min_dist
+	if dist <= min_d or Input.is_action_just_pressed("grapple") or jump_pressed:
 		if jump_pressed:
 			velocity.y = maxf(velocity.y, jump_velocity * 0.9) # release pop off the arc
 			_fov_kick = maxf(_fov_kick, 6.0)
+		elif _zip_anchor != null and dist <= min_d:
+			# Zipline arrival: kill the fling so you settle onto the deck under
+			# the anchor instead of rocketing 20 m past the platform.
+			velocity *= 0.15
 		_end_grapple()
 		return
 	# Winch: accelerate along the tether toward the anchor. Existing sideways
 	# momentum is kept (not cancelled), so approaches curve into a swing and a
 	# late release flings you — that carry is the whole point of the hook.
 	var dir := to / dist
+	if _zip_anchor != null and _grapple_point.y - global_position.y > 1.0:
+		# Zipline climb phase: bias upward while below the anchor so the ride
+		# arcs over obstacles between here and there instead of plowing level.
+		dir = (dir + Vector3.UP * 0.9).normalized()
 	velocity = velocity.move_toward(dir * grapple_winch_speed, grapple_winch_accel * delta)
 	_wall_lean = 0.0
 	_update_tether()
 
 func _end_grapple() -> void:
 	_grappling = false
+	_zip_anchor = null
 	_grapple_cd = grapple_cooldown
 	if is_instance_valid(_tether):
 		_tether.queue_free()

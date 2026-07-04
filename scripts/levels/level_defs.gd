@@ -218,21 +218,20 @@ static func _convoy() -> Dictionary:
 static func _nexus() -> Dictionary:
 	return {
 		"name": "Nexus Point — Sector 45",
-		"objective": "Clear the Sector 45 perimeter, grab the keycard and reach extraction",
+		"objective": "Find the gate lever, open the sector gate and reach extraction",
 		"sign": "NEXUS POINT · SECTOR 45",
 		"slogans": ["SECTOR 45: PACIFIED", "REMAIN INDOORS. REMAIN COMPLIANT.", "THE NEXUS PROVIDES"],
 		"lore": [
 			{"id": "lore_nexus", "title": "FIRST BROADCAST", "pos": Vector3(15, 0, -15), "color": Color(1.0, 0.5, 0.35),
 				"text": "Recovered broadcast, day one. The grid asked us, very politely, to stay home for our safety. Then the streetlights turned to watch us. Then they stopped asking."},
 		],
-		# Tutorial level teaches the find-and-unlock loop: clear the yard AND recover
-		# a keycard before the portal will open (no longer a straight walk to the exit).
+		# Tutorial level: ONE clear goal — find the gate lever, hold it to open the
+		# sector gate, walk out. (The old kill-all + keycard + staged-hack chain
+		# read on the HUD as "turn three things on" with only one findable.)
+		# Fighting the yard is optional pressure, not a completion gate.
 		"tasks": [
-			{"type": "kill_all"},
-			{"type": "key", "pos": Vector3(-4, 0, 2), "label": "Recover the access keycard"},
-			# The card unlocks the gate grid — hacking it trips the tower's alarm.
-			{"type": "hack_terminal", "id": "gates", "after": "key", "pos": Vector3(4, 0, -6), "seconds": 3.0,
-				"label": "Unlock the sector gate grid", "color": Color(1.0, 0.45, 0.3),
+			{"type": "hack_terminal", "id": "gates", "pos": Vector3(4, 0, -6), "seconds": 3.0,
+				"label": "Find the gate lever and open the sector gate", "color": Color(1.0, 0.45, 0.3),
 				"reinforce": [{"type": "spider", "count": 3, "pos": Vector3(0, 0, -10)}]},
 		],
 		"open_sky": true,

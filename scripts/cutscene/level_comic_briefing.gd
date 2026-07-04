@@ -21,6 +21,16 @@ const LEVEL_COMIC_DEFS := {
 		],
 		"weather": "rain"
 	},
+	"convoy": {
+		"image": "res://assets/comics/level_convoy.png",
+		"fx": [
+			{"kind": "glow", "u": 0.19, "v": 0.17, "size": 52, "color": C_RED}, # Lead pursuit flyer optics
+			{"kind": "glow", "u": 0.85, "v": 0.40, "size": 40, "color": C_RED}, # Flanking flyer optics
+			{"kind": "glow", "u": 0.80, "v": 0.72, "size": 64, "color": C_WARM}, # Hauler headlights
+			{"kind": "muzzle", "u": 0.36, "v": 0.63, "size": 60, "color": C_BLUE} # Player defensive fire off the span
+		],
+		"weather": "sparks"
+	},
 	"gpt": {
 		"image": "res://assets/comics/level_gpt.png",
 		"fx": [
@@ -210,6 +220,7 @@ const LEVEL_COMIC_DEFS := {
 }
 
 const TAGLINES := {
+	"convoy": "Route 7 Highway. A high-speed breakout on a flatbed hauler through machine-controlled territory.",
 	"gpt": "OpenAI Foundry. The server halls still hum — but nothing here answers to us anymore.",
 	"gemini": "Gemini Data Nexus. A sky of drones wheels around the data spires.",
 	"mistral": "Mistral Cryo-Core. Sub-zero vaults, frost on every surface. Something is thawing.",
