@@ -14,7 +14,12 @@ static func get_def(id: String) -> Dictionary:
 	var def: Dictionary = _defs().get(id, {})
 	if def.is_empty():
 		return def
-	return _scaled(def, WORLD_SCALE)
+	# A def may pin its own scale ("world_scale": 1.0) when the level pairs
+	# with hand-authored script geometry that does NOT go through this pass —
+	# the convoy's ConvoyRide (truck path, platforms, highway scenery) lives in
+	# world units, and blanket-scaling only the def half tore the level apart:
+	# the exit portal landed 74 m past where the truck parks.
+	return _scaled(def, def.get("world_scale", WORLD_SCALE))
 
 ## Enemy types that headline their own level — used to flag boss levels on the
 ## campaign map. Each appears exactly once across the campaign.
@@ -211,11 +216,22 @@ static func _convoy() -> Dictionary:
 		"spawn": Vector3(0, 0.5, 178),
 		"floor_size": Vector2(44, 380),
 		"open_sky": true,
+		# Everything on this level is positioned against ConvoyRide's
+		# hand-authored world (truck path ±170, platform/scenery z's) — the
+		# def half must not scale away from it. See get_def.
+		"world_scale": 1.0,
 		"tasks": [
 			{"type": "survive", "seconds": 70, "label": "Survive the ride"},
 		],
 		"enemies": [], # the ConvoyRide node spawns the pursuit waves
-		"exit": Vector3(0, 1.5, -176),
+		# Beside the road, not dead ahead of the parked truck: the old (0,-176)
+		# sat at ground level directly behind the CAB, so from the deck the
+		# portal was hidden inside the truck's own silhouette and the "walk
+		# straight at it" instinct ran you into the cab wall (playtest bot
+		# never completed the level; a player gets the same dead end). Off to
+		# the roadside it's visible from the deck and the route — hop the side
+		# rail, walk over — explains itself.
+		"exit": Vector3(7.5, 1.5, -174),
 		# Roadside blocks so the ride has parallax and cover from side fire.
 		"buildings": [
 			{"pos": Vector3(-17, 4.0, 120), "size": Vector3(8, 8, 14)},

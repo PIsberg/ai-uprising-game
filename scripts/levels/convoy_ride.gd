@@ -114,6 +114,16 @@ func _build_truck() -> void:
 	mk.call(Vector3(-1.7, 1.8, -1.8), Vector3(1.3, 1.1, 1.3), dark)      # front-left cover
 	mk.call(Vector3(1.7, 1.9, 2.2), Vector3(1.4, 1.3, 1.4), metal)       # back-right cover
 	mk.call(Vector3(0, 1.75, 4.2), Vector3(1.1, 1.0, 1.1), dark)         # back-center cover
+	# Roofed nook over the front-left quadrant: EVERY pursuer on this ride is
+	# an elevated flyer shooting DOWN, so the low cargo boxes never actually
+	# break their line of sight — deck fighters died to open-sky attrition in
+	# every playtest. One canopy gives the deck a legitimate LOS shelter
+	# (enemy _can_see raycasts hit it); flyers have to dive or flank to get an
+	# angle in, which is exactly the duck-out-and-shoot rhythm the ride wants.
+	# Underside at 3.38 leaves 2.1 m of headroom over the 1.25 deck.
+	mk.call(Vector3(-1.55, 3.45, -2.6), Vector3(2.9, 0.14, 3.6), dark)   # canopy roof
+	mk.call(Vector3(-0.25, 2.7, -4.3), Vector3(0.16, 1.4, 0.16), dark)   # front post
+	mk.call(Vector3(-0.25, 2.7, -0.9), Vector3(0.16, 1.4, 0.16), dark)   # rear post
 
 	# Zipline rig: the return-trip anchor floats above the tail so an incoming
 	# zip drops the player onto the deck, and the rear pad launches outbound
@@ -483,15 +493,87 @@ func _toast(text: String) -> void:
 
 ## Dense flyer pack spawned behind the truck. Flyers home on the player
 ## directly (no navmesh), so zipping to a platform drags them into the bomb.
-func _spawn_swarm() -> void:
+## Each swarm remembers its platform (meta "convoy_swarm") so leftovers can
+## disperse once that bomb window closes — see _disperse_swarms.
+##
+## The pack arrives in TWO pulses (front half at SWARM_LEAD, back half 12 s
+## later) instead of ten at once: the single drop stacked with waves and
+## gun-truck crews into a spike that killed every deck-fighting playtest run
+## right in this window. Blowing the demo charge before the second pulse
+## CANCELS it — the intended zip-and-bomb play now removes the whole swarm,
+## and standing your ground meets five at a time instead of ten.
+const SWARM_PULSE := 5
+const SWARM_PULSE_GAP := 12.0
+
+func _spawn_swarm(platform_z: float, pack: Array) -> void:
 	var tz: float = _truck.global_position.z
-	for i in SWARM.size():
-		var scene: PackedScene = SCENES.get(SWARM[i])
+	for i in pack.size():
+		var scene: PackedScene = SCENES.get(pack[i])
 		if scene == null:
 			continue
 		var e := scene.instantiate() as Node3D
 		e.position = Vector3(randf_range(-8.0, 8.0), randf_range(2.0, 5.0), tz + randf_range(14.0, 30.0))
+		e.set_meta("convoy_swarm", platform_z)
 		get_tree().current_scene.add_child(e)
+
+## Deck resupply riding the flatbed: a medkit + ammo box drop in with each
+## swarm. Playtest bot runs died at min_hp<10 fighting deck-only — the swarm
+## is DESIGNED to be baited into the platform bomb, but standing your ground
+## must stay viable, and a 60 s firefight needs somewhere to breathe. Parented
+## to the truck so they ride with the player; spots picked clear of the cargo
+## cover boxes and the rear zip pad.
+const RESUPPLY_SPOTS := [Vector3(-1.8, 1.7, 3.8), Vector3(1.0, 1.7, -3.8)]
+
+func _drop_resupply() -> void:
+	var kinds := ["health", "ammo"]
+	for i in kinds.size():
+		var scene: PackedScene = load("res://scenes/pickups/%s.tscn" % ("health_pack" if kinds[i] == "health" else "ammo_box"))
+		if scene == null:
+			continue
+		var pk := scene.instantiate() as Node3D
+		_truck.add_child(pk)
+		pk.position = RESUPPLY_SPOTS[i]
+
+## The swarm's job is to be lured into the demo charge. Once its platform is
+## behind the truck (or already blown), any leftovers would otherwise chase
+## the deck FOREVER — playtest: 20 simultaneous pursuers by the second swarm,
+## deck-only runs died to the pile-up, not to any one fight. Let the pack lose
+## interest instead: while more than 3 of a closed swarm remain, peel off the
+## flyer FURTHEST from the player every couple of seconds (reads as the swarm
+## breaking off into the night, and the survivors stay dangerous).
+var _disperse_t: float = 0.0
+
+func _disperse_swarms(delta: float) -> void:
+	_disperse_t -= delta
+	if _disperse_t > 0.0:
+		return
+	_disperse_t = 2.0
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		return
+	for p in _platforms:
+		if not p["swarmed"]:
+			continue
+		var closed: bool = p["spent"] or _truck.global_position.z < float(p["z"]) - 12.0
+		if not closed:
+			continue
+		var pack: Array[Node3D] = []
+		for e in get_tree().get_nodes_in_group("enemy"):
+			if e is Node3D and (e as Node).get_meta("convoy_swarm", 1e9) == float(p["z"]):
+				if e is EnemyBase and (e as EnemyBase).state == EnemyBase.State.DEAD:
+					continue
+				pack.append(e)
+		if pack.size() <= 3:
+			continue
+		var furthest: Node3D = null
+		var fd := -1.0
+		for e in pack:
+			var d := player.global_position.distance_to(e.global_position)
+			if d > fd:
+				fd = d
+				furthest = e
+		if furthest:
+			furthest.queue_free()
 
 # --- pursuit gun-trucks ---
 
@@ -564,10 +646,15 @@ func _update_vehicles(delta: float) -> void:
 				if hp and hp.is_alive():
 					alive += 1
 		if alive == 0:
-			# Crew wiped: the driverless rig cooks off in a fireball.
+			# Crew wiped: the driverless rig cooks off in a fireball, and its
+			# supplies land on the deck. Playtest runs that handled every wave
+			# still bled out at ~60 s on two medkits — clearing a gun-truck is
+			# the ride's most deliberate play, so it pays out the third.
 			v["done"] = true
 			_explode_at(body.global_position + Vector3(0, 1.0, 0), 7.0, 140.0)
 			body.queue_free()
+			_drop_resupply()
+			_toast("WRECK SALVAGE — SUPPLIES ON THE DECK")
 			continue
 		var dz: float = body.global_position.z - _truck.global_position.z
 		var spd: float = speed
@@ -612,10 +699,35 @@ func _board_player() -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
 	if p:
 		p.global_position = _truck.global_position + Vector3(0, 1.8, 1.0)
+		var dmg := p.get_node_or_null("Damageable")
+		if dmg and dmg.has_signal("died"):
+			dmg.died.connect(_on_player_died)
+
+## A checkpoint respawn drops the player back onto a deck the pursuit never
+## left — world state is deliberately NOT reset (see GameState), so a mid-ride
+## death put you back at partial HP inside 13+ live pursuers and playtests
+## death-spiralled (three more deaths inside ten seconds). The pack losing the
+## trail while the screen is dark is the fair version: on death, thin pursuit
+## down to the four nearest so the comeback is a fight, not a grinder.
+func _on_player_died(_source: Node) -> void:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		return
+	var live: Array = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and (e as EnemyBase).state != EnemyBase.State.DEAD:
+			live.append(e)
+	live.sort_custom(func(a, b) -> bool:
+		return player.global_position.distance_to((a as Node3D).global_position) \
+			< player.global_position.distance_to((b as Node3D).global_position))
+	for i in range(4, live.size()):
+		(live[i] as Node).queue_free()
 
 func _physics_process(delta: float) -> void:
 	_pad_cd = maxf(0.0, _pad_cd - delta) # pads stay usable even at the terminus
 	if _arrived:
+		_wind_down_pursuit(delta)
+		_update_checkpoint() # deaths at the terminus still respawn on the deck
 		return
 	_t += delta
 	# Ease off the line, cruise, ease into the terminus.
@@ -628,19 +740,40 @@ func _physics_process(delta: float) -> void:
 	_truck.global_position.z = maxf(end_z, z - spd * delta)
 	if _truck.global_position.z <= end_z + 0.05:
 		_arrived = true
+		_toast("INTERCHANGE REACHED — PURSUIT BREAKING OFF")
 		return
-	# Pursuit waves, spawned around the rolling truck.
+	# Pursuit waves, spawned around the rolling truck — but never into an
+	# already-packed sky. Waves land every 11 s no matter what, so a swarm
+	# (10 flyers, its own set-piece) stacking with two waves and a gun-truck
+	# crew peaked playtests at 20 live pursuers; a competent deck fighter died
+	# seconds short of the terminus every run. Holding the NEXT wave while
+	# live pursuit is high keeps the pace for players who clear fast and
+	# relieves exactly the pile-up that killed the ones who don't.
 	_wave_t -= delta
 	if _wave_t <= 0.0:
-		_wave_t = wave_interval
-		_spawn_wave()
+		if _live_pursuit() >= WAVE_HOLD_AT:
+			_wave_t = 3.0 # re-check shortly; the wave arrives once the sky thins
+		else:
+			_wave_t = wave_interval
+			_spawn_wave()
 	# Chase swarms: unleashed as the truck runs up on each demo platform, so
 	# the bomb is in reach right when the sky fills with pursuit.
 	for p in _platforms:
 		if not p["swarmed"] and _truck.global_position.z < float(p["z"]) + SWARM_LEAD:
 			p["swarmed"] = true
-			_spawn_swarm()
+			p["pulse2"] = SWARM_PULSE_GAP
+			_spawn_swarm(float(p["z"]), SWARM.slice(0, SWARM_PULSE))
+			_drop_resupply()
 			_toast("SWARM INBOUND — REAR ZIP PAD ARMED, RIDE IT TO THE DEMO CHARGE")
+		elif p.has("pulse2"):
+			p["pulse2"] = float(p["pulse2"]) - delta
+			if float(p["pulse2"]) <= 0.0:
+				p.erase("pulse2")
+				# The demo charge already went off? The rest of the swarm never
+				# launches — bombing the pack is meant to END this set piece.
+				if not p["spent"]:
+					_spawn_swarm(float(p["z"]), SWARM.slice(SWARM_PULSE))
+					_toast("SWARM REINFORCEMENTS INBOUND")
 	# Drive-by gun-trucks (three per run, alternating lanes).
 	_vehicle_timer -= delta
 	if _vehicle_timer <= 0.0 and _vehicle_i < 3:
@@ -648,6 +781,71 @@ func _physics_process(delta: float) -> void:
 		_spawn_pursuit_vehicle()
 	_update_vehicles(delta)
 	_cull_stragglers(delta)
+	_disperse_swarms(delta)
+	_update_checkpoint()
+
+## Terminus wind-down: the ride ends but its leftovers used to keep coming —
+## fifteen pursuers camped the parked deck and a respawn's 1.5 s grace fed the
+## player straight back into the pile (playtest died 3× AT the interchange
+## after surviving the whole ride). "Survive to the interchange" means arrival
+## is the resolution: the pack breaks off, furthest flyer first, one every
+## 0.4 s — close threats stay dangerous for a beat, then the sky clears.
+var _wind_t: float = 0.0
+
+func _wind_down_pursuit(delta: float) -> void:
+	_wind_t -= delta
+	if _wind_t > 0.0:
+		return
+	_wind_t = 0.4
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		return
+	var furthest: Node3D = null
+	var fd := -1.0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not (e is EnemyBase):
+			continue
+		if (e as EnemyBase).state == EnemyBase.State.DEAD:
+			continue
+		var d := player.global_position.distance_to((e as Node3D).global_position)
+		if d > fd:
+			fd = d
+			furthest = e
+	if furthest:
+		furthest.queue_free()
+
+## Mid-ride checkpoints. The convoy's only task is "survive", which completes
+## at the very END — so the generic task-completion checkpoint never fires
+## mid-ride and every death replayed the whole set piece. Snapshot once the
+## ride is rolling and again as each platform set-piece closes. The generic
+## snapshot pins an ABSOLUTE position, which on this level is an empty stretch
+## of highway by the time a death respawns — keep it pinned to the deck so a
+## respawn always lands back aboard the rolling truck.
+var _cp_started: bool = false
+
+func _update_checkpoint() -> void:
+	if not _cp_started and _t > 4.0:
+		_cp_started = true
+		GameState.set_checkpoint()
+	for p in _platforms:
+		if p["swarmed"] and not p.has("cp_done") \
+			and (p["spent"] or _truck.global_position.z < float(p["z"]) - 12.0):
+			p["cp_done"] = true
+			GameState.set_checkpoint()
+	if GameState.has_checkpoint():
+		GameState.checkpoint["position"] = _truck.global_position + Vector3(0, 2.0, 0.5)
+
+## Live-pursuit ceiling: at or above this, the next wave holds (see the
+## note in _physics_process). Tuned against the playtest bot — 8 keeps two
+## waves' worth of pressure in the air without the swarm-stack death spiral.
+const WAVE_HOLD_AT := 8
+
+func _live_pursuit() -> int:
+	var n := 0
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and (e as EnemyBase).hp and (e as EnemyBase).hp.is_alive():
+			n += 1
+	return n
 
 ## Heavies too slow to chase a 5.5 m/s truck from the roadside — they drop
 ## straight onto the deck as boarders instead, forcing close-quarters fights
@@ -666,8 +864,12 @@ func _spawn_wave() -> void:
 		if wave[i] in BOARDERS:
 			# Deck boarding drop: released above the front half of the bed so
 			# the truck's forward travel during the fall lands them mid-deck.
+			# Kept to the RIGHT side (x > 0): the canopy roofs the front-left
+			# quadrant, and a melee boarder released over it lands ON the roof
+			# where it can never reach anyone (convoy_probe caught a brute
+			# standing at rel y=3.5 — canopy-top height).
 			e.position = _truck.global_position \
-				+ Vector3(randf_range(-1.5, 1.5), 3.0, randf_range(-4.4, -1.4))
+				+ Vector3(randf_range(0.3, 1.8), 3.0, randf_range(-4.4, -1.4))
 		else:
 			var side := -1.0 if i % 2 == 0 else 1.0
 			# Flank spawns slightly behind the truck so pursuit reads as a chase.
