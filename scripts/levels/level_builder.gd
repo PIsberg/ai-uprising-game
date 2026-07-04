@@ -488,6 +488,9 @@ func _build_environment(def: Dictionary) -> void:
 	if def.get("open_sky", false):
 		amb = "ambience_rain" if str(e.get("weather", "")) == "rain" else "ambience_wind"
 	AudioBus.play_ambience(amb, -22.0)
+	# Environmental reverb: tight metallic room indoors, faint/dry outdoors — the
+	# same indoor/outdoor signal the ambience bed above already reads.
+	AudioBus.set_reverb_environment(not def.get("open_sky", false))
 	# Per-theme music track (def can override; otherwise mapped from level_id).
 	var music_id: String = def.get("music", LEVEL_MUSIC.get(level_id, "music_techno"))
 	AudioBus.play_music(music_id)
@@ -1273,7 +1276,23 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color) ->
 	for i in range(1, n + 1):
 		var c: Vector3 = base + corners[i % 4]
 		c.y = rise * float(i)
-		_add_ramp_between(prev, c, 3.0)
+		# Aim the ramp to TOP OUT at the landing's NEAR edge, not its centre: a
+		# centre-aimed ramp is still LANDING_HALF*slope below deck-top where the
+		# landing's front face begins, so every corner presented its face as a
+		# 0.3-0.6 m escarpment (ramp_probe + step-assist instrumentation both
+		# confirmed — too tall to step over, jump-only). Topping out at the face
+		# makes the deck transition seamless; the wedge's RAMP_TOP_EMBED run-out
+		# then carries flush onto the deck. The segment gets slightly steeper
+		# (worst case ~29° at radius 3.1) — still well under the player's
+		# floor_max_angle and the navmesh bake's default 45° slope limit. The
+		# DEPARTING ramp needs no matching offset: its tapered toe rests ON the
+		# deck and climbs away as a walkable slope, never presenting a face.
+		var dir_in := c - prev
+		dir_in.y = 0.0
+		dir_in = dir_in.normalized()
+		var ramp_to := c - dir_in * LANDING_HALF
+		ramp_to.y = c.y
+		_add_ramp_between(prev, ramp_to, 3.0)
 		# Corner landing, flush-topped at the segment height, so the player can
 		# turn. Thickness solved above so its underside clears the still-rising
 		# ramp across the full overhang (see the note above the loop).
