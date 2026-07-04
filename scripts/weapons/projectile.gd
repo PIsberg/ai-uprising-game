@@ -262,6 +262,7 @@ func _on_body_entered(body: Node) -> void:
 	if body == _shooter:
 		return
 	# Enemy rounds (splash mask excludes the player) land their hit here instead.
+	var world_hit_damageable: Node = null
 	if direct_damage and body != null:
 		var d := body.get_node_or_null("Damageable")
 		var node := body
@@ -271,6 +272,20 @@ func _on_body_entered(body: Node) -> void:
 				d = node.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(_damage, _shooter)
+		world_hit_damageable = d
+	elif body != null:
+		world_hit_damageable = _damageable_of(body)
+	# World geometry (no Damageable anywhere up its tree — not an enemy or the
+	# player): leave a small bullet mark + a material-appropriate impact tick so
+	# a stray round that clips a wall reads as hitting something solid, reusing
+	# the exact same surface classification the hitscan weapons use.
+	if body != null and world_hit_damageable == null:
+		var surf := Weapon._surface_of(body, false)
+		BulletMark.spawn(get_tree().current_scene, global_position, -_velocity.normalized())
+		# Quiet — the blast FX below already carries the loud boom; this just adds
+		# material identity underneath it (and is the only impact sound at all for
+		# non-splash direct-fire rounds like a stray plasma bolt).
+		AudioBus.play_synth_at(Weapon._impact_sound_for(surf), global_position, -14.0, randf_range(0.85, 1.05))
 	_explode(global_position)
 
 func _on_area_entered(area: Area3D) -> void:

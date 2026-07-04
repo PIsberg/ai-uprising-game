@@ -84,6 +84,23 @@ var _recovery_timer: float = 0.0
 var _recovery_dir: Vector3 = Vector3.ZERO
 var _path_recalc_timer: float = 0.0
 
+# ---------- locomotion "servo tick" SFX budget ----------
+# Continuous-feeling movement audio WITHOUT a loop per enemy: each moving
+# ground unit fires a short step/servo tick on its own stride cadence, flyers
+# a soft rotor tick, through the existing positional SFX pool (so it inherits
+# the environmental reverb for free). A horde all ticking at once would drown
+# the pool, so a GLOBAL budget caps it to the handful of movers nearest the
+# player; everyone else stays silent. The budget itself is only rebuilt every
+# LOCOMOTION_REFRESH_MS (one O(n log n) sort, not per enemy per frame) — the
+# per-enemy per-physics-tick cost is a cooldown decrement plus one dictionary
+# lookup, O(1).
+const LOCOMOTION_TICK_RANGE := 25.0   ## enemies farther than this from the player never tick
+const LOCOMOTION_BUDGET := 6          ## nearest movers allowed to tick at once
+const LOCOMOTION_REFRESH_MS := 250    ## how often the shared budget re-sorts
+static var _locomotion_allowed_ids: Dictionary = {}  ## instance_id -> true, rebuilt periodically
+static var _locomotion_next_refresh_ms: int = 0
+var _step_cd: float = 0.0 ## seconds until this enemy's next locomotion tick is allowed
+
 # Hit-flash: a per-instance overlay so we never mutate the shared .tres materials.
 var _mesh_instances: Array[MeshInstance3D] = []
 var _flash_mat: StandardMaterial3D
@@ -176,6 +193,7 @@ func _physics_process(delta: float) -> void:
 	_update_overload(delta)
 	_oil_cd = maxf(0.0, _oil_cd - delta)
 	_poise = maxf(0.0, _poise - delta * 26.0) # poise regenerates between hits
+	_update_locomotion_audio(delta)
 
 ## Scramble this unit: it goes inert for `duration` seconds (no perception, AI or
 ## attacks), crackling with EMP static. Called by the EMP grenade burst. Refreshes
@@ -231,6 +249,71 @@ func _update_hit_react(delta: float) -> void:
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+
+## Family-weighted step/servo audio for continuous movement feel — see the
+## "locomotion servo tick" comment above _step_cd for the budget design. Cheap
+## every physics tick: decays this enemy's own cooldown, checks the shared
+## (periodically rebuilt) budget map, and — only if allowed and actually
+## moving — fires one short tick through AudioBus's positional pool. Flyers
+## (never grounded, not currently falling) get a soft rotor whir instead of a
+## footstep.
+func _update_locomotion_audio(delta: float) -> void:
+	_maybe_refresh_locomotion_budget()
+	_step_cd = maxf(0.0, _step_cd - delta)
+	if _step_cd > 0.0 or not _locomotion_allowed_ids.has(get_instance_id()):
+		return
+	var speed_h := Vector2(velocity.x, velocity.z).length()
+	if speed_h < 0.4:
+		return
+	var grounded := is_on_floor()
+	if not grounded and velocity.y < -2.0:
+		return # falling/leaping, not level flight — skip rather than mis-tick a rotor hum
+	if not has_node("/root/AudioBus"):
+		return
+	var ab: Node = get_node("/root/AudioBus")
+	if not ab.has_method("play_synth_at"):
+		return
+	if grounded:
+		var fam := _voice_family()
+		# Reuse the voice-pitch table: heavier chassis speak lower, so the same
+		# split doubles as a "how heavy does this footstep sound" signal.
+		var pitch: float = VOICE_PITCH.get(fam, 1.0)
+		var heavy := pitch <= 0.9
+		_step_cd = clampf(0.6 - speed_h * 0.032, 0.22, 0.6)
+		ab.play_synth_at("servo_step_heavy" if heavy else "servo_step_light",
+			global_position, -15.0, randf_range(0.92, 1.1))
+	else:
+		_step_cd = clampf(0.85 - speed_h * 0.03, 0.45, 0.85)
+		ab.play_synth_at("rotor_whir", global_position, -16.0, randf_range(0.95, 1.08))
+
+## Periodic (NOT per-frame) rebuild of the global locomotion-tick budget: any
+## single enemy whose refresh window has elapsed re-sorts every alive, moving
+## enemy within LOCOMOTION_TICK_RANGE of the player by distance and keeps only
+## the nearest LOCOMOTION_BUDGET as "allowed" until the next window. Every
+## other enemy that physics-tick just reads the shared result.
+func _maybe_refresh_locomotion_budget() -> void:
+	var now := Time.get_ticks_msec()
+	if now < _locomotion_next_refresh_ms:
+		return
+	_locomotion_next_refresh_ms = now + LOCOMOTION_REFRESH_MS
+	_locomotion_allowed_ids.clear()
+	var player := get_tree().get_first_node_in_group("player")
+	if player == null or not (player is Node3D):
+		return
+	var ppos: Vector3 = (player as Node3D).global_position
+	var near: Array = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var eb := e as EnemyBase
+		if eb == null or not is_instance_valid(eb) or eb.state == State.DEAD:
+			continue
+		if Vector2(eb.velocity.x, eb.velocity.z).length() < 0.4:
+			continue
+		var d := ppos.distance_to(eb.global_position)
+		if d <= LOCOMOTION_TICK_RANGE:
+			near.append([d, eb.get_instance_id()])
+	near.sort_custom(func(a, b): return a[0] < b[0])
+	for i in mini(LOCOMOTION_BUDGET, near.size()):
+		_locomotion_allowed_ids[near[i][1]] = true
 
 func _perceive() -> void:
 	if target == null or not is_instance_valid(target):
