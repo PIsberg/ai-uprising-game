@@ -10,14 +10,20 @@ extends Node3D
 @export var end_z: float = -170.0
 @export var wave_interval: float = 11.0
 
+## Ranged-leaning on purpose: the deck used to fill up with melee flyers
+## perma-hugging the player (a mosh pit, not a chase). Raptor (flying gunner) and
+## strider (ranged ground trooper — it needs LOS, not a boarding path) now carry
+## most waves; seeker/dog (the true melee/kamikaze pressure) are the exception,
+## not the norm. Breaker (melee flyer) keeps its 2 slots — it now peels off
+## between hits instead of camping in your face (see EnemyDrone.standoff).
 const WAVES: Array = [
 	["drone", "drone", "raptor"],
-	["raptor", "drone", "seeker"],
-	["dog", "dog", "drone", "seeker"],
+	["raptor", "drone", "strider"],
+	["dog", "strider", "raptor", "seeker"],
 	["raptor", "raptor", "breaker"],
-	["strider", "drone", "drone", "mender"],
-	["seeker", "seeker", "raptor", "brute"],
-	["mech", "drone", "drone", "seeker"],
+	["strider", "drone", "raptor", "mender"],
+	["seeker", "raptor", "raptor", "brute"],
+	["mech", "drone", "raptor", "seeker"],
 	["brute", "breaker", "raptor", "drone"],
 ]
 const SCENES := {
@@ -578,6 +584,29 @@ func _update_vehicles(delta: float) -> void:
 			spd = speed + 3.2 # closing from behind
 		body.global_position.z -= spd * delta
 
+## Ground chasers with no path onto the moving flatbed (dog, strider, mender,
+## and any gun-truck crew whose ride already died) just fall further and further
+## behind the truck instead of ever catching up — left to accumulate they'd
+## litter the highway with pursuit that can no longer matter. Boarders ride the
+## truck's own frame (they stay within a few metres of it) and flyers are fast
+## enough to keep pace, so this only ever catches units that are truly stragglers.
+const STRAGGLER_DIST := 60.0
+var _straggler_t: float = 3.0
+
+func _cull_stragglers(delta: float) -> void:
+	_straggler_t -= delta
+	if _straggler_t > 0.0:
+		return
+	_straggler_t = 2.0
+	var tz: float = _truck.global_position.z
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not is_instance_valid(e) or not (e is Node3D):
+			continue
+		if e is EnemyBase and (e as EnemyBase).state == EnemyBase.State.DEAD:
+			continue # already dying its own death (fall/topple/explosion) — let it finish
+		if (e as Node3D).global_position.z - tz > STRAGGLER_DIST:
+			e.queue_free()
+
 func _board_player() -> void:
 	await get_tree().create_timer(0.6).timeout
 	var p := get_tree().get_first_node_in_group("player") as Node3D
@@ -618,6 +647,7 @@ func _physics_process(delta: float) -> void:
 		_vehicle_timer = 20.0
 		_spawn_pursuit_vehicle()
 	_update_vehicles(delta)
+	_cull_stragglers(delta)
 
 ## Heavies too slow to chase a 5.5 m/s truck from the roadside — they drop
 ## straight onto the deck as boarders instead, forcing close-quarters fights
@@ -642,4 +672,9 @@ func _spawn_wave() -> void:
 			var side := -1.0 if i % 2 == 0 else 1.0
 			# Flank spawns slightly behind the truck so pursuit reads as a chase.
 			e.position = Vector3(side * randf_range(9.0, 14.0), 0.6, tz + randf_range(4.0, 16.0))
+		# The breaker is the one true melee FLYER on this ride — it can actually
+		# reach the deck and hover there. Force standoff so it harries (dive in,
+		# hammer, peel off) instead of parking on top of the player forever.
+		if wave[i] == "breaker" and "standoff" in e:
+			e.standoff = true
 		get_tree().current_scene.add_child(e)

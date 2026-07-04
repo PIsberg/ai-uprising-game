@@ -174,6 +174,58 @@ const STEP_INTERVAL_CROUCH := 1.6
 @export var melee_cooldown: float = 0.85
 var _melee_cd: float = 0.0
 
+# ---------- soft enemy separation ----------
+# Enemies only ever masked the world (layer 1) — the player used to also mask
+# THEM (mask=5), so the player's own move_and_slide depenetrated against every
+# enemy body it touched. That meant an enemy walking into the player shoved the
+# PLAYER around every frame: awful in general, and on the convoy's moving flatbed
+# a boarded brute could shove the player clean off the deck. Enemy melee damage
+# is attack_range-based (enemy_base.gd), never physics-contact-based, so nothing
+# actually depends on hard collision here. This replaces it with a cheap soft
+# push: a sphere probe against the enemy layer each frame, one shape query, push
+# strength ramping with how deep an enemy is inside the probe and capped well
+# below anything that could snap/launch the player. A deep press from something
+# big (a brute planted on you) resists hard enough to cancel a walk; a graze from
+# a wandering enemy is a gentle nudge. Suspended during the dash's i-frame window
+# so the dash keeps phasing clean through.
+@export_group("Soft Enemy Separation")
+@export var separation_radius: float = 1.2 ## Sphere probe radius, centred on the capsule's mid-torso.
+@export var separation_max_speed: float = 6.0 ## Hard cap on the push, m/s.
+var _separation_push: Vector3 = Vector3.ZERO
+
+## Sphere-probes the enemy layer around the player and builds this frame's soft
+## push-away velocity into _separation_push (added onto velocity in
+## _physics_process, right before move_and_slide).
+func _update_enemy_separation() -> void:
+	_separation_push = Vector3.ZERO
+	if _dash_time > 0.0:
+		return  # i-frames: the dash phases clean through, no push at all
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = separation_radius
+	q.shape = sh
+	q.transform = Transform3D(Basis(), global_position + Vector3.UP * 0.9)
+	q.collision_mask = 0b0000100 # enemy layer only
+	q.collide_with_areas = false
+	var hits := space.intersect_shape(q, 8)
+	var push := Vector3.ZERO
+	for h in hits:
+		var col := h.get("collider") as Node3D
+		if col == null or col == self:
+			continue
+		var away := global_position - col.global_position
+		away.y = 0.0
+		var dist := away.length()
+		var dir := away / dist if dist > 0.05 else Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized()
+		# 0 at the probe's edge, 1 when the two origins coincide — squared so a
+		# graze barely registers and only a deep press ramps up hard.
+		var depth := clampf(1.0 - dist / separation_radius, 0.0, 1.0)
+		push += dir * (depth * depth)
+	var strength := push.length()
+	if strength > 0.001:
+		_separation_push = (push / strength) * minf(strength, 1.0) * separation_max_speed
+
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_camera_base_y = camera.position.y
@@ -391,6 +443,9 @@ func _physics_process(delta: float) -> void:
 	_handle_wall_run(delta)
 	_handle_grapple(delta)
 	_handle_movement(delta)
+	_update_enemy_separation()
+	velocity.x += _separation_push.x
+	velocity.z += _separation_push.z
 	_handle_camera_feel(delta)
 	if not is_on_floor():
 		_fall_speed = -velocity.y   # peak downward speed this fall (read on landing)
@@ -510,7 +565,6 @@ func _handle_dash(delta: float) -> void:
 		velocity.z = _dash_dir.z * dash_speed
 		if _dash_time <= 0.0:
 			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
-			collision_mask |= 4     # solid to enemies again (depenetration shoves us clear)
 		return
 	# Track taps every frame so the double-tap window stays accurate; a quick
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
@@ -529,10 +583,11 @@ func _handle_dash(delta: float) -> void:
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
 		hp.invulnerable = true
-		# Phase THROUGH enemies while the i-frames run: solid enemies can corner
-		# and body-block you, so the dash is the escape tool — a dodge that
-		# bounces off the brute it's dodging is no dodge at all.
-		collision_mask &= ~4
+		# The i-frame window also suspends the soft enemy-separation push (see
+		# _update_enemy_separation): enemies have no hard collision with the player
+		# at all any more, but the soft push alone can still resist a beeline through
+		# a planted brute, and the dash is the escape tool — a dodge that bounces off
+		# the thing it's dodging is no dodge at all.
 		velocity.y = maxf(velocity.y, 0.0) # flatten the arc for a clean lunge
 		_fov_kick = 9.0
 		shake(0.22)
