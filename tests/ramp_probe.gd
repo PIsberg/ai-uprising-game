@@ -160,11 +160,26 @@ func _test_ramp(level_id: String, body: Node) -> Array:
 	# whichever surface is higher, not necessarily this ramp's own line.
 	# Testing against the buried line would flag "stuck"/"low headroom"
 	# against a surface the player never actually touches.
+	#
+	# The indoor level-wide ceiling (level_builder._build_arena, group
+	# "level_ceiling") is excluded from this same search: it spans the ENTIRE
+	# floor footprint at a fixed WALL_HEIGHT+0.2, well above where any ramp is
+	# actually walked, but towers routinely climb higher than WALL_HEIGHT —
+	# so for a ramp whose nominal line comes within a few metres of that fixed
+	# absolute height, the downward ray (searching 3 m up from the nominal
+	# point) hit the ceiling's underside first and the probe mistook "the
+	# room's overhead cap" for the walkable surface, a false STUCK/LOW
+	# HEADROOM against geometry nobody ever stands on.
+	var exclude: Array[RID] = []
+	for n in get_tree().get_nodes_in_group("level_ceiling"):
+		if n is CollisionObject3D:
+			exclude.append((n as CollisionObject3D).get_rid())
 	var surfaces: Array[Vector3] = []
 	for i in range(steps + 1):
 		var s: Vector3 = from.lerp(to, float(i) / float(steps))
 		var down_q := PhysicsRayQueryParameters3D.create(s + Vector3(0, 3.0, 0), s + Vector3(0, -1.0, 0))
 		down_q.collision_mask = 1
+		down_q.exclude = exclude
 		var down_hit := space.intersect_ray(down_q)
 		surfaces.append(down_hit.position if down_hit else s)
 
@@ -188,8 +203,8 @@ func _test_ramp(level_id: String, body: Node) -> Array:
 				var hit_name := "?"
 				if col.get_collider():
 					hit_name = str(col.get_collider().name)
-				issues.append("%s: STUCK on %s near %s (t=%.2f of foot->top run, hit %s, depth=%.3f, lip~%.3fm, why=%s, dy=%.3f)" %
-					[level_id, body.name, s0, float(i) / float(steps), hit_name, col.get_depth(), step.lip, step.why, s1.y - s0.y])
+				issues.append("%s: STUCK on %s [%s -> %s] near %s (t=%.2f of foot->top run, hit %s, depth=%.3f, lip~%.3fm, why=%s, dy=%.3f)" %
+					[level_id, body.name, from, to, s0, float(i) / float(steps), hit_name, col.get_depth(), step.lip, step.why, s1.y - s0.y])
 		# Headroom: cast up CLEARANCE_M from just above the ACTUAL surface.
 		var q := PhysicsRayQueryParameters3D.create(s0 + Vector3(0, 0.05, 0), s0 + Vector3(0, CLEARANCE_M, 0))
 		q.collision_mask = 1
@@ -198,6 +213,6 @@ func _test_ramp(level_id: String, body: Node) -> Array:
 			var hn := "?"
 			if hit.collider:
 				hn = str(hit.collider.name)
-			issues.append("%s: LOW HEADROOM on %s at %s — overhang %.2f m up (need %.2f m, hit %s)" %
-				[level_id, body.name, s0, hit.position.y - s0.y, CLEARANCE_M, hn])
+			issues.append("%s: LOW HEADROOM on %s [%s -> %s] at %s — overhang %.2f m up (need %.2f m, hit %s)" %
+				[level_id, body.name, from, to, s0, hit.position.y - s0.y, CLEARANCE_M, hn])
 	return issues

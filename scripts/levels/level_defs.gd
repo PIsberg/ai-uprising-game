@@ -93,12 +93,29 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			if (def["set_piece"] as Dictionary).has(k):
 				def["set_piece"][k] = _sv(def["set_piece"][k], s)
 	# Entries whose footprint defines the layout stretch with the world…
-	for key in ["walls", "accents", "ramps", "platforms"]:
+	for key in ["walls", "accents", "platforms"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
 			if e.has("size"):
 				e["size"] = _sv(e["size"], s)
+	# "ramps" (pos/size/pitch/yaw) reposition with the arena like the entries
+	# above, but must NOT rescale "size": a ramp's rise/run is derived from
+	# size.z (its length) against a FIXED pos.y and pitch (see _add_ramp), so
+	# stretching size.z without touching pos.y or pitch to compensate doesn't
+	# make a proportionally bigger ramp — it drops the foot further below
+	# pos.y and pushes it further out along the (also-scaled) ground plane
+	# than the position scaling alone accounts for. Cross-checked against
+	# tests/ramp_probe: several levels' vantage-deck ramps had their sunk foot
+	# land outside the (also-scaled) arena boundary wall and below the floor
+	# once WORLD_SCALE stretched size.z but not pos.y — not a small lip, the
+	# ramp's foot was buried in the boundary wall's corner. Kept unscaled,
+	# like "stairs" endpoints keep their authored height (see below): the
+	# ramp's own physical climb (and hence its foot/top offsets from pos)
+	# stays exactly as authored, only its position moves with the arena.
+	for e in def.get("ramps", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Stair endpoints scale on the ground plane; heights stay fixed so the climb
 	# still lands on the rooftops/platforms it was authored against.
 	for e in def.get("stairs", []):
@@ -2014,7 +2031,14 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(-5, 2, -2), "size": Vector3(1, 4, 10)},
 			{"pos": Vector3(5, 2, 2), "size": Vector3(1, 4, 10)},
 			{"pos": Vector3(-11, 2, 5), "size": Vector3(6, 4, 1)},
-			{"pos": Vector3(11, 2, -5), "size": Vector3(6, 4, 1)},
+			# Lowered from a full 4 m rack (matching the one above) to 1.8 m: this
+			# stub sits right where tower #1's spiral (towers entry below, base
+			# (14,-6) r=3.6) climbs past at low height — ramp_probe found the
+			# ramp's walkable line at ~y=2.0-2.3 actually running INSIDE the old
+			# wall's solid box there (embedded geometry, not just a headroom
+			# nitpick). Lower keeps it as chest-height cover the ramp clears
+			# instead of a rack the climb runs through.
+			{"pos": Vector3(11, 0.9, -5), "size": Vector3(6, 1.8, 1)},
 		],
 		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
 		# to the exit, kept clear of the central core and the hack terminal at z=8.
@@ -2030,7 +2054,8 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(-5.6, 3.4, -2), "size": Vector3(0.12, 0.12, 9), "color": Color(0.2, 1.0, 1.0)},
 			{"pos": Vector3(5.6, 3.4, 2), "size": Vector3(0.12, 0.12, 9), "color": Color(1.0, 0.2, 0.8)},
 			{"pos": Vector3(-12, 3.0, 5.6), "size": Vector3(5, 0.12, 0.12), "color": Color(0.2, 1.0, 1.0)},
-			{"pos": Vector3(12, 3.0, -5.6), "size": Vector3(5, 0.12, 0.12), "color": Color(1.0, 0.2, 0.8)},
+			# Follows the lowered wall stub above (was y=3.0 on the old 4 m rack).
+			{"pos": Vector3(12, 1.5, -5.6), "size": Vector3(5, 0.12, 0.12), "color": Color(1.0, 0.2, 0.8)},
 		],
 		"sign": "OPENAI FOUNDRY",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
@@ -2045,11 +2070,23 @@ static func _gpt() -> Dictionary:
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
-			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(12.0, 7.2, -12.0), "width": 3.5},
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(12.0, 7.2, -18.0), "width": 3.5},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
-			{"pos": Vector3(12.0, 0, -12.0), "height": 7.0, "radius": 3.2},
+			# Moved from (12,-12) to (12,-18): the two towers used to sit only
+			# ~6.3 m apart, and tower #2's ground-level ramp (corner-to-corner
+			# at z=-13.6) ran straight through tower #1's own corner-2 landing
+			# deck footprint (x[14.1,17.9] z[-13.9,-10.1]) — ramp_probe caught
+			# it as a genuine embedded-geometry clash, not just tight
+			# clearance (shrinking the radius instead was tried first, but a
+			# smaller radius crowds this tower's OWN corner landings — 3.8 m
+			# square decks only radius*2 apart — into each other, trading one
+			# ramp_probe failure for others). Pushing the base further out
+			# keeps radius/height (and hence this tower's own internal
+			# geometry) untouched; the paired "stairs" sky-bridge entry below
+			# is updated to the same new z so it still lands on the roof.
+			{"pos": Vector3(12.0, 0, -18.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"ALIGNMENT LAYER: PURGED",
