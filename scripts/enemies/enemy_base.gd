@@ -899,6 +899,7 @@ func _clear_hit_flash() -> void:
 			m.material_overlay = null
 
 var _shed_stage: int = 0 ## How many armour panels have torn off (one per health threshold).
+var _weak_core: MeshInstance3D = null ## Glowing precision target exposed once the first panel sheds.
 
 func _on_damaged(_amount: float, source: Node) -> void:
 	if source and source is Node3D:
@@ -956,10 +957,13 @@ func _on_damaged(_amount: float, source: Node) -> void:
 			if frac <= thr:
 				stage += 1
 		if stage > _shed_stage:
+			var first_shed := _shed_stage == 0
 			_shed_stage = stage
 			var off := global_position - src_pos
 			off.y = 0.0
 			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
+			if first_shed:
+				_expose_weak_core() # first panel gone: bare a crit-able core on the chassis
 
 
 ## The attack wind-up made visible + audible: a charging energy orb that swells
@@ -1216,7 +1220,10 @@ func _on_died(_source: Node) -> void:
 	if _spark_emitter and is_instance_valid(_spark_emitter):
 		_spark_emitter.queue_free()
 		_spark_emitter = null
-	
+	if _weak_core and is_instance_valid(_weak_core):
+		_weak_core.queue_free() # wreck shouldn't keep pulsing a crit target
+		_weak_core = null
+
 	# Spawn visual and audio explosion
 	var exp_fx := EXPLOSION.instantiate()
 	get_parent().add_child(exp_fx)
@@ -1357,6 +1364,54 @@ func _spawn_part_debris() -> void:
 		tw.tween_interval(randf_range(1.6, 2.4))
 		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(chunk.queue_free)
+
+## Bares a small glowing core on the chassis the instant the first armour panel
+## sheds — a precision-reward mechanic: sustained fire on the same spot pays off
+## with a crit (see weakpoint_multiplier). Bosses (score_value >= 1000) are
+## hand-tuned HP bags and skip it so their fight isn't shortcut by one exposed
+## button. Constraint: it must read as "shoot me" at combat distance, so it
+## sits mid-torso (same height rule as the menace light) and gently pulses.
+func _expose_weak_core() -> void:
+	if score_value >= 1000 or _weak_core != null:
+		return
+	# Mirror _build_menace_glow's mid-torso height so the core lands in the same
+	# readable spot every chassis already flares its damage light from.
+	var top := 0.0
+	for mi in _mesh_instances:
+		if is_instance_valid(mi) and mi.mesh:
+			var aabb: AABB = mi.global_transform * mi.mesh.get_aabb()
+			top = maxf(top, aabb.end.y - global_position.y)
+	var h := clampf(top * 0.55, 0.8, 3.2)
+	var rm := _visual_root as RobotModel
+	var col := rm.menace_color if (rm and rm.menace_glow > 0.0) else Color(1.0, 0.35, 0.1)
+	_weak_core = MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.16
+	sm.height = 0.32
+	_weak_core.mesh = sm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 6.0
+	_weak_core.material_override = mat
+	_weak_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_weak_core.position = Vector3(0, h, 0)
+	add_child(_weak_core)
+	# Gentle scale pulse so it reads as "alive"/targetable without being a strobe.
+	var tw := _weak_core.create_tween().set_loops()
+	tw.tween_property(_weak_core, "scale", Vector3.ONE * 1.3, 0.55) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(_weak_core, "scale", Vector3.ONE, 0.55) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Damage bonus for a hit landing near the exposed core: 1.6x within 0.45m of it,
+## else no bonus. Weapon code multiplies damage by this (see weapon.gd/projectile.gd).
+func weakpoint_multiplier(hit_pos: Vector3) -> float:
+	if _weak_core == null or not is_instance_valid(_weak_core):
+		return 1.0
+	return 1.6 if hit_pos.distance_to(_weak_core.global_position) <= 0.45 else 1.0
 
 ## A single armour panel torn off the chassis at a damage threshold: a flat
 ## metal plate with a faintly-hot torn edge, flung off toward the impact and

@@ -264,14 +264,19 @@ func _on_body_entered(body: Node) -> void:
 	# Enemy rounds (splash mask excludes the player) land their hit here instead.
 	var world_hit_damageable: Node = null
 	if direct_damage and body != null:
+		var enemy_node := body
 		var d := body.get_node_or_null("Damageable")
-		var node := body
-		while d == null and node != null:
-			node = node.get_parent()
-			if node:
-				d = node.get_node_or_null("Damageable")
+		while d == null and enemy_node != null:
+			enemy_node = enemy_node.get_parent()
+			if enemy_node:
+				d = enemy_node.get_node_or_null("Damageable")
 		if d:
-			d.apply_damage(_damage, _shooter)
+			var hit_dmg := _damage
+			var weak_mult := 1.0
+			if enemy_node and enemy_node.has_method("weakpoint_multiplier"):
+				weak_mult = enemy_node.weakpoint_multiplier(global_position)
+			hit_dmg *= weak_mult
+			d.apply_damage(hit_dmg, _shooter, weak_mult > 1.0)
 		world_hit_damageable = d
 	elif body != null:
 		world_hit_damageable = _damageable_of(body)
