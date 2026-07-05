@@ -17,6 +17,16 @@ extends Node
 enum Quality { LOW, MEDIUM, HIGH, ULTRA }
 var quality: Quality = Quality.HIGH
 
+## True for exactly one boot: the very first time this install has ever
+## loaded settings.cfg (no "video"/"quality" key yet). GPU-name heuristics lie
+## constantly (integrated vs discrete naming, driver string differences) — a
+## short measured render burn (see QualityBenchmark) behind the main menu is
+## honest about what this machine can push, so the menu benchmarks once and
+## picks a starting tier instead of guessing. Existing installs never see
+## this go true again once a quality key exists. Defaults to HIGH pre-benchmark
+## (the fallback if the benchmark can't run, e.g. headless).
+var needs_auto_quality: bool = false
+
 # Display / input preferences (also persisted to settings.cfg). The player reads
 # fov / sensitivity / invert_y on spawn; max_fps applies immediately.
 var fov: float = 85.0
@@ -937,6 +947,11 @@ func _load_settings() -> void:
 	# high-res screens start at a ~1440p-equivalent internal res + FSR2 upscale.
 	if not (loaded and cf.has_section_key("video", "render_scale")):
 		render_scale = _auto_render_scale()
+	# First-run-ever (no persisted quality key): flag the main menu to run the
+	# QualityBenchmark. `quality` stays at its HIGH default in the meantime —
+	# that's the fallback if the benchmark can't run (e.g. headless).
+	if not (loaded and cf.has_section_key("video", "quality")):
+		needs_auto_quality = true
 
 ## First-run render scale: 1.0 (native) up to 1600-row screens, then whatever
 ## scale gives a ~1440p-tall internal resolution, floored at 0.5.

@@ -20,6 +20,8 @@ func _ready() -> void:
 	_refresh_graphics_label()
 	_build_extra_settings()
 	_show_panel(_main)
+	if GraphicsSettings.needs_auto_quality:
+		_run_auto_quality_benchmark()
 
 var _fps_btn: Button
 
@@ -443,6 +445,42 @@ func _refresh_graphics_label() -> void:
 	_graphics_label.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 	_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
 	_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
+
+## First launch ever (no persisted quality key): runs QualityBenchmark as an
+## async child so it never blocks menu interactivity — its SubViewport isn't
+## attached anywhere visible, it just renders offscreen behind the menu.
+func _run_auto_quality_benchmark() -> void:
+	# Cleared BEFORE the benchmark finishes (right here, at start): the
+	# language/preset pickers reload the whole scene (see reload_current_scene
+	# below), and a reload mid-benchmark must not be able to kick off a second
+	# one from the freshly-instanced menu.
+	GraphicsSettings.needs_auto_quality = false
+	var bench := QualityBenchmark.new()
+	bench.finished.connect(_on_auto_quality_finished)
+	add_child(bench)
+
+func _on_auto_quality_finished(tier: int) -> void:
+	GraphicsSettings.set_quality(tier)
+	_refresh_graphics_label()
+	_show_auto_quality_toast(GraphicsSettings.LABELS[tier])
+
+## Transient "AUTO QUALITY: <TIER>" banner telling the player what the
+## first-run benchmark picked. Fades itself out and frees — no dismiss needed.
+func _show_auto_quality_toast(label_text: String) -> void:
+	var toast := Label.new()
+	toast.text = tr("AUTO QUALITY: %s") % label_text
+	toast.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	toast.add_theme_font_size_override("font_size", 24)
+	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.anchor_right = 1.0
+	toast.offset_top = 24
+	toast.offset_bottom = 60
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(toast)
+	var tween := create_tween()
+	tween.tween_interval(3.0)
+	tween.tween_property(toast, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(toast.queue_free)
 
 # --- main ---
 func _on_play_pressed() -> void:
