@@ -834,7 +834,8 @@ func _add_detail_mesh(mesh: Mesh, pos: Vector3, yaw: float) -> void:
 # ---------- global illumination ----------
 
 func _build_gi(def: Dictionary) -> void:
-	# Heavy real-time GI is High-quality only. Balanced/Low skip it entirely.
+	# Reflection probe (+ the open-sky SDFGI tuning below) is High-quality
+	# only. Balanced/Low skip it entirely.
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	if gs == null or not gs.has_method("is_high") or not gs.is_high():
 		return
@@ -846,8 +847,12 @@ func _build_gi(def: Dictionary) -> void:
 		# blotchy color-bleed smears across the walls. Sky ambient looks cleaner.
 		if _env:
 			_env.sdfgi_enabled = false
-	else:
-		# Indoor levels: a baked VoxelGI covering the play space.
+	elif gs.tier() >= GraphicsSettings.Quality.ULTRA:
+		# Indoor levels: a baked VoxelGI covering the play space. ULTRA-only —
+		# measured ~13 ms at 4K on a mid GPU (tools/perf_diag) for a subtle
+		# bounce contribution in interiors that are already mostly emissive-lit;
+		# HIGH drops it for the frame time, ULTRA is the no-compromises tier
+		# that can still afford it.
 		var vgi := VoxelGI.new()
 		vgi.size = Vector3(fs.x + 4.0, 8.0, fs.y + 4.0)
 		vgi.position = Vector3(0, 4, 0)
@@ -858,6 +863,8 @@ func _build_gi(def: Dictionary) -> void:
 
 	# Reflection probe: grounded, off-screen reflections on metal robots/floors
 	# that SSR (screen-space only) can't provide. Box-projected to the arena.
+	# Stays at HIGH+ regardless of VoxelGI — UPDATE_ONCE is cheap and carries
+	# the metallic look on its own.
 	var rp := ReflectionProbe.new()
 	rp.size = Vector3(fs.x + 2.0, 14.0, fs.y + 2.0)
 	rp.position = Vector3(0, 5.0, 0)

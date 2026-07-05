@@ -8,12 +8,13 @@ extends Node
 ##          volumetric/GI, hard shadows + small atlases, no ambient dust.
 ## MEDIUM — balanced: FSR2 from 77% internal res, SSAO only, soft-low shadows,
 ##          light ambient dust.
-## HIGH   — great looking: native res, all screen-space effects + GI +
-##          volumetric fog, soft-high shadows + 8K sun shadow atlas, TAA,
-##          dense ambient dust.
-## ULTRA  — no compromises: HIGH plus MSAA 2x layered under TAA, ultra-soft
-##          shadow filtering, an 8K positional shadow atlas, longer SSR
-##          marches and ~40% denser ambient detail (dust/stars/puddles/grime).
+## HIGH   — great looking: native res, all screen-space effects + reflection
+##          probe + volumetric fog, soft-high shadows + 8K sun shadow atlas,
+##          TAA, dense ambient dust.
+## ULTRA  — no compromises: HIGH plus a baked VoxelGI real-time bounce pass
+##          (indoor levels), MSAA 2x layered under TAA, ultra-soft shadow
+##          filtering, an 8K positional shadow atlas, longer SSR marches and
+##          ~40% denser ambient detail (dust/stars/puddles/grime).
 enum Quality { LOW, MEDIUM, HIGH, ULTRA }
 var quality: Quality = Quality.HIGH
 
