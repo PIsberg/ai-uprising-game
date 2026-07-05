@@ -1352,7 +1352,53 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 
 func _build_stairs(def: Dictionary) -> void:
 	for s in def.get("stairs", []):
-		_add_ramp_between(s["from"], s["to"], s.get("width", 3.0), 0.5, "SkyBridge")
+		var from: Vector3 = s["from"]
+		var to: Vector3 = s["to"]
+		_add_ramp_between(from, to, s.get("width", 3.0), 0.5, "SkyBridge")
+		# Sky-bridge edge lights: this same array also holds ground-to-elevated
+		# approach ramps (one endpoint near y=0) — only the TRUE sky-bridges
+		# (both endpoints high, up at tower-roof height) get the deck-edge
+		# treatment, so a short entry stair doesn't grow bridge lighting.
+		if minf(from.y, to.y) >= 5.0:
+			_dress_bridge_edges(from, to, s.get("width", 3.0), def)
+
+## Thin emissive strips along both long edges of a sky-bridge deck — unlit
+## geometry only, no Light3D (a perf pass culled per-entity real lights) — so
+## the bridge's silhouette reads against a bright sky instead of vanishing as
+## a featureless black plank. Runs on every detail tier: this is a
+## readability fix, not decoration, and it's only two thin strips per bridge.
+func _dress_bridge_edges(from: Vector3, to: Vector3, width: float, def: Dictionary) -> void:
+	var delta := to - from
+	var horiz := Vector3(delta.x, 0.0, delta.z)
+	var run := horiz.length()
+	if run < 2.0:
+		return
+	# Same yaw/pitch basis as _build_ramp_wedge's visual mesh, so the strips
+	# tilt to follow the deck's slope instead of poking through/floating above
+	# it at the ends.
+	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
+	var pitch := rad_to_deg(atan2(delta.y, run))
+	var vb := Basis(Vector3.UP, deg_to_rad(yaw)) * Basis(Vector3.RIGHT, deg_to_rad(pitch))
+	var deck_top := (from + to) * 0.5 - Vector3.UP * 0.05 # matches the ramp mesh's embedded top surface
+	var col: Color = _theme_color(def).lerp(Color(1.0, 0.75, 0.35), 0.5)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	# Bright enough to read as a lit edge from the far end of a 25-30 m deck
+	# in a scene with a bright dusk sky behind it (a dim strip washes out).
+	mat.emission_energy_multiplier = 3.2
+	var length := run - 1.0 # inset from both ends so strips don't poke past the tower landings
+	for side in [1.0, -1.0]:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.09, 0.09, length)
+		bm.material = mat
+		mi.mesh = bm
+		mi.transform = Transform3D(vb, deck_top + vb.x * (width * 0.5 - 0.1) * side + vb.y * 0.03)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 ## Climbable tower: a central column "building" with a square-spiral ramp wrapping
 ## up its outside to a top vantage platform — the player's route into the vertical
@@ -1538,7 +1584,90 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 		var loot := pk.instantiate() as Node3D
 		add_child(loot)
 		loot.global_position = base + Vector3(0, roof_y + 0.9, 0)
+	_dress_tower_silhouette(base, height, radius)
 	_tower_count += 1
+
+## Emissive-only silhouette dressing for a tower's shaft: a warm trim ring
+## near the roof plus a scatter of small "window" quads up the central
+## column's faces. Fixes towers/sky-bridges rendering as huge featureless
+## BLACK slabs against a bright dusk/outdoor sky — unlit geometry with no
+## emissive detail. No Light3D nodes (a perf pass just culled per-entity
+## lights) — everything here is unshaded emissive mesh. Runs on every detail
+## tier: it's a small, fixed handful of meshes per tower, a readability fix
+## rather than density-gated decoration.
+func _dress_tower_silhouette(base: Vector3, height: float, radius: float) -> void:
+	var trim_col := Color(1.0, 0.75, 0.35)
+	var trim_mat := StandardMaterial3D.new()
+	trim_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	trim_mat.albedo_color = trim_col
+	trim_mat.emission_enabled = true
+	trim_mat.emission = trim_col
+	trim_mat.emission_energy_multiplier = 2.2
+
+	# Trim ring: a thin torus hugging the central column just outside its
+	# radius (column half-width is radius*0.31 — see the TwrColumn collider
+	# above), near the roof but below its underside.
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = radius * 0.5
+	ring_mesh.outer_radius = radius * 0.62
+	ring_mesh.rings = 24
+	ring_mesh.ring_segments = 6
+	ring_mesh.material = trim_mat
+	ring.mesh = ring_mesh
+	ring.position = base + Vector3(0, height * 0.92, 0)
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
+
+	# Windows: a deterministic scatter of small emissive quads flush against
+	# the central column's 4 faces. Seeded from the tower's own position so
+	# rebuilds are stable (no popping between runs of the same level).
+	var warm_white := Color(1.0, 0.92, 0.75)
+	var amber := Color(1.0, 0.65, 0.25)
+	var white_mat := StandardMaterial3D.new()
+	white_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	white_mat.albedo_color = warm_white
+	white_mat.emission_enabled = true
+	white_mat.emission = warm_white
+	# Brighter than the ~1.8 that reads clean up close: at the eye_shot spawn
+	# distance (30-40 m, in a scene whose auto-exposure is keyed to a much
+	# bigger bright ring/sky) a 1.8 window all but disappears into the crushed
+	# exposure. 3.6 is the smallest bump that still reads as a lit window
+	# rather than a floodlight at close range.
+	white_mat.emission_energy_multiplier = 3.6
+	white_mat.cull_mode = BaseMaterial3D.CULL_DISABLED # flat quad flush to the shaft — visible from either side
+	var amber_mat := StandardMaterial3D.new()
+	amber_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	amber_mat.albedo_color = amber
+	amber_mat.emission_enabled = true
+	amber_mat.emission = amber
+	amber_mat.emission_energy_multiplier = 3.6
+	amber_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(base)
+	var col_half := radius * 0.31 # central column half-width (size.x/z = radius*0.62)
+	var n_windows := rng.randi_range(6, 10)
+	# Face normals + the matching yaw so a QuadMesh (front face at local +Z,
+	# yaw 0) faces outward — same convention as _wall_point's inward-facing
+	# signage (yaw = atan2(normal.x, normal.z)).
+	var faces := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
+	for i in n_windows:
+		if rng.randf() < 0.3:
+			continue # a few dark windows so the shaft doesn't read as uniformly lit
+		var normal: Vector3 = faces[rng.randi_range(0, 3)]
+		var tangent := Vector3(-normal.z, 0, normal.x)
+		var t := rng.randf_range(-0.65, 0.65)
+		var y := rng.randf_range(height * 0.12, height * 0.85)
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.5, 0.35)
+		quad.material = amber_mat if rng.randf() < 0.5 else white_mat
+		var win := MeshInstance3D.new()
+		win.mesh = quad
+		win.position = base + normal * (col_half + 0.05) + tangent * (t * col_half * 2.0) + Vector3(0, y, 0)
+		win.rotation.y = atan2(normal.x, normal.z)
+		win.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(win)
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):
