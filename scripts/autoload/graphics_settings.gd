@@ -92,6 +92,16 @@ const FPS_OPTIONS := [0, 30, 60, 120, 144]
 const SETTINGS_PATH := "user://settings.cfg"
 const LABELS := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
 
+## Batch-configure presets for the whole graphics feature set (see apply_preset
+## below). Plain int constants rather than an enum — an enum named e.g.
+## "QUALITY"/"ULTRA" would collide with the bare Quality.QUALITY/ULTRA constants
+## GDScript already exposes in this script's scope.
+const PRESET_PERFORMANCE := 0
+const PRESET_BALANCED := 1
+const PRESET_QUALITY := 2
+const PRESET_ULTRA := 3
+const PRESET_LABELS := ["Performance", "Balanced", "Quality", "Ultra"]
+
 ## Selectable UI languages: [locale code, native display name]. English is the
 ## default and the fallback for any string a language hasn't translated yet.
 const LANGUAGES := [
@@ -102,6 +112,14 @@ const LANGUAGES := [
 	["pt", "Português"],
 ]
 var language: String = "en"
+
+## Window presentation mode. BORDERLESS (a full-screen *window*, no exclusive
+## mode switch) is the default because it matches project.godot's existing
+## window/size/mode=3 boot default — adding this picker shouldn't change how
+## the game already presents itself on a fresh install.
+enum WindowMode { FULLSCREEN, BORDERLESS, WINDOWED }
+const WINDOW_MODE_LABELS := ["Fullscreen", "Borderless", "Windowed"]
+var window_mode: WindowMode = WindowMode.BORDERLESS
 
 # ---------- key rebinding ----------
 #
@@ -290,6 +308,7 @@ func _ready() -> void:
 	apply_keybinds() # after GameState's default gamepad injection — see ordering note above
 	_apply_viewport.call_deferred()
 	_apply_hdr_output.call_deferred()
+	_apply_window_mode.call_deferred()
 	Engine.max_fps = max_fps
 
 ## Switch UI language live and persist it. Controls re-translate automatically;
@@ -452,6 +471,64 @@ func set_damage_numbers_enabled(v: bool) -> void:
 	damage_numbers_enabled = v
 	_save_settings()
 
+# ---------- graphics presets ----------
+
+## One-shot batch configuration of the whole graphics feature set (quality tier,
+## render scale, and the per-feature toggles). This is deliberately NOT stored
+## as "the current preset" anywhere — the settings menu always shows a
+## "Preset…" placeholder rather than remembering the last one picked, because
+## any single manual toggle afterward (e.g. turning puddles back on) would
+## silently desync a saved preset label from what's actually configured.
+## Each set_* call below already applies + persists itself, so nothing extra
+## is needed at the end.
+##
+## hdr_output_enabled is NEVER touched here: hdr_output_requested has hung
+## headless/dummy display servers in the past (it's a genuine per-display
+## capability query, not a pure render setting), so it stays a manual-only
+## toggle regardless of preset.
+func apply_preset(p: int) -> void:
+	match p:
+		PRESET_PERFORMANCE:
+			set_quality(Quality.LOW)
+			set_render_scale(0.67)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(false)
+			set_robot_triplanar_enabled(false)
+			set_puddle_ripples_enabled(false)
+			set_advanced_post_process_enabled(false)
+			set_area_lights_enabled(false)
+			set_dof_enabled(false)
+		PRESET_BALANCED:
+			set_quality(Quality.MEDIUM)
+			set_render_scale(0.85)
+			set_gpu_particles_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_volumetric_noise_enabled(false)
+			set_advanced_post_process_enabled(false)
+			set_area_lights_enabled(false)
+			set_dof_enabled(false)
+		PRESET_QUALITY:
+			set_quality(Quality.HIGH)
+			set_render_scale(1.0)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_advanced_post_process_enabled(true)
+			set_area_lights_enabled(true)
+			set_dof_enabled(false)
+		PRESET_ULTRA:
+			set_quality(Quality.ULTRA)
+			set_render_scale(1.0)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_advanced_post_process_enabled(true)
+			set_area_lights_enabled(true)
+			set_dof_enabled(false)
+
 ## Switches the color-grade preset live and persists it.
 func set_color_grade(v: int) -> void:
 	color_grade = clampi(v, 0, ColorGrade.size() - 1) as ColorGrade
@@ -482,6 +559,33 @@ func _apply_hdr_output() -> void:
 	var vp := get_viewport()
 	if vp and "use_hdr_2d" in vp:
 		vp.use_hdr_2d = hdr_output_enabled
+
+# ---------- window mode ----------
+
+## Switches window presentation live and persists it.
+func set_window_mode(m: int) -> void:
+	window_mode = clampi(m, 0, WindowMode.size() - 1) as WindowMode
+	_apply_window_mode()
+	_save_settings()
+
+## Applies window_mode via DisplayServer. Guarded for headless (import runs,
+## the probe/CI harness) — there's no real window there, and calling these on
+## a headless display server is at best a no-op and at worst a crash.
+func _apply_window_mode() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	match window_mode:
+		WindowMode.FULLSCREEN:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		WindowMode.BORDERLESS:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		WindowMode.WINDOWED:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			var size := Vector2i(1600, 900)
+			DisplayServer.window_set_size(size)
+			var screen := DisplayServer.screen_get_size()
+			var screen_pos := DisplayServer.screen_get_position()
+			DisplayServer.window_set_position(screen_pos + (screen - size) / 2)
 
 func _apply_to_live_robots() -> void:
 	if not is_inside_tree():
@@ -824,6 +928,7 @@ func _load_settings() -> void:
 		brightness = clampf(float(cf.get_value("display", "brightness", 1.0)), 0.5, 1.5)
 		combat_callouts_enabled = bool(cf.get_value("accessibility", "combat_callouts", true))
 		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
+		window_mode = clampi(int(cf.get_value("display", "window_mode", WindowMode.BORDERLESS)), 0, WindowMode.size() - 1) as WindowMode
 		var raw_overrides = cf.get_value("keybinds", "overrides", {})
 		keybind_overrides = raw_overrides if raw_overrides is Dictionary else {}
 	# Until the player has touched the Render Scale slider, pick a sane default
@@ -869,6 +974,7 @@ func _save_settings() -> void:
 	cf.set_value("display", "brightness", brightness)
 	cf.set_value("accessibility", "combat_callouts", combat_callouts_enabled)
 	cf.set_value("accessibility", "damage_numbers", damage_numbers_enabled)
+	cf.set_value("display", "window_mode", int(window_mode))
 	cf.set_value("keybinds", "overrides", keybind_overrides)
 
 	cf.save(SETTINGS_PATH)

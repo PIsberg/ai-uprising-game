@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0probe0presetgfx"]
+
+[ext_resource type="Script" path="res://tests/preset_probe.gd" id="1_p"]
+
+[node name="PresetProbe" type="Node"]
+script = ExtResource("1_p")

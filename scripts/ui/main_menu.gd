@@ -26,6 +26,13 @@ var _fps_btn: Button
 ## Adds FOV / sensitivity / invert-Y / framerate controls to the settings panel
 ## at runtime, wired straight to GraphicsSettings (persisted on change).
 func _build_extra_settings() -> void:
+	# Preset / Window rows are added FIRST (before any other runtime row) so
+	# they land at Grid child indices 2/3, right after the scene's GraphicsRow
+	# (index 0) and VolumeRow (index 1) — GridContainer fills 2-per-row in
+	# child order, so this keeps them visually adjacent to the quality stepper.
+	_add_preset_row()
+	_add_window_mode_row()
+
 	var fov_slider := _add_slider_row("Field of View", 60.0, 110.0, 1.0, GraphicsSettings.fov)
 	fov_slider.value_changed.connect(func(v: float): GraphicsSettings.set_fov(v))
 
@@ -160,6 +167,54 @@ func _build_extra_settings() -> void:
 	rebind_btn.pressed.connect(_on_rebind_controls_pressed)
 	_grid.add_child(rebind_btn)
 	# (Back lives in the panel VBox below the grid, so it stays at the bottom.)
+
+## Preset picker: a one-shot batch applicator, not a stored state. The row
+## always shows a "Preset…" placeholder (selected by default and re-selected
+## after every pick) rather than remembering the last preset chosen — any
+## manual toggle afterward (turning one effect back on/off) would otherwise
+## silently desync a saved preset label from what's actually configured.
+func _add_preset_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Preset")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opt.add_item(tr("Preset…"))
+	for label in GraphicsSettings.PRESET_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = 0 # placeholder — never reflects "the current preset" (see above)
+	opt.item_selected.connect(func(idx: int):
+		if idx == 0: # the placeholder itself — nothing to apply
+			return
+		# Placeholder occupies index 0, so preset ids are shifted by one.
+		GraphicsSettings.apply_preset(idx - 1)
+		get_tree().reload_current_scene())
+	row.add_child(lbl)
+	row.add_child(opt)
+	_grid.add_child(row)
+
+## Window mode picker: Fullscreen (exclusive) / Borderless (windowed
+## fullscreen) / Windowed. Applies live via DisplayServer — no scene reload
+## needed since nothing about the menu's own layout depends on it.
+func _add_window_mode_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Window")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for label in GraphicsSettings.WINDOW_MODE_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = int(GraphicsSettings.window_mode)
+	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_window_mode(idx))
+	row.add_child(lbl)
+	row.add_child(opt)
+	_grid.add_child(row)
 
 ## Color-grade picker: an OptionButton over GraphicsSettings' named presets,
 ## applied live so you can preview the mood shift without leaving the menu.

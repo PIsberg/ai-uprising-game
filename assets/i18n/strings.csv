@@ -155,3 +155,12 @@ Pause,Pause,Pausa,Pause,Pause,Pausa
 "Bound ""%s"" to %s.","Bound ""%s"" to %s.","""%s"" asignado a %s.","« %s » associé à %s.","„%s“ auf %s gelegt.","""%s"" vinculado a %s."
 "Bound ""%s"" to %s — removed from: %s","Bound ""%s"" to %s — removed from: %s","""%s"" asignado a %s — quitado de: %s","« %s » associé à %s — retiré de : %s","„%s“ auf %s gelegt — entfernt von: %s","""%s"" vinculado a %s — removido de: %s"
 All controls reset to defaults.,All controls reset to defaults.,Todos los controles restablecidos.,Toutes les commandes ont été réinitialisées.,Alle Steuerungen wurden zurückgesetzt.,Todos os controles foram redefinidos.
+Preset,Preset,Preajuste,Préréglage,Voreinstellung,Predefinição
+Performance,Performance,Rendimiento,Performance,Leistung,Desempenho
+Balanced,Balanced,Equilibrado,Équilibré,Ausgewogen,Equilibrado
+Quality,Quality,Calidad,Qualité,Qualität,Qualidade
+Ultra,Ultra,Ultra,Ultra,Ultra,Ultra
+Window,Window,Ventana,Fenêtre,Fenster,Janela
+Fullscreen,Fullscreen,Pantalla completa,Plein écran,Vollbild,Ecrã inteiro
+Borderless,Borderless,Sin bordes,Sans bordure,Randlos,Sem bordas
+Windowed,Windowed,Ventana,Fenêtré,Fenster,Janela
