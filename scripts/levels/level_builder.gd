@@ -241,6 +241,10 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
+	## Openings are the deadliest seconds (playtest: 100->16 HP before the
+	## first orientation). Enemies still close in and jockey for position;
+	## they just hold fire briefly so a fresh drop-in isn't an ambush.
+	GameState.start_attack_grace(2.5)
 
 ## Perf post-pass over the static dressing. Runs before tasks/pickups/enemies
 ## exist, so gameplay objects are never touched. Small decorative meshes

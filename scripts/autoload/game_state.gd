@@ -464,6 +464,20 @@ func register_hit() -> void:
 func register_damage_taken(amount: float) -> void:
 	stat_damage_taken += amount
 
+# ---------- opening-seconds fairness (spawn / respawn attack grace) ----------
+var _attack_grace_until_ms: int = 0
+
+## Playtests show players lose most of their HP in the first couple of
+## seconds after a level starts (or a convoy respawn drops them back into a
+## live pack) — before there's been any chance to orient. Enemies still see,
+## chase, and jockey for position during grace; they just hold off on
+## starting a new telegraph/attack until it lapses.
+func start_attack_grace(seconds: float) -> void:
+	_attack_grace_until_ms = Time.get_ticks_msec() + int(seconds * 1000.0)
+
+func attack_grace_active() -> bool:
+	return Time.get_ticks_msec() < _attack_grace_until_ms
+
 ## Letter grade from accuracy, best combo, and damage soaked. Returns the grade
 ## plus a stats dict for the end screen.
 func grade_level() -> Dictionary:

@@ -117,7 +117,7 @@ func _state_attack(delta: float) -> void:
 	_hover += delta * 2.0
 	var ty: float = target.global_position.y + hover_height + sin(_hover) * 0.3
 	velocity.y = move_toward(velocity.y, (ty - global_position.y) * 4.0, 30.0 * delta)
-	if _attack_timer <= 0.0 and _burst_left <= 0:
+	if _attack_timer <= 0.0 and _burst_left <= 0 and not GameState.attack_grace_active():
 		_burst_left = burst_count
 		_burst_t = 0.0
 		_attack_timer = attack_interval()

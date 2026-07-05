@@ -634,6 +634,11 @@ func _state_attack(delta: float) -> void:
 		_combat_strafe(delta) # circle-strafe at range instead of standing still
 	else:
 		_decelerate()
+	# Spawn/respawn grace: still chase, flank, and space above — just don't
+	# start (or continue past wind-up into) a new attack while it's active,
+	# so a fresh drop-in gets a couple of seconds to get its bearings.
+	if GameState.attack_grace_active():
+		return
 	# Wind-up telegraph: charge for telegraph_time (eye flare + whine) so the shot
 	# is readable and dodgeable, THEN fire. Units with telegraph_time 0 fire
 	# instantly (or telegraph their own way, like the sniper's charged beam).

@@ -729,6 +729,7 @@ func _on_player_died(_source: Node) -> void:
 			< player.global_position.distance_to((b as Node3D).global_position))
 	for i in range(4, live.size()):
 		(live[i] as Node).queue_free()
+	GameState.start_attack_grace(2.5) # same opening-seconds fairness as a fresh level
 
 func _physics_process(delta: float) -> void:
 	_pad_cd = maxf(0.0, _pad_cd - delta) # pads stay usable even at the terminus

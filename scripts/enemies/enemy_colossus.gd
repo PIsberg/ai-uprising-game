@@ -267,6 +267,9 @@ func _choose_attack(dist: float) -> void:
 	# Mid-action (beam/slam) locks out new attacks.
 	if _beam_time > 0.0 or _slam_windup > 0.0:
 		return
+	# Opening-seconds grace: still lumber into position, just don't start anything new.
+	if GameState.attack_grace_active():
+		return
 	# Enraged or cornered -> ground slam.
 	if _slam_cd <= 0.0 and (dist <= slam_trigger_range or (_phase() == 3 and dist <= slam_radius * 1.4)):
 		_begin_slam()

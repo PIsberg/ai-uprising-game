@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c1g8fq5wq7t2n"]
+
+[ext_resource type="Script" path="res://tests/grace_probe.gd" id="1_p"]
+
+[node name="GraceProbe" type="Node3D"]
+script = ExtResource("1_p")

@@ -102,7 +102,7 @@ func _state_attack(delta: float) -> void:
 	velocity.z = move_toward(velocity.z, dir.z * move_speed * pull, 9.0 * delta)
 	velocity.y = move_toward(velocity.y, (desired_y - global_position.y) * 4.0, 30.0 * delta)
 	_face_dir(dir, delta)
-	if _breach_cd <= 0.0 and dist <= attack_range:
+	if _breach_cd <= 0.0 and dist <= attack_range and not GameState.attack_grace_active():
 		_start_breach()
 
 func _start_breach() -> void:

@@ -80,13 +80,13 @@ func _state_attack(delta: float) -> void:
 		var side := to.normalized().cross(Vector3.UP) * _dodge_dir
 		velocity.x = move_toward(velocity.x, side.x * 9.0, 45.0 * delta)
 		velocity.z = move_toward(velocity.z, side.z * 9.0, 45.0 * delta)
-		if _attack_timer <= 0.0:
+		if _attack_timer <= 0.0 and not GameState.attack_grace_active():
 			_start_burst()
 			_attack_timer = attack_interval()
 	else:
 		_seeking_cover = false
 		_decelerate()
-		if _attack_timer <= 0.0:
+		if _attack_timer <= 0.0 and not GameState.attack_grace_active():
 			_start_burst()
 			_attack_timer = attack_interval()
 

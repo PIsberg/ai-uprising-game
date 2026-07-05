@@ -127,7 +127,7 @@ func _state_attack(delta: float) -> void:
 	var ty: float = target.global_position.y + fly_h + sin(_hover) * 0.25
 	velocity.y = move_toward(velocity.y, (ty - global_position.y) * 5.0, 30.0 * delta)
 
-	if _attack_timer <= 0.0 and _peel <= 0.0 and not _charging:
+	if _attack_timer <= 0.0 and _peel <= 0.0 and not _charging and not GameState.attack_grace_active():
 		_begin_spit()
 		_attack_timer = attack_interval()
 
