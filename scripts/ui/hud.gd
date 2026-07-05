@@ -1274,9 +1274,9 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	# Rattle the health readout so a hit is felt on the HUD, not just the screen.
 	_juice_shake(health_bar, 6.0)
 	_juice_shake(health_label, 6.0)
-	# Point an edge wedge toward the attacker; it tracks the world position as the
-	# player turns (handled inside the DamageIndicator).
-	if src is Node3D and _dmg_indicator:
+	# Point an arc toward the attacker (skip self-damage — a grenade at your own
+	# feet has no "direction" worth showing).
+	if src is Node3D and src != _player_ref and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
 	# Badly hurt? The overlord can't resist kicking you while you're down.
 	if _player_ref and _player_ref.hp and _player_ref.hp.max_health > 0.0:
