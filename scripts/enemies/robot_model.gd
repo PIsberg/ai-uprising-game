@@ -244,6 +244,9 @@ func _build_menace_glow() -> void:
 	_menace_light.omni_range = 6.0
 	_menace_light.shadow_enabled = false
 	_menace_light.position = Vector3(0, clampf(top * 0.55, 0.8, 3.2), 0)
+	# Hidden until a hit flares it: even a zero-energy omni is a live light the
+	# clustered renderer carries — ~1 per enemy adds up on busy levels.
+	_menace_light.visible = false
 	add_child(_menace_light)
 
 ## Mounts a bright emissive iris at every EyeLight so the optic visibly glows in
@@ -264,6 +267,12 @@ func _build_eye_optics() -> void:
 				var ab: AABB = mi.mesh.get_aabb()
 				span = maxf(span, maxf(ab.size.x, ab.size.y))
 		r = clampf(span * 0.06, 0.05, 0.16)
+	# Below HIGH the OmniLight pool each optic throws on surroundings is culled
+	# (one live light per enemy is real clustering cost); the emissive iris —
+	# the part you actually see — stays on every tier.
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var keep_light_pools: bool = gs == null or not gs.has_method("tier") \
+			or gs.tier() >= 2
 	for light in _find_eye_lights(root):
 		var col: Color = light.light_color
 		var mat := StandardMaterial3D.new()
@@ -281,7 +290,12 @@ func _build_eye_optics() -> void:
 		sm.material = mat
 		iris.mesh = sm
 		iris.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		light.add_child(iris) # rides the eye-light node, so it tracks the optic
+		# Sibling of the light (NOT a child): hiding the light must not hide
+		# the iris. Same parent transform, so it still tracks the optic.
+		iris.transform = light.transform
+		light.get_parent().add_child(iris)
+		if not keep_light_pools:
+			light.visible = false
 		_eye_mats.append(mat)
 	if _eye_mats.is_empty():
 		return
@@ -318,8 +332,9 @@ func damage_blink() -> void:
 			m.emission_energy_multiplier = 2.4 * menace_glow
 			
 	if _menace_light:
+		_menace_light.visible = true
 		_menace_light.light_energy = 3.0 * menace_glow
-		
+
 	_blink_tween = create_tween().set_parallel(true)
 	for m in _glow_mats:
 		if m is ShaderMaterial:
@@ -331,6 +346,7 @@ func damage_blink() -> void:
 			
 	if _menace_light:
 		_blink_tween.tween_property(_menace_light, "light_energy", 0.0, 0.28)
+		_blink_tween.chain().tween_callback(func(): _menace_light.visible = false)
 
 ## Power-down on death: the core light dies and the ember sheen drains so the
 ## topple reads as a dark wreck, not a still-live machine.
@@ -340,7 +356,9 @@ func _extinguish() -> void:
 	for em in _eye_mats:
 		create_tween().tween_property(em, "emission_energy_multiplier", 0.0, 0.8)
 	if _menace_light:
-		create_tween().tween_property(_menace_light, "light_energy", 0.0, 0.7)
+		var mt := create_tween()
+		mt.tween_property(_menace_light, "light_energy", 0.0, 0.7)
+		mt.tween_callback(func(): _menace_light.visible = false)
 	for m in _glow_mats:
 		if m is ShaderMaterial:
 			create_tween().tween_method(
@@ -361,7 +379,13 @@ func _apply_lean(delta: float) -> void:
 	var lat := clampf(lv.x / spd, -1.0, 1.0)  # +1 strafing right
 	var t := clampf(8.0 * delta, 0.0, 1.0)
 	_lean_pitch = lerpf(_lean_pitch, fwd * lean_max, t)
-	_lean_roll = lerpf(_lean_roll, -lat * bank_max, t)
+	# Battle-damage list: a mauled machine sits off-true (grows with the
+	# parent's damage_heat), so "nearly wrecked" reads at a glance even between
+	# hits — and a listing chassis mid-frenzy-charge sells the desperation.
+	var list := 0.0
+	if "damage_heat" in _parent:
+		list = _parent.damage_heat * 0.09
+	_lean_roll = lerpf(_lean_roll, -lat * bank_max + list, t)
 	_mesh.transform = Transform3D(
 		_mesh_base.basis * Basis.from_euler(Vector3(_lean_pitch, 0.0, _lean_roll)),
 		_mesh_base.origin)

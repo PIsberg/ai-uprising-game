@@ -248,6 +248,7 @@ func _ready() -> void:
 	_camera_base_y = camera.position.y
 	_apply_user_settings()
 	_build_dof_overlay()
+	_build_fill_light()
 	_fov_base = camera.fov
 	_register_dash_action()
 	_register_melee_action()
@@ -284,6 +285,22 @@ func _apply_supply_ammo() -> void:
 		for w in wm.weapons:
 			if w and w.has_method("add_ammo"):
 				w.add_ammo(GameState.supply_ammo)
+
+## Soft personal fill light: guarantees the player's immediate surroundings stay
+## readable in crushed-dark scenes (dusk streets, unlit corners, wall shadows)
+## without lifting the whole scene — tight range, shadowless, zero specular so
+## it never paints highlights or doubles render passes. One omni ≈ free.
+func _build_fill_light() -> void:
+	var fill := OmniLight3D.new()
+	fill.name = "FillLight"
+	fill.light_energy = 0.55
+	fill.omni_range = 10.0
+	fill.omni_attenuation = 1.6 # fades out well before the range cap
+	fill.shadow_enabled = false
+	fill.light_specular = 0.0
+	fill.light_color = Color(1.0, 0.97, 0.92)
+	fill.position = Vector3(0, 1.4, 0)
+	add_child(fill)
 
 ## Optional cinematic depth-of-field: a fullscreen quad under the camera running
 ## shaders/dof.gdshader. Built once and hidden until enabled in settings.

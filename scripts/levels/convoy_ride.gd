@@ -702,6 +702,13 @@ func _board_player() -> void:
 		var dmg := p.get_node_or_null("Damageable")
 		if dmg and dmg.has_signal("died"):
 			dmg.died.connect(_on_player_died)
+	# Opening beats: the ride explains itself before the first wave lands —
+	# the persistent objective line alone is easy to miss while being dropped
+	# onto a truck that's already rolling.
+	_toast("PURSUIT INBOUND — HOLD THE DECK TO THE INTERCHANGE")
+	get_tree().create_timer(7.5).timeout.connect(func():
+		if not _arrived:
+			_toast("REAR ZIP PAD FIRES WHEN A DEMO PLATFORM IS IN RANGE"))
 
 ## A checkpoint respawn drops the player back onto a deck the pursuit never
 ## left — world state is deliberately NOT reset (see GameState), so a mid-ride
@@ -741,6 +748,10 @@ func _physics_process(delta: float) -> void:
 	if _truck.global_position.z <= end_z + 0.05:
 		_arrived = true
 		_toast("INTERCHANGE REACHED — PURSUIT BREAKING OFF")
+		# The portal sits off the roadside (visible from the deck, but a first-
+		# timer's instinct is to walk out over the cab): say the quiet part.
+		get_tree().create_timer(3.0).timeout.connect(func():
+			_toast("HOP THE RAIL — EXTRACTION PORTAL AT THE ROADSIDE"))
 		return
 	# Pursuit waves, spawned around the rolling truck — but never into an
 	# already-packed sky. Waves land every 11 s no matter what, so a swarm

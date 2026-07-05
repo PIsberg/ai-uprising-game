@@ -177,21 +177,43 @@ theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
 text = "Settings"
 horizontal_alignment = 1
 
-[node name="Graphics" type="Button" parent="Center/VBox/SettingsPanel"]
-custom_minimum_size = Vector2(360, 52)
+[node name="Grid" type="GridContainer" parent="Center/VBox/SettingsPanel"]
 layout_mode = 2
-text = "Graphics: HIGH"
+columns = 2
+theme_override_constants/h_separation = 48
+theme_override_constants/v_separation = 8
 
-[node name="VolumeRow" type="HBoxContainer" parent="Center/VBox/SettingsPanel"]
+[node name="GraphicsRow" type="HBoxContainer" parent="Center/VBox/SettingsPanel/Grid"]
+custom_minimum_size = Vector2(360, 44)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GfxDown" type="Button" parent="Center/VBox/SettingsPanel/Grid/GraphicsRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "−"
+
+[node name="Graphics" type="Label" parent="Center/VBox/SettingsPanel/Grid/GraphicsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Graphics: HIGH"
+horizontal_alignment = 1
+
+[node name="GfxUp" type="Button" parent="Center/VBox/SettingsPanel/Grid/GraphicsRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "+"
+
+[node name="VolumeRow" type="HBoxContainer" parent="Center/VBox/SettingsPanel/Grid"]
 custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="VolumeLabel" type="Label" parent="Center/VBox/SettingsPanel/VolumeRow"]
+[node name="VolumeLabel" type="Label" parent="Center/VBox/SettingsPanel/Grid/VolumeRow"]
 layout_mode = 2
 text = "Master Volume"
 
-[node name="VolumeSlider" type="HSlider" parent="Center/VBox/SettingsPanel/VolumeRow"]
+[node name="VolumeSlider" type="HSlider" parent="Center/VBox/SettingsPanel/Grid/VolumeRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -250,7 +272,8 @@ text = "Back"
 [connection signal="pressed" from="Center/VBox/DiffButtons/Normal" to="." method="_on_normal_pressed"]
 [connection signal="pressed" from="Center/VBox/DiffButtons/Hard" to="." method="_on_hard_pressed"]
 [connection signal="pressed" from="Center/VBox/DiffButtons/Back" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="Center/VBox/SettingsPanel/Graphics" to="." method="_on_graphics_pressed"]
-[connection signal="value_changed" from="Center/VBox/SettingsPanel/VolumeRow/VolumeSlider" to="." method="_on_volume_changed"]
+[connection signal="pressed" from="Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxDown" to="." method="_on_graphics_down_pressed"]
+[connection signal="pressed" from="Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxUp" to="." method="_on_graphics_up_pressed"]
+[connection signal="value_changed" from="Center/VBox/SettingsPanel/Grid/VolumeRow/VolumeSlider" to="." method="_on_volume_changed"]
 [connection signal="pressed" from="Center/VBox/SettingsPanel/BackS" to="." method="_on_settings_back_pressed"]
 [connection signal="pressed" from="Center/VBox/ControlsPanel/BackC" to="." method="_on_controls_back_pressed"]

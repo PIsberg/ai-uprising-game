@@ -5,7 +5,9 @@ shader_type canvas_item;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 
 uniform float aberration : hint_range(0.0, 4.0) = 1.1;   // px offset at the corners
-uniform float vignette_strength : hint_range(0.0, 1.5) = 0.42;
+// 0.42 -> 0.34: the heavier ring cost ~27% brightness at bottom-centre, which
+// pushed already-dark dusk ground into unreadable black (suburb playtest).
+uniform float vignette_strength : hint_range(0.0, 1.5) = 0.34;
 uniform float vignette_softness : hint_range(0.1, 1.0) = 0.55;
 uniform float grain_amount : hint_range(0.0, 0.2) = 0.035;
 uniform float sharpen : hint_range(0.0, 1.5) = 0.35;

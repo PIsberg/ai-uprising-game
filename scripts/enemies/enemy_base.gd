@@ -79,6 +79,9 @@ var _overload_t: float = 0.0
 var _scan_timer: float = 0.0
 var _scan_dir: float = 1.0
 var _has_last_known: bool = false
+var _evade_dir: Vector3 = Vector3.ZERO ## Scramble heading away from a spotted grenade.
+var _evade_t: float = 0.0 ## While >0, the scramble overrides normal state movement.
+var _danger_cd: float = 0.0 ## Throttle for the grenade proximity scan.
 var _stuck_time: float = 0.0 ## Seconds spent commanded to move but barely moving (wall-pinned).
 var _recovery_timer: float = 0.0
 var _recovery_dir: Vector3 = Vector3.ZERO
@@ -473,6 +476,21 @@ func _on_enter_state(_s: State) -> void:
 	pass
 
 func _run_state(delta: float) -> void:
+	# GRENADE! Combat-aware units that spot a live charge cooking nearby
+	# scramble straight away from it instead of standing on the blast — even
+	# mid-windup (the fizzled attack reads as panic, which it is). Patrols and
+	# idlers don't see it coming.
+	_danger_cd -= delta
+	if _danger_cd <= 0.0:
+		_danger_cd = 0.2
+		_check_grenade_danger()
+	if _evade_t > 0.0 and _lunge_time <= 0.0:
+		_evade_t -= delta
+		_telegraphing = false
+		_face_dir(_evade_dir, delta)
+		velocity.x = _evade_dir.x * chase_speed() * 1.15
+		velocity.z = _evade_dir.z * chase_speed() * 1.15
+		return
 	match state:
 		State.IDLE:
 			_state_idle(delta)
@@ -486,6 +504,28 @@ func _run_state(delta: float) -> void:
 			_state_attack(delta)
 		State.STAGGER:
 			_state_stagger(delta)
+
+## Scan for a live grenade close enough to hurt (throttled to 5 Hz). Awareness
+## rule: only units already in the fight react — grenades still work as an
+## opener on unaware patrols.
+func _check_grenade_danger() -> void:
+	if state != State.CHASE and state != State.ATTACK and state != State.ALERT:
+		return
+	var best_d := 5.5
+	var away := Vector3.ZERO
+	for g in get_tree().get_nodes_in_group("grenade"):
+		var gp := (g as Node3D).global_position
+		var d := global_position.distance_to(gp)
+		if d < best_d:
+			best_d = d
+			away = global_position - gp
+	if away == Vector3.ZERO:
+		return
+	away.y = 0.0
+	if away.length() < 0.05: # grenade dead underfoot: any direction beats none
+		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
+	_evade_dir = away.normalized()
+	_evade_t = 0.7
 
 func _state_idle(delta: float) -> void:
 	_decelerate()
@@ -1177,6 +1217,7 @@ func _on_died(_source: Node) -> void:
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
 	_spawn_part_debris()
+	_spawn_wreck_fire()
 
 	_drop_loot()
 
@@ -1209,6 +1250,60 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
+
+## Brief guttering core fire on the felled wreck — the kill lingers as a burning
+## carcass instead of a model quietly sinking. One eroding flame cone
+## (FlameMaterial) plus a warm shadowless light, guttering out as the carcass
+## sinks. Sits along the topple direction so it burns ON the fallen torso, not
+## at the feet. Chaff-sized bots skip it so swarm wipes stay cheap; LOW skips.
+func _spawn_wreck_fire() -> void:
+	if score_value < 150:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("is_low") and gs.is_low():
+		return
+	var parent := get_parent()
+	if parent == null:
+		return
+	var fire := Node3D.new()
+	var flen := clampf(0.8 + score_value / 400.0, 0.9, 1.8)
+	var flame := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.05 # apex up: a ground fire, not a thruster plume
+	cm.bottom_radius = 0.55
+	cm.height = flen
+	cm.radial_segments = 14
+	var fm := FlameMaterial.make(Color(1.0, 0.72, 0.3), Color(1.0, 0.38, 0.1),
+			4.5, Vector2(0.0, 9.0), 0.5, 0.24) # pan base->apex: flames lick upward
+	cm.material = fm
+	flame.mesh = cm
+	flame.position = Vector3(0, flen * 0.5, 0)
+	fire.add_child(flame)
+	var flight := OmniLight3D.new()
+	flight.light_color = Color(1.0, 0.5, 0.18)
+	flight.light_energy = 4.0
+	flight.omni_range = 7.0
+	flight.shadow_enabled = false
+	flight.position = Vector3(0, 0.5, 0)
+	fire.add_child(flight)
+	parent.add_child(fire)
+	# The wreck topples AWAY from the last shot (same rule as the death tween
+	# below) — put the fire out along that line so it burns on the fallen torso.
+	var fall := Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized()
+	if _has_last_known:
+		var away := global_position - _last_known_target_pos
+		away.y = 0.0
+		if away.length() > 0.2:
+			fall = away.normalized()
+	fire.global_position = global_position + fall * 0.9 + Vector3(0, 0.25, 0)
+	# Gutter out as the carcass settles (topple ~0.6 s + 1.3 s rest, then sink).
+	var ft := fire.create_tween()
+	ft.tween_interval(1.6)
+	ft.tween_property(flight, "light_energy", 0.0, 0.8)
+	ft.parallel().tween_method(
+			func(v: float): fm.set_shader_parameter("emission_energy", v), 4.5, 0.0, 0.8)
+	ft.parallel().tween_property(flame, "scale", Vector3(0.4, 0.7, 0.4), 0.8)
+	ft.tween_callback(fire.queue_free)
 
 ## Physical wreckage: a handful of armor-plate chunks blasted off the chassis,
 ## tumbling with real physics and bouncing off the floor before burning out.

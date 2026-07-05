@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://7ruxbc5pd73i"
-path="res://.godot/imported/reaper_whirlwind_Image_40.png-669903b853d65a83897aeae14a96d093.ctex"
+path.s3tc="res://.godot/imported/reaper_whirlwind_Image_40.png-669903b853d65a83897aeae14a96d093.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2e5ce0ef6139552ea103be8ad0e30832"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/robots/reaper_whirlwind_Image_40.png"
-dest_files=["res://.godot/imported/reaper_whirlwind_Image_40.png-669903b853d65a83897aeae14a96d093.ctex"]
+dest_files=["res://.godot/imported/reaper_whirlwind_Image_40.png-669903b853d65a83897aeae14a96d093.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

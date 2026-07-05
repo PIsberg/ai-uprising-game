@@ -226,6 +226,7 @@ func _ready() -> void:
 	_build_skyline(def)
 	_build_sky_traffic(def)
 	_build_stars(def)
+	_optimize_small_decor()
 	_build_tasks(def)
 	_build_exit(def)
 	_build_weapon_pickup(def)
@@ -240,6 +241,27 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
+
+## Perf post-pass over the static dressing. Runs before tasks/pickups/enemies
+## exist, so gameplay objects are never touched. Small decorative meshes
+## (greebles, pips, grilles, fittings) are invisible in the sun-shadow pass yet
+## each costs an extra draw there, and at 40 m+ they're subpixel — so anything
+## under 0.6 m stops casting shadows and fades out with distance. The census
+## (tools/perf_node_census) shows most of a dressed level's 600+ visuals are
+## exactly this kind of small unique-mesh decor.
+func _optimize_small_decor() -> void:
+	for n in find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			continue # its builder already tuned it
+		var s := mi.get_aabb().size
+		var ext := maxf(s.x, maxf(s.y, s.z))
+		if ext < 0.6:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if mi.visibility_range_end <= 0.0:
+				mi.visibility_range_end = 40.0 + ext * 30.0
+				mi.visibility_range_end_margin = 3.0
+				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 ## Pick the level def: a built-in (LevelDefs, scaled by WORLD_SCALE) or a custom
 ## editor file (already in final coords, world_scale=1.0 — used verbatim).
@@ -329,8 +351,13 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
 	# MUCH darker baseline than the defs ask for: the world lives in shadow and
 	# every light source — fixtures, muzzle flashes, bolts, explosions, pickup
-	# glows — gets to carve its own pool out of the dark.
-	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.38
+	# glows — gets to carve its own pool out of the dark. That rule is sized for
+	# INTERIORS, where fixtures cover the floor; outdoors nothing lights the
+	# streets, and the full crush left the ground an unreadable black hole at
+	# dusk (playtest: suburb hostiles vanished against the asphalt), so
+	# open-sky levels keep more of their authored ambient.
+	env.ambient_light_energy = e.get("ambient_energy", 0.4) \
+			* (0.7 if def.get("open_sky", false) else 0.38)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 0.8
 	env.tonemap_white = 6.0
@@ -408,16 +435,34 @@ func _build_environment(def: Dictionary) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = e.get("sun_rot", Vector3(-50, -40, 0))
 	sun.light_color = e.get("sun_color", Color(1, 0.95, 0.9))
-	sun.light_energy = e.get("sun_energy", 1.0) * 0.5 # weak key: the placed lamps carry the scene
+	# Interiors: weak key — the placed lamps carry the scene. Open sky: the sun
+	# IS the scene's key light; halving it too crushed outdoor ground to black.
+	sun.light_energy = e.get("sun_energy", 1.0) \
+			* (0.85 if def.get("open_sky", false) else 0.5)
 	sun.light_angular_distance = 1.2 # sun disc size -> soft penumbra shadows
 	sun.shadow_enabled = true
 	sun.shadow_blur = 1.4
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	# Outdoors the sky refills shadowed ground — full-opacity sun shadows read
+	# as black holes at street level (interiors keep theirs pitch dark).
+	if def.get("open_sky", false):
+		sun.shadow_opacity = 0.8
+	# Cascade budget per tier: every PSSM split re-renders the scene into the
+	# shadow map, so LOW draws one cascade to 60 m instead of four to 120 m —
+	# arenas are ~64 m, and fewer/shorter cascades also mean denser texels.
+	var sun_tier := 2
+	if gs and gs.has_method("tier"):
+		sun_tier = gs.tier()
+	sun.directional_shadow_mode = [
+		DirectionalLight3D.SHADOW_ORTHOGONAL,
+		DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+		DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS,
+		DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS,
+	][sun_tier]
 	sun.directional_shadow_split_1 = 0.06
 	sun.directional_shadow_split_2 = 0.16
 	sun.directional_shadow_split_3 = 0.4
 	sun.directional_shadow_blend_splits = true
-	sun.directional_shadow_max_distance = 120.0
+	sun.directional_shadow_max_distance = [60.0, 90.0, 120.0, 120.0][sun_tier]
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 

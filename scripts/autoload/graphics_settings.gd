@@ -362,6 +362,11 @@ func set_quality(q: int) -> void:
 	_apply_to_live_environment()
 	_save_settings()
 
+## Step quality up/down without wrapping, so a struggling machine can go
+## straight from HIGH to MEDIUM without passing through ULTRA.
+func step_quality(delta: int) -> void:
+	set_quality(int(quality) + delta)
+
 # ---------- advanced settings triggers ----------
 
 func set_gpu_particles_enabled(v: bool) -> void:
@@ -653,7 +658,8 @@ func _apply_to_live_environment() -> void:
 		if env:
 			apply_to_environment(env, bool(we.get_meta("open_sky", false)))
 
-## Rotate LOW -> MEDIUM -> HIGH -> LOW (drives the single Graphics button).
+## Rotate LOW -> MEDIUM -> HIGH -> ULTRA -> LOW (legacy wrap; menus now use
+## step_quality so nobody has to pass through ULTRA to reach LOW).
 func cycle() -> void:
 	set_quality((int(quality) + 1) % Quality.size())
 
@@ -694,7 +700,25 @@ func _apply_viewport() -> void:
 	var rs := clampf(render_scale, 0.5, 1.0)
 	vp.scaling_3d_scale = rs
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if rs >= 0.999 else Viewport.SCALING_3D_MODE_FSR2
+	vp.fsr_sharpness = 0.1 # sharper-than-default FSR2 reconstruction (0 = sharpest)
 	_apply_shadow_quality()
+	_apply_ss_effect_quality()
+
+## SSAO/SSIL kernel quality per tier. The project setting pins these at HIGH
+## grade for EVERY tier — measured at tens of ms/frame at 4K on a mid GPU
+## (tools/perf_fx_isolate). These are global RenderingServer knobs, so one call
+## covers every Environment.
+func _apply_ss_effect_quality() -> void:
+	var q: int = [
+		RenderingServer.ENV_SSAO_QUALITY_VERY_LOW,
+		RenderingServer.ENV_SSAO_QUALITY_LOW,
+		RenderingServer.ENV_SSAO_QUALITY_MEDIUM,
+		RenderingServer.ENV_SSAO_QUALITY_HIGH,
+	][int(quality)]
+	# Godot-default adaptive/blur/fadeout params; half-res everywhere (the
+	# full-res kernels roughly quadruple the cost for a subtle difference).
+	RenderingServer.environment_set_ssao_quality(q, true, 0.5, 2, 50.0, 300.0)
+	RenderingServer.environment_set_ssil_quality(q, true, 0.5, 4, 50.0, 300.0)
 
 func _apply_shadow_quality() -> void:
 	var levels: Array[int] = [
@@ -707,8 +731,8 @@ func _apply_shadow_quality() -> void:
 	RenderingServer.directional_soft_shadow_filter_set_quality(dq)
 	RenderingServer.positional_soft_shadow_filter_set_quality(dq)
 	# Shadow atlas budgets: resolution where you can see it (8K sun shadows on
-	# HIGH are visibly crisper), memory/fill-rate savings where you can't.
-	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192, 8192][int(quality)], true)
+	# ULTRA are visibly crisper), memory/fill-rate savings where you can't.
+	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 4096, 8192][int(quality)], true)
 	var vp := get_viewport()
 	if vp:
 		vp.positional_shadow_atlas_size = [2048, 4096, 4096, 8192][int(quality)]
@@ -732,7 +756,10 @@ func apply_to_environment(env: Environment, open_sky: bool) -> void:
 			_restore_glow(env)
 		Quality.HIGH:
 			env.ssao_enabled = true
-			env.ssil_enabled = true
+			# SSIL is ULTRA-only: it's the single most expensive screen-space
+			# effect (~30 ms/frame at 4K, tools/perf_fx_isolate) for the
+			# subtlest visual contribution of the set.
+			env.ssil_enabled = false
 			env.ssr_enabled = true
 			env.volumetric_fog_enabled = not open_sky
 			_restore_glow(env)
@@ -770,7 +797,8 @@ func _apply_brightness(env: Environment) -> void:
 
 func _load_settings() -> void:
 	var cf := ConfigFile.new()
-	if cf.load(SETTINGS_PATH) == OK:
+	var loaded := cf.load(SETTINGS_PATH) == OK
+	if loaded:
 		quality = clampi(int(cf.get_value("video", "quality", Quality.HIGH)), 0, Quality.size() - 1) as Quality
 		max_fps = maxi(0, int(cf.get_value("video", "max_fps", 0)))
 		fov = clampf(float(cf.get_value("display", "fov", 85.0)), 60.0, 110.0)
@@ -798,6 +826,20 @@ func _load_settings() -> void:
 		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
 		var raw_overrides = cf.get_value("keybinds", "overrides", {})
 		keybind_overrides = raw_overrides if raw_overrides is Dictionary else {}
+	# Until the player has touched the Render Scale slider, pick a sane default
+	# from the screen: native-res 4K is by far the biggest frame cost on modest
+	# GPUs (tools/perf_fx_isolate: 0.5 scale more than doubled fps), so very
+	# high-res screens start at a ~1440p-equivalent internal res + FSR2 upscale.
+	if not (loaded and cf.has_section_key("video", "render_scale")):
+		render_scale = _auto_render_scale()
+
+## First-run render scale: 1.0 (native) up to 1600-row screens, then whatever
+## scale gives a ~1440p-tall internal resolution, floored at 0.5.
+func _auto_render_scale() -> float:
+	var h := DisplayServer.screen_get_size().y
+	if h <= 0 or h <= 1600: # headless probes report 0 — keep native
+		return 1.0
+	return clampf(1440.0 / float(h), 0.5, 1.0)
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()

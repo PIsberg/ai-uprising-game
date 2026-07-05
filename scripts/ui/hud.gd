@@ -25,7 +25,9 @@ var _reticle_base: Color = Color(1, 1, 1)
 var _cross_time: float = 0.0
 @onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var pause_menu: Control = $PauseMenu
-@onready var pause_graphics: Button = $PauseMenu/VBox/PauseGraphics
+@onready var pause_graphics: Label = $PauseMenu/VBox/PauseGraphicsRow/PauseGraphics
+@onready var pause_gfx_down: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxDown
+@onready var pause_gfx_up: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxUp
 @onready var pause_volume: HSlider = $PauseMenu/VBox/PauseVolumeRow/PauseVolume
 @onready var game_over_menu: Control = $GameOverMenu
 @onready var game_over_restart_btn: Button = $GameOverMenu/VBox/Restart
@@ -788,6 +790,10 @@ func _exit_pause() -> void:
 func _refresh_pause_graphics() -> void:
 	if pause_graphics:
 		pause_graphics.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
+	if pause_gfx_down:
+		pause_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
+	if pause_gfx_up:
+		pause_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
 
 # ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
 
@@ -1347,8 +1353,12 @@ func _on_quit_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
-func _on_pause_graphics_pressed() -> void:
-	GraphicsSettings.cycle()
+func _on_pause_graphics_down_pressed() -> void:
+	GraphicsSettings.step_quality(-1)
+	_refresh_pause_graphics()
+
+func _on_pause_graphics_up_pressed() -> void:
+	GraphicsSettings.step_quality(1)
 	_refresh_pause_graphics()
 
 func _on_pause_volume_changed(value: float) -> void:
