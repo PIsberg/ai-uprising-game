@@ -220,6 +220,7 @@ func _ready() -> void:
 	_build_rubble(def)
 	_build_fires(def)
 	_build_weather(def)
+	_build_ash(def)
 	_build_lightning(def)
 	_build_beacons(def)
 	_build_holograms(def)
@@ -3118,6 +3119,95 @@ func _build_weather(def: Dictionary) -> void:
 		puff.material = dm
 		p.mesh = puff
 		p.position = Vector3(0, 3.0, 0)
+		add_child(p)
+
+## Ambient ash (opt-in via env "ash": true): slow-drifting warm ember motes
+## rising off a foundry/lava floor — small additive-emissive billboard quads
+## that glow in the dark, drifting up and sideways on a lazy convection
+## current. Density-gated (skipped at LOW / gpu_particles off falls back to
+## CPUParticles3D), same pattern as _build_weather.
+func _build_ash(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	if not bool(e.get("ash", false)):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var amount := int(60 * density)
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.18, 0.18)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	# These levels are already a dominant warm-orange/red fog wash (foundry/lava
+	# glow) — an ember the same hue as the backdrop reads as invisible without
+	# help. A near-white hot core (like the flame material's core) plus
+	# disabling fog on the additive quad (fog attenuates additive surfaces
+	# toward the fog colour, same fix as the lightning bolt) keeps each mote a
+	# bright, legible point instead of fading into the ambient glow.
+	mat.albedo_color = Color(1.0, 0.85, 0.55, 0.95)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.5, 0.15)
+	mat.emission_energy_multiplier = 7.0
+	mat.disable_fog = true
+	quad.material = mat
+	# Same 0.6 coverage factor as _build_weather's rain box: reaches the
+	# spawn/exit corners near the arena walls, not just the middle third.
+	var box_ext := Vector3(fs.x * 0.6, 2.0, fs.y * 0.6)
+	var use_gpu: bool = gs == null or bool(gs.get("gpu_particles_enabled"))
+	if use_gpu:
+		var p := GPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = 8.0
+		p.preprocess = 6.0
+		p.local_coords = false
+		p.draw_pass_1 = quad
+		var pm := ParticleProcessMaterial.new()
+		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+		pm.emission_box_extents = box_ext
+		pm.direction = Vector3(0.15, 1, 0.1) # lazy rise with a slight wind lean
+		pm.spread = 20.0
+		pm.initial_velocity_min = 0.5
+		pm.initial_velocity_max = 1.0
+		pm.gravity = Vector3(0.15, 0.05, 0.05)
+		pm.scale_min = 0.7
+		pm.scale_max = 1.6
+		pm.angle_min = -180.0; pm.angle_max = 180.0
+		pm.angular_velocity_min = -12.0; pm.angular_velocity_max = 12.0
+		p.process_material = pm
+		p.position = Vector3(0, 1.2, 0)
+		# GPUParticles3D's auto-computed visibility AABB is sized for the
+		# default small emission shape — it doesn't grow to fit a large custom
+		# box + 8s of upward drift, so without an explicit AABB the whole
+		# system gets frustum/AABB-culled and silently never renders.
+		p.visibility_aabb = AABB(Vector3(-box_ext.x - 2.0, -3.0, -box_ext.z - 2.0),
+			Vector3((box_ext.x + 2.0) * 2.0, 14.0, (box_ext.z + 2.0) * 2.0))
+		add_child(p)
+	else:
+		var p := CPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = 8.0
+		p.preprocess = 6.0
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = box_ext
+		p.direction = Vector3(0.15, 1, 0.1)
+		p.spread = 20.0
+		p.initial_velocity_min = 0.5
+		p.initial_velocity_max = 1.0
+		p.gravity = Vector3(0.15, 0.05, 0.05)
+		p.scale_amount_min = 0.7
+		p.scale_amount_max = 1.6
+		p.angle_min = -180.0; p.angle_max = 180.0
+		p.angular_velocity_min = -12.0; p.angular_velocity_max = 12.0
+		p.mesh = quad
+		p.position = Vector3(0, 1.2, 0)
 		add_child(p)
 
 ## Storm lightning (opt-in via env "lightning": true, or automatic in "rain"
