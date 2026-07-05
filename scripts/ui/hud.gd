@@ -56,6 +56,7 @@ var _combo_pop: float = 0.0
 var _last_grade: String = ""
 var _last_stats: Dictionary = {}
 var _auto_advance_armed: bool = false
+var _debrief_label: Label = null ## Compact mission-stats line on the victory screen, built lazily on first level clear.
 var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
 var _kill_edge: TextureRect = null
@@ -608,6 +609,7 @@ func _on_level_completed() -> void:
 	var assess := AIDirector.assessment()
 	if assess != "":
 		win_title.text += "\n\n" + assess
+	_update_debrief_block()
 	if GameState.has_next_level() and not _auto_advance_armed:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
@@ -617,6 +619,29 @@ func _auto_advance() -> void:
 	_auto_advance_armed = false
 	if win_menu.visible and GameState.current_state == GameState.State.LEVEL_COMPLETE:
 		_on_continue_pressed()
+
+## Compact mission debrief: KILLS / DEATHS, one line under the victory title.
+## Deliberately ONLY the two stats the panel didn't already show — the grade
+## line above covers accuracy, best combo and time, so repeating them here
+## would just be noise. Built lazily (like the death-recap labels) and
+## re-populated on every level clear. KILLS reads GameState.kills (the
+## run-cumulative total) rather than a per-level count — the same convention
+## the death-recap screen already uses (hud.gd's _fill_death_recap), so the
+## number means the same thing wherever the player sees a bare "kills" readout.
+func _update_debrief_block() -> void:
+	if _debrief_label == null:
+		_debrief_label = Label.new()
+		_debrief_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_debrief_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_debrief_label.add_theme_font_size_override("font_size", 13)
+		_debrief_label.add_theme_color_override("font_color", Color(0.75, 0.82, 0.8))
+		var vbox := win_title.get_parent()
+		vbox.add_child(_debrief_label)
+		vbox.move_child(_debrief_label, win_title.get_index() + 1)
+	_debrief_label.text = "%s %d   ·   %s %d" % [
+		tr("KILLS"), GameState.kills,
+		tr("DEATHS"), int(_last_stats.get("deaths", GameState.level_deaths)),
+	]
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)

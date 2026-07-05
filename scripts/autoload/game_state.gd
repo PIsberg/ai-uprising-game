@@ -443,7 +443,27 @@ func overdrive_active() -> bool:
 var stat_shots: int = 0
 var stat_hits: int = 0
 var stat_damage_taken: float = 0.0
+## Timestamp the current level attempt started. NOTE: this is reset on every
+## load_level() call, including a TRY-AGAIN full reload — so the debrief's TIME
+## reads "time since the last retry", not a cumulative clock across deaths.
+## That's a deliberate simplification: a true cross-retry clock would need to
+## survive reset_level_stats() and be threaded through respawn_at_checkpoint's
+## in-place path too, for a number the player mostly reads as "how long did
+## THAT run take", which per-attempt already answers.
 var level_start_ms: int = 0
+## Deaths this level attempt, surviving a TRY-AGAIN/RESPAWN retry so the
+## debrief can show how rough the level actually was — see load_level()'s
+## _deaths_level_id comparison for how retries are told apart from a genuine
+## new level.
+var level_deaths: int = 0
+## Tracks which level `level_deaths` belongs to. Deliberately NOT compared
+## against current_level_path: go_to_level() (campaign advance / start) sets
+## current_level_path BEFORE routing through the briefing cutscene, which then
+## calls load_level(current_level_path) — so by the time load_level() runs,
+## current_level_path already equals the incoming scene_path and a same-path
+## check would never fire. This field is only ever written inside load_level()
+## itself, so it still reflects the level the counter was last reset for.
+var _deaths_level_id: String = ""
 
 func reset_level_stats() -> void:
 	stat_shots = 0
@@ -505,6 +525,7 @@ func grade_level() -> Dictionary:
 		"damage_taken": stat_damage_taken, "time": elapsed,
 		"kills": kills, "score": score, "difficulty": difficulty_label(),
 		"new_best": new_best, "best_grade": level_bests.get(lid, grade),
+		"deaths": level_deaths,
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
@@ -613,6 +634,12 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	controls_taught = false # re-teach controls at the start of a fresh campaign
 	level_index = 0
 	max_level_reached = 0
+	# A brand-new run must not inherit a stray death count from whatever level
+	# the PREVIOUS run last died on — load_level()'s retry check alone can't
+	# tell "same level, new run" apart from "same level, same run", so clear it
+	# explicitly here, the one true "wipe everything" entry point.
+	level_deaths = 0
+	_deaths_level_id = ""
 	go_to_level(campaign()[0], false)
 
 ## The opener is now a comic-panel flash instead of the old 3D story cutscene.
@@ -737,6 +764,11 @@ func _save_bestiary() -> void:
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
 	clear_checkpoint() # a fresh build of the level — any mid-level checkpoint is stale
+	# Only wipe the death counter on a genuine new level, not a TRY-AGAIN retry
+	# of the one we're already on (see _deaths_level_id's comment above).
+	if scene_path != _deaths_level_id:
+		level_deaths = 0
+		_deaths_level_id = scene_path
 	current_level_path = scene_path
 	var found := campaign().find(scene_path)
 	if found != -1:
@@ -846,6 +878,7 @@ var last_killer: String = "" ## Kill-feed label of whatever downed the player (d
 
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
+	level_deaths += 1 # counted once per death regardless of which respawn path follows
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
