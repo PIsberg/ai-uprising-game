@@ -220,12 +220,14 @@ func _ready() -> void:
 	_build_rubble(def)
 	_build_fires(def)
 	_build_weather(def)
+	_build_ash(def)
 	_build_lightning(def)
 	_build_beacons(def)
 	_build_holograms(def)
 	_build_skyline(def)
 	_build_sky_traffic(def)
 	_build_stars(def)
+	_optimize_small_decor()
 	_build_tasks(def)
 	_build_exit(def)
 	_build_weapon_pickup(def)
@@ -240,6 +242,31 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
+	## Openings are the deadliest seconds (playtest: 100->16 HP before the
+	## first orientation). Enemies still close in and jockey for position;
+	## they just hold fire briefly so a fresh drop-in isn't an ambush.
+	GameState.start_attack_grace(2.5)
+
+## Perf post-pass over the static dressing. Runs before tasks/pickups/enemies
+## exist, so gameplay objects are never touched. Small decorative meshes
+## (greebles, pips, grilles, fittings) are invisible in the sun-shadow pass yet
+## each costs an extra draw there, and at 40 m+ they're subpixel — so anything
+## under 0.6 m stops casting shadows and fades out with distance. The census
+## (tools/perf_node_census) shows most of a dressed level's 600+ visuals are
+## exactly this kind of small unique-mesh decor.
+func _optimize_small_decor() -> void:
+	for n in find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			continue # its builder already tuned it
+		var s := mi.get_aabb().size
+		var ext := maxf(s.x, maxf(s.y, s.z))
+		if ext < 0.6:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if mi.visibility_range_end <= 0.0:
+				mi.visibility_range_end = 40.0 + ext * 30.0
+				mi.visibility_range_end_margin = 3.0
+				mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 ## Pick the level def: a built-in (LevelDefs, scaled by WORLD_SCALE) or a custom
 ## editor file (already in final coords, world_scale=1.0 — used verbatim).
@@ -329,8 +356,13 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
 	# MUCH darker baseline than the defs ask for: the world lives in shadow and
 	# every light source — fixtures, muzzle flashes, bolts, explosions, pickup
-	# glows — gets to carve its own pool out of the dark.
-	env.ambient_light_energy = e.get("ambient_energy", 0.4) * 0.38
+	# glows — gets to carve its own pool out of the dark. That rule is sized for
+	# INTERIORS, where fixtures cover the floor; outdoors nothing lights the
+	# streets, and the full crush left the ground an unreadable black hole at
+	# dusk (playtest: suburb hostiles vanished against the asphalt), so
+	# open-sky levels keep more of their authored ambient.
+	env.ambient_light_energy = e.get("ambient_energy", 0.4) \
+			* (0.7 if def.get("open_sky", false) else 0.38)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 0.8
 	env.tonemap_white = 6.0
@@ -408,16 +440,34 @@ func _build_environment(def: Dictionary) -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = e.get("sun_rot", Vector3(-50, -40, 0))
 	sun.light_color = e.get("sun_color", Color(1, 0.95, 0.9))
-	sun.light_energy = e.get("sun_energy", 1.0) * 0.5 # weak key: the placed lamps carry the scene
+	# Interiors: weak key — the placed lamps carry the scene. Open sky: the sun
+	# IS the scene's key light; halving it too crushed outdoor ground to black.
+	sun.light_energy = e.get("sun_energy", 1.0) \
+			* (0.85 if def.get("open_sky", false) else 0.5)
 	sun.light_angular_distance = 1.2 # sun disc size -> soft penumbra shadows
 	sun.shadow_enabled = true
 	sun.shadow_blur = 1.4
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	# Outdoors the sky refills shadowed ground — full-opacity sun shadows read
+	# as black holes at street level (interiors keep theirs pitch dark).
+	if def.get("open_sky", false):
+		sun.shadow_opacity = 0.8
+	# Cascade budget per tier: every PSSM split re-renders the scene into the
+	# shadow map, so LOW draws one cascade to 60 m instead of four to 120 m —
+	# arenas are ~64 m, and fewer/shorter cascades also mean denser texels.
+	var sun_tier := 2
+	if gs and gs.has_method("tier"):
+		sun_tier = gs.tier()
+	sun.directional_shadow_mode = [
+		DirectionalLight3D.SHADOW_ORTHOGONAL,
+		DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+		DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS,
+		DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS,
+	][sun_tier]
 	sun.directional_shadow_split_1 = 0.06
 	sun.directional_shadow_split_2 = 0.16
 	sun.directional_shadow_split_3 = 0.4
 	sun.directional_shadow_blend_splits = true
-	sun.directional_shadow_max_distance = 120.0
+	sun.directional_shadow_max_distance = [60.0, 90.0, 120.0, 120.0][sun_tier]
 	sun.directional_shadow_fade_start = 0.85
 	add_child(sun)
 
@@ -785,7 +835,8 @@ func _add_detail_mesh(mesh: Mesh, pos: Vector3, yaw: float) -> void:
 # ---------- global illumination ----------
 
 func _build_gi(def: Dictionary) -> void:
-	# Heavy real-time GI is High-quality only. Balanced/Low skip it entirely.
+	# Reflection probe (+ the open-sky SDFGI tuning below) is High-quality
+	# only. Balanced/Low skip it entirely.
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	if gs == null or not gs.has_method("is_high") or not gs.is_high():
 		return
@@ -797,8 +848,12 @@ func _build_gi(def: Dictionary) -> void:
 		# blotchy color-bleed smears across the walls. Sky ambient looks cleaner.
 		if _env:
 			_env.sdfgi_enabled = false
-	else:
-		# Indoor levels: a baked VoxelGI covering the play space.
+	elif gs.tier() >= GraphicsSettings.Quality.ULTRA:
+		# Indoor levels: a baked VoxelGI covering the play space. ULTRA-only —
+		# measured ~13 ms at 4K on a mid GPU (tools/perf_diag) for a subtle
+		# bounce contribution in interiors that are already mostly emissive-lit;
+		# HIGH drops it for the frame time, ULTRA is the no-compromises tier
+		# that can still afford it.
 		var vgi := VoxelGI.new()
 		vgi.size = Vector3(fs.x + 4.0, 8.0, fs.y + 4.0)
 		vgi.position = Vector3(0, 4, 0)
@@ -809,6 +864,8 @@ func _build_gi(def: Dictionary) -> void:
 
 	# Reflection probe: grounded, off-screen reflections on metal robots/floors
 	# that SSR (screen-space only) can't provide. Box-projected to the arena.
+	# Stays at HIGH+ regardless of VoxelGI — UPDATE_ONCE is cheap and carries
+	# the metallic look on its own.
 	var rp := ReflectionProbe.new()
 	rp.size = Vector3(fs.x + 2.0, 14.0, fs.y + 2.0)
 	rp.position = Vector3(0, 5.0, 0)
@@ -1295,7 +1352,53 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 
 func _build_stairs(def: Dictionary) -> void:
 	for s in def.get("stairs", []):
-		_add_ramp_between(s["from"], s["to"], s.get("width", 3.0), 0.5, "SkyBridge")
+		var from: Vector3 = s["from"]
+		var to: Vector3 = s["to"]
+		_add_ramp_between(from, to, s.get("width", 3.0), 0.5, "SkyBridge")
+		# Sky-bridge edge lights: this same array also holds ground-to-elevated
+		# approach ramps (one endpoint near y=0) — only the TRUE sky-bridges
+		# (both endpoints high, up at tower-roof height) get the deck-edge
+		# treatment, so a short entry stair doesn't grow bridge lighting.
+		if minf(from.y, to.y) >= 5.0:
+			_dress_bridge_edges(from, to, s.get("width", 3.0), def)
+
+## Thin emissive strips along both long edges of a sky-bridge deck — unlit
+## geometry only, no Light3D (a perf pass culled per-entity real lights) — so
+## the bridge's silhouette reads against a bright sky instead of vanishing as
+## a featureless black plank. Runs on every detail tier: this is a
+## readability fix, not decoration, and it's only two thin strips per bridge.
+func _dress_bridge_edges(from: Vector3, to: Vector3, width: float, def: Dictionary) -> void:
+	var delta := to - from
+	var horiz := Vector3(delta.x, 0.0, delta.z)
+	var run := horiz.length()
+	if run < 2.0:
+		return
+	# Same yaw/pitch basis as _build_ramp_wedge's visual mesh, so the strips
+	# tilt to follow the deck's slope instead of poking through/floating above
+	# it at the ends.
+	var yaw := rad_to_deg(atan2(-delta.x, -delta.z))
+	var pitch := rad_to_deg(atan2(delta.y, run))
+	var vb := Basis(Vector3.UP, deg_to_rad(yaw)) * Basis(Vector3.RIGHT, deg_to_rad(pitch))
+	var deck_top := (from + to) * 0.5 - Vector3.UP * 0.05 # matches the ramp mesh's embedded top surface
+	var col: Color = _theme_color(def).lerp(Color(1.0, 0.75, 0.35), 0.5)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	# Bright enough to read as a lit edge from the far end of a 25-30 m deck
+	# in a scene with a bright dusk sky behind it (a dim strip washes out).
+	mat.emission_energy_multiplier = 3.2
+	var length := run - 1.0 # inset from both ends so strips don't poke past the tower landings
+	for side in [1.0, -1.0]:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.09, 0.09, length)
+		bm.material = mat
+		mi.mesh = bm
+		mi.transform = Transform3D(vb, deck_top + vb.x * (width * 0.5 - 0.1) * side + vb.y * 0.03)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 ## Climbable tower: a central column "building" with a square-spiral ramp wrapping
 ## up its outside to a top vantage platform — the player's route into the vertical
@@ -1481,7 +1584,90 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 		var loot := pk.instantiate() as Node3D
 		add_child(loot)
 		loot.global_position = base + Vector3(0, roof_y + 0.9, 0)
+	_dress_tower_silhouette(base, height, radius)
 	_tower_count += 1
+
+## Emissive-only silhouette dressing for a tower's shaft: a warm trim ring
+## near the roof plus a scatter of small "window" quads up the central
+## column's faces. Fixes towers/sky-bridges rendering as huge featureless
+## BLACK slabs against a bright dusk/outdoor sky — unlit geometry with no
+## emissive detail. No Light3D nodes (a perf pass just culled per-entity
+## lights) — everything here is unshaded emissive mesh. Runs on every detail
+## tier: it's a small, fixed handful of meshes per tower, a readability fix
+## rather than density-gated decoration.
+func _dress_tower_silhouette(base: Vector3, height: float, radius: float) -> void:
+	var trim_col := Color(1.0, 0.75, 0.35)
+	var trim_mat := StandardMaterial3D.new()
+	trim_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	trim_mat.albedo_color = trim_col
+	trim_mat.emission_enabled = true
+	trim_mat.emission = trim_col
+	trim_mat.emission_energy_multiplier = 2.2
+
+	# Trim ring: a thin torus hugging the central column just outside its
+	# radius (column half-width is radius*0.31 — see the TwrColumn collider
+	# above), near the roof but below its underside.
+	var ring := MeshInstance3D.new()
+	var ring_mesh := TorusMesh.new()
+	ring_mesh.inner_radius = radius * 0.5
+	ring_mesh.outer_radius = radius * 0.62
+	ring_mesh.rings = 24
+	ring_mesh.ring_segments = 6
+	ring_mesh.material = trim_mat
+	ring.mesh = ring_mesh
+	ring.position = base + Vector3(0, height * 0.92, 0)
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(ring)
+
+	# Windows: a deterministic scatter of small emissive quads flush against
+	# the central column's 4 faces. Seeded from the tower's own position so
+	# rebuilds are stable (no popping between runs of the same level).
+	var warm_white := Color(1.0, 0.92, 0.75)
+	var amber := Color(1.0, 0.65, 0.25)
+	var white_mat := StandardMaterial3D.new()
+	white_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	white_mat.albedo_color = warm_white
+	white_mat.emission_enabled = true
+	white_mat.emission = warm_white
+	# Brighter than the ~1.8 that reads clean up close: at the eye_shot spawn
+	# distance (30-40 m, in a scene whose auto-exposure is keyed to a much
+	# bigger bright ring/sky) a 1.8 window all but disappears into the crushed
+	# exposure. 3.6 is the smallest bump that still reads as a lit window
+	# rather than a floodlight at close range.
+	white_mat.emission_energy_multiplier = 3.6
+	white_mat.cull_mode = BaseMaterial3D.CULL_DISABLED # flat quad flush to the shaft — visible from either side
+	var amber_mat := StandardMaterial3D.new()
+	amber_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	amber_mat.albedo_color = amber
+	amber_mat.emission_enabled = true
+	amber_mat.emission = amber
+	amber_mat.emission_energy_multiplier = 3.6
+	amber_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(base)
+	var col_half := radius * 0.31 # central column half-width (size.x/z = radius*0.62)
+	var n_windows := rng.randi_range(6, 10)
+	# Face normals + the matching yaw so a QuadMesh (front face at local +Z,
+	# yaw 0) faces outward — same convention as _wall_point's inward-facing
+	# signage (yaw = atan2(normal.x, normal.z)).
+	var faces := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 0, -1)]
+	for i in n_windows:
+		if rng.randf() < 0.3:
+			continue # a few dark windows so the shaft doesn't read as uniformly lit
+		var normal: Vector3 = faces[rng.randi_range(0, 3)]
+		var tangent := Vector3(-normal.z, 0, normal.x)
+		var t := rng.randf_range(-0.65, 0.65)
+		var y := rng.randf_range(height * 0.12, height * 0.85)
+		var quad := QuadMesh.new()
+		quad.size = Vector2(0.5, 0.35)
+		quad.material = amber_mat if rng.randf() < 0.5 else white_mat
+		var win := MeshInstance3D.new()
+		win.mesh = quad
+		win.position = base + normal * (col_half + 0.05) + tangent * (t * col_half * 2.0) + Vector3(0, y, 0)
+		win.rotation.y = atan2(normal.x, normal.z)
+		win.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(win)
 
 func _build_platforms(def: Dictionary) -> void:
 	for p in def.get("platforms", []):
@@ -3062,6 +3248,95 @@ func _build_weather(def: Dictionary) -> void:
 		puff.material = dm
 		p.mesh = puff
 		p.position = Vector3(0, 3.0, 0)
+		add_child(p)
+
+## Ambient ash (opt-in via env "ash": true): slow-drifting warm ember motes
+## rising off a foundry/lava floor — small additive-emissive billboard quads
+## that glow in the dark, drifting up and sideways on a lazy convection
+## current. Density-gated (skipped at LOW / gpu_particles off falls back to
+## CPUParticles3D), same pattern as _build_weather.
+func _build_ash(def: Dictionary) -> void:
+	var e: Dictionary = def.get("env", {})
+	if not bool(e.get("ash", false)):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var density := 1.0
+	if gs and gs.has_method("detail_scale"):
+		density = gs.detail_scale()
+	if density <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var amount := int(60 * density)
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.18, 0.18)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	# These levels are already a dominant warm-orange/red fog wash (foundry/lava
+	# glow) — an ember the same hue as the backdrop reads as invisible without
+	# help. A near-white hot core (like the flame material's core) plus
+	# disabling fog on the additive quad (fog attenuates additive surfaces
+	# toward the fog colour, same fix as the lightning bolt) keeps each mote a
+	# bright, legible point instead of fading into the ambient glow.
+	mat.albedo_color = Color(1.0, 0.85, 0.55, 0.95)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.5, 0.15)
+	mat.emission_energy_multiplier = 7.0
+	mat.disable_fog = true
+	quad.material = mat
+	# Same 0.6 coverage factor as _build_weather's rain box: reaches the
+	# spawn/exit corners near the arena walls, not just the middle third.
+	var box_ext := Vector3(fs.x * 0.6, 2.0, fs.y * 0.6)
+	var use_gpu: bool = gs == null or bool(gs.get("gpu_particles_enabled"))
+	if use_gpu:
+		var p := GPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = 8.0
+		p.preprocess = 6.0
+		p.local_coords = false
+		p.draw_pass_1 = quad
+		var pm := ParticleProcessMaterial.new()
+		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+		pm.emission_box_extents = box_ext
+		pm.direction = Vector3(0.15, 1, 0.1) # lazy rise with a slight wind lean
+		pm.spread = 20.0
+		pm.initial_velocity_min = 0.5
+		pm.initial_velocity_max = 1.0
+		pm.gravity = Vector3(0.15, 0.05, 0.05)
+		pm.scale_min = 0.7
+		pm.scale_max = 1.6
+		pm.angle_min = -180.0; pm.angle_max = 180.0
+		pm.angular_velocity_min = -12.0; pm.angular_velocity_max = 12.0
+		p.process_material = pm
+		p.position = Vector3(0, 1.2, 0)
+		# GPUParticles3D's auto-computed visibility AABB is sized for the
+		# default small emission shape — it doesn't grow to fit a large custom
+		# box + 8s of upward drift, so without an explicit AABB the whole
+		# system gets frustum/AABB-culled and silently never renders.
+		p.visibility_aabb = AABB(Vector3(-box_ext.x - 2.0, -3.0, -box_ext.z - 2.0),
+			Vector3((box_ext.x + 2.0) * 2.0, 14.0, (box_ext.z + 2.0) * 2.0))
+		add_child(p)
+	else:
+		var p := CPUParticles3D.new()
+		p.amount = amount
+		p.lifetime = 8.0
+		p.preprocess = 6.0
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = box_ext
+		p.direction = Vector3(0.15, 1, 0.1)
+		p.spread = 20.0
+		p.initial_velocity_min = 0.5
+		p.initial_velocity_max = 1.0
+		p.gravity = Vector3(0.15, 0.05, 0.05)
+		p.scale_amount_min = 0.7
+		p.scale_amount_max = 1.6
+		p.angle_min = -180.0; p.angle_max = 180.0
+		p.angular_velocity_min = -12.0; p.angular_velocity_max = 12.0
+		p.mesh = quad
+		p.position = Vector3(0, 1.2, 0)
 		add_child(p)
 
 ## Storm lightning (opt-in via env "lightning": true, or automatic in "rain"

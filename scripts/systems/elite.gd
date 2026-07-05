@@ -29,6 +29,19 @@ const LIGHTS := {
 	"warden": Color(0.7, 0.4, 1.0),
 	"splitter": Color(0.4, 1.0, 0.3),
 }
+## Persistent on-body marker colours (a floating spinning gem, separate from the
+## LIGHTS glow above and the TINTS material recolor). Kept distinct from both so
+## a marker reads at combat range even when the tint/light are hard to make out
+## against a busy level — this is the identity cue the first-encounter toast
+## ("ELITE · SHIELDED — ...") promises the player they can then rely on. warden/
+## splitter reuse their existing LIGHTS tone so every affix still gets a marker.
+const AFFIX_COLORS := {
+	"shielded": Color(0.35, 0.75, 1.0),  # cold shield blue
+	"volatile": Color(1.0, 0.45, 0.12),  # detonation orange
+	"swift": Color(0.55, 1.0, 0.35),     # stim green
+	"warden": Color(0.7, 0.4, 1.0),
+	"splitter": Color(0.4, 1.0, 0.3),
+}
 
 ## Per-difficulty elite share (EASY, NORMAL, HARD).
 const CHANCE := [0.05, 0.1, 0.16]
@@ -106,10 +119,87 @@ static func _finalize(eb: EnemyBase, kind: String) -> void:
 	light.shadow_enabled = false
 	light.position = Vector3(0, 1.2, 0)
 	eb.add_child(light)
-	# Slightly larger silhouette (visual only — model node, not the collider).
+	# Slightly larger silhouette (visual only — model node, not the collider) —
+	# the marker below is the readable identity cue; this just makes the
+	# silhouette itself whisper "bigger threat" before the toast explains it.
 	var model := eb.get_node_or_null("Model") as Node3D
 	if model:
 		model.scale *= 1.12
+	_add_marker(eb, kind)
+
+## Persistent on-body marker so an elite reads at combat range, not just from
+## the one-off coaching toast: a small spinning emissive gem floating above the
+## chassis, colour-coded per affix. NOT a material tint — damage_blink() owns
+## emission_energy_multiplier and the hit-flash owns material_overlay on the
+## model's own meshes, so a marker baked into those channels would get clobbered
+## every time the enemy takes a hit. A separate mesh sidesteps that entirely.
+static func _add_marker(eb: EnemyBase, kind: String) -> void:
+	# elite.apply runs pre-add (no tree yet), and a RobotModel with fit_height
+	# resizes its mesh across a few DEFERRED frames after its own _ready — so wait
+	# a beat before measuring the silhouette, or the AABB scan below reads the
+	# model's pre-fit (often wildly wrong) scale.
+	for i in 4:
+		if not is_instance_valid(eb):
+			return
+		await eb.get_tree().process_frame
+	if not is_instance_valid(eb) or eb.state == EnemyBase.State.DEAD:
+		return
+	var top := 0.0
+	for mi in _collect_meshes(eb):
+		if mi.mesh:
+			var ab: AABB = mi.global_transform * mi.mesh.get_aabb()
+			top = maxf(top, ab.end.y - eb.global_position.y)
+	if top <= 0.0:
+		top = 2.15 # conservative fallback if the scan finds nothing to measure
+	var col: Color = AFFIX_COLORS.get(kind, Color.WHITE)
+	var pivot := Node3D.new()
+	pivot.name = "EliteMarker"
+	pivot.position = Vector3(0, top + 0.45, 0)
+	eb.add_child(pivot)
+	var gem := MeshInstance3D.new()
+	var pm := PrismMesh.new()
+	pm.size = Vector3(0.22, 0.28, 0.22)
+	gem.mesh = pm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # reads the same colour from every angle
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.92)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 4.0
+	gem.material_override = mat
+	gem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pivot.add_child(gem)
+	# Slow identity spin (~1.5 rad/s): a full TAU turn every TAU/1.5 seconds.
+	# `as_relative()` keeps looping without snapping back to 0 each cycle.
+	var tw := pivot.create_tween().set_loops()
+	tw.tween_property(pivot, "rotation:y", TAU, TAU / 1.5).as_relative()
+	# Dies with the enemy: the marker still rides the wreck down (that's fine —
+	# a fading light sinking with the topple reads as "powering off"), but the
+	# spin stops and it fades out instead of looking like a still-live implant.
+	if eb.hp:
+		eb.hp.died.connect(func(_src): _fade_marker(pivot, tw))
+
+static func _fade_marker(pivot: Node3D, tw: Tween) -> void:
+	if tw and tw.is_valid():
+		tw.kill()
+	if not is_instance_valid(pivot) or pivot.get_child_count() == 0:
+		return
+	var gem := pivot.get_child(0) as MeshInstance3D
+	var mat := gem.material_override as StandardMaterial3D if gem else null
+	if mat == null:
+		return
+	var ftw := pivot.create_tween()
+	ftw.tween_property(mat, "albedo_color:a", 0.0, 0.5)
+	ftw.parallel().tween_property(mat, "emission_energy_multiplier", 0.0, 0.5)
+
+static func _collect_meshes(n: Node) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	if n is MeshInstance3D:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_collect_meshes(c))
+	return out
 
 ## Splitter death: the wreck forks into two skitters that scuttle out of the
 ## debris — so wiping a clustered pack can briefly make MORE targets, not fewer.

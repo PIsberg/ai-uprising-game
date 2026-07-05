@@ -174,12 +174,14 @@ func _state_attack(delta: float) -> void:
 	_face_target(delta)
 	var dist := global_position.distance_to(target.global_position)
 	# Crowded -> ground slam. In reach -> overhead smash. Otherwise charge in.
-	if _slam_cd <= 0.0 and dist <= slam_trigger_range:
-		_begin_slam()
-		return
-	if _smash_cd <= 0.0 and dist <= smash_range:
-		_begin_smash()
-		return
+	# Opening-seconds grace: still charge into range, just don't land a hit yet.
+	if not GameState.attack_grace_active():
+		if _slam_cd <= 0.0 and dist <= slam_trigger_range:
+			_begin_slam()
+			return
+		if _smash_cd <= 0.0 and dist <= smash_range:
+			_begin_smash()
+			return
 	if dist > smash_range * 0.85:
 		_charge(delta)
 	else:

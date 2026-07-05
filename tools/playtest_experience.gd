@@ -21,7 +21,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _state(tag: String) -> void:
-	var hpv = _player.hp.health if (_player and _player.hp) else -1
+	var hpv = _player.hp.current_health if (_player and _player.hp) else -1
 	print("BEAT %-16s t=%5.1f hp=%s kills=%d tasks=%s" % [tag,
 		Time.get_ticks_msec() / 1000.0 - _t0, hpv, GameState.kills,
 		str(GameState.level_tasks.map(func(t): return "%s%s" % [t["id"], "+" if t["done"] else "-"]))])
@@ -124,5 +124,5 @@ func _run() -> void:
 	await _fight_until(GameState.kills + 2, 25.0)
 	_shot("07_wave_fight")
 	_state("END")
-	print("PLAYTEST DONE kills=", GameState.kills, " hp=", _player.hp.health if _player.hp else -1)
+	print("PLAYTEST DONE kills=", GameState.kills, " hp=", _player.hp.current_health if _player.hp else -1)
 	get_tree().quit()

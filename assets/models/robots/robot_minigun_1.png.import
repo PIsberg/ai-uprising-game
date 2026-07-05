@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://oer4fe7nuxny"
-path="res://.godot/imported/robot_minigun_1.png-f22eba0cdb869f831219151da1630bfa.ctex"
+path.s3tc="res://.godot/imported/robot_minigun_1.png-f22eba0cdb869f831219151da1630bfa.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6ab963d122ade45e86443bc27a1783fb"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/robots/robot_minigun_1.png"
-dest_files=["res://.godot/imported/robot_minigun_1.png-f22eba0cdb869f831219151da1630bfa.ctex"]
+dest_files=["res://.godot/imported/robot_minigun_1.png-f22eba0cdb869f831219151da1630bfa.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

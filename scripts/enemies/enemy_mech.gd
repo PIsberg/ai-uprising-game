@@ -99,7 +99,8 @@ func _state_attack(delta: float) -> void:
 		return
 	var dist := global_position.distance_to(target.global_position)
 	if dist < charge_threshold:
-		_do_stomp_if_close()
+		if not GameState.attack_grace_active():
+			_do_stomp_if_close()
 		_charging = true
 	else:
 		_charging = false
@@ -111,7 +112,7 @@ func _state_attack(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, dir.z * charge_speed, 16.0 * delta)
 	else:
 		_decelerate()
-		if _attack_timer <= 0.0:
+		if _attack_timer <= 0.0 and not GameState.attack_grace_active():
 			_fire_rocket()
 			_attack_timer = attack_interval()
 

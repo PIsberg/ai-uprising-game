@@ -79,6 +79,9 @@ var _overload_t: float = 0.0
 var _scan_timer: float = 0.0
 var _scan_dir: float = 1.0
 var _has_last_known: bool = false
+var _evade_dir: Vector3 = Vector3.ZERO ## Scramble heading away from a spotted grenade.
+var _evade_t: float = 0.0 ## While >0, the scramble overrides normal state movement.
+var _danger_cd: float = 0.0 ## Throttle for the grenade proximity scan.
 var _stuck_time: float = 0.0 ## Seconds spent commanded to move but barely moving (wall-pinned).
 var _recovery_timer: float = 0.0
 var _recovery_dir: Vector3 = Vector3.ZERO
@@ -473,6 +476,21 @@ func _on_enter_state(_s: State) -> void:
 	pass
 
 func _run_state(delta: float) -> void:
+	# GRENADE! Combat-aware units that spot a live charge cooking nearby
+	# scramble straight away from it instead of standing on the blast — even
+	# mid-windup (the fizzled attack reads as panic, which it is). Patrols and
+	# idlers don't see it coming.
+	_danger_cd -= delta
+	if _danger_cd <= 0.0:
+		_danger_cd = 0.2
+		_check_grenade_danger()
+	if _evade_t > 0.0 and _lunge_time <= 0.0:
+		_evade_t -= delta
+		_telegraphing = false
+		_face_dir(_evade_dir, delta)
+		velocity.x = _evade_dir.x * chase_speed() * 1.15
+		velocity.z = _evade_dir.z * chase_speed() * 1.15
+		return
 	match state:
 		State.IDLE:
 			_state_idle(delta)
@@ -486,6 +504,28 @@ func _run_state(delta: float) -> void:
 			_state_attack(delta)
 		State.STAGGER:
 			_state_stagger(delta)
+
+## Scan for a live grenade close enough to hurt (throttled to 5 Hz). Awareness
+## rule: only units already in the fight react — grenades still work as an
+## opener on unaware patrols.
+func _check_grenade_danger() -> void:
+	if state != State.CHASE and state != State.ATTACK and state != State.ALERT:
+		return
+	var best_d := 5.5
+	var away := Vector3.ZERO
+	for g in get_tree().get_nodes_in_group("grenade"):
+		var gp := (g as Node3D).global_position
+		var d := global_position.distance_to(gp)
+		if d < best_d:
+			best_d = d
+			away = global_position - gp
+	if away == Vector3.ZERO:
+		return
+	away.y = 0.0
+	if away.length() < 0.05: # grenade dead underfoot: any direction beats none
+		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
+	_evade_dir = away.normalized()
+	_evade_t = 0.7
 
 func _state_idle(delta: float) -> void:
 	_decelerate()
@@ -594,6 +634,11 @@ func _state_attack(delta: float) -> void:
 		_combat_strafe(delta) # circle-strafe at range instead of standing still
 	else:
 		_decelerate()
+	# Spawn/respawn grace: still chase, flank, and space above — just don't
+	# start (or continue past wind-up into) a new attack while it's active,
+	# so a fresh drop-in gets a couple of seconds to get its bearings.
+	if GameState.attack_grace_active():
+		return
 	# Wind-up telegraph: charge for telegraph_time (eye flare + whine) so the shot
 	# is readable and dodgeable, THEN fire. Units with telegraph_time 0 fire
 	# instantly (or telegraph their own way, like the sniper's charged beam).
@@ -854,6 +899,7 @@ func _clear_hit_flash() -> void:
 			m.material_overlay = null
 
 var _shed_stage: int = 0 ## How many armour panels have torn off (one per health threshold).
+var _weak_core: MeshInstance3D = null ## Glowing precision target exposed once the first panel sheds.
 
 func _on_damaged(_amount: float, source: Node) -> void:
 	if source and source is Node3D:
@@ -911,10 +957,13 @@ func _on_damaged(_amount: float, source: Node) -> void:
 			if frac <= thr:
 				stage += 1
 		if stage > _shed_stage:
+			var first_shed := _shed_stage == 0
 			_shed_stage = stage
 			var off := global_position - src_pos
 			off.y = 0.0
 			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
+			if first_shed:
+				_expose_weak_core() # first panel gone: bare a crit-able core on the chassis
 
 
 ## The attack wind-up made visible + audible: a charging energy orb that swells
@@ -1171,12 +1220,16 @@ func _on_died(_source: Node) -> void:
 	if _spark_emitter and is_instance_valid(_spark_emitter):
 		_spark_emitter.queue_free()
 		_spark_emitter = null
-	
+	if _weak_core and is_instance_valid(_weak_core):
+		_weak_core.queue_free() # wreck shouldn't keep pulsing a crit target
+		_weak_core = null
+
 	# Spawn visual and audio explosion
 	var exp_fx := EXPLOSION.instantiate()
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
 	_spawn_part_debris()
+	_spawn_wreck_fire()
 
 	_drop_loot()
 
@@ -1209,6 +1262,60 @@ func _on_died(_source: Node) -> void:
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
+
+## Brief guttering core fire on the felled wreck — the kill lingers as a burning
+## carcass instead of a model quietly sinking. One eroding flame cone
+## (FlameMaterial) plus a warm shadowless light, guttering out as the carcass
+## sinks. Sits along the topple direction so it burns ON the fallen torso, not
+## at the feet. Chaff-sized bots skip it so swarm wipes stay cheap; LOW skips.
+func _spawn_wreck_fire() -> void:
+	if score_value < 150:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("is_low") and gs.is_low():
+		return
+	var parent := get_parent()
+	if parent == null:
+		return
+	var fire := Node3D.new()
+	var flen := clampf(0.8 + score_value / 400.0, 0.9, 1.8)
+	var flame := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.05 # apex up: a ground fire, not a thruster plume
+	cm.bottom_radius = 0.55
+	cm.height = flen
+	cm.radial_segments = 14
+	var fm := FlameMaterial.make(Color(1.0, 0.72, 0.3), Color(1.0, 0.38, 0.1),
+			4.5, Vector2(0.0, 9.0), 0.5, 0.24) # pan base->apex: flames lick upward
+	cm.material = fm
+	flame.mesh = cm
+	flame.position = Vector3(0, flen * 0.5, 0)
+	fire.add_child(flame)
+	var flight := OmniLight3D.new()
+	flight.light_color = Color(1.0, 0.5, 0.18)
+	flight.light_energy = 4.0
+	flight.omni_range = 7.0
+	flight.shadow_enabled = false
+	flight.position = Vector3(0, 0.5, 0)
+	fire.add_child(flight)
+	parent.add_child(fire)
+	# The wreck topples AWAY from the last shot (same rule as the death tween
+	# below) — put the fire out along that line so it burns on the fallen torso.
+	var fall := Vector3(randf() - 0.5, 0.0, randf() - 0.5).normalized()
+	if _has_last_known:
+		var away := global_position - _last_known_target_pos
+		away.y = 0.0
+		if away.length() > 0.2:
+			fall = away.normalized()
+	fire.global_position = global_position + fall * 0.9 + Vector3(0, 0.25, 0)
+	# Gutter out as the carcass settles (topple ~0.6 s + 1.3 s rest, then sink).
+	var ft := fire.create_tween()
+	ft.tween_interval(1.6)
+	ft.tween_property(flight, "light_energy", 0.0, 0.8)
+	ft.parallel().tween_method(
+			func(v: float): fm.set_shader_parameter("emission_energy", v), 4.5, 0.0, 0.8)
+	ft.parallel().tween_property(flame, "scale", Vector3(0.4, 0.7, 0.4), 0.8)
+	ft.tween_callback(fire.queue_free)
 
 ## Physical wreckage: a handful of armor-plate chunks blasted off the chassis,
 ## tumbling with real physics and bouncing off the floor before burning out.
@@ -1257,6 +1364,54 @@ func _spawn_part_debris() -> void:
 		tw.tween_interval(randf_range(1.6, 2.4))
 		tw.tween_property(mi, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
 		tw.tween_callback(chunk.queue_free)
+
+## Bares a small glowing core on the chassis the instant the first armour panel
+## sheds — a precision-reward mechanic: sustained fire on the same spot pays off
+## with a crit (see weakpoint_multiplier). Bosses (score_value >= 1000) are
+## hand-tuned HP bags and skip it so their fight isn't shortcut by one exposed
+## button. Constraint: it must read as "shoot me" at combat distance, so it
+## sits mid-torso (same height rule as the menace light) and gently pulses.
+func _expose_weak_core() -> void:
+	if score_value >= 1000 or _weak_core != null:
+		return
+	# Mirror _build_menace_glow's mid-torso height so the core lands in the same
+	# readable spot every chassis already flares its damage light from.
+	var top := 0.0
+	for mi in _mesh_instances:
+		if is_instance_valid(mi) and mi.mesh:
+			var aabb: AABB = mi.global_transform * mi.mesh.get_aabb()
+			top = maxf(top, aabb.end.y - global_position.y)
+	var h := clampf(top * 0.55, 0.8, 3.2)
+	var rm := _visual_root as RobotModel
+	var col := rm.menace_color if (rm and rm.menace_glow > 0.0) else Color(1.0, 0.35, 0.1)
+	_weak_core = MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.16
+	sm.height = 0.32
+	_weak_core.mesh = sm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 6.0
+	_weak_core.material_override = mat
+	_weak_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_weak_core.position = Vector3(0, h, 0)
+	add_child(_weak_core)
+	# Gentle scale pulse so it reads as "alive"/targetable without being a strobe.
+	var tw := _weak_core.create_tween().set_loops()
+	tw.tween_property(_weak_core, "scale", Vector3.ONE * 1.3, 0.55) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(_weak_core, "scale", Vector3.ONE, 0.55) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Damage bonus for a hit landing near the exposed core: 1.6x within 0.45m of it,
+## else no bonus. Weapon code multiplies damage by this (see weapon.gd/projectile.gd).
+func weakpoint_multiplier(hit_pos: Vector3) -> float:
+	if _weak_core == null or not is_instance_valid(_weak_core):
+		return 1.0
+	return 1.6 if hit_pos.distance_to(_weak_core.global_position) <= 0.45 else 1.0
 
 ## A single armour panel torn off the chassis at a damage threshold: a flat
 ## metal plate with a faintly-hot torn edge, flung off toward the impact and

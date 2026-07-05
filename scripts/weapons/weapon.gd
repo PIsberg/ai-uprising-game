@@ -585,11 +585,17 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 				is_head = col.is_headshot(hpos.y)
 			elif col is Node3D:
 				is_head = hpos.y - (col as Node3D).global_position.y > 0.6
+			## Weak-point core crit: only the LARGER of headshot/weak-point bonus
+			## applies (no stacking a lucky head+core overlap into a double-dip).
+			var weak_mult := 1.0
+			if col.has_method("weakpoint_multiplier"):
+				weak_mult = col.weakpoint_multiplier(hpos)
+			var is_crit := is_head or weak_mult > 1.0
+			final_damage *= maxf(data.headshot_mult if is_head else 1.0, weak_mult)
 			if is_head:
-				final_damage *= data.headshot_mult
 				AudioBus.play_synth_at("headshot", hpos, -1.0, 1.0)
-			dmg_node.apply_damage(final_damage, _active_shooter, is_head)
-			_enemy_hit_pop(hpos, is_head, final_damage)
+			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
+			_enemy_hit_pop(hpos, is_crit, final_damage)
 			# Punch through to the next enemy if this weapon pierces.
 			if pierces_left > 0 and col is CollisionObject3D:
 				pierces_left -= 1
@@ -778,10 +784,15 @@ func _update_beam(delta: float) -> void:
 		var col := hit.collider as Node
 		var dmg_node: Node = _find_damageable(col) if col else null
 		if dmg_node:
-			dmg_node.apply_damage(eff_damage() * _range_mult(origin.distance_to(hit.position)), _active_shooter)
+			var beam_dmg := eff_damage() * _range_mult(origin.distance_to(hit.position))
+			var weak_mult := 1.0
+			if col.has_method("weakpoint_multiplier"):
+				weak_mult = col.weakpoint_multiplier(hit.position)
+			beam_dmg *= weak_mult
+			dmg_node.apply_damage(beam_dmg, _active_shooter, weak_mult > 1.0)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.
 			if _beam_pop % 4 == 0:
-				_enemy_hit_pop(hit.position, false, eff_damage() * 2.0)
+				_enemy_hit_pop(hit.position, weak_mult > 1.0, beam_dmg * 2.0)
 		elif _beam_pop % 6 == 0:
 			_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
 	fired.emit(self)

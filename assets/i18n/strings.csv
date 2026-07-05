@@ -75,6 +75,8 @@ You're the last patch. Push them back.,You're the last patch. Push them back.,Er
 RANK  %s,RANK  %s,RANGO  %s,RANG  %s,RANG  %s,PATENTE  %s
 Accuracy %d%%,Accuracy %d%%,Precisión %d%%,Précision %d%%,Treffer %d%%,Precisão %d%%
 Best Combo ×%d,Best Combo ×%d,Mejor combo ×%d,Meilleur combo ×%d,Bestes Combo ×%d,Melhor combo ×%d
+KILLS,KILLS,BAJAS,ÉLIMINATIONS,ABSCHÜSSE,ABATES
+DEATHS,DEATHS,MUERTES,MORTS,TODE,MORTES
 ✔ Objective complete — step into the portal,✔ Objective complete — step into the portal,✔ Objetivo completado — entra en el portal,✔ Objectif accompli — entrez dans le portail,✔ Ziel erreicht — betrete das Portal,✔ Objetivo concluído — entre no portal
 Break the Gemini swarm and reach the beacon,Break the Gemini swarm and reach the beacon,Rompe el enjambre Gemini y alcanza la baliza,Brisez l'essaim Gemini et atteignez la balise,Zerschlage den Gemini-Schwarm und erreiche das Leuchtfeuer,Quebre o enxame Gemini e alcance o farol
 Clear the Claude Vault and reach the beacon,Clear the Claude Vault and reach the beacon,Despeja la Bóveda Claude y alcanza la baliza,Nettoyez le Coffre Claude et atteignez la balise,Räume den Claude-Tresor und erreiche das Leuchtfeuer,Limpe o Cofre Claude e alcance o farol
@@ -153,3 +155,12 @@ Pause,Pause,Pausa,Pause,Pause,Pausa
 "Bound ""%s"" to %s.","Bound ""%s"" to %s.","""%s"" asignado a %s.","« %s » associé à %s.","„%s“ auf %s gelegt.","""%s"" vinculado a %s."
 "Bound ""%s"" to %s — removed from: %s","Bound ""%s"" to %s — removed from: %s","""%s"" asignado a %s — quitado de: %s","« %s » associé à %s — retiré de : %s","„%s“ auf %s gelegt — entfernt von: %s","""%s"" vinculado a %s — removido de: %s"
 All controls reset to defaults.,All controls reset to defaults.,Todos los controles restablecidos.,Toutes les commandes ont été réinitialisées.,Alle Steuerungen wurden zurückgesetzt.,Todos os controles foram redefinidos.
+Preset,Preset,Preajuste,Préréglage,Voreinstellung,Predefinição
+Performance,Performance,Rendimiento,Performance,Leistung,Desempenho
+Balanced,Balanced,Equilibrado,Équilibré,Ausgewogen,Equilibrado
+Quality,Quality,Calidad,Qualité,Qualität,Qualidade
+Ultra,Ultra,Ultra,Ultra,Ultra,Ultra
+Window,Window,Ventana,Fenêtre,Fenster,Janela
+Fullscreen,Fullscreen,Pantalla completa,Plein écran,Vollbild,Ecrã inteiro
+Borderless,Borderless,Sin bordes,Sans bordure,Randlos,Sem bordas
+Windowed,Windowed,Ventana,Fenêtré,Fenster,Janela

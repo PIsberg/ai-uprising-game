@@ -5,8 +5,11 @@ extends Control
 @onready var _settings: VBoxContainer = $Center/VBox/SettingsPanel
 @onready var _controls: VBoxContainer = $Center/VBox/ControlsPanel
 @onready var _continue: Button = $Center/VBox/MainButtons/Continue
-@onready var _graphics_btn: Button = $Center/VBox/SettingsPanel/Graphics
-@onready var _volume: HSlider = $Center/VBox/SettingsPanel/VolumeRow/VolumeSlider
+@onready var _grid: GridContainer = $Center/VBox/SettingsPanel/Grid
+@onready var _graphics_label: Label = $Center/VBox/SettingsPanel/Grid/GraphicsRow/Graphics
+@onready var _gfx_down: Button = $Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxDown
+@onready var _gfx_up: Button = $Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxUp
+@onready var _volume: HSlider = $Center/VBox/SettingsPanel/Grid/VolumeRow/VolumeSlider
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -17,13 +20,20 @@ func _ready() -> void:
 	_refresh_graphics_label()
 	_build_extra_settings()
 	_show_panel(_main)
+	if GraphicsSettings.needs_auto_quality:
+		_run_auto_quality_benchmark()
 
 var _fps_btn: Button
 
 ## Adds FOV / sensitivity / invert-Y / framerate controls to the settings panel
 ## at runtime, wired straight to GraphicsSettings (persisted on change).
 func _build_extra_settings() -> void:
-	var back := _settings.get_node_or_null("BackS") as Control
+	# Preset / Window rows are added FIRST (before any other runtime row) so
+	# they land at Grid child indices 2/3, right after the scene's GraphicsRow
+	# (index 0) and VolumeRow (index 1) — GridContainer fills 2-per-row in
+	# child order, so this keeps them visually adjacent to the quality stepper.
+	_add_preset_row()
+	_add_window_mode_row()
 
 	var fov_slider := _add_slider_row("Field of View", 60.0, 110.0, 1.0, GraphicsSettings.fov)
 	fov_slider.value_changed.connect(func(v: float): GraphicsSettings.set_fov(v))
@@ -36,42 +46,42 @@ func _build_extra_settings() -> void:
 	invert.custom_minimum_size = Vector2(360, 44)
 	invert.button_pressed = GraphicsSettings.invert_y
 	invert.toggled.connect(func(p: bool): GraphicsSettings.set_invert_y(p))
-	_settings.add_child(invert)
+	_grid.add_child(invert)
 
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = "Enable GPU Particles"
 	gpu_parts.custom_minimum_size = Vector2(360, 44)
 	gpu_parts.button_pressed = GraphicsSettings.gpu_particles_enabled
 	gpu_parts.toggled.connect(func(p: bool): GraphicsSettings.set_gpu_particles_enabled(p))
-	_settings.add_child(gpu_parts)
+	_grid.add_child(gpu_parts)
 
 	var vol_noise := CheckButton.new()
 	vol_noise.text = "Volumetric Noise Shafts"
 	vol_noise.custom_minimum_size = Vector2(360, 44)
 	vol_noise.button_pressed = GraphicsSettings.volumetric_noise_enabled
 	vol_noise.toggled.connect(func(p: bool): GraphicsSettings.set_volumetric_noise_enabled(p))
-	_settings.add_child(vol_noise)
+	_grid.add_child(vol_noise)
 
 	var tri_robots := CheckButton.new()
 	tri_robots.text = "Triplanar Damage Robots"
 	tri_robots.custom_minimum_size = Vector2(360, 44)
 	tri_robots.button_pressed = GraphicsSettings.robot_triplanar_enabled
 	tri_robots.toggled.connect(func(p: bool): GraphicsSettings.set_robot_triplanar_enabled(p))
-	_settings.add_child(tri_robots)
+	_grid.add_child(tri_robots)
 
 	var puddles := CheckButton.new()
 	puddles.text = "Animated Puddle Ripples"
 	puddles.custom_minimum_size = Vector2(360, 44)
 	puddles.button_pressed = GraphicsSettings.puddle_ripples_enabled
 	puddles.toggled.connect(func(p: bool): GraphicsSettings.set_puddle_ripples_enabled(p))
-	_settings.add_child(puddles)
+	_grid.add_child(puddles)
 
 	var post_proc := CheckButton.new()
 	post_proc.text = "Advanced Lens Flares & Bloom"
 	post_proc.custom_minimum_size = Vector2(360, 44)
 	post_proc.button_pressed = GraphicsSettings.advanced_post_process_enabled
 	post_proc.toggled.connect(func(p: bool): GraphicsSettings.set_advanced_post_process_enabled(p))
-	_settings.add_child(post_proc)
+	_grid.add_child(post_proc)
 
 	_add_color_grade_row()
 
@@ -80,34 +90,34 @@ func _build_extra_settings() -> void:
 	area_lights.custom_minimum_size = Vector2(360, 44)
 	area_lights.button_pressed = GraphicsSettings.area_lights_enabled
 	area_lights.toggled.connect(func(p: bool): GraphicsSettings.set_area_lights_enabled(p))
-	_settings.add_child(area_lights)
+	_grid.add_child(area_lights)
 
 	var hdr := CheckButton.new()
 	hdr.text = tr("HDR Display Output")
 	hdr.custom_minimum_size = Vector2(360, 44)
 	hdr.button_pressed = GraphicsSettings.hdr_output_enabled
 	hdr.toggled.connect(func(p: bool): GraphicsSettings.set_hdr_output_enabled(p))
-	_settings.add_child(hdr)
+	_grid.add_child(hdr)
 
 	var show_fps := CheckButton.new()
 	show_fps.text = tr("Show FPS Counter")
 	show_fps.custom_minimum_size = Vector2(360, 44)
 	show_fps.button_pressed = GraphicsSettings.show_fps
 	show_fps.toggled.connect(func(p: bool): GraphicsSettings.set_show_fps(p))
-	_settings.add_child(show_fps)
+	_grid.add_child(show_fps)
 
 	var dof := CheckButton.new()
 	dof.text = tr("Depth of Field")
 	dof.custom_minimum_size = Vector2(360, 44)
 	dof.button_pressed = GraphicsSettings.dof_enabled
 	dof.toggled.connect(func(p: bool): GraphicsSettings.set_dof_enabled(p))
-	_settings.add_child(dof)
+	_grid.add_child(dof)
 
 	_fps_btn = Button.new()
 	_fps_btn.custom_minimum_size = Vector2(360, 44)
 	_fps_btn.text = tr("Framerate: %s") % GraphicsSettings.fps_label()
 	_fps_btn.pressed.connect(_on_fps_pressed)
-	_settings.add_child(_fps_btn)
+	_grid.add_child(_fps_btn)
 
 	var sfx := _add_slider_row("SFX Volume", 0.0, 1.0, 0.05, AudioBus.get_sfx_volume())
 	sfx.value_changed.connect(func(v: float): AudioBus.set_sfx_volume(v))
@@ -142,7 +152,7 @@ func _build_extra_settings() -> void:
 	callouts.custom_minimum_size = Vector2(360, 44)
 	callouts.button_pressed = GraphicsSettings.combat_callouts_enabled
 	callouts.toggled.connect(func(p: bool): GraphicsSettings.set_combat_callouts_enabled(p))
-	_settings.add_child(callouts)
+	_grid.add_child(callouts)
 
 	# Accessibility: floating damage numbers — Damageable reads
 	# GraphicsSettings.damage_numbers_enabled (see report for the read site).
@@ -151,17 +161,62 @@ func _build_extra_settings() -> void:
 	dmg_numbers.custom_minimum_size = Vector2(360, 44)
 	dmg_numbers.button_pressed = GraphicsSettings.damage_numbers_enabled
 	dmg_numbers.toggled.connect(func(p: bool): GraphicsSettings.set_damage_numbers_enabled(p))
-	_settings.add_child(dmg_numbers)
+	_grid.add_child(dmg_numbers)
 
 	var rebind_btn := Button.new()
 	rebind_btn.custom_minimum_size = Vector2(360, 48)
 	rebind_btn.text = tr("Rebind Controls")
 	rebind_btn.pressed.connect(_on_rebind_controls_pressed)
-	_settings.add_child(rebind_btn)
+	_grid.add_child(rebind_btn)
+	# (Back lives in the panel VBox below the grid, so it stays at the bottom.)
 
-	# Keep the Back button at the bottom of the panel.
-	if back:
-		_settings.move_child(back, _settings.get_child_count() - 1)
+## Preset picker: a one-shot batch applicator, not a stored state. The row
+## always shows a "Preset…" placeholder (selected by default and re-selected
+## after every pick) rather than remembering the last preset chosen — any
+## manual toggle afterward (turning one effect back on/off) would otherwise
+## silently desync a saved preset label from what's actually configured.
+func _add_preset_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Preset")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opt.add_item(tr("Preset…"))
+	for label in GraphicsSettings.PRESET_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = 0 # placeholder — never reflects "the current preset" (see above)
+	opt.item_selected.connect(func(idx: int):
+		if idx == 0: # the placeholder itself — nothing to apply
+			return
+		# Placeholder occupies index 0, so preset ids are shifted by one.
+		GraphicsSettings.apply_preset(idx - 1)
+		get_tree().reload_current_scene())
+	row.add_child(lbl)
+	row.add_child(opt)
+	_grid.add_child(row)
+
+## Window mode picker: Fullscreen (exclusive) / Borderless (windowed
+## fullscreen) / Windowed. Applies live via DisplayServer — no scene reload
+## needed since nothing about the menu's own layout depends on it.
+func _add_window_mode_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Window")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for label in GraphicsSettings.WINDOW_MODE_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = int(GraphicsSettings.window_mode)
+	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_window_mode(idx))
+	row.add_child(lbl)
+	row.add_child(opt)
+	_grid.add_child(row)
 
 ## Color-grade picker: an OptionButton over GraphicsSettings' named presets,
 ## applied live so you can preview the mood shift without leaving the menu.
@@ -180,7 +235,7 @@ func _add_color_grade_row() -> void:
 	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_color_grade(idx))
 	row.add_child(lbl)
 	row.add_child(opt)
-	_settings.add_child(row)
+	_grid.add_child(row)
 
 ## Language picker: an OptionButton of the available locales. Changing it applies
 ## the locale immediately and reloads the menu so every runtime-built label
@@ -203,7 +258,7 @@ func _add_language_row() -> void:
 		get_tree().reload_current_scene())
 	row.add_child(lbl)
 	row.add_child(opt)
-	_settings.add_child(row)
+	_grid.add_child(row)
 
 func _add_slider_row(label: String, mn: float, mx: float, step: float, val: float) -> HSlider:
 	var row := HBoxContainer.new()
@@ -221,7 +276,7 @@ func _add_slider_row(label: String, mn: float, mx: float, step: float, val: floa
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	row.add_child(s)
-	_settings.add_child(row)
+	_grid.add_child(row)
 	return s
 
 func _on_fps_pressed() -> void:
@@ -387,7 +442,45 @@ func _refresh_difficulty_row() -> void:
 		_diff_btns[i].button_pressed = GameState.difficulty == tiers[i]
 
 func _refresh_graphics_label() -> void:
-	_graphics_btn.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
+	_graphics_label.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
+	_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
+	_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
+
+## First launch ever (no persisted quality key): runs QualityBenchmark as an
+## async child so it never blocks menu interactivity — its SubViewport isn't
+## attached anywhere visible, it just renders offscreen behind the menu.
+func _run_auto_quality_benchmark() -> void:
+	# Cleared BEFORE the benchmark finishes (right here, at start): the
+	# language/preset pickers reload the whole scene (see reload_current_scene
+	# below), and a reload mid-benchmark must not be able to kick off a second
+	# one from the freshly-instanced menu.
+	GraphicsSettings.needs_auto_quality = false
+	var bench := QualityBenchmark.new()
+	bench.finished.connect(_on_auto_quality_finished)
+	add_child(bench)
+
+func _on_auto_quality_finished(tier: int) -> void:
+	GraphicsSettings.set_quality(tier)
+	_refresh_graphics_label()
+	_show_auto_quality_toast(GraphicsSettings.LABELS[tier])
+
+## Transient "AUTO QUALITY: <TIER>" banner telling the player what the
+## first-run benchmark picked. Fades itself out and frees — no dismiss needed.
+func _show_auto_quality_toast(label_text: String) -> void:
+	var toast := Label.new()
+	toast.text = tr("AUTO QUALITY: %s") % label_text
+	toast.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
+	toast.add_theme_font_size_override("font_size", 24)
+	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.anchor_right = 1.0
+	toast.offset_top = 24
+	toast.offset_bottom = 60
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(toast)
+	var tween := create_tween()
+	tween.tween_interval(3.0)
+	tween.tween_property(toast, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(toast.queue_free)
 
 # --- main ---
 func _on_play_pressed() -> void:
@@ -440,8 +533,12 @@ func _on_hard_pressed() -> void:
 	GameState.start_campaign(GameState.Difficulty.HARD)
 
 # --- settings ---
-func _on_graphics_pressed() -> void:
-	GraphicsSettings.cycle()
+func _on_graphics_down_pressed() -> void:
+	GraphicsSettings.step_quality(-1)
+	_refresh_graphics_label()
+
+func _on_graphics_up_pressed() -> void:
+	GraphicsSettings.step_quality(1)
 	_refresh_graphics_label()
 
 func _on_volume_changed(value: float) -> void:

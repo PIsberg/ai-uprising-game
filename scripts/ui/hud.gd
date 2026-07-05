@@ -25,7 +25,9 @@ var _reticle_base: Color = Color(1, 1, 1)
 var _cross_time: float = 0.0
 @onready var damage_overlay: ColorRect = $DamageOverlay
 @onready var pause_menu: Control = $PauseMenu
-@onready var pause_graphics: Button = $PauseMenu/VBox/PauseGraphics
+@onready var pause_graphics: Label = $PauseMenu/VBox/PauseGraphicsRow/PauseGraphics
+@onready var pause_gfx_down: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxDown
+@onready var pause_gfx_up: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxUp
 @onready var pause_volume: HSlider = $PauseMenu/VBox/PauseVolumeRow/PauseVolume
 @onready var game_over_menu: Control = $GameOverMenu
 @onready var game_over_restart_btn: Button = $GameOverMenu/VBox/Restart
@@ -54,6 +56,7 @@ var _combo_pop: float = 0.0
 var _last_grade: String = ""
 var _last_stats: Dictionary = {}
 var _auto_advance_armed: bool = false
+var _debrief_label: Label = null ## Compact mission-stats line on the victory screen, built lazily on first level clear.
 var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
 var _kill_edge: TextureRect = null
@@ -606,6 +609,7 @@ func _on_level_completed() -> void:
 	var assess := AIDirector.assessment()
 	if assess != "":
 		win_title.text += "\n\n" + assess
+	_update_debrief_block()
 	if GameState.has_next_level() and not _auto_advance_armed:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
@@ -615,6 +619,29 @@ func _auto_advance() -> void:
 	_auto_advance_armed = false
 	if win_menu.visible and GameState.current_state == GameState.State.LEVEL_COMPLETE:
 		_on_continue_pressed()
+
+## Compact mission debrief: KILLS / DEATHS, one line under the victory title.
+## Deliberately ONLY the two stats the panel didn't already show — the grade
+## line above covers accuracy, best combo and time, so repeating them here
+## would just be noise. Built lazily (like the death-recap labels) and
+## re-populated on every level clear. KILLS reads GameState.kills (the
+## run-cumulative total) rather than a per-level count — the same convention
+## the death-recap screen already uses (hud.gd's _fill_death_recap), so the
+## number means the same thing wherever the player sees a bare "kills" readout.
+func _update_debrief_block() -> void:
+	if _debrief_label == null:
+		_debrief_label = Label.new()
+		_debrief_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_debrief_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_debrief_label.add_theme_font_size_override("font_size", 13)
+		_debrief_label.add_theme_color_override("font_color", Color(0.75, 0.82, 0.8))
+		var vbox := win_title.get_parent()
+		vbox.add_child(_debrief_label)
+		vbox.move_child(_debrief_label, win_title.get_index() + 1)
+	_debrief_label.text = "%s %d   ·   %s %d" % [
+		tr("KILLS"), GameState.kills,
+		tr("DEATHS"), int(_last_stats.get("deaths", GameState.level_deaths)),
+	]
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)
@@ -788,6 +815,10 @@ func _exit_pause() -> void:
 func _refresh_pause_graphics() -> void:
 	if pause_graphics:
 		pause_graphics.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
+	if pause_gfx_down:
+		pause_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
+	if pause_gfx_up:
+		pause_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
 
 # ---------- OVERCLOCK indicator (countdown under the crosshair) ----------
 
@@ -1268,9 +1299,9 @@ func _on_player_damaged(_amount: float, src: Node) -> void:
 	# Rattle the health readout so a hit is felt on the HUD, not just the screen.
 	_juice_shake(health_bar, 6.0)
 	_juice_shake(health_label, 6.0)
-	# Point an edge wedge toward the attacker; it tracks the world position as the
-	# player turns (handled inside the DamageIndicator).
-	if src is Node3D and _dmg_indicator:
+	# Point an arc toward the attacker (skip self-damage — a grenade at your own
+	# feet has no "direction" worth showing).
+	if src is Node3D and src != _player_ref and _dmg_indicator:
 		_dmg_indicator.flash((src as Node3D).global_position)
 	# Badly hurt? The overlord can't resist kicking you while you're down.
 	if _player_ref and _player_ref.hp and _player_ref.hp.max_health > 0.0:
@@ -1347,8 +1378,12 @@ func _on_quit_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
-func _on_pause_graphics_pressed() -> void:
-	GraphicsSettings.cycle()
+func _on_pause_graphics_down_pressed() -> void:
+	GraphicsSettings.step_quality(-1)
+	_refresh_pause_graphics()
+
+func _on_pause_graphics_up_pressed() -> void:
+	GraphicsSettings.step_quality(1)
 	_refresh_pause_graphics()
 
 func _on_pause_volume_changed(value: float) -> void:

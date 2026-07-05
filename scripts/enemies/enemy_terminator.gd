@@ -348,6 +348,9 @@ func _state_attack(delta: float) -> void:
 	_face_target(delta)
 	_decelerate()
 	var dist := global_position.distance_to(target.global_position)
+	# Opening-seconds grace: still plant/track, just don't start anything new.
+	if GameState.attack_grace_active():
+		return
 	# Optic Lance when it's off cooldown and you're at a beam-able distance;
 	# otherwise the dual-cannon burst.
 	if _beam_cd <= 0.0 and dist >= 6.0 and dist <= BEAM_RANGE:

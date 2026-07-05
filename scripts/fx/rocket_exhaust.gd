@@ -8,6 +8,9 @@ extends Node3D
 @export var color: Color = Color(1.0, 0.5, 0.16)
 @export var flame_length: float = 4.2
 @export var flame_radius: float = 0.7
+## The fast spark spray suits a thruster blasting the ground; slower reuses
+## (e.g. the wreck fire) turn it off — at low speed the quads read as squares.
+@export var sparks: bool = true
 
 var intensity: float = 1.0
 
@@ -39,7 +42,8 @@ func _ready() -> void:
 	_light.shadow_enabled = false
 	_light.position = Vector3(0, -flame_length * 0.5, 0)
 	add_child(_light)
-	_add_sparks()
+	if sparks:
+		_add_sparks()
 
 # A tapered cylinder: the narrow nozzle sits at y=0 (the foot), flaring downward.
 func _make_cone(radius: float, length: float, c: Color, energy: float) -> MeshInstance3D:

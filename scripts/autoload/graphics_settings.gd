@@ -8,14 +8,25 @@ extends Node
 ##          volumetric/GI, hard shadows + small atlases, no ambient dust.
 ## MEDIUM — balanced: FSR2 from 77% internal res, SSAO only, soft-low shadows,
 ##          light ambient dust.
-## HIGH   — great looking: native res, all screen-space effects + GI +
-##          volumetric fog, soft-high shadows + 8K sun shadow atlas, TAA,
-##          dense ambient dust.
-## ULTRA  — no compromises: HIGH plus MSAA 2x layered under TAA, ultra-soft
-##          shadow filtering, an 8K positional shadow atlas, longer SSR
-##          marches and ~40% denser ambient detail (dust/stars/puddles/grime).
+## HIGH   — great looking: native res, all screen-space effects + reflection
+##          probe + volumetric fog, soft-high shadows + 8K sun shadow atlas,
+##          TAA, dense ambient dust.
+## ULTRA  — no compromises: HIGH plus a baked VoxelGI real-time bounce pass
+##          (indoor levels), MSAA 2x layered under TAA, ultra-soft shadow
+##          filtering, an 8K positional shadow atlas, longer SSR marches and
+##          ~40% denser ambient detail (dust/stars/puddles/grime).
 enum Quality { LOW, MEDIUM, HIGH, ULTRA }
 var quality: Quality = Quality.HIGH
+
+## True for exactly one boot: the very first time this install has ever
+## loaded settings.cfg (no "video"/"quality" key yet). GPU-name heuristics lie
+## constantly (integrated vs discrete naming, driver string differences) — a
+## short measured render burn (see QualityBenchmark) behind the main menu is
+## honest about what this machine can push, so the menu benchmarks once and
+## picks a starting tier instead of guessing. Existing installs never see
+## this go true again once a quality key exists. Defaults to HIGH pre-benchmark
+## (the fallback if the benchmark can't run, e.g. headless).
+var needs_auto_quality: bool = false
 
 # Display / input preferences (also persisted to settings.cfg). The player reads
 # fov / sensitivity / invert_y on spawn; max_fps applies immediately.
@@ -92,6 +103,16 @@ const FPS_OPTIONS := [0, 30, 60, 120, 144]
 const SETTINGS_PATH := "user://settings.cfg"
 const LABELS := ["LOW", "MEDIUM", "HIGH", "ULTRA"]
 
+## Batch-configure presets for the whole graphics feature set (see apply_preset
+## below). Plain int constants rather than an enum — an enum named e.g.
+## "QUALITY"/"ULTRA" would collide with the bare Quality.QUALITY/ULTRA constants
+## GDScript already exposes in this script's scope.
+const PRESET_PERFORMANCE := 0
+const PRESET_BALANCED := 1
+const PRESET_QUALITY := 2
+const PRESET_ULTRA := 3
+const PRESET_LABELS := ["Performance", "Balanced", "Quality", "Ultra"]
+
 ## Selectable UI languages: [locale code, native display name]. English is the
 ## default and the fallback for any string a language hasn't translated yet.
 const LANGUAGES := [
@@ -102,6 +123,14 @@ const LANGUAGES := [
 	["pt", "Português"],
 ]
 var language: String = "en"
+
+## Window presentation mode. BORDERLESS (a full-screen *window*, no exclusive
+## mode switch) is the default because it matches project.godot's existing
+## window/size/mode=3 boot default — adding this picker shouldn't change how
+## the game already presents itself on a fresh install.
+enum WindowMode { FULLSCREEN, BORDERLESS, WINDOWED }
+const WINDOW_MODE_LABELS := ["Fullscreen", "Borderless", "Windowed"]
+var window_mode: WindowMode = WindowMode.BORDERLESS
 
 # ---------- key rebinding ----------
 #
@@ -290,6 +319,7 @@ func _ready() -> void:
 	apply_keybinds() # after GameState's default gamepad injection — see ordering note above
 	_apply_viewport.call_deferred()
 	_apply_hdr_output.call_deferred()
+	_apply_window_mode.call_deferred()
 	Engine.max_fps = max_fps
 
 ## Switch UI language live and persist it. Controls re-translate automatically;
@@ -361,6 +391,11 @@ func set_quality(q: int) -> void:
 	_apply_viewport()
 	_apply_to_live_environment()
 	_save_settings()
+
+## Step quality up/down without wrapping, so a struggling machine can go
+## straight from HIGH to MEDIUM without passing through ULTRA.
+func step_quality(delta: int) -> void:
+	set_quality(int(quality) + delta)
 
 # ---------- advanced settings triggers ----------
 
@@ -447,6 +482,64 @@ func set_damage_numbers_enabled(v: bool) -> void:
 	damage_numbers_enabled = v
 	_save_settings()
 
+# ---------- graphics presets ----------
+
+## One-shot batch configuration of the whole graphics feature set (quality tier,
+## render scale, and the per-feature toggles). This is deliberately NOT stored
+## as "the current preset" anywhere — the settings menu always shows a
+## "Preset…" placeholder rather than remembering the last one picked, because
+## any single manual toggle afterward (e.g. turning puddles back on) would
+## silently desync a saved preset label from what's actually configured.
+## Each set_* call below already applies + persists itself, so nothing extra
+## is needed at the end.
+##
+## hdr_output_enabled is NEVER touched here: hdr_output_requested has hung
+## headless/dummy display servers in the past (it's a genuine per-display
+## capability query, not a pure render setting), so it stays a manual-only
+## toggle regardless of preset.
+func apply_preset(p: int) -> void:
+	match p:
+		PRESET_PERFORMANCE:
+			set_quality(Quality.LOW)
+			set_render_scale(0.67)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(false)
+			set_robot_triplanar_enabled(false)
+			set_puddle_ripples_enabled(false)
+			set_advanced_post_process_enabled(false)
+			set_area_lights_enabled(false)
+			set_dof_enabled(false)
+		PRESET_BALANCED:
+			set_quality(Quality.MEDIUM)
+			set_render_scale(0.85)
+			set_gpu_particles_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_volumetric_noise_enabled(false)
+			set_advanced_post_process_enabled(false)
+			set_area_lights_enabled(false)
+			set_dof_enabled(false)
+		PRESET_QUALITY:
+			set_quality(Quality.HIGH)
+			set_render_scale(1.0)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_advanced_post_process_enabled(true)
+			set_area_lights_enabled(true)
+			set_dof_enabled(false)
+		PRESET_ULTRA:
+			set_quality(Quality.ULTRA)
+			set_render_scale(1.0)
+			set_gpu_particles_enabled(true)
+			set_volumetric_noise_enabled(true)
+			set_robot_triplanar_enabled(true)
+			set_puddle_ripples_enabled(true)
+			set_advanced_post_process_enabled(true)
+			set_area_lights_enabled(true)
+			set_dof_enabled(false)
+
 ## Switches the color-grade preset live and persists it.
 func set_color_grade(v: int) -> void:
 	color_grade = clampi(v, 0, ColorGrade.size() - 1) as ColorGrade
@@ -477,6 +570,33 @@ func _apply_hdr_output() -> void:
 	var vp := get_viewport()
 	if vp and "use_hdr_2d" in vp:
 		vp.use_hdr_2d = hdr_output_enabled
+
+# ---------- window mode ----------
+
+## Switches window presentation live and persists it.
+func set_window_mode(m: int) -> void:
+	window_mode = clampi(m, 0, WindowMode.size() - 1) as WindowMode
+	_apply_window_mode()
+	_save_settings()
+
+## Applies window_mode via DisplayServer. Guarded for headless (import runs,
+## the probe/CI harness) — there's no real window there, and calling these on
+## a headless display server is at best a no-op and at worst a crash.
+func _apply_window_mode() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	match window_mode:
+		WindowMode.FULLSCREEN:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+		WindowMode.BORDERLESS:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+		WindowMode.WINDOWED:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			var size := Vector2i(1600, 900)
+			DisplayServer.window_set_size(size)
+			var screen := DisplayServer.screen_get_size()
+			var screen_pos := DisplayServer.screen_get_position()
+			DisplayServer.window_set_position(screen_pos + (screen - size) / 2)
 
 func _apply_to_live_robots() -> void:
 	if not is_inside_tree():
@@ -653,7 +773,8 @@ func _apply_to_live_environment() -> void:
 		if env:
 			apply_to_environment(env, bool(we.get_meta("open_sky", false)))
 
-## Rotate LOW -> MEDIUM -> HIGH -> LOW (drives the single Graphics button).
+## Rotate LOW -> MEDIUM -> HIGH -> ULTRA -> LOW (legacy wrap; menus now use
+## step_quality so nobody has to pass through ULTRA to reach LOW).
 func cycle() -> void:
 	set_quality((int(quality) + 1) % Quality.size())
 
@@ -694,7 +815,25 @@ func _apply_viewport() -> void:
 	var rs := clampf(render_scale, 0.5, 1.0)
 	vp.scaling_3d_scale = rs
 	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if rs >= 0.999 else Viewport.SCALING_3D_MODE_FSR2
+	vp.fsr_sharpness = 0.1 # sharper-than-default FSR2 reconstruction (0 = sharpest)
 	_apply_shadow_quality()
+	_apply_ss_effect_quality()
+
+## SSAO/SSIL kernel quality per tier. The project setting pins these at HIGH
+## grade for EVERY tier — measured at tens of ms/frame at 4K on a mid GPU
+## (tools/perf_fx_isolate). These are global RenderingServer knobs, so one call
+## covers every Environment.
+func _apply_ss_effect_quality() -> void:
+	var q: int = [
+		RenderingServer.ENV_SSAO_QUALITY_VERY_LOW,
+		RenderingServer.ENV_SSAO_QUALITY_LOW,
+		RenderingServer.ENV_SSAO_QUALITY_MEDIUM,
+		RenderingServer.ENV_SSAO_QUALITY_HIGH,
+	][int(quality)]
+	# Godot-default adaptive/blur/fadeout params; half-res everywhere (the
+	# full-res kernels roughly quadruple the cost for a subtle difference).
+	RenderingServer.environment_set_ssao_quality(q, true, 0.5, 2, 50.0, 300.0)
+	RenderingServer.environment_set_ssil_quality(q, true, 0.5, 4, 50.0, 300.0)
 
 func _apply_shadow_quality() -> void:
 	var levels: Array[int] = [
@@ -707,8 +846,8 @@ func _apply_shadow_quality() -> void:
 	RenderingServer.directional_soft_shadow_filter_set_quality(dq)
 	RenderingServer.positional_soft_shadow_filter_set_quality(dq)
 	# Shadow atlas budgets: resolution where you can see it (8K sun shadows on
-	# HIGH are visibly crisper), memory/fill-rate savings where you can't.
-	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 8192, 8192][int(quality)], true)
+	# ULTRA are visibly crisper), memory/fill-rate savings where you can't.
+	RenderingServer.directional_shadow_atlas_set_size([2048, 4096, 4096, 8192][int(quality)], true)
 	var vp := get_viewport()
 	if vp:
 		vp.positional_shadow_atlas_size = [2048, 4096, 4096, 8192][int(quality)]
@@ -732,7 +871,10 @@ func apply_to_environment(env: Environment, open_sky: bool) -> void:
 			_restore_glow(env)
 		Quality.HIGH:
 			env.ssao_enabled = true
-			env.ssil_enabled = true
+			# SSIL is ULTRA-only: it's the single most expensive screen-space
+			# effect (~30 ms/frame at 4K, tools/perf_fx_isolate) for the
+			# subtlest visual contribution of the set.
+			env.ssil_enabled = false
 			env.ssr_enabled = true
 			env.volumetric_fog_enabled = not open_sky
 			_restore_glow(env)
@@ -770,7 +912,8 @@ func _apply_brightness(env: Environment) -> void:
 
 func _load_settings() -> void:
 	var cf := ConfigFile.new()
-	if cf.load(SETTINGS_PATH) == OK:
+	var loaded := cf.load(SETTINGS_PATH) == OK
+	if loaded:
 		quality = clampi(int(cf.get_value("video", "quality", Quality.HIGH)), 0, Quality.size() - 1) as Quality
 		max_fps = maxi(0, int(cf.get_value("video", "max_fps", 0)))
 		fov = clampf(float(cf.get_value("display", "fov", 85.0)), 60.0, 110.0)
@@ -796,8 +939,28 @@ func _load_settings() -> void:
 		brightness = clampf(float(cf.get_value("display", "brightness", 1.0)), 0.5, 1.5)
 		combat_callouts_enabled = bool(cf.get_value("accessibility", "combat_callouts", true))
 		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
+		window_mode = clampi(int(cf.get_value("display", "window_mode", WindowMode.BORDERLESS)), 0, WindowMode.size() - 1) as WindowMode
 		var raw_overrides = cf.get_value("keybinds", "overrides", {})
 		keybind_overrides = raw_overrides if raw_overrides is Dictionary else {}
+	# Until the player has touched the Render Scale slider, pick a sane default
+	# from the screen: native-res 4K is by far the biggest frame cost on modest
+	# GPUs (tools/perf_fx_isolate: 0.5 scale more than doubled fps), so very
+	# high-res screens start at a ~1440p-equivalent internal res + FSR2 upscale.
+	if not (loaded and cf.has_section_key("video", "render_scale")):
+		render_scale = _auto_render_scale()
+	# First-run-ever (no persisted quality key): flag the main menu to run the
+	# QualityBenchmark. `quality` stays at its HIGH default in the meantime —
+	# that's the fallback if the benchmark can't run (e.g. headless).
+	if not (loaded and cf.has_section_key("video", "quality")):
+		needs_auto_quality = true
+
+## First-run render scale: 1.0 (native) up to 1600-row screens, then whatever
+## scale gives a ~1440p-tall internal resolution, floored at 0.5.
+func _auto_render_scale() -> float:
+	var h := DisplayServer.screen_get_size().y
+	if h <= 0 or h <= 1600: # headless probes report 0 — keep native
+		return 1.0
+	return clampf(1440.0 / float(h), 0.5, 1.0)
 
 func _save_settings() -> void:
 	var cf := ConfigFile.new()
@@ -827,6 +990,7 @@ func _save_settings() -> void:
 	cf.set_value("display", "brightness", brightness)
 	cf.set_value("accessibility", "combat_callouts", combat_callouts_enabled)
 	cf.set_value("accessibility", "damage_numbers", damage_numbers_enabled)
+	cf.set_value("display", "window_mode", int(window_mode))
 	cf.set_value("keybinds", "overrides", keybind_overrides)
 
 	cf.save(SETTINGS_PATH)

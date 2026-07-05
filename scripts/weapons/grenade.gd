@@ -19,6 +19,7 @@ var _pulse_phase: float = 0.0
 var _core_mat: StandardMaterial3D
 
 func _ready() -> void:
+	add_to_group("grenade") # enemies scan this group to scramble clear of the blast
 	# Per-instance core material so simultaneous grenades pulse independently.
 	var core := get_node_or_null("Core") as MeshInstance3D
 	if core and core.mesh and core.mesh.material is StandardMaterial3D:

@@ -287,9 +287,25 @@ text = "Resume"
 layout_mode = 2
 text = "Restart"
 
-[node name="PauseGraphics" type="Button" parent="PauseMenu/VBox"]
+[node name="PauseGraphicsRow" type="HBoxContainer" parent="PauseMenu/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GfxDown" type="Button" parent="PauseMenu/VBox/PauseGraphicsRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+text = "−"
+
+[node name="PauseGraphics" type="Label" parent="PauseMenu/VBox/PauseGraphicsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Graphics: HIGH"
+horizontal_alignment = 1
+
+[node name="GfxUp" type="Button" parent="PauseMenu/VBox/PauseGraphicsRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+text = "+"
 
 [node name="PauseVolumeRow" type="HBoxContainer" parent="PauseMenu/VBox"]
 layout_mode = 2
@@ -353,9 +369,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -180.0
-offset_top = -140.0
+offset_top = -165.0
 offset_right = 180.0
-offset_bottom = 140.0
+offset_bottom = 165.0
 
 [node name="VBox" type="VBoxContainer" parent="WinMenu"]
 layout_mode = 1
@@ -386,7 +402,8 @@ text = "Main Menu"
 
 [connection signal="pressed" from="PauseMenu/VBox/Resume" to="." method="_on_resume_pressed"]
 [connection signal="pressed" from="PauseMenu/VBox/Restart" to="." method="_on_restart_pressed"]
-[connection signal="pressed" from="PauseMenu/VBox/PauseGraphics" to="." method="_on_pause_graphics_pressed"]
+[connection signal="pressed" from="PauseMenu/VBox/PauseGraphicsRow/GfxDown" to="." method="_on_pause_graphics_down_pressed"]
+[connection signal="pressed" from="PauseMenu/VBox/PauseGraphicsRow/GfxUp" to="." method="_on_pause_graphics_up_pressed"]
 [connection signal="value_changed" from="PauseMenu/VBox/PauseVolumeRow/PauseVolume" to="." method="_on_pause_volume_changed"]
 [connection signal="pressed" from="PauseMenu/VBox/Quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="GameOverMenu/VBox/Restart" to="." method="_on_death_restart_pressed"]

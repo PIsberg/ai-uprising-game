@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cprobe0weakpoint1"]
+
+[ext_resource type="Script" path="res://tests/weakpoint_probe.gd" id="1_p"]
+
+[node name="WeakpointProbe" type="Node3D"]
+script = ExtResource("1_p")

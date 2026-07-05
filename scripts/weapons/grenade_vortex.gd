@@ -25,6 +25,7 @@ var _pulse_phase: float = 0.0
 var _vortex: Node3D                        # spinning well VFX, spawned at collapse
 
 func _ready() -> void:
+	add_to_group("grenade") # enemies scan this group to scramble clear of the well
 	var core := get_node_or_null("Core") as MeshInstance3D
 	if core and core.mesh and core.mesh.material is StandardMaterial3D:
 		_core_mat = core.mesh.material.duplicate()

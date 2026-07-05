@@ -798,6 +798,7 @@ static func _crucible() -> Dictionary:
 			"sun_color": Color(1.0, 0.6, 0.35), "sun_energy": 0.7,
 			"contrast": 1.22, "saturation": 1.15, "brightness": 0.86,
 			"volumetric_density": 0.012,
+			"ash": true,
 		},
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.2), "height": 5.5},
 		"light_shafts": [0, 1, 2],
@@ -2945,6 +2946,7 @@ static func _lava_world() -> Dictionary:
 			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
 			"contrast": 1.2, "saturation": 1.2, "brightness": 0.88,
 			"volumetric_density": 0.007,
+			"ash": true,
 		},
 		"lights": [
 			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
@@ -3051,6 +3053,8 @@ static func _water_world() -> Dictionary:
 			"sun_color": Color(0.6, 0.85, 1.0), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.15, "brightness": 0.9,
 			"volumetric_density": 0.012,
+			# A storm feeding the flood — the basin overflowed for a reason.
+			"weather": "rain",
 		},
 		"lights": [
 			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.4, "range": 22},

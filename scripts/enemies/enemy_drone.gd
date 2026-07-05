@@ -163,7 +163,7 @@ func _state_attack(delta: float) -> void:
 	_hover_phase += delta * hover_freq
 	var desired_y := target.global_position.y + fly_height + sin(_hover_phase) * hover_amplitude
 	velocity.y = move_toward(velocity.y, (desired_y - global_position.y) * 5.0, 30.0 * delta)
-	if _attack_timer <= 0.0:
+	if _attack_timer <= 0.0 and not GameState.attack_grace_active():
 		_perform_attack()
 		_attack_timer = attack_interval()
 		if standoff:

@@ -27,7 +27,7 @@ auto_exposure_speed = 0.5
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
 shader = ExtResource("8_post")
 shader_parameter/aberration = 1.1
-shader_parameter/vignette_strength = 0.42
+shader_parameter/vignette_strength = 0.34
 shader_parameter/vignette_softness = 0.55
 shader_parameter/grain_amount = 0.035
 shader_parameter/sharpen = 0.35
