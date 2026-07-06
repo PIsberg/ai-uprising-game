@@ -1262,7 +1262,7 @@ static func _alien() -> Dictionary:
 		"objective": "Sever the off-world beacon and survive the welcoming party",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.5, 1.0, 0.4), "health": 320.0,
+			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.82, 0.32, 1.0), "health": 320.0,
 				"reinforce": [{"type": "alien", "count": 4, "pos": Vector3(0, 0, 10)}]},
 			# Breaking the beacon doesn't end the call — something answers it.
 			{"type": "survive", "after": "core", "seconds": 30.0, "label": "Survive the Hollow's answer"},
@@ -1278,18 +1278,32 @@ static func _alien() -> Dictionary:
 			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.75, 1.0, 0.8),
 			"milkyway": 0.5, "milkyway_tint": Color(0.4, 0.8, 0.5), "moon_color": Color(0.7, 1.0, 0.75),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.4, 0.9, 0.5),
-			"ambient": Color(0.5, 0.9, 0.6), "ambient_energy": 0.5,
-			"sky_contribution": 0.55, "glow": 1.42, "fog_density": 0.013,
+			# Fog pulled down from a near-neon (0.4,0.9,0.5) to a deeper, less
+			# saturated green so the open-sky haze stops washing the whole arena a
+			# flat uniform green — lets the violet beacon + warm spawn light read.
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.26, 0.55, 0.38),
+			# Ambient desaturated (was 0.5,0.9,0.6) + per-level saturation pulled to
+			# 1.0 (below the 1.14 global): this level is so mono-green that LESS
+			# saturation actually reads richer — it stops every surface being shoved
+			# to the same green and lets the violet beacon + amber spawn light hold
+			# their own hue. The green identity stays; the flatness goes.
+			"ambient": Color(0.58, 0.82, 0.66), "ambient_energy": 0.5,
+			"sky_contribution": 0.5, "glow": 1.42, "fog_density": 0.013,
 			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.14, "brightness": 0.84,
+			"contrast": 1.15, "saturation": 1.0, "brightness": 0.84,
 		},
 		# An off-world green god-ray pours down over the contact beacon.
 		"light_shafts": [0],
 		"lights": [
-			{"pos": Vector3(0, 8, 14), "color": Color(0.5, 1.0, 0.4), "energy": 3.2, "range": 34},
+			# Beacon god-ray now pours down ALIEN VIOLET (green's complement) — an
+			# unnatural off-world signal colour amid the green, and the focal
+			# contrast that breaks the monochrome. light_shafts[0] tracks this light.
+			{"pos": Vector3(0, 8, 14), "color": Color(0.72, 0.34, 1.0), "energy": 3.4, "range": 34},
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.4, 1.0, 0.5), "energy": 2.0, "range": 22},
 			{"pos": Vector3(22, 5, -22), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 22},
+			# Warm amber fill over the player spawn / weapon pickup (SW corner): a
+			# third colour note so the approach isn't a flat green field.
+			{"pos": Vector3(-26, 5, -22), "color": Color(1.0, 0.62, 0.32), "energy": 2.4, "range": 24},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},

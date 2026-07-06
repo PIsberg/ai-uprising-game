@@ -297,6 +297,28 @@ func _resolve_def() -> Dictionary:
 
 # ---------- environment ----------
 
+## Cinematic split-tone LUT for Environment.adjustment_color_correction. The
+## engine looks each channel up independently (out.r = ramp(in.r).r, etc.), so a
+## black→white ramp is identity. We tilt the ends: shadows gain a touch of
+## teal/blue, highlights lose a little blue (→ warm), mids stay neutral. Subtle
+## on purpose — it enriches EVERY level's colour without a visible cast. Built
+## once and shared (all levels want the same grade).
+static var _grade_lut: GradientTexture1D
+
+static func _split_tone_lut() -> GradientTexture1D:
+	if _grade_lut != null:
+		return _grade_lut
+	var g := Gradient.new()
+	# Ramp offsets: 0 = shadows, 0.5 = mids (kept neutral), 1 = highlights.
+	g.set_color(0, Color(0.0, 0.03, 0.07))     # shadows lean cool teal
+	g.add_point(0.5, Color(0.5, 0.5, 0.5))      # mids exactly neutral (identity)
+	g.set_color(2, Color(1.0, 0.96, 0.88))      # highlights lean warm
+	var t := GradientTexture1D.new()
+	t.gradient = g
+	t.width = 256
+	_grade_lut = t
+	return _grade_lut
+
 func _build_environment(def: Dictionary) -> void:
 	var e: Dictionary = def.get("env", {})
 	var we := WorldEnvironment.new()
@@ -396,14 +418,20 @@ func _build_environment(def: Dictionary) -> void:
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
-	# Interiors: darken the distance fog so far walls recede into shadow instead of
-	# washing out into a bright themed band (open-sky levels keep their bright haze
-	# so the sky/horizon reads). Big readability + depth win for enclosed arenas.
-	if not def.get("open_sky", false):
-		env.fog_light_color = env.fog_light_color.darkened(0.5)
 	env.fog_density = e.get("fog_density", 0.01)
 	env.fog_aerial_perspective = 0.12
 	env.fog_sky_affect = 0.3
+	# Interiors: pull the distance fog WAY back so enclosed walls keep their own
+	# dark color instead of washing into a bright themed band. The earlier
+	# darken(0.5) alone wasn't enough — the real culprit is aerial perspective
+	# tinting far surfaces toward the fog/sky colour, so the back of a room lifts
+	# into a flat grey haze band. Darker + thinner + almost no aerial-perspective
+	# = the far side reads as shadow, not fog. Open-sky levels keep their bright
+	# atmospheric haze so the sky/horizon still reads with depth.
+	if not def.get("open_sky", false):
+		env.fog_light_color = env.fog_light_color.darkened(0.62)
+		env.fog_density = e.get("fog_density", 0.01) * 0.6
+		env.fog_aerial_perspective = 0.04
 
 	# Volumetric fog is for interior atmosphere / god-rays. Outdoors it floods
 	# the open space with sun in-scatter (a milky veil), so exteriors use only
@@ -423,12 +451,18 @@ func _build_environment(def: Dictionary) -> void:
 	else:
 		env.volumetric_fog_enabled = false
 
-	# Filmic grade: gentle teal shadows / warm highlights, lifted contrast.
-	# Levels can override per-theme (def "env": brightness/contrast/saturation).
+	# Filmic grade: teal shadows / warm highlights, lifted contrast + richer colour.
+	# The AGX tonemapper above is gorgeous but notoriously desaturating, so the
+	# grade pushes saturation back up and adds a real split-tone (cool shadows,
+	# warm highlights) via a colour-correction ramp — the "teal/warm" look this
+	# comment used to only promise. Levels override per-theme (def "env":
+	# brightness/contrast/saturation, or "split_tone": false to opt out).
 	env.adjustment_enabled = true
 	env.adjustment_brightness = e.get("brightness", 0.84)
-	env.adjustment_contrast = e.get("contrast", 1.12)
-	env.adjustment_saturation = e.get("saturation", 1.06)
+	env.adjustment_contrast = e.get("contrast", 1.15)
+	env.adjustment_saturation = e.get("saturation", 1.14)
+	if e.get("split_tone", true):
+		env.adjustment_color_correction = _split_tone_lut()
 	
 	# Scalability: the chosen quality tier strips back the most expensive
 	# screen-space effects so lower-end machines stay smooth. HIGH keeps it all.
