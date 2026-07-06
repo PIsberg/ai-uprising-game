@@ -3055,6 +3055,11 @@ func _build_streetlamps(def: Dictionary) -> void:
 	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
 	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
 	var verge := 6.0
+	# Night levels (env "stars") get denser, brighter lamps so they own the
+	# dark — dusk levels (suburb) keep the sparser, dimmer original spacing.
+	var night: bool = def.get("env", {}).has("stars")
+	var spacing: float = def.get("streetlamp_spacing", 8.5 if night else 11.0)
+	var lamp_energy: float = def.get("streetlamp_energy", 3.2 if night else 2.6)
 
 	# Candidate lamp (xz position, arm yaw). Yaw points the arm/head back at
 	# the road centreline: N-S verge lamps face toward x=0, E-W verge lamps
@@ -3064,7 +3069,7 @@ func _build_streetlamps(def: Dictionary) -> void:
 		var x: float = side * verge
 		var yaw := 0.0 if side < 0.0 else PI
 		var length := hz * 2.0 - 12.0
-		var count := maxi(2, int(round(length / 11.0)))
+		var count := maxi(2, int(round(length / spacing)))
 		for i in count:
 			var t: float = float(i) / float(maxi(count - 1, 1))
 			candidates.append([Vector3(x, 0.0, -hz + 6.0 + length * t), yaw])
@@ -3072,7 +3077,7 @@ func _build_streetlamps(def: Dictionary) -> void:
 		var z: float = side * verge
 		var yaw := -PI * 0.5 if side < 0.0 else PI * 0.5
 		var length := hx * 2.0 - 12.0
-		var count := maxi(2, int(round(length / 11.0)))
+		var count := maxi(2, int(round(length / spacing)))
 		for i in count:
 			var t: float = float(i) / float(maxi(count - 1, 1))
 			candidates.append([Vector3(-hx + 6.0 + length * t, 0.0, z), yaw])
@@ -3089,14 +3094,14 @@ func _build_streetlamps(def: Dictionary) -> void:
 			continue
 		# Every ~5th lamp flickers — occupation infrastructure failing — most
 		# stay steady so the street doesn't feel uniformly broken.
-		_add_streetlamp(pos, yaw, placed % 5 == 0)
+		_add_streetlamp(pos, yaw, placed % 5 == 0, lamp_energy)
 		placed += 1
 
 ## One street lamp: tapered pole, an arm reaching over the road with an
 ## emissive sodium head, and a matching OmniLight3D. A thin collider goes up
 ## before the deferred navmesh bake (same pattern as _add_light_pylon) so
 ## ground robots route around the post instead of clipping it.
-func _add_streetlamp(pos: Vector3, yaw: float, flicker: bool) -> void:
+func _add_streetlamp(pos: Vector3, yaw: float, flicker: bool, energy: float = 2.6) -> void:
 	var pivot := Node3D.new()
 	pivot.position = pos
 	pivot.rotation.y = yaw
@@ -3154,7 +3159,7 @@ func _add_streetlamp(pos: Vector3, yaw: float, flicker: bool) -> void:
 
 	var light := OmniLight3D.new()
 	light.light_color = lamp_col
-	light.light_energy = 2.6
+	light.light_energy = energy
 	light.omni_range = 12.0
 	light.shadow_enabled = false
 	light.light_specular = 0.5
@@ -3791,7 +3796,12 @@ func _build_disco(def: Dictionary) -> void:
 	for i in rigs.size():
 		var r: Dictionary = rigs[i]
 		var pos: Vector3 = r.get("pos", Vector3.ZERO)
-		var height: float = minf(r.get("height", 5.5), WALL_HEIGHT - 0.3)
+		# Open-sky rigs have no ceiling to hang from, so they auto-switch to a
+		# ground mast instead of a drop-rod; a rig can force either explicitly.
+		var use_mast: bool = r.get("mast", def.get("open_sky", false))
+		var height: float = r.get("height", 5.5)
+		if not use_mast:
+			height = minf(height, WALL_HEIGHT - 0.3)
 		var radius: float = r.get("radius", 14.0)
 		var colors: Array = r.get("colors", default_colors)
 		var speed: float = r.get("speed", 1.0)
@@ -3800,18 +3810,46 @@ func _build_disco(def: Dictionary) -> void:
 		pivot.position = Vector3(pos.x, height, pos.z)
 		add_child(pivot)
 
-		# Drop-rod from the ceiling down to the ball — visual only.
-		var rod := MeshInstance3D.new()
-		var rod_mesh := CylinderMesh.new()
-		rod_mesh.top_radius = 0.03
-		rod_mesh.bottom_radius = 0.03
-		rod_mesh.height = maxf(WALL_HEIGHT - height, 0.2)
-		rod_mesh.radial_segments = 6
-		rod_mesh.material = MAT_TRIM
-		rod.mesh = rod_mesh
-		rod.position = Vector3(0, rod_mesh.height * 0.5, 0)
-		rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		pivot.add_child(rod)
+		if use_mast:
+			# Ground mast: a tapered support column from the ground up to the
+			# rig, standing in for the ceiling this open-sky level lacks.
+			var mast := MeshInstance3D.new()
+			var mast_mesh := CylinderMesh.new()
+			mast_mesh.top_radius = 0.09
+			mast_mesh.bottom_radius = 0.16
+			mast_mesh.height = height
+			mast_mesh.radial_segments = 8
+			mast_mesh.material = _color_material(Color(0.1, 0.11, 0.14), 0.5)
+			mast.mesh = mast_mesh
+			mast.position = Vector3(0, -height * 0.5, 0)
+			pivot.add_child(mast)
+
+			# Solid: built before the deferred navmesh bake (same pattern as
+			# _add_light_pylon/_add_streetlamp) so ground robots route around it.
+			var body := StaticBody3D.new()
+			body.collision_layer = 1
+			body.collision_mask = 0
+			var cs := CollisionShape3D.new()
+			var shape := CylinderShape3D.new()
+			shape.radius = 0.18
+			shape.height = height
+			cs.shape = shape
+			body.add_child(cs)
+			body.position = mast.position
+			pivot.add_child(body)
+		else:
+			# Drop-rod from the ceiling down to the ball — visual only.
+			var rod := MeshInstance3D.new()
+			var rod_mesh := CylinderMesh.new()
+			rod_mesh.top_radius = 0.03
+			rod_mesh.bottom_radius = 0.03
+			rod_mesh.height = maxf(WALL_HEIGHT - height, 0.2)
+			rod_mesh.radial_segments = 6
+			rod_mesh.material = MAT_TRIM
+			rod.mesh = rod_mesh
+			rod.position = Vector3(0, rod_mesh.height * 0.5, 0)
+			rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			pivot.add_child(rod)
 
 		# Faceted mirror ball: low-poly sphere, dimly emissive metallic skin so
 		# it glows rather than reading as a flat grey rock.

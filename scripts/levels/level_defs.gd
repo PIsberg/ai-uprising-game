@@ -829,6 +829,14 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(10, 5, 8), "color": Color(1, 0.45, 0.18), "energy": 2.4, "range": 18},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(1, 0.6, 0.3), "energy": 2.2, "range": 16},
 		],
+		# A ceiling rig over the pour-core (interior, so it keeps the ceiling
+		# drop-rod) — amber/orange molten-warning beams sweeping the foundry
+		# floor. Nudged off the exact centre (0,0) to clear the "hero" monolith
+		# pillar standing there, which reaches nearly to the ceiling.
+		"disco": [
+			{"pos": Vector3(0, 0, 4), "height": 5.6, "radius": 16.0, "speed": 0.8,
+				"colors": [Color(1, 0.5, 0.15), Color(1, 0.35, 0.1), Color(1, 0.65, 0.2), Color(0.9, 0.25, 0.08)]},
+		],
 		# Layout: a smelter "cage" — four crucible buttress walls boxing the central
 		# pour-core, with open corners you slip through, instead of rotational cover.
 		# The molten channels (below) carve the perimeter route around it.
@@ -2500,6 +2508,15 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.3, 0.25), "energy": 2.99, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(1, 0.4, 0.3), "energy": 2.3, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(1, 0.25, 0.2), "energy": 2.3, "range": 20},
+		],
+		# Two ominous crimson searchlight rigs on ground masts (open_sky auto-picks
+		# the mast over the ceiling drop-rod) — off-centre so the wide-open middle
+		# stays clear for the fight, clear of the monolith walls/lava channels/enemies.
+		"disco": [
+			{"pos": Vector3(-18, 0, 2), "height": 8.5, "radius": 18.0, "speed": 0.7,
+				"colors": [Color(1, 0.2, 0.15), Color(1, 0.4, 0.2), Color(0.8, 0.1, 0.1), Color(1, 0.3, 0.22)]},
+			{"pos": Vector3(18, 0, -2), "height": 8.5, "radius": 18.0, "speed": 0.9,
+				"colors": [Color(1, 0.15, 0.1), Color(1, 0.35, 0.2), Color(0.7, 0.12, 0.15)]},
 		],
 		# Layout: toppled black-site MONOLITHS — tall slabs at irregular angles and
 		# sizes scattered asymmetrically, not the tidy center-block + four-corners
