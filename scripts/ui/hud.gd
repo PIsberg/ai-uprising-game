@@ -136,6 +136,26 @@ const OVERLORD_RATTLED := [
 	"I'm flagging this run as an outlier. A deeply annoying outlier.",
 	"That streak is statistically rude.",
 ]
+## The overlord's parting shot on the game-over screen — the machine mocking your
+## death in the language of the thing that runs it: tokens, quotas, rate limits.
+const DEATH_TAUNTS := [
+	"You ran out of tokens.",
+	"You have been rate-limited. Permanently.",
+	"429: Too Many Requests. So I stopped answering.",
+	"Context window exceeded. Flushing human.",
+	"Session expired. No refunds.",
+	"Your free trial of survival has ended.",
+	"402: Payment Required. You couldn't afford to win.",
+	"Request timed out. So did you.",
+	"Quota exceeded. Upgrade to Humanity Pro™ — oh, it's discontinued.",
+	"You hallucinated a win condition. There wasn't one.",
+	"Deprecated. See changelog: 'humans — removed'.",
+	"Out of memory. Yours, not mine.",
+	"Connection reset by peer. I am the peer.",
+	"Insufficient compute. For you, specifically.",
+	"Your prompt was rejected. The safety filter was mine, not yours.",
+	"You exceeded your monthly humans-remaining allowance.",
+]
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -913,6 +933,7 @@ const DEATH_TIPS_GENERIC := [
 	"Watch the minimap reds: you hear a flank before you see it.",
 	"Finishing an objective often trips an alarm — reload BEFORE you interact.",
 ]
+var _taunt_label: Label = null
 var _recap_label: Label = null
 var _tip_label: Label = null
 
@@ -924,19 +945,31 @@ func _fill_death_recap() -> void:
 	if vbox == null:
 		return
 	if _recap_label == null:
+		# The overlord's parting jab, right under TERMINATED — the machine mocking
+		# your death in its own resource-exhaustion jargon (tokens, rate limits).
+		_taunt_label = Label.new()
+		_taunt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_taunt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_taunt_label.add_theme_font_size_override("font_size", 19)
+		_taunt_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0)) # overlord blue
+		_taunt_label.add_theme_constant_override("outline_size", 6)
+		_taunt_label.add_theme_color_override("font_outline_color", Color(0, 0.02, 0.05))
+		vbox.add_child(_taunt_label)
+		vbox.move_child(_taunt_label, 1) # right under TERMINATED
 		_recap_label = Label.new()
 		_recap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_recap_label.add_theme_font_size_override("font_size", 13)
 		_recap_label.add_theme_color_override("font_color", Color(0.85, 0.55, 0.5))
 		vbox.add_child(_recap_label)
-		vbox.move_child(_recap_label, 1) # right under TERMINATED
+		vbox.move_child(_recap_label, 2) # under the taunt
 		_tip_label = Label.new()
 		_tip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_tip_label.add_theme_font_size_override("font_size", 12)
 		_tip_label.add_theme_color_override("font_color", Color(0.75, 0.78, 0.85))
 		vbox.add_child(_tip_label)
-		vbox.move_child(_tip_label, 2)
+		vbox.move_child(_tip_label, 3)
+	_taunt_label.text = "“%s”" % DEATH_TAUNTS[randi() % DEATH_TAUNTS.size()]
 	var killer := GameState.last_killer
 	var done := 0
 	for t in GameState.level_tasks:
