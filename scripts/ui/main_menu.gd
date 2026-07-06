@@ -35,6 +35,22 @@ func _build_extra_settings() -> void:
 	_add_preset_row()
 	_add_window_mode_row()
 
+	# GPU / driver readout, pinned just under the panel title. The fastest way for
+	# a player to confirm the game is on their real GPU — a software fallback
+	# (missing/old driver) or the wrong integrated chip is the usual cause of
+	# unexplained lag, and no quality setting can fix that; a driver update does.
+	var gpu_lbl := Label.new()
+	gpu_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	gpu_lbl.text = GraphicsSettings.gpu_summary()
+	if GraphicsSettings.gpu_is_software():
+		gpu_lbl.text += "\n" + tr("⚠ Software rendering — install/update your GPU driver for real performance.")
+		gpu_lbl.modulate = Color(1.0, 0.55, 0.3)
+	elif GraphicsSettings.gpu_is_integrated():
+		gpu_lbl.text += "\n" + tr("Integrated GPU — on a laptop, set this game to your High-performance GPU.")
+		gpu_lbl.modulate = Color(1.0, 0.85, 0.4)
+	_settings.add_child(gpu_lbl)
+	_settings.move_child(gpu_lbl, 1) # just below the "Settings" prompt, above the grid
+
 	var fov_slider := _add_slider_row("Field of View", 60.0, 110.0, 1.0, GraphicsSettings.fov)
 	fov_slider.value_changed.connect(func(v: float): GraphicsSettings.set_fov(v))
 

@@ -462,6 +462,37 @@ func set_render_scale(v: float) -> void:
 	_apply_viewport()
 	_save_settings()
 
+## One-line GPU + driver-API summary for the settings screen, e.g.
+## "NVIDIA GeForce RTX 3060 · Vulkan 1.3.260". Lets a player confirm the game is
+## actually running on their real GPU (and see the driver's Vulkan version) —
+## the single most common cause of "it's laggy" is the machine quietly running
+## on a software rasterizer or the wrong (integrated) GPU.
+func gpu_summary() -> String:
+	var name := RenderingServer.get_video_adapter_name()
+	if name.is_empty():
+		return tr("GPU: unavailable (headless)")
+	var api := RenderingServer.get_video_adapter_api_version()
+	return "GPU: %s%s" % [name, (" · " + api) if not api.is_empty() else ""]
+
+## True when the renderer fell back to CPU/software rasterization (no real GPU
+## acceleration) — the driver is missing/outdated or the GPU isn't exposing
+## Vulkan. Performance is catastrophic in this state no matter the quality tier,
+## so the settings screen flags it loudly and points at a driver update.
+func gpu_is_software() -> bool:
+	if RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_CPU:
+		return true
+	var n := RenderingServer.get_video_adapter_name().to_lower()
+	for tag in ["llvmpipe", "lavapipe", "software", "basic render", "swiftshader", "warp"]:
+		if n.contains(tag):
+			return true
+	return false
+
+## True when running on an integrated GPU — fine on many machines, but on a
+## laptop with a discrete GPU it usually means the game picked the wrong one
+## (a soft warning, not an error).
+func gpu_is_integrated() -> bool:
+	return RenderingServer.get_video_adapter_type() == RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU
+
 ## Human-readable readout for the Render Scale slider: the percentage plus the
 ## effective internal 3D resolution it renders at (window size × scale) — so
 ## "0.70" reads as "70% · 2688×1512" instead of a bare number. FSR2 upscales that
