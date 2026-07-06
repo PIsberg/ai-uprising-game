@@ -132,6 +132,7 @@ func _ready() -> void:
 	nav_agent.path_desired_distance = 0.6
 	nav_agent.target_desired_distance = 0.6
 	_approach_angle = randf() * TAU
+	_see_phase_ms = randi() % SEE_TTL_MS # stagger LOS recomputes so the fleet doesn't all raycast the same frame
 	_visual_root = get_node_or_null("Rig")
 	if _visual_root == null:
 		_visual_root = get_node_or_null("Model")
@@ -342,7 +343,31 @@ func is_headshot(world_y: float) -> bool:
 	var head_y := eye.global_position.y if eye else global_position.y + 1.6
 	return absf(world_y - head_y) <= head_radius
 
+## Line-of-sight, throttled. _can_see is called every physics tick by _perceive
+## AND again inside most subclasses' attack/state logic — 36 call sites, so at 60
+## Hz with a full arena that's thousands of raycasts a second, the dominant slice
+## of combat physics time. LOS doesn't need 60 Hz: memoize the raycast per target
+## for ~SEE_TTL_MS (a ~12 Hz refresh, jittered per-enemy so the fleet doesn't all
+## raycast on one frame) and hand every caller the cached answer in between. A
+## ~100 ms-stale sightline is imperceptible in play (telegraphs are longer than
+## that) and reads as natural reaction lag.
+const SEE_TTL_MS := 85
+var _see_phase_ms: int = 0
+var _see_cache: Dictionary = {} # target instance_id -> [stamp_ms, result]
+
 func _can_see(t: Node3D) -> bool:
+	if t == null:
+		return false
+	var now := Time.get_ticks_msec() + _see_phase_ms
+	var id := t.get_instance_id()
+	var c = _see_cache.get(id)
+	if c != null and now - c[0] < SEE_TTL_MS:
+		return c[1]
+	var result := _compute_can_see(t)
+	_see_cache[id] = [now, result]
+	return result
+
+func _compute_can_see(t: Node3D) -> bool:
 	if eye == null:
 		return false
 	var to := t.global_position - eye.global_position
