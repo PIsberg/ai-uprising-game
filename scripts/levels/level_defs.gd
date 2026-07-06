@@ -818,7 +818,7 @@ static func _crucible() -> Dictionary:
 			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
 			"sky_contribution": 0.35, "glow": 1.12, "fog_density": 0.014,
 			"sun_color": Color(1.0, 0.6, 0.35), "sun_energy": 0.7,
-			"contrast": 1.22, "saturation": 1.15, "brightness": 0.86,
+			"contrast": 1.22, "saturation": 1.03, "brightness": 0.88,
 			"volumetric_density": 0.012,
 			"ash": true,
 		},
@@ -828,6 +828,11 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(-10, 5, -8), "color": Color(1, 0.5, 0.2), "energy": 2.6, "range": 18},
 			{"pos": Vector3(10, 5, 8), "color": Color(1, 0.45, 0.18), "energy": 2.4, "range": 18},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(1, 0.6, 0.3), "energy": 2.2, "range": 16},
+			# Cool contrast fills over the three forge rings so hostiles read as
+			# silhouettes-with-cold-rims against the molten glow, not red-on-red.
+			{"pos": Vector3(-12, 5, -12), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 16},
+			{"pos": Vector3(12, 5, -12), "color": Color(0.52, 0.79, 1.0), "energy": 2.2, "range": 16},
+			{"pos": Vector3(0, 5.5, 12), "color": Color(0.55, 0.8, 1.0), "energy": 2.0, "range": 15},
 		],
 		# A ceiling rig over the pour-core (interior, so it keeps the ceiling
 		# drop-rod) — amber/orange molten-warning beams sweeping the foundry
@@ -1797,7 +1802,7 @@ static func _assembly() -> Dictionary:
 			"ambient": Color(0.9, 0.66, 0.42), "ambient_energy": 0.5,
 			"sky_contribution": 0.4, "glow": 1.12, "fog_density": 0.012,
 			"sun_color": Color(1.0, 0.7, 0.4), "sun_energy": 0.7,
-			"contrast": 1.18, "saturation": 1.14, "brightness": 0.82, "volumetric_density": 0.012,
+			"contrast": 1.18, "saturation": 1.02, "brightness": 0.86, "volumetric_density": 0.012,
 		},
 		# A molten reactor core anchors the plant under a god-ray.
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.15), "height": 6.0},
@@ -1807,6 +1812,11 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(-20, 5, 20), "color": Color(1.0, 0.6, 0.3), "energy": 2.2, "range": 22},
 			{"pos": Vector3(20, 5, -20), "color": Color(1.0, 0.45, 0.2), "energy": 2.2, "range": 22},
 			{"pos": Vector3(20, 5, 20), "color": Color(0.9, 0.5, 0.25), "energy": 2.0, "range": 20},
+			# Cool contrast fills across the big plant floor so hostiles rim out
+			# against the red reactor haze instead of blending into it.
+			{"pos": Vector3(-20, 6, -20), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(0, 7, 20), "color": Color(0.52, 0.79, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(0, 7, -20), "color": Color(0.5, 0.77, 1.0), "energy": 2.2, "range": 20},
 		],
 		# Layout: production-line CONVEYOR RAILS — two long offset assembly rails
 		# flank the reactor, with upright stanchions, instead of the corner-block +
@@ -2987,7 +2997,7 @@ static func _lava_world() -> Dictionary:
 			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
 			"sky_contribution": 0.3, "glow": 1.25, "fog_density": 0.012,
 			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
-			"contrast": 1.2, "saturation": 1.2, "brightness": 0.88,
+			"contrast": 1.2, "saturation": 1.03, "brightness": 0.9,
 			"volumetric_density": 0.007,
 			"ash": true,
 		},
@@ -2995,6 +3005,11 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
 			{"pos": Vector3(-14, 4, -14), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16},
 			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
+			# Cool contrast fills: cold work-lights over the walkways/hub so hostiles
+			# rim out against the all-red forge instead of dissolving into it.
+			{"pos": Vector3(0, 7, 0), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(-7, 5, 9), "color": Color(0.5, 0.76, 1.0), "energy": 1.8, "range": 14},
+			{"pos": Vector3(8, 5, -8), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14},
 		],
 		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
 		# arena has a high sniping vantage, not just one flat plane of gantries.
