@@ -22,6 +22,11 @@ const ENEMY_SCENES := {
 	"gunner": "res://scenes/enemies/gunner.tscn",
 	"raptor": "res://scenes/enemies/raptor.tscn",
 	"archon": "res://scenes/enemies/archon.tscn",
+	"ronin": "res://scenes/enemies/ronin.tscn",
+	"howitzer": "res://scenes/enemies/howitzer.tscn",
+	"orb": "res://scenes/enemies/orb.tscn",
+	"bowler": "res://scenes/enemies/bowler.tscn",
+	"manus": "res://scenes/enemies/manus.tscn",
 }
 
 # name / one-line dossier / display scale / hover height (0 = on the ground).
@@ -49,6 +54,11 @@ const ENEMY_INFO := {
 	"hunter": {"name": "HUNTER", "desc": "A sleek twin-cannon skirmisher. Circle-strafes at mid range and rakes you with rapid bolt bursts. Break line of sight and flank it.", "scale": 1.0, "y": 0.0},
 	"sentinel": {"name": "SENTINEL", "desc": "A four-legged weapons platform — slow, heavily armoured, and patient. Plants at range and lobs heavy bolts. Use cover and chip it down.", "scale": 1.0, "y": 0.0},
 	"mauler": {"name": "MAULER", "desc": "A slab-bodied brawler with two oversized hammer-fists. Slow but brutally tough — it closes in and slams. Kite it and never let it corner you.", "scale": 1.0, "y": 0.0},
+	"ronin": {"name": "RONIN", "desc": "A hooded assassin — revolver slugs at range, sudden flanking dashes, and a two-cut katana combo up close. Drop it before it gets inside your guard.", "scale": 1.0, "y": 0.0},
+	"howitzer": {"name": "HOWITZER", "desc": "A four-legged artillery walker. It plants, whines up a charge, and arcs a heavy shell with wide splash at you. Move on the whine — or get under its barrel.", "scale": 0.6, "y": 0.0},
+	"orb": {"name": "MOLTEN ORB", "desc": "A rolling crusher sphere with a magma core. It builds speed and slams into you — and its core ruptures when it dies. Cut sideways; it corners wide.", "scale": 1.0, "y": 0.0},
+	"bowler": {"name": "STRIKER-9", "desc": "A heavy pitcher that BOWLS molten orbs down the ramps at you — every ball lands rolling and hunts. Kill the pitcher to close the lane.", "scale": 0.8, "y": 0.0},
+	"manus": {"name": "MANUS", "desc": "A colossal severed manipulator arm that crawls on its fingers. It sweeps, slams and GRABS. Its plating is impervious — only the glowing wrist core takes damage. Aim.", "scale": 0.35, "y": 0.0},
 }
 
 const TAGLINES := {

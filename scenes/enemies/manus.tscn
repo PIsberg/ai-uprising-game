@@ -1,0 +1,62 @@
+[gd_scene load_steps=7 format=3 uid="uid://b3manus0boss001"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_manus.gd" id="1_man"]
+[ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
+[ext_resource type="PackedScene" path="res://assets/models/robots/robot_arm_wip_2.glb" id="4_model"]
+
+[sub_resource type="SphereShape3D" id="Sphere_body"]
+radius = 2.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_core"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.32, 0.08, 1)
+emission_energy_multiplier = 4.0
+albedo_color = Color(1, 0.4, 0.1, 1)
+
+[sub_resource type="SphereMesh" id="Sphere_core"]
+radius = 0.5
+height = 1.0
+
+[node name="Manus" type="CharacterBody3D" groups=["enemy"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_man")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+shape = SubResource("Sphere_body")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Mesh" parent="Model" instance=ExtResource("4_model")]
+transform = Transform3D(-1.5556, 0, -1.5556, 0, 2.2, 0, 1.5556, 0, -1.5556, 5.3, 1.1, 1.8)
+
+[node name="WeakSpot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, -3.2)
+
+[node name="Core" type="MeshInstance3D" parent="WeakSpot"]
+mesh = SubResource("Sphere_core")
+material_override = SubResource("Mat_core")
+cast_shadow = 0
+
+[node name="CoreLight" type="OmniLight3D" parent="WeakSpot"]
+light_color = Color(1, 0.4, 0.1, 1)
+light_energy = 2.5
+omni_range = 7.0
+shadow_enabled = false
+
+[node name="Palm" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -4.5)
+
+[node name="Eye" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, -2.5)
+
+[node name="Damageable" type="Node" parent="."]
+script = ExtResource("2_dmg")
+max_health = 2800.0
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 2.4
+height = 3.6
+avoidance_enabled = true

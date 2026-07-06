@@ -52,6 +52,11 @@ const ENEMY_SCENES := {
 	"gunslinger": preload("res://scenes/enemies/gunslinger.tscn"),
 	"whirlwind": preload("res://scenes/enemies/whirlwind.tscn"),
 	"breaker": preload("res://scenes/enemies/breaker.tscn"),
+	"orb": preload("res://scenes/enemies/orb.tscn"),
+	"bowler": preload("res://scenes/enemies/bowler.tscn"),
+	"ronin": preload("res://scenes/enemies/ronin.tscn"),
+	"howitzer": preload("res://scenes/enemies/howitzer.tscn"),
+	"manus": preload("res://scenes/enemies/manus.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 

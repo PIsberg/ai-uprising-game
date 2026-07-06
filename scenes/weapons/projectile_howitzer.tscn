@@ -1,0 +1,41 @@
+[gd_scene load_steps=5 format=3 uid="uid://bhowitzer0proj1"]
+
+[ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_shell"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.42, 0.12, 1)
+emission_energy_multiplier = 12.0
+albedo_color = Color(1, 0.5, 0.18, 1)
+
+[sub_resource type="SphereMesh" id="Sphere_shell"]
+radius = 0.3
+height = 0.6
+material = SubResource("Mat_shell")
+
+[sub_resource type="SphereShape3D" id="Shape_shell"]
+radius = 0.3
+
+[node name="ProjectileHowitzer" type="Area3D"]
+collision_layer = 16
+collision_mask = 3
+script = ExtResource("1_proj")
+trail_color = Color(1, 0.5, 0.18, 1)
+energy_pulse = true
+lifetime = 6.0
+gravity_scale = 0.3
+direct_damage = true
+big_detonation = true
+smoke_trail = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("Sphere_shell")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_shell")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.5, 0.18, 1)
+light_energy = 4.0
+omni_range = 6.0

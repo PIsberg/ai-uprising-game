@@ -23,7 +23,7 @@ static func get_def(id: String) -> Dictionary:
 
 ## Enemy types that headline their own level — used to flag boss levels on the
 ## campaign map. Each appears exactly once across the campaign.
-const BOSS_ENEMY_TYPES := ["colossus", "titan", "overseer", "archon", "terminator"]
+const BOSS_ENEMY_TYPES := ["colossus", "titan", "overseer", "archon", "terminator", "manus"]
 
 ## True if `id`'s level spawns a campaign boss.
 static func level_is_boss(id: String) -> bool:
@@ -517,6 +517,8 @@ static func _frostbreak() -> Dictionary:
 			{"type": "sentinel", "pos": Vector3(-14, 0.5, 6), "trigger": 20},
 			{"type": "ravager", "pos": Vector3(15, 0.5, 6), "trigger": 24},
 			{"type": "skitter", "pos": Vector3(-6, 0.5, -8), "count": 6, "trigger": 16},
+			# A HOWITZER walker shelling the yard from the east fins.
+			{"type": "howitzer", "pos": Vector3(16, 0.5, -8), "trigger": 22},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
@@ -642,6 +644,10 @@ static func _neon() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18},
 			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21},
 			{"type": "reaper", "pos": Vector3(2, 0.5, -7), "trigger": 14},
+			# RONIN assassins ghost through the cabinet lanes — the arcade's
+			# undefeated duellists.
+			{"type": "ronin", "pos": Vector3(14, 0.5, -14), "trigger": 16},
+			{"type": "ronin", "pos": Vector3(-6, 0.5, -12), "trigger": 19},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -1869,6 +1875,10 @@ static func _assembly() -> Dictionary:
 			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28},
 			# A WHIRLWIND buzzsaw drone screaming off the overhead line.
 			{"type": "whirlwind", "pos": Vector3(6, 3.5, 6), "trigger": 22},
+			# MANUS — the plant's colossal master manipulator arm, torn off the
+			# line and feral. It guards the exit quarter: armoured everywhere but
+			# the reactor coupling on its wrist. The Assembly's own hand.
+			{"type": "manus", "pos": Vector3(20, 0.5, 20), "trigger": 26},
 		],
 	}
 
@@ -3014,6 +3024,11 @@ static func _lava_world() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(12, 3, -12), "trigger": 24},
 			{"type": "seeker", "pos": Vector3(-10, 3, -12), "trigger": 18},
 			{"type": "seeker", "pos": Vector3(8, 3, 4), "trigger": 20},
+			# A STRIKER-9 pitcher commands the forge perch, bowling MOLTEN ORBS
+			# down the ramp at anyone crossing the lanes below.
+			{"type": "bowler", "pos": Vector3(0, 3.0, -1), "trigger": 18},
+			{"type": "orb", "pos": Vector3(0, 0.6, -14), "trigger": 15},
+			{"type": "orb", "pos": Vector3(14, 0.6, 0), "trigger": 20},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -3250,6 +3265,10 @@ static func _desert() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26},
 			{"type": "strider", "pos": Vector3(-16, 3.8, 12), "trigger": 26},
 			{"type": "android", "pos": Vector3(22, 0.5, 24), "trigger": 26},
+			# HOWITZER artillery walkers guard the relay across the open flats —
+			# the whole basin is their firing range.
+			{"type": "howitzer", "pos": Vector3(18, 0.5, 10), "trigger": 26},
+			{"type": "howitzer", "pos": Vector3(24, 0.5, -2), "trigger": 28},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(-2, 1.7, 9)},
