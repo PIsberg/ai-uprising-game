@@ -16,8 +16,8 @@ const ORDER: Array = [
 	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker",
-	"terminator", "overseer", "colossus", "smasher", "titan", "archon",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler",
+	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
 const ENTRIES := {
@@ -97,6 +97,41 @@ const ENTRIES := {
 		"strengths": ["Floats above the fight and dives to smash", "Hammer slam hits hard", "Tougher than a recon drone"],
 		"weaknesses": ["No ranged attack — punish it at range", "Slow, glowing, easy to track"],
 		"weapons": ["MK-VII Longshot", "GRK-X Devastator", "AR-7 Pulse Rifle"],
+	},
+	"ronin": {
+		"scene": "res://scenes/enemies/ronin.tscn", "name": "RONIN", "scale": 1.0, "y": 0.0,
+		"desc": "A hooded assassin frame in a tattered green cloak — one red eye, a katana across its back, revolvers on each hip. It snaps off hard slugs at range, breaks your aim with sudden flanking dashes, and finishes inside your guard with a two-cut katana combo.",
+		"strengths": ["Sudden angled dashes ruin your tracking", "Two-cut katana combo hits fast up close", "Accurate revolver slugs at range"],
+		"weaknesses": ["Lighter armour than it looks — sustained fire drops it", "The pause between dashes is your window", "Backpedal during its slash combo"],
+		"weapons": ["SG-12 Breacher", "AR-7 Pulse Rifle", "NV-X Nova Scatter"],
+	},
+	"howitzer": {
+		"scene": "res://scenes/enemies/howitzer.tscn", "name": "HOWITZER", "scale": 0.6, "y": 0.0,
+		"desc": "A four-legged artillery walker — a long-barrelled cannon stalking on bladed crab-legs. It plants, charges with a rising whine, and sends a heavy shell arcing at you; the blast splashes wide. Slow, armoured, and helpless up close.",
+		"strengths": ["Huge engagement range", "Shell splash punishes thin cover", "Heavily armoured carriage"],
+		"weaknesses": ["The charge whine telegraphs every shot — move", "Can't traverse fast — flank it", "Blind under its own barrel: get close and stay there"],
+		"weapons": ["GRK-X Devastator", "ARC-9 Gauss Lance", "OMEGA-X Annihilator"],
+	},
+	"orb": {
+		"scene": "res://scenes/enemies/orb.tscn", "name": "MOLTEN ORB", "scale": 1.0, "y": 0.0, "light": 1.6,
+		"desc": "A spherical crusher — black armour treads wrapped around a blazing magma core. It ROLLS: building speed into a charge, bouncing at you off ramps, and slamming its whole mass into your legs. STRIKER-9 units bowl them downhill as living ordnance. The core ruptures when it dies — step back.",
+		"strengths": ["Outruns you on the flat", "Bounce-hop attack is hard to sidestep", "Death burst punishes point-blank kills"],
+		"weaknesses": ["Corners in wide arcs — cut sideways", "No ranged attack", "Modest armour under the treads"],
+		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "VK-7 Tesla Projector"],
+	},
+	"bowler": {
+		"scene": "res://scenes/enemies/bowler.tscn", "name": "STRIKER-9", "scale": 0.8, "y": 0.0,
+		"desc": "A heavy pitcher frame that holds ramp tops and walkway mouths, conjures MOLTEN ORBS in its fist, and BOWLS them down at you — each ball lands rolling and hunts on its own. Up close it falls back on a two-handed shove.",
+		"strengths": ["Rains rolling ordnance from high ground", "Every throw becomes a live hunter", "Sturdy pitcher chassis"],
+		"weaknesses": ["Kill the pitcher and the lane goes quiet", "Slow between throws — punish the wind-up", "Racks at most three balls at once"],
+		"weapons": ["MK-VII Longshot", "ARC-9 Gauss Lance", "GRK-X Devastator"],
+	},
+	"manus": {
+		"scene": "res://scenes/enemies/manus.tscn", "name": "MANUS", "scale": 0.35, "y": 0.0,
+		"desc": "The assembly plant's master manipulator arm, torn free and feral — a colossal severed hand that drags itself on its fingers. It backhands, palm-slams, and GRABS: snatched off the floor, you're squeezed and hurled. Armoured everywhere but the glowing reactor coupling on its wrist — ONLY the core takes damage.",
+		"strengths": ["Impervious plating — body shots spark off harmlessly", "The grab crushes and throws you across the arena", "Faster on its fingers than it has any right to be"],
+		"weaknesses": ["The wrist core takes AMPLIFIED damage — aim, don't spray", "Every attack is telegraphed — read the coil-up", "In its palm the core is right in your face: empty a mag"],
+		"weapons": ["MK-VII Longshot", "ARC-9 Gauss Lance", "GEM-2 Twin Rail"],
 	},
 	"android": {
 		"scene": "res://scenes/enemies/android.tscn", "name": "INFANTRY ANDROID", "scale": 1.0, "y": 0.0,
