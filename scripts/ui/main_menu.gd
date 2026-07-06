@@ -134,8 +134,19 @@ func _build_extra_settings() -> void:
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
 	# Resolution scale — 1.0 = native/sharp; lower it for performance (FSR2 upscale).
+	# A live readout shows the effective internal resolution ("70% · 2688×1512") so
+	# the slider reads as the resolution/perf control it actually is.
 	var rscale := _add_slider_row("Render Scale", 0.5, 1.0, 0.05, GraphicsSettings.render_scale)
-	rscale.value_changed.connect(func(v: float): GraphicsSettings.set_render_scale(v))
+	rscale.custom_minimum_size = Vector2(120, 0) # make room for the readout in the row
+	rscale.tooltip_text = tr("Lower = faster. Renders the 3D world at this fraction of screen resolution and upscales it (FSR2). The HUD stays sharp.")
+	var rscale_lbl := Label.new()
+	rscale_lbl.custom_minimum_size = Vector2(150, 0)
+	rscale_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	rscale_lbl.text = GraphicsSettings.render_scale_label(GraphicsSettings.render_scale)
+	rscale.get_parent().add_child(rscale_lbl)
+	rscale.value_changed.connect(func(v: float):
+		GraphicsSettings.set_render_scale(v)
+		rscale_lbl.text = GraphicsSettings.render_scale_label(v))
 
 	_add_language_row()
 

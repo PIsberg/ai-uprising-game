@@ -462,6 +462,19 @@ func set_render_scale(v: float) -> void:
 	_apply_viewport()
 	_save_settings()
 
+## Human-readable readout for the Render Scale slider: the percentage plus the
+## effective internal 3D resolution it renders at (window size × scale) — so
+## "0.70" reads as "70% · 2688×1512" instead of a bare number. FSR2 upscales that
+## back to the native window size; the 2D HUD stays sharp at native regardless.
+## Falls back to just the percentage when the window size is unknown (headless).
+func render_scale_label(scale: float) -> String:
+	var s := clampf(scale, 0.5, 1.0)
+	var pct := roundi(s * 100.0)
+	var w := DisplayServer.window_get_size()
+	if w.x <= 0 or w.y <= 0:
+		return "%d%%" % pct
+	return "%d%% · %d×%d" % [pct, roundi(w.x * s), roundi(w.y * s)]
+
 ## Accessibility: brightness multiplier (0.5..1.5) on top of each Environment's
 ## own authored adjustment_brightness. Re-tiers the live level's environment
 ## immediately, same as a quality change.
