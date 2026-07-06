@@ -26,20 +26,32 @@ func _ready() -> void:
 			m.emission = tint_color
 			m.emission_energy_multiplier = 8.0
 			mi.material_override = m
+	# The flash's spill light is the single most-spammed FX light in the game —
+	# one per shot, and the node lingered ~0.45 s for the sparks even after the
+	# light itself zeroed at `lifetime`. Gate it on the global FX-light budget
+	# (over budget: drop it entirely — the emissive flash mesh still reads), and
+	# either way it's freed the instant it goes dark (see _process) instead of
+	# idling in the cluster for the rest of the spark tail.
 	for c in get_children():
 		if c is OmniLight3D:
-			(c as OmniLight3D).light_color = tint_color
+			if FXLights.take():
+				(c as OmniLight3D).light_color = tint_color
+				(c as OmniLight3D).tree_exited.connect(FXLights.give)
+			else:
+				c.queue_free()
 	_spawn_sparks()
 
 func _process(delta: float) -> void:
 	_age += delta
 	if _age > lifetime:
-		# Flash is spent; go dark but linger so the spark burst can finish.
+		# Flash is spent; go dark but linger so the spark burst can finish. FREE the
+		# light now (not just zero it) — a dead light idling in the cluster for the
+		# 0.45 s spark tail was pure cost, and freeing it returns its budget slot.
 		for c in get_children():
 			if c is MeshInstance3D:
 				(c as MeshInstance3D).visible = false
 			elif c is OmniLight3D:
-				(c as OmniLight3D).light_energy = 0.0
+				c.queue_free()
 		if _age > 0.45:
 			queue_free()
 		return

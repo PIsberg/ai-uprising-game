@@ -642,16 +642,22 @@ func _enemy_hit_pop(pos: Vector3, is_head: bool, dmg: float = 10.0) -> void:
 	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	scene.add_child(orb)
 	orb.global_position = pos
-	var light := OmniLight3D.new()
-	light.light_color = col
-	light.light_energy = 4.0
-	light.omni_range = 3.0
-	orb.add_child(light)
+	# Spill light only if the global FX-light budget allows — the orb above is
+	# self-lit (unshaded emissive), so over budget we simply skip the point light.
+	var light: OmniLight3D = null
+	if FXLights.take():
+		light = OmniLight3D.new()
+		light.light_color = col
+		light.light_energy = 4.0
+		light.omni_range = 3.0
+		orb.add_child(light)
+		light.tree_exited.connect(FXLights.give)
 	var tw := orb.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(orb, "scale", Vector3.ONE * (2.4 if is_head else 1.8), 0.11)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.11)
-	tw.tween_property(light, "light_energy", 0.0, 0.11)
+	if light:
+		tw.tween_property(light, "light_energy", 0.0, 0.11)
 	tw.chain().tween_callback(orb.queue_free)
 
 ## Metal chunks/embers flung off the enemy on a hit; more on heavier hits.
@@ -881,16 +887,20 @@ func _energy_muzzle() -> void:
 	orb.material_override = mat
 	orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	muzzle.add_child(orb)
-	var light := OmniLight3D.new()
-	light.light_color = col
-	light.light_energy = 5.0
-	light.omni_range = 5.0
-	orb.add_child(light)
+	var light: OmniLight3D = null
+	if FXLights.take():
+		light = OmniLight3D.new()
+		light.light_color = col
+		light.light_energy = 5.0
+		light.omni_range = 5.0
+		orb.add_child(light)
+		light.tree_exited.connect(FXLights.give)
 	var tw := orb.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(orb, "scale", Vector3.ONE * 1.7, 0.13)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.13)
-	tw.tween_property(light, "light_energy", 0.0, 0.13)
+	if light:
+		tw.tween_property(light, "light_energy", 0.0, 0.13)
 	tw.chain().tween_callback(orb.queue_free)
 
 ## ---------- energy / laser / arc beam flash (hitscan cosmetic) ----------
@@ -913,11 +923,15 @@ func _energy_beam_flash(from: Vector3, to: Vector3) -> void:
 		var orb := _glow_orb(col, 0.14)
 		root.add_child(orb)
 		orb.global_position = end_pt
-		var l := OmniLight3D.new()
-		l.light_color = col
-		l.light_energy = 5.0
-		l.omni_range = 4.0
-		orb.add_child(l)
+		# Budgeted spill light (the glow orb is self-lit; skip the point light when
+		# the FX-light budget is full). The fade loop below finds lights generically.
+		if FXLights.take():
+			var l := OmniLight3D.new()
+			l.light_color = col
+			l.light_energy = 5.0
+			l.omni_range = 4.0
+			orb.add_child(l)
+			l.tree_exited.connect(FXLights.give)
 	if data.arc_fx:
 		_spawn_arc_overlay(root, from, to, col)
 	# A shock-ring punched into the impact plane — the energy bolt's bite.
