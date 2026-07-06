@@ -54,7 +54,7 @@ const LEVEL_COMIC_DEFS := {
 		"fx": [
 			{"kind": "glow", "u": 0.75, "v": 0.5, "size": 110, "color": C_CYAN}, # Cryo core
 			{"kind": "glow", "u": 0.35, "v": 0.6, "size": 40, "color": C_RED}, # Mech eye
-			{"kind": "glow", "u": 0.55, "v": 0.62, "size": 30, "color": C_RED} # Strider eye
+			{"kind": "glow", "u": 0.55, "v": 0.62, "size": 30, "color": C_RED} # sentry eye
 		],
 		"weather": "snow"
 	},
@@ -98,7 +98,7 @@ const LEVEL_COMIC_DEFS := {
 		"image": "res://assets/comics/level_uplink.png",
 		"fx": [
 			{"kind": "glow", "u": 0.35, "v": 0.52, "size": 120, "color": C_BLUE}, # Uplink Dish
-			{"kind": "glow", "u": 0.72, "v": 0.65, "size": 44, "color": C_RED}, # Strider Eye
+			{"kind": "glow", "u": 0.72, "v": 0.65, "size": 44, "color": C_RED}, # sentry eye
 			{"kind": "glow", "u": 0.85, "v": 0.62, "size": 36, "color": C_RED} # Gunner Eye
 		],
 		"weather": "rain"

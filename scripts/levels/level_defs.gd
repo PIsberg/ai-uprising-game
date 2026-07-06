@@ -509,8 +509,8 @@ static func _frostbreak() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20},
 			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19},
-			{"type": "strider", "pos": Vector3(-13, 0.5, 12), "trigger": 17},
-			{"type": "strider", "pos": Vector3(7, 0.5, -12), "trigger": 16},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, 12), "trigger": 17},
+			{"type": "gunner", "pos": Vector3(7, 0.5, -12), "trigger": 16},
 			{"type": "hunter", "pos": Vector3(8, 0.5, 6), "trigger": 16},
 			{"type": "brute", "pos": Vector3(-13, 0.5, -12), "trigger": 21},
 			{"type": "ravager", "pos": Vector3(-8, 0.5, 10), "trigger": 23},
@@ -646,7 +646,7 @@ static func _neon() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(14, 0.5, 0), "trigger": 18},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
 			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14},
-			{"type": "strider", "pos": Vector3(-13, 0.5, 13), "trigger": 17},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, 13), "trigger": 17},
 			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21},
 			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18},
 			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21},
@@ -773,8 +773,8 @@ static func _sublevel() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 14},
 			{"type": "gunner", "pos": Vector3(13, 0.5, -4), "trigger": 16},
 			{"type": "sentinel", "pos": Vector3(-14, 0.5, 2), "trigger": 18},
-			{"type": "strider", "pos": Vector3(-12, 0.5, -12), "trigger": 17},
-			{"type": "strider", "pos": Vector3(12, 0.5, 12), "trigger": 19},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, -12), "trigger": 17},
+			{"type": "gunner", "pos": Vector3(12, 0.5, 12), "trigger": 19},
 			{"type": "vacuum", "pos": Vector3(-6, 0.5, -10), "trigger": 13},
 			{"type": "ravager", "pos": Vector3(10, 0.5, -12), "trigger": 22},
 			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 20},
@@ -906,7 +906,7 @@ static func _crucible() -> Dictionary:
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
 			# Pre-finale foundry: heavier garrison so it's the hardest level before titan.
 			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17},
-			{"type": "strider", "pos": Vector3(16, 0.5, -6), "trigger": 16},
+			{"type": "gunner", "pos": Vector3(16, 0.5, -6), "trigger": 16},
 			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15},
 			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
@@ -1230,7 +1230,7 @@ static func _overseer() -> Dictionary:
 			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
 			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
-			{"type": "strider", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
 			# This Act II boss arena was under-tuned (lower threat than level 2);
 			# the OVERSEER now fields a real escort — more Seeker swarm + heavies.
 			{"type": "seeker", "pos": Vector3(8, 2.5, 8), "trigger": 24},
@@ -1238,7 +1238,7 @@ static func _overseer() -> Dictionary:
 			{"type": "seeker", "pos": Vector3(10, 2.5, -8), "trigger": 28},
 			{"type": "android", "pos": Vector3(-16, 0.5, -16), "count": 3, "trigger": 20},
 			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 22},
-			{"type": "strider", "pos": Vector3(16, 0.5, -4), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(16, 0.5, -4), "trigger": 24},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 26},
 			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 		],
@@ -1368,7 +1368,7 @@ static func _alien() -> Dictionary:
 			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
 			{"type": "mender", "pos": Vector3(-12, 2.5, -8), "trigger": 26},
 			{"type": "alien", "pos": Vector3(18, 2.5, 6), "trigger": 28},
-			{"type": "strider", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
 			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
 			# Act III opener: lift it above the Act II finale so the off-world act ramps up.
@@ -1497,7 +1497,7 @@ static func _titan() -> Dictionary:
 			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
 			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 14), "count": 8, "trigger": 22},
-			{"type": "strider", "pos": Vector3(-14, 0.5, 10), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 10), "trigger": 24},
 			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
 			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
@@ -1755,7 +1755,7 @@ static func _uplink() -> Dictionary:
 			{"type": "android", "pos": Vector3(6, 0.5, 6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, -8)},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 6, "trigger": 20},
-			{"type": "strider", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
 			{"type": "gunner", "pos": Vector3(14, 0.5, 14), "trigger": 22},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 14), "trigger": 22},
 			{"type": "android", "pos": Vector3(12, 0.5, -12), "trigger": 16},
@@ -1873,7 +1873,7 @@ static func _assembly() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
 		],
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
-		# from the line and striders/mech press in — fight to the reactor.
+		# from the line and gunners/mech press in — fight to the reactor.
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
@@ -1888,14 +1888,14 @@ static func _assembly() -> Dictionary:
 			{"type": "warbot", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "warbot", "pos": Vector3(6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(0, 0.5, -8)},
-			{"type": "strider", "pos": Vector3(0, 0.5, 8)},
+			{"type": "gunner", "pos": Vector3(0, 0.5, 8)},
 			{"type": "warbot", "pos": Vector3(10, 0.5, 10), "trigger": 24},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
 			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
 			{"type": "skitter", "pos": Vector3(-10, 0.5, -10), "count": 7, "trigger": 22},
 			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 28},
-			{"type": "strider", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
 			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
@@ -2025,7 +2025,7 @@ static func _mistral() -> Dictionary:
 			{"type": "drone", "pos": Vector3(13, 2.5, 11), "trigger": 16},
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 17},
 			{"type": "mech", "pos": Vector3(15, 0.5, 15), "trigger": 20},
-			{"type": "strider", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
 			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15},
 			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19},
@@ -2196,7 +2196,7 @@ static func _gpt() -> Dictionary:
 			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
 			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
-			{"type": "strider", "pos": Vector3(12, 0.5, 10), "trigger": 17},
+			{"type": "gunner", "pos": Vector3(12, 0.5, 10), "trigger": 17},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, -8)},
@@ -2466,7 +2466,7 @@ static func _claude() -> Dictionary:
 			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16},
 			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14},
 			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
-			{"type": "strider", "pos": Vector3(12, 0.5, -12), "trigger": 18},
+			{"type": "gunner", "pos": Vector3(12, 0.5, -12), "trigger": 18},
 			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20},
 			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16},
@@ -2798,7 +2798,7 @@ static func _suburb() -> Dictionary:
 			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
 			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 13},
 			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 13},
-			{"type": "strider", "pos": Vector3(-16, 0.5, 10), "trigger": 12},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 10), "trigger": 12},
 			{"type": "sniper", "pos": Vector3(7, 4.9, 15), "trigger": 14},
 			# A K-9 HUNTER pack bursts from the yards mid-fight (second wave).
 			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 16},
@@ -3197,7 +3197,7 @@ static func _desert() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "destroy_core", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0,
-				"reinforce": [{"type": "strider", "count": 3, "pos": Vector3(10, 0, 10)}]},
+				"reinforce": [{"type": "gunner", "count": 3, "pos": Vector3(10, 0, 10)}]},
 			# The mast's last transmission called in the cavalry — hold until the
 			# sandstorm swallows their signal.
 			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike"},
@@ -3304,14 +3304,14 @@ static func _desert() -> Dictionary:
 			{"type": "dog", "pos": Vector3(-10, 0.5, -2), "trigger": 18},
 			{"type": "dog", "pos": Vector3(-8, 0.5, 0), "trigger": 18},
 			{"type": "drone", "pos": Vector3(-4, 3.0, -6), "trigger": 16},
-			{"type": "strider", "pos": Vector3(2, 0.5, -10), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(2, 0.5, -10), "trigger": 20},
 			{"type": "sniper", "pos": Vector3(20, 4.5, -16), "trigger": 24},
 			{"type": "gunslinger", "pos": Vector3(14, 0.5, 6), "trigger": 22},
 			{"type": "dog", "pos": Vector3(12, 0.5, 12), "trigger": 22},
 			{"type": "android", "pos": Vector3(18, 0.5, 18), "trigger": 24},
 			{"type": "drone", "pos": Vector3(8, 3.0, 14), "trigger": 22},
 			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26},
-			{"type": "strider", "pos": Vector3(-16, 3.8, 12), "trigger": 26},
+			{"type": "gunner", "pos": Vector3(-16, 3.8, 12), "trigger": 26},
 			{"type": "android", "pos": Vector3(22, 0.5, 24), "trigger": 26},
 			# HOWITZER artillery walkers guard the relay across the open flats —
 			# the whole basin is their firing range.

@@ -1,6 +1,10 @@
 extends Node
 
-const POOL_SIZE := 16
+# Positional-SFX voice pool. Sized so a dense firefight (or a swarm caught in a
+# blast) doesn't round-robin over still-playing voices and cut its own sounds —
+# 16 saturated the instant a mega-bomb killed a cluster. 24 gives headroom without
+# meaningfully taxing the audio mixer.
+const POOL_SIZE := 24
 
 var _pool: Array[AudioStreamPlayer3D] = []
 var _next: int = 0

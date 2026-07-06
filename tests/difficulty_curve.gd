@@ -9,7 +9,7 @@ extends Node
 # threat = measured eval DPS + hp/40 (survivability/exposure). Bosses dominate via hp.
 const THREAT := {
 	"drone": 17.7, "android": 16.3, "spider": 14.4, "mech": 20.8, "skitter": 5.4,
-	"vacuum": 6.9, "hunter": 8.0, "reaper": 12.6, "strider": 12.9, "sniper": 16.3,
+	"vacuum": 6.9, "hunter": 8.0, "reaper": 12.6, "sniper": 16.3,
 	"seeker": 6.7, "brute": 17.0, "gunner": 14.8, "raptor": 9.9, "mender": 6.0,
 	"sentinel": 10.6, "mauler": 22.3, "ravager": 12.8, "warmech": 15.5, "alien": 10.0,
 	"dog": 9.8, "server": 12.6,

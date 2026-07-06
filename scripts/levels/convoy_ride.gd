@@ -12,16 +12,16 @@ extends Node3D
 
 ## Ranged-leaning on purpose: the deck used to fill up with melee flyers
 ## perma-hugging the player (a mosh pit, not a chase). Raptor (flying gunner) and
-## strider (ranged ground trooper — it needs LOS, not a boarding path) now carry
+## the ground Gunner (ranged trooper — it needs LOS, not a boarding path) now carry
 ## most waves; seeker/dog (the true melee/kamikaze pressure) are the exception,
 ## not the norm. Breaker (melee flyer) keeps its 2 slots — it now peels off
 ## between hits instead of camping in your face (see EnemyDrone.standoff).
 const WAVES: Array = [
 	["drone", "drone", "raptor"],
-	["raptor", "drone", "strider"],
-	["dog", "strider", "raptor", "seeker"],
+	["raptor", "drone", "gunner"],
+	["dog", "gunner", "raptor", "seeker"],
 	["raptor", "raptor", "breaker"],
-	["strider", "drone", "raptor", "mender"],
+	["gunner", "drone", "raptor", "mender"],
 	["seeker", "raptor", "raptor", "brute"],
 	["mech", "drone", "raptor", "seeker"],
 	["brute", "breaker", "raptor", "drone"],
@@ -30,7 +30,6 @@ const SCENES := {
 	"drone": preload("res://scenes/enemies/drone.tscn"),
 	"raptor": preload("res://scenes/enemies/raptor.tscn"),
 	"dog": preload("res://scenes/enemies/dog.tscn"),
-	"strider": preload("res://scenes/enemies/strider.tscn"),
 	"seeker": preload("res://scenes/enemies/seeker.tscn"),
 	"breaker": preload("res://scenes/enemies/breaker.tscn"),
 	"mender": preload("res://scenes/enemies/mender.tscn"),
@@ -469,6 +468,15 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 	q.transform = Transform3D(Basis(), pos)
 	q.collision_mask = 0b100 # enemy layer only — tuned as a swarm-killer
 	var hits := get_world_3d().direct_space_state.intersect_shape(q, 64)
+	# Collect the victims (nearest first) instead of damaging them all in the same
+	# frame. A mega-bomb into the swarm can kill ~18 robots at once, and every death
+	# spawns its own explosion FX + positional death sound — 18 of those plus the
+	# bomb's own fireball and a 64-body physics query in ONE frame spiked hard
+	# enough to underrun the WASAPI audio device and drop ALL sound for the rest of
+	# the run. Ripple the damage out over successive frames so the deaths (and their
+	# FX/sounds) spread across ~0.2 s — visually still a single blast, but no frame
+	# ever carries the whole flood at once.
+	var victims: Array = []
 	var seen := {}
 	for h in hits:
 		var c: Object = h.get("collider")
@@ -482,7 +490,27 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 		if d == null:
 			continue
 		var falloff := clampf(1.0 - pos.distance_to(n.global_position) / radius, 0.3, 1.0)
-		d.apply_damage(damage * falloff, player)
+		victims.append({"d": d, "amt": damage * falloff, "dist": pos.distance_to(n.global_position)})
+	victims.sort_custom(func(a, b): return a["dist"] < b["dist"]) # inner ring dies first — reads as an outward blast wave
+	# Batch on a real-time cadence (not per-frame): at a low framerate a per-frame
+	# stagger still bunches the whole flood into one long frame, which is exactly
+	# the stall that drops the audio device. A short wall-clock gap between batches
+	# keeps each frame's FX/sound spawn small regardless of framerate.
+	const PER_BATCH := 3
+	const BATCH_GAP := 0.05
+	var i := 0
+	while i < victims.size():
+		for _j in range(PER_BATCH):
+			if i >= victims.size():
+				break
+			var v = victims[i]
+			i += 1
+			if is_instance_valid(v["d"]):
+				v["d"].apply_damage(v["amt"], player)
+		if i < victims.size():
+			await get_tree().create_timer(BATCH_GAP).timeout
+			if not is_inside_tree():
+				return
 
 func _toast(text: String) -> void:
 	var pl := get_tree().get_first_node_in_group("player")
@@ -671,7 +699,7 @@ func _update_vehicles(delta: float) -> void:
 			spd = speed + 3.2 # closing from behind
 		body.global_position.z -= spd * delta
 
-## Ground chasers with no path onto the moving flatbed (dog, strider, mender,
+## Ground chasers with no path onto the moving flatbed (dog, gunner, mender,
 ## and any gun-truck crew whose ride already died) just fall further and further
 ## behind the truck instead of ever catching up — left to accumulate they'd
 ## litter the highway with pursuit that can no longer matter. Boarders ride the

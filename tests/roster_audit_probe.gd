@@ -8,7 +8,7 @@ extends Node3D
 const GROUPS := [
 	["skitter", "spider", "seeker", "drone", "reaper", "dog"],           # small/fast
 	["hunter", "raptor", "fishbot", "vacuum", "gunslinger", "optic"],    # light skirmishers
-	["strider", "sniper", "gunner", "sentinel", "warbot", "enforcer"],   # ranged troopers
+	["sniper", "gunner", "sentinel", "warbot", "enforcer"],   # ranged troopers
 	["orb", "roller", "breaker", "whirlwind", "mauler", "ravager"],      # melee/rush
 	["brute", "server", "ripper", "android", "mech", "mender"],          # mid bruisers/support
 	["ronin", "howitzer", "bowler", "shark", "terminator"],              # heavies/special

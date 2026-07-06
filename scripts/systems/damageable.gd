@@ -16,10 +16,13 @@ func _ready() -> void:
 
 func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	# A stored shooter (a projectile/explosion's source) can be freed before its
-	# hit lands. Passing a freed object to a typed `Node` param crashes Godot at
-	# the call itself, so we take `source` untyped and null out a dead reference
-	# here — this shields every caller and the source-typed signals below.
-	if source != null and not is_instance_valid(source):
+	# hit lands. Passing a freed OR non-Node object to a typed `Node` param crashes
+	# Godot at the call itself ("Cannot convert argument from Object to Object" when
+	# the `damaged`/`died` signals fan out), so we take `source` untyped and demote
+	# anything that isn't a live Node to null here — shielding every caller and the
+	# source-typed signals below. (is_instance_valid alone missed the freed-Node
+	# case that fires when an enemy dies before its projectile reaches the player.)
+	if not (source is Node and is_instance_valid(source)):
 		source = null
 	
 	# Enemies should not take damage from OTHER enemies' fire. Self-damage stays

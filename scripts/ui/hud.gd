@@ -918,7 +918,6 @@ const DEATH_TIPS := {
 	"SPIDER": "Spiders swarm — fall back to a choke point so they bunch up.",
 	"BRUTE": "Brutes telegraph the charge — dash THROUGH it, not away from it.",
 	"HUNTER": "Hunters flank in pairs — keep a wall on one side and check the map.",
-	"STRIDER": "Striders stagger when a leg takes fire — kneecap them, then finish.",
 	"FLOOD": "Deep water drowns fast — cross at the bridges, not the banks.",
 	"MOLTEN": "The glow means death — lava kills faster than any robot. Take the long way.",
 	"GUNNER": "Gunners spin up before the stream — use the wind-up to reposition.",

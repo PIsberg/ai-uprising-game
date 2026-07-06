@@ -7,7 +7,7 @@ extends Node3D
 
 const TYPES := [
 	"drone", "android", "spider", "mech", "skitter", "vacuum", "hunter",
-	"reaper", "strider", "sniper", "seeker", "brute", "gunner", "raptor",
+	"reaper", "sniper", "seeker", "brute", "gunner", "raptor",
 	"mender", "sentinel", "mauler", "ravager", "warmech", "alien", "dog", "server",
 	"fishbot", "shark",
 	"warbot", "enforcer", "ripper", "whirlwind", "optic", "roller", "gunslinger", "breaker",

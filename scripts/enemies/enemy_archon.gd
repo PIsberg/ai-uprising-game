@@ -36,7 +36,7 @@ const MINION_SCENES := {
 	"mech": preload("res://scenes/enemies/mech.tscn"),
 	"mender": preload("res://scenes/enemies/mender.tscn"),
 	"skitter": preload("res://scenes/enemies/skitter.tscn"),
-	"strider": preload("res://scenes/enemies/strider.tscn"),
+	"gunner": preload("res://scenes/enemies/gunner.tscn"),
 }
 
 ## Wave roster per phase (1/2/3). Each phase pours out a bigger, meaner mix; from
@@ -44,8 +44,8 @@ const MINION_SCENES := {
 ## SKITTER swarms flood the floor to pin you while the heavies close in.
 const WAVES := {
 	1: ["drone", "skitter", "skitter", "android", "android", "skitter", "drone", "spider"],
-	2: ["android", "skitter", "skitter", "spider", "strider", "seeker", "skitter", "drone", "android", "brute"],
-	3: ["brute", "skitter", "strider", "skitter", "spider", "mender", "seeker", "skitter", "mech", "strider", "android", "seeker", "drone"],
+	2: ["android", "skitter", "skitter", "spider", "gunner", "seeker", "skitter", "drone", "android", "brute"],
+	3: ["brute", "skitter", "gunner", "skitter", "spider", "mender", "seeker", "skitter", "mech", "gunner", "android", "seeker", "drone"],
 }
 
 ## How long the core stays exposed (and ARCHON stays vulnerable) after a wave is

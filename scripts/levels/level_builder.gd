@@ -29,7 +29,6 @@ const ENEMY_SCENES := {
 	"archon": preload("res://scenes/enemies/archon.tscn"),
 	"mender": preload("res://scenes/enemies/mender.tscn"),
 	"skitter": preload("res://scenes/enemies/skitter.tscn"),
-	"strider": preload("res://scenes/enemies/strider.tscn"),
 	"gunner": preload("res://scenes/enemies/gunner.tscn"),
 	"raptor": preload("res://scenes/enemies/raptor.tscn"),
 	"vacuum": preload("res://scenes/enemies/vacuum.tscn"),

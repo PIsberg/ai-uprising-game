@@ -11,7 +11,7 @@ const OUT_DIR := "res://docs/screenshots/models"
 # Every enemy scene except legacy/backup chassis.
 const MODELS := [
 	"drone", "spider", "android", "skitter", "mech", "brute", "sniper", "server",
-	"strider", "seeker", "gunner", "raptor", "dog", "vacuum", "reaper", "hunter",
+	"seeker", "gunner", "raptor", "dog", "vacuum", "reaper", "hunter",
 	"sentinel", "mauler", "ravager", "gunslinger", "breaker", "ripper", "roller",
 	"smasher", "whirlwind", "enforcer", "optic", "shark", "fishbot", "mender",
 	"warbot", "alien", "warmech",

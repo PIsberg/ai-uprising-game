@@ -13,7 +13,7 @@ extends Object
 ## specials → bosses). The Encyclopedia shows only the ones the player has met.
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
-	"hunter", "reaper", "strider", "sniper", "seeker", "brute",
+	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
 	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler",
@@ -181,13 +181,6 @@ const ENTRIES := {
 		"strengths": ["Extremely fast charge", "Devastating melee lunge"],
 		"weaknesses": ["Fragile — drop it before it reaches you", "No ranged option"],
 		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", ".50 Maelstrom"],
-	},
-	"strider": {
-		"scene": "res://scenes/enemies/strider.tscn", "name": "STRIDER", "scale": 1.0, "y": 0.0,
-		"desc": "A chicken-walker sentry with a single red eye and a chin gun. Strides to mid range and rakes you.",
-		"strengths": ["Accurate bolt bursts at range", "Strafes to keep distance"],
-		"weaknesses": ["Spindly legs — staggers under heavy fire", "Loses track behind cover"],
-		"weapons": ["MK-VII Longshot", "ARC-9 Gauss Lance", "AR-7 Pulse Rifle"],
 	},
 	"sniper": {
 		"scene": "res://scenes/enemies/sniper.tscn", "name": "SNIPER SENTRY", "scale": 1.0, "y": 0.0,

@@ -5,7 +5,7 @@ extends Node3D
 
 const SHOT_DIR := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private-ai-uprising-game/df4a3e78-e161-445d-96b9-6124bf321864/scratchpad"
 const ROW1 := ["android", "drone", "spider", "dog", "skitter", "vacuum", "roller", "optic", "hunter"]
-const ROW2 := ["mauler", "sentinel", "reaper", "seeker", "breaker", "mender", "gunner", "strider", "gunslinger"]
+const ROW2 := ["mauler", "sentinel", "reaper", "seeker", "breaker", "mender", "gunner", "gunslinger"]
 
 func _ready() -> void:
 	var body := StaticBody3D.new()
