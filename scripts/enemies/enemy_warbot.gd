@@ -18,6 +18,8 @@ const HAND_Z := -0.42
 var _happy: Node3D
 var _angry: Node3D
 var _angry_now: bool = false
+var _angry_mat: StandardMaterial3D
+var _furious: bool = false ## Below the rage threshold it snaps to a heavier, faster barrage.
 
 func _ready() -> void:
 	super._ready()
@@ -91,6 +93,7 @@ func _build_weapons() -> void:
 func _build_face() -> void:
 	var green := _emissive(Color(0.3, 1.0, 0.4), 4.0)
 	var red := _emissive(Color(1.0, 0.2, 0.16), 4.5)
+	_angry_mat = red # kept so the face can flare furious when it's wounded
 	# A near-black panel masks the model's painted-on face so only ours shows.
 	var panel := StandardMaterial3D.new()
 	panel.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -129,3 +132,15 @@ func _physics_process(delta: float) -> void:
 			_happy.visible = not hostile
 		if _angry:
 			_angry.visible = hostile
+	# Wounded rage: past 45% damage the mood face goes FURIOUS and it snaps to a
+	# heavier, faster barrage — the mood screen finally cashed as a mechanic.
+	if not _furious and state != State.DEAD and hp.current_health <= hp.max_health * 0.45:
+		_furious = true
+		burst_count = 8
+		burst_interval = 0.06
+		attack_cooldown = 1.0
+	if _furious and _angry and _angry.visible:
+		var p := 1.0 + sin(_state_timer * 12.0) * 0.09 # a seething throb
+		_angry.scale = Vector3(p, p, 1.0)
+		if _angry_mat:
+			_angry_mat.emission_energy_multiplier = 5.0 + sin(_state_timer * 12.0) * 2.5

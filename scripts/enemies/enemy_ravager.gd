@@ -26,7 +26,7 @@ var _leap_cd: float = 0.0
 @onready var _eye_light: OmniLight3D = $EyeLight
 
 func _ready() -> void:
-	max_health = 220.0
+	max_health = 320.0 # a bulk-sized bruiser — was 220, but its imposing chassis read as squishy for its size
 	move_speed = 4.6
 	turn_speed = 7.0
 	sight_range = 40.0

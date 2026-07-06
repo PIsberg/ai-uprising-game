@@ -14,7 +14,7 @@ var _burst_t: float = 0.0
 
 
 func _ready() -> void:
-	max_health = 72.0
+	max_health = 88.0   # heavier than a hound to match the bulky armoured tick-body it wears (still a fragile, kill-it-fast skirmisher)
 	move_speed = 7.6
 	turn_speed = 8.0
 	sight_range = 38.0

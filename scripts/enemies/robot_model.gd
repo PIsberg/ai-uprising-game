@@ -72,6 +72,10 @@ func _ready() -> void:
 	if fit_height > 0.0 and _mesh:
 		_mesh.visible = false
 		_apply_fit.call_deferred()
+	elif _mesh:
+		# Already sized in the .tscn: no refit, but still clamp the (skinned) cull
+		# AABBs so the model frustum-culls instead of always drawing.
+		_clamp_after_pose.call_deferred()
 	# Flyers (no walk gait) bank like aircraft; walkers just lean a little.
 	if anim_walk == "":
 		bank_max *= 2.6
@@ -138,7 +142,61 @@ func _apply_fit() -> void:
 		var oy := -ab.position.y * s if fit_ground else -rc.y
 		_mesh.transform = Transform3D(basis, Vector3(-rc.x, oy, -rc.z))
 	_mesh_base = _mesh.transform
+	# Now that the real posed bounds are known, pin each sub-mesh's culling box to
+	# the model (see _clamp_cull_aabbs). `ab` is in pre-fit _mesh-local space.
+	var parent := _mesh.get_parent() as Node3D
+	if parent:
+		_clamp_cull_aabbs(parent.global_transform * (_mesh.transform * ab))
 	_mesh.visible = true
+
+## Pin every sub-mesh's culling AABB to the model's real bounds. Imported skinned
+## meshes carry a huge counter-scale in their instance transform (the rig scales
+## verts back down), so their world AABB spans hundreds of metres and they NEVER
+## frustum-cull — they keep drawing and casting sun-shadows off-screen / behind
+## the camera. `world_box` is the model's true world-space extent; each sub-mesh's
+## custom_aabb is set to that box expressed in the mesh's own local space.
+func _clamp_cull_aabbs(world_box: AABB) -> void:
+	if _mesh == null or not is_instance_valid(_mesh) or world_box.size == Vector3.ZERO:
+		return
+	world_box = world_box.grow(maxf(0.6, world_box.size.length() * 0.1)) # margin for wide anims
+	for mi in _collect_meshes(_mesh):
+		mi.custom_aabb = mi.global_transform.affine_inverse() * world_box
+
+## Non-fit models (already sized in their .tscn) skip _apply_fit, so clamp their
+## cull AABBs here once the idle clip has posed the rig. Measures the posed
+## skeleton in WORLD space (bone origins, grown to skin), or falls back to the
+## static mesh AABBs when there's no rig.
+func _clamp_after_pose() -> void:
+	if _mesh == null or not is_instance_valid(_mesh):
+		return
+	for i in 3:
+		await get_tree().process_frame
+	if not is_instance_valid(_mesh):
+		return
+	var skel := _mesh.find_child("Skeleton3D", true, false) as Skeleton3D
+	var ab := AABB()
+	var first := true
+	if skel and skel.get_bone_count() > 0:
+		for b in skel.get_bone_count():
+			var p: Vector3 = (skel.global_transform * skel.get_bone_global_pose(b)).origin
+			if first:
+				ab = AABB(p, Vector3.ZERO); first = false
+			else:
+				ab = ab.expand(p)
+		ab = ab.grow(maxf(0.4, ab.size.length() * 0.1)) # bones sit inside the skin
+	else:
+		for mi in _collect_meshes(_mesh):
+			if mi.mesh == null:
+				continue
+			var w: AABB = mi.global_transform * mi.mesh.get_aabb()
+			# Skip a mesh whose own world AABB is already absurd (the skinned-scale
+			# case) — a bone rig would've been used; here we just have static parts.
+			if first:
+				ab = w; first = false
+			else:
+				ab = ab.merge(w)
+	if not first:
+		_clamp_cull_aabbs(ab)
 
 ## Manual override hook for enemy specials (e.g. the sniper's charge-up).
 func play_named(anim_name: String, blend: float = 0.2) -> void:
