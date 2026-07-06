@@ -558,6 +558,13 @@ static func _neon() -> Dictionary:
 			"volumetric_density": 0.015,
 		},
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.3, 0.9), "height": 5.4},
+		# Two hanging disco rigs over the arcade lanes — mirror ball + spinning
+		# coloured spotlights, the arcade's own party lighting.
+		"disco": [
+			{"pos": Vector3(0, 0, 0), "height": 5.6, "radius": 15.0, "speed": 1.0},
+			{"pos": Vector3(0, 0, 8), "height": 5.2, "radius": 11.0, "speed": 1.4,
+				"colors": [Color(1, 0.2, 0.9), Color(0.2, 0.9, 1), Color(0.7, 0.3, 1), Color(1, 0.5, 0.2)]},
+		],
 		"light_shafts": [0, 1, 2],
 		"lights": [
 			{"pos": Vector3(-9, 4.5, -7), "color": Color(1.0, 0.2, 0.8), "energy": 2.6, "range": 16},
@@ -674,18 +681,27 @@ static func _sublevel() -> Dictionary:
 		"env": {
 			"sky_top": Color(0.03, 0.06, 0.06), "sky_horizon": Color(0.06, 0.14, 0.13),
 			"ground": Color(0.03, 0.05, 0.04), "fog": Color(0.06, 0.16, 0.14),
-			"ambient": Color(0.4, 0.55, 0.52), "ambient_energy": 0.3,
+			# ambient_energy 0.3 -> 0.44, brightness 0.74 -> 0.84: measured mean
+			# luminance 0.051 with 83% of the frame near-black (only 3 weak
+			# omnis over a 40x40 corridor-slalom) — enemies read as silhouettes.
+			# Raised both while keeping the green custodial tint untouched.
+			"ambient": Color(0.4, 0.55, 0.52), "ambient_energy": 0.44,
 			"sky_contribution": 0.3, "glow": 0.82, "fog_density": 0.02,
 			"sun_color": Color(0.6, 0.85, 0.8), "sun_energy": 0.5,
-			"contrast": 1.2, "saturation": 0.95, "brightness": 0.74,
+			"contrast": 1.2, "saturation": 0.95, "brightness": 0.84,
 			"volumetric_density": 0.016,
 		},
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 0.9, 0.7), "height": 4.0},
 		"light_shafts": [0, 1],
+		# Existing three bumped ~30% (dark-spot fix) plus two new fixtures to
+		# cover the slalom corridors and the raised vantage platform at
+		# (-12, 3, 11) — positions clear of the partition walls below.
 		"lights": [
-			{"pos": Vector3(-8, 4, -6), "color": Color(0.4, 0.9, 0.7), "energy": 2.0, "range": 15},
-			{"pos": Vector3(8, 4, 8), "color": Color(0.5, 0.9, 0.8), "energy": 1.9, "range": 15},
-			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 1.6, "range": 14},
+			{"pos": Vector3(-8, 4, -6), "color": Color(0.4, 0.9, 0.7), "energy": 2.6, "range": 15},
+			{"pos": Vector3(8, 4, 8), "color": Color(0.5, 0.9, 0.8), "energy": 2.5, "range": 15},
+			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 2.2, "range": 14},
+			{"pos": Vector3(-4, 4, 3), "color": Color(0.5, 0.95, 0.75), "energy": 2.2, "range": 13},
+			{"pos": Vector3(-12, 5, 11), "color": Color(0.55, 0.95, 0.8), "energy": 2.0, "range": 12},
 		],
 		# Layout: a maintenance "echelon" — staggered partition walls (alternating
 		# Z- and X-running) that force a slalom from the SW lift to the override

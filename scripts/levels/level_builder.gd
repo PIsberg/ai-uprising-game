@@ -221,6 +221,7 @@ func _ready() -> void:
 	_build_facility_detail(def)
 	_build_outdoor_detail(def)
 	_build_streets(def)
+	_build_streetlamps(def)
 	_build_trees(def)
 	_build_rubble(def)
 	_build_fires(def)
@@ -228,6 +229,7 @@ func _ready() -> void:
 	_build_ash(def)
 	_build_lightning(def)
 	_build_beacons(def)
+	_build_disco(def)
 	_build_holograms(def)
 	_build_skyline(def)
 	_build_sky_traffic(def)
@@ -3035,6 +3037,132 @@ func _road_paint(color: Color) -> StandardMaterial3D:
 	m.emission_energy_multiplier = 0.12
 	return m
 
+## Street lamps down both verges of a "streets" crossroads. The dusk street
+## levels only had the big area lights from "lights", which go dark past their
+## range — this adds the actual sodium street lighting along the road so night
+## approaches aren't pitch black between fixtures. Lamps sit 6 m off each road
+## centreline (the carriageway half-width is 5 m, see _build_streets), spaced
+## ~11 m apart, and skip the intersection itself plus the spawn/exit clearings.
+func _build_streetlamps(def: Dictionary) -> void:
+	if not def.get("streets", false):
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var fs: Vector2 = def.get("floor_size", Vector2(60, 60))
+	var hx := fs.x * 0.5
+	var hz := fs.y * 0.5
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exitp: Vector3 = def.get("exit", Vector3.ZERO)
+	var verge := 6.0
+
+	# Candidate lamp (xz position, arm yaw). Yaw points the arm/head back at
+	# the road centreline: N-S verge lamps face toward x=0, E-W verge lamps
+	# face toward z=0.
+	var candidates: Array = []
+	for side in [-1.0, 1.0]:
+		var x: float = side * verge
+		var yaw := 0.0 if side < 0.0 else PI
+		var length := hz * 2.0 - 12.0
+		var count := maxi(2, int(round(length / 11.0)))
+		for i in count:
+			var t: float = float(i) / float(maxi(count - 1, 1))
+			candidates.append([Vector3(x, 0.0, -hz + 6.0 + length * t), yaw])
+	for side in [-1.0, 1.0]:
+		var z: float = side * verge
+		var yaw := -PI * 0.5 if side < 0.0 else PI * 0.5
+		var length := hx * 2.0 - 12.0
+		var count := maxi(2, int(round(length / 11.0)))
+		for i in count:
+			var t: float = float(i) / float(maxi(count - 1, 1))
+			candidates.append([Vector3(-hx + 6.0 + length * t, 0.0, z), yaw])
+
+	var placed := 0
+	for c in candidates:
+		var pos: Vector3 = c[0]
+		var yaw: float = c[1]
+		if Vector2(pos.x, pos.z).length() < 4.0:
+			continue # keep the intersection itself clear
+		if Vector2(pos.x - spawn.x, pos.z - spawn.z).length() < 5.0:
+			continue
+		if Vector2(pos.x - exitp.x, pos.z - exitp.z).length() < 5.0:
+			continue
+		# Every ~5th lamp flickers — occupation infrastructure failing — most
+		# stay steady so the street doesn't feel uniformly broken.
+		_add_streetlamp(pos, yaw, placed % 5 == 0)
+		placed += 1
+
+## One street lamp: tapered pole, an arm reaching over the road with an
+## emissive sodium head, and a matching OmniLight3D. A thin collider goes up
+## before the deferred navmesh bake (same pattern as _add_light_pylon) so
+## ground robots route around the post instead of clipping it.
+func _add_streetlamp(pos: Vector3, yaw: float, flicker: bool) -> void:
+	var pivot := Node3D.new()
+	pivot.position = pos
+	pivot.rotation.y = yaw
+	add_child(pivot)
+
+	var pole_h := 4.2
+	var pole := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.07
+	cm.bottom_radius = 0.11
+	cm.height = pole_h
+	cm.radial_segments = 8
+	cm.material = _color_material(Color(0.16, 0.17, 0.2), 0.45)
+	pole.mesh = cm
+	pole.position = Vector3(0, pole_h * 0.5, 0)
+	pivot.add_child(pole)
+
+	# Solid: built before the navmesh bake, so robots path around the post.
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 0.14
+	shape.height = pole_h
+	cs.shape = shape
+	body.add_child(cs)
+	body.position = pole.position
+	pivot.add_child(body)
+
+	var lamp_col := Color(1.0, 0.82, 0.5)
+	var arm := MeshInstance3D.new()
+	var ab := BoxMesh.new()
+	ab.size = Vector3(0.7, 0.08, 0.08)
+	ab.material = _color_material(Color(0.16, 0.17, 0.2), 0.45)
+	arm.mesh = ab
+	arm.position = Vector3(0.35, pole_h - 0.08, 0)
+	arm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pivot.add_child(arm)
+
+	var head := MeshInstance3D.new()
+	var hb := BoxMesh.new()
+	hb.size = Vector3(0.5, 0.12, 0.28)
+	var hm := StandardMaterial3D.new()
+	hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	hm.albedo_color = lamp_col
+	hm.emission_enabled = true
+	hm.emission = lamp_col
+	hm.emission_energy_multiplier = 3.0
+	hb.material = hm
+	head.mesh = hb
+	head.position = Vector3(0.68, pole_h - 0.16, 0)
+	head.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pivot.add_child(head)
+
+	var light := OmniLight3D.new()
+	light.light_color = lamp_col
+	light.light_energy = 2.6
+	light.omni_range = 12.0
+	light.shadow_enabled = false
+	light.light_specular = 0.5
+	light.position = head.position
+	pivot.add_child(light)
+	if flicker:
+		_flicker_light(light)
+
 ## Open-air dressing for outdoor levels: utility poles strung with sagging power
 ## lines overhead (fills the empty sky-space), plus scattered cordon clutter —
 ## jersey barriers, traffic cones, bollards — hugging the perimeter. All
@@ -3643,6 +3771,124 @@ func _build_beacons(def: Dictionary) -> void:
 		var tw := pivot.create_tween().set_loops()
 		tw.tween_property(pivot, "rotation:y", TAU, 13.0 + i * 6.0).as_relative()
 		i += 1
+
+## Hanging disco rig for party levels (def "disco": [{pos, height?, radius?,
+## colors?, speed?}]): a spinning faceted mirror ball plus a ring of coloured
+## spotlights sweeping the floor, with faint additive beam cones so the sweep
+## reads from across the room (same non-noise cone trick as _build_light_shafts).
+## Purely decorative — no colliders, no gameplay effect.
+func _build_disco(def: Dictionary) -> void:
+	var rigs: Array = def.get("disco", [])
+	if rigs.is_empty():
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and gs.has_method("detail_scale") and gs.detail_scale() <= 0.0:
+		return
+	var default_colors := [
+		Color(1.0, 0.15, 0.85), Color(0.15, 0.9, 1.0), Color(0.4, 1.0, 0.2),
+		Color(1.0, 0.8, 0.1), Color(0.6, 0.2, 1.0), Color(1.0, 0.45, 0.1),
+	]
+	for i in rigs.size():
+		var r: Dictionary = rigs[i]
+		var pos: Vector3 = r.get("pos", Vector3.ZERO)
+		var height: float = minf(r.get("height", 5.5), WALL_HEIGHT - 0.3)
+		var radius: float = r.get("radius", 14.0)
+		var colors: Array = r.get("colors", default_colors)
+		var speed: float = r.get("speed", 1.0)
+
+		var pivot := Node3D.new()
+		pivot.position = Vector3(pos.x, height, pos.z)
+		add_child(pivot)
+
+		# Drop-rod from the ceiling down to the ball — visual only.
+		var rod := MeshInstance3D.new()
+		var rod_mesh := CylinderMesh.new()
+		rod_mesh.top_radius = 0.03
+		rod_mesh.bottom_radius = 0.03
+		rod_mesh.height = maxf(WALL_HEIGHT - height, 0.2)
+		rod_mesh.radial_segments = 6
+		rod_mesh.material = MAT_TRIM
+		rod.mesh = rod_mesh
+		rod.position = Vector3(0, rod_mesh.height * 0.5, 0)
+		rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pivot.add_child(rod)
+
+		# Faceted mirror ball: low-poly sphere, dimly emissive metallic skin so
+		# it glows rather than reading as a flat grey rock.
+		var ball := MeshInstance3D.new()
+		var ball_mesh := SphereMesh.new()
+		ball_mesh.radius = 0.55
+		ball_mesh.height = 1.1
+		ball_mesh.radial_segments = 12
+		ball_mesh.rings = 6
+		var ball_mat := StandardMaterial3D.new()
+		ball_mat.albedo_color = Color(0.9, 0.9, 0.95)
+		ball_mat.metallic = 0.9
+		ball_mat.roughness = 0.15
+		ball_mat.emission_enabled = true
+		ball_mat.emission = Color(1, 1, 1)
+		ball_mat.emission_energy_multiplier = 0.6
+		ball_mesh.material = ball_mat
+		ball.mesh = ball_mesh
+		pivot.add_child(ball)
+
+		for c in colors.size():
+			var col: Color = colors[c]
+			var ang := TAU * float(c) / float(colors.size())
+			var tilt := randf_range(-55.0, -35.0) # downward, so the cone sweeps the floor
+			var spot_pivot := Node3D.new()
+			spot_pivot.rotation.y = ang
+			pivot.add_child(spot_pivot)
+
+			var spot := SpotLight3D.new()
+			spot.light_color = col
+			spot.light_energy = 3.5
+			spot.spot_range = radius
+			spot.spot_angle = 16.0
+			spot.shadow_enabled = false
+			spot.rotation_degrees = Vector3(tilt, 0, 0)
+			spot_pivot.add_child(spot)
+			# Idle colour life: pulse each spot's energy out of phase so the
+			# sweep doesn't read as one flat brightness (tweens only — no
+			# per-frame hue cycling).
+			var etw := spot.create_tween().set_loops()
+			etw.tween_property(spot, "light_energy", 2.5, 1.0 + c * 0.15).set_trans(Tween.TRANS_SINE)
+			etw.tween_property(spot, "light_energy", 4.0, 1.0 + c * 0.15).set_trans(Tween.TRANS_SINE)
+
+			# Faint additive beam so the sweep is visible in the air, not just
+			# where it lands. Parented straight under the spot so it inherits
+			# the tilt; the fixed -90 X correction re-aims the cylinder's
+			# default Y-axis onto the spotlight's default -Z aim.
+			var beam := MeshInstance3D.new()
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0.05
+			cone.bottom_radius = radius * 0.12
+			cone.height = radius * 0.8
+			cone.radial_segments = 12
+			cone.cap_top = false
+			cone.cap_bottom = false
+			var beam_mat := StandardMaterial3D.new()
+			beam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			beam_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			beam_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			beam_mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+			beam_mat.albedo_color = Color(col.r, col.g, col.b, 0.05)
+			beam_mat.emission_enabled = true
+			beam_mat.emission = col
+			beam_mat.emission_energy_multiplier = 0.3
+			cone.material = beam_mat
+			beam.mesh = cone
+			beam.rotation_degrees = Vector3(-90, 0, 0)
+			beam.position = Vector3(0, 0, -cone.height * 0.5)
+			beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			spot.add_child(beam)
+
+		# Spin the rig; alternate direction per rig so a multi-rig room feels
+		# lively rather than uniformly synced.
+		var dir := 1.0 if i % 2 == 0 else -1.0
+		var tw := pivot.create_tween().set_loops()
+		tw.tween_property(pivot, "rotation:y", TAU * dir, 6.0 / maxf(speed, 0.1)).as_relative()
 
 ## Open-sky levels get a distant occupied-city ring: dark tower silhouettes
 ## with sparse lit window slits beyond the walls, over a ground apron so they
