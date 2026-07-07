@@ -60,6 +60,7 @@ var _last_grade: String = ""
 var _last_stats: Dictionary = {}
 var _auto_advance_armed: bool = false
 var _debrief_label: Label = null ## Compact mission-stats line on the victory screen, built lazily on first level clear.
+var _highlights_label: Label = null ## Gold "flashy moments" line on the victory screen (executions/bounties/dodges/streak).
 var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
 var _kill_edge: TextureRect = null
@@ -838,6 +839,38 @@ func _update_debrief_block() -> void:
 		tr("KILLS"), GameState.kills,
 		tr("DEATHS"), int(_last_stats.get("deaths", GameState.level_deaths)),
 	]
+	_update_highlights_block()
+
+## Gold "HIGHLIGHTS" line celebrating the run's flashy moments — only the systems
+## that actually fired this level get listed, so a clean run reads its own story.
+func _update_highlights_block() -> void:
+	if _highlights_label == null:
+		_highlights_label = Label.new()
+		_highlights_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_highlights_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_highlights_label.add_theme_font_size_override("font_size", 14)
+		_highlights_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.32))
+		var vbox := win_title.get_parent()
+		vbox.add_child(_highlights_label)
+		vbox.move_child(_highlights_label, _debrief_label.get_index() + 1)
+	var bits: Array = []
+	var execs := int(_last_stats.get("executions", 0))
+	var bounties := int(_last_stats.get("bounties", 0))
+	var dodges := int(_last_stats.get("dodges", 0))
+	var streak := int(_last_stats.get("best_rampage", 0))
+	if execs > 0:
+		bits.append("%d %s" % [execs, tr("EXECUTED") if execs == 1 else tr("EXECUTIONS")])
+	if bounties > 0:
+		bits.append("%d %s" % [bounties, tr("BOUNTY") if bounties == 1 else tr("BOUNTIES")])
+	if dodges > 0:
+		bits.append("%d %s" % [dodges, tr("PERFECT DODGE") if dodges == 1 else tr("PERFECT DODGES")])
+	if streak > 0 and streak <= GameState.RAMPAGE_NAMES.size():
+		bits.append(tr(GameState.RAMPAGE_NAMES[streak - 1]) + " " + tr("STREAK"))
+	if bits.is_empty():
+		_highlights_label.visible = false
+	else:
+		_highlights_label.visible = true
+		_highlights_label.text = "⚡ " + "   ·   ".join(bits)
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)

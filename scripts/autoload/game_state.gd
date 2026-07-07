@@ -427,6 +427,7 @@ func _update_rampage() -> void:
 	if t <= rampage_tier:
 		return # only fires on a NEW, higher tier
 	rampage_tier = t
+	stat_best_rampage = maxi(stat_best_rampage, t)
 	var nm: String = RAMPAGE_NAMES[t - 1]
 	rampage_changed.emit(rampage_tier, nm)
 	# Reward: a top-up heal to sustain the aggression + a satisfying hit-stop spike.
@@ -508,6 +509,7 @@ func reward_perfect_dodge() -> void:
 	# Reactive play chips away at the clutch-surge lockout, tying the systems.
 	if _adrenaline_cd > 0.0:
 		_adrenaline_cd = maxf(0.0, _adrenaline_cd - PERFECT_DODGE_ADREN_REFUND)
+	stat_dodges += 1
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
 	perfect_dodge.emit()
 
@@ -522,6 +524,7 @@ func reward_execution(world_pos: Vector3) -> void:
 	if current_state != State.PLAYING:
 		return
 	add_score(EXECUTE_BONUS)
+	stat_executions += 1
 	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
@@ -619,6 +622,7 @@ func _bounty_interval() -> float:
 func claim_bounty() -> void:
 	var pts := int(round(BOUNTY_BONUS * float(directive.get("bounty_bonus", 1.0))))
 	add_score(pts)
+	stat_bounties += 1
 	_bounty = null
 	_bounty_cd = _bounty_interval()
 	_bounty_age = 0.0
@@ -713,6 +717,12 @@ func overdrive_active() -> bool:
 var stat_shots: int = 0
 var stat_hits: int = 0
 var stat_damage_taken: float = 0.0
+## Highlight counters for the new engagement systems — surfaced on the debrief so
+## a run's flashy moments (executions, bounties, dodges, best streak) get credit.
+var stat_executions: int = 0
+var stat_bounties: int = 0
+var stat_dodges: int = 0
+var stat_best_rampage: int = 0
 ## Timestamp the current level attempt started. NOTE: this is reset on every
 ## load_level() call, including a TRY-AGAIN full reload — so the debrief's TIME
 ## reads "time since the last retry", not a cumulative clock across deaths.
@@ -739,6 +749,10 @@ func reset_level_stats() -> void:
 	stat_shots = 0
 	stat_hits = 0
 	stat_damage_taken = 0.0
+	stat_executions = 0
+	stat_bounties = 0
+	stat_dodges = 0
+	stat_best_rampage = 0
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
@@ -796,6 +810,8 @@ func grade_level() -> Dictionary:
 		"kills": kills, "score": score, "difficulty": difficulty_label(),
 		"new_best": new_best, "best_grade": level_bests.get(lid, grade),
 		"deaths": level_deaths,
+		"executions": stat_executions, "bounties": stat_bounties,
+		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
