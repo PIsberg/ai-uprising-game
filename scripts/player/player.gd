@@ -272,6 +272,7 @@ func _ready() -> void:
 	_register_dash_action()
 	_register_melee_action()
 	_register_grapple_action()
+	_register_ultimate_action()
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -543,6 +544,7 @@ func _physics_process(delta: float) -> void:
 	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_melee(delta)
+	_handle_ultimate(delta)
 	_handle_slide(delta)
 	_handle_jump(delta)
 	_handle_grenade(delta)
@@ -586,6 +588,90 @@ func _register_melee_action() -> void:
 		var pad := InputEventJoypadButton.new()
 		pad.button_index = JOY_BUTTON_B
 		InputMap.action_add_event("melee", pad)
+
+## Registers the OVERLOAD ultimate (X + gamepad Y) at runtime.
+func _register_ultimate_action() -> void:
+	if not InputMap.has_action("ultimate"):
+		InputMap.add_action("ultimate")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_X
+		InputMap.action_add_event("ultimate", ev)
+		var pad := InputEventJoypadButton.new()
+		pad.button_index = JOY_BUTTON_Y
+		InputMap.action_add_event("ultimate", pad)
+
+@export var overload_radius: float = 22.0   ## OVERLOAD shockwave reach.
+@export var overload_damage: float = 140.0  ## damage to every hostile caught in it.
+
+## OVERLOAD ultimate: when the meter is full, X unleashes a screen-clearing
+## shockwave — heavy damage + an EMP stun + knockback to every hostile in range,
+## sold with a nova ring, slow-mo and a camera slam. The arsenal's panic button.
+func _handle_ultimate(_delta: float) -> void:
+	if not Input.is_action_just_pressed("ultimate"):
+		return
+	if not GameState.ultimate_ready_state():
+		AudioBus.play_synth_ui("empty_click", -6.0, 0.7) # not charged yet
+		return
+	if not GameState.consume_ultimate():
+		return
+	_unleash_overload()
+
+func _unleash_overload() -> void:
+	var origin := global_position
+	GameState.hit_stop(0.28, 0.5)
+	shake(1.0)
+	_fov_kick = maxf(_fov_kick, 16.0)
+	AudioBus.play_synth_at("explosion", origin, 6.0, 0.5)
+	_spawn_overload_nova(origin)
+	# Sweep every hostile in reach: heavy damage + EMP stun + outward knockback.
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = overload_radius
+	q.shape = sh
+	q.transform = Transform3D(Basis(), origin)
+	q.collision_mask = 0b0000100 # enemies (layer 3)
+	q.collide_with_areas = false
+	var seen := {}
+	for h in space.intersect_shape(q, 64):
+		var col: Node = h.get("collider")
+		if col == null or seen.has(col):
+			continue
+		seen[col] = true
+		var d = col.get_node_or_null("Damageable")
+		if d and d.has_method("apply_damage"):
+			d.apply_damage(overload_damage, self)
+		if col.has_method("emp_disable"):
+			col.emp_disable(2.5)
+		if "velocity" in col and col is Node3D:
+			var push: Vector3 = (col as Node3D).global_position - origin
+			push.y = 0.0
+			col.velocity += (push.normalized() if push.length() > 0.1 else Vector3.FORWARD) * 16.0 + Vector3.UP * 4.0
+
+## Expanding cyan nova ring at the blast — a quick TorusMesh that fattens, scales
+## out and fades. Frees itself on a short timer.
+func _spawn_overload_nova(origin: Vector3) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.8
+	torus.outer_radius = 1.4
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(0.4, 0.85, 1.0)
+	mat.emission_energy_multiplier = 6.0
+	mat.albedo_color = Color(0.4, 0.85, 1.0)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	torus.material = mat
+	ring.mesh = torus
+	get_parent().add_child(ring)
+	ring.global_position = origin + Vector3.UP * 0.6
+	ring.rotation_degrees.x = 90.0
+	var tw := create_tween().set_parallel(true)
+	var target_scale := overload_radius * 0.9
+	tw.tween_property(ring, "scale", Vector3.ONE * target_scale, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.5)
+	tw.chain().tween_callback(ring.queue_free)
 
 var _wh_kick_tween: Tween ## Tracks the last dash/landing viewmodel kick so overlapping kicks don't fight over weapon_holder.position.
 

@@ -23,6 +23,7 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bo
 	register_hit()
 	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
+	add_ultimate_charge(amount * ULT_PER_DAMAGE) # damage dealt smooths the OVERLOAD fill
 	# LIFELEECH track: siphon a slice of the damage you deal back as health, so an
 	# aggressive build sustains itself. Clamped by Damageable.heal to max HP.
 	var leech := upgrade_mult("leech") - 1.0
@@ -400,6 +401,7 @@ func add_kill(points: int = 100, label: String = "HOSTILE") -> void:
 	add_score(int(round(points * combo_mult())))
 	enemy_killed.emit(points, label)
 	_update_rampage()
+	add_ultimate_charge(ULT_PER_KILL)
 
 # ---------- RAMPAGE: kill-streak power escalation ----------
 ## A streak doesn't just multiply score — it cranks YOUR power. Chain kills inside
@@ -528,6 +530,40 @@ func reward_execution(world_pos: Vector3) -> void:
 	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
+
+# ---------- OVERLOAD: charge-and-unleash ultimate ----------
+## A meter the player builds by fighting (kills + damage dealt) and unleashes as a
+## screen-clearing shockwave (see Player._unleash_overload) — a panic-button power
+## peak the arsenal otherwise lacks. Charge is per-level.
+const ULT_PER_KILL := 0.085      ## charge gained per kill (~12 kills to fill)
+const ULT_PER_DAMAGE := 0.0004   ## charge per point of damage dealt (smooths the fill)
+signal ultimate_changed(charge: float) ## 0..1 meter — HUD gauge.
+signal ultimate_ready()                 ## crossed to full — HUD prompt + chirp.
+signal ultimate_fired()                 ## unleashed — HUD flash.
+var ultimate_charge: float = 0.0
+
+func add_ultimate_charge(amount: float) -> void:
+	if current_state != State.PLAYING or ultimate_charge >= 1.0 or amount <= 0.0:
+		return
+	var was := ultimate_charge
+	ultimate_charge = clampf(ultimate_charge + amount, 0.0, 1.0)
+	ultimate_changed.emit(ultimate_charge)
+	if was < 1.0 and ultimate_charge >= 1.0:
+		AudioBus.play_synth_ui("combo_up", 0.0, 1.5)
+		ultimate_ready.emit()
+
+func ultimate_ready_state() -> bool:
+	return ultimate_charge >= 1.0
+
+## Spend a full meter (Player calls this on the OVERLOAD keypress). Returns false
+## if not charged, so the player can play a denied click instead.
+func consume_ultimate() -> bool:
+	if ultimate_charge < 1.0:
+		return false
+	ultimate_charge = 0.0
+	ultimate_changed.emit(0.0)
+	ultimate_fired.emit()
+	return true
 
 # ---------- COMBAT DIRECTIVE: per-level roguelite mutator ----------
 ## At the start of each (non-boss) level there's a chance the run rolls a DIRECTIVE
@@ -753,6 +789,8 @@ func reset_level_stats() -> void:
 	stat_bounties = 0
 	stat_dodges = 0
 	stat_best_rampage = 0
+	ultimate_charge = 0.0
+	ultimate_changed.emit(0.0)
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()

@@ -228,6 +228,9 @@ func _ready() -> void:
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.perfect_dodge.connect(_on_perfect_dodge)
 	GameState.execution.connect(_on_execution)
+	GameState.ultimate_changed.connect(_on_ultimate_changed)
+	GameState.ultimate_ready.connect(_on_ultimate_ready)
+	GameState.ultimate_fired.connect(_on_ultimate_fired)
 	GameState.directive_set.connect(_on_directive_set)
 	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
 	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
@@ -238,6 +241,7 @@ func _ready() -> void:
 	_build_adrenaline()
 	_build_dodge_label()
 	_build_exec_label()
+	_build_ult_meter()
 	# The directive was rolled in load_level before this HUD existed — announce the
 	# active one now (a beat later so the toast lands after the level settles in).
 	if GameState.directive_id != "":
@@ -468,6 +472,12 @@ var _exec_label: Label = null    ## Orange "EXECUTED!" flash on a melee finisher
 var _exec_alpha: float = 0.0
 var _exec_pop: float = 0.0
 
+var _ult_root: Control = null    ## OVERLOAD ultimate gauge (bottom-centre).
+var _ult_fill: ColorRect = null
+var _ult_label: Label = null
+var _ult_pulse: float = 0.0      ## drives the "READY" glow pulse
+const ULT_BAR_W := 260.0
+
 ## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
 ## into a power tier (a REAL buff, not just score). Sits above the combo readout,
 ## bigger and brighter than the streak word so a power spike reads as an event.
@@ -582,6 +592,58 @@ func _on_execution(_world_pos: Vector3) -> void:
 	if _exec_label:
 		_exec_alpha = 1.0
 		_exec_pop = 1.3
+
+## OVERLOAD gauge: a slim charge bar centred above the weapon hotbar with a label
+## that flips to "OVERLOAD READY [X]" and pulses cyan when it's full.
+func _build_ult_meter() -> void:
+	_ult_root = Control.new()
+	_ult_root.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_ult_root.anchor_left = 0.5
+	_ult_root.anchor_right = 0.5
+	_ult_root.position = Vector2(-ULT_BAR_W * 0.5, -196.0)
+	_ult_root.custom_minimum_size = Vector2(ULT_BAR_W, 30)
+	_ult_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ult_root)
+	_ult_label = Label.new()
+	_ult_label.add_theme_font_size_override("font_size", 13)
+	_ult_label.add_theme_constant_override("outline_size", 5)
+	_ult_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_ult_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	_ult_label.text = "OVERLOAD"
+	_ult_label.position = Vector2(0, -4)
+	_ult_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(_ult_label)
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.08, 0.12, 0.7)
+	bg.position = Vector2(0, 16)
+	bg.size = Vector2(ULT_BAR_W, 8)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(bg)
+	_ult_fill = ColorRect.new()
+	_ult_fill.color = Color(0.35, 0.8, 1.0)
+	_ult_fill.position = Vector2(0, 16)
+	_ult_fill.size = Vector2(0, 8)
+	_ult_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(_ult_fill)
+	_on_ultimate_changed(GameState.ultimate_charge) # reflect any carried state
+
+func _on_ultimate_changed(charge: float) -> void:
+	if _ult_fill == null:
+		return
+	_ult_fill.size.x = ULT_BAR_W * clampf(charge, 0.0, 1.0)
+	var ready := charge >= 1.0
+	_ult_fill.color = Color(1.0, 0.85, 0.3) if ready else Color(0.35, 0.8, 1.0)
+	if _ult_label:
+		_ult_label.text = "OVERLOAD READY  [X]" if ready else "OVERLOAD"
+		_ult_label.add_theme_color_override("font_color",
+			Color(1.0, 0.85, 0.3) if ready else Color(0.55, 0.85, 1.0))
+
+func _on_ultimate_ready() -> void:
+	_ult_pulse = 1.0
+
+func _on_ultimate_fired() -> void:
+	_ult_pulse = 0.0
+	_damage_alpha = 0.0 # don't fight the red flash; the nova + shake sell it in-world
 
 ## Announce the level's COMBAT DIRECTIVE (the roguelite mutator). Fires via signal
 ## AND is polled once on _ready — the roll happens in load_level, before this HUD
@@ -923,6 +985,12 @@ func _process(delta: float) -> void:
 		_exec_label.modulate.a = clampf(_exec_alpha, 0.0, 1.0)
 		_exec_label.scale = Vector2.ONE * (1.0 + _exec_pop * 0.45)
 		_exec_label.pivot_offset = _exec_label.size * 0.5
+	if _ult_root and GameState.ultimate_ready_state():
+		# Breathe the gauge while it's ready so the player notices the option.
+		_ult_pulse = wrapf(_ult_pulse + delta * 3.0, 0.0, TAU)
+		_ult_root.modulate.a = 0.7 + 0.3 * (0.5 + 0.5 * sin(_ult_pulse))
+	elif _ult_root:
+		_ult_root.modulate.a = 1.0
 	if _headshot_label:
 		# Quicker fade than the streak word (~0.8s) since headshots land often.
 		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
