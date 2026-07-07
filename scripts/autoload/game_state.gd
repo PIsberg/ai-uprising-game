@@ -511,6 +511,64 @@ func reward_perfect_dodge() -> void:
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
 	perfect_dodge.emit()
 
+# ---------- BOUNTY: a rotating hunt-the-marked-target sub-goal ----------
+## Periodically tags one live non-boss enemy as a BOUNTY: a beacon-marked target
+## worth bonus score + a guaranteed rare drop. Gives every drawn-out fight a
+## shifting objective ("go get THAT one") on top of the mandatory objectives —
+## variety and a pull through the level, distinct from elite THREATS.
+const BOUNTY_BONUS := 300               ## bonus score for claiming a bounty
+const BOUNTY_INTERVAL := 24.0           ## seconds between bounties
+const BOUNTY_LIFETIME := 45.0           ## un-mark if it survives this long (re-roll)
+const BOUNTY_MIN_ENEMIES := 3           ## only mark when a fight is actually on
+signal bounty_marked(label: String)     ## a target was tagged — HUD callout
+signal bounty_claimed(points: int)      ## the tagged target went down — HUD payoff
+var _bounty: WeakRef = null
+var _bounty_cd: float = BOUNTY_INTERVAL
+var _bounty_age: float = 0.0
+
+func _tick_bounty(delta: float) -> void:
+	if current_state != State.PLAYING:
+		return
+	var cur: Node = _bounty.get_ref() if _bounty else null
+	if cur != null and is_instance_valid(cur) and not cur.is_queued_for_deletion():
+		_bounty_age += delta
+		if _bounty_age >= BOUNTY_LIFETIME:
+			if cur.has_method("clear_bounty"):
+				cur.clear_bounty()
+			_bounty = null
+			_bounty_cd = BOUNTY_INTERVAL
+		return
+	# No live bounty — count down and try to mark a new one.
+	_bounty = null
+	_bounty_cd -= delta
+	if _bounty_cd <= 0.0:
+		_try_mark_bounty()
+
+func _try_mark_bounty() -> void:
+	var candidates: Array = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and e.score_value < 1000 and e.state != EnemyBase.State.DEAD \
+				and not e.is_bounty and e.hp != null and e.hp.is_alive():
+			candidates.append(e)
+	if candidates.size() < BOUNTY_MIN_ENEMIES:
+		_bounty_cd = 4.0 # not enough of a fight yet — check back soon
+		return
+	var pick: EnemyBase = candidates[randi() % candidates.size()]
+	pick.mark_bounty()
+	_bounty = weakref(pick)
+	_bounty_age = 0.0
+	var label: String = pick._kill_label() if pick.has_method("_kill_label") else "TARGET"
+	bounty_marked.emit(label)
+
+## The marked target went down (called from EnemyBase._on_died).
+func claim_bounty() -> void:
+	add_score(BOUNTY_BONUS)
+	_bounty = null
+	_bounty_cd = BOUNTY_INTERVAL
+	_bounty_age = 0.0
+	AudioBus.play_synth_ui("combo_up", -2.0, 0.9)
+	bounty_claimed.emit(BOUNTY_BONUS)
+
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
 var combo: int = 0
@@ -534,6 +592,7 @@ func _process(delta: float) -> void:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			_reset_combo()
+	_tick_bounty(delta)
 	if adrenaline_left > 0.0:
 		adrenaline_left = maxf(0.0, adrenaline_left - delta)
 		if adrenaline_left <= 0.0:
@@ -723,6 +782,9 @@ func reset_run() -> void:
 	_taught.clear()
 	adrenaline_left = 0.0
 	_adrenaline_cd = 0.0
+	_bounty = null
+	_bounty_cd = BOUNTY_INTERVAL
+	_bounty_age = 0.0
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------

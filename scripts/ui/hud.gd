@@ -226,6 +226,8 @@ func _ready() -> void:
 	GameState.rampage_changed.connect(_on_rampage_changed)
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.perfect_dodge.connect(_on_perfect_dodge)
+	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
+	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
