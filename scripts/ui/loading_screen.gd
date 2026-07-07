@@ -34,6 +34,11 @@ const TIPS := [
 	"The Tesla Projector shreds up close but has almost no reach — get in tight and it leaves you exposed to melee smashers. Stay mobile and back off before they close.",
 ]
 
+## When this is the app's main scene, GameState.pending_scene is "" — that's the
+## BOOT case: load the main menu (which itself preloads its art/bestiary) behind a
+## proper loading frame instead of a black window on launch.
+const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
+
 var _spinner: Control
 var _dots_lbl: Label
 var _t: float = 0.0
@@ -85,20 +90,22 @@ func _build_ui() -> void:
 	box.grow_vertical = Control.GROW_DIRECTION_BOTH
 	add_child(box)
 
+	# Boot (app launch) shows the game title; a level load shows "ENTERING <level>".
+	var is_boot: bool = GameState.pending_scene == ""
 	var lid := GameState.level_id_from_path(GameState.current_level_path)
 	var def := LevelDefs.get_def(lid)
 	var lname: String = def.get("name", "")
 
-	if lname != "":
+	if is_boot or lname != "":
 		var kicker := Label.new()
-		kicker.text = "ENTERING"
+		kicker.text = "INITIALIZING" if is_boot else "ENTERING"
 		kicker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		kicker.add_theme_font_size_override("font_size", 18)
 		kicker.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
 		box.add_child(kicker)
 
 		var title := Label.new()
-		title.text = lname.to_upper()
+		title.text = "AI UPRISING" if is_boot else lname.to_upper()
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title.add_theme_font_size_override("font_size", 44)
 		title.add_theme_color_override("font_color", Color(1, 0.96, 0.9))
@@ -191,7 +198,14 @@ func _go() -> void:
 	# while we keep ticking the progress ring (a blocking change_scene couldn't
 	# report progress). _poll_load() swaps in the scene when it's ready.
 	_path = GameState.pending_scene
-	if _path == "" or not ResourceLoader.exists(_path):
+	if _path == "": # boot: nothing pending -> load the main menu
+		# ...unless a CLI boot (--editor / --level) is taking over the scene itself;
+		# GameState._handle_cli_boot() defers that change, so don't fight it.
+		var cli := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+		if "--editor" in cli or "--level" in cli or OS.has_feature("editor_build"):
+			return
+		_path = MAIN_MENU
+	if not ResourceLoader.exists(_path):
 		get_tree().change_scene_to_file(_path)
 		return
 	if ResourceLoader.load_threaded_request(_path) == OK:
