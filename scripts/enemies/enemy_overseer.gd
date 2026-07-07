@@ -8,6 +8,17 @@ extends EnemyBase
 @export var fly_height: float = 6.5
 @export var proj_speed: float = 40.0
 @export var proj_damage: float = 13.0
+
+@export_group("Rocket Barrage")
+## Signature gunship weapon: on a cooldown the OVERSEER rears up and salvos a fan
+## of arcing rockets that rain down AROUND the player — a bombing run you have to
+## keep moving through, distinct from the direct bolt spray. Denser the more it's
+## wounded.
+@export var barrage_cooldown: float = 8.5
+@export var barrage_rockets: int = 6
+@export var barrage_spread: float = 6.5
+@export var barrage_damage: float = 30.0
+var _barrage_cd: float = 4.5
 @export var preview: bool = false ## Codex/briefing showcase: hover idle, skip the portal arrival (BossPortal swirl), boss bar + AI.
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
@@ -144,15 +155,21 @@ func _process(delta: float) -> void:
 		_eye_light.light_energy = 3.0 + float(_phase()) * 1.5 + recoil * 6.0
 	if _summon_cd > 0.0:
 		_summon_cd -= delta
+	if _barrage_cd > 0.0:
+		_barrage_cd -= delta
 
 ## A spreading volley from several muzzles; heavier with each phase, and in the
-## final phase it also spits out a Seeker.
+## final phase it also spits out a Seeker. On its cooldown it instead unloads the
+## signature ROCKET BARRAGE.
 func _perform_attack() -> void:
 	if target == null:
 		return
 	recoil = 1.0
 	var scene := get_tree().current_scene
 	if scene == null:
+		return
+	if _barrage_cd <= 0.0:
+		_barrage(scene)
 		return
 	var phase := _phase()
 	var shots := 2 + phase # 3 / 4 / 5 bolts
@@ -170,6 +187,23 @@ func _perform_attack() -> void:
 	AudioBus.play_synth_at("drone_shot", global_position, -2.0, 0.8)
 	if phase >= 3:
 		_maybe_summon(scene)
+
+## Rocket barrage: a ring of arcing rockets lobbed to land AROUND the player,
+## staggered so the impacts walk across the ground — keep moving or get carpeted.
+func _barrage(scene: Node) -> void:
+	_barrage_cd = maxf(4.5, barrage_cooldown - float(_phase() - 1) * 2.0)
+	recoil = 1.0
+	var n := barrage_rockets + _phase() # 7 / 8 / 9 rockets
+	var base_ang := randf() * TAU
+	for i in n:
+		var ang := base_ang + TAU * float(i) / float(n)
+		var r := barrage_spread * sqrt(randf()) # bias toward the centre on the player
+		var land: Vector3 = target.global_position + Vector3(cos(ang) * r, 0.0, sin(ang) * r)
+		var origin := global_position + Vector3(randf_range(-1.2, 1.2), fly_height - 0.5, randf_range(-1.2, 1.2))
+		EnemyBomb.lob_at(scene, origin, land, 0.95 + float(i) * 0.07, barrage_damage)
+	_muzzle_flash()
+	AudioBus.play_synth_at("plasma_fire", global_position, 1.0, 0.55)
+	AudioBus.play_synth_at("grenade_throw", global_position, -2.0, 0.7)
 
 func _maybe_summon(scene: Node) -> void:
 	if _summon_cd > 0.0:
