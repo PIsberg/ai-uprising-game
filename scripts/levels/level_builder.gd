@@ -414,8 +414,8 @@ func _build_environment(def: Dictionary) -> void:
 	env.ssr_max_steps = 48
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-	env.glow_intensity = e.get("glow", 0.62)
-	env.glow_strength = e.get("glow_strength", 0.78)
+	env.glow_intensity = e.get("glow", 0.55)
+	env.glow_strength = e.get("glow_strength", 0.7)
 	# Bloom bleed: levels can crank this for a hazy neon-noir look where bright
 	# signs/lights smear into a fuzzy glow. Default 0 keeps a CRISP halo — the old
 	# 0.05 bleed was part of why interiors read soft/unfocused (bright strips smeared
@@ -423,12 +423,14 @@ func _build_environment(def: Dictionary) -> void:
 	env.glow_bloom = e.get("glow_bloom", 0.0)
 	# Raised so only genuinely bright emissives bloom, not every mid-lit surface —
 	# tightens the glow and stops the whole interior hazing over.
-	env.glow_hdr_threshold = e.get("glow_threshold", 1.4)
+	env.glow_hdr_threshold = e.get("glow_threshold", 1.6)
 	env.glow_hdr_scale = 1.0
-	# Narrow the wide glow kernel: the 5th level (0.55) spread a big soft halo that
-	# smeared light strips; 0.3 keeps the bloom tight so lights read as lights.
-	env.set("glow_levels/3", 1.0)
-	env.set("glow_levels/4", 0.3)
+	# Narrow the wide glow kernel: the broad upper levels spread a big soft halo that
+	# smeared light strips and hazed the whole room. Bias the bloom to the tighter
+	# levels so lights read as sharp lights, not a fog of light.
+	env.set("glow_levels/2", 0.9)
+	env.set("glow_levels/3", 0.7)
+	env.set("glow_levels/4", 0.12)
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
@@ -454,16 +456,20 @@ func _build_environment(def: Dictionary) -> void:
 	# the cheap distance fog above.
 	if not def.get("open_sky", false):
 		env.volumetric_fog_enabled = true
-		env.volumetric_fog_density = minf(e.get("fog_density", 0.01), 0.012) * 0.5
+		# Thinned: the interior veil was picking up the bright emissive grid/neon via
+		# GI and blooming into a soft milky haze that read as "blurry". Halve the
+		# density and cut the GI inject so far surfaces stay sharp — the fog is now a
+		# faint atmosphere for god-rays, not a screen-wide fog of light.
+		env.volumetric_fog_density = minf(e.get("fog_density", 0.01), 0.012) * 0.28
 		# Showcase levels can thicken the haze so light shafts/god-rays read.
 		if e.has("volumetric_density"):
 			env.volumetric_fog_density = e["volumetric_density"]
 		# A darker, less milky veil: the near-white albedo washed enclosed arenas
 		# into a flat bright haze. This keeps god-rays/shafts readable but lets the
 		# space hold shadow and depth.
-		env.volumetric_fog_albedo = Color(0.34, 0.37, 0.43)
+		env.volumetric_fog_albedo = Color(0.32, 0.35, 0.4)
 		env.volumetric_fog_length = 80.0
-		env.volumetric_fog_gi_inject = 0.25
+		env.volumetric_fog_gi_inject = 0.08
 	else:
 		env.volumetric_fog_enabled = false
 

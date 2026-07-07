@@ -26,6 +26,11 @@ const TIPS := [
 	"Out of ammo mid-fight? Switch to another loaded weapon instead of reloading — the swap is faster and can be the difference between living and dying.",
 	"Every gun has a role — check the Weapon Codex from the main menu.",
 	"Hunt the marked high-value target to clear an assassination sector.",
+	"Chain kills without pausing to spike into RAMPAGE — each tier boosts your damage, fire rate and speed. The streak and its buffs collapse the instant you stop killing, so press the attack hard — but stay alive to keep it rolling.",
+	"Aggression is rewarded, but survival matters: RAMPAGE only builds while you keep killing, and dropping to critical health triggers a one-time ADRENALINE surge to claw the fight back.",
+	"Sprinting and grappling drain STAMINA (the blue bar). Run it to empty and you're locked to a walk — and can't grapple — until it recovers, so pace your bursts instead of holding sprint.",
+	"Fire the grapple to rappel up to ledges, rooftops and high ground for the drop on the pack — it's fast, but it burns stamina, so don't dangle.",
+	"Land a shot in an enemy's head for a crit — big bonus damage and a HEADSHOT callout. Precision even charges your OVERLOAD faster.",
 	"The Tesla Projector shreds up close but has almost no reach — get in tight and it leaves you exposed to melee smashers. Stay mobile and back off before they close.",
 ]
 

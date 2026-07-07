@@ -24,6 +24,8 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bo
 	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
 	add_ultimate_charge(amount * ULT_PER_DAMAGE) # damage dealt smooths the OVERLOAD fill
+	if crit:
+		add_ultimate_charge(0.02) # precision (headshots/weak-points) charges OVERLOAD faster
 	# LIFELEECH track: siphon a slice of the damage you deal back as health, so an
 	# aggressive build sustains itself. Clamped by Damageable.heal to max HP.
 	var leech := upgrade_mult("leech") - 1.0

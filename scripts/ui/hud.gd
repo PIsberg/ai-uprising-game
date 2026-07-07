@@ -681,11 +681,11 @@ func _build_headshot_label() -> void:
 	_headshot_label.position = Vector2(0, 234)
 	_headshot_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_headshot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_headshot_label.add_theme_font_size_override("font_size", 30)
-	_headshot_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
-	_headshot_label.add_theme_constant_override("outline_size", 7)
-	_headshot_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	_headshot_label.text = "HEADSHOT" # arcade-style callout word; kept raw like the streak/multikill words, not tr()'d
+	_headshot_label.add_theme_font_size_override("font_size", 48)
+	_headshot_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.55))
+	_headshot_label.add_theme_constant_override("outline_size", 12)
+	_headshot_label.add_theme_color_override("font_outline_color", Color(0.5, 0.12, 0.0, 0.95))
+	_headshot_label.text = "◎ HEADSHOT!" # arcade-style callout; raw like the streak/multikill words, not tr()'d
 	_headshot_label.modulate.a = 0.0
 	_headshot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_headshot_label)
@@ -992,11 +992,12 @@ func _process(delta: float) -> void:
 	elif _ult_root:
 		_ult_root.modulate.a = 1.0
 	if _headshot_label:
-		# Quicker fade than the streak word (~0.8s) since headshots land often.
-		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
-		_headshot_pop = move_toward(_headshot_pop, 0.0, delta * 4.5)
+		# Headshots are now a tighter, rarer shot, so the callout gets to land with
+		# a bigger punch and linger a little longer than before.
+		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 0.95)
+		_headshot_pop = move_toward(_headshot_pop, 0.0, delta * 3.8)
 		_headshot_label.modulate.a = clampf(_headshot_alpha, 0.0, 1.0)
-		_headshot_label.scale = Vector2.ONE * (1.0 + _headshot_pop * 0.5)
+		_headshot_label.scale = Vector2.ONE * (1.0 + _headshot_pop * 0.9)
 		_headshot_label.pivot_offset = _headshot_label.size * 0.5
 	if _multikill_label:
 		# The rolling window closes -> the multi-kill count resets.
@@ -1760,7 +1761,7 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	if crit and GraphicsSettings.combat_callouts_enabled:
 		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
 		_headshot_alpha = 1.0
-		_headshot_pop = 1.0
+		_headshot_pop = 1.4
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).

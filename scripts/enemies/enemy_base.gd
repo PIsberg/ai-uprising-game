@@ -30,7 +30,7 @@ var _bounty_marker: Node3D = null
 
 @export_group("Reactions")
 @export var flinch_knockback: float = 3.0 ## Backward shove applied on taking a hit.
-@export var head_radius: float = 0.45 ## Vertical tolerance around the head for headshots.
+@export var head_radius: float = 0.3 ## Vertical tolerance around the head for headshots — tight, so a crit takes real aim (bigger units widen it).
 @export var stagger_threshold: float = 38.0 ## Poise: damage absorbed before a hit staggers it (bosses set this high).
 
 @export_group("Loot")
