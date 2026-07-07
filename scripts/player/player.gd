@@ -123,6 +123,7 @@ var _is_crouching: bool = false
 var _dash_time: float = 0.0
 var _dash_cd: float = 0.0
 var _dash_dir: Vector3 = Vector3.ZERO
+var _dodge_scored: bool = false ## One PERFECT DODGE reward per dash, not per blocked pellet.
 
 var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights the landing)
 
@@ -691,6 +692,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		_dodge_scored = false
 		hp.invulnerable = true
 		# The i-frame window also suspends the soft enemy-separation push (see
 		# _update_enemy_separation): enemies have no hard collision with the player
@@ -1539,6 +1541,15 @@ func _on_health_changed(cur: float, max_: float) -> void:
 ## level, ×1.0 by ~25% depth) so the first levels teach instead of execute.
 func modify_incoming_damage(amount: float, _source) -> float:
 	return amount * GameState.campaign_incoming_mult()
+
+## Damageable hook: fires when a hit is negated by our invulnerability. During the
+## dash i-frame window (and NOT god mode) that means a skillful dodge just phased
+## through a real attack -> reward it as a PERFECT DODGE. Once per dash so a
+## shotgun blast is one dodge, not eight.
+func notify_shield_hit(_source) -> void:
+	if _dash_time > 0.0 and not _god and not _dodge_scored:
+		_dodge_scored = true
+		GameState.reward_perfect_dodge()
 
 func _on_died(source: Node) -> void:
 	if _dead:

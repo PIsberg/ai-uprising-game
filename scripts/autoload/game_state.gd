@@ -490,6 +490,27 @@ func adrenaline_fire_mult() -> float:
 func adrenaline_speed_mult() -> float:
 	return ADRENALINE_SPEED if adrenaline_left > 0.0 else 1.0
 
+# ---------- PERFECT DODGE: skill-expression reward ----------
+## Rewards a dash that actually phases through an incoming hit (its i-frames
+## negate a shot/melee). Skillful, reactive play — the third engagement pillar
+## alongside RAMPAGE (winning) and ADRENALINE (surviving). The player calls
+## reward_perfect_dodge() from its shield-hit hook, once per dash.
+const PERFECT_DODGE_SCORE := 75            ## bonus points per clean dodge
+const PERFECT_DODGE_ADREN_REFUND := 3.0    ## seconds shaved off the adrenaline lockout
+signal perfect_dodge()                     ## HUD banner + slow-mo cue.
+
+func reward_perfect_dodge() -> void:
+	if current_state != State.PLAYING:
+		return
+	add_score(PERFECT_DODGE_SCORE)
+	# A crisp bullet-time snap sells the read; shorter than a kill cinematic.
+	combat_hitstop(0.35, 0.09)
+	# Reactive play chips away at the clutch-surge lockout, tying the systems.
+	if _adrenaline_cd > 0.0:
+		_adrenaline_cd = maxf(0.0, _adrenaline_cd - PERFECT_DODGE_ADREN_REFUND)
+	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
+	perfect_dodge.emit()
+
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
 var combo: int = 0

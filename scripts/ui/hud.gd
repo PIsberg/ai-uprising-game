@@ -225,11 +225,13 @@ func _ready() -> void:
 	GameState.combo_changed.connect(_on_combo_changed)
 	GameState.rampage_changed.connect(_on_rampage_changed)
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
+	GameState.perfect_dodge.connect(_on_perfect_dodge)
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
 	_build_rampage_label()
 	_build_adrenaline()
+	_build_dodge_label()
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -446,6 +448,10 @@ var _adren_pop: float = 0.0
 var _adren_edge: TextureRect = null ## Red screen-edge pulse while the surge is live.
 var _adren_flash: float = 0.0
 
+var _dodge_label: Label = null   ## Cyan "PERFECT DODGE!" flash on a dash that phases a hit.
+var _dodge_alpha: float = 0.0
+var _dodge_pop: float = 0.0
+
 ## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
 ## into a power tier (a REAL buff, not just score). Sits above the combo readout,
 ## bigger and brighter than the streak word so a power spike reads as an event.
@@ -512,6 +518,30 @@ func _on_adrenaline_changed(active: bool) -> void:
 		_adren_alpha = 1.0
 		_adren_pop = 1.5
 	_adren_flash = 1.0
+
+## A cool cyan "PERFECT DODGE!" flash when a dash phases through a real hit — the
+## skill-expression cue. Quick and low so it doesn't fight the power banners.
+func _build_dodge_label() -> void:
+	_dodge_label = Label.new()
+	_dodge_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_dodge_label.anchor_left = 0.5
+	_dodge_label.anchor_right = 0.5
+	_dodge_label.position = Vector2(0, 360)
+	_dodge_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_dodge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dodge_label.add_theme_font_size_override("font_size", 40)
+	_dodge_label.add_theme_constant_override("outline_size", 10)
+	_dodge_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_dodge_label.add_theme_color_override("font_color", Color(0.4, 0.92, 1.0))
+	_dodge_label.text = "PERFECT DODGE!"
+	_dodge_label.modulate.a = 0.0
+	_dodge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_dodge_label)
+
+func _on_perfect_dodge() -> void:
+	if _dodge_label:
+		_dodge_alpha = 1.0
+		_dodge_pop = 1.2
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
@@ -801,6 +831,12 @@ func _process(delta: float) -> void:
 		var base := 0.32 if GameState.adrenaline_left > 0.0 else 0.0
 		_adren_flash = maxf(base, move_toward(_adren_flash, 0.0, delta * 1.4))
 		_adren_edge.modulate.a = _adren_flash * 0.5 * GraphicsSettings.flash_intensity
+	if _dodge_label:
+		_dodge_alpha = move_toward(_dodge_alpha, 0.0, delta * 1.5)
+		_dodge_pop = move_toward(_dodge_pop, 0.0, delta * 5.0)
+		_dodge_label.modulate.a = clampf(_dodge_alpha, 0.0, 1.0)
+		_dodge_label.scale = Vector2.ONE * (1.0 + _dodge_pop * 0.4)
+		_dodge_label.pivot_offset = _dodge_label.size * 0.5
 	if _headshot_label:
 		# Quicker fade than the streak word (~0.8s) since headshots land often.
 		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
