@@ -227,6 +227,7 @@ func _ready() -> void:
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.perfect_dodge.connect(_on_perfect_dodge)
 	GameState.execution.connect(_on_execution)
+	GameState.directive_set.connect(_on_directive_set)
 	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
 	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
 	GameState.level_graded.connect(_on_level_graded)
@@ -236,6 +237,12 @@ func _ready() -> void:
 	_build_adrenaline()
 	_build_dodge_label()
 	_build_exec_label()
+	# The directive was rolled in load_level before this HUD existed — announce the
+	# active one now (a beat later so the toast lands after the level settles in).
+	if GameState.directive_id != "":
+		var dn := String(GameState.directive.get("name", ""))
+		var dd := String(GameState.directive.get("desc", ""))
+		get_tree().create_timer(0.8).timeout.connect(func(): _on_directive_set(dn, dd))
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -574,6 +581,14 @@ func _on_execution(_world_pos: Vector3) -> void:
 	if _exec_label:
 		_exec_alpha = 1.0
 		_exec_pop = 1.3
+
+## Announce the level's COMBAT DIRECTIVE (the roguelite mutator). Fires via signal
+## AND is polled once on _ready — the roll happens in load_level, before this HUD
+## exists, so the signal alone would be missed on the level we actually load into.
+func _on_directive_set(dir_name: String, desc: String) -> void:
+	if dir_name == "":
+		return
+	_show_toast("⚡ DIRECTIVE · " + dir_name + " — " + desc)
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:

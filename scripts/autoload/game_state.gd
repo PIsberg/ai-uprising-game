@@ -526,6 +526,42 @@ func reward_execution(world_pos: Vector3) -> void:
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
 
+# ---------- COMBAT DIRECTIVE: per-level roguelite mutator ----------
+## At the start of each (non-boss) level there's a chance the run rolls a DIRECTIVE
+## that reshapes the rules — a high-risk/high-reward twist for replay variety. All
+## effects route through the mult getters below (damage dealt/taken, move, loot,
+## bounty cadence) so a directive is fully contained and reverts on the next level.
+const DIRECTIVE_CHANCE := 0.6 ## odds a level rolls one at all
+const DIRECTIVES := [
+	{"id": "glass_cannon", "name": "GLASS CANNON",
+		"desc": "+50% damage dealt — but you take +40% more", "damage": 1.5, "incoming": 1.4},
+	{"id": "juggernaut", "name": "JUGGERNAUT",
+		"desc": "Take 40% less damage — deal 10% less", "incoming": 0.6, "damage": 0.9},
+	{"id": "spoils", "name": "SPOILS OF WAR",
+		"desc": "Every kill drops double loot", "pickup": 2.0},
+	{"id": "blitz", "name": "BLITZ",
+		"desc": "+20% move speed — but +20% damage taken", "move": 1.2, "incoming": 1.2},
+	{"id": "most_wanted", "name": "MOST WANTED",
+		"desc": "Bounties appear twice as often, worth 50% more", "bounty_interval": 0.4, "bounty_bonus": 1.5},
+]
+signal directive_set(name: String, desc: String) ## Level's directive (or "" for none) — HUD callout.
+var directive_id: String = ""
+var directive: Dictionary = {}
+
+func roll_directive() -> void:
+	directive = {}
+	directive_id = ""
+	if randf() <= DIRECTIVE_CHANCE:
+		var d: Dictionary = DIRECTIVES[randi() % DIRECTIVES.size()]
+		directive = d
+		directive_id = String(d["id"])
+	directive_set.emit(String(directive.get("name", "")), String(directive.get("desc", "")))
+
+func directive_damage_mult() -> float: return float(directive.get("damage", 1.0))
+func directive_incoming_mult() -> float: return float(directive.get("incoming", 1.0))
+func directive_move_mult() -> float: return float(directive.get("move", 1.0))
+func directive_pickup_mult() -> float: return float(directive.get("pickup", 1.0))
+
 # ---------- BOUNTY: a rotating hunt-the-marked-target sub-goal ----------
 ## Periodically tags one live non-boss enemy as a BOUNTY: a beacon-marked target
 ## worth bonus score + a guaranteed rare drop. Gives every drawn-out fight a
@@ -551,7 +587,7 @@ func _tick_bounty(delta: float) -> void:
 			if cur.has_method("clear_bounty"):
 				cur.clear_bounty()
 			_bounty = null
-			_bounty_cd = BOUNTY_INTERVAL
+			_bounty_cd = _bounty_interval()
 		return
 	# No live bounty — count down and try to mark a new one.
 	_bounty = null
@@ -575,14 +611,19 @@ func _try_mark_bounty() -> void:
 	var label: String = pick._kill_label() if pick.has_method("_kill_label") else "TARGET"
 	bounty_marked.emit(label)
 
+## Seconds until the next bounty — shortened by the MOST WANTED directive.
+func _bounty_interval() -> float:
+	return BOUNTY_INTERVAL * float(directive.get("bounty_interval", 1.0))
+
 ## The marked target went down (called from EnemyBase._on_died).
 func claim_bounty() -> void:
-	add_score(BOUNTY_BONUS)
+	var pts := int(round(BOUNTY_BONUS * float(directive.get("bounty_bonus", 1.0))))
+	add_score(pts)
 	_bounty = null
-	_bounty_cd = BOUNTY_INTERVAL
+	_bounty_cd = _bounty_interval()
 	_bounty_age = 0.0
 	AudioBus.play_synth_ui("combo_up", -2.0, 0.9)
-	bounty_claimed.emit(BOUNTY_BONUS)
+	bounty_claimed.emit(pts)
 
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
@@ -800,6 +841,8 @@ func reset_run() -> void:
 	_bounty = null
 	_bounty_cd = BOUNTY_INTERVAL
 	_bounty_age = 0.0
+	directive = {}
+	directive_id = ""
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------
@@ -1010,6 +1053,13 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		max_level_reached = maxi(max_level_reached, found)
 	if reset:
 		reset_run()
+		# Roll this level's COMBAT DIRECTIVE (skip bosses — those fights stay pure).
+		# Only on a genuine new level; a TRY-AGAIN retry (reset=false) keeps it.
+		if not LevelDefs.level_is_boss(level_id_from_path(scene_path)):
+			roll_directive()
+		else:
+			directive = {}
+			directive_id = ""
 	reset_level_stats()
 	set_state(State.PLAYING)
 	if found != -1:

@@ -1552,7 +1552,7 @@ func _drop_prize() -> void:
 	p.global_position = pos
 
 func _drop_loot() -> void:
-	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0)
+	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0) * GameState.directive_pickup_mult()
 	# Read the player's health up front: it gates a low-HP PITY DROP (a safety net
 	# so low-kill objective levels can't spiral into an unrecoverable starve) and
 	# biases the loot toward health when you're hurt.

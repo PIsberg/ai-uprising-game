@@ -1335,7 +1335,7 @@ func _handle_stamina(delta: float) -> void:
 func _current_speed() -> float:
 	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE + a clutch ADRENALINE surge
 	# all boost every movement state.
-	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult() * GameState.adrenaline_speed_mult()
+	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult() * GameState.adrenaline_speed_mult() * GameState.directive_move_mult()
 	if _is_crouching:
 		return crouch_speed * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
@@ -1549,7 +1549,7 @@ func _on_health_changed(cur: float, max_: float) -> void:
 ## Damageable hook: campaign warmup on incoming damage (×0.65 on the opening
 ## level, ×1.0 by ~25% depth) so the first levels teach instead of execute.
 func modify_incoming_damage(amount: float, _source) -> float:
-	return amount * GameState.campaign_incoming_mult()
+	return amount * GameState.campaign_incoming_mult() * GameState.directive_incoming_mult()
 
 ## Damageable hook: fires when a hit is negated by our invulnerability. During the
 ## dash i-frame window (and NOT god mode) that means a skillful dodge just phased

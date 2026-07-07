@@ -15,7 +15,7 @@ signal ammo_changed(mag: int, reserve: int)
 # every read goes through these. GameState owns the multipliers.
 
 func eff_damage() -> float:
-	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * GameState.rampage_damage_mult() * GameState.adrenaline_damage_mult() * _alt_boost
+	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * GameState.rampage_damage_mult() * GameState.adrenaline_damage_mult() * GameState.directive_damage_mult() * _alt_boost
 
 ## Effective fire rate — OVERDRIVE and a high kill-streak RAMPAGE both crank it up
 ## so cooldowns shorten across all fire modes (semi/auto/burst/beam).
