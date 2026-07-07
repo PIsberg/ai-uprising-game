@@ -433,7 +433,9 @@ func _build_environment(def: Dictionary) -> void:
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
 	env.fog_density = e.get("fog_density", 0.01)
-	env.fog_aerial_perspective = 0.12
+	# Aerial perspective tints distant surfaces toward the fog colour for depth;
+	# open-sky levels can crank it (e.g. a hazy sun-baked desert) via "fog_aerial".
+	env.fog_aerial_perspective = e.get("fog_aerial", 0.12)
 	env.fog_sky_affect = 0.3
 	# Interiors: pull the distance fog WAY back so enclosed walls keep their own
 	# dark color instead of washing into a bright themed band. The earlier

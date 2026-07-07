@@ -3402,6 +3402,7 @@ static func _desert() -> Dictionary:
 		],
 		"open_sky": true,
 		"floor_size": Vector2(66, 66),
+		"floor_material": "res://assets/materials/desert_sand.tres", # textured sand, not flat beige
 		"floor_color": Color(0.66, 0.5, 0.31),
 		"spawn": Vector3(-27, 2.0, -27),
 		"exit": Vector3(28, 1.6, 28),
@@ -3409,19 +3410,24 @@ static func _desert() -> Dictionary:
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-18, 3.6, 12), "color": Color(0.6, 0.85, 1.0)},
 		],
+		# Golden-hour desert: a deep-blue zenith burning down to a hot gold horizon,
+		# a low warm sun throwing long shadows across the grit, and thicker distance
+		# haze so the far canyon walls and mast recede with real atmospheric depth —
+		# a striking sun-baked look instead of a flat bright noon.
 		"env": {
-			"sky_top": Color(0.24, 0.5, 0.86), "sky_horizon": Color(0.88, 0.72, 0.5),
-			"ground": Color(0.6, 0.45, 0.28), "fog": Color(0.88, 0.74, 0.52),
-			"ambient": Color(1.0, 0.92, 0.74), "ambient_energy": 0.72,
-			"sky_contribution": 0.55, "glow": 1.0, "glow_threshold": 1.1, "fog_density": 0.006,
-			"sun_color": Color(1.0, 0.95, 0.8), "sun_energy": 1.45, "sun_rot": Vector3(-58, 35, 0),
-			"contrast": 1.1, "saturation": 1.16, "brightness": 1.05,
+			"sky_top": Color(0.14, 0.32, 0.66), "sky_horizon": Color(1.0, 0.66, 0.34),
+			"ground": Color(0.5, 0.36, 0.22), "fog": Color(0.98, 0.72, 0.44),
+			"ambient": Color(1.0, 0.86, 0.62), "ambient_energy": 0.62,
+			"sky_contribution": 0.55, "glow": 1.05, "glow_threshold": 1.05, "fog_density": 0.013,
+			"fog_aerial": 0.5,
+			"sun_color": Color(1.0, 0.82, 0.52), "sun_energy": 1.9, "sun_rot": Vector3(-34, 42, 0),
+			"contrast": 1.16, "saturation": 1.24, "brightness": 1.02,
 		},
-		# Hard noon sun pools down the central mast.
+		# Low sun pools warm light down the central mast; a cool fill lifts the shade.
 		"light_shafts": [0],
 		"lights": [
-			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.75, 0.4), "energy": 2.6, "range": 24},
-			{"pos": Vector3(0, 5, 6), "color": Color(0.7, 0.85, 1.0), "energy": 1.6, "range": 16},
+			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26},
+			{"pos": Vector3(0, 5, 6), "color": Color(0.6, 0.8, 1.0), "energy": 1.8, "range": 18},
 		],
 		# Canyon walls: sandstone slabs at irregular angles carving a winding route
 		# from the SW spawn to the NE relay, leaving the centre open for the oasis.

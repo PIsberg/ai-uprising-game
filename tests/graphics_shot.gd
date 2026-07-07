@@ -5,9 +5,7 @@ extends Node3D
 
 # level id -> a scenic vantage {pos, look_at} to frame architecture + enemies.
 const SHOTS := [
-	{"id": "claude",  "pos": Vector3(-8, 1.7, -9),   "look": Vector3(10, 2.0, 11)},
-	{"id": "sublevel","pos": Vector3(-9, 1.7, -9),   "look": Vector3(9, 1.6, 10)},
-	{"id": "suburb",  "pos": Vector3(-22, 2.0, -18), "look": Vector3(18, 3.0, 14)},
+	{"id": "desert",  "pos": Vector3(-18, 7.5, 12),  "look": Vector3(6, 0.5, 4)},
 ]
 
 func _ready() -> void:
