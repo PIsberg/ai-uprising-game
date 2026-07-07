@@ -1316,8 +1316,8 @@ func _handle_stamina(delta: float) -> void:
 		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
 
 func _current_speed() -> float:
-	# OVERDRIVE powerup boosts every movement state.
-	var mult: float = GameState.move_speed_mult()
+	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE both boost every movement state.
+	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult()
 	if _is_crouching:
 		return crouch_speed * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.

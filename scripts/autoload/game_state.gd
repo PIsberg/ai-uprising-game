@@ -399,6 +399,53 @@ func add_kill(points: int = 100, label: String = "HOSTILE") -> void:
 	combo_changed.emit(combo, combo_mult())
 	add_score(int(round(points * combo_mult())))
 	enemy_killed.emit(points, label)
+	_update_rampage()
+
+# ---------- RAMPAGE: kill-streak power escalation ----------
+## A streak doesn't just multiply score — it cranks YOUR power. Chain kills inside
+## the combo window to spike into a tier: +damage, then +fire rate, then +speed,
+## each announced with a banner + a top-up heal so momentum sustains itself. It
+## all drops the instant the streak breaks — a fun, aggressive "keep killing" loop.
+const RAMPAGE_TIERS := [5, 10, 18]                 ## combo counts unlocking tiers 1/2/3
+const RAMPAGE_NAMES := ["RAMPAGE", "UNSTOPPABLE", "GODLIKE"]
+const RAMPAGE_DMG := [1.0, 1.18, 1.35, 1.55]       ## damage mult by tier 0..3
+const RAMPAGE_FIRE := [1.0, 1.0, 1.18, 1.35]       ## fire-rate mult by tier
+const RAMPAGE_SPEED := [1.0, 1.0, 1.0, 1.12]       ## move-speed mult by tier
+const RAMPAGE_HEAL := [0.0, 12.0, 16.0, 22.0]      ## HP topped up on reaching a tier
+signal rampage_changed(tier: int, name: String)    ## Rampage tier changed — HUD banner.
+var rampage_tier: int = 0
+
+func _rampage_for_combo() -> int:
+	var t := 0
+	for i in RAMPAGE_TIERS.size():
+		if combo >= RAMPAGE_TIERS[i]:
+			t = i + 1
+	return t
+
+func _update_rampage() -> void:
+	var t := _rampage_for_combo()
+	if t <= rampage_tier:
+		return # only fires on a NEW, higher tier
+	rampage_tier = t
+	var nm: String = RAMPAGE_NAMES[t - 1]
+	rampage_changed.emit(rampage_tier, nm)
+	# Reward: a top-up heal to sustain the aggression + a satisfying hit-stop spike.
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl:
+		var d = pl.get_node_or_null("Damageable")
+		if d and d.has_method("heal") and d.has_method("is_alive") and d.is_alive():
+			d.heal(RAMPAGE_HEAL[t])
+	AudioBus.play_synth_ui("combo_up", -1.0, 1.0 + t * 0.18)
+	hit_stop(0.06, 0.4)
+
+func rampage_damage_mult() -> float:
+	return RAMPAGE_DMG[rampage_tier]
+
+func rampage_fire_mult() -> float:
+	return RAMPAGE_FIRE[rampage_tier]
+
+func rampage_speed_mult() -> float:
+	return RAMPAGE_SPEED[rampage_tier]
 
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
@@ -414,6 +461,9 @@ func _reset_combo() -> void:
 	if combo != 0:
 		combo = 0
 		combo_changed.emit(0, 1.0)
+	if rampage_tier != 0:
+		rampage_tier = 0
+		rampage_changed.emit(0, "") # rampage collapses when the streak breaks
 
 func _process(delta: float) -> void:
 	if combo > 0:

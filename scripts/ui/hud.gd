@@ -223,9 +223,11 @@ func _ready() -> void:
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
 	GameState.combo_changed.connect(_on_combo_changed)
+	GameState.rampage_changed.connect(_on_rampage_changed)
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
+	_build_rampage_label()
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -430,6 +432,40 @@ func _build_fps_label() -> void:
 	_fps_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fps_label.visible = false
 	add_child(_fps_label)
+
+var _rampage_label: Label = null
+var _rampage_alpha: float = 0.0
+var _rampage_pop: float = 0.0
+const RAMPAGE_COLORS := [Color(1.0, 0.55, 0.2), Color(1.0, 0.28, 0.24), Color(1.0, 0.82, 0.35)]
+
+## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
+## into a power tier (a REAL buff, not just score). Sits above the combo readout,
+## bigger and brighter than the streak word so a power spike reads as an event.
+func _build_rampage_label() -> void:
+	_rampage_label = Label.new()
+	_rampage_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_rampage_label.anchor_left = 0.5
+	_rampage_label.anchor_right = 0.5
+	_rampage_label.position = Vector2(0, 200)
+	_rampage_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_rampage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rampage_label.add_theme_font_size_override("font_size", 58)
+	_rampage_label.add_theme_constant_override("outline_size", 12)
+	_rampage_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_rampage_label.modulate.a = 0.0
+	_rampage_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_rampage_label)
+
+func _on_rampage_changed(tier: int, name: String) -> void:
+	if _rampage_label == null:
+		return
+	if tier <= 0 or name == "":
+		return # streak broke — banner just fades on its own
+	var col: Color = RAMPAGE_COLORS[clampi(tier - 1, 0, RAMPAGE_COLORS.size() - 1)]
+	_rampage_label.text = "%s!" % name
+	_rampage_label.add_theme_color_override("font_color", col)
+	_rampage_alpha = 1.0
+	_rampage_pop = 1.4 # a bigger punch than the streak word
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
@@ -701,6 +737,12 @@ func _process(delta: float) -> void:
 		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
 		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
 		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _rampage_label:
+		_rampage_alpha = move_toward(_rampage_alpha, 0.0, delta * 0.85)
+		_rampage_pop = move_toward(_rampage_pop, 0.0, delta * 4.5)
+		_rampage_label.modulate.a = clampf(_rampage_alpha, 0.0, 1.0)
+		_rampage_label.scale = Vector2.ONE * (1.0 + _rampage_pop * 0.5)
+		_rampage_label.pivot_offset = _rampage_label.size * 0.5
 	if _headshot_label:
 		# Quicker fade than the streak word (~0.8s) since headshots land often.
 		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
