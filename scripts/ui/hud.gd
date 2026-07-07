@@ -1097,12 +1097,18 @@ func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
 ## fresh run has no clutter and the loadout fills in as you invest.
 func _build_upgrade_chips() -> void:
 	var layout := $Margin/Layout
-	var row := HBoxContainer.new()
-	row.name = "UpgradeRow"
-	row.add_theme_constant_override("separation", 8)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layout.add_child(row)
-	layout.move_child(row, $Margin/Layout/BottomLeft.get_index()) # sit right above the HP bar
+	var row: HBoxContainer = layout.get_node_or_null("UpgradeRow")
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = "UpgradeRow"
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layout.add_child(row)
+		layout.move_child(row, $Margin/Layout/BottomLeft.get_index()) # sit right above the HP bar
+		# Rebuild live when ranks change (armory buy / "imba" cheat).
+		GameState.upgrades_changed.connect(_build_upgrade_chips)
+	for c in row.get_children():
+		c.queue_free()
 	for k in Armory.KEYS:
 		var lvl := GameState.upgrade_level(k)
 		if lvl <= 0:

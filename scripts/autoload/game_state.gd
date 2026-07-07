@@ -8,6 +8,7 @@ signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit
 signal enemy_killed(score: int, label: String) ## An enemy was destroyed — drives the HUD kill feed.
 signal objective_blocked(text: String) ## Player reached a locked portal — HUD posts why.
 signal objective_unlocked(text: String) ## Objective met, portal opened — HUD updates the goal line.
+signal upgrades_changed ## Run upgrade ranks changed (armory buy / "imba" cheat) — HUD re-renders the upgrade chips.
 signal tasks_changed ## The level task checklist changed — HUD re-renders the objective line.
 signal task_completed(label: String) ## A single task was just finished — HUD cheers it.
 signal combo_changed(combo: int, mult: float) ## Kill-streak combo updated — HUD shows the multiplier.
@@ -335,8 +336,16 @@ func buy_upgrade(k: String) -> bool:
 		return false
 	score -= cost
 	upgrades[k] = upgrade_level(k) + 1
+	upgrades_changed.emit()
 	save_progress()
 	return true
+
+## Cheat ("imba"): max every permanent upgrade track for the run, for free.
+func max_all_upgrades() -> void:
+	for k in UPGRADE_DEFS:
+		upgrades[k] = UPGRADE_MAX
+	upgrades_changed.emit()
+	save_progress()
 
 ## True if at least one track is purchasable right now — the briefing only
 ## bothers showing the armory when there's an actual decision to make.

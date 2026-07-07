@@ -37,6 +37,7 @@ var _stamina: float = 100.0
 var _stamina_exhausted: bool = false ## true from the moment stamina hits 0 until it recovers past the threshold
 var _stamina_regen_cd: float = 0.0
 var _was_exhausted: bool = false ## edge-detect so the HUD is only pinged when the lock flips
+var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-track multiplier
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
@@ -277,7 +278,8 @@ func _ready() -> void:
 		hp.max_health += GameState.supply_health
 	hp.current_health = hp.max_health
 	# STAMINA armory track: a bigger pool to sprint/rappel on before gassing out.
-	max_stamina *= GameState.stamina_mult()
+	_base_stamina = max_stamina # authored base, kept so the "imba" cheat can re-apply the mult
+	max_stamina = _base_stamina * GameState.stamina_mult()
 	_stamina = max_stamina
 	stamina_changed.emit(_stamina, max_stamina, false)
 	if GameState.supply_grenades > 0:
@@ -491,8 +493,10 @@ func _handle_low_health(delta: float) -> void:
 	elif _breath and _breath.playing:
 		_breath.stop()
 
-# --- cheat: type "god" during play to toggle invincibility (testing aid) ---
+# --- cheats: type a keyword during play. "god" toggles invincibility; "imba"
+# maxes every permanent upgrade track for the run (testing aids). ---
 const GOD_WORD := "god"
+const IMBA_WORD := "imba"
 var _god: bool = false
 var _cheat_buf := ""
 
@@ -501,10 +505,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		var u := (event as InputEventKey).unicode
 		if u != 0:
-			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(GOD_WORD.length())
-			if _cheat_buf == GOD_WORD:
+			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(8) # holds the longest keyword
+			if _cheat_buf.ends_with(GOD_WORD):
 				_cheat_buf = ""
 				_toggle_god()
+			elif _cheat_buf.ends_with(IMBA_WORD):
+				_cheat_buf = ""
+				_cheat_imba()
 	if _dead:
 		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -703,6 +710,20 @@ func _toggle_god() -> void:
 		hp.heal(hp.max_health)
 	pickup_message.emit("☢ GOD MODE: " + ("ON — invincible" if _god else "OFF"))
 	AudioBus.play_synth_ui("pickup_health", -4.0, 1.7 if _god else 0.8)
+
+## "imba" cheat: max every armory upgrade track for the run, and apply the parts
+## that normally only take effect on deploy (the stamina pool) to the live player
+## right now. Damage/mag/reload/blast/leech read their multipliers live already.
+func _cheat_imba() -> void:
+	GameState.max_all_upgrades()
+	max_stamina = _base_stamina * GameState.stamina_mult()
+	_stamina = max_stamina
+	_stamina_exhausted = false
+	stamina_changed.emit(_stamina, max_stamina, false)
+	if hp and hp.has_method("heal"):
+		hp.heal(hp.max_health)
+	pickup_message.emit("★ IMBA — ALL UPGRADES MAXED")
+	AudioBus.play_synth_ui("victory", -3.0, 1.1)
 
 ## Returns a world-space dodge direction when a movement key is double-tapped
 ## within the window, else Vector3.ZERO. Updates the tap tracker every call.
