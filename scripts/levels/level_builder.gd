@@ -392,15 +392,14 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_color = e.get("ambient", Color(0.6, 0.65, 0.75))
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
-	# MUCH darker baseline than the defs ask for: the world lives in shadow and
-	# every light source — fixtures, muzzle flashes, bolts, explosions, pickup
-	# glows — gets to carve its own pool out of the dark. That rule is sized for
-	# INTERIORS, where fixtures cover the floor; outdoors nothing lights the
-	# streets, and the full crush left the ground an unreadable black hole at
-	# dusk (playtest: suburb hostiles vanished against the asphalt), so
-	# open-sky levels keep more of their authored ambient.
+	# Darker baseline than the defs ask for so light sources — fixtures, muzzle
+	# flashes, bolts, explosions, pickup glows — each carve their own pool out of
+	# the dark. But the interior crush (×0.38) was too aggressive: walls, floors and
+	# cover read as murky near-black with only emissives visible ("dark / unclear"),
+	# so it's lifted to ×0.55 — surfaces are now legibly lit while the scene keeps
+	# its moody, fixture-lit character. Open-sky levels keep more of their ambient.
 	env.ambient_light_energy = e.get("ambient_energy", 0.4) \
-			* (0.7 if def.get("open_sky", false) else 0.38)
+			* (0.7 if def.get("open_sky", false) else 0.55)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 0.8
 	env.tonemap_white = 6.0
@@ -416,15 +415,20 @@ func _build_environment(def: Dictionary) -> void:
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.glow_intensity = e.get("glow", 0.62)
-	env.glow_strength = e.get("glow_strength", 0.9)
+	env.glow_strength = e.get("glow_strength", 0.78)
 	# Bloom bleed: levels can crank this for a hazy neon-noir look where bright
-	# signs/lights smear into a fuzzy glow (default keeps edges crisp).
-	env.glow_bloom = e.get("glow_bloom", 0.05)
-	env.glow_hdr_threshold = e.get("glow_threshold", 1.25) # low enough that enemy emissives halo in the dark
+	# signs/lights smear into a fuzzy glow. Default 0 keeps a CRISP halo — the old
+	# 0.05 bleed was part of why interiors read soft/unfocused (bright strips smeared
+	# into the dark instead of staying sharp).
+	env.glow_bloom = e.get("glow_bloom", 0.0)
+	# Raised so only genuinely bright emissives bloom, not every mid-lit surface —
+	# tightens the glow and stops the whole interior hazing over.
+	env.glow_hdr_threshold = e.get("glow_threshold", 1.4)
 	env.glow_hdr_scale = 1.0
-	# Soft filmic halo around emissives — narrow kernel keeps the scene crisp.
+	# Narrow the wide glow kernel: the 5th level (0.55) spread a big soft halo that
+	# smeared light strips; 0.3 keeps the bloom tight so lights read as lights.
 	env.set("glow_levels/3", 1.0)
-	env.set("glow_levels/4", 0.55)
+	env.set("glow_levels/4", 0.3)
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
