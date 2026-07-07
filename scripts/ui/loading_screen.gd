@@ -120,14 +120,19 @@ func _build_ui() -> void:
 	_dots_lbl.add_theme_color_override("font_color", Color(0.7, 0.78, 0.9))
 	box.add_child(_dots_lbl)
 
-	# Tactical tip, pinned near the bottom.
+	# Tactical tip, pinned near the bottom. Wraps + keeps side margins so the longer
+	# tips (RAMPAGE/stamina/etc.) don't run off the screen edges — a single-line
+	# label overflowed once the tips grew past one sentence.
 	var tip := Label.new()
 	# Index varies by level so it isn't always the same tip (no RNG needed).
 	tip.text = "TIP:  " + TIPS[abs(lid.hash()) % TIPS.size()]
 	tip.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	tip.anchor_top = 1.0; tip.anchor_bottom = 1.0
-	tip.offset_top = -110.0; tip.offset_bottom = -70.0
+	tip.offset_top = -150.0; tip.offset_bottom = -34.0
+	tip.offset_left = 120.0; tip.offset_right = -120.0
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tip.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	tip.add_theme_font_size_override("font_size", 18)
 	tip.add_theme_color_override("font_color", Color(0.6, 0.65, 0.75))
 	add_child(tip)
