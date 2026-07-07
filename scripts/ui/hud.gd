@@ -3,6 +3,8 @@ extends Control
 @onready var health_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/HealthBar
 @onready var health_label: Label = $Margin/Layout/BottomLeft/HealthRow/HealthLabel
 @onready var stamina_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/StaminaBar
+@onready var _hp_caption: Label = $Margin/Layout/BottomLeft/HealthRow/HpCaption
+@onready var _sta_caption: Label = $Margin/Layout/BottomLeft/HealthRow/StaCaption
 @onready var ammo_label: Label = $Margin/Layout/BottomRight/AmmoLabel
 @onready var weapon_label: Label = $Margin/Layout/BottomRight/WeaponLabel
 @onready var grenade_label: Label = $Margin/Layout/BottomRight/GrenadeLabel
@@ -1028,6 +1030,17 @@ func _style_health_bar() -> void:
 	health_label.add_theme_font_size_override("font_size", 20)
 	health_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	health_label.add_theme_constant_override("outline_size", 6)
+	_style_caption(_hp_caption, Color(0.4, 1.0, 0.55))
+
+## Small bold caption stamped in front of a bar ("HP" / "STA") so the two readouts
+## are labelled at a glance.
+func _style_caption(cap: Label, col: Color) -> void:
+	if cap == null:
+		return
+	cap.add_theme_font_size_override("font_size", 15)
+	cap.add_theme_color_override("font_color", col)
+	cap.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	cap.add_theme_constant_override("outline_size", 5)
 
 func _on_health_changed(cur: float, max_: float) -> void:
 	health_bar.max_value = max_
@@ -1062,6 +1075,7 @@ func _style_stamina_bar() -> void:
 	_stam_fill.bg_color = Color(0.3, 0.8, 1.0)
 	_stam_fill.set_corner_radius_all(3)
 	stamina_bar.add_theme_stylebox_override("fill", _stam_fill)
+	_style_caption(_sta_caption, Color(0.35, 0.85, 1.0))
 
 func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
 	if not stamina_bar:

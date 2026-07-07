@@ -8,9 +8,9 @@ extends RigidBody3D
 @export var fuse: float = 1.5
 const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
 
-@export var damage: float = 20.0
-@export var splash_radius: float = 4.5
-@export var splash_damage: float = 90.0
+@export var damage: float = 40.0
+@export var splash_radius: float = 6.2
+@export var splash_damage: float = 165.0
 
 var _shooter: Node
 var _t: float = 0.0

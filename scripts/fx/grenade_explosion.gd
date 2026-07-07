@@ -6,10 +6,10 @@ func _ready() -> void:
 	# Play explosion audio at high volume
 	AudioBus.play_synth_at("explosion", global_position, 4.0, randf_range(0.85, 1.05))
 
-	# Fireball core + shockwave ring + light pop + proximity kick; the scene's
-	# fire/smoke/spark/debris particles dress it. Grenades hit harder, so the
-	# whole read is bigger than the enemy-death pop.
-	ExplosionFX.detonate(self, 3.2, Color(1.0, 0.58, 0.2))
+	# Fireball core + fire column + double shockwave + spark/debris/smoke + light
+	# pop + proximity kick; the scene's own particles dress it further. Grenades
+	# hit HARD now, so the blast is bigger and hotter than the enemy-death pop.
+	ExplosionFX.detonate(self, 4.3, Color(1.0, 0.55, 0.18))
 
 	# Ground scorch lingers well past the blast, then fades out.
 	if scorch:
