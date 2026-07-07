@@ -430,6 +430,7 @@ func _update_rampage() -> void:
 		return # only fires on a NEW, higher tier
 	rampage_tier = t
 	stat_best_rampage = maxi(stat_best_rampage, t)
+	teach_once("rampage", MECHANIC_HINTS["rampage"])
 	var nm: String = RAMPAGE_NAMES[t - 1]
 	rampage_changed.emit(rampage_tier, nm)
 	# Reward: a top-up heal to sustain the aggression + a satisfying hit-stop spike.
@@ -481,6 +482,7 @@ func try_adrenaline() -> bool:
 			d.heal(ADRENALINE_HEAL)
 	hit_stop(0.28, 0.5) # a distinct bullet-time beat, slower than a kill's micro-punch
 	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.7)
+	teach_once("adrenaline", MECHANIC_HINTS["adrenaline"])
 	adrenaline_changed.emit(true)
 	return true
 
@@ -512,6 +514,7 @@ func reward_perfect_dodge() -> void:
 	if _adrenaline_cd > 0.0:
 		_adrenaline_cd = maxf(0.0, _adrenaline_cd - PERFECT_DODGE_ADREN_REFUND)
 	stat_dodges += 1
+	teach_once("dodge", MECHANIC_HINTS["dodge"])
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
 	perfect_dodge.emit()
 
@@ -527,6 +530,7 @@ func reward_execution(world_pos: Vector3) -> void:
 		return
 	add_score(EXECUTE_BONUS)
 	stat_executions += 1
+	teach_once("execution", MECHANIC_HINTS["execution"])
 	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
@@ -550,6 +554,7 @@ func add_ultimate_charge(amount: float) -> void:
 	ultimate_changed.emit(ultimate_charge)
 	if was < 1.0 and ultimate_charge >= 1.0:
 		AudioBus.play_synth_ui("combo_up", 0.0, 1.5)
+		teach_once("overload", MECHANIC_HINTS["overload"])
 		ultimate_ready.emit()
 
 func ultimate_ready_state() -> bool:
@@ -911,6 +916,16 @@ const ELITE_HINTS := {
 	"swift": "◆ ELITE · SWIFT — fast mover. Lead your shots.",
 	"warden": "◆ ELITE · WARDEN — can't be staggered. Dodge it, don't trade.",
 	"splitter": "◆ ELITE · SPLITTER — splits into skitters on death. Watch the spawn.",
+}
+
+## First-time coaching for the engagement systems — each fires once per run the
+## moment the mechanic first triggers, so players actually discover the new verbs.
+const MECHANIC_HINTS := {
+	"rampage": "🔥 RAMPAGE — kill streaks power you up. Keep the chain alive!",
+	"adrenaline": "🩸 ADRENALINE — a near-death surge kicked in. Push the counter-attack!",
+	"dodge": "✦ PERFECT DODGE — dashing (Q) through an attack dodges it. Time your dashes!",
+	"execution": "☠ EXECUTION — melee (F) finishes off weakened enemies instantly.",
+	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).
