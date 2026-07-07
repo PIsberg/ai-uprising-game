@@ -311,9 +311,16 @@ static func _split_tone_lut() -> GradientTexture1D:
 		return _grade_lut
 	var g := Gradient.new()
 	# Ramp offsets: 0 = shadows, 0.5 = mids (kept neutral), 1 = highlights.
-	g.set_color(0, Color(0.0, 0.03, 0.07))     # shadows lean cool teal
+	# Shadow TOE-LIFT: pure-black pixels resolve to a dark cool-teal instead of a
+	# flat void, so the ground right in front of the player and the shadowed side
+	# of a room keep their material/shape (dusk asphalt and night arenas were
+	# crushing whole regions to #000). The lift is confined to the very darkest
+	# input (rejoined to identity by offset 0.16) so midtones/contrast/mood are
+	# untouched — it recovers detail without washing the moody interiors out.
+	g.set_color(0, Color(0.055, 0.085, 0.12))  # lifted cool-teal shadows (was near-black)
+	g.add_point(0.16, Color(0.16, 0.17, 0.18))  # rejoin ~identity fast: only the deepest shadows lift
 	g.add_point(0.5, Color(0.5, 0.5, 0.5))      # mids exactly neutral (identity)
-	g.set_color(2, Color(1.0, 0.96, 0.88))      # highlights lean warm
+	g.set_color(3, Color(1.0, 0.96, 0.88))      # highlights lean warm
 	var t := GradientTexture1D.new()
 	t.gradient = g
 	t.width = 256
