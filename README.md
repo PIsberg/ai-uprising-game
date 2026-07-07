@@ -22,6 +22,8 @@ Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cut
 | **Enemy Codex** — PROMETHEUS‑0, the Titan boss | **Campaign map** — interactive sector intel & route |
 | ![Armory shop](docs/screenshots/armory.png) | ![Level editor](docs/screenshots/level_editor.png) |
 | **Armory** — between‑levels upgrades & field supplies | **Level editor** — build levels with live marker preview & playtest |
+| ![Moonlit reactor firefight](docs/screenshots/moonlit_reactor.png) | ![RAVAGER render](docs/screenshots/render_ravager.png) |
+| **Moonlit reactor** — a night firefight in the flooded Tidecore sector under a milky‑way sky | **RAVAGER** — the gold‑crowned, red‑eyed ground‑slammer |
 
 > The built-in **level editor** (`--editor`) authors levels as plain data with a live marker preview, full gizmos, and one-click playtest. The **bestiary** turns slowly in 3D and lists every hostile's strengths, weaknesses, and counter-weapons — discovered as you meet them.
 
