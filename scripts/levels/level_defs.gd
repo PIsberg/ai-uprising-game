@@ -586,15 +586,22 @@ static func _frostbreak() -> Dictionary:
 		"spawn": Vector3(-19, 0.6, -19),
 		"exit": Vector3(19, 1.5, 19),
 		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-13, 0, -11), "color": Color(0.6, 0.85, 1.0)},
+		# Moonlit blizzard: falling snow drifting through a crisp cold night, a bright
+		# moon over the relay, and brighter bounce (snow reflects light — a snowy
+		# night reads pale and luminous, not flat and dim). The wind haze thickens
+		# the depth so far gantries fade into the storm.
 		"env": {
-			"stars": true,
-			"sky_top": Color(0.02, 0.04, 0.09), "sky_horizon": Color(0.1, 0.18, 0.32),
-			"ground": Color(0.4, 0.48, 0.58), "fog": Color(0.5, 0.62, 0.78),
-			"ambient": Color(0.6, 0.72, 0.9), "ambient_energy": 0.45,
-			"sky_contribution": 0.5, "glow": 0.92, "fog_density": 0.012,
-			"sun_color": Color(0.7, 0.82, 1.0), "sun_energy": 0.55,
-			"contrast": 1.12, "saturation": 0.92, "brightness": 0.9,
-			"volumetric_density": 0.013,
+			"stars": true, "star_brightness": 1.6, "star_tint": Color(0.8, 0.88, 1.0),
+			"milkyway": 0.35, "milkyway_tint": Color(0.55, 0.65, 0.9),
+			"moon_dir": Vector3(0.3, 0.5, 0.7), "moon_glow": 2.2, "moon_color": Color(0.85, 0.92, 1.0),
+			"sky_top": Color(0.03, 0.06, 0.13), "sky_horizon": Color(0.16, 0.26, 0.42),
+			"ground": Color(0.46, 0.55, 0.66), "fog": Color(0.62, 0.72, 0.86),
+			"ambient": Color(0.66, 0.78, 0.96), "ambient_energy": 0.6,
+			"sky_contribution": 0.5, "glow": 0.95, "fog_density": 0.016,
+			"sun_color": Color(0.78, 0.88, 1.0), "sun_energy": 0.85,
+			"contrast": 1.12, "saturation": 0.98, "brightness": 0.98,
+			"volumetric_density": 0.016,
+			"weather": "snow",
 		},
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.6, 0.85, 1.0), "height": 5.0},
 		"light_shafts": [0, 1],

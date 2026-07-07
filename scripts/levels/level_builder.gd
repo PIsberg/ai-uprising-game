@@ -3518,6 +3518,47 @@ func _build_weather(def: Dictionary) -> void:
 		p.mesh = streak
 		p.position = Vector3(0, 15.0, 0)
 		add_child(p)
+	elif w == "snow":
+		# Slow, drifting, faintly-glowing flakes that sway as they settle — a soft
+		# blizzard for frost levels. Much slower + fluffier + brighter than rain.
+		var p := CPUParticles3D.new()
+		p.amount = int(300 * density)
+		p.lifetime = 7.0
+		p.preprocess = 6.0 # already snowing on load
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 3.0, fs.y * 0.6)
+		p.direction = Vector3(0.25, -1.0, 0.12)
+		p.spread = 12.0
+		p.initial_velocity_min = 1.0
+		p.initial_velocity_max = 2.4
+		p.gravity = Vector3(0.35, -1.6, 0.2) # gentle wind-blown drift
+		p.damping_min = 0.15
+		p.damping_max = 0.5
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.6
+		# Tumble each flake so they sway rather than slide straight down.
+		p.angle_min = -180.0
+		p.angle_max = 180.0
+		p.angular_velocity_min = -50.0
+		p.angular_velocity_max = 50.0
+		var flake := SphereMesh.new()
+		flake.radius = 0.05
+		flake.height = 0.1
+		flake.radial_segments = 5
+		flake.rings = 3
+		var sm := StandardMaterial3D.new()
+		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		sm.albedo_color = Color(0.95, 0.98, 1.0, 0.9)
+		sm.emission_enabled = true # catches the cold light so flakes twinkle
+		sm.emission = Color(0.8, 0.9, 1.0)
+		sm.emission_energy_multiplier = 0.6
+		flake.material = sm
+		p.mesh = flake
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.position = Vector3(0, 13.0, 0)
+		add_child(p)
 	elif w == "dust":
 		var p := CPUParticles3D.new()
 		p.amount = int(180 * density)
