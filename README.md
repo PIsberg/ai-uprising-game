@@ -219,4 +219,4 @@ docs/                  # design docs, level_editor_spec, screenshots/ (README ga
 
 Third-party CC0 / CC-BY assets (ambientCG PBR textures; one Sketchfab boss model) are listed in **`CREDITS.md`**. All code, design, levels, FX, and procedural audio are original. The faction sectors are affectionate parodies named only by colour/theme — no real logos or assets.
 
-Copyright © 2026 Peter Isberg, Diversity AB. All rights reserved.
+Copyright © 2026 Peter Isberg, Deversity AB. All rights reserved.
