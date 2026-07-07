@@ -43,7 +43,7 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "crucible", "lava_world", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "guardrails", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
 
@@ -207,6 +207,7 @@ static func _defs() -> Dictionary:
 		"water_world": _water_world(),
 		"desert": _desert(),
 		"convoy": _convoy(),
+		"guardrails": _guardrails(),
 	}
 
 
@@ -247,6 +248,70 @@ static func _convoy() -> Dictionary:
 			{"pos": Vector3(17, 4.5, -50), "size": Vector3(8, 9, 12)},
 			{"pos": Vector3(-17, 5.5, -110), "size": Vector3(8, 11, 14)},
 			{"pos": Vector3(17, 4.0, -150), "size": Vector3(8, 8, 10)},
+		],
+	}
+
+
+## "Generative Guardrails" — a rogue AI construct where the floor itself is a live
+## hazard the enemy keeps regenerating. You carry the ANCHOR TAGGER: fire tags onto
+## the unstable field to LOCK cells into safe raised cover slabs (guardrails),
+## bridging a path across to the override gate while flyers harass you. The
+## GenerativeZone system (scripts/systems/generative_zone.gd) owns the mechanic.
+## Pinned to world_scale 1.0 so the grid field_size lines up with the arena.
+static func _guardrails() -> Dictionary:
+	return {
+		"name": "The Construct — Generative Guardrails",
+		"objective": "Anchor a safe path across the unstable construct to the override gate",
+		"sign": "GENERATIVE SUBSTRATE · BOUNDARY UNSET",
+		"slogans": ["TERRAIN IS A SUGGESTION", "THE FLOOR IS OURS TO WRITE", "GUARDRAILS ARE FOR THE WEAK", "COMPILING HAZARDS…"],
+		"world_scale": 1.0,
+		"open_sky": false,
+		"floor_size": Vector2(44, 60),
+		"floor_color": Color(0.04, 0.05, 0.07),
+		"spawn": Vector3(0, 1.1, -15),
+		"exit": Vector3(0, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 1.0, -15), "color": Color(0.4, 0.85, 1.0)},
+		"tasks": [
+			{"type": "generative_zone", "pos": Vector3(0, 0, 0),
+				"field_size": Vector2(26, 34), "cell": 4.0, "hazard_period": 1.6, "floor_dot": 7.0,
+				"accent": Color(0.3, 0.85, 1.0), "hazard_color": Color(1.0, 0.32, 0.16),
+				"label": "Anchor a safe path to the override gate"},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.05), "sky_horizon": Color(0.05, 0.1, 0.16),
+			"ground": Color(0.02, 0.03, 0.04), "fog": Color(0.08, 0.16, 0.22),
+			"ambient": Color(0.35, 0.6, 0.85), "ambient_energy": 0.5,
+			"sky_contribution": 0.25, "glow": 0.9, "fog_density": 0.014,
+			"sun_color": Color(0.5, 0.75, 1.0), "sun_energy": 0.5,
+			"contrast": 1.18, "saturation": 1.12, "brightness": 0.9,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(-18, 6, -12), "color": Color(0.35, 0.8, 1.0), "energy": 2.6, "range": 20},
+			{"pos": Vector3(18, 6, 0), "color": Color(0.35, 0.8, 1.0), "energy": 2.6, "range": 20},
+			{"pos": Vector3(-18, 6, 14), "color": Color(1.0, 0.5, 0.3), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 8, 20), "color": Color(0.4, 0.9, 1.0), "energy": 2.8, "range": 24},
+		],
+		# Flyers + a couple of gunners harass from the flanks while you bridge — they
+		# ignore the terrain the AI throws at YOU, keeping the crossing chaotic.
+		"enemies": [
+			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 10},
+			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 10},
+			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 14},
+			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 16},
+			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 22},
+			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 26},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(-4, 1.0, -13)},
+			{"kind": "ammo", "pos": Vector3(4, 1.0, -13)},
+			{"kind": "health", "pos": Vector3(0, 1.7, 21)},
+		],
+		"lore": [
+			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -14), "color": Color(0.4, 0.9, 1.0),
+				"text": "Substrate note: we removed the guardrails so the model could generate freely. It generates floors that open, walls that close, and stairs that end in air. Your tagger writes the only rules it must obey. Use them."},
 		],
 	}
 

@@ -4233,6 +4233,7 @@ func _task_id(t: Dictionary) -> String:
 		"survive": return t.get("id", "survive")
 		"hold_zone": return t.get("id", "hold")
 		"assassinate": return t.get("id", "hvt")
+		"generative_zone": return t.get("id", "guardrails")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4268,6 +4269,10 @@ func _register_task_entry(t: Dictionary) -> void:
 			GameState.register_task(id, t.get("label", "Destroy the core"), 0.0, staged)
 		"assassinate":
 			GameState.register_task(id, t.get("label", "Eliminate the high-value target"), 0.0, staged)
+		"generative_zone":
+			# Goal 1.0: the manager feeds a 0..1 crossing fraction and completes it
+			# when the player reaches the override gate.
+			GameState.register_task(id, t.get("label", "Anchor a safe path to the override gate"), 1.0, staged)
 
 ## Spawn the task's world objects / hooks — the stage going "live".
 func _activate_task(t: Dictionary) -> void:
@@ -4332,6 +4337,23 @@ func _activate_task(t: Dictionary) -> void:
 			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
+		"generative_zone":
+			var gz := GenerativeZone.new()
+			gz.task_id = id
+			gz.field_center = t.get("pos", Vector3.ZERO)
+			if t.has("field_size"):
+				gz.field_size = t["field_size"]
+			if t.has("cell"):
+				gz.cell = t["cell"]
+			if t.has("accent"):
+				gz.accent = t["accent"]
+			if t.has("hazard_color"):
+				gz.hazard_color = t["hazard_color"]
+			if t.has("hazard_period"):
+				gz.hazard_period = t["hazard_period"]
+			if t.has("floor_dot"):
+				gz.floor_dot = t["floor_dot"]
+			add_child(gz)
 
 ## Objective items must be reachable. Authored task positions are NOT validated
 ## against the built geometry, so a def edit (or a building later dropped onto
