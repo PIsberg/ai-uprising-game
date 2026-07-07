@@ -235,6 +235,14 @@ show_percentage = false
 layout_mode = 2
 text = "100 / 100"
 
+[node name="StaminaBar" type="ProgressBar" parent="Margin/Layout/BottomLeft/HealthRow"]
+custom_minimum_size = Vector2(180, 14)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
 [node name="BottomRight" type="HBoxContainer" parent="Margin/Layout"]
 layout_mode = 2
 alignment = 2

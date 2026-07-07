@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody3D
 
 signal health_changed(current: float, max: float)
+signal stamina_changed(current: float, max: float, exhausted: bool)
 signal died
 signal grenades_changed(count: int)
 signal pickup_message(text: String) ## Fired when a non-weapon pickup is collected (for the HUD toast).
@@ -21,6 +22,21 @@ func notify_pickup(text: String) -> void:
 @export var jump_buffer_time: float = 0.12 ## Grace for a jump pressed just before landing.
 @export var sprint_jump_mult: float = 1.3 ## Jump boost after a sustained sprint (running jump).
 @export var sprint_jump_charge: float = 0.5 ## Seconds of full-speed sprinting needed to bank the boost.
+
+@export_group("Stamina")
+## Sprinting and grappling burn stamina; standing/walking recovers it. Hit zero
+## and you're EXHAUSTED — locked out of both until it climbs back to the recover
+## threshold, so you can't machine-gun sprint bursts or chain-grapple forever.
+@export var max_stamina: float = 100.0
+@export var stamina_sprint_drain: float = 20.0   ## per second while actually running
+@export var stamina_grapple_drain: float = 26.0  ## per second while winching on the tether
+@export var stamina_regen: float = 18.0          ## per second recovered once you stop draining
+@export var stamina_regen_delay: float = 0.5     ## grace after the last drain before regen starts
+@export var stamina_recover_threshold: float = 30.0 ## exhausted lock clears once stamina climbs back to this
+var _stamina: float = 100.0
+var _stamina_exhausted: bool = false ## true from the moment stamina hits 0 until it recovers past the threshold
+var _stamina_regen_cd: float = 0.0
+var _was_exhausted: bool = false ## edge-detect so the HUD is only pinged when the lock flips
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
@@ -260,6 +276,8 @@ func _ready() -> void:
 	if GameState.supply_health > 0.0:
 		hp.max_health += GameState.supply_health
 	hp.current_health = hp.max_health
+	_stamina = max_stamina
+	stamina_changed.emit(_stamina, max_stamina, false)
 	if GameState.supply_grenades > 0:
 		grenade_counts[GrenadeType.FRAG] += GameState.supply_grenades
 	_sync_grenades()
@@ -502,6 +520,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	_apply_gravity(delta)
+	_handle_stamina(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
 	_handle_low_health(delta)
@@ -1042,8 +1061,12 @@ func _handle_grapple(delta: float) -> void:
 	_gv_t -= delta
 	if _gv_t <= 0.0:
 		_gv_t = 0.12
-		_grapple_valid = _grapple_cd <= 0.0 and not _grapple_ray().is_empty()
+		_grapple_valid = _grapple_cd <= 0.0 and not _stamina_exhausted and not _grapple_ray().is_empty()
 	if _grapple_cd > 0.0 or not Input.is_action_just_pressed("grapple"):
+		return
+	# No tether while exhausted — you don't have the arm strength to rappel.
+	if _stamina_exhausted:
+		AudioBus.play_synth_ui("empty_click", -10.0, 1.2)
 		return
 	var hit := _grapple_ray()
 	if hit.is_empty():
@@ -1229,12 +1252,46 @@ func _handle_stance(delta: float) -> void:
 	collider.position.y = shape.height * 0.5
 	head.position.y = shape.height - 0.2
 
+## Stamina economy: running and grappling burn it; standing/walking refills it
+## after a short grace. Bottoming out at zero sets the exhausted lock — no sprint,
+## no tether — until stamina climbs back to stamina_recover_threshold. The
+## scripted convoy zipline is a set-piece rather than a player rappel, so it is
+## excluded from drain (and must never be cut short by exhaustion). Emits
+## stamina_changed for the HUD bar (only when the value or lock actually moves).
+func _handle_stamina(delta: float) -> void:
+	if _dead:
+		return
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	var running := Input.is_action_pressed("sprint") and is_on_floor() \
+		and not _is_crouching and not _stamina_exhausted and hspeed > walk_speed + 0.3
+	var rappelling := _grappling and _zip_anchor == null
+	var prev := _stamina
+	if running or rappelling:
+		var rate := stamina_grapple_drain if rappelling else stamina_sprint_drain
+		_stamina = maxf(0.0, _stamina - rate * delta)
+		_stamina_regen_cd = stamina_regen_delay
+		if _stamina <= 0.0 and not _stamina_exhausted:
+			_stamina_exhausted = true
+			if rappelling:
+				_end_grapple() # the rope snaps the instant you gas out mid-rappel
+			AudioBus.play_synth_ui("player_hurt", -15.0, 0.7) # soft "gassed" cue
+	else:
+		_stamina_regen_cd = maxf(0.0, _stamina_regen_cd - delta)
+		if _stamina_regen_cd <= 0.0:
+			_stamina = minf(max_stamina, _stamina + stamina_regen * delta)
+	if _stamina_exhausted and _stamina >= stamina_recover_threshold:
+		_stamina_exhausted = false
+	if not is_equal_approx(_stamina, prev) or _stamina_exhausted != _was_exhausted:
+		_was_exhausted = _stamina_exhausted
+		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
+
 func _current_speed() -> float:
 	# OVERDRIVE powerup boosts every movement state.
 	var mult: float = GameState.move_speed_mult()
 	if _is_crouching:
 		return crouch_speed * mult
-	if Input.is_action_pressed("sprint") and not _is_crouching:
+	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
+	if Input.is_action_pressed("sprint") and not _is_crouching and not _stamina_exhausted:
 		return sprint_speed * mult
 	return walk_speed * mult
 
@@ -1516,6 +1573,11 @@ func respawn_from_checkpoint(data: Dictionary) -> void:
 		_death_tween.kill() # stop the fall-over mid-flight — respawn snaps the head back
 	_dead = false
 	velocity = Vector3.ZERO
+	# Come back with a full tank — don't respawn locked out from an exhausted death.
+	_stamina = max_stamina
+	_stamina_exhausted = false
+	_was_exhausted = false
+	stamina_changed.emit(_stamina, max_stamina, false)
 	global_position = data.get("position", global_position)
 	rotation.y = data.get("rotation_y", rotation.y)
 	if head:

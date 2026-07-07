@@ -2,6 +2,7 @@ extends Control
 
 @onready var health_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/HealthBar
 @onready var health_label: Label = $Margin/Layout/BottomLeft/HealthRow/HealthLabel
+@onready var stamina_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/StaminaBar
 @onready var ammo_label: Label = $Margin/Layout/BottomRight/AmmoLabel
 @onready var weapon_label: Label = $Margin/Layout/BottomRight/WeaponLabel
 @onready var grenade_label: Label = $Margin/Layout/BottomRight/GrenadeLabel
@@ -167,6 +168,7 @@ func _ready() -> void:
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
 	_style_health_bar()
+	_style_stamina_bar()
 	_build_fps_label()
 	_build_grapple_hint()
 	_build_ammo_block()
@@ -181,6 +183,8 @@ func _ready() -> void:
 	if player:
 		player.health_changed.connect(_on_health_changed)
 		_on_health_changed(player.hp.current_health, player.hp.max_health)
+		if player.has_signal("stamina_changed"):
+			player.stamina_changed.connect(_on_stamina_changed)
 		var wm: WeaponManager = player.get_node_or_null("Head/Camera3D/WeaponHolder")
 		if wm:
 			_wm = wm
@@ -1039,6 +1043,38 @@ func _on_health_changed(cur: float, max_: float) -> void:
 			col = Color(1.0, 0.2, 0.16).lerp(Color(0.95, 0.75, 0.2), r / 0.4)
 		_hp_fill.bg_color = col
 	_hp_ratio = cur / maxf(1.0, max_)
+
+var _stam_fill: StyleBoxFlat
+
+## Stamina bar sits alongside health: cyan when you have wind, and it flips to a
+## hard red bar while EXHAUSTED so the "can't run / can't grapple" lockout is
+## obvious at a glance rather than reading as a mystery slowdown.
+func _style_stamina_bar() -> void:
+	if not stamina_bar:
+		return
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.06, 0.07, 0.08, 0.85)
+	bg.set_border_width_all(2)
+	bg.border_color = Color(0, 0, 0, 0.6)
+	bg.set_corner_radius_all(3)
+	stamina_bar.add_theme_stylebox_override("background", bg)
+	_stam_fill = StyleBoxFlat.new()
+	_stam_fill.bg_color = Color(0.3, 0.8, 1.0)
+	_stam_fill.set_corner_radius_all(3)
+	stamina_bar.add_theme_stylebox_override("fill", _stam_fill)
+
+func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
+	if not stamina_bar:
+		return
+	stamina_bar.max_value = max_
+	stamina_bar.value = cur
+	if _stam_fill:
+		# Exhausted -> red lockout bar; otherwise cyan that dims a touch as it drains.
+		if exhausted:
+			_stam_fill.bg_color = Color(1.0, 0.28, 0.24)
+		else:
+			var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
+			_stam_fill.bg_color = Color(0.2, 0.55, 0.75).lerp(Color(0.35, 0.85, 1.0), r)
 
 # ---------- ammo block: big numerals + segmented mag bar + grenade pips ----------
 
