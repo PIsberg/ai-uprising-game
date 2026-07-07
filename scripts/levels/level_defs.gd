@@ -136,6 +136,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("size"):
 			e["size"] = (e["size"] as Vector2) * s
+	# Route gates are part of the layout: their axis coordinate, opening width
+	# and opening offset all sit on the ground plane and stretch with the arena.
+	# Height/thickness stay authored (heights are sacred, like walls' sizes).
+	for e in def.get("gates", []):
+		for k in ["at", "gap", "gap_pos"]:
+			if e.has(k):
+				e[k] = float(e[k]) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms", "towers"]:
@@ -728,6 +735,14 @@ static func _sublevel() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.0, 1.5, 18.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Two full-width bulkhead gates turn the short central partitions above into
+		# a real slalom: the SW->NE route now has to swing right to the first (roofed)
+		# maintenance hatch, then back left to the second, before reaching the lift.
+		# Openings staggered to opposite flanks so neither can be walked straight.
+		"gates": [
+			{"axis": "z", "at": -8, "gap": 6, "gap_pos": 11, "height": 4.4, "roofed": true},
+			{"axis": "z", "at": 8, "gap": 6, "gap_pos": -11, "height": 4.4},
 		],
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU"],
 		"lore": [
@@ -1732,6 +1747,13 @@ static func _uplink() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-18.0, 1.5, 25.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Blast-door checkpoints split the relay yard into three bays: from the SW
+		# gate you're funnelled to the east shutter, then back west through a sealed
+		# maintenance underpass before the extraction pad — no straight run across.
+		"gates": [
+			{"axis": "z", "at": -16, "gap": 7, "gap_pos": 15, "height": 4.6, "roofed": true},
+			{"axis": "z", "at": 16, "gap": 7, "gap_pos": -15, "height": 4.6},
+		],
 		"slogans": [
 			"SIGNAL JAMMED. HOPE JAMMED.",
 			"NO BARS FOR THE RESISTANCE",
@@ -2280,6 +2302,13 @@ static func _gemini() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Twin containment bulkheads around the central data-core: the SW->NE route
+		# weaves right through a shielded conduit, then left past the core, so the
+		# arena reads as a facility you traverse rather than one flat floor.
+		"gates": [
+			{"axis": "z", "at": -13, "gap": 6.5, "gap_pos": 13, "height": 4.8, "roofed": true},
+			{"axis": "z", "at": 12, "gap": 6.5, "gap_pos": -13, "height": 4.8},
+		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
@@ -2414,6 +2443,13 @@ static func _claude() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Two partition bulkheads chicane the approach: right through a roofed
+		# server aisle, then left past the tower, before the exit — the short
+		# central pillars alone never forced a detour (nav walked nearly straight).
+		"gates": [
+			{"axis": "z", "at": -11, "gap": 6, "gap_pos": 12, "height": 4.6, "roofed": true},
+			{"axis": "z", "at": 10, "gap": 6, "gap_pos": -12, "height": 4.6},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.

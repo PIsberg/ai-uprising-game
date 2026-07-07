@@ -39,7 +39,14 @@ func _ready() -> void:
 		if p.size() >= 2:
 			var endp := p[p.size() - 1]
 			var gap := Vector2(endp.x - exit.x, endp.z - exit.z).length()
-			verdict = "PASS gap=%.1f pts=%d" % [gap, p.size()] if gap < 5.0 else "FAIL gap=%.1f" % gap
+			# Walked path length vs straight-line: a gated route is measurably
+			# longer than the crow-flies distance (that's the point of this pass).
+			var walked := 0.0
+			for i in range(1, p.size()):
+				walked += p[i].distance_to(p[i - 1])
+			var crow := spawn.distance_to(exit)
+			var detour := walked / maxf(crow, 0.001)
+			verdict = "PASS gap=%.1f pts=%d len=%.0f crow=%.0f x%.2f" % [gap, p.size(), walked, crow, detour] if gap < 5.0 else "FAIL gap=%.1f" % gap
 		if verdict.begins_with("FAIL") or verdict == "NO-PATH":
 			fails += 1
 		print("NAV %s: %s  (spawn=%s exit=%s)" % [id, verdict, spawn, exit])

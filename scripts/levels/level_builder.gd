@@ -202,6 +202,7 @@ func _ready() -> void:
 	_build_stairs(def)
 	_build_towers(def)
 	_build_platforms(def)
+	_build_gates(def)
 	_build_props(def)
 	_build_hero(def)
 	_build_nexus(def)
@@ -1715,6 +1716,99 @@ func _build_platforms(def: Dictionary) -> void:
 		if p.has("color"):
 			mat = _color_material(p["color"])
 		_add_collider_box(p["pos"], p["size"], mat)
+
+## Route gates: full-height partition walls that span the arena but leave a
+## single walk-through gap, so the player (and pathing enemies) must weave to
+## the opening instead of walking straight across. Stagger the gaps side-to-side
+## down a level and a flat box becomes a serpentine route — longer to cross and
+## bigger-feeling — while combat still plays out in the open bays between gates.
+##
+## Authored in pre-scale level coords (like walls/platforms). Each entry:
+##   {"axis": "z"|"x",   # travel direction the wall BLOCKS (its normal)
+##    "at": float,       # world coord on that axis where the wall sits
+##    "gap": float,      # width of the opening (default 5.5)
+##    "gap_pos": float,  # centre of the opening along the wall (default 0)
+##    "height": float,   # wall height (default 4.5)
+##    "thick": float,    # wall thickness (default 1.0)
+##    "roofed": bool,    # cap the gap with a lintel -> reads as a tunnel mouth
+##    "beacon": bool}    # emissive guide posts flanking the gap (default true)
+## Reachability is guaranteed by construction: the gap is never closed, and
+## tests/campaign_nav_sweep confirms spawn->exit still solves on every gated level.
+func _build_gates(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var open_sky: bool = def.get("open_sky", false)
+	var wall_mat: Material = MAT_WALL_OUT if open_sky else MAT_WALL
+	for g in def.get("gates", []):
+		var axis: String = g.get("axis", "z")
+		var at: float = g.get("at", 0.0)
+		var gap: float = g.get("gap", 5.5)
+		var gap_pos: float = g.get("gap_pos", 0.0)
+		var h: float = g.get("height", 4.5)
+		var thick: float = g.get("thick", 1.0)
+		# The wall spans the full floor extent on the axis it does NOT block.
+		var span: float = fs.x if axis == "z" else fs.y
+		var half := span * 0.5
+		var g0 := gap_pos - gap * 0.5
+		var g1 := gap_pos + gap * 0.5
+		# One wall segment either side of the opening; skip a segment that would
+		# be zero-length because the gap is hard against a perimeter wall.
+		var segs: Array = []
+		if g0 - (-half) > 0.2:
+			segs.append([(-half + g0) * 0.5, g0 - (-half)])   # [centre_along, length]
+		if half - g1 > 0.2:
+			segs.append([(g1 + half) * 0.5, half - g1])
+		for s in segs:
+			var along: float = s[0]
+			var length: float = s[1]
+			var pos: Vector3
+			var size: Vector3
+			if axis == "z":
+				pos = Vector3(along, h * 0.5, at)
+				size = Vector3(length, h, thick)
+			else:
+				pos = Vector3(at, h * 0.5, along)
+				size = Vector3(thick, h, length)
+			_add_box(pos, size, wall_mat, "surf_concrete", "", "GateWall")
+		# Optional lintel across the top of the opening -> reads as a tunnel mouth.
+		if g.get("roofed", false):
+			var cap_h := 0.7
+			var lin_pos: Vector3
+			var lin_size: Vector3
+			if axis == "z":
+				lin_pos = Vector3(gap_pos, h - cap_h * 0.5, at)
+				lin_size = Vector3(gap + thick, cap_h, thick + 1.8)
+			else:
+				lin_pos = Vector3(at, h - cap_h * 0.5, gap_pos)
+				lin_size = Vector3(thick + 1.8, cap_h, gap + thick)
+			_add_box(lin_pos, lin_size, MAT_CEIL if not open_sky else wall_mat, "surf_metal", "", "GateRoof")
+		# Guide beacons: emissive posts flanking the opening pull the eye to it
+		# from across the bay. No Light3D (per-entity lights were culled for perf)
+		# — bright unshaded strips, the same trick as the sky-bridge deck edges.
+		if g.get("beacon", true):
+			_gate_beacon(def, axis, at, gap_pos, gap, h)
+
+func _gate_beacon(def: Dictionary, axis: String, at: float, gap_pos: float, gap: float, h: float) -> void:
+	var col := _theme_color(def).lerp(Color(1.0, 0.82, 0.4), 0.45)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 3.0
+	var post_h := h - 0.3
+	for side in [-1.0, 1.0]:
+		var post := BoxMesh.new()
+		post.size = Vector3(0.15, post_h, 0.15)
+		post.material = mat
+		var mi := MeshInstance3D.new()
+		mi.mesh = post
+		var off: float = (gap * 0.5 - 0.08) * side
+		if axis == "z":
+			mi.position = Vector3(gap_pos + off, post_h * 0.5, at)
+		else:
+			mi.position = Vector3(at, post_h * 0.5, gap_pos + off)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 ## A solid collidable box parented under the navmesh region so its walkable TOP
 ## bakes into the navmesh — platforms, tower landings and bridge decks are
