@@ -7,14 +7,15 @@ extends CanvasLayer
 
 signal deployed
 
-const KEYS := ["damage", "mag", "reload", "blast", "leech"]
+const KEYS := ["damage", "mag", "reload", "blast", "leech", "stamina"]
 ## Per-track presentation (icon glyph, blurb, accent) layered over GameState's defs.
 const META := {
-	"damage": {"icon": "✦", "desc": "More punch per shot", "color": Color(1.0, 0.45, 0.35)},
-	"mag":    {"icon": "▤", "desc": "Bigger magazines", "color": Color(0.45, 0.75, 1.0)},
-	"reload": {"icon": "↻", "desc": "Faster reloads", "color": Color(0.5, 0.95, 0.6)},
-	"blast":  {"icon": "✸", "desc": "Bigger grenade blasts", "color": Color(1.0, 0.6, 0.25)},
-	"leech":  {"icon": "❣", "desc": "Heal from damage dealt", "color": Color(0.8, 0.4, 0.85)},
+	"damage":  {"icon": "✦", "desc": "More punch per shot", "color": Color(1.0, 0.45, 0.35)},
+	"mag":     {"icon": "▤", "desc": "Bigger magazines", "color": Color(0.45, 0.75, 1.0)},
+	"reload":  {"icon": "↻", "desc": "Faster reloads", "color": Color(0.5, 0.95, 0.6)},
+	"blast":   {"icon": "✸", "desc": "Bigger grenade blasts", "color": Color(1.0, 0.6, 0.25)},
+	"leech":   {"icon": "❣", "desc": "Heal from damage dealt", "color": Color(0.8, 0.4, 0.85)},
+	"stamina": {"icon": "⚡", "desc": "Run & rappel longer", "color": Color(0.3, 0.85, 1.0)},
 }
 ## Consumable field supplies (banked, applied on next deploy). Hotkeys 4/5/6.
 const SKEYS := ["ammo", "grenades", "health"]
@@ -113,7 +114,7 @@ func _ready() -> void:
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(footer)
 	var hint := Label.new()
-	hint.text = "1–8 or click a card to BUY"
+	hint.text = "1–9 or click a card to BUY"
 	hint.add_theme_color_override("font_color", Color(0.65, 0.72, 0.8))
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(hint)
@@ -152,7 +153,7 @@ func _make_card(rack: HBoxContainer, k: String, idx: int) -> void:
 	var accent: Color = m["color"]
 	var defn: Dictionary = GameState.UPGRADE_DEFS[k]
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(212, 252)
+	card.custom_minimum_size = Vector2(190, 252) # trimmed so all six upgrade cards fit one row
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.06, 0.1, 0.13, 0.96)
 	box.set_corner_radius_all(12)
@@ -339,9 +340,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_3, KEY_KP_3: _buy("reload")
 		KEY_4, KEY_KP_4: _buy("blast")
 		KEY_5, KEY_KP_5: _buy("leech")
-		KEY_6, KEY_KP_6: _buy_supply("ammo")
-		KEY_7, KEY_KP_7: _buy_supply("grenades")
-		KEY_8, KEY_KP_8: _buy_supply("health")
+		KEY_6, KEY_KP_6: _buy("stamina")
+		KEY_7, KEY_KP_7: _buy_supply("ammo")
+		KEY_8, KEY_KP_8: _buy_supply("grenades")
+		KEY_9, KEY_KP_9: _buy_supply("health")
 		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
 			get_viewport().set_input_as_handled()
 			_deploy()

@@ -15,9 +15,19 @@ func _ready() -> void:
 	GameState.score = 99999
 	GameState.buy_upgrade("blast"); GameState.buy_upgrade("blast")  # 2 ranks
 	GameState.buy_upgrade("leech"); GameState.buy_upgrade("leech"); GameState.buy_upgrade("leech") # 3 ranks
-	print("blast lvl=%d grenade_mult=%.2f | leech lvl=%d mult=%.2f" % [
+	GameState.buy_upgrade("stamina"); GameState.buy_upgrade("stamina"); GameState.buy_upgrade("stamina") # 3 ranks
+	print("blast lvl=%d grenade_mult=%.2f | leech lvl=%d mult=%.2f | stamina lvl=%d mult=%.2f" % [
 		GameState.upgrade_level("blast"), GameState.grenade_mult(),
-		GameState.upgrade_level("leech"), GameState.upgrade_mult("leech")])
+		GameState.upgrade_level("leech"), GameState.upgrade_mult("leech"),
+		GameState.upgrade_level("stamina"), GameState.stamina_mult()])
+
+	# --- STAMINA: a freshly-built player should get the boosted max pool ---
+	var fresh: Node = load("res://scenes/player/player.tscn").instantiate()
+	add_child(fresh)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("STAMINA: fresh player max_stamina=%.0f (expected %.0f)" % [fresh.max_stamina, 100.0 * GameState.stamina_mult()])
+	fresh.queue_free()
 
 	# --- GRENADE POWER: a thrown frag's splash should be scaled by grenade_mult ---
 	var frag: Node = load("res://scenes/weapons/grenade.tscn").instantiate()

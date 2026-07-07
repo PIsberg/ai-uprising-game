@@ -258,12 +258,14 @@ const UPGRADE_DEFS := {
 	"damage": {"label": "WEAPON DAMAGE", "per": 0.08, "cost": 1500},
 	"mag":    {"label": "MAGAZINE SIZE", "per": 0.15, "cost": 1200},
 	"reload": {"label": "RELOAD SPEED",  "per": 0.06, "cost": 1000},
-	# Two build-defining tracks: lean into explosives, or heal off aggression.
-	"blast":  {"label": "GRENADE POWER", "per": 0.16, "cost": 1300},
-	"leech":  {"label": "LIFELEECH",     "per": 0.03, "cost": 1400},
+	# Build-defining tracks: lean into explosives, heal off aggression, or run/rappel
+	# longer before gassing out.
+	"blast":   {"label": "GRENADE POWER", "per": 0.16, "cost": 1300},
+	"leech":   {"label": "LIFELEECH",     "per": 0.03, "cost": 1400},
+	"stamina": {"label": "STAMINA",       "per": 0.10, "cost": 900},
 }
 const UPGRADE_MAX := 5
-var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0}
+var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0, "stamina": 0}
 
 ## "Field supplies" bought in the Armory — banked here and PERMANENT for the run:
 ## the player re-applies them on every deploy (never cleared until reset_run on a
@@ -352,6 +354,10 @@ func upgrade_mult(k: String) -> float:
 ## and radius. 1.0 with no ranks.
 func grenade_mult() -> float:
 	return upgrade_mult("blast")
+
+## Max-stamina multiplier (STAMINA track) — a bigger pool to sprint/rappel on.
+func stamina_mult() -> float:
+	return upgrade_mult("stamina")
 
 ## Reload is a time REDUCTION; floored so it can't break the reload anim.
 func upgrade_reload_mult() -> float:

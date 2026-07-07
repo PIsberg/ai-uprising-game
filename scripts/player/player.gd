@@ -276,6 +276,8 @@ func _ready() -> void:
 	if GameState.supply_health > 0.0:
 		hp.max_health += GameState.supply_health
 	hp.current_health = hp.max_health
+	# STAMINA armory track: a bigger pool to sprint/rappel on before gassing out.
+	max_stamina *= GameState.stamina_mult()
 	_stamina = max_stamina
 	stamina_changed.emit(_stamina, max_stamina, false)
 	if GameState.supply_grenades > 0:
