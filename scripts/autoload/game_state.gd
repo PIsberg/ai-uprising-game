@@ -447,6 +447,49 @@ func rampage_fire_mult() -> float:
 func rampage_speed_mult() -> float:
 	return RAMPAGE_SPEED[rampage_tier]
 
+# ---------- ADRENALINE SURGE: clutch near-death comeback ----------
+## The defensive counterpart to RAMPAGE. Dropping to critical HP kicks a brief
+## bullet-time beat, a small heal, and a short offensive/mobility surge so a
+## near-death moment becomes a dramatic comeback instead of a death spiral.
+## Cooldown-gated so it stays a rare clutch, never a constant crutch.
+const ADRENALINE_TRIGGER_FRAC := 0.25   ## HP fraction the surge fires below
+const ADRENALINE_DURATION := 5.0        ## seconds the buff lasts
+const ADRENALINE_COOLDOWN := 16.0       ## lockout after it ends
+const ADRENALINE_DMG := 1.3             ## damage mult while surging
+const ADRENALINE_FIRE := 1.25           ## fire-rate mult while surging
+const ADRENALINE_SPEED := 1.15          ## move-speed mult while surging
+const ADRENALINE_HEAL := 12.0           ## instant breathing-room heal on trigger
+signal adrenaline_changed(active: bool) ## Surge started/ended — HUD banner + vignette.
+var adrenaline_left: float = 0.0
+var _adrenaline_cd: float = 0.0
+
+## Called by the player when its HP crosses below the critical line. Returns true
+## if a fresh surge actually fired (so the caller can skip duplicate cues).
+func try_adrenaline() -> bool:
+	if current_state != State.PLAYING:
+		return false
+	if adrenaline_left > 0.0 or _adrenaline_cd > 0.0:
+		return false
+	adrenaline_left = ADRENALINE_DURATION
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		var d = player.get_node_or_null("Damageable")
+		if d and d.has_method("heal"):
+			d.heal(ADRENALINE_HEAL)
+	hit_stop(0.28, 0.5) # a distinct bullet-time beat, slower than a kill's micro-punch
+	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.7)
+	adrenaline_changed.emit(true)
+	return true
+
+func adrenaline_damage_mult() -> float:
+	return ADRENALINE_DMG if adrenaline_left > 0.0 else 1.0
+
+func adrenaline_fire_mult() -> float:
+	return ADRENALINE_FIRE if adrenaline_left > 0.0 else 1.0
+
+func adrenaline_speed_mult() -> float:
+	return ADRENALINE_SPEED if adrenaline_left > 0.0 else 1.0
+
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
 var combo: int = 0
@@ -470,6 +513,13 @@ func _process(delta: float) -> void:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			_reset_combo()
+	if adrenaline_left > 0.0:
+		adrenaline_left = maxf(0.0, adrenaline_left - delta)
+		if adrenaline_left <= 0.0:
+			_adrenaline_cd = ADRENALINE_COOLDOWN
+			adrenaline_changed.emit(false)
+	elif _adrenaline_cd > 0.0:
+		_adrenaline_cd = maxf(0.0, _adrenaline_cd - delta)
 	if overclock_left > 0.0:
 		overclock_left = maxf(0.0, overclock_left - delta)
 		overclock_changed.emit(overclock_left)
@@ -650,6 +700,8 @@ func reset_run() -> void:
 	supply_grenades = 0
 	supply_health = 0.0
 	_taught.clear()
+	adrenaline_left = 0.0
+	_adrenaline_cd = 0.0
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------

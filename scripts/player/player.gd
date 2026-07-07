@@ -440,6 +440,12 @@ func _on_hp_damaged(amount: float, source: Node) -> void:
 		_hurt_cd = 0.22
 		var pitch := clampf(1.12 - amount * 0.012, 0.82, 1.12) + randf_range(-0.04, 0.04)
 		AudioBus.play_synth_ui("player_hurt", -4.0, pitch)
+	# Clutch ADRENALINE SURGE: a hit that drops you to critical (but not dead)
+	# kicks a brief bullet-time comeback beat + offensive/mobility buff. Cooldown
+	# and alive-check live in GameState.try_adrenaline; this just detects the line.
+	if hp and hp.current_health > 0.0 and hp.max_health > 0.0 \
+			and hp.current_health / hp.max_health <= GameState.ADRENALINE_TRIGGER_FRAC:
+		GameState.try_adrenaline()
 
 ## Directional camera punch AWAY from the hit source — a locational thump layered
 ## on top of the undirected shake trauma above, so a hit reads not just as
@@ -1316,8 +1322,9 @@ func _handle_stamina(delta: float) -> void:
 		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
 
 func _current_speed() -> float:
-	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE both boost every movement state.
-	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult()
+	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE + a clutch ADRENALINE surge
+	# all boost every movement state.
+	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult() * GameState.adrenaline_speed_mult()
 	if _is_crouching:
 		return crouch_speed * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.

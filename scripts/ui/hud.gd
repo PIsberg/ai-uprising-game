@@ -224,10 +224,12 @@ func _ready() -> void:
 	GameState.task_completed.connect(_on_task_completed)
 	GameState.combo_changed.connect(_on_combo_changed)
 	GameState.rampage_changed.connect(_on_rampage_changed)
+	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
 	_build_rampage_label()
+	_build_adrenaline()
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -438,6 +440,12 @@ var _rampage_alpha: float = 0.0
 var _rampage_pop: float = 0.0
 const RAMPAGE_COLORS := [Color(1.0, 0.55, 0.2), Color(1.0, 0.28, 0.24), Color(1.0, 0.82, 0.35)]
 
+var _adren_label: Label = null   ## Clutch ADRENALINE SURGE banner (near-death comeback).
+var _adren_alpha: float = 0.0
+var _adren_pop: float = 0.0
+var _adren_edge: TextureRect = null ## Red screen-edge pulse while the surge is live.
+var _adren_flash: float = 0.0
+
 ## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
 ## into a power tier (a REAL buff, not just score). Sits above the combo readout,
 ## bigger and brighter than the streak word so a power spike reads as an event.
@@ -466,6 +474,44 @@ func _on_rampage_changed(tier: int, name: String) -> void:
 	_rampage_label.add_theme_color_override("font_color", col)
 	_rampage_alpha = 1.0
 	_rampage_pop = 1.4 # a bigger punch than the streak word
+
+## The clutch ADRENALINE banner + red screen-edge pulse — punches in when a hit
+## drops the player to critical HP and the surge fires (bullet-time + buff). The
+## defensive twin of the RAMPAGE banner; sits lower so the two never overlap.
+func _build_adrenaline() -> void:
+	_adren_edge = TextureRect.new()
+	if _low_vig:
+		_adren_edge.texture = _low_vig.texture
+		_adren_edge.expand_mode = _low_vig.expand_mode
+		_adren_edge.stretch_mode = _low_vig.stretch_mode
+	_adren_edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_adren_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_adren_edge.modulate = Color(1.0, 0.16, 0.16, 0.0)
+	add_child(_adren_edge)
+	move_child(_adren_edge, 0)
+	_adren_label = Label.new()
+	_adren_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_adren_label.anchor_left = 0.5
+	_adren_label.anchor_right = 0.5
+	_adren_label.position = Vector2(0, 290)
+	_adren_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_adren_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_adren_label.add_theme_font_size_override("font_size", 52)
+	_adren_label.add_theme_constant_override("outline_size", 12)
+	_adren_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_adren_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.32))
+	_adren_label.text = "ADRENALINE!"
+	_adren_label.modulate.a = 0.0
+	_adren_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_adren_label)
+
+func _on_adrenaline_changed(active: bool) -> void:
+	if not active:
+		return # surge ended — banner/edge already faded on their own
+	if _adren_label:
+		_adren_alpha = 1.0
+		_adren_pop = 1.5
+	_adren_flash = 1.0
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
@@ -743,6 +789,18 @@ func _process(delta: float) -> void:
 		_rampage_label.modulate.a = clampf(_rampage_alpha, 0.0, 1.0)
 		_rampage_label.scale = Vector2.ONE * (1.0 + _rampage_pop * 0.5)
 		_rampage_label.pivot_offset = _rampage_label.size * 0.5
+	if _adren_label:
+		_adren_alpha = move_toward(_adren_alpha, 0.0, delta * 0.7)
+		_adren_pop = move_toward(_adren_pop, 0.0, delta * 4.5)
+		_adren_label.modulate.a = clampf(_adren_alpha, 0.0, 1.0)
+		_adren_label.scale = Vector2.ONE * (1.0 + _adren_pop * 0.5)
+		_adren_label.pivot_offset = _adren_label.size * 0.5
+	if _adren_edge:
+		# Hold a low red edge glow while the surge runs, with a stronger initial
+		# pulse that eases off — reads as "the world reddens" during bullet-time.
+		var base := 0.32 if GameState.adrenaline_left > 0.0 else 0.0
+		_adren_flash = maxf(base, move_toward(_adren_flash, 0.0, delta * 1.4))
+		_adren_edge.modulate.a = _adren_flash * 0.5 * GraphicsSettings.flash_intensity
 	if _headshot_label:
 		# Quicker fade than the streak word (~0.8s) since headshots land often.
 		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
