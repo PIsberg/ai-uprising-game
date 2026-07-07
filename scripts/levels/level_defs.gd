@@ -3306,21 +3306,38 @@ static func _water_world() -> Dictionary:
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.45, 0.65, 1)},
+		# Haunting moonlit flooded reactor: a low moon and Milky Way over the basin
+		# (the flat dark gradient read as an empty void), moonlight silvering the
+		# water and its reflection, with the storm still rolling through — rain +
+		# auto lightning. A touch more sun/ambient so the basin reads without losing
+		# the ominous dark, and richer saturation for the teal-vs-warning contrast.
 		"env": {
-			"sky_top": Color(0.02, 0.05, 0.1), "sky_horizon": Color(0.06, 0.2, 0.34),
-			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.25, 0.4),
-			"ambient": Color(0.4, 0.7, 0.95), "ambient_energy": 0.45,
-			"sky_contribution": 0.35, "glow": 1.05, "fog_density": 0.013,
-			"sun_color": Color(0.6, 0.85, 1.0), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.15, "brightness": 0.9,
+			"sky_top": Color(0.02, 0.05, 0.11), "sky_horizon": Color(0.06, 0.22, 0.36),
+			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.26, 0.42),
+			"ambient": Color(0.45, 0.72, 1.0), "ambient_energy": 0.55,
+			"sky_contribution": 0.4, "glow": 1.1, "fog_density": 0.012,
+			"sun_color": Color(0.62, 0.82, 1.0), "sun_energy": 0.9,
+			"contrast": 1.16, "saturation": 1.24, "brightness": 0.92,
 			"volumetric_density": 0.012,
+			# Moonlit night sky (stars + Milky Way + a bright low moon that the water
+			# mirrors) layered under the ongoing storm.
+			"stars": true, "star_brightness": 1.8, "star_density": 0.07,
+			"star_tint": Color(0.72, 0.85, 1.0), "milkyway": 0.45,
+			"milkyway_tint": Color(0.45, 0.55, 0.9),
+			"moon_dir": Vector3(0.45, 0.4, 0.8), "moon_glow": 2.4,
+			"moon_color": Color(0.82, 0.9, 1.0), "moon_size": 0.07,
 			# A storm feeding the flood — the basin overflowed for a reason.
 			"weather": "rain",
 		},
 		"lights": [
-			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.6, "range": 22},
 			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
 			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+			# Failing-reactor warning lights: warm strobes cutting the all-blue basin
+			# with hazard colour, so the scene isn't one flat teal wash.
+			{"pos": Vector3(0, 3, 0), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
+			{"pos": Vector3(-9.5, 2.2, -9.5), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
+			{"pos": Vector3(9.5, 2.2, 9.5), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
 		],
 		# Gantry web + a raised control perch over the central hub (ramp up) for a
 		# dry sniping vantage above the flooded floor.
@@ -3332,7 +3349,7 @@ static func _water_world() -> Dictionary:
 		],
 		"lava": [
 			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
-				"color": Color(0.2, 0.55, 0.95)},
+				"color": Color(0.28, 0.72, 1.0)}, # brighter teal so the flood glows + mirrors the moon
 		],
 		# Reactor dressing: drowned coolant columns standing out of the water to
 		# break sightlines + canisters/servers/crates for cover on the gantries.
