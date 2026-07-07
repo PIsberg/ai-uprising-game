@@ -21,6 +21,8 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var telegraph_time: float = 0.35 ## Wind-up before each attack: the unit charges (eye flare + charge whine) for this long so the player can read the shot and dodge it. 0 = no tell (units that telegraph their own way, e.g. the sniper's charged beam).
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
+var is_bounty: bool = false ## Marked as a high-value BOUNTY target (bonus score + guaranteed prize). See GameState bounty director.
+var _bounty_marker: Node3D = null
 
 @export_group("References")
 @export var eye: Node3D
@@ -28,7 +30,7 @@ var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by
 
 @export_group("Reactions")
 @export var flinch_knockback: float = 3.0 ## Backward shove applied on taking a hit.
-@export var head_radius: float = 0.45 ## Vertical tolerance around the head for headshots.
+@export var head_radius: float = 0.3 ## Vertical tolerance around the head for headshots — tight, so a crit takes real aim (bigger units widen it).
 @export var stagger_threshold: float = 38.0 ## Poise: damage absorbed before a hit staggers it (bosses set this high).
 
 @export_group("Loot")
@@ -551,6 +553,21 @@ func _check_grenade_danger() -> void:
 		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
 	_evade_dir = away.normalized()
 	_evade_t = 0.7
+
+## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
+## channel). Broadcast when the player hits a power peak (GODLIKE rampage /
+## OVERLOAD) so the world visibly reacts to the player's spike. EMP'd/dead units
+## ignore it — an inert bot can't flee.
+func startle(from_pos: Vector3, duration: float = 0.9) -> void:
+	if state == State.DEAD or _emp_t > 0.0:
+		return
+	var away := global_position - from_pos
+	away.y = 0.0
+	if away.length() < 0.05:
+		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
+	_evade_dir = away.normalized()
+	_evade_t = maxf(_evade_t, duration)
+	_flinch = 1.0 # a visible jolt as it breaks off
 
 func _state_idle(delta: float) -> void:
 	_decelerate()
@@ -1483,8 +1500,74 @@ func _shed_panel(toward: Vector3) -> void:
 ## odds (easy drops more, hard less). Overclock rides the pool as a rare prize,
 ## mostly off anchors. Weapons and keycards are deliberately NOT in the loot
 ## pool: those stay where the level placed them.
+## Flags this unit as the current BOUNTY: a floating gold diamond marker (drawn
+## through walls so it doubles as a hunt beacon) plus a guaranteed rare drop on
+## death (see _drop_loot) and a bonus (see _on_died). Driven by GameState.
+func mark_bounty() -> void:
+	if is_bounty or state == State.DEAD:
+		return
+	is_bounty = true
+	var lbl := Label3D.new()
+	lbl.text = "◆ BOUNTY"
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true # visible through geometry — it's a tracking beacon
+	lbl.fixed_size = true
+	lbl.pixel_size = 0.0006
+	lbl.modulate = Color(1.0, 0.82, 0.2)
+	lbl.outline_modulate = Color(0.15, 0.05, 0.0, 0.9)
+	lbl.outline_size = 14
+	lbl.render_priority = 40
+	lbl.position = Vector3(0, 2.6, 0)
+	add_child(lbl)
+	_bounty_marker = lbl
+	# A soft gold beacon glow so it also reads in-world, not just via the label.
+	# Parented UNDER the marker so clear_bounty()/death frees it in one go.
+	var glow := OmniLight3D.new()
+	glow.light_color = Color(1.0, 0.78, 0.25)
+	glow.light_energy = 2.2
+	glow.omni_range = 5.0
+	glow.position = Vector3(0, -0.8, 0) # marker sits at y=2.6 -> glow near the body
+	lbl.add_child(glow)
+	# Pay the bounty off the Damageable's died signal, NOT _on_died — several
+	# subclasses override _on_died without calling super, so hooking the signal
+	# directly is the only override-proof place to catch every death.
+	if hp and not hp.died.is_connected(_on_bounty_died):
+		hp.died.connect(_on_bounty_died)
+
+## Un-marks the bounty (its lifetime lapsed and GameState re-rolled) without
+## killing the unit — just strips the beacon.
+func clear_bounty() -> void:
+	is_bounty = false
+	if _bounty_marker and is_instance_valid(_bounty_marker):
+		_bounty_marker.queue_free()
+	_bounty_marker = null
+
+## The bounty went down: award the bonus + drop a guaranteed rare prize. Fires
+## for any death (see mark_bounty) so it's robust to _on_died overrides.
+func _on_bounty_died(_source: Node) -> void:
+	if not is_bounty:
+		return
+	is_bounty = false # guard against a double-fire
+	GameState.claim_bounty()
+	_drop_prize()
+
+## Drops exactly one rare powerup at the unit, landed on the floor. Bounty payoff,
+## independent of the normal _drop_loot roll.
+func _drop_prize() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var scene: PackedScene = PICKUP_OVERDRIVE if randf() < 0.5 else PICKUP_OVERCLOCK
+	var p := scene.instantiate() as Node3D
+	parent.add_child(p)
+	var pos := global_position
+	var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 0.5, pos + Vector3.DOWN * 14.0, 1)
+	var hitp := get_world_3d().direct_space_state.intersect_ray(q)
+	pos.y = hitp.position.y if not hitp.is_empty() else global_position.y
+	p.global_position = pos
+
 func _drop_loot() -> void:
-	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0)
+	var mult: float = GameState.difficulty_config().get("pickup_mult", 1.0) * GameState.directive_pickup_mult()
 	# Read the player's health up front: it gates a low-HP PITY DROP (a safety net
 	# so low-kill objective levels can't spiral into an unrecoverable starve) and
 	# biases the loot toward health when you're hurt.

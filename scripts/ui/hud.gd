@@ -2,6 +2,9 @@ extends Control
 
 @onready var health_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/HealthBar
 @onready var health_label: Label = $Margin/Layout/BottomLeft/HealthRow/HealthLabel
+@onready var stamina_bar: ProgressBar = $Margin/Layout/BottomLeft/HealthRow/StaminaBar
+@onready var _hp_caption: Label = $Margin/Layout/BottomLeft/HealthRow/HpCaption
+@onready var _sta_caption: Label = $Margin/Layout/BottomLeft/HealthRow/StaCaption
 @onready var ammo_label: Label = $Margin/Layout/BottomRight/AmmoLabel
 @onready var weapon_label: Label = $Margin/Layout/BottomRight/WeaponLabel
 @onready var grenade_label: Label = $Margin/Layout/BottomRight/GrenadeLabel
@@ -57,6 +60,7 @@ var _last_grade: String = ""
 var _last_stats: Dictionary = {}
 var _auto_advance_armed: bool = false
 var _debrief_label: Label = null ## Compact mission-stats line on the victory screen, built lazily on first level clear.
+var _highlights_label: Label = null ## Gold "flashy moments" line on the victory screen (executions/bounties/dodges/streak).
 var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
 var _kill_edge: TextureRect = null
@@ -167,6 +171,8 @@ func _ready() -> void:
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
 	_style_health_bar()
+	_style_stamina_bar()
+	_build_upgrade_chips()
 	_build_fps_label()
 	_build_grapple_hint()
 	_build_ammo_block()
@@ -181,6 +187,8 @@ func _ready() -> void:
 	if player:
 		player.health_changed.connect(_on_health_changed)
 		_on_health_changed(player.hp.current_health, player.hp.max_health)
+		if player.has_signal("stamina_changed"):
+			player.stamina_changed.connect(_on_stamina_changed)
 		var wm: WeaponManager = player.get_node_or_null("Head/Camera3D/WeaponHolder")
 		if wm:
 			_wm = wm
@@ -216,9 +224,30 @@ func _ready() -> void:
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)
 	GameState.combo_changed.connect(_on_combo_changed)
+	GameState.rampage_changed.connect(_on_rampage_changed)
+	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
+	GameState.perfect_dodge.connect(_on_perfect_dodge)
+	GameState.execution.connect(_on_execution)
+	GameState.ultimate_changed.connect(_on_ultimate_changed)
+	GameState.ultimate_ready.connect(_on_ultimate_ready)
+	GameState.ultimate_fired.connect(_on_ultimate_fired)
+	GameState.directive_set.connect(_on_directive_set)
+	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
+	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()
 	_build_combo_label()
+	_build_rampage_label()
+	_build_adrenaline()
+	_build_dodge_label()
+	_build_exec_label()
+	_build_ult_meter()
+	# The directive was rolled in load_level before this HUD existed — announce the
+	# active one now (a beat later so the toast lands after the level settles in).
+	if GameState.directive_id != "":
+		var dn := String(GameState.directive.get("name", ""))
+		var dd := String(GameState.directive.get("desc", ""))
+		get_tree().create_timer(0.8).timeout.connect(func(): _on_directive_set(dn, dd))
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -424,6 +453,206 @@ func _build_fps_label() -> void:
 	_fps_label.visible = false
 	add_child(_fps_label)
 
+var _rampage_label: Label = null
+var _rampage_alpha: float = 0.0
+var _rampage_pop: float = 0.0
+const RAMPAGE_COLORS := [Color(1.0, 0.55, 0.2), Color(1.0, 0.28, 0.24), Color(1.0, 0.82, 0.35)]
+
+var _adren_label: Label = null   ## Clutch ADRENALINE SURGE banner (near-death comeback).
+var _adren_alpha: float = 0.0
+var _adren_pop: float = 0.0
+var _adren_edge: TextureRect = null ## Red screen-edge pulse while the surge is live.
+var _adren_flash: float = 0.0
+
+var _dodge_label: Label = null   ## Cyan "PERFECT DODGE!" flash on a dash that phases a hit.
+var _dodge_alpha: float = 0.0
+var _dodge_pop: float = 0.0
+
+var _exec_label: Label = null    ## Orange "EXECUTED!" flash on a melee finisher.
+var _exec_alpha: float = 0.0
+var _exec_pop: float = 0.0
+
+var _ult_root: Control = null    ## OVERLOAD ultimate gauge (bottom-centre).
+var _ult_fill: ColorRect = null
+var _ult_label: Label = null
+var _ult_pulse: float = 0.0      ## drives the "READY" glow pulse
+const ULT_BAR_W := 260.0
+
+## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
+## into a power tier (a REAL buff, not just score). Sits above the combo readout,
+## bigger and brighter than the streak word so a power spike reads as an event.
+func _build_rampage_label() -> void:
+	_rampage_label = Label.new()
+	_rampage_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_rampage_label.anchor_left = 0.5
+	_rampage_label.anchor_right = 0.5
+	_rampage_label.position = Vector2(0, 200)
+	_rampage_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_rampage_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_rampage_label.add_theme_font_size_override("font_size", 58)
+	_rampage_label.add_theme_constant_override("outline_size", 12)
+	_rampage_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_rampage_label.modulate.a = 0.0
+	_rampage_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_rampage_label)
+
+func _on_rampage_changed(tier: int, name: String) -> void:
+	if _rampage_label == null:
+		return
+	if tier <= 0 or name == "":
+		return # streak broke — banner just fades on its own
+	var col: Color = RAMPAGE_COLORS[clampi(tier - 1, 0, RAMPAGE_COLORS.size() - 1)]
+	_rampage_label.text = "%s!" % name
+	_rampage_label.add_theme_color_override("font_color", col)
+	_rampage_alpha = 1.0
+	_rampage_pop = 1.4 # a bigger punch than the streak word
+
+## The clutch ADRENALINE banner + red screen-edge pulse — punches in when a hit
+## drops the player to critical HP and the surge fires (bullet-time + buff). The
+## defensive twin of the RAMPAGE banner; sits lower so the two never overlap.
+func _build_adrenaline() -> void:
+	_adren_edge = TextureRect.new()
+	if _low_vig:
+		_adren_edge.texture = _low_vig.texture
+		_adren_edge.expand_mode = _low_vig.expand_mode
+		_adren_edge.stretch_mode = _low_vig.stretch_mode
+	_adren_edge.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_adren_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_adren_edge.modulate = Color(1.0, 0.16, 0.16, 0.0)
+	add_child(_adren_edge)
+	move_child(_adren_edge, 0)
+	_adren_label = Label.new()
+	_adren_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_adren_label.anchor_left = 0.5
+	_adren_label.anchor_right = 0.5
+	_adren_label.position = Vector2(0, 290)
+	_adren_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_adren_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_adren_label.add_theme_font_size_override("font_size", 52)
+	_adren_label.add_theme_constant_override("outline_size", 12)
+	_adren_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_adren_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.32))
+	_adren_label.text = "ADRENALINE!"
+	_adren_label.modulate.a = 0.0
+	_adren_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_adren_label)
+
+func _on_adrenaline_changed(active: bool) -> void:
+	if not active:
+		return # surge ended — banner/edge already faded on their own
+	if _adren_label:
+		_adren_alpha = 1.0
+		_adren_pop = 1.5
+	_adren_flash = 1.0
+
+## A cool cyan "PERFECT DODGE!" flash when a dash phases through a real hit — the
+## skill-expression cue. Quick and low so it doesn't fight the power banners.
+func _build_dodge_label() -> void:
+	_dodge_label = Label.new()
+	_dodge_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_dodge_label.anchor_left = 0.5
+	_dodge_label.anchor_right = 0.5
+	_dodge_label.position = Vector2(0, 360)
+	_dodge_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_dodge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dodge_label.add_theme_font_size_override("font_size", 40)
+	_dodge_label.add_theme_constant_override("outline_size", 10)
+	_dodge_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_dodge_label.add_theme_color_override("font_color", Color(0.4, 0.92, 1.0))
+	_dodge_label.text = "PERFECT DODGE!"
+	_dodge_label.modulate.a = 0.0
+	_dodge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_dodge_label)
+
+func _on_perfect_dodge() -> void:
+	if _dodge_label:
+		_dodge_alpha = 1.0
+		_dodge_pop = 1.2
+
+## Orange "EXECUTED!" stamp on a melee finisher — visceral, brief, low so it
+## doesn't collide with the power banners above it.
+func _build_exec_label() -> void:
+	_exec_label = Label.new()
+	_exec_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_exec_label.anchor_left = 0.5
+	_exec_label.anchor_right = 0.5
+	_exec_label.position = Vector2(0, 430)
+	_exec_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_exec_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_exec_label.add_theme_font_size_override("font_size", 46)
+	_exec_label.add_theme_constant_override("outline_size", 11)
+	_exec_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_exec_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.12))
+	_exec_label.text = "EXECUTED!"
+	_exec_label.modulate.a = 0.0
+	_exec_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_exec_label)
+
+func _on_execution(_world_pos: Vector3) -> void:
+	if _exec_label:
+		_exec_alpha = 1.0
+		_exec_pop = 1.3
+
+## OVERLOAD gauge: a slim charge bar centred above the weapon hotbar with a label
+## that flips to "OVERLOAD READY [X]" and pulses cyan when it's full.
+func _build_ult_meter() -> void:
+	_ult_root = Control.new()
+	_ult_root.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_ult_root.anchor_left = 0.5
+	_ult_root.anchor_right = 0.5
+	_ult_root.position = Vector2(-ULT_BAR_W * 0.5, -196.0)
+	_ult_root.custom_minimum_size = Vector2(ULT_BAR_W, 30)
+	_ult_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ult_root)
+	_ult_label = Label.new()
+	_ult_label.add_theme_font_size_override("font_size", 13)
+	_ult_label.add_theme_constant_override("outline_size", 5)
+	_ult_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_ult_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	_ult_label.text = "OVERLOAD"
+	_ult_label.position = Vector2(0, -4)
+	_ult_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(_ult_label)
+	var bg := ColorRect.new()
+	bg.color = Color(0.05, 0.08, 0.12, 0.7)
+	bg.position = Vector2(0, 16)
+	bg.size = Vector2(ULT_BAR_W, 8)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(bg)
+	_ult_fill = ColorRect.new()
+	_ult_fill.color = Color(0.35, 0.8, 1.0)
+	_ult_fill.position = Vector2(0, 16)
+	_ult_fill.size = Vector2(0, 8)
+	_ult_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ult_root.add_child(_ult_fill)
+	_on_ultimate_changed(GameState.ultimate_charge) # reflect any carried state
+
+func _on_ultimate_changed(charge: float) -> void:
+	if _ult_fill == null:
+		return
+	_ult_fill.size.x = ULT_BAR_W * clampf(charge, 0.0, 1.0)
+	var ready := charge >= 1.0
+	_ult_fill.color = Color(1.0, 0.85, 0.3) if ready else Color(0.35, 0.8, 1.0)
+	if _ult_label:
+		_ult_label.text = "OVERLOAD READY  [X]" if ready else "OVERLOAD"
+		_ult_label.add_theme_color_override("font_color",
+			Color(1.0, 0.85, 0.3) if ready else Color(0.55, 0.85, 1.0))
+
+func _on_ultimate_ready() -> void:
+	_ult_pulse = 1.0
+
+func _on_ultimate_fired() -> void:
+	_ult_pulse = 0.0
+	_damage_alpha = 0.0 # don't fight the red flash; the nova + shake sell it in-world
+
+## Announce the level's COMBAT DIRECTIVE (the roguelite mutator). Fires via signal
+## AND is polled once on _ready — the roll happens in load_level, before this HUD
+## exists, so the signal alone would be missed on the level we actually load into.
+func _on_directive_set(dir_name: String, desc: String) -> void:
+	if dir_name == "":
+		return
+	_show_toast("⚡ DIRECTIVE · " + dir_name + " — " + desc)
+
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
 	_streak_label = Label.new()
@@ -452,11 +681,11 @@ func _build_headshot_label() -> void:
 	_headshot_label.position = Vector2(0, 234)
 	_headshot_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_headshot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_headshot_label.add_theme_font_size_override("font_size", 30)
-	_headshot_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
-	_headshot_label.add_theme_constant_override("outline_size", 7)
-	_headshot_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
-	_headshot_label.text = "HEADSHOT" # arcade-style callout word; kept raw like the streak/multikill words, not tr()'d
+	_headshot_label.add_theme_font_size_override("font_size", 48)
+	_headshot_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.55))
+	_headshot_label.add_theme_constant_override("outline_size", 12)
+	_headshot_label.add_theme_color_override("font_outline_color", Color(0.5, 0.12, 0.0, 0.95))
+	_headshot_label.text = "◎ HEADSHOT!" # arcade-style callout; raw like the streak/multikill words, not tr()'d
 	_headshot_label.modulate.a = 0.0
 	_headshot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_headshot_label)
@@ -672,6 +901,38 @@ func _update_debrief_block() -> void:
 		tr("KILLS"), GameState.kills,
 		tr("DEATHS"), int(_last_stats.get("deaths", GameState.level_deaths)),
 	]
+	_update_highlights_block()
+
+## Gold "HIGHLIGHTS" line celebrating the run's flashy moments — only the systems
+## that actually fired this level get listed, so a clean run reads its own story.
+func _update_highlights_block() -> void:
+	if _highlights_label == null:
+		_highlights_label = Label.new()
+		_highlights_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_highlights_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_highlights_label.add_theme_font_size_override("font_size", 14)
+		_highlights_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.32))
+		var vbox := win_title.get_parent()
+		vbox.add_child(_highlights_label)
+		vbox.move_child(_highlights_label, _debrief_label.get_index() + 1)
+	var bits: Array = []
+	var execs := int(_last_stats.get("executions", 0))
+	var bounties := int(_last_stats.get("bounties", 0))
+	var dodges := int(_last_stats.get("dodges", 0))
+	var streak := int(_last_stats.get("best_rampage", 0))
+	if execs > 0:
+		bits.append("%d %s" % [execs, tr("EXECUTED") if execs == 1 else tr("EXECUTIONS")])
+	if bounties > 0:
+		bits.append("%d %s" % [bounties, tr("BOUNTY") if bounties == 1 else tr("BOUNTIES")])
+	if dodges > 0:
+		bits.append("%d %s" % [dodges, tr("PERFECT DODGE") if dodges == 1 else tr("PERFECT DODGES")])
+	if streak > 0 and streak <= GameState.RAMPAGE_NAMES.size():
+		bits.append(tr(GameState.RAMPAGE_NAMES[streak - 1]) + " " + tr("STREAK"))
+	if bits.is_empty():
+		_highlights_label.visible = false
+	else:
+		_highlights_label.visible = true
+		_highlights_label.text = "⚡ " + "   ·   ".join(bits)
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)
@@ -694,12 +955,58 @@ func _process(delta: float) -> void:
 		_streak_label.modulate.a = clampf(_streak_alpha, 0.0, 1.0)
 		_streak_label.scale = Vector2.ONE * (1.0 + _streak_pop * 0.6)
 		_streak_label.pivot_offset = _streak_label.size * 0.5
+	if _rampage_label:
+		_rampage_alpha = move_toward(_rampage_alpha, 0.0, delta * 0.85)
+		_rampage_pop = move_toward(_rampage_pop, 0.0, delta * 4.5)
+		_rampage_label.modulate.a = clampf(_rampage_alpha, 0.0, 1.0)
+		_rampage_label.scale = Vector2.ONE * (1.0 + _rampage_pop * 0.5)
+		_rampage_label.pivot_offset = _rampage_label.size * 0.5
+	if _adren_label:
+		_adren_alpha = move_toward(_adren_alpha, 0.0, delta * 0.7)
+		_adren_pop = move_toward(_adren_pop, 0.0, delta * 4.5)
+		_adren_label.modulate.a = clampf(_adren_alpha, 0.0, 1.0)
+		_adren_label.scale = Vector2.ONE * (1.0 + _adren_pop * 0.5)
+		_adren_label.pivot_offset = _adren_label.size * 0.5
+	if _adren_edge:
+		# Hold a low red edge glow while the surge runs, with a stronger initial
+		# pulse that eases off — reads as "the world reddens" during bullet-time.
+		var base := 0.32 if GameState.adrenaline_left > 0.0 else 0.0
+		_adren_flash = maxf(base, move_toward(_adren_flash, 0.0, delta * 1.4))
+		_adren_edge.modulate.a = _adren_flash * 0.5 * GraphicsSettings.flash_intensity
+	if _dodge_label:
+		_dodge_alpha = move_toward(_dodge_alpha, 0.0, delta * 1.5)
+		_dodge_pop = move_toward(_dodge_pop, 0.0, delta * 5.0)
+		_dodge_label.modulate.a = clampf(_dodge_alpha, 0.0, 1.0)
+		_dodge_label.scale = Vector2.ONE * (1.0 + _dodge_pop * 0.4)
+		_dodge_label.pivot_offset = _dodge_label.size * 0.5
+	if _exec_label:
+		_exec_alpha = move_toward(_exec_alpha, 0.0, delta * 1.6)
+		_exec_pop = move_toward(_exec_pop, 0.0, delta * 5.5)
+		_exec_label.modulate.a = clampf(_exec_alpha, 0.0, 1.0)
+		_exec_label.scale = Vector2.ONE * (1.0 + _exec_pop * 0.45)
+		_exec_label.pivot_offset = _exec_label.size * 0.5
+	if stamina_bar and _sta_flash > 0.0:
+		# Brighten + a hair of scale while draining so the eye catches the drop.
+		_sta_flash = maxf(0.0, _sta_flash - delta * 3.0)
+		stamina_bar.modulate = Color(1, 1, 1).lerp(Color(1.7, 1.9, 2.0), _sta_flash)
+		stamina_bar.pivot_offset = stamina_bar.size * Vector2(0, 0.5)
+		stamina_bar.scale = Vector2(1.0, 1.0 + 0.35 * _sta_flash)
+	elif stamina_bar and stamina_bar.modulate != Color(1, 1, 1):
+		stamina_bar.modulate = Color(1, 1, 1)
+		stamina_bar.scale = Vector2.ONE
+	if _ult_root and GameState.ultimate_ready_state():
+		# Breathe the gauge while it's ready so the player notices the option.
+		_ult_pulse = wrapf(_ult_pulse + delta * 3.0, 0.0, TAU)
+		_ult_root.modulate.a = 0.7 + 0.3 * (0.5 + 0.5 * sin(_ult_pulse))
+	elif _ult_root:
+		_ult_root.modulate.a = 1.0
 	if _headshot_label:
-		# Quicker fade than the streak word (~0.8s) since headshots land often.
-		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
-		_headshot_pop = move_toward(_headshot_pop, 0.0, delta * 4.5)
+		# Headshots are now a tighter, rarer shot, so the callout gets to land with
+		# a bigger punch and linger a little longer than before.
+		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 0.95)
+		_headshot_pop = move_toward(_headshot_pop, 0.0, delta * 3.8)
 		_headshot_label.modulate.a = clampf(_headshot_alpha, 0.0, 1.0)
-		_headshot_label.scale = Vector2.ONE * (1.0 + _headshot_pop * 0.5)
+		_headshot_label.scale = Vector2.ONE * (1.0 + _headshot_pop * 0.9)
 		_headshot_label.pivot_offset = _headshot_label.size * 0.5
 	if _multikill_label:
 		# The rolling window closes -> the multi-kill count resets.
@@ -1024,6 +1331,17 @@ func _style_health_bar() -> void:
 	health_label.add_theme_font_size_override("font_size", 20)
 	health_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	health_label.add_theme_constant_override("outline_size", 6)
+	_style_caption(_hp_caption, Color(0.4, 1.0, 0.55))
+
+## Small bold caption stamped in front of a bar ("HP" / "STA") so the two readouts
+## are labelled at a glance.
+func _style_caption(cap: Label, col: Color) -> void:
+	if cap == null:
+		return
+	cap.add_theme_font_size_override("font_size", 15)
+	cap.add_theme_color_override("font_color", col)
+	cap.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	cap.add_theme_constant_override("outline_size", 5)
 
 func _on_health_changed(cur: float, max_: float) -> void:
 	health_bar.max_value = max_
@@ -1039,6 +1357,107 @@ func _on_health_changed(cur: float, max_: float) -> void:
 			col = Color(1.0, 0.2, 0.16).lerp(Color(0.95, 0.75, 0.2), r / 0.4)
 		_hp_fill.bg_color = col
 	_hp_ratio = cur / maxf(1.0, max_)
+
+var _stam_fill: StyleBoxFlat
+var _sta_prev: float = -1.0  ## last stamina value, to detect draining
+var _sta_flash: float = 0.0  ## brief brighten each time stamina drops, so drain is visible
+
+## Stamina bar sits alongside health: cyan when you have wind, and it flips to a
+## hard red bar while EXHAUSTED so the "can't run / can't grapple" lockout is
+## obvious at a glance rather than reading as a mystery slowdown.
+func _style_stamina_bar() -> void:
+	if not stamina_bar:
+		return
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.06, 0.07, 0.08, 0.85)
+	bg.set_border_width_all(2)
+	bg.border_color = Color(0, 0, 0, 0.6)
+	bg.set_corner_radius_all(3)
+	stamina_bar.add_theme_stylebox_override("background", bg)
+	_stam_fill = StyleBoxFlat.new()
+	_stam_fill.bg_color = Color(0.3, 0.8, 1.0)
+	_stam_fill.set_corner_radius_all(3)
+	stamina_bar.add_theme_stylebox_override("fill", _stam_fill)
+	_style_caption(_sta_caption, Color(0.35, 0.85, 1.0))
+
+func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
+	if not stamina_bar:
+		return
+	stamina_bar.max_value = max_
+	stamina_bar.value = cur
+	# Draining? Kick a flash so the drop is actually noticeable (the whole point of
+	# a stamina bar is seeing it move). Only on a real decrease, not on regen.
+	if _sta_prev >= 0.0 and cur < _sta_prev - 0.05:
+		_sta_flash = 1.0
+	_sta_prev = cur
+	if _stam_fill:
+		var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
+		# Exhausted -> red lockout; low -> amber warning; else cyan by fraction.
+		if exhausted:
+			_stam_fill.bg_color = Color(1.0, 0.28, 0.24)
+		elif r < 0.35:
+			_stam_fill.bg_color = Color(1.0, 0.62, 0.2) # amber: running low
+		else:
+			_stam_fill.bg_color = Color(0.2, 0.55, 0.75).lerp(Color(0.35, 0.85, 1.0), r)
+
+## A compact row of chips just above the health bar showing which permanent armory
+## upgrades this run has and at what rank — a colour-coded glyph (reusing the
+## armory's icons) with rank pips. Only tracks with at least one rank show, so a
+## fresh run has no clutter and the loadout fills in as you invest.
+func _build_upgrade_chips() -> void:
+	var layout := $Margin/Layout
+	var row: HBoxContainer = layout.get_node_or_null("UpgradeRow")
+	if row == null:
+		row = HBoxContainer.new()
+		row.name = "UpgradeRow"
+		row.add_theme_constant_override("separation", 8)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layout.add_child(row)
+		layout.move_child(row, $Margin/Layout/BottomLeft.get_index()) # sit right above the HP bar
+		# Rebuild live when ranks change (armory buy / "imba" cheat).
+		GameState.upgrades_changed.connect(_build_upgrade_chips)
+	for c in row.get_children():
+		c.queue_free()
+	for k in Armory.KEYS:
+		var lvl := GameState.upgrade_level(k)
+		if lvl <= 0:
+			continue
+		var meta: Dictionary = Armory.META[k]
+		row.add_child(_make_upgrade_chip(meta["icon"], meta["color"], lvl))
+
+func _make_upgrade_chip(glyph: String, color: Color, lvl: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.08, 0.7)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(color.r, color.g, color.b, 0.8)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 6; sb.content_margin_right = 6
+	sb.content_margin_top = 2; sb.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", sb)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 4)
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(hb)
+	var g := Label.new()
+	g.text = glyph
+	g.add_theme_color_override("font_color", color)
+	g.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	g.add_theme_constant_override("outline_size", 4)
+	g.add_theme_font_size_override("font_size", 16)
+	hb.add_child(g)
+	# Rank pips (filled = bought), one per possible rank.
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 2)
+	pips.alignment = BoxContainer.ALIGNMENT_CENTER
+	for i in GameState.UPGRADE_MAX:
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(3, 10)
+		pip.color = color if i < lvl else Color(0.2, 0.22, 0.26, 0.9)
+		pips.add_child(pip)
+	hb.add_child(pips)
+	return panel
 
 # ---------- ammo block: big numerals + segmented mag bar + grenade pips ----------
 
@@ -1360,7 +1779,7 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	if crit and GraphicsSettings.combat_callouts_enabled:
 		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
 		_headshot_alpha = 1.0
-		_headshot_pop = 1.0
+		_headshot_pop = 1.4
 	# Crisp UI tick on hit; a heftier metallic clang on a kill.
 	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).

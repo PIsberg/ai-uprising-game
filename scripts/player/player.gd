@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody3D
 
 signal health_changed(current: float, max: float)
+signal stamina_changed(current: float, max: float, exhausted: bool)
 signal died
 signal grenades_changed(count: int)
 signal pickup_message(text: String) ## Fired when a non-weapon pickup is collected (for the HUD toast).
@@ -21,6 +22,24 @@ func notify_pickup(text: String) -> void:
 @export var jump_buffer_time: float = 0.12 ## Grace for a jump pressed just before landing.
 @export var sprint_jump_mult: float = 1.3 ## Jump boost after a sustained sprint (running jump).
 @export var sprint_jump_charge: float = 0.5 ## Seconds of full-speed sprinting needed to bank the boost.
+
+@export_group("Stamina")
+## Sprinting and grappling burn stamina; standing/walking recovers it. Hit zero
+## and you're EXHAUSTED — locked out of both until it climbs back to the recover
+## threshold, so you can't machine-gun sprint bursts or chain-grapple forever.
+@export var max_stamina: float = 100.0
+@export var stamina_sprint_drain: float = 20.0   ## per second while actually running
+@export var stamina_grapple_drain: float = 26.0  ## per second while winching on the tether
+@export var stamina_regen: float = 18.0          ## per second recovered once you stop draining
+@export var stamina_regen_delay: float = 0.5     ## grace after the last drain before regen starts
+@export var stamina_recover_threshold: float = 30.0 ## exhausted lock clears once stamina climbs back to this
+@export var melee_stamina_cost: float = 18.0     ## stamina spent per melee shove (heavy fighting gasses you out)
+@export var dash_stamina_cost: float = 12.0      ## stamina spent per dash/dodge (kept modest so dodging stays viable)
+var _stamina: float = 100.0
+var _stamina_exhausted: bool = false ## true from the moment stamina hits 0 until it recovers past the threshold
+var _stamina_regen_cd: float = 0.0
+var _was_exhausted: bool = false ## edge-detect so the HUD is only pinged when the lock flips
+var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-track multiplier
 
 @export_group("Look")
 @export var mouse_sensitivity: float = 0.0022
@@ -106,6 +125,7 @@ var _is_crouching: bool = false
 var _dash_time: float = 0.0
 var _dash_cd: float = 0.0
 var _dash_dir: Vector3 = Vector3.ZERO
+var _dodge_scored: bool = false ## One PERFECT DODGE reward per dash, not per blocked pellet.
 
 var _fall_speed: float = 0.0   ## downward speed at the last touchdown (weights the landing)
 
@@ -189,6 +209,7 @@ const STEP_INTERVAL_CROUCH := 1.6
 @export var melee_arc_deg: float = 120.0
 @export var melee_knockback: float = 13.0
 @export var melee_cooldown: float = 0.85
+@export var execute_hp_threshold: float = 40.0 ## A melee hit on a non-boss below this HP is a guaranteed EXECUTION (instakill + crunch + bonus).
 var _melee_cd: float = 0.0
 
 # ---------- soft enemy separation ----------
@@ -253,6 +274,7 @@ func _ready() -> void:
 	_register_dash_action()
 	_register_melee_action()
 	_register_grapple_action()
+	_register_ultimate_action()
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -260,6 +282,11 @@ func _ready() -> void:
 	if GameState.supply_health > 0.0:
 		hp.max_health += GameState.supply_health
 	hp.current_health = hp.max_health
+	# STAMINA armory track: a bigger pool to sprint/rappel on before gassing out.
+	_base_stamina = max_stamina # authored base, kept so the "imba" cheat can re-apply the mult
+	max_stamina = _base_stamina * GameState.stamina_mult()
+	_stamina = max_stamina
+	stamina_changed.emit(_stamina, max_stamina, false)
 	if GameState.supply_grenades > 0:
 		grenade_counts[GrenadeType.FRAG] += GameState.supply_grenades
 	_sync_grenades()
@@ -418,6 +445,12 @@ func _on_hp_damaged(amount: float, source: Node) -> void:
 		_hurt_cd = 0.22
 		var pitch := clampf(1.12 - amount * 0.012, 0.82, 1.12) + randf_range(-0.04, 0.04)
 		AudioBus.play_synth_ui("player_hurt", -4.0, pitch)
+	# Clutch ADRENALINE SURGE: a hit that drops you to critical (but not dead)
+	# kicks a brief bullet-time comeback beat + offensive/mobility buff. Cooldown
+	# and alive-check live in GameState.try_adrenaline; this just detects the line.
+	if hp and hp.current_health > 0.0 and hp.max_health > 0.0 \
+			and hp.current_health / hp.max_health <= GameState.ADRENALINE_TRIGGER_FRAC:
+		GameState.try_adrenaline()
 
 ## Directional camera punch AWAY from the hit source — a locational thump layered
 ## on top of the undirected shake trauma above, so a hit reads not just as
@@ -471,8 +504,10 @@ func _handle_low_health(delta: float) -> void:
 	elif _breath and _breath.playing:
 		_breath.stop()
 
-# --- cheat: type "god" during play to toggle invincibility (testing aid) ---
+# --- cheats: type a keyword during play. "god" toggles invincibility; "imba"
+# maxes every permanent upgrade track for the run (testing aids). ---
 const GOD_WORD := "god"
+const IMBA_WORD := "imba"
 var _god: bool = false
 var _cheat_buf := ""
 
@@ -481,10 +516,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		var u := (event as InputEventKey).unicode
 		if u != 0:
-			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(GOD_WORD.length())
-			if _cheat_buf == GOD_WORD:
+			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(8) # holds the longest keyword
+			if _cheat_buf.ends_with(GOD_WORD):
 				_cheat_buf = ""
 				_toggle_god()
+			elif _cheat_buf.ends_with(IMBA_WORD):
+				_cheat_buf = ""
+				_cheat_imba()
 	if _dead:
 		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -502,11 +540,13 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	_apply_gravity(delta)
+	_handle_stamina(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
 	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_melee(delta)
+	_handle_ultimate(delta)
 	_handle_slide(delta)
 	_handle_jump(delta)
 	_handle_grenade(delta)
@@ -551,6 +591,92 @@ func _register_melee_action() -> void:
 		pad.button_index = JOY_BUTTON_B
 		InputMap.action_add_event("melee", pad)
 
+## Registers the OVERLOAD ultimate (X + gamepad Y) at runtime.
+func _register_ultimate_action() -> void:
+	if not InputMap.has_action("ultimate"):
+		InputMap.add_action("ultimate")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_X
+		InputMap.action_add_event("ultimate", ev)
+		var pad := InputEventJoypadButton.new()
+		pad.button_index = JOY_BUTTON_Y
+		InputMap.action_add_event("ultimate", pad)
+
+@export var overload_radius: float = 22.0   ## OVERLOAD shockwave reach.
+@export var overload_damage: float = 140.0  ## damage to every hostile caught in it.
+
+## OVERLOAD ultimate: when the meter is full, X unleashes a screen-clearing
+## shockwave — heavy damage + an EMP stun + knockback to every hostile in range,
+## sold with a nova ring, slow-mo and a camera slam. The arsenal's panic button.
+func _handle_ultimate(_delta: float) -> void:
+	if not Input.is_action_just_pressed("ultimate"):
+		return
+	if not GameState.ultimate_ready_state():
+		AudioBus.play_synth_ui("empty_click", -6.0, 0.7) # not charged yet
+		return
+	if not GameState.consume_ultimate():
+		return
+	_unleash_overload()
+
+func _unleash_overload() -> void:
+	var origin := global_position
+	GameState.hit_stop(0.28, 0.5)
+	shake(1.0)
+	_fov_kick = maxf(_fov_kick, 16.0)
+	AudioBus.play_synth_at("explosion", origin, 6.0, 0.5)
+	_spawn_overload_nova(origin)
+	# Sweep every hostile in reach: heavy damage + EMP stun + outward knockback.
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = overload_radius
+	q.shape = sh
+	q.transform = Transform3D(Basis(), origin)
+	q.collision_mask = 0b0000100 # enemies (layer 3)
+	q.collide_with_areas = false
+	var seen := {}
+	for h in space.intersect_shape(q, 64):
+		var col: Node = h.get("collider")
+		if col == null or seen.has(col):
+			continue
+		seen[col] = true
+		var d = col.get_node_or_null("Damageable")
+		if d and d.has_method("apply_damage"):
+			d.apply_damage(overload_damage, self)
+		if col.has_method("emp_disable"):
+			col.emp_disable(2.5)
+		if "velocity" in col and col is Node3D:
+			var push: Vector3 = (col as Node3D).global_position - origin
+			push.y = 0.0
+			col.velocity += (push.normalized() if push.length() > 0.1 else Vector3.FORWARD) * 16.0 + Vector3.UP * 4.0
+	# Hostiles just OUTSIDE the blast (not EMP'd) see it and scatter.
+	GameState.startle_enemies(origin, overload_radius * 1.7, 1.1)
+
+## Expanding cyan nova ring at the blast — a quick TorusMesh that fattens, scales
+## out and fades. Frees itself on a short timer.
+func _spawn_overload_nova(origin: Vector3) -> void:
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.8
+	torus.outer_radius = 1.4
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(0.4, 0.85, 1.0)
+	mat.emission_energy_multiplier = 6.0
+	mat.albedo_color = Color(0.4, 0.85, 1.0)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	torus.material = mat
+	ring.mesh = torus
+	get_parent().add_child(ring)
+	ring.global_position = origin + Vector3.UP * 0.6
+	ring.rotation_degrees.x = 90.0
+	var tw := create_tween().set_parallel(true)
+	var target_scale := overload_radius * 0.9
+	tw.tween_property(ring, "scale", Vector3.ONE * target_scale, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.5)
+	tw.chain().tween_callback(ring.queue_free)
+
 var _wh_kick_tween: Tween ## Tracks the last dash/landing viewmodel kick so overlapping kicks don't fight over weapon_holder.position.
 
 ## A quick viewmodel punch on weapon_holder (dash/landing) — snapshots the
@@ -575,6 +701,7 @@ func _handle_melee(delta: float) -> void:
 	if _melee_cd > 0.0 or not Input.is_action_just_pressed("melee"):
 		return
 	_melee_cd = melee_cooldown
+	_spend_stamina(melee_stamina_cost) # a swing is heavy fighting — it costs wind
 	_fov_kick = maxf(_fov_kick, 6.0)
 	shake(0.18)
 	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.7) # whoosh
@@ -617,7 +744,15 @@ func _do_melee() -> void:
 			continue
 		var d := col.get_node_or_null("Damageable")
 		if d and d.has_method("apply_damage"):
-			d.apply_damage(melee_damage, self)
+			# EXECUTION: a shove into a weakened, non-boss enemy is a finisher —
+			# guaranteed kill with a heavier crunch, so melee reads as a real
+			# takedown tool, not just a get-off-me nudge.
+			var is_boss := col is EnemyBase and (col as EnemyBase).score_value >= 1000
+			if not is_boss and d.current_health > 0.0 and d.current_health <= execute_hp_threshold:
+				d.apply_damage(9999.0, self)
+				GameState.reward_execution((col as Node3D).global_position + Vector3.UP * 1.2)
+			else:
+				d.apply_damage(melee_damage, self)
 			struck = true
 		# Heavy knockback away from the player (+ a little lift) — the "get off me".
 		if "velocity" in col:
@@ -657,6 +792,8 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		_dodge_scored = false
+		_spend_stamina(dash_stamina_cost) # a dodge-dash is exertion too
 		hp.invulnerable = true
 		# The i-frame window also suspends the soft enemy-separation push (see
 		# _update_enemy_separation): enemies have no hard collision with the player
@@ -682,6 +819,20 @@ func _toggle_god() -> void:
 		hp.heal(hp.max_health)
 	pickup_message.emit("☢ GOD MODE: " + ("ON — invincible" if _god else "OFF"))
 	AudioBus.play_synth_ui("pickup_health", -4.0, 1.7 if _god else 0.8)
+
+## "imba" cheat: max every armory upgrade track for the run, and apply the parts
+## that normally only take effect on deploy (the stamina pool) to the live player
+## right now. Damage/mag/reload/blast/leech read their multipliers live already.
+func _cheat_imba() -> void:
+	GameState.max_all_upgrades()
+	max_stamina = _base_stamina * GameState.stamina_mult()
+	_stamina = max_stamina
+	_stamina_exhausted = false
+	stamina_changed.emit(_stamina, max_stamina, false)
+	if hp and hp.has_method("heal"):
+		hp.heal(hp.max_health)
+	pickup_message.emit("★ IMBA — ALL UPGRADES MAXED")
+	AudioBus.play_synth_ui("victory", -3.0, 1.1)
 
 ## Returns a world-space dodge direction when a movement key is double-tapped
 ## within the window, else Vector3.ZERO. Updates the tap tracker every call.
@@ -800,6 +951,13 @@ func _throw_grenade() -> void:
 	grenade_counts[grenade_type] -= 1
 	_grenade_cd = grenade_cooldown
 	var g: Node = (grenade_kinds[grenade_type]["scene"] as PackedScene).instantiate()
+	# GRENADE POWER upgrade: scale this charge's blast (damage + reach) before it's
+	# thrown. Covers frag (splash), vortex (splash + pull) and EMP (burst radius).
+	var gm := GameState.grenade_mult()
+	if gm > 1.0:
+		for prop in ["splash_damage", "splash_radius", "damage", "pull_radius", "burst_radius"]:
+			if prop in g:
+				g.set(prop, float(g.get(prop)) * gm)
 	get_tree().current_scene.add_child(g)
 	var dir := -camera.global_transform.basis.z
 	g.global_position = camera.global_position + dir * 0.7
@@ -1042,8 +1200,12 @@ func _handle_grapple(delta: float) -> void:
 	_gv_t -= delta
 	if _gv_t <= 0.0:
 		_gv_t = 0.12
-		_grapple_valid = _grapple_cd <= 0.0 and not _grapple_ray().is_empty()
+		_grapple_valid = _grapple_cd <= 0.0 and not _stamina_exhausted and not _grapple_ray().is_empty()
 	if _grapple_cd > 0.0 or not Input.is_action_just_pressed("grapple"):
+		return
+	# No tether while exhausted — you don't have the arm strength to rappel.
+	if _stamina_exhausted:
+		AudioBus.play_synth_ui("empty_click", -10.0, 1.2)
 		return
 	var hit := _grapple_ray()
 	if hit.is_empty():
@@ -1229,12 +1391,69 @@ func _handle_stance(delta: float) -> void:
 	collider.position.y = shape.height * 0.5
 	head.position.y = shape.height - 0.2
 
+## Stamina economy: running and grappling burn it; standing/walking refills it
+## after a short grace. Bottoming out at zero sets the exhausted lock — no sprint,
+## no tether — until stamina climbs back to stamina_recover_threshold. The
+## scripted convoy zipline is a set-piece rather than a player rappel, so it is
+## excluded from drain (and must never be cut short by exhaustion). Emits
+## stamina_changed for the HUD bar (only when the value or lock actually moves).
+func _handle_stamina(delta: float) -> void:
+	if _dead:
+		return
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	var running := Input.is_action_pressed("sprint") and is_on_floor() \
+		and not _is_crouching and not _stamina_exhausted and hspeed > walk_speed + 0.3
+	var rappelling := _grappling and _zip_anchor == null
+	var prev := _stamina
+	if running or rappelling:
+		var rate := stamina_grapple_drain if rappelling else stamina_sprint_drain
+		_stamina = maxf(0.0, _stamina - rate * delta)
+		_stamina_regen_cd = stamina_regen_delay
+		if _stamina <= 0.0 and not _stamina_exhausted:
+			_stamina_exhausted = true
+			if rappelling:
+				_end_grapple() # the rope snaps the instant you gas out mid-rappel
+			AudioBus.play_synth_ui("player_hurt", -15.0, 0.7) # soft "gassed" cue
+	else:
+		_stamina_regen_cd = maxf(0.0, _stamina_regen_cd - delta)
+		if _stamina_regen_cd <= 0.0:
+			_stamina = minf(max_stamina, _stamina + stamina_regen * delta)
+	if _stamina_exhausted and _stamina >= stamina_recover_threshold:
+		_stamina_exhausted = false
+	if not is_equal_approx(_stamina, prev) or _stamina_exhausted != _was_exhausted:
+		_was_exhausted = _stamina_exhausted
+		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
+
+## Spend a burst of stamina on an exertion action (melee swing, dash). Heavy
+## fighting and dodging drain the same bar sprinting does, so a big brawl leaves
+## you unable to sprint off — a real tradeoff. Doesn't block the action (you can
+## always defend), it just costs you.
+func _spend_stamina(amount: float) -> void:
+	if amount <= 0.0 or _dead:
+		return
+	_stamina = maxf(0.0, _stamina - amount)
+	_stamina_regen_cd = stamina_regen_delay
+	if _stamina <= 0.0 and not _stamina_exhausted:
+		_stamina_exhausted = true
+		AudioBus.play_synth_ui("player_hurt", -15.0, 0.7) # "gassed" cue
+	_was_exhausted = _stamina_exhausted
+	stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
+
+const MAX_MOVE_MULT := 1.8 ## Cap on the COMBINED movement buff so stacked speed powerups stay controllable.
+
 func _current_speed() -> float:
-	# OVERDRIVE powerup boosts every movement state.
-	var mult: float = GameState.move_speed_mult()
+	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE + a clutch ADRENALINE surge
+	# + the BLITZ directive all boost every movement state. Damage/fire-rate spikes
+	# are the intended power fantasy, but a fully-stacked SPEED multiplier (~2.1x)
+	# makes the player twitchy and hard to aim/platform with, so the COMBINED
+	# movement multiplier is capped — the buffs still stack, just not into a slide.
+	var mult: float = minf(MAX_MOVE_MULT,
+		GameState.move_speed_mult() * GameState.rampage_speed_mult() \
+		* GameState.adrenaline_speed_mult() * GameState.directive_move_mult())
 	if _is_crouching:
 		return crouch_speed * mult
-	if Input.is_action_pressed("sprint") and not _is_crouching:
+	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
+	if Input.is_action_pressed("sprint") and not _is_crouching and not _stamina_exhausted:
 		return sprint_speed * mult
 	return walk_speed * mult
 
@@ -1444,7 +1663,16 @@ func _on_health_changed(cur: float, max_: float) -> void:
 ## Damageable hook: campaign warmup on incoming damage (×0.65 on the opening
 ## level, ×1.0 by ~25% depth) so the first levels teach instead of execute.
 func modify_incoming_damage(amount: float, _source) -> float:
-	return amount * GameState.campaign_incoming_mult()
+	return amount * GameState.campaign_incoming_mult() * GameState.directive_incoming_mult()
+
+## Damageable hook: fires when a hit is negated by our invulnerability. During the
+## dash i-frame window (and NOT god mode) that means a skillful dodge just phased
+## through a real attack -> reward it as a PERFECT DODGE. Once per dash so a
+## shotgun blast is one dodge, not eight.
+func notify_shield_hit(_source) -> void:
+	if _dash_time > 0.0 and not _god and not _dodge_scored:
+		_dodge_scored = true
+		GameState.reward_perfect_dodge()
 
 func _on_died(source: Node) -> void:
 	if _dead:
@@ -1516,6 +1744,11 @@ func respawn_from_checkpoint(data: Dictionary) -> void:
 		_death_tween.kill() # stop the fall-over mid-flight — respawn snaps the head back
 	_dead = false
 	velocity = Vector3.ZERO
+	# Come back with a full tank — don't respawn locked out from an exhausted death.
+	_stamina = max_stamina
+	_stamina_exhausted = false
+	_was_exhausted = false
+	stamina_changed.emit(_stamina, max_stamina, false)
 	global_position = data.get("position", global_position)
 	rotation.y = data.get("rotation_y", rotation.y)
 	if head:

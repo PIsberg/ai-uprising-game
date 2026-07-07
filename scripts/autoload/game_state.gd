@@ -8,6 +8,7 @@ signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit
 signal enemy_killed(score: int, label: String) ## An enemy was destroyed — drives the HUD kill feed.
 signal objective_blocked(text: String) ## Player reached a locked portal — HUD posts why.
 signal objective_unlocked(text: String) ## Objective met, portal opened — HUD updates the goal line.
+signal upgrades_changed ## Run upgrade ranks changed (armory buy / "imba" cheat) — HUD re-renders the upgrade chips.
 signal tasks_changed ## The level task checklist changed — HUD re-renders the objective line.
 signal task_completed(label: String) ## A single task was just finished — HUD cheers it.
 signal combo_changed(combo: int, mult: float) ## Kill-streak combo updated — HUD shows the multiplier.
@@ -22,6 +23,18 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bo
 	register_hit()
 	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
+	add_ultimate_charge(amount * ULT_PER_DAMAGE) # damage dealt smooths the OVERLOAD fill
+	if crit:
+		add_ultimate_charge(0.02) # precision (headshots/weak-points) charges OVERLOAD faster
+	# LIFELEECH track: siphon a slice of the damage you deal back as health, so an
+	# aggressive build sustains itself. Clamped by Damageable.heal to max HP.
+	var leech := upgrade_mult("leech") - 1.0
+	if leech > 0.0:
+		var pl := get_tree().get_first_node_in_group("player")
+		if pl:
+			var d = pl.get_node_or_null("Damageable")
+			if d and d.has_method("is_alive") and d.is_alive():
+				d.heal(amount * leech)
 	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
 	# the punch that separates a good-feeling shooter from a flat one. A kill
 	# snaps harder than a heavy hit; rate-limited so a fast horde can't slideshow.
@@ -160,6 +173,8 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_water_world.tscn",
 	"res://scenes/levels/level_desert.tscn",
 	"res://scenes/levels/level_neon.tscn",
+	"res://scenes/levels/level_guardrails.tscn", # Generative Guardrails: anchor-tag a safe path across live-generated hazard terrain
+	"res://scenes/levels/level_hivemind.tscn",   # Geofenced Signal Jamming: jam beacons strip shields off the hive-mind flankers
 	"res://scenes/levels/level_crucible.tscn",
 	"res://scenes/levels/level_lava_world.tscn",
 	"res://scenes/levels/level_titan.tscn",
@@ -247,9 +262,14 @@ const UPGRADE_DEFS := {
 	"damage": {"label": "WEAPON DAMAGE", "per": 0.08, "cost": 1500},
 	"mag":    {"label": "MAGAZINE SIZE", "per": 0.15, "cost": 1200},
 	"reload": {"label": "RELOAD SPEED",  "per": 0.06, "cost": 1000},
+	# Build-defining tracks: lean into explosives, heal off aggression, or run/rappel
+	# longer before gassing out.
+	"blast":   {"label": "GRENADE POWER", "per": 0.16, "cost": 1300},
+	"leech":   {"label": "LIFELEECH",     "per": 0.03, "cost": 1400},
+	"stamina": {"label": "STAMINA",       "per": 0.10, "cost": 900},
 }
 const UPGRADE_MAX := 5
-var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0}
+var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0, "stamina": 0}
 
 ## "Field supplies" bought in the Armory — banked here and PERMANENT for the run:
 ## the player re-applies them on every deploy (never cleared until reset_run on a
@@ -319,8 +339,16 @@ func buy_upgrade(k: String) -> bool:
 		return false
 	score -= cost
 	upgrades[k] = upgrade_level(k) + 1
+	upgrades_changed.emit()
 	save_progress()
 	return true
+
+## Cheat ("imba"): max every permanent upgrade track for the run, for free.
+func max_all_upgrades() -> void:
+	for k in UPGRADE_DEFS:
+		upgrades[k] = UPGRADE_MAX
+	upgrades_changed.emit()
+	save_progress()
 
 ## True if at least one track is purchasable right now — the briefing only
 ## bothers showing the armory when there's an actual decision to make.
@@ -333,6 +361,15 @@ func can_buy_any_upgrade() -> bool:
 ## Multiplier for damage/mag tracks (>= 1.0).
 func upgrade_mult(k: String) -> float:
 	return 1.0 + float(UPGRADE_DEFS[k]["per"]) * upgrade_level(k)
+
+## Grenade blast multiplier (GRENADE POWER track) — scales thrown-charge damage
+## and radius. 1.0 with no ranks.
+func grenade_mult() -> float:
+	return upgrade_mult("blast")
+
+## Max-stamina multiplier (STAMINA track) — a bigger pool to sprint/rappel on.
+func stamina_mult() -> float:
+	return upgrade_mult("stamina")
 
 ## Reload is a time REDUCTION; floored so it can't break the reload anim.
 func upgrade_reload_mult() -> float:
@@ -365,6 +402,287 @@ func add_kill(points: int = 100, label: String = "HOSTILE") -> void:
 	combo_changed.emit(combo, combo_mult())
 	add_score(int(round(points * combo_mult())))
 	enemy_killed.emit(points, label)
+	_update_rampage()
+	add_ultimate_charge(ULT_PER_KILL)
+
+# ---------- RAMPAGE: kill-streak power escalation ----------
+## A streak doesn't just multiply score — it cranks YOUR power. Chain kills inside
+## the combo window to spike into a tier: +damage, then +fire rate, then +speed,
+## each announced with a banner + a top-up heal so momentum sustains itself. It
+## all drops the instant the streak breaks — a fun, aggressive "keep killing" loop.
+const RAMPAGE_TIERS := [5, 10, 18]                 ## combo counts unlocking tiers 1/2/3
+const RAMPAGE_NAMES := ["RAMPAGE", "UNSTOPPABLE", "GODLIKE"]
+const RAMPAGE_DMG := [1.0, 1.18, 1.35, 1.55]       ## damage mult by tier 0..3
+const RAMPAGE_FIRE := [1.0, 1.0, 1.18, 1.35]       ## fire-rate mult by tier
+const RAMPAGE_SPEED := [1.0, 1.0, 1.0, 1.12]       ## move-speed mult by tier
+const RAMPAGE_HEAL := [0.0, 12.0, 16.0, 22.0]      ## HP topped up on reaching a tier
+signal rampage_changed(tier: int, name: String)    ## Rampage tier changed — HUD banner.
+var rampage_tier: int = 0
+
+func _rampage_for_combo() -> int:
+	var t := 0
+	for i in RAMPAGE_TIERS.size():
+		if combo >= RAMPAGE_TIERS[i]:
+			t = i + 1
+	return t
+
+func _update_rampage() -> void:
+	var t := _rampage_for_combo()
+	if t <= rampage_tier:
+		return # only fires on a NEW, higher tier
+	rampage_tier = t
+	stat_best_rampage = maxi(stat_best_rampage, t)
+	teach_once("rampage", MECHANIC_HINTS["rampage"])
+	var nm: String = RAMPAGE_NAMES[t - 1]
+	rampage_changed.emit(rampage_tier, nm)
+	# Reward: a top-up heal to sustain the aggression + a satisfying hit-stop spike.
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl:
+		var d = pl.get_node_or_null("Damageable")
+		if d and d.has_method("heal") and d.has_method("is_alive") and d.is_alive():
+			d.heal(RAMPAGE_HEAL[t])
+	AudioBus.play_synth_ui("combo_up", -1.0, 1.0 + t * 0.18)
+	hit_stop(0.06, 0.4)
+	# Top tier (GODLIKE): the pack visibly breaks and scatters around you.
+	if t >= RAMPAGE_TIERS.size() and pl:
+		startle_enemies((pl as Node3D).global_position, 18.0, 1.0)
+
+## Make nearby hostiles panic-scatter — the world reacting to a player power spike
+## (GODLIKE rampage, OVERLOAD). Skips bosses (they don't flinch) and EMP'd/dead
+## units (handled in EnemyBase.startle).
+func startle_enemies(pos: Vector3, radius: float, duration: float = 0.9) -> void:
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and e.score_value < 1000 \
+				and (e as Node3D).global_position.distance_to(pos) <= radius:
+			e.startle(pos, duration)
+
+func rampage_damage_mult() -> float:
+	return RAMPAGE_DMG[rampage_tier]
+
+func rampage_fire_mult() -> float:
+	return RAMPAGE_FIRE[rampage_tier]
+
+func rampage_speed_mult() -> float:
+	return RAMPAGE_SPEED[rampage_tier]
+
+# ---------- ADRENALINE SURGE: clutch near-death comeback ----------
+## The defensive counterpart to RAMPAGE. Dropping to critical HP kicks a brief
+## bullet-time beat, a small heal, and a short offensive/mobility surge so a
+## near-death moment becomes a dramatic comeback instead of a death spiral.
+## Cooldown-gated so it stays a rare clutch, never a constant crutch.
+const ADRENALINE_TRIGGER_FRAC := 0.25   ## HP fraction the surge fires below
+const ADRENALINE_DURATION := 5.0        ## seconds the buff lasts
+const ADRENALINE_COOLDOWN := 16.0       ## lockout after it ends
+const ADRENALINE_DMG := 1.3             ## damage mult while surging
+const ADRENALINE_FIRE := 1.25           ## fire-rate mult while surging
+const ADRENALINE_SPEED := 1.15          ## move-speed mult while surging
+const ADRENALINE_HEAL := 12.0           ## instant breathing-room heal on trigger
+signal adrenaline_changed(active: bool) ## Surge started/ended — HUD banner + vignette.
+var adrenaline_left: float = 0.0
+var _adrenaline_cd: float = 0.0
+
+## Called by the player when its HP crosses below the critical line. Returns true
+## if a fresh surge actually fired (so the caller can skip duplicate cues).
+func try_adrenaline() -> bool:
+	if current_state != State.PLAYING:
+		return false
+	if adrenaline_left > 0.0 or _adrenaline_cd > 0.0:
+		return false
+	adrenaline_left = ADRENALINE_DURATION
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		var d = player.get_node_or_null("Damageable")
+		if d and d.has_method("heal"):
+			d.heal(ADRENALINE_HEAL)
+	hit_stop(0.28, 0.5) # a distinct bullet-time beat, slower than a kill's micro-punch
+	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.7)
+	teach_once("adrenaline", MECHANIC_HINTS["adrenaline"])
+	adrenaline_changed.emit(true)
+	return true
+
+func adrenaline_damage_mult() -> float:
+	return ADRENALINE_DMG if adrenaline_left > 0.0 else 1.0
+
+func adrenaline_fire_mult() -> float:
+	return ADRENALINE_FIRE if adrenaline_left > 0.0 else 1.0
+
+func adrenaline_speed_mult() -> float:
+	return ADRENALINE_SPEED if adrenaline_left > 0.0 else 1.0
+
+# ---------- PERFECT DODGE: skill-expression reward ----------
+## Rewards a dash that actually phases through an incoming hit (its i-frames
+## negate a shot/melee). Skillful, reactive play — the third engagement pillar
+## alongside RAMPAGE (winning) and ADRENALINE (surviving). The player calls
+## reward_perfect_dodge() from its shield-hit hook, once per dash.
+const PERFECT_DODGE_SCORE := 75            ## bonus points per clean dodge
+const PERFECT_DODGE_ADREN_REFUND := 3.0    ## seconds shaved off the adrenaline lockout
+signal perfect_dodge()                     ## HUD banner + slow-mo cue.
+
+func reward_perfect_dodge() -> void:
+	if current_state != State.PLAYING:
+		return
+	add_score(PERFECT_DODGE_SCORE)
+	# A crisp bullet-time snap sells the read; shorter than a kill cinematic.
+	combat_hitstop(0.35, 0.09)
+	# Reactive play chips away at the clutch-surge lockout, tying the systems.
+	if _adrenaline_cd > 0.0:
+		_adrenaline_cd = maxf(0.0, _adrenaline_cd - PERFECT_DODGE_ADREN_REFUND)
+	stat_dodges += 1
+	teach_once("dodge", MECHANIC_HINTS["dodge"])
+	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
+	perfect_dodge.emit()
+
+# ---------- EXECUTION: melee finisher on a weakened enemy ----------
+## A melee shove into a low-HP non-boss instakills it (see Player._do_melee).
+## Small bonus + a heavier crunch + callout so finishing a stagger by hand feels
+## like a takedown. The kill's own score/combo still lands via add_kill.
+const EXECUTE_BONUS := 60
+signal execution(world_pos: Vector3)
+
+func reward_execution(world_pos: Vector3) -> void:
+	if current_state != State.PLAYING:
+		return
+	add_score(EXECUTE_BONUS)
+	stat_executions += 1
+	teach_once("execution", MECHANIC_HINTS["execution"])
+	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
+	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
+	execution.emit(world_pos)
+
+# ---------- OVERLOAD: charge-and-unleash ultimate ----------
+## A meter the player builds by fighting (kills + damage dealt) and unleashes as a
+## screen-clearing shockwave (see Player._unleash_overload) — a panic-button power
+## peak the arsenal otherwise lacks. Charge is per-level.
+const ULT_PER_KILL := 0.085      ## charge gained per kill (~12 kills to fill)
+const ULT_PER_DAMAGE := 0.0004   ## charge per point of damage dealt (smooths the fill)
+signal ultimate_changed(charge: float) ## 0..1 meter — HUD gauge.
+signal ultimate_ready()                 ## crossed to full — HUD prompt + chirp.
+signal ultimate_fired()                 ## unleashed — HUD flash.
+var ultimate_charge: float = 0.0
+
+func add_ultimate_charge(amount: float) -> void:
+	if current_state != State.PLAYING or ultimate_charge >= 1.0 or amount <= 0.0:
+		return
+	var was := ultimate_charge
+	ultimate_charge = clampf(ultimate_charge + amount, 0.0, 1.0)
+	ultimate_changed.emit(ultimate_charge)
+	if was < 1.0 and ultimate_charge >= 1.0:
+		AudioBus.play_synth_ui("combo_up", 0.0, 1.5)
+		teach_once("overload", MECHANIC_HINTS["overload"])
+		ultimate_ready.emit()
+
+func ultimate_ready_state() -> bool:
+	return ultimate_charge >= 1.0
+
+## Spend a full meter (Player calls this on the OVERLOAD keypress). Returns false
+## if not charged, so the player can play a denied click instead.
+func consume_ultimate() -> bool:
+	if ultimate_charge < 1.0:
+		return false
+	ultimate_charge = 0.0
+	ultimate_changed.emit(0.0)
+	ultimate_fired.emit()
+	return true
+
+# ---------- COMBAT DIRECTIVE: per-level roguelite mutator ----------
+## At the start of each (non-boss) level there's a chance the run rolls a DIRECTIVE
+## that reshapes the rules — a high-risk/high-reward twist for replay variety. All
+## effects route through the mult getters below (damage dealt/taken, move, loot,
+## bounty cadence) so a directive is fully contained and reverts on the next level.
+const DIRECTIVE_CHANCE := 0.6 ## odds a level rolls one at all
+const DIRECTIVES := [
+	{"id": "glass_cannon", "name": "GLASS CANNON",
+		"desc": "+50% damage dealt — but you take +40% more", "damage": 1.5, "incoming": 1.4},
+	{"id": "juggernaut", "name": "JUGGERNAUT",
+		"desc": "Take 40% less damage — deal 10% less", "incoming": 0.6, "damage": 0.9},
+	{"id": "spoils", "name": "SPOILS OF WAR",
+		"desc": "Every kill drops double loot", "pickup": 2.0},
+	{"id": "blitz", "name": "BLITZ",
+		"desc": "+20% move speed — but +20% damage taken", "move": 1.2, "incoming": 1.2},
+	{"id": "most_wanted", "name": "MOST WANTED",
+		"desc": "Bounties appear twice as often, worth 50% more", "bounty_interval": 0.4, "bounty_bonus": 1.5},
+]
+signal directive_set(name: String, desc: String) ## Level's directive (or "" for none) — HUD callout.
+var directive_id: String = ""
+var directive: Dictionary = {}
+
+func roll_directive() -> void:
+	directive = {}
+	directive_id = ""
+	if randf() <= DIRECTIVE_CHANCE:
+		var d: Dictionary = DIRECTIVES[randi() % DIRECTIVES.size()]
+		directive = d
+		directive_id = String(d["id"])
+	directive_set.emit(String(directive.get("name", "")), String(directive.get("desc", "")))
+
+func directive_damage_mult() -> float: return float(directive.get("damage", 1.0))
+func directive_incoming_mult() -> float: return float(directive.get("incoming", 1.0))
+func directive_move_mult() -> float: return float(directive.get("move", 1.0))
+func directive_pickup_mult() -> float: return float(directive.get("pickup", 1.0))
+
+# ---------- BOUNTY: a rotating hunt-the-marked-target sub-goal ----------
+## Periodically tags one live non-boss enemy as a BOUNTY: a beacon-marked target
+## worth bonus score + a guaranteed rare drop. Gives every drawn-out fight a
+## shifting objective ("go get THAT one") on top of the mandatory objectives —
+## variety and a pull through the level, distinct from elite THREATS.
+const BOUNTY_BONUS := 300               ## bonus score for claiming a bounty
+const BOUNTY_INTERVAL := 24.0           ## seconds between bounties
+const BOUNTY_LIFETIME := 45.0           ## un-mark if it survives this long (re-roll)
+const BOUNTY_MIN_ENEMIES := 3           ## only mark when a fight is actually on
+signal bounty_marked(label: String)     ## a target was tagged — HUD callout
+signal bounty_claimed(points: int)      ## the tagged target went down — HUD payoff
+var _bounty: WeakRef = null
+var _bounty_cd: float = BOUNTY_INTERVAL
+var _bounty_age: float = 0.0
+
+func _tick_bounty(delta: float) -> void:
+	if current_state != State.PLAYING:
+		return
+	var cur: Node = _bounty.get_ref() if _bounty else null
+	if cur != null and is_instance_valid(cur) and not cur.is_queued_for_deletion():
+		_bounty_age += delta
+		if _bounty_age >= BOUNTY_LIFETIME:
+			if cur.has_method("clear_bounty"):
+				cur.clear_bounty()
+			_bounty = null
+			_bounty_cd = _bounty_interval()
+		return
+	# No live bounty — count down and try to mark a new one.
+	_bounty = null
+	_bounty_cd -= delta
+	if _bounty_cd <= 0.0:
+		_try_mark_bounty()
+
+func _try_mark_bounty() -> void:
+	var candidates: Array = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and e.score_value < 1000 and e.state != EnemyBase.State.DEAD \
+				and not e.is_bounty and e.hp != null and e.hp.is_alive():
+			candidates.append(e)
+	if candidates.size() < BOUNTY_MIN_ENEMIES:
+		_bounty_cd = 4.0 # not enough of a fight yet — check back soon
+		return
+	var pick: EnemyBase = candidates[randi() % candidates.size()]
+	pick.mark_bounty()
+	_bounty = weakref(pick)
+	_bounty_age = 0.0
+	var label: String = pick._kill_label() if pick.has_method("_kill_label") else "TARGET"
+	bounty_marked.emit(label)
+
+## Seconds until the next bounty — shortened by the MOST WANTED directive.
+func _bounty_interval() -> float:
+	return BOUNTY_INTERVAL * float(directive.get("bounty_interval", 1.0))
+
+## The marked target went down (called from EnemyBase._on_died).
+func claim_bounty() -> void:
+	var pts := int(round(BOUNTY_BONUS * float(directive.get("bounty_bonus", 1.0))))
+	add_score(pts)
+	stat_bounties += 1
+	_bounty = null
+	_bounty_cd = _bounty_interval()
+	_bounty_age = 0.0
+	AudioBus.play_synth_ui("combo_up", -2.0, 0.9)
+	bounty_claimed.emit(pts)
 
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
@@ -380,12 +698,23 @@ func _reset_combo() -> void:
 	if combo != 0:
 		combo = 0
 		combo_changed.emit(0, 1.0)
+	if rampage_tier != 0:
+		rampage_tier = 0
+		rampage_changed.emit(0, "") # rampage collapses when the streak breaks
 
 func _process(delta: float) -> void:
 	if combo > 0:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			_reset_combo()
+	_tick_bounty(delta)
+	if adrenaline_left > 0.0:
+		adrenaline_left = maxf(0.0, adrenaline_left - delta)
+		if adrenaline_left <= 0.0:
+			_adrenaline_cd = ADRENALINE_COOLDOWN
+			adrenaline_changed.emit(false)
+	elif _adrenaline_cd > 0.0:
+		_adrenaline_cd = maxf(0.0, _adrenaline_cd - delta)
 	if overclock_left > 0.0:
 		overclock_left = maxf(0.0, overclock_left - delta)
 		overclock_changed.emit(overclock_left)
@@ -443,6 +772,12 @@ func overdrive_active() -> bool:
 var stat_shots: int = 0
 var stat_hits: int = 0
 var stat_damage_taken: float = 0.0
+## Highlight counters for the new engagement systems — surfaced on the debrief so
+## a run's flashy moments (executions, bounties, dodges, best streak) get credit.
+var stat_executions: int = 0
+var stat_bounties: int = 0
+var stat_dodges: int = 0
+var stat_best_rampage: int = 0
 ## Timestamp the current level attempt started. NOTE: this is reset on every
 ## load_level() call, including a TRY-AGAIN full reload — so the debrief's TIME
 ## reads "time since the last retry", not a cumulative clock across deaths.
@@ -469,6 +804,12 @@ func reset_level_stats() -> void:
 	stat_shots = 0
 	stat_hits = 0
 	stat_damage_taken = 0.0
+	stat_executions = 0
+	stat_bounties = 0
+	stat_dodges = 0
+	stat_best_rampage = 0
+	ultimate_charge = 0.0
+	ultimate_changed.emit(0.0)
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
@@ -526,6 +867,8 @@ func grade_level() -> Dictionary:
 		"kills": kills, "score": score, "difficulty": difficulty_label(),
 		"new_best": new_best, "best_grade": level_bests.get(lid, grade),
 		"deaths": level_deaths,
+		"executions": stat_executions, "bounties": stat_bounties,
+		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
@@ -566,6 +909,13 @@ func reset_run() -> void:
 	supply_grenades = 0
 	supply_health = 0.0
 	_taught.clear()
+	adrenaline_left = 0.0
+	_adrenaline_cd = 0.0
+	_bounty = null
+	_bounty_cd = BOUNTY_INTERVAL
+	_bounty_age = 0.0
+	directive = {}
+	directive_id = ""
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------
@@ -580,6 +930,16 @@ const ELITE_HINTS := {
 	"swift": "◆ ELITE · SWIFT — fast mover. Lead your shots.",
 	"warden": "◆ ELITE · WARDEN — can't be staggered. Dodge it, don't trade.",
 	"splitter": "◆ ELITE · SPLITTER — splits into skitters on death. Watch the spawn.",
+}
+
+## First-time coaching for the engagement systems — each fires once per run the
+## moment the mechanic first triggers, so players actually discover the new verbs.
+const MECHANIC_HINTS := {
+	"rampage": "🔥 RAMPAGE — kill streaks power you up. Keep the chain alive!",
+	"adrenaline": "🩸 ADRENALINE — a near-death surge kicked in. Push the counter-attack!",
+	"dodge": "✦ PERFECT DODGE — dashing (Q) through an attack dodges it. Time your dashes!",
+	"execution": "☠ EXECUTION — melee (F) finishes off weakened enemies instantly.",
+	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).
@@ -776,6 +1136,13 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		max_level_reached = maxi(max_level_reached, found)
 	if reset:
 		reset_run()
+		# Roll this level's COMBAT DIRECTIVE (skip bosses — those fights stay pure).
+		# Only on a genuine new level; a TRY-AGAIN retry (reset=false) keeps it.
+		if not LevelDefs.level_is_boss(level_id_from_path(scene_path)):
+			roll_directive()
+		else:
+			directive = {}
+			directive_id = ""
 	reset_level_stats()
 	set_state(State.PLAYING)
 	if found != -1:

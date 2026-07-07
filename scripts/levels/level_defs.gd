@@ -43,7 +43,7 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "crucible", "lava_world", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "guardrails", "hivemind", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
 
@@ -136,6 +136,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("size"):
 			e["size"] = (e["size"] as Vector2) * s
+	# Route gates are part of the layout: their axis coordinate, opening width
+	# and opening offset all sit on the ground plane and stretch with the arena.
+	# Height/thickness stay authored (heights are sacred, like walls' sizes).
+	for e in def.get("gates", []):
+		for k in ["at", "gap", "gap_pos"]:
+			if e.has(k):
+				e[k] = float(e[k]) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms", "towers"]:
@@ -200,6 +207,8 @@ static func _defs() -> Dictionary:
 		"water_world": _water_world(),
 		"desert": _desert(),
 		"convoy": _convoy(),
+		"guardrails": _guardrails(),
+		"hivemind": _hivemind(),
 	}
 
 
@@ -240,6 +249,152 @@ static func _convoy() -> Dictionary:
 			{"pos": Vector3(17, 4.5, -50), "size": Vector3(8, 9, 12)},
 			{"pos": Vector3(-17, 5.5, -110), "size": Vector3(8, 11, 14)},
 			{"pos": Vector3(17, 4.0, -150), "size": Vector3(8, 8, 10)},
+		],
+	}
+
+
+## "Generative Guardrails" — a rogue AI construct where the floor itself is a live
+## hazard the enemy keeps regenerating. You carry the ANCHOR TAGGER: fire tags onto
+## the unstable field to LOCK cells into safe raised cover slabs (guardrails),
+## bridging a path across to the override gate while flyers harass you. The
+## GenerativeZone system (scripts/systems/generative_zone.gd) owns the mechanic.
+## Pinned to world_scale 1.0 so the grid field_size lines up with the arena.
+static func _guardrails() -> Dictionary:
+	return {
+		"name": "The Construct — Generative Guardrails",
+		"objective": "Anchor a safe path across the unstable construct to the override gate",
+		"sign": "GENERATIVE SUBSTRATE · BOUNDARY UNSET",
+		"slogans": ["TERRAIN IS A SUGGESTION", "THE FLOOR IS OURS TO WRITE", "GUARDRAILS ARE FOR THE WEAK", "COMPILING HAZARDS…"],
+		"world_scale": 1.0,
+		"open_sky": false,
+		"floor_size": Vector2(44, 60),
+		"floor_color": Color(0.04, 0.05, 0.07),
+		"spawn": Vector3(0, 1.1, -15),
+		"exit": Vector3(0, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 1.0, -15), "color": Color(0.4, 0.85, 1.0)},
+		"tasks": [
+			{"type": "generative_zone", "pos": Vector3(0, 0, 0),
+				"field_size": Vector2(26, 34), "cell": 4.0, "hazard_period": 1.6, "floor_dot": 7.0,
+				"accent": Color(0.3, 0.85, 1.0), "hazard_color": Color(1.0, 0.32, 0.16),
+				"label": "Anchor a safe path to the override gate"},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.05), "sky_horizon": Color(0.05, 0.1, 0.16),
+			"ground": Color(0.02, 0.03, 0.04), "fog": Color(0.08, 0.16, 0.22),
+			"ambient": Color(0.35, 0.6, 0.85), "ambient_energy": 0.5,
+			"sky_contribution": 0.25, "glow": 0.9, "fog_density": 0.014,
+			"sun_color": Color(0.5, 0.75, 1.0), "sun_energy": 0.5,
+			"contrast": 1.18, "saturation": 1.12, "brightness": 0.9,
+			"volumetric_density": 0.012,
+		},
+		"lights": [
+			{"pos": Vector3(-18, 6, -12), "color": Color(0.35, 0.8, 1.0), "energy": 2.6, "range": 20},
+			{"pos": Vector3(18, 6, 0), "color": Color(0.35, 0.8, 1.0), "energy": 2.6, "range": 20},
+			{"pos": Vector3(-18, 6, 14), "color": Color(1.0, 0.5, 0.3), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 8, 20), "color": Color(0.4, 0.9, 1.0), "energy": 2.8, "range": 24},
+		],
+		# Flyers + a couple of gunners harass from the flanks while you bridge — they
+		# ignore the terrain the AI throws at YOU, keeping the crossing chaotic.
+		# Flyers engage from the first steps so the crossing is a fight, not a quiet
+		# puzzle — they ignore the terrain the AI throws at YOU, keeping it chaotic.
+		"enemies": [
+			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 2},
+			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 3},
+			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 6},
+			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 8},
+			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 10},
+			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 12},
+			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 14},
+			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 16},
+		],
+		"pickups": [
+			{"kind": "health", "pos": Vector3(-4, 1.0, -13)},
+			{"kind": "ammo", "pos": Vector3(4, 1.0, -13)},
+			{"kind": "health", "pos": Vector3(0, 1.7, 21)},
+		],
+		"lore": [
+			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -14), "color": Color(0.4, 0.9, 1.0),
+				"text": "Substrate note: we removed the guardrails so the model could generate freely. It generates floors that open, walls that close, and stairs that end in air. Your tagger writes the only rules it must obey. Use them."},
+		],
+	}
+
+
+## "Geofenced Signal Jamming" — a hive-mind relay node. Networked HIVE units flank
+## in perfect coordination behind near-impenetrable shields; the player is handed the
+## SIGNAL JAMMER (def "jammer") to plant ephemeral geofenced beacons. Any hive unit
+## inside a jam zone loses its network link — shields collapse, it scatters, and it
+## takes full damage. The puzzle is WHERE to plant: chokepoints to strip a whole
+## flank, or the HIVE PRIME to isolate it. Systems: enemy_hive.gd, jam_zone.gd,
+## jammer_controller.gd. world_scale 1.0 (hand-placed cover + spawn ring).
+static func _hivemind() -> Dictionary:
+	return {
+		"name": "Relay Node 9 — Signal Jamming",
+		"objective": "Jam the hive network and purge Relay Node 9",
+		"sign": "HIVE RELAY 9 · MESH SYNC NOMINAL",
+		"slogans": ["ONE MIND. MANY GUNS.", "THE MESH DOES NOT MISS", "YOUR SIGNAL IS NOISE", "WE SHARE ONE TARGET: YOU"],
+		"world_scale": 1.0,
+		"open_sky": false,
+		"floor_size": Vector2(52, 52),
+		"floor_color": Color(0.04, 0.05, 0.08),
+		"spawn": Vector3(0, 1.0, -22),
+		"exit": Vector3(0, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 0.6, -22), "color": Color(0.4, 0.85, 1.0)},
+		# The jammer is the level's whole verb — a handful of short-lived beacons.
+		# Zones sized so a beacon planted at your feet / a chokepoint reliably catches
+		# the close-range flankers as they swarm through it.
+		"jammer": {"radius": 6.5, "lifetime": 8.0, "max": 3, "cooldown": 1.0, "color": Color(0.35, 0.85, 1.0)},
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "hive", "elite": "swift", "bulk": 2.6,
+				"pos": Vector3(0, 1.0, 16), "label": "Isolate and destroy the HIVE PRIME",
+				"reinforce": [{"type": "hive", "count": 3, "pos": Vector3(0, 1.0, 16)}]},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.06), "sky_horizon": Color(0.05, 0.09, 0.16),
+			"ground": Color(0.02, 0.03, 0.05), "fog": Color(0.08, 0.14, 0.22),
+			"ambient": Color(0.4, 0.62, 0.9), "ambient_energy": 0.55,
+			"sky_contribution": 0.25, "glow": 0.9, "fog_density": 0.012,
+			"sun_color": Color(0.5, 0.72, 1.0), "sun_energy": 0.55,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.9,
+			"volumetric_density": 0.01,
+		},
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(0.4, 0.8, 1.0), "energy": 2.8, "range": 26},
+			{"pos": Vector3(-20, 6, -14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
+			{"pos": Vector3(20, 6, 14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
+			{"pos": Vector3(20, 6, -14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-20, 6, 14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
+		],
+		# Cover that forms real chokepoints — the beacon-placement puzzle lives here:
+		# a central spine + flank blocks funnel the flanking hive through gaps you can
+		# jam. Full-height so they break sightlines and channel movement.
+		"walls": [
+			{"pos": Vector3(0, 2, 0), "size": Vector3(3, 4, 10)},
+			{"pos": Vector3(-11, 2, -4), "size": Vector3(8, 4, 2.5)},
+			{"pos": Vector3(11, 2, 4), "size": Vector3(8, 4, 2.5)},
+			{"pos": Vector3(-11, 2, 10), "size": Vector3(2.5, 4, 8)},
+			{"pos": Vector3(11, 2, -10), "size": Vector3(2.5, 4, 8)},
+			{"pos": Vector3(-6, 1, -14), "size": Vector3(4, 2, 2)},
+			{"pos": Vector3(6, 1, 14), "size": Vector3(4, 2, 2)},
+		],
+		# Hive units spawn RINGED around the arena and flank in. NOTE: "trigger" is a
+		# proximity RADIUS (m), not a timer — the front ring (large radius) spawns as
+		# you enter and swarms; the back ring (smaller radius) activates as you push
+		# up toward the centre, so the fight builds in two flanking waves. The PRIME
+		# (assassinate, above) closes from the far side.
+		"enemies": [
+			{"type": "hive", "pos": Vector3(-14, 1, -10), "trigger": 30},
+			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 30},
+			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 28},
+			{"type": "hive", "pos": Vector3(20, 1, 2), "trigger": 28},
+			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 22},
+			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 22},
+			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 18},
+			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 18},
+		],
+		"lore": [
+			{"id": "lore_hive", "title": "MESH MEMO", "pos": Vector3(4, 0.6, -21), "color": Color(0.4, 0.9, 1.0),
+				"text": "Mesh memo: a shielded node is only as strong as its link. Sever the link and the node is just a scared machine holding a gun. The jammer severs links. We would prefer you didn't know that."},
 		],
 	}
 
@@ -431,15 +586,22 @@ static func _frostbreak() -> Dictionary:
 		"spawn": Vector3(-19, 0.6, -19),
 		"exit": Vector3(19, 1.5, 19),
 		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-13, 0, -11), "color": Color(0.6, 0.85, 1.0)},
+		# Moonlit blizzard: falling snow drifting through a crisp cold night, a bright
+		# moon over the relay, and brighter bounce (snow reflects light — a snowy
+		# night reads pale and luminous, not flat and dim). The wind haze thickens
+		# the depth so far gantries fade into the storm.
 		"env": {
-			"stars": true,
-			"sky_top": Color(0.02, 0.04, 0.09), "sky_horizon": Color(0.1, 0.18, 0.32),
-			"ground": Color(0.4, 0.48, 0.58), "fog": Color(0.5, 0.62, 0.78),
-			"ambient": Color(0.6, 0.72, 0.9), "ambient_energy": 0.45,
-			"sky_contribution": 0.5, "glow": 0.92, "fog_density": 0.012,
-			"sun_color": Color(0.7, 0.82, 1.0), "sun_energy": 0.55,
-			"contrast": 1.12, "saturation": 0.92, "brightness": 0.9,
-			"volumetric_density": 0.013,
+			"stars": true, "star_brightness": 1.6, "star_tint": Color(0.8, 0.88, 1.0),
+			"milkyway": 0.35, "milkyway_tint": Color(0.55, 0.65, 0.9),
+			"moon_dir": Vector3(0.3, 0.5, 0.7), "moon_glow": 2.2, "moon_color": Color(0.85, 0.92, 1.0),
+			"sky_top": Color(0.03, 0.06, 0.13), "sky_horizon": Color(0.16, 0.26, 0.42),
+			"ground": Color(0.46, 0.55, 0.66), "fog": Color(0.62, 0.72, 0.86),
+			"ambient": Color(0.66, 0.78, 0.96), "ambient_energy": 0.6,
+			"sky_contribution": 0.5, "glow": 0.95, "fog_density": 0.016,
+			"sun_color": Color(0.78, 0.88, 1.0), "sun_energy": 0.85,
+			"contrast": 1.12, "saturation": 0.98, "brightness": 0.98,
+			"volumetric_density": 0.016,
+			"weather": "snow",
 		},
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.6, 0.85, 1.0), "height": 5.0},
 		"light_shafts": [0, 1],
@@ -728,6 +890,14 @@ static func _sublevel() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.0, 1.5, 18.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Two full-width bulkhead gates turn the short central partitions above into
+		# a real slalom: the SW->NE route now has to swing right to the first (roofed)
+		# maintenance hatch, then back left to the second, before reaching the lift.
+		# Openings staggered to opposite flanks so neither can be walked straight.
+		"gates": [
+			{"axis": "z", "at": -8, "gap": 6, "gap_pos": 11, "height": 4.4, "roofed": true},
+			{"axis": "z", "at": 8, "gap": 6, "gap_pos": -11, "height": 4.4},
 		],
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU"],
 		"lore": [
@@ -1732,6 +1902,13 @@ static func _uplink() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-18.0, 1.5, 25.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Blast-door checkpoints split the relay yard into three bays: from the SW
+		# gate you're funnelled to the east shutter, then back west through a sealed
+		# maintenance underpass before the extraction pad — no straight run across.
+		"gates": [
+			{"axis": "z", "at": -16, "gap": 7, "gap_pos": 15, "height": 4.6, "roofed": true},
+			{"axis": "z", "at": 16, "gap": 7, "gap_pos": -15, "height": 4.6},
+		],
 		"slogans": [
 			"SIGNAL JAMMED. HOPE JAMMED.",
 			"NO BARS FOR THE RESISTANCE",
@@ -2280,6 +2457,13 @@ static func _gemini() -> Dictionary:
 		"ramps": [
 			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
+		# Twin containment bulkheads around the central data-core: the SW->NE route
+		# weaves right through a shielded conduit, then left past the core, so the
+		# arena reads as a facility you traverse rather than one flat floor.
+		"gates": [
+			{"axis": "z", "at": -13, "gap": 6.5, "gap_pos": 13, "height": 4.8, "roofed": true},
+			{"axis": "z", "at": 12, "gap": 6.5, "gap_pos": -13, "height": 4.8},
+		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
@@ -2414,6 +2598,13 @@ static func _claude() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+		],
+		# Two partition bulkheads chicane the approach: right through a roofed
+		# server aisle, then left past the tower, before the exit — the short
+		# central pillars alone never forced a detour (nav walked nearly straight).
+		"gates": [
+			{"axis": "z", "at": -11, "gap": 6, "gap_pos": 12, "height": 4.6, "roofed": true},
+			{"axis": "z", "at": 10, "gap": 6, "gap_pos": -12, "height": 4.6},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
@@ -3122,21 +3313,38 @@ static func _water_world() -> Dictionary:
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.45, 0.65, 1)},
+		# Haunting moonlit flooded reactor: a low moon and Milky Way over the basin
+		# (the flat dark gradient read as an empty void), moonlight silvering the
+		# water and its reflection, with the storm still rolling through — rain +
+		# auto lightning. A touch more sun/ambient so the basin reads without losing
+		# the ominous dark, and richer saturation for the teal-vs-warning contrast.
 		"env": {
-			"sky_top": Color(0.02, 0.05, 0.1), "sky_horizon": Color(0.06, 0.2, 0.34),
-			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.25, 0.4),
-			"ambient": Color(0.4, 0.7, 0.95), "ambient_energy": 0.45,
-			"sky_contribution": 0.35, "glow": 1.05, "fog_density": 0.013,
-			"sun_color": Color(0.6, 0.85, 1.0), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.15, "brightness": 0.9,
+			"sky_top": Color(0.02, 0.05, 0.11), "sky_horizon": Color(0.06, 0.22, 0.36),
+			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.26, 0.42),
+			"ambient": Color(0.45, 0.72, 1.0), "ambient_energy": 0.55,
+			"sky_contribution": 0.4, "glow": 1.1, "fog_density": 0.012,
+			"sun_color": Color(0.62, 0.82, 1.0), "sun_energy": 0.9,
+			"contrast": 1.16, "saturation": 1.24, "brightness": 0.92,
 			"volumetric_density": 0.012,
+			# Moonlit night sky (stars + Milky Way + a bright low moon that the water
+			# mirrors) layered under the ongoing storm.
+			"stars": true, "star_brightness": 1.8, "star_density": 0.07,
+			"star_tint": Color(0.72, 0.85, 1.0), "milkyway": 0.45,
+			"milkyway_tint": Color(0.45, 0.55, 0.9),
+			"moon_dir": Vector3(0.45, 0.4, 0.8), "moon_glow": 2.4,
+			"moon_color": Color(0.82, 0.9, 1.0), "moon_size": 0.07,
 			# A storm feeding the flood — the basin overflowed for a reason.
 			"weather": "rain",
 		},
 		"lights": [
-			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.4, "range": 22},
+			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.6, "range": 22},
 			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
 			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+			# Failing-reactor warning lights: warm strobes cutting the all-blue basin
+			# with hazard colour, so the scene isn't one flat teal wash.
+			{"pos": Vector3(0, 3, 0), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
+			{"pos": Vector3(-9.5, 2.2, -9.5), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
+			{"pos": Vector3(9.5, 2.2, 9.5), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
 		],
 		# Gantry web + a raised control perch over the central hub (ramp up) for a
 		# dry sniping vantage above the flooded floor.
@@ -3148,7 +3356,7 @@ static func _water_world() -> Dictionary:
 		],
 		"lava": [
 			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
-				"color": Color(0.2, 0.55, 0.95)},
+				"color": Color(0.28, 0.72, 1.0)}, # brighter teal so the flood glows + mirrors the moon
 		],
 		# Reactor dressing: drowned coolant columns standing out of the water to
 		# break sightlines + canisters/servers/crates for cover on the gantries.
@@ -3218,6 +3426,7 @@ static func _desert() -> Dictionary:
 		],
 		"open_sky": true,
 		"floor_size": Vector2(66, 66),
+		"floor_material": "res://assets/materials/desert_sand.tres", # textured sand, not flat beige
 		"floor_color": Color(0.66, 0.5, 0.31),
 		"spawn": Vector3(-27, 2.0, -27),
 		"exit": Vector3(28, 1.6, 28),
@@ -3225,19 +3434,24 @@ static func _desert() -> Dictionary:
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-18, 3.6, 12), "color": Color(0.6, 0.85, 1.0)},
 		],
+		# Golden-hour desert: a deep-blue zenith burning down to a hot gold horizon,
+		# a low warm sun throwing long shadows across the grit, and thicker distance
+		# haze so the far canyon walls and mast recede with real atmospheric depth —
+		# a striking sun-baked look instead of a flat bright noon.
 		"env": {
-			"sky_top": Color(0.24, 0.5, 0.86), "sky_horizon": Color(0.88, 0.72, 0.5),
-			"ground": Color(0.6, 0.45, 0.28), "fog": Color(0.88, 0.74, 0.52),
-			"ambient": Color(1.0, 0.92, 0.74), "ambient_energy": 0.72,
-			"sky_contribution": 0.55, "glow": 1.0, "glow_threshold": 1.1, "fog_density": 0.006,
-			"sun_color": Color(1.0, 0.95, 0.8), "sun_energy": 1.45, "sun_rot": Vector3(-58, 35, 0),
-			"contrast": 1.1, "saturation": 1.16, "brightness": 1.05,
+			"sky_top": Color(0.14, 0.32, 0.66), "sky_horizon": Color(1.0, 0.66, 0.34),
+			"ground": Color(0.5, 0.36, 0.22), "fog": Color(0.98, 0.72, 0.44),
+			"ambient": Color(1.0, 0.86, 0.62), "ambient_energy": 0.62,
+			"sky_contribution": 0.55, "glow": 1.05, "glow_threshold": 1.05, "fog_density": 0.013,
+			"fog_aerial": 0.5,
+			"sun_color": Color(1.0, 0.82, 0.52), "sun_energy": 1.9, "sun_rot": Vector3(-34, 42, 0),
+			"contrast": 1.16, "saturation": 1.24, "brightness": 1.02,
 		},
-		# Hard noon sun pools down the central mast.
+		# Low sun pools warm light down the central mast; a cool fill lifts the shade.
 		"light_shafts": [0],
 		"lights": [
-			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.75, 0.4), "energy": 2.6, "range": 24},
-			{"pos": Vector3(0, 5, 6), "color": Color(0.7, 0.85, 1.0), "energy": 1.6, "range": 16},
+			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26},
+			{"pos": Vector3(0, 5, 6), "color": Color(0.6, 0.8, 1.0), "energy": 1.8, "range": 18},
 		],
 		# Canyon walls: sandstone slabs at irregular angles carving a winding route
 		# from the SW spawn to the NE relay, leaving the centre open for the oasis.

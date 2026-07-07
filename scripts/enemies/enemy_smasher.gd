@@ -31,6 +31,19 @@ extends EnemyBase
 @export_group("Charge")
 @export var charge_speed: float = 13.0    ## Lunge speed used to close on a distant target.
 
+@export_group("Claw Rake")
+## Signature move that matches the clawed chassis: a rearing, screeching LUNGE that
+## rakes its talons through you as it closes — a fast, mobile mid-range gap-closer
+## distinct from the planted overhead hammer and the point-blank ground slam. This
+## is what makes BEHEMOTH-X a berserker, not just a siege fist.
+@export var rake_damage: float = 34.0
+@export var rake_range: float = 18.0      ## Furthest distance it will commit a lunge-rake from.
+@export var rake_reach: float = 4.6       ## Talon reach that connects mid-lunge.
+@export var rake_arc_deg: float = 90.0    ## Frontal cone the rake sweeps.
+@export var rake_speed: float = 23.0
+@export var rake_cooldown: float = 5.5
+@export var rake_windup: float = 0.42
+
 @onready var _reactor: MeshInstance3D = $Reactor
 @onready var _eye_light: SpotLight3D = $Head/Eye/EyeLight
 @onready var _head: Node3D = $Head
@@ -43,6 +56,11 @@ var _smash_cd: float = 1.0
 var _slam_cd: float = 3.0
 var _smash_windup_t: float = 0.0
 var _slam_windup_t: float = 0.0
+var _rake_cd: float = 3.5
+var _rake_windup_t: float = 0.0
+var _rake_lunge_t: float = 0.0
+var _rake_dir: Vector3 = Vector3.FORWARD
+var _rake_hit: bool = false
 
 # Brief invulnerable "wake" roar before it engages.
 var _wake: float = 1.4
@@ -147,6 +165,33 @@ func _physics_process(delta: float) -> void:
 			pl.shake(0.6)
 	_smash_cd = maxf(0.0, _smash_cd - delta)
 	_slam_cd = maxf(0.0, _slam_cd - delta)
+	_rake_cd = maxf(0.0, _rake_cd - delta)
+	# Claw-rake windup: rear back on its heels, talons raised, then launch.
+	if _rake_windup_t > 0.0:
+		_rake_windup_t -= delta
+		_decelerate()
+		_face_target(delta)
+		if _visual_root:
+			_visual_root.rotation.x = _visual_base_rot.x + 0.4 * minf(1.0, (rake_windup - _rake_windup_t) * 4.0)
+		if _rake_windup_t <= 0.0:
+			_launch_rake()
+		_apply_gravity(delta)
+		move_and_slide()
+		return
+	# Claw-rake lunge: surge forward, talons out, raking anything in the arc.
+	if _rake_lunge_t > 0.0:
+		_rake_lunge_t -= delta
+		if _visual_root:
+			_visual_root.rotation.x = _visual_base_rot.x - 0.45 # lean into the slash
+		_apply_gravity(delta)
+		move_and_slide()
+		_rake_check()
+		if _rake_lunge_t <= 0.0:
+			if _visual_root:
+				_visual_root.rotation.x = _visual_base_rot.x
+			velocity.x = 0.0
+			velocity.z = 0.0
+		return
 	# Resolve in-flight windups.
 	if _smash_windup_t > 0.0:
 		_smash_windup_t -= delta
@@ -182,6 +227,10 @@ func _state_attack(delta: float) -> void:
 		if _smash_cd <= 0.0 and dist <= smash_range:
 			_begin_smash()
 			return
+		# Mid-range: lunge-rake to close the gap WITH a hit, instead of a plain charge.
+		if _rake_cd <= 0.0 and dist > smash_range and dist <= rake_range:
+			_begin_rake()
+			return
 	if dist > smash_range * 0.85:
 		_charge(delta)
 	else:
@@ -196,6 +245,82 @@ func _charge(delta: float) -> void:
 	dir = dir.normalized()
 	velocity.x = move_toward(velocity.x, dir.x * charge_speed, 18.0 * delta)
 	velocity.z = move_toward(velocity.z, dir.z * charge_speed, 18.0 * delta)
+
+# ---------- signature: claw rake lunge ----------
+
+func _begin_rake() -> void:
+	_rake_windup_t = rake_windup
+	_rake_cd = rake_cooldown
+	_rake_hit = false
+	recoil = 1.0
+	AudioBus.play_synth_at("charge", global_position, -2.0, 1.3) # a rising shriek
+	AudioBus.play_synth_at("overlord_glitch", global_position, -8.0, 1.6)
+
+func _launch_rake() -> void:
+	if target == null or not is_instance_valid(target):
+		_rake_lunge_t = 0.0
+		return
+	var dir := target.global_position - global_position
+	dir.y = 0.0
+	if dir.length() < 0.05:
+		return
+	_rake_dir = dir.normalized()
+	velocity = _rake_dir * rake_speed
+	_rake_lunge_t = 0.42
+	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.6)
+	_claw_slash_fx()
+
+## Checks the rake arc once per lunge frame; connects a single big talon hit.
+func _rake_check() -> void:
+	if _rake_hit:
+		return
+	var p := get_tree().get_first_node_in_group("player")
+	if p == null or not (p is Node3D):
+		return
+	var to: Vector3 = (p as Node3D).global_position - global_position
+	to.y = 0.0
+	if to.length() <= rake_reach and rad_to_deg(_rake_dir.angle_to(to)) <= rake_arc_deg * 0.5:
+		_rake_hit = true
+		var d := p.get_node_or_null("Damageable")
+		if d:
+			d.apply_damage(rake_damage, self)
+		if p.has_method("shake"):
+			p.shake(0.9)
+		if to.length() > 0.1 and "velocity" in p:
+			p.velocity += to.normalized() * 11.0 + Vector3.UP * 3.5 # flung by the swipe
+		AudioBus.play_synth_at("impact_metal", (p as Node3D).global_position, 0.0, 0.7)
+		_claw_slash_fx()
+
+## Three glowing talon streaks fanned across the swing — the visible claw slash.
+func _claw_slash_fx() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(1.0, 0.35, 0.2, 0.9)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.25, 0.12)
+	mat.emission_energy_multiplier = 7.0
+	var centre := global_position - global_transform.basis.z * 3.2 + Vector3.UP * 4.2
+	var right := global_transform.basis.x
+	for i in 3:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.14, 5.5, 0.14) # a long thin slash streak
+		bm.material = mat
+		mi.mesh = bm
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		scene.add_child(mi)
+		mi.global_position = centre + right * (float(i) - 1.0) * 1.0
+		mi.rotation = Vector3(0, 0, deg_to_rad(28.0)) # diagonal rake
+		mi.rotation.y = rotation.y
+		var tw := mi.create_tween().set_parallel(true)
+		tw.tween_property(mi, "transparency", 1.0, 0.24) # fade the streak out
+		tw.tween_property(mi, "scale", Vector3(1, 1.25, 1), 0.24)
+		tw.chain().tween_callback(mi.queue_free)
 
 # ---------- overhead fist-smash ----------
 

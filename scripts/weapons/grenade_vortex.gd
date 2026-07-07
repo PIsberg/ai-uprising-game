@@ -12,9 +12,9 @@ const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
 @export var implode_time: float = 0.95    ## How long the well pulls before it detonates.
 @export var pull_radius: float = 9.5      ## Robots inside this get hauled toward the core.
 @export var pull_strength: float = 9.0    ## Inward speed (m/s at full ramp) of the haul-in.
-@export var damage: float = 16.0
-@export var splash_radius: float = 6.5
-@export var splash_damage: float = 130.0  ## Big — and it lands on a clustered pack.
+@export var damage: float = 30.0
+@export var splash_radius: float = 8.0
+@export var splash_damage: float = 200.0  ## Big — and it lands on a clustered pack.
 
 var _shooter: Node
 var _t: float = 0.0

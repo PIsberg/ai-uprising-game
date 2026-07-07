@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://yihxy7afxmav"
-path="res://.godot/imported/robot-killer_model_27.jpg-02f3ba2b279cee5f2da9ce1db3b54e86.ctex"
+path.s3tc="res://.godot/imported/robot-killer_model_27.jpg-02f3ba2b279cee5f2da9ce1db3b54e86.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5bfed24328f6c326f4f7af8eb65cecb1"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/robots/robot-killer_model_27.jpg"
-dest_files=["res://.godot/imported/robot-killer_model_27.jpg-02f3ba2b279cee5f2da9ce1db3b54e86.ctex"]
+dest_files=["res://.godot/imported/robot-killer_model_27.jpg-02f3ba2b279cee5f2da9ce1db3b54e86.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

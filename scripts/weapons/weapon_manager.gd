@@ -179,7 +179,28 @@ func _register_alt_fire_action() -> void:
 	mb.button_index = MOUSE_BUTTON_XBUTTON1
 	InputMap.action_add_event("alt_fire", mb)
 
+## Diagnostic watchdog for the intermittent "lose my weapon on first shot" report:
+## logs (to the game log) any time the equipped weapon unexpectedly disappears —
+## goes null/freed, or turns invisible while it should be drawn — with the state
+## at that moment. Edge-triggered so it prints once per transition, not per frame.
+var _watch_ok: bool = true
+func _watch_weapon() -> void:
+	if current == null or not is_instance_valid(current):
+		if _watch_ok:
+			_watch_ok = false
+			push_warning("[WEAPON-WATCH] equipped weapon became null/freed (weapons=%d index=%d state=%d)"
+				% [weapons.size(), current_index, GameState.current_state])
+		return
+	# While a weapon is drawn (not mid-swap), it must be visible. Flag the drop.
+	var drawn_ok := current.visible or _equip_timer > 0.0
+	if drawn_ok != _watch_ok:
+		_watch_ok = drawn_ok
+		if not drawn_ok:
+			push_warning("[WEAPON-WATCH] '%s' went INVISIBLE while drawn (mag=%d reserve=%d reloading=%s equip_timer=%.2f state=%d)"
+				% [current.name, current.mag, current.reserve, current._reloading, _equip_timer, GameState.current_state])
+
 func _process(delta: float) -> void:
+	_watch_weapon()
 	if _equip_timer > 0.0:
 		_equip_timer -= delta
 	# Number-key weapon selection (1-9) is handled in _input(). Wheel cycling is

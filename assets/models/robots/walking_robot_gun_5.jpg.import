@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://h4pxe77fom3h"
-path="res://.godot/imported/walking_robot_gun_5.jpg-278991a8cd84e8cbacad3a6fba7705d1.ctex"
+path.s3tc="res://.godot/imported/walking_robot_gun_5.jpg-278991a8cd84e8cbacad3a6fba7705d1.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a825fd50fe99cdb1cac5ec86e7b00819"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/robots/walking_robot_gun_5.jpg"
-dest_files=["res://.godot/imported/walking_robot_gun_5.jpg-278991a8cd84e8cbacad3a6fba7705d1.ctex"]
+dest_files=["res://.godot/imported/walking_robot_gun_5.jpg-278991a8cd84e8cbacad3a6fba7705d1.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

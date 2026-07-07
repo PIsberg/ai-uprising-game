@@ -34,6 +34,11 @@ extends EnemyBase
 @export var slam_trigger_range: float = 10.0
 @export var slam_cooldown: float = 5.5
 
+@export_group("Seismic footfall")
+@export var footfall_radius: float = 8.5    ## Ground crushed under each step.
+@export var footfall_damage: float = 10.0   ## Peak damage directly underfoot.
+@export var footfall_knockback: float = 10.0
+
 @onready var _muzzle_l: Node3D = $MuzzleL
 @onready var _muzzle_r: Node3D = $MuzzleR
 @onready var _muzzle_core: Node3D = $MuzzleCore
@@ -209,12 +214,17 @@ func _process(delta: float) -> void:
 		_glow_mat.emission_energy_multiplier = (4.0 + sin(_walk_phase * 2.0) * 1.5 + recoil * 6.0 + damage_heat * 6.0 + (4.0 if is_enraged() else 0.0)) * rage
 	if _eye_light:
 		_eye_light.light_energy = (3.0 + sin(_walk_phase * 2.5) * 1.0 + _entrance * 5.0) * rage
-	# Footfall booms.
+	# Footfall booms + SEISMIC SHOCKWAVE: this thing is so massive that each step
+	# quakes the ground — the screen shakes as it lumbers, an expanding dust-ring
+	# rips out from the foot, and anyone caught underfoot is flung and crushed. Its
+	# movement itself is a weapon (matches the colossal siege chassis) — you never
+	# want to be beneath it.
 	if speed > 0.1 and is_on_floor():
 		var fs := sin(_walk_phase)
 		var last := sin(_walk_phase - delta * rate)
 		if (fs > 0.0) != (last > 0.0):
 			AudioBus.play_synth_at("mech_step", global_position, 1.0, randf_range(0.6, 0.75))
+			_footfall_quake()
 
 func _physics_process(delta: float) -> void:
 	if _descending:
@@ -281,6 +291,64 @@ func _choose_attack(dist: float) -> void:
 	# Default -> artillery barrage (volley grows with phase).
 	if _artillery_cd <= 0.0:
 		_fire_artillery()
+
+# ---------- seismic footfall ----------
+
+## Every heavy step quakes the arena: a dust-ring rips outward, the camera jolts
+## (scaled by how close you are), and anyone caught under the foot is crushed and
+## flung clear. Distant steps are just an ominous rumble.
+func _footfall_quake() -> void:
+	_footfall_ring()
+	var p := get_tree().get_first_node_in_group("player")
+	if p == null or not (p is Node3D):
+		return
+	var to: Vector3 = (p as Node3D).global_position - global_position
+	to.y = 0.0
+	var d := to.length()
+	if d <= footfall_radius:
+		var prox := clampf(1.0 - d / footfall_radius, 0.0, 1.0)
+		if p.has_method("shake"):
+			p.shake(0.25 + prox * 0.55)
+		# Grace period: shake but don't crush a fresh drop-in.
+		if not GameState.attack_grace_active():
+			var dm = p.get_node_or_null("Damageable")
+			if dm:
+				dm.apply_damage(footfall_damage * maxf(prox, 0.3), self)
+			if d > 0.1 and "velocity" in p:
+				p.velocity += to.normalized() * footfall_knockback + Vector3.UP * 4.0
+	elif p.has_method("shake") and d < footfall_radius * 3.0:
+		p.shake(0.12) # far-off tremor as the giant approaches
+
+## An expanding shockwave dust-ring flung out from the foot on impact.
+func _footfall_ring() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.85
+	tm.outer_radius = 1.05
+	tm.rings = 24
+	tm.ring_segments = 6
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(1.0, 0.62, 0.3, 0.6)
+	m.emission_enabled = true
+	m.emission = Color(1.0, 0.55, 0.25)
+	m.emission_energy_multiplier = 2.2
+	tm.material = m
+	ring.mesh = tm
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.scale = Vector3(0.6, 0.1, 0.6)
+	scene.add_child(ring)
+	ring.global_position = Vector3(global_position.x, 0.2, global_position.z)
+	var tw := ring.create_tween().set_parallel(true)
+	tw.tween_property(ring, "scale", Vector3(footfall_radius, 0.05, footfall_radius), 0.4) \
+		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "transparency", 1.0, 0.4)
+	tw.chain().tween_callback(ring.queue_free)
 
 # ---------- artillery ----------
 

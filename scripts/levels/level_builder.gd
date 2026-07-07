@@ -56,6 +56,7 @@ const ENEMY_SCENES := {
 	"ronin": preload("res://scenes/enemies/ronin.tscn"),
 	"howitzer": preload("res://scenes/enemies/howitzer.tscn"),
 	"manus": preload("res://scenes/enemies/manus.tscn"),
+	"hive": preload("res://scenes/enemies/hive.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
@@ -202,6 +203,7 @@ func _ready() -> void:
 	_build_stairs(def)
 	_build_towers(def)
 	_build_platforms(def)
+	_build_gates(def)
 	_build_props(def)
 	_build_hero(def)
 	_build_nexus(def)
@@ -244,6 +246,7 @@ func _ready() -> void:
 	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
+	_build_jammer(def)
 	_build_lava(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -310,9 +313,16 @@ static func _split_tone_lut() -> GradientTexture1D:
 		return _grade_lut
 	var g := Gradient.new()
 	# Ramp offsets: 0 = shadows, 0.5 = mids (kept neutral), 1 = highlights.
-	g.set_color(0, Color(0.0, 0.03, 0.07))     # shadows lean cool teal
+	# Shadow TOE-LIFT: pure-black pixels resolve to a dark cool-teal instead of a
+	# flat void, so the ground right in front of the player and the shadowed side
+	# of a room keep their material/shape (dusk asphalt and night arenas were
+	# crushing whole regions to #000). The lift is confined to the very darkest
+	# input (rejoined to identity by offset 0.16) so midtones/contrast/mood are
+	# untouched — it recovers detail without washing the moody interiors out.
+	g.set_color(0, Color(0.055, 0.085, 0.12))  # lifted cool-teal shadows (was near-black)
+	g.add_point(0.16, Color(0.16, 0.17, 0.18))  # rejoin ~identity fast: only the deepest shadows lift
 	g.add_point(0.5, Color(0.5, 0.5, 0.5))      # mids exactly neutral (identity)
-	g.set_color(2, Color(1.0, 0.96, 0.88))      # highlights lean warm
+	g.set_color(3, Color(1.0, 0.96, 0.88))      # highlights lean warm
 	var t := GradientTexture1D.new()
 	t.gradient = g
 	t.width = 256
@@ -382,15 +392,14 @@ func _build_environment(def: Dictionary) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_color = e.get("ambient", Color(0.6, 0.65, 0.75))
 	env.ambient_light_sky_contribution = e.get("sky_contribution", 0.5)
-	# MUCH darker baseline than the defs ask for: the world lives in shadow and
-	# every light source — fixtures, muzzle flashes, bolts, explosions, pickup
-	# glows — gets to carve its own pool out of the dark. That rule is sized for
-	# INTERIORS, where fixtures cover the floor; outdoors nothing lights the
-	# streets, and the full crush left the ground an unreadable black hole at
-	# dusk (playtest: suburb hostiles vanished against the asphalt), so
-	# open-sky levels keep more of their authored ambient.
+	# Darker baseline than the defs ask for so light sources — fixtures, muzzle
+	# flashes, bolts, explosions, pickup glows — each carve their own pool out of
+	# the dark. But the interior crush (×0.38) was too aggressive: walls, floors and
+	# cover read as murky near-black with only emissives visible ("dark / unclear"),
+	# so it's lifted to ×0.55 — surfaces are now legibly lit while the scene keeps
+	# its moody, fixture-lit character. Open-sky levels keep more of their ambient.
 	env.ambient_light_energy = e.get("ambient_energy", 0.4) \
-			* (0.7 if def.get("open_sky", false) else 0.38)
+			* (0.7 if def.get("open_sky", false) else 0.55)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 0.8
 	env.tonemap_white = 6.0
@@ -405,21 +414,30 @@ func _build_environment(def: Dictionary) -> void:
 	env.ssr_max_steps = 48
 	env.glow_enabled = true
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
-	env.glow_intensity = e.get("glow", 0.62)
-	env.glow_strength = e.get("glow_strength", 0.9)
+	env.glow_intensity = e.get("glow", 0.55)
+	env.glow_strength = e.get("glow_strength", 0.7)
 	# Bloom bleed: levels can crank this for a hazy neon-noir look where bright
-	# signs/lights smear into a fuzzy glow (default keeps edges crisp).
-	env.glow_bloom = e.get("glow_bloom", 0.05)
-	env.glow_hdr_threshold = e.get("glow_threshold", 1.25) # low enough that enemy emissives halo in the dark
+	# signs/lights smear into a fuzzy glow. Default 0 keeps a CRISP halo — the old
+	# 0.05 bleed was part of why interiors read soft/unfocused (bright strips smeared
+	# into the dark instead of staying sharp).
+	env.glow_bloom = e.get("glow_bloom", 0.0)
+	# Raised so only genuinely bright emissives bloom, not every mid-lit surface —
+	# tightens the glow and stops the whole interior hazing over.
+	env.glow_hdr_threshold = e.get("glow_threshold", 1.6)
 	env.glow_hdr_scale = 1.0
-	# Soft filmic halo around emissives — narrow kernel keeps the scene crisp.
-	env.set("glow_levels/3", 1.0)
-	env.set("glow_levels/4", 0.55)
+	# Narrow the wide glow kernel: the broad upper levels spread a big soft halo that
+	# smeared light strips and hazed the whole room. Bias the bloom to the tighter
+	# levels so lights read as sharp lights, not a fog of light.
+	env.set("glow_levels/2", 0.9)
+	env.set("glow_levels/3", 0.7)
+	env.set("glow_levels/4", 0.12)
 
 	env.fog_enabled = true
 	env.fog_light_color = e.get("fog", Color(0.45, 0.5, 0.55))
 	env.fog_density = e.get("fog_density", 0.01)
-	env.fog_aerial_perspective = 0.12
+	# Aerial perspective tints distant surfaces toward the fog colour for depth;
+	# open-sky levels can crank it (e.g. a hazy sun-baked desert) via "fog_aerial".
+	env.fog_aerial_perspective = e.get("fog_aerial", 0.12)
 	env.fog_sky_affect = 0.3
 	# Interiors: pull the distance fog WAY back so enclosed walls keep their own
 	# dark color instead of washing into a bright themed band. The earlier
@@ -438,16 +456,20 @@ func _build_environment(def: Dictionary) -> void:
 	# the cheap distance fog above.
 	if not def.get("open_sky", false):
 		env.volumetric_fog_enabled = true
-		env.volumetric_fog_density = minf(e.get("fog_density", 0.01), 0.012) * 0.5
+		# Thinned: the interior veil was picking up the bright emissive grid/neon via
+		# GI and blooming into a soft milky haze that read as "blurry". Halve the
+		# density and cut the GI inject so far surfaces stay sharp — the fog is now a
+		# faint atmosphere for god-rays, not a screen-wide fog of light.
+		env.volumetric_fog_density = minf(e.get("fog_density", 0.01), 0.012) * 0.28
 		# Showcase levels can thicken the haze so light shafts/god-rays read.
 		if e.has("volumetric_density"):
 			env.volumetric_fog_density = e["volumetric_density"]
 		# A darker, less milky veil: the near-white albedo washed enclosed arenas
 		# into a flat bright haze. This keeps god-rays/shafts readable but lets the
 		# space hold shadow and depth.
-		env.volumetric_fog_albedo = Color(0.34, 0.37, 0.43)
+		env.volumetric_fog_albedo = Color(0.32, 0.35, 0.4)
 		env.volumetric_fog_length = 80.0
-		env.volumetric_fog_gi_inject = 0.25
+		env.volumetric_fog_gi_inject = 0.08
 	else:
 		env.volumetric_fog_enabled = false
 
@@ -1716,6 +1738,99 @@ func _build_platforms(def: Dictionary) -> void:
 			mat = _color_material(p["color"])
 		_add_collider_box(p["pos"], p["size"], mat)
 
+## Route gates: full-height partition walls that span the arena but leave a
+## single walk-through gap, so the player (and pathing enemies) must weave to
+## the opening instead of walking straight across. Stagger the gaps side-to-side
+## down a level and a flat box becomes a serpentine route — longer to cross and
+## bigger-feeling — while combat still plays out in the open bays between gates.
+##
+## Authored in pre-scale level coords (like walls/platforms). Each entry:
+##   {"axis": "z"|"x",   # travel direction the wall BLOCKS (its normal)
+##    "at": float,       # world coord on that axis where the wall sits
+##    "gap": float,      # width of the opening (default 5.5)
+##    "gap_pos": float,  # centre of the opening along the wall (default 0)
+##    "height": float,   # wall height (default 4.5)
+##    "thick": float,    # wall thickness (default 1.0)
+##    "roofed": bool,    # cap the gap with a lintel -> reads as a tunnel mouth
+##    "beacon": bool}    # emissive guide posts flanking the gap (default true)
+## Reachability is guaranteed by construction: the gap is never closed, and
+## tests/campaign_nav_sweep confirms spawn->exit still solves on every gated level.
+func _build_gates(def: Dictionary) -> void:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var open_sky: bool = def.get("open_sky", false)
+	var wall_mat: Material = MAT_WALL_OUT if open_sky else MAT_WALL
+	for g in def.get("gates", []):
+		var axis: String = g.get("axis", "z")
+		var at: float = g.get("at", 0.0)
+		var gap: float = g.get("gap", 5.5)
+		var gap_pos: float = g.get("gap_pos", 0.0)
+		var h: float = g.get("height", 4.5)
+		var thick: float = g.get("thick", 1.0)
+		# The wall spans the full floor extent on the axis it does NOT block.
+		var span: float = fs.x if axis == "z" else fs.y
+		var half := span * 0.5
+		var g0 := gap_pos - gap * 0.5
+		var g1 := gap_pos + gap * 0.5
+		# One wall segment either side of the opening; skip a segment that would
+		# be zero-length because the gap is hard against a perimeter wall.
+		var segs: Array = []
+		if g0 - (-half) > 0.2:
+			segs.append([(-half + g0) * 0.5, g0 - (-half)])   # [centre_along, length]
+		if half - g1 > 0.2:
+			segs.append([(g1 + half) * 0.5, half - g1])
+		for s in segs:
+			var along: float = s[0]
+			var length: float = s[1]
+			var pos: Vector3
+			var size: Vector3
+			if axis == "z":
+				pos = Vector3(along, h * 0.5, at)
+				size = Vector3(length, h, thick)
+			else:
+				pos = Vector3(at, h * 0.5, along)
+				size = Vector3(thick, h, length)
+			_add_box(pos, size, wall_mat, "surf_concrete", "", "GateWall")
+		# Optional lintel across the top of the opening -> reads as a tunnel mouth.
+		if g.get("roofed", false):
+			var cap_h := 0.7
+			var lin_pos: Vector3
+			var lin_size: Vector3
+			if axis == "z":
+				lin_pos = Vector3(gap_pos, h - cap_h * 0.5, at)
+				lin_size = Vector3(gap + thick, cap_h, thick + 1.8)
+			else:
+				lin_pos = Vector3(at, h - cap_h * 0.5, gap_pos)
+				lin_size = Vector3(thick + 1.8, cap_h, gap + thick)
+			_add_box(lin_pos, lin_size, MAT_CEIL if not open_sky else wall_mat, "surf_metal", "", "GateRoof")
+		# Guide beacons: emissive posts flanking the opening pull the eye to it
+		# from across the bay. No Light3D (per-entity lights were culled for perf)
+		# — bright unshaded strips, the same trick as the sky-bridge deck edges.
+		if g.get("beacon", true):
+			_gate_beacon(def, axis, at, gap_pos, gap, h)
+
+func _gate_beacon(def: Dictionary, axis: String, at: float, gap_pos: float, gap: float, h: float) -> void:
+	var col := _theme_color(def).lerp(Color(1.0, 0.82, 0.4), 0.45)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 3.0
+	var post_h := h - 0.3
+	for side in [-1.0, 1.0]:
+		var post := BoxMesh.new()
+		post.size = Vector3(0.15, post_h, 0.15)
+		post.material = mat
+		var mi := MeshInstance3D.new()
+		mi.mesh = post
+		var off: float = (gap * 0.5 - 0.08) * side
+		if axis == "z":
+			mi.position = Vector3(gap_pos + off, post_h * 0.5, at)
+		else:
+			mi.position = Vector3(at, post_h * 0.5, gap_pos + off)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+
 ## A solid collidable box parented under the navmesh region so its walkable TOP
 ## bakes into the navmesh — platforms, tower landings and bridge decks are
 ## real routes (enemies chase across them, and a deck bridging a hazard keeps
@@ -2120,6 +2235,23 @@ func _pos_in_lava(pos: Vector3, beds: Array, margin: float = 0.6) -> bool:
 		if absf(pos.x - bp.x) <= bs.x * 0.5 + margin and absf(pos.z - bp.z) <= bs.y * 0.5 + margin:
 			return true
 	return false
+
+## Grant the SIGNAL JAMMER on levels that ask for it (def "jammer": true, or a
+## dict of {radius,lifetime,max,cooldown,color}). The controller registers the
+## beacon input and manages the ephemeral jam zones. See jammer_controller.gd.
+func _build_jammer(def: Dictionary) -> void:
+	var j = def.get("jammer", null)
+	if j == null or (j is bool and not j):
+		return
+	var cfg: Dictionary = j if j is Dictionary else {}
+	var jc := JammerController.new()
+	jc.zone_radius = cfg.get("radius", 5.0)
+	jc.zone_lifetime = cfg.get("lifetime", 7.0)
+	jc.max_beacons = cfg.get("max", 3)
+	jc.cooldown = cfg.get("cooldown", 1.2)
+	if cfg.has("color"):
+		jc.color = cfg["color"]
+	add_child(jc)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
@@ -3392,6 +3524,47 @@ func _build_weather(def: Dictionary) -> void:
 		p.mesh = streak
 		p.position = Vector3(0, 15.0, 0)
 		add_child(p)
+	elif w == "snow":
+		# Slow, drifting, faintly-glowing flakes that sway as they settle — a soft
+		# blizzard for frost levels. Much slower + fluffier + brighter than rain.
+		var p := CPUParticles3D.new()
+		p.amount = int(300 * density)
+		p.lifetime = 7.0
+		p.preprocess = 6.0 # already snowing on load
+		p.local_coords = false
+		p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+		p.emission_box_extents = Vector3(fs.x * 0.6, 3.0, fs.y * 0.6)
+		p.direction = Vector3(0.25, -1.0, 0.12)
+		p.spread = 12.0
+		p.initial_velocity_min = 1.0
+		p.initial_velocity_max = 2.4
+		p.gravity = Vector3(0.35, -1.6, 0.2) # gentle wind-blown drift
+		p.damping_min = 0.15
+		p.damping_max = 0.5
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.6
+		# Tumble each flake so they sway rather than slide straight down.
+		p.angle_min = -180.0
+		p.angle_max = 180.0
+		p.angular_velocity_min = -50.0
+		p.angular_velocity_max = 50.0
+		var flake := SphereMesh.new()
+		flake.radius = 0.05
+		flake.height = 0.1
+		flake.radial_segments = 5
+		flake.rings = 3
+		var sm := StandardMaterial3D.new()
+		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		sm.albedo_color = Color(0.95, 0.98, 1.0, 0.9)
+		sm.emission_enabled = true # catches the cold light so flakes twinkle
+		sm.emission = Color(0.8, 0.9, 1.0)
+		sm.emission_energy_multiplier = 0.6
+		flake.material = sm
+		p.mesh = flake
+		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		p.position = Vector3(0, 13.0, 0)
+		add_child(p)
 	elif w == "dust":
 		var p := CPUParticles3D.new()
 		p.amount = int(180 * density)
@@ -4132,6 +4305,7 @@ func _task_id(t: Dictionary) -> String:
 		"survive": return t.get("id", "survive")
 		"hold_zone": return t.get("id", "hold")
 		"assassinate": return t.get("id", "hvt")
+		"generative_zone": return t.get("id", "guardrails")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4167,6 +4341,10 @@ func _register_task_entry(t: Dictionary) -> void:
 			GameState.register_task(id, t.get("label", "Destroy the core"), 0.0, staged)
 		"assassinate":
 			GameState.register_task(id, t.get("label", "Eliminate the high-value target"), 0.0, staged)
+		"generative_zone":
+			# Goal 1.0: the manager feeds a 0..1 crossing fraction and completes it
+			# when the player reaches the override gate.
+			GameState.register_task(id, t.get("label", "Anchor a safe path to the override gate"), 1.0, staged)
 
 ## Spawn the task's world objects / hooks — the stage going "live".
 func _activate_task(t: Dictionary) -> void:
@@ -4231,6 +4409,23 @@ func _activate_task(t: Dictionary) -> void:
 			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
+		"generative_zone":
+			var gz := GenerativeZone.new()
+			gz.task_id = id
+			gz.field_center = t.get("pos", Vector3.ZERO)
+			if t.has("field_size"):
+				gz.field_size = t["field_size"]
+			if t.has("cell"):
+				gz.cell = t["cell"]
+			if t.has("accent"):
+				gz.accent = t["accent"]
+			if t.has("hazard_color"):
+				gz.hazard_color = t["hazard_color"]
+			if t.has("hazard_period"):
+				gz.hazard_period = t["hazard_period"]
+			if t.has("floor_dot"):
+				gz.floor_dot = t["floor_dot"]
+			add_child(gz)
 
 ## Objective items must be reachable. Authored task positions are NOT validated
 ## against the built geometry, so a def edit (or a building later dropped onto

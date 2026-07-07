@@ -10,8 +10,13 @@ extends Object
 static func detonate(root: Node3D, size: float = 2.2, color: Color = Color(1.0, 0.62, 0.25)) -> void:
 	_flash(root, size)
 	_fireball(root, size, color)
-	_shockwave(root, size, color)
+	_fire_column(root, size, color)         # a pillar of fire punches upward
+	_shockwave(root, size, color, 0.0, 1.0)
+	_shockwave(root, size, Color(1.0, 0.95, 0.85), 0.06, 1.35) # trailing white pressure ring
 	_embers(root, size, color)
+	_sparks(root, size, color)              # a fast bright spark shower
+	_debris(root, size, color)              # heavy tumbling chunks
+	_smoke(root, size)                      # boiling aftermath plume
 	_light_pop(root)
 	_kick_player(root, size)
 
@@ -135,14 +140,14 @@ static func _fireball(root: Node3D, size: float, color: Color) -> void:
 	mat.albedo_color = Color(1.0, 0.95, 0.8, 0.95) # white-hot at birth
 	mat.emission_enabled = true
 	mat.emission = color
-	mat.emission_energy_multiplier = 13.0 # HDR-hot core: blooms hard, sears on HDR
+	mat.emission_energy_multiplier = 18.0 # HDR-hot core: blooms hard, sears on HDR
 	sm.material = mat
 	ball.mesh = sm
 	ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ball.scale = Vector3.ONE * 0.25
 	root.add_child(ball)
 	var tw := ball.create_tween().set_parallel(true)
-	tw.tween_property(ball, "scale", Vector3.ONE * size, 0.18) \
+	tw.tween_property(ball, "scale", Vector3.ONE * size * 1.15, 0.18) \
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	# Cool from white-hot to the blast color as it expands, then burn off fast —
 	# a flash should be gone before the smoke takes over.
@@ -152,7 +157,8 @@ static func _fireball(root: Node3D, size: float, color: Color) -> void:
 	tw.chain().tween_callback(ball.queue_free)
 
 ## A flattened ring racing outward at ankle height — sells the pressure wave.
-static func _shockwave(root: Node3D, size: float, color: Color) -> void:
+## `delay` staggers a trailing ring; `reach` scales how far it races out.
+static func _shockwave(root: Node3D, size: float, color: Color, delay: float = 0.0, reach: float = 1.0) -> void:
 	var ring := MeshInstance3D.new()
 	var tm := TorusMesh.new()
 	tm.inner_radius = 0.85
@@ -163,10 +169,10 @@ static func _shockwave(root: Node3D, size: float, color: Color) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(color.r, color.g, color.b, 0.4)
+	mat.albedo_color = Color(color.r, color.g, color.b, 0.0)
 	mat.emission_enabled = true
 	mat.emission = color
-	mat.emission_energy_multiplier = 1.8
+	mat.emission_energy_multiplier = 2.2
 	tm.material = mat
 	ring.mesh = tm
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -174,11 +180,111 @@ static func _shockwave(root: Node3D, size: float, color: Color) -> void:
 	ring.position = Vector3(0, 0.15, 0)
 	root.add_child(ring)
 	var tw := ring.create_tween().set_parallel(true)
-	tw.tween_property(ring, "scale", Vector3(size * 1.7, 0.05, size * 1.7), 0.32) \
+	if delay > 0.0:
+		tw.tween_interval(delay)
+	tw.chain()
+	tw.set_parallel(true)
+	tw.tween_property(mat, "albedo_color:a", 0.5, 0.02) # snap in
+	tw.tween_property(ring, "scale", Vector3(size * 1.7 * reach, 0.05, size * 1.7 * reach), 0.34) \
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tw.tween_property(mat, "albedo_color:a", 0.0, 0.32) \
+	tw.chain().tween_property(mat, "albedo_color:a", 0.0, 0.3) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(ring.queue_free)
+
+## A pillar of fire that punches straight up out of the blast, then peels apart —
+## turns a flat ground pop into a real detonation column.
+static func _fire_column(root: Node3D, size: float, color: Color) -> void:
+	var col := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = size * 0.14
+	cyl.bottom_radius = size * 0.34
+	cyl.height = 1.0
+	cyl.radial_segments = 10
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(1.0, 0.9, 0.7, 0.9)
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 9.0
+	cyl.material = mat
+	col.mesh = cyl
+	col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	col.scale = Vector3(1.0, 0.2, 1.0)
+	col.position = Vector3(0, 0.2, 0)
+	root.add_child(col)
+	var tw := col.create_tween().set_parallel(true)
+	# Shoot up and taper; the pivot rises with it so it grows FROM the ground.
+	tw.tween_property(col, "scale", Vector3(1.2, size * 1.6, 1.2), 0.22) \
+		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(col, "position:y", size * 0.9, 0.22).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color", Color(color.r, color.g, color.b, 0.0), 0.3) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.3)
+	tw.chain().tween_callback(col.queue_free)
+
+## A shower of tiny, very fast, very bright sparks — the sharp high-frequency
+## detail that makes a blast read as violent, not soft.
+static func _sparks(root: Node3D, size: float, color: Color) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = int(clampf(22.0 * size, 22.0, 90.0))
+	p.lifetime = 0.4
+	p.explosiveness = 1.0
+	p.spread = 180.0
+	p.initial_velocity_min = 9.0 * size
+	p.initial_velocity_max = 20.0 * size
+	p.gravity = Vector3(0, -24.0, 0)
+	p.damping_min = 4.0
+	p.damping_max = 10.0
+	p.scale_amount_min = 0.4
+	p.scale_amount_max = 1.0
+	p.scale_amount_curve = _ember_taper_curve()
+	var spark := BoxMesh.new()
+	spark.size = Vector3(0.035, 0.035, 0.32) # long thin tracer
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(1.0, 0.95, 0.7)
+	m.emission_enabled = true
+	m.emission = Color(1.0, 0.9, 0.6).lerp(color, 0.4)
+	m.emission_energy_multiplier = 10.0
+	spark.material = m
+	p.mesh = spark
+	root.add_child(p)
+
+## Heavier, slower tumbling chunks blown out of the blast — mass the sparks lack.
+static func _debris(root: Node3D, size: float, color: Color) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = true
+	p.amount = int(clampf(5.0 * size, 5.0, 20.0))
+	p.lifetime = 0.9
+	p.explosiveness = 0.9
+	p.spread = 80.0
+	p.direction = Vector3.UP
+	p.initial_velocity_min = 4.0 * size
+	p.initial_velocity_max = 8.0 * size
+	p.gravity = Vector3(0, -22.0, 0)
+	p.angle_min = -180.0
+	p.angle_max = 180.0
+	p.angular_velocity_min = -700.0
+	p.angular_velocity_max = 700.0
+	p.scale_amount_min = 0.7
+	p.scale_amount_max = 1.5
+	var chunk := BoxMesh.new()
+	chunk.size = Vector3(0.16, 0.12, 0.14)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.09, 0.08, 0.08)
+	m.roughness = 1.0
+	m.emission_enabled = true
+	m.emission = color * 0.5
+	m.emission_energy_multiplier = 0.8
+	chunk.material = m
+	p.mesh = chunk
+	root.add_child(p)
 
 ## Light pops UP for two frames before decaying — a flash, not a dimmer switch.
 static func _light_pop(root: Node3D) -> void:
