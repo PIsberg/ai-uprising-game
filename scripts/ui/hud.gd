@@ -171,6 +171,7 @@ func _ready() -> void:
 	GameState.boss_spawned.connect(_on_boss_spawned)
 	_style_health_bar()
 	_style_stamina_bar()
+	_build_upgrade_chips()
 	_build_fps_label()
 	_build_grapple_hint()
 	_build_ammo_block()
@@ -1089,6 +1090,59 @@ func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
 		else:
 			var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
 			_stam_fill.bg_color = Color(0.2, 0.55, 0.75).lerp(Color(0.35, 0.85, 1.0), r)
+
+## A compact row of chips just above the health bar showing which permanent armory
+## upgrades this run has and at what rank — a colour-coded glyph (reusing the
+## armory's icons) with rank pips. Only tracks with at least one rank show, so a
+## fresh run has no clutter and the loadout fills in as you invest.
+func _build_upgrade_chips() -> void:
+	var layout := $Margin/Layout
+	var row := HBoxContainer.new()
+	row.name = "UpgradeRow"
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(row)
+	layout.move_child(row, $Margin/Layout/BottomLeft.get_index()) # sit right above the HP bar
+	for k in Armory.KEYS:
+		var lvl := GameState.upgrade_level(k)
+		if lvl <= 0:
+			continue
+		var meta: Dictionary = Armory.META[k]
+		row.add_child(_make_upgrade_chip(meta["icon"], meta["color"], lvl))
+
+func _make_upgrade_chip(glyph: String, color: Color, lvl: int) -> Control:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.08, 0.7)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(color.r, color.g, color.b, 0.8)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 6; sb.content_margin_right = 6
+	sb.content_margin_top = 2; sb.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", sb)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 4)
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(hb)
+	var g := Label.new()
+	g.text = glyph
+	g.add_theme_color_override("font_color", color)
+	g.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	g.add_theme_constant_override("outline_size", 4)
+	g.add_theme_font_size_override("font_size", 16)
+	hb.add_child(g)
+	# Rank pips (filled = bought), one per possible rank.
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 2)
+	pips.alignment = BoxContainer.ALIGNMENT_CENTER
+	for i in GameState.UPGRADE_MAX:
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(3, 10)
+		pip.color = color if i < lvl else Color(0.2, 0.22, 0.26, 0.9)
+		pips.add_child(pip)
+	hb.add_child(pips)
+	return panel
 
 # ---------- ammo block: big numerals + segmented mag bar + grenade pips ----------
 
