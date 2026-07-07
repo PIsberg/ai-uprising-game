@@ -29,17 +29,21 @@ static var _hive: Array = []
 
 func _ready() -> void:
 	max_health = 70.0
-	move_speed = 4.6
+	move_speed = 5.2
 	turn_speed = 6.0
-	sight_range = 40.0
-	sight_angle_deg = 200.0
-	attack_range = 30.0
-	preferred_range = 14.0
-	attack_cooldown = 1.5
-	telegraph_time = 0.25
+	sight_range = 46.0
+	sight_angle_deg = 220.0
+	attack_range = 24.0
+	# CLOSE-range flanker: it rushes in and circle-strafes at short range instead of
+	# plinking from 14 m. That's what makes the jammer work — a swarm that closes on
+	# you runs THROUGH the zones you plant near yourself / at chokepoints, where a
+	# distant strafer never would (playtest: 14 m strafers were effectively unjammable).
+	preferred_range = 6.0
+	attack_cooldown = 1.6
+	telegraph_time = 0.3
 	score_value = 130
 	stagger_threshold = 60.0
-	combat_strafe = true # circle-strafe at range — a moving, flanking target
+	combat_strafe = true # circle-strafe at close range — a moving, flanking target
 	super._ready()
 	_build_shield()
 	_hive.append(self)

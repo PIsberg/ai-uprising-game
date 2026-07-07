@@ -340,7 +340,9 @@ static func _hivemind() -> Dictionary:
 		"exit": Vector3(0, 1.5, 24),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 0.6, -22), "color": Color(0.4, 0.85, 1.0)},
 		# The jammer is the level's whole verb — a handful of short-lived beacons.
-		"jammer": {"radius": 5.5, "lifetime": 7.0, "max": 3, "cooldown": 1.1, "color": Color(0.35, 0.85, 1.0)},
+		# Zones sized so a beacon planted at your feet / a chokepoint reliably catches
+		# the close-range flankers as they swarm through it.
+		"jammer": {"radius": 6.5, "lifetime": 8.0, "max": 3, "cooldown": 1.0, "color": Color(0.35, 0.85, 1.0)},
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "assassinate", "enemy": "hive", "elite": "swift", "bulk": 2.6,
@@ -375,18 +377,20 @@ static func _hivemind() -> Dictionary:
 			{"pos": Vector3(-6, 1, -14), "size": Vector3(4, 2, 2)},
 			{"pos": Vector3(6, 1, 14), "size": Vector3(4, 2, 2)},
 		],
-		# Hive units spawn RINGED around the arena and flank in — staggered triggers
-		# feed the fight so beacons matter more than raw DPS. The PRIME (assassinate,
-		# above) anchors the far side.
+		# Hive units spawn RINGED around the arena and flank in. NOTE: "trigger" is a
+		# proximity RADIUS (m), not a timer — the front ring (large radius) spawns as
+		# you enter and swarms; the back ring (smaller radius) activates as you push
+		# up toward the centre, so the fight builds in two flanking waves. The PRIME
+		# (assassinate, above) closes from the far side.
 		"enemies": [
-			{"type": "hive", "pos": Vector3(-14, 1, -10), "trigger": 2},
-			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 3},
-			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 6},
-			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 7},
-			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 11},
-			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 12},
-			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 16},
-			{"type": "hive", "pos": Vector3(20, 1, 2), "trigger": 18},
+			{"type": "hive", "pos": Vector3(-14, 1, -10), "trigger": 30},
+			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 30},
+			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 28},
+			{"type": "hive", "pos": Vector3(20, 1, 2), "trigger": 28},
+			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 22},
+			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 22},
+			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 18},
+			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 18},
 		],
 		"lore": [
 			{"id": "lore_hive", "title": "MESH MEMO", "pos": Vector3(4, 0.6, -21), "color": Color(0.4, 0.9, 1.0),
