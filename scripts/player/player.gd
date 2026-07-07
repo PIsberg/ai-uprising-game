@@ -647,6 +647,8 @@ func _unleash_overload() -> void:
 			var push: Vector3 = (col as Node3D).global_position - origin
 			push.y = 0.0
 			col.velocity += (push.normalized() if push.length() > 0.1 else Vector3.FORWARD) * 16.0 + Vector3.UP * 4.0
+	# Hostiles just OUTSIDE the blast (not EMP'd) see it and scatter.
+	GameState.startle_enemies(origin, overload_radius * 1.7, 1.1)
 
 ## Expanding cyan nova ring at the blast — a quick TorusMesh that fattens, scales
 ## out and fades. Frees itself on a short timer.

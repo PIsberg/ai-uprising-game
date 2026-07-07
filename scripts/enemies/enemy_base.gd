@@ -554,6 +554,21 @@ func _check_grenade_danger() -> void:
 	_evade_dir = away.normalized()
 	_evade_t = 0.7
 
+## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
+## channel). Broadcast when the player hits a power peak (GODLIKE rampage /
+## OVERLOAD) so the world visibly reacts to the player's spike. EMP'd/dead units
+## ignore it — an inert bot can't flee.
+func startle(from_pos: Vector3, duration: float = 0.9) -> void:
+	if state == State.DEAD or _emp_t > 0.0:
+		return
+	var away := global_position - from_pos
+	away.y = 0.0
+	if away.length() < 0.05:
+		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
+	_evade_dir = away.normalized()
+	_evade_t = maxf(_evade_t, duration)
+	_flinch = 1.0 # a visible jolt as it breaks off
+
 func _state_idle(delta: float) -> void:
 	_decelerate()
 	if target == null:

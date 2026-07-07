@@ -441,6 +441,18 @@ func _update_rampage() -> void:
 			d.heal(RAMPAGE_HEAL[t])
 	AudioBus.play_synth_ui("combo_up", -1.0, 1.0 + t * 0.18)
 	hit_stop(0.06, 0.4)
+	# Top tier (GODLIKE): the pack visibly breaks and scatters around you.
+	if t >= RAMPAGE_TIERS.size() and pl:
+		startle_enemies((pl as Node3D).global_position, 18.0, 1.0)
+
+## Make nearby hostiles panic-scatter — the world reacting to a player power spike
+## (GODLIKE rampage, OVERLOAD). Skips bosses (they don't flinch) and EMP'd/dead
+## units (handled in EnemyBase.startle).
+func startle_enemies(pos: Vector3, radius: float, duration: float = 0.9) -> void:
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e is EnemyBase and e.score_value < 1000 \
+				and (e as Node3D).global_position.distance_to(pos) <= radius:
+			e.startle(pos, duration)
 
 func rampage_damage_mult() -> float:
 	return RAMPAGE_DMG[rampage_tier]
