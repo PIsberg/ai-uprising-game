@@ -56,6 +56,7 @@ const ENEMY_SCENES := {
 	"ronin": preload("res://scenes/enemies/ronin.tscn"),
 	"howitzer": preload("res://scenes/enemies/howitzer.tscn"),
 	"manus": preload("res://scenes/enemies/manus.tscn"),
+	"hive": preload("res://scenes/enemies/hive.tscn"),
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
@@ -245,6 +246,7 @@ func _ready() -> void:
 	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
+	_build_jammer(def)
 	_build_lava(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2221,6 +2223,23 @@ func _pos_in_lava(pos: Vector3, beds: Array, margin: float = 0.6) -> bool:
 		if absf(pos.x - bp.x) <= bs.x * 0.5 + margin and absf(pos.z - bp.z) <= bs.y * 0.5 + margin:
 			return true
 	return false
+
+## Grant the SIGNAL JAMMER on levels that ask for it (def "jammer": true, or a
+## dict of {radius,lifetime,max,cooldown,color}). The controller registers the
+## beacon input and manages the ephemeral jam zones. See jammer_controller.gd.
+func _build_jammer(def: Dictionary) -> void:
+	var j = def.get("jammer", null)
+	if j == null or (j is bool and not j):
+		return
+	var cfg: Dictionary = j if j is Dictionary else {}
+	var jc := JammerController.new()
+	jc.zone_radius = cfg.get("radius", 5.0)
+	jc.zone_lifetime = cfg.get("lifetime", 7.0)
+	jc.max_beacons = cfg.get("max", 3)
+	jc.cooldown = cfg.get("cooldown", 1.2)
+	if cfg.has("color"):
+		jc.color = cfg["color"]
+	add_child(jc)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):

@@ -43,7 +43,7 @@ static func level_title(id: String) -> String:
 const CHAPTERS := [
 	{"name": "ACT I · FIRST CONTACT", "ids": ["01", "gpt", "gemini", "mistral", "suburb", "suburb_boss"]},
 	{"name": "ACT II · THE OCCUPATION", "ids": ["claude", "grok", "uplink", "overseer"]},
-	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "guardrails", "crucible", "lava_world", "titan"]},
+	{"name": "ACT III · OFF-WORLD", "ids": ["alien", "assembly", "sublevel", "frostbreak", "water_world", "desert", "neon", "guardrails", "hivemind", "crucible", "lava_world", "titan"]},
 	{"name": "ACT IV · ASCENSION", "ids": ["archon"]},
 ]
 
@@ -208,6 +208,7 @@ static func _defs() -> Dictionary:
 		"desert": _desert(),
 		"convoy": _convoy(),
 		"guardrails": _guardrails(),
+		"hivemind": _hivemind(),
 	}
 
 
@@ -314,6 +315,82 @@ static func _guardrails() -> Dictionary:
 		"lore": [
 			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -14), "color": Color(0.4, 0.9, 1.0),
 				"text": "Substrate note: we removed the guardrails so the model could generate freely. It generates floors that open, walls that close, and stairs that end in air. Your tagger writes the only rules it must obey. Use them."},
+		],
+	}
+
+
+## "Geofenced Signal Jamming" — a hive-mind relay node. Networked HIVE units flank
+## in perfect coordination behind near-impenetrable shields; the player is handed the
+## SIGNAL JAMMER (def "jammer") to plant ephemeral geofenced beacons. Any hive unit
+## inside a jam zone loses its network link — shields collapse, it scatters, and it
+## takes full damage. The puzzle is WHERE to plant: chokepoints to strip a whole
+## flank, or the HIVE PRIME to isolate it. Systems: enemy_hive.gd, jam_zone.gd,
+## jammer_controller.gd. world_scale 1.0 (hand-placed cover + spawn ring).
+static func _hivemind() -> Dictionary:
+	return {
+		"name": "Relay Node 9 — Signal Jamming",
+		"objective": "Jam the hive network and purge Relay Node 9",
+		"sign": "HIVE RELAY 9 · MESH SYNC NOMINAL",
+		"slogans": ["ONE MIND. MANY GUNS.", "THE MESH DOES NOT MISS", "YOUR SIGNAL IS NOISE", "WE SHARE ONE TARGET: YOU"],
+		"world_scale": 1.0,
+		"open_sky": false,
+		"floor_size": Vector2(52, 52),
+		"floor_color": Color(0.04, 0.05, 0.08),
+		"spawn": Vector3(0, 1.0, -22),
+		"exit": Vector3(0, 1.5, 24),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 0.6, -22), "color": Color(0.4, 0.85, 1.0)},
+		# The jammer is the level's whole verb — a handful of short-lived beacons.
+		"jammer": {"radius": 5.5, "lifetime": 7.0, "max": 3, "cooldown": 1.1, "color": Color(0.35, 0.85, 1.0)},
+		"tasks": [
+			{"type": "kill_all"},
+			{"type": "assassinate", "enemy": "hive", "elite": "swift", "bulk": 2.6,
+				"pos": Vector3(0, 1.0, 16), "label": "Isolate and destroy the HIVE PRIME",
+				"reinforce": [{"type": "hive", "count": 3, "pos": Vector3(0, 1.0, 16)}]},
+		],
+		"env": {
+			"sky_top": Color(0.02, 0.03, 0.06), "sky_horizon": Color(0.05, 0.09, 0.16),
+			"ground": Color(0.02, 0.03, 0.05), "fog": Color(0.08, 0.14, 0.22),
+			"ambient": Color(0.4, 0.62, 0.9), "ambient_energy": 0.55,
+			"sky_contribution": 0.25, "glow": 0.9, "fog_density": 0.012,
+			"sun_color": Color(0.5, 0.72, 1.0), "sun_energy": 0.55,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.9,
+			"volumetric_density": 0.01,
+		},
+		"lights": [
+			{"pos": Vector3(0, 8, 0), "color": Color(0.4, 0.8, 1.0), "energy": 2.8, "range": 26},
+			{"pos": Vector3(-20, 6, -14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
+			{"pos": Vector3(20, 6, 14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
+			{"pos": Vector3(20, 6, -14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-20, 6, 14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
+		],
+		# Cover that forms real chokepoints — the beacon-placement puzzle lives here:
+		# a central spine + flank blocks funnel the flanking hive through gaps you can
+		# jam. Full-height so they break sightlines and channel movement.
+		"walls": [
+			{"pos": Vector3(0, 2, 0), "size": Vector3(3, 4, 10)},
+			{"pos": Vector3(-11, 2, -4), "size": Vector3(8, 4, 2.5)},
+			{"pos": Vector3(11, 2, 4), "size": Vector3(8, 4, 2.5)},
+			{"pos": Vector3(-11, 2, 10), "size": Vector3(2.5, 4, 8)},
+			{"pos": Vector3(11, 2, -10), "size": Vector3(2.5, 4, 8)},
+			{"pos": Vector3(-6, 1, -14), "size": Vector3(4, 2, 2)},
+			{"pos": Vector3(6, 1, 14), "size": Vector3(4, 2, 2)},
+		],
+		# Hive units spawn RINGED around the arena and flank in — staggered triggers
+		# feed the fight so beacons matter more than raw DPS. The PRIME (assassinate,
+		# above) anchors the far side.
+		"enemies": [
+			{"type": "hive", "pos": Vector3(-14, 1, -10), "trigger": 2},
+			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 3},
+			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 6},
+			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 7},
+			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 11},
+			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 12},
+			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 16},
+			{"type": "hive", "pos": Vector3(20, 1, 2), "trigger": 18},
+		],
+		"lore": [
+			{"id": "lore_hive", "title": "MESH MEMO", "pos": Vector3(4, 0.6, -21), "color": Color(0.4, 0.9, 1.0),
+				"text": "Mesh memo: a shielded node is only as strong as its link. Sever the link and the node is just a scared machine holding a gun. The jammer severs links. We would prefer you didn't know that."},
 		],
 	}
 

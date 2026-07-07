@@ -161,6 +161,7 @@ const CAMPAIGN: Array[String] = [
 	"res://scenes/levels/level_desert.tscn",
 	"res://scenes/levels/level_neon.tscn",
 	"res://scenes/levels/level_guardrails.tscn", # Generative Guardrails: anchor-tag a safe path across live-generated hazard terrain
+	"res://scenes/levels/level_hivemind.tscn",   # Geofenced Signal Jamming: jam beacons strip shields off the hive-mind flankers
 	"res://scenes/levels/level_crucible.tscn",
 	"res://scenes/levels/level_lava_world.tscn",
 	"res://scenes/levels/level_titan.tscn",
