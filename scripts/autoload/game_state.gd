@@ -22,6 +22,15 @@ func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bo
 	register_hit()
 	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
+	# LIFELEECH track: siphon a slice of the damage you deal back as health, so an
+	# aggressive build sustains itself. Clamped by Damageable.heal to max HP.
+	var leech := upgrade_mult("leech") - 1.0
+	if leech > 0.0:
+		var pl := get_tree().get_first_node_in_group("player")
+		if pl:
+			var d = pl.get_node_or_null("Damageable")
+			if d and d.has_method("is_alive") and d.is_alive():
+				d.heal(amount * leech)
 	# Combat hit-stop: a crisp per-impact freeze that gives shots real weight —
 	# the punch that separates a good-feeling shooter from a flat one. A kill
 	# snaps harder than a heavy hit; rate-limited so a fast horde can't slideshow.
@@ -249,9 +258,12 @@ const UPGRADE_DEFS := {
 	"damage": {"label": "WEAPON DAMAGE", "per": 0.08, "cost": 1500},
 	"mag":    {"label": "MAGAZINE SIZE", "per": 0.15, "cost": 1200},
 	"reload": {"label": "RELOAD SPEED",  "per": 0.06, "cost": 1000},
+	# Two build-defining tracks: lean into explosives, or heal off aggression.
+	"blast":  {"label": "GRENADE POWER", "per": 0.16, "cost": 1300},
+	"leech":  {"label": "LIFELEECH",     "per": 0.03, "cost": 1400},
 }
 const UPGRADE_MAX := 5
-var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0}
+var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0}
 
 ## "Field supplies" bought in the Armory — banked here and PERMANENT for the run:
 ## the player re-applies them on every deploy (never cleared until reset_run on a
@@ -335,6 +347,11 @@ func can_buy_any_upgrade() -> bool:
 ## Multiplier for damage/mag tracks (>= 1.0).
 func upgrade_mult(k: String) -> float:
 	return 1.0 + float(UPGRADE_DEFS[k]["per"]) * upgrade_level(k)
+
+## Grenade blast multiplier (GRENADE POWER track) — scales thrown-charge damage
+## and radius. 1.0 with no ranks.
+func grenade_mult() -> float:
+	return upgrade_mult("blast")
 
 ## Reload is a time REDUCTION; floored so it can't break the reload anim.
 func upgrade_reload_mult() -> float:

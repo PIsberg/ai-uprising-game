@@ -819,6 +819,13 @@ func _throw_grenade() -> void:
 	grenade_counts[grenade_type] -= 1
 	_grenade_cd = grenade_cooldown
 	var g: Node = (grenade_kinds[grenade_type]["scene"] as PackedScene).instantiate()
+	# GRENADE POWER upgrade: scale this charge's blast (damage + reach) before it's
+	# thrown. Covers frag (splash), vortex (splash + pull) and EMP (burst radius).
+	var gm := GameState.grenade_mult()
+	if gm > 1.0:
+		for prop in ["splash_damage", "splash_radius", "damage", "pull_radius", "burst_radius"]:
+			if prop in g:
+				g.set(prop, float(g.get(prop)) * gm)
 	get_tree().current_scene.add_child(g)
 	var dir := -camera.global_transform.basis.z
 	g.global_position = camera.global_position + dir * 0.7
