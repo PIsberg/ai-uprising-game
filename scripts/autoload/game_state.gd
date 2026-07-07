@@ -511,6 +511,21 @@ func reward_perfect_dodge() -> void:
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.35)
 	perfect_dodge.emit()
 
+# ---------- EXECUTION: melee finisher on a weakened enemy ----------
+## A melee shove into a low-HP non-boss instakills it (see Player._do_melee).
+## Small bonus + a heavier crunch + callout so finishing a stagger by hand feels
+## like a takedown. The kill's own score/combo still lands via add_kill.
+const EXECUTE_BONUS := 60
+signal execution(world_pos: Vector3)
+
+func reward_execution(world_pos: Vector3) -> void:
+	if current_state != State.PLAYING:
+		return
+	add_score(EXECUTE_BONUS)
+	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
+	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
+	execution.emit(world_pos)
+
 # ---------- BOUNTY: a rotating hunt-the-marked-target sub-goal ----------
 ## Periodically tags one live non-boss enemy as a BOUNTY: a beacon-marked target
 ## worth bonus score + a guaranteed rare drop. Gives every drawn-out fight a

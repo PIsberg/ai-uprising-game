@@ -207,6 +207,7 @@ const STEP_INTERVAL_CROUCH := 1.6
 @export var melee_arc_deg: float = 120.0
 @export var melee_knockback: float = 13.0
 @export var melee_cooldown: float = 0.85
+@export var execute_hp_threshold: float = 40.0 ## A melee hit on a non-boss below this HP is a guaranteed EXECUTION (instakill + crunch + bonus).
 var _melee_cd: float = 0.0
 
 # ---------- soft enemy separation ----------
@@ -652,7 +653,15 @@ func _do_melee() -> void:
 			continue
 		var d := col.get_node_or_null("Damageable")
 		if d and d.has_method("apply_damage"):
-			d.apply_damage(melee_damage, self)
+			# EXECUTION: a shove into a weakened, non-boss enemy is a finisher —
+			# guaranteed kill with a heavier crunch, so melee reads as a real
+			# takedown tool, not just a get-off-me nudge.
+			var is_boss := col is EnemyBase and (col as EnemyBase).score_value >= 1000
+			if not is_boss and d.current_health > 0.0 and d.current_health <= execute_hp_threshold:
+				d.apply_damage(9999.0, self)
+				GameState.reward_execution((col as Node3D).global_position + Vector3.UP * 1.2)
+			else:
+				d.apply_damage(melee_damage, self)
 			struck = true
 		# Heavy knockback away from the player (+ a little lift) — the "get off me".
 		if "velocity" in col:

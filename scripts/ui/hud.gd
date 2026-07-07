@@ -226,6 +226,7 @@ func _ready() -> void:
 	GameState.rampage_changed.connect(_on_rampage_changed)
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.perfect_dodge.connect(_on_perfect_dodge)
+	GameState.execution.connect(_on_execution)
 	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
 	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
 	GameState.level_graded.connect(_on_level_graded)
@@ -234,6 +235,7 @@ func _ready() -> void:
 	_build_rampage_label()
 	_build_adrenaline()
 	_build_dodge_label()
+	_build_exec_label()
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -454,6 +456,10 @@ var _dodge_label: Label = null   ## Cyan "PERFECT DODGE!" flash on a dash that p
 var _dodge_alpha: float = 0.0
 var _dodge_pop: float = 0.0
 
+var _exec_label: Label = null    ## Orange "EXECUTED!" flash on a melee finisher.
+var _exec_alpha: float = 0.0
+var _exec_pop: float = 0.0
+
 ## The big, hot RAMPAGE banner — punches in when a kill streak spikes the player
 ## into a power tier (a REAL buff, not just score). Sits above the combo readout,
 ## bigger and brighter than the streak word so a power spike reads as an event.
@@ -544,6 +550,30 @@ func _on_perfect_dodge() -> void:
 	if _dodge_label:
 		_dodge_alpha = 1.0
 		_dodge_pop = 1.2
+
+## Orange "EXECUTED!" stamp on a melee finisher — visceral, brief, low so it
+## doesn't collide with the power banners above it.
+func _build_exec_label() -> void:
+	_exec_label = Label.new()
+	_exec_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_exec_label.anchor_left = 0.5
+	_exec_label.anchor_right = 0.5
+	_exec_label.position = Vector2(0, 430)
+	_exec_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_exec_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_exec_label.add_theme_font_size_override("font_size", 46)
+	_exec_label.add_theme_constant_override("outline_size", 11)
+	_exec_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_exec_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.12))
+	_exec_label.text = "EXECUTED!"
+	_exec_label.modulate.a = 0.0
+	_exec_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_exec_label)
+
+func _on_execution(_world_pos: Vector3) -> void:
+	if _exec_label:
+		_exec_alpha = 1.0
+		_exec_pop = 1.3
 
 ## Big arcade-style word that punches in when a kill-streak milestone is crossed.
 func _build_streak_label() -> void:
@@ -839,6 +869,12 @@ func _process(delta: float) -> void:
 		_dodge_label.modulate.a = clampf(_dodge_alpha, 0.0, 1.0)
 		_dodge_label.scale = Vector2.ONE * (1.0 + _dodge_pop * 0.4)
 		_dodge_label.pivot_offset = _dodge_label.size * 0.5
+	if _exec_label:
+		_exec_alpha = move_toward(_exec_alpha, 0.0, delta * 1.6)
+		_exec_pop = move_toward(_exec_pop, 0.0, delta * 5.5)
+		_exec_label.modulate.a = clampf(_exec_alpha, 0.0, 1.0)
+		_exec_label.scale = Vector2.ONE * (1.0 + _exec_pop * 0.45)
+		_exec_label.pivot_offset = _exec_label.size * 0.5
 	if _headshot_label:
 		# Quicker fade than the streak word (~0.8s) since headshots land often.
 		_headshot_alpha = move_toward(_headshot_alpha, 0.0, delta * 1.25)
