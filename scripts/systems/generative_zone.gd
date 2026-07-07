@@ -31,7 +31,8 @@ extends Node3D
 enum { UNSTABLE, HAZARD, ANCHORED }
 
 const PLAYER_LAYER := 2
-const SLAB_H := 0.62          ## anchored slab height — tall enough to stand clear of the floor hazard
+const SLAB_H := 0.26          ## anchored slab height — kept under the player's 0.3 m step so you can
+                             ## always walk (and recover) onto a safe slab; safety is by cell state, not height
 const PILLAR_H := 3.2
 
 var _cols: int
@@ -59,6 +60,7 @@ func _ready() -> void:
 	_rows = maxi(2, int(field_size.y / cell))
 	_register_action()
 	_build_grid()
+	_build_field_lights()
 	_build_start_pad()
 	_build_gate()
 	add_to_group("objective")
@@ -115,7 +117,10 @@ func _build_grid() -> void:
 			mat.emission_enabled = true
 			mat.albedo_color = hazard_color * 0.5
 			mat.emission = hazard_color
-			mat.emission_energy_multiplier = 1.1
+			# Dimmer per-tile emission: 48 hot red tiles washed the whole field red and
+			# drowned out the cyan safe path. The field lights carry readability now, so
+			# the danger tiles just need a menacing glow, not a floodlight.
+			mat.emission_energy_multiplier = 0.55
 			pm.material = mat
 			mi.mesh = pm
 			mi.position = _cell_world(r, c) + Vector3(0, 0.04, 0)
@@ -149,6 +154,24 @@ func _build_kerb() -> void:
 		mi.position = (spec[0] as Vector3) + Vector3(0, 0.2, 0)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+
+## Cool work-lights strung above the field so the slabs, pillars and grid read by
+## FORM, not just emission — the construct's ambient is near-black, and a grid you
+## can't see is a grid you can't solve. Kept modest so the danger/safe emissives
+## still carry the colour language.
+func _build_field_lights() -> void:
+	var span := _rows * cell
+	var n := maxi(2, int(span / 12.0) + 1)
+	for i in n:
+		var z := field_center.z + (float(i) / float(maxi(1, n - 1)) - 0.5) * (span - 4.0)
+		var l := OmniLight3D.new()
+		l.light_color = Color(0.6, 0.82, 1.0)
+		l.light_energy = 2.2
+		l.omni_range = field_size.x * 0.9
+		l.omni_attenuation = 1.4
+		l.shadow_enabled = false
+		l.position = Vector3(field_center.x, field_center.y + 6.5, z)
+		add_child(l)
 
 ## The near row(s) start pre-anchored so the player has safe ground to fire from.
 func _build_start_pad() -> void:
@@ -216,9 +239,14 @@ func _make_slab(center: Vector3, half: float, col: Color) -> StaticBody3D:
 	var bm := BoxMesh.new()
 	bm.size = Vector3(half * 2.0, SLAB_H, half * 2.0)
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.14, 0.17, 0.2)
-	mat.metallic = 0.5
-	mat.roughness = 0.5
+	# Cyan-tinted safe slab that glows faintly on its own, so a locked cell reads as
+	# a clean blue island the moment it snaps in, against the red hazard field.
+	mat.albedo_color = Color(col.r * 0.25, col.g * 0.28, col.b * 0.32)
+	mat.metallic = 0.4
+	mat.roughness = 0.45
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = 0.12
 	bm.material = mat
 	mi.mesh = bm
 	var cs := CollisionShape3D.new()
@@ -236,9 +264,9 @@ func _make_slab(center: Vector3, half: float, col: Color) -> StaticBody3D:
 	rmat.emission_enabled = true
 	rmat.emission = col
 	rmat.albedo_color = col * 0.5
-	# Kept just under the level's glow HDR threshold so the safe slabs read as a
-	# lit grid line, not a blown-out white block.
-	rmat.emission_energy_multiplier = 0.6
+	# Bright enough to clearly out-read the (now dimmer) red hazard tiles so the
+	# safe path pops, but under the glow HDR threshold so it doesn't blow out.
+	rmat.emission_energy_multiplier = 1.0
 	rp.material = rmat
 	rim.mesh = rp
 	rim.position = Vector3(0, SLAB_H * 0.5 + 0.02, 0)
@@ -438,7 +466,7 @@ func _apply_floor_damage() -> void:
 					"⚠ The floor is UNSTABLE — tag [T] cells to lock safe slabs and cross on them.")
 
 func _pulse() -> void:
-	var e := 0.8 + sin(_clock * 3.0) * 0.4
+	var e := 0.5 + sin(_clock * 3.0) * 0.22
 	for r in _rows:
 		for c in _cols:
 			var m: StandardMaterial3D = _tile_mat[r][c]

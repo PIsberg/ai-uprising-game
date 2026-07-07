@@ -294,15 +294,17 @@ static func _guardrails() -> Dictionary:
 		],
 		# Flyers + a couple of gunners harass from the flanks while you bridge — they
 		# ignore the terrain the AI throws at YOU, keeping the crossing chaotic.
+		# Flyers engage from the first steps so the crossing is a fight, not a quiet
+		# puzzle — they ignore the terrain the AI throws at YOU, keeping it chaotic.
 		"enemies": [
-			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 10},
-			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 10},
-			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 14},
-			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 16},
-			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 18},
-			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 20},
-			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 22},
-			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 26},
+			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 2},
+			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 3},
+			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 6},
+			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 8},
+			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 10},
+			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 12},
+			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 14},
+			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 16},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(-4, 1.0, -13)},
