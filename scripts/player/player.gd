@@ -33,6 +33,8 @@ func notify_pickup(text: String) -> void:
 @export var stamina_regen: float = 18.0          ## per second recovered once you stop draining
 @export var stamina_regen_delay: float = 0.5     ## grace after the last drain before regen starts
 @export var stamina_recover_threshold: float = 30.0 ## exhausted lock clears once stamina climbs back to this
+@export var melee_stamina_cost: float = 18.0     ## stamina spent per melee shove (heavy fighting gasses you out)
+@export var dash_stamina_cost: float = 12.0      ## stamina spent per dash/dodge (kept modest so dodging stays viable)
 var _stamina: float = 100.0
 var _stamina_exhausted: bool = false ## true from the moment stamina hits 0 until it recovers past the threshold
 var _stamina_regen_cd: float = 0.0
@@ -699,6 +701,7 @@ func _handle_melee(delta: float) -> void:
 	if _melee_cd > 0.0 or not Input.is_action_just_pressed("melee"):
 		return
 	_melee_cd = melee_cooldown
+	_spend_stamina(melee_stamina_cost) # a swing is heavy fighting — it costs wind
 	_fov_kick = maxf(_fov_kick, 6.0)
 	shake(0.18)
 	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.7) # whoosh
@@ -790,6 +793,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
 		_dodge_scored = false
+		_spend_stamina(dash_stamina_cost) # a dodge-dash is exertion too
 		hp.invulnerable = true
 		# The i-frame window also suspends the soft enemy-separation push (see
 		# _update_enemy_separation): enemies have no hard collision with the player
@@ -1419,6 +1423,21 @@ func _handle_stamina(delta: float) -> void:
 	if not is_equal_approx(_stamina, prev) or _stamina_exhausted != _was_exhausted:
 		_was_exhausted = _stamina_exhausted
 		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
+
+## Spend a burst of stamina on an exertion action (melee swing, dash). Heavy
+## fighting and dodging drain the same bar sprinting does, so a big brawl leaves
+## you unable to sprint off — a real tradeoff. Doesn't block the action (you can
+## always defend), it just costs you.
+func _spend_stamina(amount: float) -> void:
+	if amount <= 0.0 or _dead:
+		return
+	_stamina = maxf(0.0, _stamina - amount)
+	_stamina_regen_cd = stamina_regen_delay
+	if _stamina <= 0.0 and not _stamina_exhausted:
+		_stamina_exhausted = true
+		AudioBus.play_synth_ui("player_hurt", -15.0, 0.7) # "gassed" cue
+	_was_exhausted = _stamina_exhausted
+	stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
 
 const MAX_MOVE_MULT := 1.8 ## Cap on the COMBINED movement buff so stacked speed powerups stay controllable.
 

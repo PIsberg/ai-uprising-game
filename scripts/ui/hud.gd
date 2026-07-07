@@ -985,6 +985,15 @@ func _process(delta: float) -> void:
 		_exec_label.modulate.a = clampf(_exec_alpha, 0.0, 1.0)
 		_exec_label.scale = Vector2.ONE * (1.0 + _exec_pop * 0.45)
 		_exec_label.pivot_offset = _exec_label.size * 0.5
+	if stamina_bar and _sta_flash > 0.0:
+		# Brighten + a hair of scale while draining so the eye catches the drop.
+		_sta_flash = maxf(0.0, _sta_flash - delta * 3.0)
+		stamina_bar.modulate = Color(1, 1, 1).lerp(Color(1.7, 1.9, 2.0), _sta_flash)
+		stamina_bar.pivot_offset = stamina_bar.size * Vector2(0, 0.5)
+		stamina_bar.scale = Vector2(1.0, 1.0 + 0.35 * _sta_flash)
+	elif stamina_bar and stamina_bar.modulate != Color(1, 1, 1):
+		stamina_bar.modulate = Color(1, 1, 1)
+		stamina_bar.scale = Vector2.ONE
 	if _ult_root and GameState.ultimate_ready_state():
 		# Breathe the gauge while it's ready so the player notices the option.
 		_ult_pulse = wrapf(_ult_pulse + delta * 3.0, 0.0, TAU)
@@ -1350,6 +1359,8 @@ func _on_health_changed(cur: float, max_: float) -> void:
 	_hp_ratio = cur / maxf(1.0, max_)
 
 var _stam_fill: StyleBoxFlat
+var _sta_prev: float = -1.0  ## last stamina value, to detect draining
+var _sta_flash: float = 0.0  ## brief brighten each time stamina drops, so drain is visible
 
 ## Stamina bar sits alongside health: cyan when you have wind, and it flips to a
 ## hard red bar while EXHAUSTED so the "can't run / can't grapple" lockout is
@@ -1374,12 +1385,19 @@ func _on_stamina_changed(cur: float, max_: float, exhausted: bool) -> void:
 		return
 	stamina_bar.max_value = max_
 	stamina_bar.value = cur
+	# Draining? Kick a flash so the drop is actually noticeable (the whole point of
+	# a stamina bar is seeing it move). Only on a real decrease, not on regen.
+	if _sta_prev >= 0.0 and cur < _sta_prev - 0.05:
+		_sta_flash = 1.0
+	_sta_prev = cur
 	if _stam_fill:
-		# Exhausted -> red lockout bar; otherwise cyan that dims a touch as it drains.
+		var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
+		# Exhausted -> red lockout; low -> amber warning; else cyan by fraction.
 		if exhausted:
 			_stam_fill.bg_color = Color(1.0, 0.28, 0.24)
+		elif r < 0.35:
+			_stam_fill.bg_color = Color(1.0, 0.62, 0.2) # amber: running low
 		else:
-			var r := clampf(cur / maxf(max_, 1.0), 0.0, 1.0)
 			_stam_fill.bg_color = Color(0.2, 0.55, 0.75).lerp(Color(0.35, 0.85, 1.0), r)
 
 ## A compact row of chips just above the health bar showing which permanent armory
