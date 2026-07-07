@@ -1420,10 +1420,17 @@ func _handle_stamina(delta: float) -> void:
 		_was_exhausted = _stamina_exhausted
 		stamina_changed.emit(_stamina, max_stamina, _stamina_exhausted)
 
+const MAX_MOVE_MULT := 1.8 ## Cap on the COMBINED movement buff so stacked speed powerups stay controllable.
+
 func _current_speed() -> float:
 	# OVERDRIVE powerup + a top-tier kill-streak RAMPAGE + a clutch ADRENALINE surge
-	# all boost every movement state.
-	var mult: float = GameState.move_speed_mult() * GameState.rampage_speed_mult() * GameState.adrenaline_speed_mult() * GameState.directive_move_mult()
+	# + the BLITZ directive all boost every movement state. Damage/fire-rate spikes
+	# are the intended power fantasy, but a fully-stacked SPEED multiplier (~2.1x)
+	# makes the player twitchy and hard to aim/platform with, so the COMBINED
+	# movement multiplier is capped — the buffs still stack, just not into a slide.
+	var mult: float = minf(MAX_MOVE_MULT,
+		GameState.move_speed_mult() * GameState.rampage_speed_mult() \
+		* GameState.adrenaline_speed_mult() * GameState.directive_move_mult())
 	if _is_crouching:
 		return crouch_speed * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
