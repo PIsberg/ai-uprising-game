@@ -346,9 +346,18 @@ func _state_attack(delta: float) -> void:
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
-	_decelerate()
 	var dist := global_position.distance_to(target.global_position)
-	# Opening-seconds grace: still plant/track, just don't start anything new.
+	# Movement identity: unlike the planted siege bosses, the TERMINATOR is a fast,
+	# agile hunter-killer — it circle-strafes the player at range, flanking and never
+	# giving a clean shot, closing if you run and backing off if you crowd it. It
+	# only plants for the Optic Lance windup (in _process_beam).
+	if dist > preferred_range * 1.15:
+		_move_toward(target.global_position, delta)   # run you down
+	elif dist < preferred_range * 0.55:
+		_move_toward(global_position + (global_position - target.global_position).normalized() * 4.0, delta) # give ground
+	else:
+		_combat_strafe(delta)                          # orbit and flank
+	# Opening-seconds grace: still track/reposition, just don't start anything new.
 	if GameState.attack_grace_active():
 		return
 	# Optic Lance when it's off cooldown and you're at a beam-able distance;
