@@ -17,11 +17,18 @@ section below, and re-export.
   (L / gamepad D-pad up) mounted on the weapon.
 - **Keyboard access to weapon slots 11+** — double-tap a digit to arm its +10
   slot (double-tap 1 → slot 11, 2 → 12, …), so big racks aren't wheel-only.
-- **More engaging levels (prototype on GPT Foundry)** — the hall now opens into
-  an optional northern **weights vault**: a bigger arena (44→54 m) with a dressed
-  side-room holding a reward cache (bonus shotgun + overclock + health), defended
-  by an escalating wave that ramps as you push in. Explore-and-reward + a longer
-  fight, without gating the exit. First of a level-enrichment pass.
+- **GPT Foundry reworked into a full showcase level** (the engagement prototype):
+  - A four-beat mission arc with a **climax** — Hack → exfiltrate the weights →
+    grabbing the last fragment trips the **PURGE PROTOCOL** (an overload assault
+    erupts) → **survive** it, then escape to the beacon.
+  - A **MECH mini-boss** guards the mainframe — a mid-level spike to break through.
+  - Bigger arena (44→54 m) opening into an optional **weights vault** with a
+    reward cache (bonus shotgun + overclock + health), guarded by an escalating
+    wave — explore-and-reward without gating the exit.
+  - **Rewarded verticality:** a plasma launcher + overclock on the tower roofs,
+    reached via the climb and sky-bridge.
+  - Atmosphere: burning smelt **fires** and a **techno** music track.
+  This is the template for the wider level pass — playtest and confirm the feel.
 
 ### Changed
 - **Beefier energy-beam VFX** on the beam weapons (Tesla, Gauss, Arc Coil): a

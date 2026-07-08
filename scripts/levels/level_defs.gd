@@ -2241,7 +2241,8 @@ static func _mistral() -> Dictionary:
 static func _gpt() -> Dictionary:
 	return {
 		"name": "OpenAI Foundry — GPT Core",
-		"objective": "Purge the GPT Foundry and reach the green beacon",
+		"objective": "Hack the Foundry, exfiltrate the weights, then survive the core overload to the beacon",
+		"music": "music_techno",
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6),
@@ -2249,7 +2250,19 @@ static func _gpt() -> Dictionary:
 			# The hack cracks the model vault open — grab the weights and go.
 			{"type": "collect_shards", "id": "weights", "after": "hack_terminal",
 				"label": "Exfiltrate the weight fragments",
-				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)]},
+				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)],
+				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL — the
+				# overload assault erupts the instant the survive phase begins.
+				"reinforce": [
+					{"type": "drone", "count": 3, "pos": Vector3(0, 3, 0)},
+					{"type": "android", "count": 3, "pos": Vector3(-12, 0, 0)},
+					{"type": "android", "count": 3, "pos": Vector3(12, 0, 0)},
+					{"type": "skitter", "count": 8, "pos": Vector3(0, 0, -14)},
+				]},
+			# CLIMAX: the core goes critical — hold out through the purge, then the
+			# blast doors cycle and the beacon opens. A held, escalating finish.
+			{"type": "survive", "id": "purge", "after": "weights", "seconds": 22.0,
+				"label": "FOUNDRY OVERLOAD — survive the purge protocol"},
 		],
 		"open_sky": false,
 		# Enlarged (was 44) so the hall opens into a northern WEIGHTS VAULT annex — an
@@ -2263,6 +2276,16 @@ static func _gpt() -> Dictionary:
 		# exploration payoff (the exit doesn't wait on it).
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(0, 0, 22), "color": Color(1.0, 0.82, 0.3)},
+			# Rewards the vertical route: climb tower #1, cross the sky-bridge, and a
+			# plasma launcher waits on tower #2's roof — a real payoff for going up.
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.4, 1.0, 0.55)},
+		],
+		# Burning smelt + wreckage fires — the foundry reads as a live, molten warzone.
+		"fires": [
+			{"pos": Vector3(-13, 0, -9), "scale": 1.3},
+			{"pos": Vector3(13, 0, 13), "scale": 1.3},
+			{"pos": Vector3(3, 0, -3), "scale": 0.9},
+			{"pos": Vector3(-16, 0, 6), "scale": 0.8},
 		],
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
@@ -2380,6 +2403,9 @@ static func _gpt() -> Dictionary:
 			{"type": "android", "pos": Vector3(8, 0.5, -8)},
 			{"type": "drone", "pos": Vector3(10, 2.5, 2)},
 			{"type": "drone", "pos": Vector3(-4, 2.5, -10)},
+			# CORE GUARDIAN: a heavy MECH walker holds the mainframe — the mid-level
+			# spike you must break to reach the hack. Wakes as you push to the centre.
+			{"type": "mech", "pos": Vector3(0, 0.5, 5), "trigger": 16},
 			# Spider intro: one in the opening fight (no trigger) so it's met early
 			# on every difficulty, plus a reinforcement pair below.
 			{"type": "spider", "pos": Vector3(-8, 0.5, -4)},
@@ -2411,6 +2437,9 @@ static func _gpt() -> Dictionary:
 			{"type": "overclock", "pos": Vector3(-3, 0, 22)},
 			{"type": "health", "pos": Vector3(3, 0, 22)},
 			{"type": "ammo", "pos": Vector3(0, 0, 23.5)},
+			# Vertical-route reward on tower #1's roof (climb pays off).
+			{"type": "overclock", "pos": Vector3(14, 8.4, -6)},
+			{"type": "ammo", "pos": Vector3(12, 7.4, -18)},
 		],
 		# Vault dressing — server racks + a terminal frame the cache as a real room.
 		"props": [
