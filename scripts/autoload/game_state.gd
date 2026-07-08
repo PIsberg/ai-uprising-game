@@ -989,7 +989,13 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	reset_run()
 	unlocked_weapons.clear() # fresh run starts with only the base arsenal
 	equipped_weapon = ""     # ...armed with the default (pistol)
-	upgrades = {"damage": 0, "mag": 0, "reload": 0} # armory resets with the run
+	# Armory resets with the run. Zero every declared track — a literal subset here
+	# would silently leave the build-defining tracks (blast/leech/stamina) unlisted
+	# (they still default to 0 via upgrade_level's .get, but the reset should cover
+	# the same key set UPGRADE_DEFS declares).
+	upgrades = {}
+	for k in UPGRADE_DEFS:
+		upgrades[k] = 0
 	intro_played = false
 	controls_taught = false # re-teach controls at the start of a fresh campaign
 	level_index = 0

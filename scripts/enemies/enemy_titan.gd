@@ -140,8 +140,12 @@ func _try_blink(dist: float) -> bool:
 	_blink_flash(dest)
 	AudioBus.play_synth_at("overlord_glitch", dest, 2.0, 0.85)
 	GameState.hit_stop(0.05, 0.6)
-	# Punish the reposition with an immediate sweeping beam from its new angle.
-	_begin_beam()
+	# Punish the reposition with a sweeping beam from its new angle — but charge it
+	# for BLINK_BEAM_TELL first so the blink-onto-flank is a readable threat you can
+	# react to, not a free on-target hit (see the const's note). The _process handler
+	# fires _begin_beam() when this delay elapses; the lockout in _choose_attack holds
+	# other actions until then.
+	_blink_beam_delay = BLINK_BEAM_TELL
 	return true
 
 func _blink_flash(at: Vector3) -> void:
