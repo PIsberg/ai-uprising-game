@@ -2115,17 +2115,19 @@ static func _assembly() -> Dictionary:
 static func _mistral() -> Dictionary:
 	return {
 		"name": "Mistral Cryo-Core",
-		"objective": "Thaw out the Mistral Cryo-Core and reach the cyan beacon",
+		"objective": "Vent BOTH coolant pumps to expose the core, then destroy it and reach the cyan beacon",
 		"tasks": [
-			{"type": "kill_all"},
 			# The reactor sits behind cryo shielding — vent both coolant pumps to
-			# expose it, and expect the maintenance swarm to object.
+			# expose it, and expect the maintenance swarm to object. Labels are
+			# numbered so the required ORDER (pumps -> core) reads at a glance; the
+			# core task stays locked (and hidden on the HUD) until both pumps blow.
 			{"type": "sabotage", "id": "pump_a", "pos": Vector3(-14, 0, 4), "seconds": 3.0,
-				"label": "Vent coolant pump WEST", "color": Color(0.5, 0.9, 1.0)},
+				"label": "① Vent the WEST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0)},
 			{"type": "sabotage", "id": "pump_b", "pos": Vector3(14, 0, 4), "seconds": 3.0,
-				"label": "Vent coolant pump EAST", "color": Color(0.5, 0.9, 1.0),
+				"label": "① Vent the EAST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0),
 				"reinforce": [{"type": "skitter", "count": 4, "pos": Vector3(0, 0, 8)}]},
-			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "② Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			{"type": "kill_all"},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(48, 48),

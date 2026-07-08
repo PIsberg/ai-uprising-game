@@ -12,11 +12,24 @@ section below, and re-export.
 
 ## [Unreleased]
 
+### Changed
+- **Grenades** toned down from near-nuke (~205 dmg over a 6.2 m radius that
+  one-shot whole groups) to a strong-but-fair frag (~110 over 4.8 m). The
+  GRENADE POWER upgrade still scales up from there.
+- **Mistral Cryo-Core** objectives clarified: the coolant-pump tasks are now
+  numbered (① pumps → ② core) with a "stand on it" hint, so the required order
+  reads at a glance, and the summary spells out the full sequence.
+
 ### Fixed
-- Silenced the console spam on the suburb levels — 12 `invalid UID ... colormap.png`
-  warnings per load, caused by the shared texture's UID having been regenerated out
-  from under the imported building/vehicle/tree models. Restored the original UID so
-  the references resolve cleanly.
+- **Headshots and their crit/callout now only trigger on enemy robots** — a
+  fallback was awarding a headshot for hitting the upper part of any destructible
+  prop or cover object.
+- **Hazard readability:** recolored coolant/acid pools and deep-water pools now
+  get a pulsing amber warning border, so a lethal cyan pool no longer reads as
+  harmless water (Mistral's "step in water, take lava damage" trap).
+- Silenced the suburb console spam — 12 `invalid UID ... colormap.png` warnings
+  per load, caused by the shared texture's UID being regenerated out from under
+  the imported models. Restored the original UID.
 - Fixed a `non-equal opposite anchors` UI warning from the Armory scanline
   (`armory.gd`) by sizing it via its bottom offset instead of `.size`.
 

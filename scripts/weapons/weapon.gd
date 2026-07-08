@@ -580,11 +580,10 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			_spawn_bullet_hole(hpos, hit.normal)
 		if dmg_node:
 			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos))
-			var is_head := false
-			if col.has_method("is_headshot"):
-				is_head = col.is_headshot(hpos.y)
-			elif col is Node3D:
-				is_head = hpos.y - (col as Node3D).global_position.y > 0.6
+			# Headshots — and the crit bonus + "headshot" callout — apply ONLY to
+			# enemy robots (the is_headshot method is the enemy marker). Destructible
+			# props/cover never grant a headshot no matter where you hit them.
+			var is_head: bool = col.has_method("is_headshot") and col.is_headshot(hpos.y)
 			## Weak-point core crit: only the LARGER of headshot/weak-point bonus
 			## applies (no stacking a lucky head+core overlap into a double-dip).
 			var weak_mult := 1.0
