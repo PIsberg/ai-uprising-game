@@ -17,6 +17,10 @@ section below, and re-export.
   (L / gamepad D-pad up) mounted on the weapon.
 
 ### Changed
+- **Beefier energy-beam VFX** on the beam weapons (Tesla, Gauss, Arc Coil): a
+  three-layer bolt (wide halo → glow → hot white core) sized by the weapon's
+  muzzle scale, so the heavy guns fire visibly fatter, cooler beams with a
+  bigger impact bloom.
 - **Grenades** toned down from near-nuke (~205 dmg over a 6.2 m radius that
   one-shot whole groups) to a strong-but-fair frag (~110 over 4.8 m). The
   GRENADE POWER upgrade still scales up from there.
