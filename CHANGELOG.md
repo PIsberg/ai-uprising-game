@@ -21,6 +21,10 @@ section below, and re-export.
   reads at a glance, and the summary spells out the full sequence.
 
 ### Fixed
+- **End-of-campaign hang/black screen** after the final boss: the victory sequence
+  swapped straight to the cutscene, freezing the main thread on a black frame while
+  it built its 3D set. It now routes through the loading screen (finale banner)
+  like every other scene change, so the build stalls on a proper frame.
 - **Headshots and their crit/callout now only trigger on enemy robots** — a
   fallback was awarding a headshot for hitting the upper part of any destructible
   prop or cover object.
