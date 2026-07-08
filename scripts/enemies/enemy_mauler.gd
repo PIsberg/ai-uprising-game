@@ -53,7 +53,10 @@ func _physics_process(delta: float) -> void:
 func _begin_overload() -> void:
 	_overloading = true
 	_fuse_t = overload_fuse
-	_speed_mult *= 1.7 # a wounded mauler RUNS
+	# a wounded mauler RUNS. Multiply the LIVE move_speed, not _speed_mult — the
+	# latter is folded into move_speed once at spawn (_sync_stats) and never re-read,
+	# so a runtime bump to it does nothing. The _overloading latch makes this one-shot.
+	move_speed *= 1.7
 	_glow_light = OmniLight3D.new()
 	_glow_light.light_color = Color(1.0, 0.2, 0.1)
 	_glow_light.omni_range = 6.0

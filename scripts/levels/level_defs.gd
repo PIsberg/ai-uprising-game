@@ -1330,10 +1330,10 @@ static func _overseer() -> Dictionary:
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.8, 0.85, 1.0),
 			"milkyway": 0.45, "milkyway_tint": Color(0.55, 0.5, 0.85),
 			"ground": Color(0.05, 0.05, 0.08), "fog": Color(0.3, 0.4, 0.7),
-			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.5,
+			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.65,
 			"sky_contribution": 0.55, "glow": 1.22, "fog_density": 0.01,
-			"sun_color": Color(0.7, 0.5, 1.0), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.12, "brightness": 0.84,
+			"sun_color": Color(0.7, 0.5, 1.0), "sun_energy": 0.82,
+			"contrast": 1.15, "saturation": 1.12, "brightness": 0.90,
 		},
 		# A god-ray drops from the command beacon at the arena centre.
 		"light_shafts": [0],
@@ -1458,7 +1458,11 @@ static func _alien() -> Dictionary:
 			# to the same green and lets the violet beacon + amber spawn light hold
 			# their own hue. The green identity stays; the flatness goes.
 			"ambient": Color(0.58, 0.82, 0.66), "ambient_energy": 0.5,
-			"sky_contribution": 0.5, "glow": 1.42, "fog_density": 0.013,
+			# glow pulled from 1.42 (2nd-highest in the game) to 1.1: on this mono-green
+			# arena that much bloom smeared green over every surface and flattened depth.
+			# Lower bloom + slightly thinner haze lets the background separate and the
+			# robots' own hues read, without losing the off-world green mood.
+			"sky_contribution": 0.5, "glow": 1.1, "fog_density": 0.011,
 			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
 			"contrast": 1.15, "saturation": 1.0, "brightness": 0.84,
 		},
@@ -1599,10 +1603,10 @@ static func _titan() -> Dictionary:
 			"stars": true, "star_density": 0.1, "star_brightness": 2.4, "star_tint": Color(0.85, 0.8, 1.0),
 			"milkyway": 0.6, "milkyway_tint": Color(0.6, 0.5, 0.9),
 			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
-			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.45,
+			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.62,
 			"sky_contribution": 0.5, "glow": 1.42, "fog_density": 0.012,
-			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.5,
-			"contrast": 1.16, "saturation": 1.12, "brightness": 0.83,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.72,
+			"contrast": 1.16, "saturation": 1.12, "brightness": 0.90,
 		},
 		# The Singularity Core itself — a tall central monolith under the sky-beam.
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.55, 0.72, 1.0), "height": 6.5},
@@ -1737,10 +1741,10 @@ static func _archon() -> Dictionary:
 			"stars": true, "star_brightness": 2.4, "star_tint": Color(0.7, 0.8, 1.0),
 			"milkyway": 0.6, "milkyway_tint": Color(0.5, 0.55, 0.95),
 			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.25, 0.4, 0.8),
-			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.5,
+			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.65,
 			"sky_contribution": 0.55, "glow": 1.42, "fog_density": 0.011,
-			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.55,
-			"contrast": 1.16, "saturation": 1.13, "brightness": 0.83,
+			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.78,
+			"contrast": 1.16, "saturation": 1.13, "brightness": 0.90,
 		},
 		# A cathedral god-ray pours straight down onto the suspended brain.
 		"light_shafts": [0],
@@ -1868,10 +1872,10 @@ static func _uplink() -> Dictionary:
 			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.8, 0.85, 1.0),
 			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
 			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.3, 0.4, 0.75),
-			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.5,
+			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.65,
 			"sky_contribution": 0.6, "glow": 1.32, "fog_density": 0.009,
-			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
+			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.82,
+			"contrast": 1.15, "saturation": 1.13, "brightness": 0.90,
 		},
 		"light_shafts": [0],
 		"lights": [
@@ -2253,16 +2257,19 @@ static func _gpt() -> Dictionary:
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
-		# Neon-noir foundry: bright signage-coloured lights bleed into a hazy bloom so
-		# the hall reads soft and fuzzy (heavy glow_bloom + thicker volumetric fog).
+		# Neon-noir foundry: crisp green signage glow against a dark deck. Deliberately
+		# de-fuzzed from the original "soft & fuzzy" tuning (glow 1.5 / bloom 0.6 /
+		# threshold 0.82 / vol 0.03) that drowned the hall in a blurry green haze:
+		# glow_bloom 0 keeps a CRISP halo (no smear), a high threshold + thin fog let
+		# the racks and grid read sharp. The green identity stays; the blur is gone.
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
 			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.12, 0.3, 0.22),
-			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.34,
-			"sky_contribution": 0.4, "glow": 1.5, "glow_bloom": 0.6, "glow_strength": 1.15,
-			"glow_threshold": 0.82, "fog_density": 0.02,
-			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.7,
-			"contrast": 1.16, "saturation": 1.2, "brightness": 0.82, "volumetric_density": 0.03,
+			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.38,
+			"sky_contribution": 0.4, "glow": 0.95, "glow_bloom": 0.0, "glow_strength": 0.9,
+			"glow_threshold": 1.35, "fog_density": 0.009,
+			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.75,
+			"contrast": 1.16, "saturation": 1.2, "brightness": 0.86, "volumetric_density": 0.008,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},

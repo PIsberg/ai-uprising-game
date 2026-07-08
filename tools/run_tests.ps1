@@ -24,7 +24,9 @@ $probes = @(
   "res://tests/mission_arc_probe.tscn",
   "res://tests/survival_probe.tscn",
   "res://tests/voice_probe.tscn",
-  "res://tests/gun_range_probe.tscn"
+  "res://tests/gun_range_probe.tscn",
+  "res://tests/titan_blink_probe.tscn",
+  "res://tests/mauler_overload_probe.tscn"
 )
 
 Write-Host "== importing project =="
