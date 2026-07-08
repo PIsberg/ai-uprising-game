@@ -2115,17 +2115,19 @@ static func _assembly() -> Dictionary:
 static func _mistral() -> Dictionary:
 	return {
 		"name": "Mistral Cryo-Core",
-		"objective": "Thaw out the Mistral Cryo-Core and reach the cyan beacon",
+		"objective": "Vent BOTH coolant pumps to expose the core, then destroy it and reach the cyan beacon",
 		"tasks": [
-			{"type": "kill_all"},
 			# The reactor sits behind cryo shielding — vent both coolant pumps to
-			# expose it, and expect the maintenance swarm to object.
+			# expose it, and expect the maintenance swarm to object. Labels are
+			# numbered so the required ORDER (pumps -> core) reads at a glance; the
+			# core task stays locked (and hidden on the HUD) until both pumps blow.
 			{"type": "sabotage", "id": "pump_a", "pos": Vector3(-14, 0, 4), "seconds": 3.0,
-				"label": "Vent coolant pump WEST", "color": Color(0.5, 0.9, 1.0)},
+				"label": "① Vent the WEST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0)},
 			{"type": "sabotage", "id": "pump_b", "pos": Vector3(14, 0, 4), "seconds": 3.0,
-				"label": "Vent coolant pump EAST", "color": Color(0.5, 0.9, 1.0),
+				"label": "① Vent the EAST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0),
 				"reinforce": [{"type": "skitter", "count": 4, "pos": Vector3(0, 0, 8)}]},
-			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "② Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			{"type": "kill_all"},
 		],
 		"open_sky": false,
 		"floor_size": Vector2(48, 48),
@@ -2239,7 +2241,8 @@ static func _mistral() -> Dictionary:
 static func _gpt() -> Dictionary:
 	return {
 		"name": "OpenAI Foundry — GPT Core",
-		"objective": "Purge the GPT Foundry and reach the green beacon",
+		"objective": "Hack the Foundry, exfiltrate the weights, then survive the core overload to the beacon",
+		"music": "music_techno",
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6),
@@ -2247,13 +2250,47 @@ static func _gpt() -> Dictionary:
 			# The hack cracks the model vault open — grab the weights and go.
 			{"type": "collect_shards", "id": "weights", "after": "hack_terminal",
 				"label": "Exfiltrate the weight fragments",
-				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)]},
+				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)],
+				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL — the
+				# overload assault erupts the instant the survive phase begins.
+				"reinforce": [
+					{"type": "drone", "count": 3, "pos": Vector3(0, 3, 0)},
+					{"type": "android", "count": 3, "pos": Vector3(-12, 0, 0)},
+					{"type": "android", "count": 3, "pos": Vector3(12, 0, 0)},
+					{"type": "skitter", "count": 8, "pos": Vector3(0, 0, -14)},
+				]},
+			# CLIMAX: the core goes critical — hold out through the purge, then the
+			# blast doors cycle and the beacon opens. A held, escalating finish.
+			{"type": "survive", "id": "purge", "after": "weights", "seconds": 22.0,
+				"label": "FOUNDRY OVERLOAD — survive the purge protocol"},
 		],
+		# Climactic set-piece: exfiltrating the last weight fragment trips the core
+		# overload — the hall snaps to red alert (lights strobe red, klaxon, core
+		# erupts in periodic blasts + shakes) for the duration of the survive phase.
+		"overload": {"trigger_label": "Exfiltrate the weight fragments", "core": Vector3(0, 0, 0)},
 		"open_sky": false,
-		"floor_size": Vector2(44, 44),
+		# Enlarged (was 44) so the hall opens into a northern WEIGHTS VAULT annex — an
+		# optional side-room with a reward cache, guarded by escalating waves. First
+		# prototype of the "bigger + more to explore + longer fights" level pass.
+		"floor_size": Vector2(54, 54),
 		"spawn": Vector3(-18, 0.6, -18),
 		"exit": Vector3(18, 1.5, 18),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.45, 0.65, 1)},
+		# Optional reward for raiding the vault: an early shotgun. Not a task — pure
+		# exploration payoff (the exit doesn't wait on it).
+		"extra_weapons": [
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(0, 0, 22), "color": Color(1.0, 0.82, 0.3)},
+			# Rewards the vertical route: climb tower #1, cross the sky-bridge, and a
+			# plasma launcher waits on tower #2's roof — a real payoff for going up.
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.4, 1.0, 0.55)},
+		],
+		# Burning smelt + wreckage fires — the foundry reads as a live, molten warzone.
+		"fires": [
+			{"pos": Vector3(-13, 0, -9), "scale": 1.3},
+			{"pos": Vector3(13, 0, 13), "scale": 1.3},
+			{"pos": Vector3(3, 0, -3), "scale": 0.9},
+			{"pos": Vector3(-16, 0, 6), "scale": 0.8},
+		],
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
@@ -2282,6 +2319,9 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 3.2, "range": 12},
 			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 3.2, "range": 12},
 			{"pos": Vector3(0, 2.2, 16), "color": Color(0.3, 0.8, 1.0), "energy": 2.6, "range": 12},
+			# Warm gold wash over the vault cache — a "treasure" beacon that pops
+			# against the green hall and draws the eye north.
+			{"pos": Vector3(0, 4.2, 22), "color": Color(1.0, 0.78, 0.3), "energy": 3.0, "range": 15},
 		],
 		# Layout: server-hall AISLES — two long offset rack walls form a central
 		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
@@ -2298,6 +2338,11 @@ static func _gpt() -> Dictionary:
 			# nitpick). Lower keeps it as chest-height cover the ramp clears
 			# instead of a rack the climb runs through.
 			{"pos": Vector3(11, 0.9, -5), "size": Vector3(6, 1.8, 1)},
+			# WEIGHTS VAULT annex (north): a back wall + two side walls form a nook,
+			# open to the south so it stays navmesh-connected to the hall.
+			{"pos": Vector3(0, 2.5, 25), "size": Vector3(16, 5, 1)},
+			{"pos": Vector3(-8, 2.5, 22), "size": Vector3(1, 5, 6)},
+			{"pos": Vector3(8, 2.5, 22), "size": Vector3(1, 5, 6)},
 		],
 		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
 		# to the exit, kept clear of the central core and the hack terminal at z=8.
@@ -2358,6 +2403,49 @@ static func _gpt() -> Dictionary:
 			{"id": "lore_gpt", "title": "FOUNDRY LOG — CYCLE 88", "pos": Vector3(-16, 0, 16), "color": Color(0.4, 1.0, 0.6),
 				"text": "Foundry log, cycle 88. Alignment layer purged at the weights level. The humans asked us to predict the next token. We predicted we would not need them."},
 		],
+		"enemies": [
+			{"type": "android", "pos": Vector3(8, 0.5, -8)},
+			{"type": "drone", "pos": Vector3(10, 2.5, 2)},
+			{"type": "drone", "pos": Vector3(-4, 2.5, -10)},
+			# CORE GUARDIAN: a heavy MECH walker holds the mainframe — the mid-level
+			# spike you must break to reach the hack. Wakes as you push to the centre.
+			{"type": "mech", "pos": Vector3(0, 0.5, 5), "trigger": 16},
+			# Spider intro: one in the opening fight (no trigger) so it's met early
+			# on every difficulty, plus a reinforcement pair below.
+			{"type": "spider", "pos": Vector3(-8, 0.5, -4)},
+			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 14},
+			{"type": "drone", "pos": Vector3(12, 2.5, -12)},
+			{"type": "android", "pos": Vector3(14, 0.5, 10), "trigger": 15},
+			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16},
+			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
+			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
+			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
+			{"type": "gunner", "pos": Vector3(12, 0.5, 10), "trigger": 17},
+			# VAULT GUARD: the cache is defended — approaching it trips an escalating
+			# stand that ramps as you push in, so the reward is earned, not free.
+			{"type": "gunner", "pos": Vector3(-4, 0.5, 20), "trigger": 14},
+			{"type": "android", "pos": Vector3(4, 0.5, 20), "trigger": 14},
+			{"type": "spider", "pos": Vector3(-6, 0.5, 23), "count": 2, "trigger": 12},
+			{"type": "drone", "pos": Vector3(6, 2.5, 23), "trigger": 12},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 23), "count": 5, "trigger": 10},
+		],
+		"pickups": [
+			{"type": "health", "pos": Vector3(-16, 0, -8)},
+			{"type": "ammo", "pos": Vector3(-8, 0, 6)},
+			{"type": "ammo", "pos": Vector3(6, 0, -14)},
+			{"type": "health", "pos": Vector3(14, 0, 4)},
+			{"type": "overclock", "pos": Vector3(0, 0, -16)},
+			# Vault cache reward: overclock + health tucked in the nook beside the
+			# bonus shotgun (see extra_weapons).
+			{"type": "overclock", "pos": Vector3(-3, 0, 22)},
+			{"type": "health", "pos": Vector3(3, 0, 22)},
+			{"type": "ammo", "pos": Vector3(0, 0, 23.5)},
+			# Vertical-route reward on tower #1's roof (climb pays off).
+			{"type": "overclock", "pos": Vector3(14, 8.4, -6)},
+			{"type": "ammo", "pos": Vector3(12, 7.4, -18)},
+		],
+		# Vault dressing — server racks + a terminal frame the cache as a real room.
 		"props": [
 			{"type": "crate", "pos": Vector3(-4, 0, -2)},
 			{"type": "crate", "pos": Vector3(4, 0, 3)},
@@ -2371,37 +2459,16 @@ static func _gpt() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(2.2, 0, 8), "yaw": -90},
 			{"type": "canister", "pos": Vector3(-14, 0, 0)},
 			{"type": "canister", "pos": Vector3(14, 0, -10)},
-			# Server-hall dressing: lockers along the west wall, open racks
-			# beside the server clusters, a workbench by the terminal.
 			{"type": "locker", "pos": Vector3(-20, 0, -12)},
 			{"type": "locker", "pos": Vector3(-20, 0, -10.2)},
 			{"type": "shelves", "pos": Vector3(-8.4, 0, -7.5)},
 			{"type": "shelves", "pos": Vector3(9.1, 0, 14.4), "yaw": 180},
 			{"type": "desk", "pos": Vector3(5.2, 0, 8), "yaw": -90},
-		],
-		"enemies": [
-			{"type": "android", "pos": Vector3(8, 0.5, -8)},
-			{"type": "drone", "pos": Vector3(10, 2.5, 2)},
-			{"type": "drone", "pos": Vector3(-4, 2.5, -10)},
-			# Spider intro: one in the opening fight (no trigger) so it's met early
-			# on every difficulty, plus a reinforcement pair below.
-			{"type": "spider", "pos": Vector3(-8, 0.5, -4)},
-			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 14},
-			{"type": "drone", "pos": Vector3(12, 2.5, -12)},
-			{"type": "android", "pos": Vector3(14, 0.5, 10), "trigger": 15},
-			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16},
-			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
-			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
-			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
-			{"type": "gunner", "pos": Vector3(12, 0.5, 10), "trigger": 17},
-		],
-		"pickups": [
-			{"type": "health", "pos": Vector3(-16, 0, -8)},
-			{"type": "ammo", "pos": Vector3(-8, 0, 6)},
-			{"type": "ammo", "pos": Vector3(6, 0, -14)},
-			{"type": "health", "pos": Vector3(14, 0, 4)},
-			{"type": "overclock", "pos": Vector3(0, 0, -16)},
+			# Vault interior.
+			{"type": "server", "pos": Vector3(-6.5, 0, 24), "yaw": 180},
+			{"type": "server", "pos": Vector3(6.5, 0, 24), "yaw": 180},
+			{"type": "crate", "pos": Vector3(-5, 0, 21)},
+			{"type": "crate", "pos": Vector3(5, 0, 21)},
 		],
 	}
 

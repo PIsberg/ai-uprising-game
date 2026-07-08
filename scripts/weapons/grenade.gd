@@ -8,9 +8,12 @@ extends RigidBody3D
 @export var fuse: float = 1.5
 const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
 
-@export var damage: float = 40.0
-@export var splash_radius: float = 6.2
-@export var splash_damage: float = 165.0
+# Tuned down from a near-nuke (40 + 165 over 6.2 m one-shot everything in a huge
+# radius). Now a strong-but-fair frag: kills clustered light units, wounds tougher
+# ones, and the GRENADE POWER upgrade still scales it up from here.
+@export var damage: float = 28.0
+@export var splash_radius: float = 4.8
+@export var splash_damage: float = 82.0
 
 var _shooter: Node
 var _t: float = 0.0

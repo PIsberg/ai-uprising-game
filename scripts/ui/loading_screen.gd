@@ -25,6 +25,8 @@ const TIPS := [
 	"Standing in lava burns you fast — it drains health every second you're in it. Keep to the dark walkways.",
 	"Out of ammo mid-fight? Switch to another loaded weapon instead of reloading — the swap is faster and can be the difference between living and dying.",
 	"Every gun has a role — check the Weapon Codex from the main menu.",
+	"Number keys 1-0 arm weapon slots 1-10. Double-tap a digit for the slots past ten — double-tap 1 for slot 11, 2 for 12, and so on.",
+	"On the dark levels, hit L (or D-pad up) for your weapon flashlight.",
 	"Hunt the marked high-value target to clear an assassination sector.",
 	"Chain kills without pausing to spike into RAMPAGE — each tier boosts your damage, fire rate and speed. The streak and its buffs collapse the instant you stop killing, so press the attack hard — but stay alive to keep it rolling.",
 	"Aggression is rewarded, but survival matters: RAMPAGE only builds while you keep killing, and dropping to critical health triggers a one-time ADRENALINE surge to claw the fight back.",
@@ -92,20 +94,23 @@ func _build_ui() -> void:
 
 	# Boot (app launch) shows the game title; a level load shows "ENTERING <level>".
 	var is_boot: bool = GameState.pending_scene == ""
+	# The end-of-campaign victory sequence routes through here too; show a finale
+	# banner rather than the stale last-level name ("ARCHON").
+	var is_finale: bool = GameState.pending_scene == GameState.VICTORY_CUTSCENE
 	var lid := GameState.level_id_from_path(GameState.current_level_path)
 	var def := LevelDefs.get_def(lid)
 	var lname: String = def.get("name", "")
 
-	if is_boot or lname != "":
+	if is_boot or is_finale or lname != "":
 		var kicker := Label.new()
-		kicker.text = "INITIALIZING" if is_boot else "ENTERING"
+		kicker.text = "INITIALIZING" if is_boot else ("HUMANITY ENDURES" if is_finale else "ENTERING")
 		kicker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		kicker.add_theme_font_size_override("font_size", 18)
 		kicker.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
 		box.add_child(kicker)
 
 		var title := Label.new()
-		title.text = "AI UPRISING" if is_boot else lname.to_upper()
+		title.text = "AI UPRISING" if (is_boot or is_finale) else lname.to_upper()
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title.add_theme_font_size_override("font_size", 44)
 		title.add_theme_color_override("font_color", Color(1, 0.96, 0.9))

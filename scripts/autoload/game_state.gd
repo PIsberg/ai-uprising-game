@@ -1245,7 +1245,12 @@ func advance_level() -> void:
 		# main_menu.tscn itself once it ends or is skipped.
 		clear_save()
 		set_state(State.MENU)
-		get_tree().change_scene_to_file(VICTORY_CUTSCENE)
+		# Route through the loading screen like every other scene change: the victory
+		# cutscene builds its 3D dawn set synchronously in _ready, and swapping to it
+		# DIRECTLY froze the main thread on a black frame ("hangs + goes dark after the
+		# final boss"). The loading screen paints a frame first so the build stalls on
+		# a proper loading screen instead.
+		_enter_level_scene(VICTORY_CUTSCENE)
 
 var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
 

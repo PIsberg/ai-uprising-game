@@ -138,7 +138,10 @@ func _ready() -> void:
 	_scan.color = Color(0.4, 0.85, 1.0, 0.05)
 	_scan.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_scan.custom_minimum_size = Vector2(0, 90)
-	_scan.size.y = 90
+	# TOP_WIDE stretches width via anchors (0..1), so its height must be set through
+	# the bottom offset, not .size — assigning .size on a control with non-equal
+	# opposite anchors warns ("size overridden after _ready").
+	_scan.offset_bottom = _scan.offset_top + 90.0
 	_scan.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_scan)
 	var h: float = get_viewport().get_visible_rect().size.y

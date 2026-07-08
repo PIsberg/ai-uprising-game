@@ -246,6 +246,7 @@ func _ready() -> void:
 	_build_horde(def)
 	_place_player(def)
 	_build_set_piece(def)
+	_build_overload(def)
 	_build_jammer(def)
 	_build_lava(def)
 	_apply_objective_text(def)
@@ -2186,6 +2187,16 @@ func _build_hero_lights(def: Dictionary) -> void:
 		add_child(area)
 
 # ---------- boss horizon set-piece ----------
+
+## Opt-in climactic OVERLOAD director (def "overload"): red-alert lighting, klaxon
+## and core blasts when the trigger objective completes. See OverloadDirector.
+func _build_overload(def: Dictionary) -> void:
+	var cfg: Dictionary = def.get("overload", {})
+	if cfg.is_empty():
+		return
+	var director := OverloadDirector.new()
+	director.setup(cfg)
+	add_child(director)
 
 func _build_set_piece(def: Dictionary) -> void:
 	var sp: Dictionary = def.get("set_piece", {})

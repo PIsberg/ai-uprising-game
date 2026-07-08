@@ -110,14 +110,35 @@ func _relax_arms() -> void:
 		{"bone": "LowerArm.R", "euler": Vector3(0, 0, -30)},
 	])
 
+## WAKE-SLAM entrance: BEHEMOTH-X boots up — reactor flares, a warning ring
+## blooms on the foundry deck — then it rears and HAMMERS the floor, a molten
+## double shock ring blasting out with a hit-stop. Unique to the melee behemoth
+## (GOLIATH drops, PROMETHEUS folds, GROK erupts — BEHEMOTH quakes the deck).
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	AudioBus.play_synth_at("mech_step", global_position, 6.0, 0.4)
-	AudioBus.play_synth_at("explosion", global_position, 3.0, 0.5)
 	var p := get_tree().get_first_node_in_group("player")
+	# Beat 1 — it wakes: a subterranean rumble, the reactor flares white-hot, and
+	# a molten warning ring charges on the deck under it.
+	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.3)
+	AudioBus.play_synth_at("servo_step_heavy", global_position, 2.0, 0.4)
+	spawn_ground_warning(global_position, 6.5, 0.55, Color(1.0, 0.4, 0.12))
+	recoil = 1.0 # spikes the reactor emission (see _process glow driver)
 	if p and p.has_method("shake"):
-		p.shake(1.2)
+		p.shake(0.5)
+	await get_tree().create_timer(0.55).timeout
+	if state == State.DEAD:
+		return
+	# Beat 2 — WAKE-SLAM: it hammers the deck. Twin molten shock rings blast out,
+	# a hard hit-stop and shake sell the impact.
+	AudioBus.play_synth_at("explosion", global_position, 7.0, 1.0)
+	AudioBus.play_synth_at("impact_metal", global_position, 3.0, 0.85)
+	spawn_shockwave_ring(9.5, Color(1.0, 0.42, 0.14))
+	spawn_shockwave_ring(5.0, Color(1.0, 0.6, 0.2))
+	recoil = 1.0
+	GameState.hit_stop(0.1, 0.5)
+	if p and p.has_method("shake"):
+		p.shake(1.5)
 
 func _phase() -> int:
 	var frac := hp.current_health / hp.max_health

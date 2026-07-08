@@ -580,11 +580,10 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			_spawn_bullet_hole(hpos, hit.normal)
 		if dmg_node:
 			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos))
-			var is_head := false
-			if col.has_method("is_headshot"):
-				is_head = col.is_headshot(hpos.y)
-			elif col is Node3D:
-				is_head = hpos.y - (col as Node3D).global_position.y > 0.6
+			# Headshots — and the crit bonus + "headshot" callout — apply ONLY to
+			# enemy robots (the is_headshot method is the enemy marker). Destructible
+			# props/cover never grant a headshot no matter where you hit them.
+			var is_head: bool = col.has_method("is_headshot") and col.is_headshot(hpos.y)
 			## Weak-point core crit: only the LARGER of headshot/weak-point bonus
 			## applies (no stacking a lucky head+core overlap into a double-dip).
 			var weak_mult := 1.0
@@ -914,13 +913,21 @@ func _energy_beam_flash(from: Vector3, to: Vector3) -> void:
 	if scene == null:
 		return
 	var col := data.tracer_color
+	# Bigger guns fire fatter, cooler beams: scale the beam presence by the weapon's
+	# muzzle_scale (gauss 1.3, arccoil 1.15, ... the heavy energy guns read beefier).
+	var ms: float = maxf(1.0, data.muzzle_scale)
 	var root := Node3D.new()
 	scene.add_child(root)
-	root.add_child(_beam_tube(from, to, 0.09, Color(col.r, col.g, col.b, 0.5), col, 6.0))
-	root.add_child(_beam_tube(from, to, 0.028, Color(1, 1, 1, 0.95), col.lerp(Color.WHITE, 0.6), 13.0))
-	# End blooms — an emissive orb + a light at the muzzle and at the impact.
-	for end_pt in [from, to]:
-		var orb := _glow_orb(col, 0.14)
+	# Wide soft halo → glow tube → bright white core: three concentric layers give
+	# the bolt real girth and a hot centre instead of a thin line.
+	root.add_child(_beam_tube(from, to, 0.20 * ms, Color(col.r, col.g, col.b, 0.16), col, 3.2))
+	root.add_child(_beam_tube(from, to, 0.10 * ms, Color(col.r, col.g, col.b, 0.5), col, 6.5))
+	root.add_child(_beam_tube(from, to, 0.03 * ms, Color(1, 1, 1, 0.95), col.lerp(Color.WHITE, 0.6), 14.0))
+	# End blooms — an emissive orb + a light at the muzzle and at the impact (the
+	# impact end punches bigger so the hit reads as the bolt biting in).
+	var ends := {from: 0.13 * ms, to: 0.22 * ms}
+	for end_pt in ends:
+		var orb := _glow_orb(col, ends[end_pt])
 		root.add_child(orb)
 		orb.global_position = end_pt
 		# Budgeted spill light (the glow orb is self-lit; skip the point light when

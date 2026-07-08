@@ -59,6 +59,12 @@ func _ready() -> void:
 	_build_obstacle()
 	_build_light()
 	_build_audio()
+	# Default molten lava reads as "hot, don't touch" on its own. A RECOLORED bed
+	# (cyan coolant, green acid) or a WATER pool reads as harmless liquid — players
+	# walk in and get cooked. Frame those in a pulsing amber hazard border so the
+	# danger is unmistakable regardless of the fluid's colour.
+	if recolor or water:
+		_build_warning_edge()
 
 ## The glowing molten surface plane (or, in water mode, a deep blue pool).
 func _build_surface() -> void:
@@ -131,6 +137,40 @@ func _build_water_surface() -> void:
 	basin.position = Vector3(0, surface_y - 0.3, 0)
 	basin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(basin)
+
+## A pulsing amber danger frame around the bed perimeter — the universal "hazard,
+## do not enter" cue. Makes a benign-looking coolant / acid / water pool read as
+## lethal at a glance (amber contrasts against any fluid colour).
+func _build_warning_edge() -> void:
+	var hx := size.x * 0.5
+	var hz := size.y * 0.5
+	var col := Color(1.0, 0.62, 0.05)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.albedo_color = col
+	mat.emission = col
+	mat.emission_energy_multiplier = 2.5
+	var th := 0.3
+	var edges := [
+		[Vector3(0, 0, -hz), Vector3(size.x, 0.05, th)],
+		[Vector3(0, 0, hz), Vector3(size.x, 0.05, th)],
+		[Vector3(-hx, 0, 0), Vector3(th, 0.05, size.y)],
+		[Vector3(hx, 0, 0), Vector3(th, 0.05, size.y)],
+	]
+	for e in edges:
+		var bar := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = e[1]
+		bm.material = mat
+		bar.mesh = bm
+		var p: Vector3 = e[0]
+		bar.position = Vector3(p.x, surface_y + 0.09, p.z)
+		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(bar)
+	var tw := create_tween().set_loops()
+	tw.tween_property(mat, "emission_energy_multiplier", 4.5, 0.7).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(mat, "emission_energy_multiplier", 2.0, 0.7).set_trans(Tween.TRANS_SINE)
 
 ## Carve the bed out of the baked navmesh so enemies route around it. Present
 ## before the builder's deferred bake, so the static carve takes.

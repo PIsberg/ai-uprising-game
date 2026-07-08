@@ -38,6 +38,77 @@ func _ready() -> void:
 		if _arm_l: _arm_l_base = _arm_l.rotation
 
 # ---------------------------------------------------------------------------
+# Signature ENTRANCE — SPATIAL FOLD (overrides the Colossus sky-drop)
+#
+# GOLIATH-IX makes planetfall. PROMETHEUS-0 doesn't arrive — it *un-folds into
+# being*. A violet rift tears open over the dais, reality glitches, and the titan
+# de-rezzes into the arena on a spatial shockwave: the exact trick it uses to
+# blink around you mid-fight, now weaponised as its introduction. Held frozen +
+# invulnerable through the materialise, then it drops into the fight.
+# ---------------------------------------------------------------------------
+
+## Override: no sky-drop. Freeze + hide, then run the fold-in cinematic.
+func _begin_entrance() -> void:
+	hp.invulnerable = true
+	visible = false
+	set_physics_process(false)
+	_do_entrance.call_deferred()
+
+func _do_entrance() -> void:
+	GameState.announce_boss(self)
+	AudioBus.play_synth_ui("eas_alert", -6.0)
+	var here := global_position
+	var p := get_tree().get_first_node_in_group("player")
+	var scene := get_tree().current_scene
+	if scene == null:
+		_finish_fold_in()
+		return
+
+	# 1) Reality tears: a violet spatial rift irises open above the dais.
+	var rift := BossPortal.new()
+	rift.radius = 5.0
+	rift.color = Color(0.58, 0.5, 1.0)
+	scene.add_child(rift)
+	rift.global_position = here + Vector3(0, 4.0, 0)
+	if p and p is Node3D:
+		rift.face((p as Node3D).global_position)
+	AudioBus.play_synth_at("overlord_glitch", here, 3.0, 0.95)
+	if p and p.has_method("shake"):
+		p.shake(0.7)
+	rift.open(0.5)
+	await get_tree().create_timer(0.5).timeout
+
+	# 2) It de-rezzes in: a glitch crack at the dais, then the chassis snaps into
+	#    existence with a fold shockwave — hit-stop + a hard shake sell the arrival.
+	_blink_flash(here)
+	AudioBus.play_synth_at("overlord_glitch", here, 2.0, 0.7)
+	AudioBus.play_synth_at("explosion", here, 4.0, 0.55)
+	visible = true
+	var model := get_node_or_null("Model") as Node3D
+	if model:
+		model.scale = Vector3(1.18, 0.72, 1.18) # a squashed "phasing-in" pop...
+		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(model, "scale", Vector3.ONE, 0.45) # ...settling to solid
+	GameState.hit_stop(0.09, 0.55)
+	if p and p.has_method("shake"):
+		p.shake(1.2)
+	_entrance = 6.0   # eye-blaze surge (drives the inherited eye-glow spike)
+	await get_tree().create_timer(0.4).timeout
+
+	# 3) Echo cracks around it as the rift collapses — the fold "settles".
+	_blink_flash(here + Vector3(3.2, 0, -2.4))
+	_blink_flash(here + Vector3(-3.0, 0, 2.6))
+	rift.close(0.45)
+	await get_tree().create_timer(0.2).timeout
+	_finish_fold_in()
+
+## Release the freeze/invuln and hand control to the normal fight.
+func _finish_fold_in() -> void:
+	hp.invulnerable = false
+	visible = true
+	set_physics_process(true)
+
+# ---------------------------------------------------------------------------
 # Signature mechanic — PHASE-BLINK HIT-AND-RUN
 #
 # GOLIATH-IX lumbers; PROMETHEUS-0 *strides*. Where the Colossus closes the
