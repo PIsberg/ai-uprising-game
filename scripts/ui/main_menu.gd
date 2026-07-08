@@ -20,8 +20,25 @@ func _ready() -> void:
 	_refresh_graphics_label()
 	_build_extra_settings()
 	_show_panel(_main)
+	_add_version_label()
 	if GraphicsSettings.needs_auto_quality:
 		_run_auto_quality_benchmark()
+
+## A small, dim build-version tag pinned to the bottom-right corner. Reads the
+## single source of truth (project.godot `application/config/version`) so bumping
+## the version there updates the menu, the exported build, and this label at once.
+func _add_version_label() -> void:
+	var v := str(ProjectSettings.get_setting("application/config/version", "dev"))
+	var lbl := Label.new()
+	lbl.text = "v" + v
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.modulate = Color(1.0, 1.0, 1.0, 0.38)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.anchor_left = 1.0; lbl.anchor_top = 1.0; lbl.anchor_right = 1.0; lbl.anchor_bottom = 1.0
+	lbl.offset_left = -170.0; lbl.offset_top = -34.0; lbl.offset_right = -16.0; lbl.offset_bottom = -10.0
+	add_child(lbl)
 
 var _fps_btn: Button
 
