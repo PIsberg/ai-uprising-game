@@ -12,6 +12,10 @@ section below, and re-export.
 
 ## [Unreleased]
 
+### Added
+- **Weapon flashlight** for the dark levels — a toggleable forward spotlight
+  (L / gamepad D-pad up) mounted on the weapon.
+
 ### Changed
 - **Grenades** toned down from near-nuke (~205 dmg over a 6.2 m radius that
   one-shot whole groups) to a strong-but-fair frag (~110 over 4.8 m). The

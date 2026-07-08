@@ -523,6 +523,8 @@ func _input(event: InputEvent) -> void:
 			elif _cheat_buf.ends_with(IMBA_WORD):
 				_cheat_buf = ""
 				_cheat_imba()
+	if event.is_action_pressed("flashlight"):
+		_toggle_flashlight()
 	if _dead:
 		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -530,6 +532,25 @@ func _input(event: InputEvent) -> void:
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
 		head.rotate_x(-m.relative.y * mouse_sensitivity * _look_sens_mult * _look_y_sign)
 		head.rotation.x = clampf(head.rotation.x, -deg_to_rad(look_clamp_deg), deg_to_rad(look_clamp_deg))
+
+## Weapon-mounted flashlight for the dark levels (toggle: L / gamepad D-pad up).
+## A tight forward spot parented to the camera, built lazily on first toggle.
+var _flashlight: SpotLight3D
+func _toggle_flashlight() -> void:
+	if _flashlight == null:
+		_flashlight = SpotLight3D.new()
+		_flashlight.light_color = Color(0.96, 0.97, 1.0)
+		_flashlight.light_energy = 6.5
+		_flashlight.spot_range = 38.0
+		_flashlight.spot_angle = 30.0
+		_flashlight.spot_attenuation = 1.1
+		_flashlight.spot_angle_attenuation = 1.6
+		_flashlight.shadow_enabled = true
+		camera.add_child(_flashlight)
+		# Near the muzzle, aimed straight down the camera's -Z (forward).
+		_flashlight.position = Vector3(0.25, -0.12, -0.2)
+	_flashlight.visible = not _flashlight.visible
+	AudioBus.play_synth_ui("empty_click", -10.0, 1.4)
 
 func _physics_process(delta: float) -> void:
 	if _dead:
