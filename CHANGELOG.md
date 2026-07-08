@@ -28,6 +28,11 @@ section below, and re-export.
   - **Rewarded verticality:** a plasma launcher + overclock on the tower roofs,
     reached via the climb and sky-bridge.
   - Atmosphere: burning smelt **fires** and a **techno** music track.
+  - **Dynamic red-alert climax:** grabbing the last weight fragment now trips a
+    full environmental **OverloadDirector** set-piece — the hall's lights and
+    ambient bleed to emergency red and strobe, a klaxon loops, and the core
+    erupts with periodic blasts, shock rings, and screen shake for the whole
+    survive phase. New reusable `overload` level-def hook.
   This is the template for the wider level pass — playtest and confirm the feel.
 
 ### Changed

@@ -2264,6 +2264,10 @@ static func _gpt() -> Dictionary:
 			{"type": "survive", "id": "purge", "after": "weights", "seconds": 22.0,
 				"label": "FOUNDRY OVERLOAD — survive the purge protocol"},
 		],
+		# Climactic set-piece: exfiltrating the last weight fragment trips the core
+		# overload — the hall snaps to red alert (lights strobe red, klaxon, core
+		# erupts in periodic blasts + shakes) for the duration of the survive phase.
+		"overload": {"trigger_label": "Exfiltrate the weight fragments", "core": Vector3(0, 0, 0)},
 		"open_sky": false,
 		# Enlarged (was 44) so the hall opens into a northern WEIGHTS VAULT annex — an
 		# optional side-room with a reward cache, guarded by escalating waves. First
