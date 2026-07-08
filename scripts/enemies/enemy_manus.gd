@@ -84,17 +84,34 @@ func _ready() -> void:
 	hp.invulnerable = true
 	_do_entrance.call_deferred()
 
+## FINGER-DRUM WAKE entrance: the severed master-arm boots up — its knuckles rap
+## the deck one by one (each rap kicks a shock ring and pulses the core brighter),
+## then it REARS and drives the whole fist down in a floor-quaking slam. Unique to
+## the hand: it doesn't walk in, it drums itself awake.
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	# Fingers drum the deck: the arm "wakes", knuckles rapping one by one.
+	var p := get_tree().get_first_node_in_group("player")
+	# Knuckles rap the deck one by one — each strike a shock ring at a fingertip,
+	# the core throbbing louder with every rap.
+	var knuckles := [Vector3(2.4, 0, 1.4), Vector3(1.0, 0, 2.7), Vector3(-1.1, 0, 2.5), Vector3(-2.5, 0, 1.1)]
 	for i in 4:
 		AudioBus.play_synth_at("servo_step_heavy", global_position, 4.0, 0.5 + i * 0.12)
+		spawn_shockwave_ring(2.2 + i * 0.5, Color(0.72, 0.95, 1.0), global_position + knuckles[i])
+		recoil = 0.85 # pulse the core glow with each rap (see _process driver)
+		if p and p.has_method("shake"):
+			p.shake(0.35)
 		await get_tree().create_timer(0.16).timeout
-	AudioBus.play_synth_at("mech_step", global_position, 5.0, 0.35)
-	var p := get_tree().get_first_node_in_group("player")
+		if state == State.DEAD:
+			return
+	# Then it REARS and drives the whole fist down — a floor-quaking slam ring.
+	AudioBus.play_synth_at("mech_step", global_position, 5.0, 0.3)
+	AudioBus.play_synth_at("explosion", global_position, 6.0, 0.9)
+	spawn_shockwave_ring(8.5, Color(0.6, 0.9, 1.0))
+	recoil = 1.0
+	GameState.hit_stop(0.09, 0.5)
 	if p and p.has_method("shake"):
-		p.shake(1.0)
+		p.shake(1.4)
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:

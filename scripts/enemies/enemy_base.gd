@@ -1095,6 +1095,35 @@ func spawn_ground_warning(center: Vector3, radius: float, dur: float, col: Color
 	tw.tween_property(dm, "albedo_color:a", 0.0, 0.12)
 	tw.tween_callback(root.queue_free)
 
+## A single expanding shock ring blasting out from a ground impact — a bright
+## torus that scales out to `radius` while fading, then frees itself. Reusable
+## impact FX (boss slams, wake-quakes). Parents to the scene so it stays put.
+func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), origin: Vector3 = Vector3.INF) -> void:
+	var parent := get_tree().current_scene
+	if parent == null:
+		return
+	var at := origin if origin != Vector3.INF else global_position
+	var ring := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 0.25; tm.outer_radius = 0.6
+	ring.mesh = tm
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = color; mat.emission_energy_multiplier = 6.0
+	ring.material_override = mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(ring)
+	ring.global_position = Vector3(at.x, 0.15, at.z)
+	var tw := ring.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(ring, "scale", Vector3(radius * 1.6, 1.0, radius * 1.6), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.45)
+	tw.chain().tween_callback(ring.queue_free)
+
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
 ## in-progress actions (a charging shot, a slam wind-up, …).
 func _on_staggered() -> void:

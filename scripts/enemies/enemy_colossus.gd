@@ -103,8 +103,12 @@ func _ready() -> void:
 		hp.invulnerable = true
 		set_physics_process(false)
 		return
-	# Cinematic sky-drop: GOLIATH-IX makes planetfall on its foot retro-rockets,
-	# then slams down. It hangs high and invulnerable until it lands.
+	_begin_entrance()
+
+## The boss's arrival cinematic. Overridable so subclasses can arrive their own
+## way (e.g. the titan folds space instead of making planetfall). Base = the
+## GOLIATH sky-drop: hang high on retro-rockets, invulnerable, until it lands.
+func _begin_entrance() -> void:
 	_drop_target_y = global_position.y
 	global_position.y += DROP_HEIGHT
 	velocity = Vector3.ZERO
