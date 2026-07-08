@@ -12,7 +12,13 @@ section below, and re-export.
 
 ## [Unreleased]
 
-_Changes staged for the next build land here._
+### Fixed
+- Silenced the console spam on the suburb levels — 12 `invalid UID ... colormap.png`
+  warnings per load, caused by the shared texture's UID having been regenerated out
+  from under the imported building/vehicle/tree models. Restored the original UID so
+  the references resolve cleanly.
+- Fixed a `non-equal opposite anchors` UI warning from the Armory scanline
+  (`armory.gd`) by sizing it via its bottom offset instead of `.size`.
 
 ## [1.0.0] - 2026-07-08
 
