@@ -15,6 +15,8 @@ section below, and re-export.
 ### Added
 - **Weapon flashlight** for the dark levels — a toggleable forward spotlight
   (L / gamepad D-pad up) mounted on the weapon.
+- **Keyboard access to weapon slots 11+** — double-tap a digit to arm its +10
+  slot (double-tap 1 → slot 11, 2 → 12, …), so big racks aren't wheel-only.
 
 ### Changed
 - **Beefier energy-beam VFX** on the beam weapons (Tesla, Gauss, Arc Coil): a

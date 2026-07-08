@@ -24,6 +24,11 @@ var _recoil_yaw: float = 0.0
 @export var equip_time: float = 0.5
 var _equip_timer: float = 0.0
 
+## Double-tap-a-digit tracking (reach slots 11+ from the keyboard). See _input.
+const DOUBLE_TAP_MS := 350
+var _last_digit_key: int = -1
+var _last_digit_ms: int = 0
+
 # ADS & Sway variables
 var _hip_position: Vector3
 var _current_ads_lerp: float = 0.0
@@ -101,15 +106,27 @@ func _input(event: InputEvent) -> void:
 		_mouse_input += m.relative
 	elif event is InputEventKey and event.pressed and not event.echo:
 		# Number keys 1-9 select that weapon slot directly; 0 selects the 10th.
-		# Anything past the 10th is reached with the mouse wheel (weapon_next/prev),
-		# which cycles the whole rack. Ignored mid-draw.
+		# DOUBLE-TAPPING a digit d reaches slot 10+d (dbl-1 -> slot 11, dbl-2 -> 12,
+		# ...), so racks past 10 weapons are keyboard-reachable without the wheel.
+		# The mouse wheel (weapon_next/prev) still cycles the whole rack. Ignored
+		# mid-draw.
 		var k := (event as InputEventKey).physical_keycode
 		if _equip_timer <= 0.0:
+			var d := -1                       # the 1-9 digit pressed (0 stays slot 10)
 			var idx := -1
 			if k >= KEY_1 and k <= KEY_9:
-				idx = k - KEY_1
+				d = k - KEY_1 + 1
+				idx = d - 1
 			elif k == KEY_0:
 				idx = 9
+			if d >= 1:
+				var now := Time.get_ticks_msec()
+				# A quick second tap of the SAME digit jumps to its +10 slot.
+				if k == _last_digit_key and now - _last_digit_ms <= DOUBLE_TAP_MS \
+						and (9 + d) < weapons.size():
+					idx = 9 + d               # slot 10+d (idx is 0-based)
+				_last_digit_key = k
+				_last_digit_ms = now
 			if idx >= 0 and idx < weapons.size():
 				_equip(idx)
 
