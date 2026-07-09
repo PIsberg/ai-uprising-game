@@ -30,7 +30,8 @@ const ENEMY_LAYER := 4
 var _t: float = 0.0       ## damage-tick accumulator
 var _clock: float = 0.0   ## continuous clock for the glow flicker
 var _mat: ShaderMaterial
-var _light: OmniLight3D
+var _light: OmniLight3D            ## first of _lights (back-compat handle)
+var _lights: Array[OmniLight3D] = []
 
 func _ready() -> void:
 	# Burns the PLAYER only (layer 2). Enemies route around the bed via the navmesh
@@ -191,14 +192,48 @@ func _build_obstacle() -> void:
 	obs.avoidance_enabled = false       # static carve only; no RVO jitter
 	add_child(obs)
 
+## Molten light. A single omni at the centre of a long channel is wrong twice
+## over: its radius has to span the whole bed (so the falloff is a soft, uniform
+## wash instead of a hot trench), and the far ends are lit by a lamp 20 m away.
+## Beds are long and thin, so lay a LINE of emitters down the long axis, each
+## sized to the bed's WIDTH. GPT Foundry's smelt channels are ~39 m x 5 m — one
+## lamp made them read as flat orange carpet; a line makes them read as molten.
+## Bounded to LIGHT_MAX (shadowless, so each is cheap, but they are not free).
+const LIGHT_MAX := 6
+
 func _build_light() -> void:
-	_light = OmniLight3D.new()
-	_light.light_color = hazard_color if recolor else Color(1.0, 0.45, 0.12)
-	_light.light_energy = 2.4
-	_light.omni_range = maxf(size.x, size.y) * 0.9 + 4.0
-	_light.shadow_enabled = false
-	_light.position = Vector3(0, 1.2, 0)
-	add_child(_light)
+	var col := hazard_color if recolor else Color(1.0, 0.45, 0.12)
+	var along_x := size.x >= size.y
+	var length: float = size.x if along_x else size.y
+	var width: float = size.y if along_x else size.x
+	# One emitter per ~1.6 bed-widths of length: dense enough that the pools
+	# overlap into a continuous channel, sparse enough to stay cheap. Capped by
+	# the detail tier — LOW falls back to exactly one lamp (the old behaviour),
+	# so a weak GPU never pays for 6 lights per bed on a 4-bed level. Never zero:
+	# an unlit molten channel would read as painted orange floor.
+	var cap: int = clampi(int(round(1.0 + GraphicsSettings.detail_scale() * 4.0)), 1, LIGHT_MAX)
+	var n: int = clampi(int(round(length / maxf(width * 1.6, 1.0))), 1, cap)
+	for i in n:
+		var l := OmniLight3D.new()
+		l.light_color = col
+		l.light_energy = _light_energy(0.0, i)
+		l.omni_range = width * 0.9 + 5.0
+		l.shadow_enabled = false
+		# Evenly spaced along the long axis, centred: i=0..n-1 -> -L/2..+L/2,
+		# inset by half a step so the end lamps sit inside the bed, not on its lip.
+		var t: float = 0.0 if n == 1 else (float(i) + 0.5) / float(n) - 0.5
+		var off: float = t * length
+		l.position = Vector3(off if along_x else 0.0, 1.2, 0.0 if along_x else off)
+		add_child(l)
+		_lights.append(l)
+	if not _lights.is_empty():
+		_light = _lights[0] # kept for any external reference
+
+## Flicker, de-phased per lamp so the channel shimmers along its length instead
+## of the whole bed pulsing as one slab.
+func _light_energy(clock: float, i: int) -> float:
+	var p := float(i) * 1.7
+	return 2.4 + sin(clock * 6.0 + p) * 0.3 + sin(clock * 13.0 + p * 0.5) * 0.15
 
 ## A looping bubbling bed so the hazard is recognisable by ear before you reach
 ## it. Louder/lower for molten lava; thinner and quieter for a recolored coolant
@@ -223,9 +258,9 @@ func _build_audio() -> void:
 
 func _process(delta: float) -> void:
 	_clock += delta
-	if _light:
-		# Subtle flicker so the molten glow feels alive.
-		_light.light_energy = 2.4 + sin(_clock * 6.0) * 0.3 + sin(_clock * 13.0) * 0.15
+	# Subtle flicker so the molten glow feels alive; de-phased along the channel.
+	for i in _lights.size():
+		_lights[i].light_energy = _light_energy(_clock, i)
 	_t += delta
 	if _t < tick:
 		return
