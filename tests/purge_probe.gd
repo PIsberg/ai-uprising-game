@@ -71,12 +71,24 @@ func _run() -> void:
 			if p.y > 1.0:
 				continue # airborne (drones) — lava beds don't reach them
 			for bed in lava:
-				var c: Vector3 = bed["pos"]
-				var s: Vector2 = bed["size"]
 				# Spawners scatter a clustered "count" up to 2.5 m off `pos`, so
 				# require the point to clear the bed by that margin, not just miss it.
-				var inside := absf(p.x - c.x) < s.x * 0.5 + 2.5 and absf(p.z - c.z) < s.y * 0.5 + 2.5
-				_check("'%s' @%v clears lava %v" % [t, p, c], not inside)
+				_check("'%s' @%v clears lava %v" % [t, p, bed["pos"]],
+					not _in_bed(p, bed, 2.5))
+
+	# 2b. Vented supplies must be reachable too — a pickup inside a smelt channel
+	#     is worse than no pickup (it baits the player into the fire). No scatter
+	#     on these, so they only have to clear the bed itself.
+	var vented := 0
+	for w in waves:
+		for s in w.get("supplies", []):
+			vented += 1
+			var kind: String = s.get("type", "")
+			_check("supply '%s' resolves" % kind, LevelBuilder.PICKUP_SCENES.has(kind))
+			var sp: Vector3 = s.get("pos", Vector3.ZERO)
+			for bed in lava:
+				_check("supply '%s' @%v clears lava" % [kind, sp], not _in_bed(sp, bed, 0.0))
+	_check("purge vents supplies for the hold", vented >= 2, "%d drops" % vented)
 
 	# 3. The timer fires each wave exactly once, in order, and stops at the goal.
 	GameState.reset_tasks()
@@ -88,7 +100,7 @@ func _run() -> void:
 	# Deliberately shuffled: _ready must sort them back into firing order.
 	timer.waves = [waves[2], waves[0], waves[1]]
 	var fired: Array[String] = []
-	timer.wave_due.connect(func(_e: Array, l: String): fired.append(l))
+	timer.wave_due.connect(func(w: Dictionary): fired.append(String(w.get("label", ""))))
 	add_child(timer)
 	await get_tree().process_frame
 	# Drive the clock in 1 s steps past the end of the hold.
@@ -103,3 +115,9 @@ func _run() -> void:
 
 	print("RESULT ", "PASS" if _ok else "FAIL")
 	get_tree().quit()
+
+## Is `p` inside a lava bed, allowing `margin` metres of spawn scatter?
+func _in_bed(p: Vector3, bed: Dictionary, margin: float) -> bool:
+	var c: Vector3 = bed["pos"]
+	var s: Vector2 = bed["size"]
+	return absf(p.x - c.x) < s.x * 0.5 + margin and absf(p.z - c.z) < s.y * 0.5 + margin

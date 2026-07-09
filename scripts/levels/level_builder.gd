@@ -4513,11 +4513,35 @@ func _on_tasks_progress() -> void:
 			_spawn_reinforcements.call_deferred(spec["enemies"])
 
 ## A "survive" wave came due. Announce it (so the escalation reads as authored,
-## not as enemies wandering in) and pour it in through the same alarm spawner.
-func _on_survive_wave(enemies: Array, label: String) -> void:
+## not as enemies wandering in), pour the enemies in through the same alarm
+## spawner, and vent any emergency supplies the wave carries.
+func _on_survive_wave(wave: Dictionary) -> void:
+	var label := String(wave.get("label", ""))
 	if label != "":
 		GameState.wave_incoming.emit(label)
-	_spawn_reinforcements.call_deferred(enemies)
+	var enemies: Array = wave.get("enemies", [])
+	if not enemies.is_empty():
+		_spawn_reinforcements.call_deferred(enemies)
+	var supplies: Array = wave.get("supplies", [])
+	if not supplies.is_empty():
+		_vent_supplies.call_deferred(supplies)
+
+## Emergency stores ejected mid-hold: pickups that pop in ({type, pos}, the same
+## spec as the def's "pickups"). Author them where reaching them costs something
+## and a long hold stays sustainable without handing the sustain over for free.
+func _vent_supplies(supplies: Array) -> void:
+	for s in supplies:
+		var scene: PackedScene = PICKUP_SCENES.get(s.get("type", s.get("kind", "")))
+		if scene == null:
+			continue
+		var inst := scene.instantiate() as Node3D
+		add_child(inst)
+		inst.global_position = s.get("pos", Vector3.ZERO)
+		# Pop-in, like the horde director's between-wave drops, so it reads as a
+		# delivery rather than something that was always lying there.
+		inst.scale = Vector3.ONE * 0.2
+		inst.create_tween().tween_property(inst, "scale", Vector3.ONE, 0.3) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 ## An objective tripped the alarm: pour the authored wave in with the same
 ## machinery as placed enemies (spawn FX, difficulty scaling), staggered so it

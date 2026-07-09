@@ -25,7 +25,24 @@ func _ready() -> void:
 		if not String(k).begins_with("weapon"):
 			supply += int(hist[k])
 	print("supply pickups: %d (def wants %d)" % [supply, want.size()])
-	print("RESULT ", "PASS" if supply >= want.size() else "FAIL")
+	var ok := supply >= want.size()
+
+	# The purge's mid-hold supply vent runs through a different path
+	# (_vent_supplies, driven by SurviveTimer.wave_due) — exercise it for real
+	# rather than trusting the def, since a wave only fires late in the level.
+	lvl.call("_vent_supplies", [
+		{"type": "ammo", "pos": Vector3(0, 0, -7)},
+		{"type": "health", "pos": Vector3(0, 0, 7)},
+	])
+	await get_tree().process_frame
+	var after := 0
+	for n in _walk(lvl):
+		if String(n.scene_file_path).begins_with("res://scenes/pickups/"):
+			after += 1
+	var vented := after - (supply + int(hist.get("weapon_pickup.tscn", 0)))
+	print("vented supplies: %d (expect 2)" % vented)
+	ok = ok and vented == 2
+	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
 
 func _walk(n: Node) -> Array[Node]:

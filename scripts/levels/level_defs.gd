@@ -184,6 +184,9 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			for e in w.get("enemies", []):
 				if e.has("pos"):
 					e["pos"] = _sv(e["pos"], s)
+			for sup in w.get("supplies", []):
+				if sup.has("pos"):
+					sup["pos"] = _sv(sup["pos"], s)
 	return def
 
 ## Scale a position/span on the ground plane; heights are sacred.
@@ -2288,13 +2291,18 @@ static func _gpt() -> Dictionary:
 						{"type": "skitter", "count": 6, "pos": Vector3(0, 0, -14)},
 						{"type": "drone", "count": 2, "pos": Vector3(0, 3, 4)},
 					]},
-					# Security answers: real guns, from both aisle mouths.
+					# Security answers: real guns, from both aisle mouths. The foundry
+					# also vents its emergency stores — but they eject at the CORE,
+					# which is erupting on a timer (see "overload"). Resupplying is a
+					# run into the blast epicentre, not a freebie.
 					{"at": 9.0, "label": "SECOND WAVE — FOUNDRY SECURITY", "enemies": [
 						{"type": "android", "count": 2, "pos": Vector3(-12, 0, -4)},
 						{"type": "android", "count": 2, "pos": Vector3(12, 0, 4)},
 						# z=18, not 16: the eastern smelt channel's scaled edge sits at
 						# z~20.6, and a clustered pair scatters up to 2.5 m off `pos`.
 						{"type": "spider", "count": 2, "pos": Vector3(0, 0, 18)},
+					], "supplies": [
+						{"type": "ammo", "pos": Vector3(0, 0, -5)},
 					]},
 					# The foundry stops pretending: a BRUTE and covering fire. Landing
 					# at 17 s leaves ~9 s of hold — enough to be a real last stand.
@@ -2305,6 +2313,9 @@ static func _gpt() -> Dictionary:
 						# z[-9.6,-2.4] there, and a spawn 0.4 m off its skirt would
 						# drop a gunner into the column.
 						{"type": "gunner", "pos": Vector3(14, 0, 2)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(0, 0, 5)},
+						{"type": "ammo", "pos": Vector3(0, 0, -5)},
 					]},
 				]},
 		],

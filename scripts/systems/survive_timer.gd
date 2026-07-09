@@ -4,12 +4,16 @@ extends Node
 ## actively playing (not paused / in a menu) and stops once the goal is met.
 ##
 ## Optional escalating WAVES turn the hold into a real climax instead of a
-## countdown you can wait out behind cover: each entry is
-##   {"at": seconds_elapsed, "label": "SECOND WAVE", "enemies": [<enemy specs>]}
+## countdown you can wait out behind cover. Each entry is
+##   {"at": seconds_elapsed, "label": "SECOND WAVE",
+##    "enemies": [<enemy specs>], "supplies": [<pickup specs>]}
 ## and fires once when the clock crosses `at`. The enemy specs match the level
 ## def's "enemies"/"reinforce" format, and are handed to the level builder's
 ## reinforcement spawner — so they get the same spawn FX and difficulty scaling
-## as any placed enemy. Waves at/after `seconds` never fire (the hold is over).
+## as any placed enemy. "supplies" are optional pickup drops ({type, pos}, like
+## the def's "pickups") that keep a long hold sustainable; place them somewhere
+## costly to reach and the resupply becomes a decision rather than a freebie.
+## Waves at/after `seconds` never fire (the hold is over).
 
 @export var task_id: String = "survive"
 @export var seconds: float = 45.0
@@ -17,9 +21,9 @@ extends Node
 ## Authored waves, ascending by "at". Empty = a plain countdown (old behaviour).
 @export var waves: Array = []
 
-## A wave came due: (enemies, label). The level builder spawns them; the HUD
+## A wave came due. The level builder spawns its enemies + supplies; the HUD
 ## announces the label so the escalation reads as intentional.
-signal wave_due(enemies: Array, label: String)
+signal wave_due(wave: Dictionary)
 
 var _elapsed: float = 0.0
 var _next_wave: int = 0
@@ -42,6 +46,4 @@ func _process(delta: float) -> void:
 	while _next_wave < waves.size() and _elapsed >= float(waves[_next_wave].get("at", 0.0)):
 		var w: Dictionary = waves[_next_wave]
 		_next_wave += 1
-		var enemies: Array = w.get("enemies", [])
-		if not enemies.is_empty():
-			wave_due.emit(enemies, String(w.get("label", "")))
+		wave_due.emit(w)
