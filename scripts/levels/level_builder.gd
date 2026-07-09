@@ -4611,11 +4611,17 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 		glow.material_override = m
 	add_child(pk)
 
-## Hand-placed supply/powerup pickups (def "pickups": [{kind, pos}]). Campaign
-## levels leave this empty (supplies drop from kills); the editor uses it.
+## Hand-placed supply/powerup pickups (def "pickups": [{type|kind, pos}]).
+##
+## Accepts BOTH spellings on purpose: the level editor emits "kind", but every
+## hand-authored campaign def writes "type" (matching "enemies"/"props"). This
+## only read "kind", so all ~88 authored campaign pickups silently resolved to
+## a null scene and never spawned — GPT Foundry's vault cache and its
+## climb-the-tower overclock reward included. tests/pickup_probe guards it.
 func _build_pickups(def: Dictionary) -> void:
 	for p in def.get("pickups", []):
-		var scene: PackedScene = PICKUP_SCENES.get(p.get("kind", ""))
+		var kind: String = p.get("type", p.get("kind", ""))
+		var scene: PackedScene = PICKUP_SCENES.get(kind)
 		if scene == null:
 			continue
 		var inst := scene.instantiate() as Node3D
