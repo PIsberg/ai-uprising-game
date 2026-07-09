@@ -850,6 +850,16 @@ func grade_level() -> Dictionary:
 	var score_pts := accuracy * 45.0
 	score_pts += clampf(max_combo / 10.0, 0.0, 1.0) * 30.0
 	score_pts += clampf(1.0 - stat_damage_taken / 250.0, 0.0, 1.0) * 25.0
+	# SPEED BONUS: beating the level's par time adds up to 10 extra points, so
+	# the grade chase finally has an arcade "go fast" hook — elapsed time was
+	# always measured and shown on the debrief, but it never counted for
+	# anything. Missing par costs nothing (the base 100 is untouched); full
+	# bonus lands at half par.
+	var par := level_par_time(level_id_from_path(current_level_path))
+	var speed_bonus := 0.0
+	if par > 0.0 and elapsed < par:
+		speed_bonus = clampf((par - elapsed) / (par * 0.5), 0.0, 1.0) * 10.0
+	score_pts += speed_bonus
 	# Reward the difficulty you cleared on: now that difficulty genuinely changes
 	# enemy toughness/speed/cadence, the same play ranks higher on HARD and lower
 	# on EASY — so an S means more on HARD than it does on a cakewalk.
@@ -870,9 +880,25 @@ func grade_level() -> Dictionary:
 		"deaths": level_deaths,
 		"executions": stat_executions, "bounties": stat_bounties,
 		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
+		"par": par, "speed_bonus": speed_bonus,
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
+
+## Par time for a level: a generous baseline plus a slice per authored enemy,
+## so bigger rosters get proportionally more room. Feeds the SPEED BONUS in
+## grade_level and the "PAR BEATEN" flourish on the debrief. 0 = no par (e.g.
+## custom/editor levels with no def).
+func level_par_time(lid: String) -> float:
+	if lid == "":
+		return 0.0
+	var def: Dictionary = LevelDefs.get_def(lid)
+	if def.is_empty():
+		return 0.0
+	var n := 0
+	for e in def.get("enemies", []):
+		n += int((e as Dictionary).get("count", 1))
+	return 75.0 + 7.0 * float(n)
 
 # ---------- per-level best grade (replay incentive, persisted) ----------
 const RECORDS_PATH := "user://records.cfg"
