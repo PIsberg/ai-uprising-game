@@ -2370,13 +2370,29 @@ static func _gpt() -> Dictionary:
 			"contrast": 1.16, "saturation": 1.2, "brightness": 0.86, "volumetric_density": 0.008,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
-		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
+		# 8.4 m, not 5: the towers push room_h to ~10.5 m, and at 5 m the core's top
+		# sat at 5.85 — below the aisle racks' sightline, so the level's namesake
+		# landmark was invisible from the spawn. At 8.4 its top reaches 9.25, well
+		# clear of the 4 m racks and still ~1.2 m under the ceiling. It now draws
+		# the eye to the centre of the hall, which is also where the overload
+		# erupts and where the purge vents its supplies.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 8.4},
+		# A soft downward key pooled over the core plinth: separates the monolith
+		# from the dark deck and makes the halo ring read. AreaLight3D, so it only
+		# builds on tiers that support them (see _build_hero_lights).
+		"hero_lights": [
+			{"pos": Vector3(0, 9.9, 0), "size": Vector2(6, 6), "color": Color(0.65, 1.0, 0.75),
+				"energy": 4.0, "range": 26.0},
+		],
 		"light_shafts": [0, 1, 2],
 		# Green core key + neon accent lamps (cyan / magenta) that bloom into the haze.
 		"lights": [
 			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.4, 1, 0.5), "energy": 2.53, "range": 18},
 			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
-			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.7), "energy": 1.84, "range": 16},
+			# Lifted from y=4.5 to 9.7: at 4.5 this lamp sat *inside* the core slab
+			# (which spans y 0.85..9.25), lighting the hall from within solid
+			# geometry. Above the slab's crown it reads as the core's own corona.
+			{"pos": Vector3(0, 9.7, 0), "color": Color(0.6, 1, 0.7), "energy": 2.4, "range": 20},
 			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 3.2, "range": 12},
 			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 3.2, "range": 12},
 			{"pos": Vector3(0, 2.2, 16), "color": Color(0.3, 0.8, 1.0), "energy": 2.6, "range": 12},
