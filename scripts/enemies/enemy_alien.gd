@@ -10,7 +10,13 @@ extends EnemyBase
 
 @export var intercept_height: float = 2.2 ## Hovers about the player's head height.
 @export var strafe_speed: float = 3.4
-@export var spit_damage: float = 11.0
+## The bio-plasma volley is meant to be a volley. It wasn't: the three orbs fanned
+## out at +-7 deg (see _spit below), which at a 12 m engagement is ~1.5 m of
+## lateral offset against a 0.35 m-wide player — two of the three orbs COULD NOT
+## hit. Measured threat was 5.5 DPS, 5x below the roster median and the feeblest
+## robot in the game, on the level it is named after. Tightened the fan and paid
+## for it with a slightly hotter orb.
+@export var spit_damage: float = 13.0
 @export var spit_speed: float = 30.0
 @export var spit_orbs: int = 3
 @export var charge_time: float = 0.45 ## Throat windup before a volley (the dodge tell).
@@ -40,7 +46,7 @@ func _ready() -> void:
 	sight_angle_deg = 300.0
 	attack_range = 30.0
 	preferred_range = 14.0
-	attack_cooldown = 2.0
+	attack_cooldown = 1.7
 	score_value = 160
 	stagger_threshold = 60.0
 	super._ready()
@@ -207,7 +213,7 @@ func _spit() -> void:
 		var orb := BIO_SPIT.instantiate()
 		scene.add_child(orb)
 		(orb as Node3D).global_position = origin
-		var spread := deg_to_rad((float(i) - float(n - 1) * 0.5) * 7.0)
+		var spread := deg_to_rad((float(i) - float(n - 1) * 0.5) * 2.2)
 		var dir := base.rotated(Vector3.UP, spread)
 		dir = scatter_aim(dir, 2.0)
 		if orb.has_method("launch"):

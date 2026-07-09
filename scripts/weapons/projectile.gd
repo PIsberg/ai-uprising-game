@@ -270,7 +270,9 @@ func _find_homing_target() -> Node3D:
 	var best_score := -1.0
 	var fwd := _velocity.normalized()
 	for e in get_tree().get_nodes_in_group("enemy"):
-		if not (e is Node3D):
+		# A robot freed this frame can still be in the group; `is` on a freed
+		# instance is a runtime error, not false.
+		if not is_instance_valid(e) or not (e is Node3D):
 			continue
 		var en := e as Node3D
 		var d := en.get_node_or_null("Damageable")
