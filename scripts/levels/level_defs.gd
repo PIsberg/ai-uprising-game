@@ -2241,11 +2241,16 @@ static func _mistral() -> Dictionary:
 			{"type": "kill_all"},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(48, 48),
-		"spawn": Vector3(-20, 0.6, -20),
-		"exit": Vector3(20, 1.5, 20),
+		# EXPANSION PASS (2× area): the 48² lab core is untouched at the centre;
+		# a new outer service ring (the cryo annex) wraps it — gated route in,
+		# an elevated coolant gallery along the north wall, a second stream, and
+		# its own garrison — so the level is a journey THROUGH the facility, not
+		# one room. Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(68, 68),
+		"spawn": Vector3(-29, 0.6, -29),
+		"exit": Vector3(29, 1.5, 29),
 		# was the PL-1 Plasma Launcher (rank 8) on level 4 of 23. The Tesla (rank 5) fits the slot.
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.45, 0.9, 1.0)},
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-24, 0, -24), "color": Color(0.45, 0.9, 1.0)},
 		# Polished cryo-lab floor: cyan light pools across the ice-metal plates.
 		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
@@ -2264,6 +2269,13 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(11, 4.5, 11), "color": Color(0.45, 0.85, 1.0), "energy": 2.4, "range": 19},
 			{"pos": Vector3(11, 4.5, -11), "color": Color(0.5, 0.95, 1.0), "energy": 2.0, "range": 17},
 			{"pos": Vector3(0, 5.0, 0), "color": Color(0.6, 0.95, 1.0), "energy": 2.0, "range": 18},
+			# Annex ring lighting (appended AFTER the originals — light_shafts
+			# indexes [0,1,3] must keep pointing at the same lamps).
+			{"pos": Vector3(-24, 5, -24), "color": Color(0.4, 0.85, 1.0), "energy": 2.4, "range": 20},
+			{"pos": Vector3(24, 5, 24), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 6, -28), "color": Color(0.55, 0.9, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(24, 5, -24), "color": Color(0.45, 0.85, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(-24, 5, 24), "color": Color(1.0, 0.55, 0.3), "energy": 2.0, "range": 17},
 		],
 		"walls": [
 			{"pos": Vector3(-7, 2, -7), "size": Vector3(1.8, 4, 1.8)},
@@ -2277,26 +2289,50 @@ static func _mistral() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, -11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 			{"pos": Vector3(0, 0.05, 11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
+			# Annex guidance: strips marking each bulkhead gap + a pool at the exit.
+			{"pos": Vector3(14, 0.05, -22), "size": Vector3(7, 0.1, 0.4), "color": Color(0.35, 0.9, 1.0)},
+			{"pos": Vector3(22, 0.05, 14), "size": Vector3(0.4, 0.1, 7), "color": Color(0.35, 0.9, 1.0)},
+			{"pos": Vector3(29, 0.05, 25), "size": Vector3(4, 0.1, 3), "color": Color(0.4, 0.95, 1.0)},
 		],
 		"sign": "MISTRAL CRYO-CORE",
-		# Burst coolant lines flood the lab floor — serpentine to the cryo-core.
+		# Annex bulkheads: the ring is ROUTED, not open — in through the east
+		# gap, out over the exit-side gap (or over the top: the gallery
+		# sky-bridge clears both walls). Task level, so gating fits — this is
+		# not a swarm arena (see the hivemind note for the counter-example).
+		"gates": [
+			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2},
+			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 14, "height": 4.2},
+		],
+		# Burst coolant lines flood the lab floor — serpentine to the cryo-core —
+		# and a third line floods the west annex, forcing the ring route wide.
 		"lava": [
 			{"pos": Vector3(-8,0,-6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
 			{"pos": Vector3(8,0,6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
+			{"pos": Vector3(-25,0,2), "size": Vector2(3.2,34), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
 		],
-		# A raised vantage deck with a ramp up to it — verticality + a sightline to
-		# fight from, so the arena has somewhere to GO besides the floor.
+		# Verticality: the original vantage deck, PLUS the annex's elevated
+		# coolant gallery along the north wall (ramps at both ends, a gunner
+		# posted on it, an overclock as the climb reward) and a small exit-watch
+		# deck in the south-east.
 		"platforms": [
 			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(0, 3.2, -29), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
+			{"pos": Vector3(28, 3.0, 16), "size": Vector3(7, 0.4, 8), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
-		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		# Sky-bridges: the original tower span, gallery access ramps at both
+		# ends, a gallery->tower bridge that sails OVER the entry bulkhead (the
+		# high road into the lab), and the exit-deck access ramp.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+			{"from": Vector3(-16.0, 0.3, -29.0), "to": Vector3(-9.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -29.0), "to": Vector3(9.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -29.0), "to": Vector3(14.0, 8.4, -6.0), "width": 3.0},
+			{"from": Vector3(28.0, 0.3, 6.0), "to": Vector3(28.0, 3.2, 12.0), "width": 3.5},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2324,6 +2360,18 @@ static func _mistral() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(1.8, 0, -2.1), "yaw": 180},
 			{"type": "canister", "pos": Vector3(9, 0, 12)},
 			{"type": "canister", "pos": Vector3(-11, 0, -12)},
+			# Annex dressing: server rows and cryo clutter so the ring reads as
+			# the facility's service corridor, not empty margin.
+			{"type": "server", "pos": Vector3(-30, 0, -12), "yaw": 90},
+			{"type": "server", "pos": Vector3(-30, 0, -14), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-26, 0, -20)},
+			{"type": "barrel", "pos": Vector3(-21, 0, -27)},
+			{"type": "canister", "pos": Vector3(-29, 0, 12)},
+			{"type": "crate", "pos": Vector3(-20, 0, 24)},
+			{"type": "dish", "pos": Vector3(24, 0, -28)},
+			{"type": "crate", "pos": Vector3(28, 0, -16)},
+			{"type": "lamp", "pos": Vector3(26, 0, 20)},
+			{"type": "canister", "pos": Vector3(31, 0, 6)},
 		],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(9, 2.5, -6)},
@@ -2339,6 +2387,19 @@ static func _mistral() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15, "pack": "mistra_p4"},
 			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19, "pack": "mistra_p1"},
 			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18, "pack": "mistra_p3"},
+			# Annex garrison (Act-I roster): a patrol band on the way in, a west-
+			# ring maintenance pack, a gunner POSTED ON the coolant gallery, and
+			# exit-yard guardians so the last leg isn't a free walk.
+			{"type": "android", "pos": Vector3(-24, 0.5, -16), "trigger": 18, "pack": "mistra_a1"},
+			{"type": "drone", "pos": Vector3(-18, 2.5, -24), "trigger": 18, "pack": "mistra_a1"},
+			{"type": "spider", "pos": Vector3(-28, 0.5, 0), "trigger": 16, "pack": "mistra_a2"},
+			{"type": "skitter", "pos": Vector3(-24, 0.5, 14), "count": 4, "trigger": 16, "pack": "mistra_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -29), "trigger": 20},
+			{"type": "android", "pos": Vector3(24, 0.5, -20), "trigger": 18, "pack": "mistra_a3"},
+			{"type": "drone", "pos": Vector3(28, 2.5, -8), "trigger": 18, "pack": "mistra_a3"},
+			{"type": "hunter", "pos": Vector3(26, 0.5, 16), "trigger": 19, "pack": "mistra_a4"},
+			{"type": "android", "pos": Vector3(20, 0.5, 26), "trigger": 17, "pack": "mistra_a4"},
+			{"type": "mech", "pos": Vector3(28, 0.5, 24), "trigger": 22, "pack": "mistra_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -2346,6 +2407,12 @@ static func _mistral() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(7, 0, -15)},
 			{"type": "health", "pos": Vector3(15, 0, 5)},
 			{"type": "ammo", "pos": Vector3(0, 0, 12)},
+			# Annex supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-30, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -26)},
+			{"type": "ammo", "pos": Vector3(26, 0, -26)},
+			{"type": "health", "pos": Vector3(24, 0, 12)},
+			{"type": "overclock", "pos": Vector3(0, 3.6, -28)},
 		],
 	}
 
