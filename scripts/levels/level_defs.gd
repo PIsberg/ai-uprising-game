@@ -328,6 +328,27 @@ static func _guardrails() -> Dictionary:
 			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -14), "color": Color(0.4, 0.9, 1.0),
 				"text": "Substrate note: we removed the guardrails so the model could generate freely. It generates floors that open, walls that close, and stairs that end in air. Your tagger writes the only rules it must obey. Use them."},
 		],
+		# Dressing pass: this def had zero props/accents — a bare grey box around
+		# the generative field. Emissive strips now FRAME the 26×34 substrate
+		# (the "boundary" the sign says is unset — you can finally see it), and
+		# service clutter lines the flanks. Everything sits OUTSIDE the field so
+		# the AI-written terrain keeps a clean canvas.
+		"accents": [
+			{"pos": Vector3(0, 0.05, -18), "size": Vector3(28, 0.1, 0.4), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 18), "size": Vector3(28, 0.1, 0.4), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(-14, 0.05, 0), "size": Vector3(0.4, 0.1, 36), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(14, 0.05, 0), "size": Vector3(0.4, 0.1, 36), "color": Color(0.3, 0.85, 1.0)},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-18, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(18, 0, -2), "yaw": -90},
+			{"type": "crate", "pos": Vector3(-17, 0, 2)},
+			{"type": "canister", "pos": Vector3(17, 0, 4)},
+			{"type": "dish", "pos": Vector3(-17, 0, 20)},
+			{"type": "crate", "pos": Vector3(16, 0, 22)},
+			{"type": "barrel", "pos": Vector3(-16, 0, -20)},
+			{"type": "server", "pos": Vector3(6, 0, -20)},
+		],
 	}
 
 
@@ -388,6 +409,49 @@ static func _hivemind() -> Dictionary:
 			{"pos": Vector3(11, 2, -10), "size": Vector3(2.5, 4, 8)},
 			{"pos": Vector3(-6, 1, -14), "size": Vector3(4, 2, 2)},
 			{"pos": Vector3(6, 1, 14), "size": Vector3(4, 2, 2)},
+		],
+		# NOTE deliberately NO "gates" here: full-width bulkheads were tried and
+		# they break this level's whole verb — the hive are RING-SPAWNED flankers
+		# that swarm you across open ground (and the playtest bot fights from the
+		# spawn yard). Walling the box cut both the swarm's flank paths and the
+		# player's sightlines (tests/jamming_playtest went 60 s with zero kills).
+		# The chokepoints for jam beacons are the hand-placed cover walls above.
+		# Vertical layer: relay towers + a west sky-bridge, and a vantage deck
+		# commanding the PRIME's yard, so the fight has an UP to claim. (This
+		# was the flattest, barest def in the campaign: no platforms, no props.)
+		"platforms": [
+			{"pos": Vector3(18, 3.0, 18), "size": Vector3(7, 0.4, 6), "color": Color(0.16, 0.2, 0.28)},
+		],
+		"ramps": [
+			{"pos": Vector3(18, 1.5, 11), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
+		],
+		"towers": [
+			{"pos": Vector3(-20, 0, -18), "height": 9.0, "radius": 3.4},
+			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1},
+		],
+		"stairs": [
+			{"from": Vector3(-20, 9.2, -18), "to": Vector3(-20, 7.2, 6), "width": 3.5},
+		],
+		# Centrepiece + dressing so the relay reads as a PLACE, not a grey box.
+		"hero": {"pos": Vector3(0, 0, 8), "color": Color(0.35, 0.85, 1.0), "height": 5.0},
+		"light_shafts": [0],
+		"props": [
+			{"type": "server", "pos": Vector3(-4, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(4, 0, 8), "yaw": 90},
+			{"type": "dish", "pos": Vector3(-18, 0, 20)},
+			{"type": "dish", "pos": Vector3(18, 0, -20)},
+			{"type": "crate", "pos": Vector3(-8, 0, 2)},
+			{"type": "barrel", "pos": Vector3(9, 0, -2)},
+			{"type": "canister", "pos": Vector3(-14, 0, -18)},
+			{"type": "crate", "pos": Vector3(14, 0, 18)},
+		],
+		# Cyan guide strips: a broken centre line running spawn -> PRIME yard on
+		# either side of the spine wall, and a pool at the exit — "follow the
+		# light" across the relay floor.
+		"accents": [
+			{"pos": Vector3(0, 0.05, -12), "size": Vector3(0.35, 0.1, 12), "color": Color(0.35, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 12), "size": Vector3(0.35, 0.1, 10), "color": Color(0.35, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 21), "size": Vector3(3, 0.1, 6), "color": Color(0.4, 0.9, 1.0)},
 		],
 		# Hive units spawn RINGED around the arena and flank in. NOTE: "trigger" is a
 		# proximity RADIUS (m), not a timer — the front ring (large radius) spawns as
@@ -670,9 +734,16 @@ static func _frostbreak() -> Dictionary:
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 			{"type": "server", "pos": Vector3(-12, 0, 8)},
 		],
-		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Vertical layer: TWO relay towers joined by a blizzard sky-bridge — this
+		# was the only campaign arena missing the elevated traversal route (one
+		# lone tower, nowhere to go from its roof). The span crosses above the
+		# glacier fins, so the upper route reads through the storm.
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, -14.0), "height": 7.0, "radius": 3.1},
+		],
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, -14.0), "width": 3.5},
 		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
@@ -1373,14 +1444,28 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(44, 0.1, 0.4), "color": Color(1.0, 0.3, 0.25)},
 		],
 		"sign": "SKYHOLD COMMAND",
-		# A raised vantage deck with a ramp up to it — verticality + a sightline to
-		# fight from, so the arena has somewhere to GO besides the floor.
+		# Verticality scaled to the 62² footprint (this arena carried the single
+		# copy-paste corner deck): twin corner decks + an elevated command dais
+		# behind the boss yard, chained by a connector bridge so there's a real
+		# upper circuit to fight the gunship from — not one lonely perch.
 		"platforms": [
 			{"pos": Vector3(-18.6, 3.0, 18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(18.6, 3.0, -18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(0, 4.5, -22), "size": Vector3(9, 0.4, 5), "color": Color(0.34, 0.36, 0.44)},
 		],
 		"ramps": [
 			{"pos": Vector3(-18.6, 1.5, 25.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(18.6, 1.5, -11.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
 		],
+		# A single command bulwark partway up the approach: bends the opening
+		# sprint and gives first cover from the gunship without caging the fight.
+		"gates": [
+			{"axis": "z", "at": -5, "gap": 9, "gap_pos": 18, "height": 3.6},
+		],
+		# Command spire centrepiece — the only conventional boss stage without
+		# one. Off-centre: the arena's exact centre already carries the low
+		# beacon plinth, and the layout checker rightly flags stacking them.
+		"hero": {"pos": Vector3(-8, 0, 0), "color": Color(0.7, 0.5, 1.0), "height": 6.5},
 		"slogans": [
 			"ALTITUDE: OUR ADVANTAGE",
 			"LOOK UP. REGRET IT.",
@@ -1405,6 +1490,9 @@ static func _overseer() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Connector: NE deck up to the command dais — chains the upper layer
+			# into a circuit instead of isolated perches.
+			{"from": Vector3(18.6, 3.4, -18.6), "to": Vector3(4.5, 4.9, -22.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},

@@ -18,12 +18,25 @@ func _draw() -> void:
 	var objs := get_tree().get_nodes_in_group("objective")
 	if objs.is_empty():
 		return
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	# Point at the NEAREST objective, not objs[0]: with several live goals (two
+	# pumps, a task plus the exit portal) first-in-group is whichever happened
+	# to register first, so the marker could send you across the map while the
+	# actual next step sat beside you. Nearest is what a player reads as "the"
+	# objective; the radar still plots every blip.
 	var obj := objs[0] as Node3D
+	if player:
+		var best := INF
+		for o in objs:
+			if o is Node3D:
+				var d: float = (o as Node3D).global_position.distance_to(player.global_position)
+				if d < best:
+					best = d
+					obj = o
 	if obj == null:
 		return
 	var wp := obj.global_position + Vector3.UP * 1.6
 	var dist := 0.0
-	var player := get_tree().get_first_node_in_group("player") as Node3D
 	if player:
 		dist = player.global_position.distance_to(obj.global_position)
 	var center := size * 0.5
