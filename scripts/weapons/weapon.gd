@@ -1126,6 +1126,13 @@ func _eject_brass() -> void:
 	get_tree().current_scene.add_child(p)
 	p.global_position = global_position + cam.global_basis.x * 0.14 - cam.global_basis.y * 0.04
 	get_tree().create_timer(1.5).timeout.connect(p.queue_free)
+	# The casing lands a beat later: a tiny pitched-up tink at the shooter's
+	# feet, timing-jittered so an automatic burst scatters into a tinkle
+	# instead of a metronome. The closure captures only the landing spot and
+	# the AudioBus autoload, so it still fires if this weapon is freed mid-drop.
+	var land := p.global_position - Vector3(0, 1.2, 0) + cam.global_basis.x * randf_range(0.3, 0.7)
+	get_tree().create_timer(randf_range(0.55, 0.8)).timeout.connect(
+		func() -> void: AudioBus.play_synth_at("brass_tink", land, -16.0, randf_range(0.85, 1.25)))
 
 ## A short puff of smoke off the muzzle after firing.
 func _muzzle_smoke() -> void:

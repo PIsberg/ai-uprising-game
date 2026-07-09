@@ -601,6 +601,17 @@ func _build_environment(def: Dictionary) -> void:
 	if def.get("open_sky", false):
 		amb = "ambience_rain" if str(e.get("weather", "")) == "rain" else "ambience_wind"
 	AudioBus.play_ambience(amb, -22.0)
+	# Hazard bed layered over the room tone: lava bubbling or water flow, so a
+	# hazard level reads by ear the moment you deploy (the loops existed in
+	# SoundSynth but nothing ever played them as level atmosphere).
+	var hazard_beds: Array = def.get("lava", [])
+	if not hazard_beds.is_empty():
+		var wet := false
+		for hb in hazard_beds:
+			if hb is Dictionary and bool((hb as Dictionary).get("water", false)):
+				wet = true
+				break
+		AudioBus.play_ambience_layer("water_loop" if wet else "lava_loop", -24.0)
 	# Environmental reverb: tight metallic room indoors, faint/dry outdoors — the
 	# same indoor/outdoor signal the ambience bed above already reads.
 	AudioBus.set_reverb_environment(not def.get("open_sky", false))

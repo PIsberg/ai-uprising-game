@@ -17,6 +17,7 @@ var _synth: Node
 var _music: AudioStreamPlayer
 var _ui: AudioStreamPlayer
 var _ambience: AudioStreamPlayer
+var _ambience2: AudioStreamPlayer # optional hazard bed layered over the room tone
 
 # Sampled-audio override: any real file at assets/audio/samples/<id>.<ext> is
 # used in place of the procedural synth for that id (synth stays the fallback).
@@ -55,6 +56,10 @@ func _ready() -> void:
 	_ambience.volume_db = -20.0
 	_ambience.bus = "SFX"
 	add_child(_ambience)
+	_ambience2 = AudioStreamPlayer.new()
+	_ambience2.volume_db = -24.0
+	_ambience2.bus = "SFX"
+	add_child(_ambience2)
 	_setup_broadcast_bus()
 	_setup_robot_voice_bus()
 	for i in VOICE_POOL_SIZE:
@@ -79,7 +84,7 @@ func _exit_tree() -> void:
 	for p in _voice_pool:
 		p.stop()
 		p.stream = null
-	for p in [_music, _ui, _ambience, _lore_player]:
+	for p in [_music, _ui, _ambience, _ambience2, _lore_player]:
 		if p:
 			p.stop()
 			p.stream = null
@@ -163,6 +168,50 @@ func set_reverb_wet(wet: float, room_size: float = 0.5, damping: float = 0.5) ->
 			(fx as AudioEffectReverb).damping = damping
 			(fx as AudioEffectReverb).wet = clampf(wet, 0.0, 1.0)
 			return
+
+# ---------- blast shock (close explosion -> muffle + tinnitus) ----------
+# An explosion near the player's head low-passes the positional world mix (the
+# SFXReverb bus: gunfire, impacts, footsteps) and ducks the score while a thin
+# ear-ring whine plays, all recovering over a couple of seconds. UI/confirm
+# cues route around the muffle on the plain SFX bus, so feedback stays crisp
+# while the WORLD goes underwater — the standard modern-shooter deafen.
+
+const SHOCK_RADIUS := 13.0     ## full->zero shock over this distance to the blast
+const SHOCK_RECOVERY := 0.45   ## shock units shed per second (~2.2 s full recovery)
+const SHOCK_MIN := 0.25        ## blasts farther than ~75% of the radius don't ring
+const SHOCK_LP_HZ := 650.0     ## low-pass floor at full shock
+const SHOCK_OPEN_HZ := 20500.0 ## effectively transparent
+const SHOCK_MUSIC_DUCK_DB := 9.0
+
+var _shock: float = 0.0
+var _shock_lp: AudioEffectLowPassFilter
+
+## Report an explosion at a world position. Fired automatically for every
+## "explosion" played through play_synth_at; scripted set-piece blasts can call
+## it directly (strength scales the felt radius).
+func notify_blast(position: Vector3, strength: float = 1.0) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var d := cam.global_position.distance_to(position)
+	var intensity := clampf(1.0 - d / SHOCK_RADIUS, 0.0, 1.0) * clampf(strength, 0.0, 1.5)
+	if intensity < SHOCK_MIN or intensity <= _shock:
+		return
+	_shock = minf(intensity, 1.0)
+	# The whine plays on the (unmuffled) UI channel so it survives its own muffle.
+	play_synth_ui("ear_ring", lerpf(-18.0, -8.0, _shock), randf_range(0.96, 1.04))
+
+## Lazily insert the muffle low-pass on SFXReverb (kept transparent at rest).
+func _ensure_shock_lp() -> AudioEffectLowPassFilter:
+	if _shock_lp:
+		return _shock_lp
+	var idx := AudioServer.get_bus_index("SFXReverb")
+	if idx < 0:
+		return null
+	_shock_lp = AudioEffectLowPassFilter.new()
+	_shock_lp.cutoff_hz = SHOCK_OPEN_HZ
+	AudioServer.add_bus_effect(idx, _shock_lp)
+	return _shock_lp
 
 # ---------- per-bus volume (persisted to user://settings.cfg) ----------
 
@@ -378,17 +427,38 @@ func set_combat(active: bool) -> void:
 func set_combat_heat(heat: float) -> void:
 	_combat_target = clampf(heat, 0.0, 1.0)
 
+## Fraction the score steps back while a broadcast/lore VO line is speaking.
+var _vo_duck: float = 0.0
+const VO_DUCK_DB := 7.0
+
 func _process(delta: float) -> void:
 	if _music == null:
 		return
-	if not is_equal_approx(_combat, _combat_target):
-		# Swell fast on engagement, settle slowly when it clears.
-		var rate := 2.2 if _combat_target > _combat else 0.45
-		_combat = move_toward(_combat, _combat_target, delta * rate)
-		# Any engagement lifts CALM->COMBAT quickly; a big fight pushes toward HOT.
-		var base := lerpf(MUSIC_CALM_DB, MUSIC_COMBAT_DB, clampf(_combat * 2.0, 0.0, 1.0))
-		_music.volume_db = lerpf(base, MUSIC_HOT_DB, smoothstep(0.5, 1.0, _combat))
-		_music.pitch_scale = lerpf(1.0, 1.09, _combat)
+	# Swell fast on engagement, settle slowly when it clears.
+	var rate := 2.2 if _combat_target > _combat else 0.45
+	_combat = move_toward(_combat, _combat_target, delta * rate)
+	# Any engagement lifts CALM->COMBAT quickly; a big fight pushes toward HOT.
+	var base := lerpf(MUSIC_CALM_DB, MUSIC_COMBAT_DB, clampf(_combat * 2.0, 0.0, 1.0))
+	var vol := lerpf(base, MUSIC_HOT_DB, smoothstep(0.5, 1.0, _combat))
+	# VO duck: the score steps back while a lore/broadcast line is speaking
+	# (fast dip, gentle recovery) so the voice never fights the music.
+	var speaking := _lore_player != null and _lore_player.playing
+	_vo_duck = move_toward(_vo_duck, 1.0 if speaking else 0.0, delta * (6.0 if speaking else 1.8))
+	vol -= VO_DUCK_DB * _vo_duck
+	# Blast shock: shed intensity, duck the score and run the world low-pass
+	# from wide open down toward the muffle floor as shock deepens.
+	if _shock > 0.0:
+		_shock = maxf(0.0, _shock - delta * SHOCK_RECOVERY)
+		vol -= SHOCK_MUSIC_DUCK_DB * _shock
+		var lp := _ensure_shock_lp()
+		if lp:
+			# Perceptual sweep: interpolate in log-frequency so the recovery
+			# sounds even instead of hanging muffled then snapping open.
+			lp.cutoff_hz = exp(lerpf(log(SHOCK_OPEN_HZ), log(SHOCK_LP_HZ), pow(_shock, 1.2)))
+	elif _shock_lp and _shock_lp.cutoff_hz < SHOCK_OPEN_HZ:
+		_shock_lp.cutoff_hz = SHOCK_OPEN_HZ
+	_music.volume_db = vol
+	_music.pitch_scale = lerpf(1.0, 1.09, _combat)
 
 func _start_music() -> void:
 	if not _music_enabled:
@@ -480,22 +550,44 @@ func _resolve_sample(id: String) -> AudioStream:
 	_sample_cache[id] = found
 	return found
 
-## Looping atmospheric bed for a level (room tone / wind). Crossfades softly.
+## Looping atmospheric bed for a level (room tone / wind), fading in softly so
+## a level swap never hard-cuts the loop edge. Starting a new room tone also
+## clears any hazard layer — every level build calls this, so a lava bed can't
+## leak into the next, lava-less, level.
 func play_ambience(id: String, volume_db: float = -20.0) -> void:
-	if _ambience == null:
+	if _ambience2 and _ambience2.playing:
+		_ambience2.stop()
+	_play_bed(_ambience, id, volume_db)
+
+## Second, optional bed layered OVER the room tone (lava bubbling under the
+## drone, water flow under the wind) so a hazard level reads by ear before the
+## hazard is even in view. Call after play_ambience.
+func play_ambience_layer(id: String, volume_db: float = -24.0) -> void:
+	_play_bed(_ambience2, id, volume_db)
+
+func _play_bed(p: AudioStreamPlayer, id: String, volume_db: float) -> void:
+	if p == null:
 		return
 	var stream := synth(id)
 	if stream == null:
 		return
-	_ambience.stream = stream
-	_ambience.volume_db = volume_db
-	_ambience.play()
+	p.stream = stream
+	p.volume_db = -50.0
+	p.play()
+	var tw := create_tween()
+	tw.tween_property(p, "volume_db", volume_db, 1.2)
 
 func stop_ambience() -> void:
 	if _ambience:
 		_ambience.stop()
+	if _ambience2:
+		_ambience2.stop()
 
 func play_synth_at(id: String, position: Vector3, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	var stream := synth(id)
 	if stream:
 		play_at(stream, position, volume_db, pitch_scale)
+	# Every explosion in the game funnels through here — piggyback the blast
+	# shock so no per-call-site wiring is needed for the deafen effect.
+	if id == "explosion" and not suppress_world_sfx:
+		notify_blast(position)

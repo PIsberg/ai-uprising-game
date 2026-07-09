@@ -61,6 +61,16 @@ const KICK_SANE := 2.0
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
 
+# Sprint lower-ready: flat-out running drops the gun toward the chest (muzzle
+# down, pulled in) — the near-universal modern-shooter read for "sprinting".
+# The pose is purely visual: firing is never gated on it. The trigger or ADS
+# breaks the pose immediately, and raising is much faster than lowering, so
+# snapping onto a target out of a sprint never feels sluggish.
+const SPRINT_POSE_POS := Vector3(-0.04, -0.09, 0.06)
+const SPRINT_POSE_ROT := Vector3(-0.38, 0.24, 0.10) # pitch down, yaw in, slight roll
+const SPRINT_POSE_MIN_SPEED := 6.5 ## above walk (6) and below full sprint (9)
+var _sprint_lerp: float = 0.0
+
 ## External roll (radians), e.g. the player's wall-run lean. This node's own
 ## _process() sets rotation.z every frame (sway + kick), which would silently
 ## erase any direct rotation.z write from outside — so external callers feed
@@ -391,6 +401,17 @@ func _process(delta: float) -> void:
 		_bob_time = 0.0
 		_bob_offset = _bob_offset.lerp(Vector3.ZERO, clampf(8.0 * delta, 0.0, 1.0))
 
+	# Sprint lower-ready pose (see constants above): engage only in a genuine
+	# grounded sprint, and drop it the instant the player aims or squeezes the
+	# trigger so the raise never fights the shot.
+	var sprint_now := is_moving_on_floor and movement_speed > SPRINT_POSE_MIN_SPEED \
+		and Input.is_action_pressed("sprint") \
+		and not aiming and not Input.is_action_pressed("fire")
+	_sprint_lerp = move_toward(_sprint_lerp, 1.0 if sprint_now else 0.0, delta * (4.5 if sprint_now else 14.0))
+	# Ease the blend (smoothstep) so the gun settles into and out of the pose
+	# instead of hitting it linearly.
+	var sp := _sprint_lerp * _sprint_lerp * (3.0 - 2.0 * _sprint_lerp)
+
 	# Spring the recoil kick back to rest (snappy, lightly underdamped for punch).
 	#
 	# SUBSTEPPED, and not optional. This is an explicit Euler integrator: its
@@ -414,11 +435,11 @@ func _process(delta: float) -> void:
 		_kick_rot += _kick_rot_vel * h
 	_sanitize_kick()
 
-	# Apply final position and rotation (sway + bob + recoil kick)
-	position = target_pos + _sway_offset + _bob_offset + _kick_pos
-	rotation.x = _sway_rotation.x + _kick_rot.x
-	rotation.y = _sway_rotation.y + _kick_rot.y
-	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll
+	# Apply final position and rotation (sway + bob + recoil kick + sprint pose)
+	position = target_pos + _sway_offset + _bob_offset + _kick_pos + SPRINT_POSE_POS * sp
+	rotation.x = _sway_rotation.x + _kick_rot.x + SPRINT_POSE_ROT.x * sp
+	rotation.y = _sway_rotation.y + _kick_rot.y + SPRINT_POSE_ROT.y * sp
+	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll + SPRINT_POSE_ROT.z * sp
 
 
 ## How far into aim-down-sights we are (0 hip → 1 fully aimed). The player's

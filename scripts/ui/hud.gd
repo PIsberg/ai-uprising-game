@@ -1781,8 +1781,14 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
 		_headshot_alpha = 1.0
 		_headshot_pop = 1.4
-	# Crisp UI tick on hit; a heftier metallic clang on a kill.
-	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
+	# Crisp UI tick on hit; a heftier thock on the killing blow. Dedicated
+	# shot-confirm streams (the old repurposed radio-blip/clang read as UI
+	# noise rather than "I connected"), with a pitch wobble so full-auto
+	# confirmation reads as texture, not a metronome.
+	if killed:
+		AudioBus.play_synth_ui("kill_thock", -5.0, randf_range(0.95, 1.05))
+	else:
+		AudioBus.play_synth_ui("hit_tick", -12.0, randf_range(0.9, 1.1))
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
 
 func _on_enemy_killed(score: int, label: String) -> void:

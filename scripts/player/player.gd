@@ -481,6 +481,7 @@ const LOW_HEALTH_FRAC := 0.35 ## Effects ramp in below this health fraction.
 
 var _low_health: float = 0.0   # smoothed 0..1 severity driven into the shader
 var _breath: AudioStreamPlayer
+var _heartbeat: AudioStreamPlayer # deeper-danger layer under the breathing
 
 func _handle_low_health(delta: float) -> void:
 	var frac := 1.0
@@ -503,6 +504,22 @@ func _handle_low_health(delta: float) -> void:
 		_breath.pitch_scale = 1.0 + 0.12 * severity
 	elif _breath and _breath.playing:
 		_breath.stop()
+	# Heartbeat kicks in deeper than the breathing (below ~18% HP): a low thump
+	# bed that swells and quickens toward death — the classic "get to cover NOW"
+	# cue, felt more than heard under the breathing loop above.
+	var pulse := clampf((severity - 0.5) * 2.0, 0.0, 1.0)
+	if pulse > 0.02 and hp.current_health > 0.0:
+		if _heartbeat == null:
+			_heartbeat = AudioStreamPlayer.new()
+			_heartbeat.bus = "SFX"
+			_heartbeat.stream = AudioBus.synth("heartbeat")
+			add_child(_heartbeat)
+		if not _heartbeat.playing:
+			_heartbeat.play()
+		_heartbeat.volume_db = lerpf(-24.0, -8.0, pulse)
+		_heartbeat.pitch_scale = 1.0 + 0.25 * pulse # 75 -> ~94 bpm at death's door
+	elif _heartbeat and _heartbeat.playing:
+		_heartbeat.stop()
 
 # --- cheats: type a keyword during play. "god" toggles invincibility; "imba"
 # maxes every permanent upgrade track for the run (testing aids). ---
