@@ -52,18 +52,37 @@ func _topup(rs: Array) -> void:
 			hp.max_health = 1000000.0
 			hp.current_health = 1000000.0
 
-func _measure(wname: String, crowd: bool) -> float:
+## mode:
+##   "solo"  — one robot, torso. The boss/elite case; AoE earns nothing extra.
+##   "crowd" — six robots in a rank. The horde case; AoE is the whole point.
+##   "head"  — one robot, aimed at the eye. What the MK-VII Longshot is FOR
+##             (headshot_mult 3.5); invisible to a centre-mass rig.
+##   "line"  — six robots single-file down the aim ray. What the ARC-9 Gauss
+##             Lance is FOR (pierce 3); a rank of robots side-by-side never
+##             shows it, because the shot only ever meets the first one.
+func _measure(wname: String, mode: String) -> float:
 	var targets: Array = []
-	if crowd:
-		# One robot MUST sit on the aim ray, or hitscan weapons register nothing
-		# and only the AoE weapons appear to work.
-		var xs := [0.0, -0.9, 0.9, -1.8, 1.8, 2.7]
-		for i in 6:
-			targets.append(_robot(Vector3(xs[i], 0, -DIST - float(i % 2))))
-	else:
-		targets.append(_robot(Vector3(0, 0, -DIST)))
+	match mode:
+		"crowd":
+			# One robot MUST sit on the aim ray, or hitscan weapons register nothing
+			# and only the AoE weapons appear to work.
+			var xs := [0.0, -0.9, 0.9, -1.8, 1.8, 2.7]
+			for i in 6:
+				targets.append(_robot(Vector3(xs[i], 0, -DIST - float(i % 2))))
+		"line":
+			for i in 6:
+				targets.append(_robot(Vector3(0, 0, -DIST - float(i) * 1.7)))
+		_:
+			targets.append(_robot(Vector3(0, 0, -DIST)))
 	for i in 3:
 		await get_tree().physics_frame
+	# Aim: centre mass, except the head pass, which aims at the robot's own eye
+	# (EnemyBase.is_headshot compares the hit Y against eye.global_position.y).
+	var aim_y := 0.7
+	if mode == "head":
+		var eye: Node3D = (targets[0] as Node).get("eye")
+		aim_y = eye.global_position.y if eye != null else 1.6
+	_cam.look_at(Vector3(0, aim_y, -DIST), Vector3.UP)
 	var w: Node3D = (load("res://scenes/weapons/%s.tscn" % wname) as PackedScene).instantiate()
 	add_child(w)
 	w.global_position = Vector3(0, 1.2, 0)
@@ -104,21 +123,21 @@ func _run() -> void:
 	_cam.current = true
 	add_child(_cam)
 	_cam.global_position = Vector3(0, 1.2, 0)
-	# Centre mass, NOT the head: aiming high lands headshots (x2.2 on some guns,
-	# x1 on others) and silently rewrites the ladder. Balance is judged on torso hits.
-	_cam.look_at(Vector3(0, 0.7, -DIST), Vector3.UP)
 	await get_tree().physics_frame
 
-	print("%-11s %-5s %9s %9s" % ["WEAPON", "rank", "soloDPS", "crowdDPS"])
+	print("%-11s %-5s %9s %9s %9s %9s" % ["WEAPON", "rank", "soloDPS", "crowdDPS", "headDPS", "lineDPS"])
 	var solo := {}
 	var crowd := {}
+	var head := {}
+	var line := {}
 	for i in WEAPONS.size():
 		var wname: String = WEAPONS[i]
-		var s: float = await _measure(wname, false)
-		var c: float = await _measure(wname, true)
-		solo[wname] = s
-		crowd[wname] = c
-		print("%-11s %-5d %9.0f %9.0f" % [wname, i + 1, s, c])
+		solo[wname] = await _measure(wname, "solo")
+		crowd[wname] = await _measure(wname, "crowd")
+		head[wname] = await _measure(wname, "head")
+		line[wname] = await _measure(wname, "line")
+		print("%-11s %-5d %9.0f %9.0f %9.0f %9.0f" % [wname, i + 1,
+			solo[wname], crowd[wname], head[wname], line[wname]])
 
 	# Rank inversions are INFORMATIONAL. This rig fires at centre mass from one
 	# distance, so it cannot see what the MK-VII Longshot (headshots) or the ARC-9
@@ -153,6 +172,31 @@ func _run() -> void:
 	for w in WEAPONS:
 		if solo[w] <= 0.0:
 			print("BAD  %s cannot damage a lone robot in the open (solo DPS = 0)" % w)
+			ok = false
+	# 0b. And must be able to hit a robot in the HEAD. A projectile moves in
+	#     discrete steps and an Area3D only reports overlaps it is standing inside
+	#     on a tick, so a fast round can straddle a target: the sphere's own radius
+	#     (0.2 m) plus the capsule's (0.32 m) gives a ~1.04 m window, but the
+	#     capsule's top cap narrows it, and a TPX-9 Tempest round covers 1.00 m per
+	#     tick. Aimed at an android's head it dealt exactly 0. Projectile._advance
+	#     now sweeps the gap; this is the guard.
+	for w in WEAPONS:
+		if head[w] <= 0.0:
+			print("BAD  %s cannot damage a robot's head (head DPS = 0) — tunnelling?" % w)
+			ok = false
+	# 4. Pierce must pierce. The ARC-9 Gauss Lance's whole identity (pierce 3) is
+	#    invisible unless the robots are single-file down the shot's path.
+	if line["gauss"] < solo["gauss"] * 1.8:
+		print("BAD  gauss line %.0f is not meaningfully above its solo %.0f — pierce broken?" % [
+			line["gauss"], solo["gauss"]])
+		ok = false
+	# 5. Headshots must reward the marksman weapons. The MK-VII Longshot's
+	#    identity is per-SHOT (145 x 3.5 = 507 in one pull, a one-shot kill on
+	#    every non-boss), not per-second — its slow bolt-action DPS is the cost,
+	#    so we assert the multiplier lands, not that it tops the DPS table.
+	for w in ["sniper", "magnum", "pistol", "rifle", "gauss", "arccoil"]:
+		if head[w] < solo[w] * 1.35:
+			print("BAD  %s headshots barely pay (head %.0f vs solo %.0f)" % [w, head[w], solo[w]])
 			ok = false
 	# 1. Nothing may beat the OMEGA ultimate at BOTH jobs. Caught the GRK-X
 	#    Devastator out-damaging the game's final weapon on solo AND on crowd.
