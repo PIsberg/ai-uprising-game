@@ -24,12 +24,15 @@ signal finished
 
 const CPS := 30.0 # characters typed per second
 const HOLD_AFTER_TYPE := 0.5 # beat held once a line finishes typing
+const SCRIM_A := 0.9 # opacity of the black broadcast scrim
 
 var _bg: ColorRect
 var _header: Label
 var _body: Label
 var _prompt: Label
 var _static: AudioStreamPlayer
+var _crt: ColorRect
+var _crt_mat: ShaderMaterial
 
 var _phase: int = 0
 var _pt: float = 0.0     # time within the current phase
@@ -37,6 +40,7 @@ var _line: int = 0
 var _line_t: float = 0.0 # time within the current line's typing
 var _completed: String = ""
 var _fade: float = 0.0
+var _scrim: float = 0.0 # authoritative scrim alpha (Color.a is float32 and rounds)
 
 func _ready() -> void:
 	layer = 12 # above the cutscene's own overlay (layer 10), which is now black
@@ -98,6 +102,55 @@ func _build_ui() -> void:
 	_prompt.modulate.a = 0.0
 	vbox.add_child(_prompt)
 
+	_build_crt()
+
+## The last thing a player sees before the credits was flat text on flat black.
+## A CRT pass over the top — rolling scanlines, a soft vignette, a slow signal
+## roll and a little grain — makes it read as a broadcast being received rather
+## than a text box. Drawn ABOVE the labels (added last) and pointer-transparent
+## so it can't eat the skip input. Cheap: one full-screen canvas_item shader.
+func _build_crt() -> void:
+	var sh := Shader.new()
+	sh.code = """
+shader_type canvas_item;
+uniform float scan_strength : hint_range(0.0, 1.0) = 0.10;
+uniform float vignette : hint_range(0.0, 1.5) = 0.75;
+uniform float grain : hint_range(0.0, 0.2) = 0.035;
+uniform float fade : hint_range(0.0, 1.0) = 0.0;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
+}
+
+void fragment() {
+	vec2 uv = SCREEN_UV;
+	// Scanlines, drifting slowly downward like a rolling frame sync.
+	float scan = sin((uv.y + TIME * 0.035) * 900.0) * 0.5 + 0.5;
+	float dark = scan * scan_strength;
+	// One brighter band sweeping the tube every few seconds.
+	float roll = smoothstep(0.965, 1.0, fract(uv.y * 0.5 - TIME * 0.09));
+	// Corners fall off.
+	vec2 c = uv - 0.5;
+	float vig = smoothstep(0.85, 0.20, length(c) * vignette);
+	float g = (hash(uv * vec2(1920.0, 1080.0) + TIME) - 0.5) * grain;
+	// Additive tint (a phosphor-green sheen) minus the scanline darkening.
+	vec3 col = vec3(0.35, 1.0, 0.55) * (roll * 0.05 + g);
+	float a = (dark + (1.0 - vig) * 0.35) * fade;
+	COLOR = vec4(col + vec3(0.0), clamp(a, 0.0, 0.9));
+}
+"""
+	_crt_mat = ShaderMaterial.new()
+	_crt_mat.shader = sh
+	_crt_mat.set_shader_parameter("fade", 0.0)
+	_crt = ColorRect.new()
+	_crt.color = Color(0, 0, 0, 1)
+	_crt.material = _crt_mat
+	_crt.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_crt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_crt)
+	# Ease the tube on with the scrim rather than snapping it in.
+	create_tween().tween_property(_crt_mat, "shader_parameter/fade", 1.0, 1.4)
+
 func _go(phase: int) -> void:
 	_phase = phase
 	_pt = 0.0
@@ -112,8 +165,15 @@ func _process(delta: float) -> void:
 		_go(3)
 	match _phase:
 		0:
-			_bg.color.a = minf(0.9, _bg.color.a + delta * 1.4)
-			if _bg.color.a >= 0.9:
+			# Drive the scrim from our own float, NOT by reading Color.a back.
+			# Color stores 32-bit floats: assigning minf(0.9, ...) and reading it
+			# again yields 0.89999997, so `>= SCRIM_A` was never true and the
+			# broadcast never left phase 0. The campaign's closing transmission
+			# never typed a word, and because skip is only wired for phases 1-2,
+			# the finale hung on a black screen instead of reaching the credits.
+			_scrim = minf(SCRIM_A, _scrim + delta * 1.4)
+			_bg.color.a = _scrim
+			if _scrim >= SCRIM_A:
 				_go(1)
 		1:
 			_header.modulate.a = minf(1.0, _header.modulate.a + delta * 1.6)
@@ -128,7 +188,7 @@ func _process(delta: float) -> void:
 		4:
 			_fade += delta * 1.3
 			var a := maxf(0.0, 1.0 - _fade)
-			_bg.color.a = a * 0.9
+			_bg.color.a = a * SCRIM_A
 			_header.modulate.a = a
 			_body.modulate.a = a
 			_prompt.modulate.a = a
