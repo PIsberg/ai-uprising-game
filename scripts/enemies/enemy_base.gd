@@ -121,6 +121,9 @@ func _ready() -> void:
 	# making elite and difficulty health scaling no-ops.
 	_sync_stats.call_deferred()
 	hp.died.connect(_on_died)
+	# Death bark hangs off the signal, NOT _on_died: seven subclasses override
+	# _on_died without calling super, so a bark inside it never reaches them.
+	hp.died.connect(_on_died_voice)
 	hp.damaged.connect(_on_damaged)
 	# Mark this type as encountered when it spawns in an actual level (fixes
 	# hand-authored level_01, whose roster has no def for the briefing to
@@ -453,6 +456,26 @@ func _speak(category: String, chance: float = 1.0) -> void:
 			return
 		ab.play_voice_at(category, src.global_position, 1.0, 2.0, pitch)
 
+## Dying gasp. Bypasses the global voice cooldown (in AudioBus) so a kill always
+## gets its payoff — but swarm chassis bark rarely, or a wiped skitter nest just
+## mushes four overlapping gasps through the 4-voice pool.
+const VOICE_DIE_CHANCE := {"skitter": 0.12, "orb": 0.15, "drone": 0.3}
+
+## Set by chassis that stage their own death line on a dramatic beat (ARCHON's
+## core rupture, MENDER's fall) so the generic gasp doesn't double up on it.
+var speaks_own_death_line := false
+
+func _on_died_voice(_source: Node) -> void:
+	if speaks_own_death_line:
+		return
+	_speak("die", VOICE_DIE_CHANCE.get(_voice_family(), 0.45))
+
+## Occasional combat bark, mid-fight. Base `_state_attack` calls this after each
+## shot; subclasses that override `_state_attack` without calling super must
+## call it themselves, or that chassis fights in total silence.
+func _bark_attack() -> void:
+	_speak("taunt" if randf() < 0.35 else "atk", 0.08)
+
 ## The bestiary key for this chassis (EnemyAndroid -> "android"), elite prefix
 ## excluded. Matches EnemyCodex.ORDER; unknown keys are ignored by GameState.
 func codex_key() -> String:
@@ -691,7 +714,7 @@ func _state_attack(delta: float) -> void:
 			_telegraphing = false
 			_perform_attack()
 			_attack_timer = attack_cooldown
-			_speak("taunt" if randf() < 0.35 else "atk", 0.08)
+			_bark_attack()
 		return
 	if _attack_timer <= 0.0:
 		if telegraph_time > 0.0:
@@ -702,7 +725,7 @@ func _state_attack(delta: float) -> void:
 		_perform_attack()
 		_attack_timer = attack_cooldown
 		# Occasional combat bark mid-fight (cooldown-gated globally).
-		_speak("taunt" if randf() < 0.35 else "atk", 0.08)
+		_bark_attack()
 
 func _state_stagger(_delta: float) -> void:
 	_decelerate()
@@ -1272,8 +1295,6 @@ func _make_damage_sparks() -> Node3D:
 
 func _on_died(_source: Node) -> void:
 	set_state(State.DEAD)
-	# Dying gasp — bypasses the global voice cooldown so kills get their payoff.
-	_speak("die", 0.45)
 	GameState.discover_enemy(codex_key()) # killed before it ever alerted still counts
 	GameState.add_kill(score_value, _kill_label())
 	# Satisfying slow-mo crunch on heftier player kills (bosses do their own,

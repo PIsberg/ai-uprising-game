@@ -102,6 +102,7 @@ func _pick_flank_position() -> Vector3:
 func _start_burst() -> void:
 	_burst_remaining = burst_count
 	_burst_timer = 0.0
+	_bark_attack() # once per burst, not per shot
 
 func _fire_one_shot() -> void:
 	if target == null or muzzle == null:

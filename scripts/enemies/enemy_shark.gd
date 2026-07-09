@@ -109,6 +109,7 @@ func _start_breach() -> void:
 	_breaching = true
 	_breach_t = 0.0
 	_bit = false
+	_bark_attack()
 	var to := target.global_position - global_position
 	to.y = 0
 	_breach_dir = to.normalized() if to.length() > 0.01 else -global_transform.basis.z

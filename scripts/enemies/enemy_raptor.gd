@@ -149,6 +149,7 @@ func _physics_process(delta: float) -> void:
 func _fire_one() -> void:
 	if target == null or not is_instance_valid(target) or muzzle == null:
 		return
+	_bark_attack()
 	var scene := get_tree().current_scene
 	if scene == null:
 		return

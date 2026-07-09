@@ -368,6 +368,7 @@ func _state_attack(delta: float) -> void:
 	if _attack_timer <= 0.0:
 		_start_burst()
 		_attack_timer = attack_interval()
+		_bark_attack()
 
 func _beaming() -> bool:
 	return _beam_windup > 0.0 or _beam_time > 0.0

@@ -23,6 +23,7 @@ var _repair_cd: float = 0.0
 @onready var _eye_light: OmniLight3D = $Eye/EyeLight
 
 func _ready() -> void:
+	speaks_own_death_line = true # staged on its fall, in _on_died
 	super._ready()
 	max_health = 70.0
 	move_speed = 6.2

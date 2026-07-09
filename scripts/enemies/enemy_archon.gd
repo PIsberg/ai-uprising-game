@@ -81,6 +81,7 @@ var _rings: Array[Node3D] = []
 
 func _ready() -> void:
 	add_to_group("shield_enemies")
+	speaks_own_death_line = true # staged below, on the core rupture
 	super._ready()
 	max_health = 2600.0
 	stagger_threshold = 1.0e9        # an AGI is never stunlocked
