@@ -572,7 +572,8 @@ static func _nexus() -> Dictionary:
 		# GRAPPLE CACHE: an arc coil on an isolated high pad with no stairs or
 		# ramp — the only way up is the grapple (C). Teaches the tool early.
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(0.55, 0.85, 1.0)},
+			# was the CL-3 Arc Coil (rank 6 of 13) — on the FIRST level. The Breacher (rank 3) is the right reward for this rooftop.
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(1.0, 0.82, 0.3)},
 		],
 	}
 
@@ -1877,7 +1878,8 @@ static func _uplink() -> Dictionary:
 		"exit": Vector3(24, 1.5, 24),
 		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-18, 0, -12), "color": Color(0.45, 0.9, 1.0)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(18, 0, -12), "color": Color(1, 0.4, 0.35)},
+			# was the Devastator (rank 12) on level 9. Gauss (rank 9) lands here instead.
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(18, 0, -12), "color": Color(0.55, 0.8, 1.0)},
 		],
 		"env": {
 			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
@@ -2145,7 +2147,8 @@ static func _mistral() -> Dictionary:
 		"floor_size": Vector2(48, 48),
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
-		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.4, 0.9, 1.0)},
+		# was the PL-1 Plasma Launcher (rank 8) on level 4 of 23. The Tesla (rank 5) fits the slot.
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.45, 0.9, 1.0)},
 		# Polished cryo-lab floor: cyan light pools across the ice-metal plates.
 		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
@@ -2337,7 +2340,8 @@ static func _gpt() -> Dictionary:
 			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(0, 0, 22), "color": Color(1.0, 0.82, 0.3)},
 			# Rewards the vertical route: climb tower #1, cross the sky-bridge, and a
 			# plasma launcher waits on tower #2's roof — a real payoff for going up.
-			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.4, 1.0, 0.55)},
+			# was the PL-1 Plasma Launcher (rank 8) — a launcher on level 2. The .50 Maelstrom (rank 4) is the right reward for the climb, and otherwise waited until level 13.
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.95, 0.72, 0.3)},
 		],
 		# Burning smelt + wreckage fires — the foundry reads as a live, molten warzone.
 		"fires": [
@@ -2583,7 +2587,8 @@ static func _gemini() -> Dictionary:
 		"floor_size": Vector2(50, 50),
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
-		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-16, 0, -12), "color": Color(0.55, 0.8, 1)},
+		# was the ARC-9 Gauss Lance: a rank-9 piercing laser handed out on level 3 of 23.
+		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-16, 0, -12), "color": Color(1.0, 0.82, 0.3)},
 		"env": {
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
 			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
@@ -2711,7 +2716,8 @@ static func _claude() -> Dictionary:
 		"exit": Vector3(17, 1.5, 17),
 		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-13, 0, -12), "color": Color(1, 0.75, 0.35)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.55, 0.8, 1.0)},
+			# was gauss (rank 9). The MK-VII Longshot (rank 7) otherwise never showed up until level 14.
+			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.6, 0.85, 1.0)},
 		],
 		# Polished metal-plate floor: crisp amber reflections in the dark vault.
 		"floor_material": "res://assets/materials/vault_floor.tres",
@@ -2870,9 +2876,11 @@ static func _grok() -> Dictionary:
 		"floor_size": Vector2(58, 58),
 		"spawn": Vector3(-23, 0.6, -23),
 		"exit": Vector3(23, 1.5, 23),
-		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-18, 0, -16), "color": Color(1, 0.35, 0.28)},
+		# was the GRK-X Devastator (rank 12 of 13) on level 8 of 23. Plasma (rank 8) fits the slot.
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-18, 0, -16), "color": Color(0.4, 1.0, 0.55)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(8, 0, -8), "color": Color(0.55, 0.8, 1.0)},
+			# was the ARC-9 Gauss Lance (rank 9) — too strong for act II; a Maelstrom re-find instead.
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(8, 0, -8), "color": Color(0.95, 0.72, 0.3)},
 		],
 		"env": {
 			"sky_top": Color(0.08, 0.02, 0.03), "sky_horizon": Color(0.28, 0.07, 0.07),
@@ -3203,7 +3211,8 @@ static func _suburb_boss() -> Dictionary:
 		"floor_color": Color(0.16, 0.15, 0.17),
 		"spawn": Vector3(-36, 0.6, -36),
 		"exit": Vector3(36, 1.5, 36),
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -23), "color": Color(0.45, 0.85, 1)}, # in front of the corner house — (-31,-31) was inside it
+		# was the Tesla (rank 5), now handed out on mistral. The Arc Coil (rank 6) belongs here, not on level 1.
+		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-31, 0, -23), "color": Color(1, 0.75, 0.35)}, # in front of the corner house
 		"env": {
 			"hdri": "res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr", "sky_energy": 0.9,
 			"physical_sky": true, "turbidity": 10.0,
