@@ -14,6 +14,20 @@ const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 @export var burst_count: int = 4
 @export var burst_interval: float = 0.12
 
+## STRAFING RUN: on a cooldown the raptor stops hovering and commits — a fast,
+## straight fly-by through the player's position, raking a line of angled-down
+## bolts along the flight path. A strike-aircraft pass (which is exactly what
+## the winged flying-gun model reads as), not more hovering plinking. The
+## committed line is also its weakness: mid-run it cannot adjust course, so
+## tracking the pass is the counter-play.
+@export var run_cooldown: float = 7.5
+@export var run_speed: float = 16.0
+
+var _run_t: float = 0.0
+var _run_dir: Vector3 = Vector3.ZERO
+var _run_cd: float = 0.0
+var _run_fire_t: float = 0.0
+
 var _hover: float = 0.0
 var _strafe_dir: float = 1.0
 var _strafe_t: float = 0.0
@@ -41,6 +55,7 @@ func _ready() -> void:
 	hp.current_health = max_health
 	_hover = randf() * TAU
 	_strafe_dir = 1.0 if randf() < 0.5 else -1.0
+	_run_cd = randf_range(3.0, 6.0) # stagger a flight's first passes
 	_make_thrusters()
 
 ## Twin glowing thruster jets under the body — a streaming exhaust trail that
@@ -93,10 +108,19 @@ func _state_chase(delta: float) -> void:
 	_fly_to(target.global_position, delta)
 
 func _state_attack(delta: float) -> void:
-	if target == null or not _can_see(target):
+	if target == null:
+		set_state(State.CHASE)
+		return
+	# A committed run rides through LOS breaks — it's flying a straight pass,
+	# not tracking, so a pillar flashing by must not abort it into CHASE.
+	if _run_t > 0.0:
+		_strafing_run(delta)
+		return
+	if not _can_see(target):
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
+	_run_cd -= delta
 	_strafe_t -= delta
 	if _strafe_t <= 0.0:
 		_strafe_t = randf_range(1.2, 2.6)
@@ -105,6 +129,14 @@ func _state_attack(delta: float) -> void:
 	to.y = 0.0
 	var dist := to.length()
 	var dirn := to.normalized() if to.length() > 0.01 else -global_transform.basis.z
+	# Commit a strafing run: far enough out for a real pass, guns idle.
+	if _run_cd <= 0.0 and dist > 10.0 and _burst_left <= 0 \
+			and not GameState.attack_grace_active():
+		_run_dir = dirn
+		_run_t = 2.0
+		_run_fire_t = 0.25 # first bolt lands as the pass crosses toward you
+		AudioBus.play_synth_at("charge", global_position, -8.0, 1.6) # dive whine
+		return
 	var fwd := 0.0
 	if dist > preferred_range * 1.15:
 		fwd = 1.0
@@ -121,6 +153,34 @@ func _state_attack(delta: float) -> void:
 		_burst_left = burst_count
 		_burst_t = 0.0
 		_attack_timer = attack_interval()
+
+## The committed pass: full speed along the locked line at a lowered attack
+## altitude, raking angled-down bolts on a fixed cadence so the impacts paint
+## a walking line across the ground — you dodge the LINE, not aimed fire.
+func _strafing_run(delta: float) -> void:
+	_run_t -= delta
+	velocity.x = _run_dir.x * run_speed
+	velocity.z = _run_dir.z * run_speed
+	var ty: float = (target.global_position.y if target and is_instance_valid(target) else global_position.y) \
+		+ hover_height * 0.6
+	velocity.y = move_toward(velocity.y, (ty - global_position.y) * 4.0, 30.0 * delta)
+	_face_dir(_run_dir, delta)
+	_run_fire_t -= delta
+	if _run_fire_t <= 0.0 and muzzle:
+		_run_fire_t = 0.11
+		var scene := get_tree().current_scene
+		if scene:
+			var proj := PROJECTILE.instantiate()
+			scene.add_child(proj)
+			(proj as Node3D).global_position = muzzle.global_position
+			var dir := scatter_aim((_run_dir + Vector3.DOWN * 0.85).normalized(), 4.0)
+			if proj.has_method("launch"):
+				proj.launch(dir * proj_speed, self, proj_damage, 0.0, 0.0)
+			recoil = 1.0
+			_muzzle_flash()
+			AudioBus.play_synth_at("drone_shot", muzzle.global_position, -6.0, 1.15)
+	if _run_t <= 0.0:
+		_run_cd = run_cooldown # pass complete — peel back to the hover fight
 
 func _fly_to(dest: Vector3, delta: float) -> void:
 	var ty: float = (target.global_position.y if target else dest.y) + hover_height
