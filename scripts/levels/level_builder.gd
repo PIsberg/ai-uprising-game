@@ -4406,6 +4406,11 @@ func _activate_task(t: Dictionary) -> void:
 			var timer := SurviveTimer.new()
 			timer.task_id = id
 			timer.seconds = t.get("seconds", 45.0)
+			# Escalating waves make a hold a climax instead of a countdown you
+			# can sit out behind cover. Reuses the reinforcement spawner, so a
+			# wave pours in with the same FX/scaling as any objective alarm.
+			timer.waves = t.get("waves", [])
+			timer.wave_due.connect(_on_survive_wave)
 			add_child(timer)
 		"hold_zone":
 			var zone := HoldZone.new()
@@ -4506,6 +4511,13 @@ func _on_tasks_progress() -> void:
 		if not spec["fired"] and GameState.is_task_done(spec["id"]):
 			spec["fired"] = true
 			_spawn_reinforcements.call_deferred(spec["enemies"])
+
+## A "survive" wave came due. Announce it (so the escalation reads as authored,
+## not as enemies wandering in) and pour it in through the same alarm spawner.
+func _on_survive_wave(enemies: Array, label: String) -> void:
+	if label != "":
+		GameState.wave_incoming.emit(label)
+	_spawn_reinforcements.call_deferred(enemies)
 
 ## An objective tripped the alarm: pour the authored wave in with the same
 ## machinery as placed enemies (spawn FX, difficulty scaling), staggered so it

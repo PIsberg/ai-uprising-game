@@ -175,6 +175,15 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		for r in t.get("reinforce", []):
 			if r.has("pos"):
 				r["pos"] = _sv(r["pos"], s)
+		# …as do the timed waves of a "survive" hold. Same reason as "reinforce":
+		# these are spawn points on the ground plane, and the lava beds / walls they
+		# were authored to clear all stretch with the arena. Missing this lands a
+		# wave short of where it was placed — for GPT Foundry's purge, close enough
+		# to a smelt channel to matter (tests/purge_probe asserts the clearance).
+		for w in t.get("waves", []):
+			for e in w.get("enemies", []):
+				if e.has("pos"):
+					e["pos"] = _sv(e["pos"], s)
 	return def
 
 ## Scale a position/span on the ground plane; heights are sacred.
@@ -2251,18 +2260,46 @@ static func _gpt() -> Dictionary:
 			{"type": "collect_shards", "id": "weights", "after": "hack_terminal",
 				"label": "Exfiltrate the weight fragments",
 				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)],
-				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL — the
-				# overload assault erupts the instant the survive phase begins.
+				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL. This
+				# is the REACTION — a sharp, immediate shove — not the whole assault.
+				# The escalation proper is paced out across the survive waves below,
+				# so the climax builds instead of dumping 17 bodies at second zero.
 				"reinforce": [
-					{"type": "drone", "count": 3, "pos": Vector3(0, 3, 0)},
-					{"type": "android", "count": 3, "pos": Vector3(-12, 0, 0)},
-					{"type": "android", "count": 3, "pos": Vector3(12, 0, 0)},
-					{"type": "skitter", "count": 8, "pos": Vector3(0, 0, -14)},
+					{"type": "drone", "count": 2, "pos": Vector3(0, 3, 0)},
+					{"type": "android", "count": 2, "pos": Vector3(-12, 0, 0)},
+					{"type": "android", "count": 2, "pos": Vector3(12, 0, 0)},
 				]},
 			# CLIMAX: the core goes critical — hold out through the purge, then the
-			# blast doors cycle and the beacon opens. A held, escalating finish.
-			{"type": "survive", "id": "purge", "after": "weights", "seconds": 22.0,
-				"label": "FOUNDRY OVERLOAD — survive the purge protocol"},
+			# blast doors cycle and the beacon opens. Three announced waves ramp the
+			# pressure (swarm -> security -> heavy), so the hold is a fight you win,
+			# not a countdown you sit out behind a rack.
+			{"type": "survive", "id": "purge", "after": "weights", "seconds": 26.0,
+				"label": "FOUNDRY OVERLOAD — survive the purge protocol",
+				"waves": [
+					# Chaff first: skitters boil out of the core, drones pin you down.
+					{"at": 1.0, "label": "PURGE PROTOCOL — CHAFF RELEASE", "enemies": [
+						{"type": "skitter", "count": 6, "pos": Vector3(0, 0, -14)},
+						{"type": "drone", "count": 2, "pos": Vector3(0, 3, 4)},
+					]},
+					# Security answers: real guns, from both aisle mouths.
+					{"at": 9.0, "label": "SECOND WAVE — FOUNDRY SECURITY", "enemies": [
+						{"type": "android", "count": 2, "pos": Vector3(-12, 0, -4)},
+						{"type": "android", "count": 2, "pos": Vector3(12, 0, 4)},
+						# z=18, not 16: the eastern smelt channel's scaled edge sits at
+						# z~20.6, and a clustered pair scatters up to 2.5 m off `pos`.
+						{"type": "spider", "count": 2, "pos": Vector3(0, 0, 18)},
+					]},
+					# The foundry stops pretending: a BRUTE and covering fire. Landing
+					# at 17 s leaves ~9 s of hold — enough to be a real last stand.
+					{"at": 17.0, "label": "HEAVY RESPONSE — BRUTE INBOUND", "enemies": [
+						{"type": "brute", "pos": Vector3(0, 0, -16)},
+						{"type": "gunner", "pos": Vector3(-14, 0, 2)},
+						# x=14 z=+2, NOT z=-2: tower #1 (base 14,-6 r=3.6) fills
+						# z[-9.6,-2.4] there, and a spawn 0.4 m off its skirt would
+						# drop a gunner into the column.
+						{"type": "gunner", "pos": Vector3(14, 0, 2)},
+					]},
+				]},
 		],
 		# Climactic set-piece: exfiltrating the last weight fragment trips the core
 		# overload — the hall snaps to red alert (lights strobe red, klaxon, core
