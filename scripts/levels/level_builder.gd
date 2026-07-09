@@ -4706,10 +4706,15 @@ func _spawn_enemies(def: Dictionary) -> void:
 		# each its own spawner so they trigger/scale exactly like a single placed one.
 		var count: int = maxi(1, int(en.get("count", 1)))
 		var base_pos: Vector3 = en["pos"]
+		# "pack": entries sharing an id wake as one squad the moment any of them
+		# is tripped, so the player meets a mixed group instead of crossing three
+		# trigger circles in a row and fighting three robots in sequence.
+		var pack: String = String(en.get("pack", ""))
 		for j in count:
 			var sp := EnemySpawner.new()
 			sp.enemy_scene = scene
 			sp.position = base_pos if count == 1 else base_pos + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
+			sp.pack_id = pack
 			if trig > 0.0:
 				sp.spawn_on_ready = false
 				sp.trigger_radius = trig
