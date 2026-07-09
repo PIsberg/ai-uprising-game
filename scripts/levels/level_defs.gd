@@ -2252,8 +2252,15 @@ static func _gpt() -> Dictionary:
 		"name": "OpenAI Foundry — GPT Core",
 		"objective": "Hack the Foundry, exfiltrate the weights, then survive the core overload to the beacon",
 		"music": "music_techno",
+		# A pure mission arc: hack -> exfiltrate -> hold. Deliberately NO "kill_all".
+		# It contradicted this level's own objective line, and it lied: the portal
+		# drives kill_all off the LIVE enemy count, but 14 of the 19 authored
+		# hostiles (the MECH core guardian and every vault guard among them) are
+		# trigger-gated and haven't spawned yet — so downing the 5 opening enemies
+		# ticked "Eliminate all hostiles ✔" with a mini-boss still asleep. Dropping
+		# it also kills the post-climax chore of hunting the last skitter: once the
+		# purge is survived the beacon opens and you RUN, under a red-alert core.
 		"tasks": [
-			{"type": "kill_all"},
 			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6),
 				"reinforce": [{"type": "android", "count": 3, "pos": Vector3(0, 0, 2)}]},
 			# The hack cracks the model vault open — grab the weights and go.

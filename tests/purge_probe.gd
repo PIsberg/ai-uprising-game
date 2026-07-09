@@ -25,10 +25,29 @@ func _run() -> void:
 	await get_tree().process_frame
 	var def: Dictionary = LevelDefs.get_def("gpt")
 	var survive := {}
+	var types: Array[String] = []
 	for t in def.get("tasks", []):
+		types.append(String(t.get("type", "")))
 		if t.get("type", "") == "survive":
 			survive = t
 	_check("gpt has a survive climax", not survive.is_empty())
+
+	# The arc is hack -> exfiltrate -> hold, and NOTHING else. "kill_all" must
+	# stay off this level: Portal drives it from the LIVE enemy count, but most
+	# of the roster is trigger-gated, so it would tick while a mini-boss sleeps.
+	_check("gpt arc is hack->weights->purge",
+		",".join(types) == "hack_terminal,collect_shards,survive", str(types))
+	var gated := 0
+	var awake := 0
+	for e in def.get("enemies", []):
+		if float(e.get("trigger", 0.0)) > 0.0:
+			gated += int(e.get("count", 1))
+		else:
+			awake += int(e.get("count", 1))
+	# The premise, asserted rather than assumed: a kill_all here could complete
+	# with the majority of the roster still unspawned.
+	_check("most of the roster is trigger-gated (why kill_all lied)", gated > awake,
+		"%d gated vs %d awake at spawn" % [gated, awake])
 	var waves: Array = survive.get("waves", [])
 	var hold: float = float(survive.get("seconds", 0.0))
 	_check("purge has waves", waves.size() >= 3, "%d waves over %.0fs" % [waves.size(), hold])
