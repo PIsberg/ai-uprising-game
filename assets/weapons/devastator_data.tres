@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
-[ext_resource type="PackedScene" uid="uid://b0proj0rocket01" path="res://scenes/weapons/projectile_rocket.tscn" id="3_proj"]
+[ext_resource type="PackedScene" uid="uid://b0proj0rocketp1" path="res://scenes/weapons/projectile_rocket_player.tscn" id="3_proj"]
 
 [resource]
 script = ExtResource("1_data")
