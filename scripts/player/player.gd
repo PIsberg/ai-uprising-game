@@ -429,6 +429,9 @@ func _on_hp_damaged(amount: float, source: Node) -> void:
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
 	var frac := (amount / hp.max_health) if hp and hp.max_health > 0.0 else 0.0
 	_apply_hit_kick(source, frac)
+	# Taking damage thumps the pad's low motor, scaled with the bite — the
+	# through-the-hands counterpart of the camera kick above.
+	Haptics.pulse(0.0, clampf(0.25 + frac * 1.5, 0.25, 1.0), 0.25)
 	# Micro hit-stop: a ~50ms Engine.time_scale dip, BIG hits only, so it reads
 	# as "that one really landed" instead of nausea-inducing on every graze.
 	# Reuses GameState's existing combat hit-stop primitive (same one per-kill
@@ -1650,6 +1653,7 @@ func _check_landing() -> void:
 			shake(0.12 + impact * 0.24)
 			_fov_kick = maxf(_fov_kick, impact * 5.0)
 			_kick_weapon_holder(Vector3(0, -0.05 - impact * 0.07, 0), 0.05, 0.22)
+			Haptics.pulse(0.0, impact * 0.7, 0.18) # the drop lands in the hands too
 	_was_on_floor = is_on_floor()
 	_fall_speed = 0.0
 

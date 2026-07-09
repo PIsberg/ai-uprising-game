@@ -521,6 +521,10 @@ func _do_shot() -> void:
 	_muzzle_smoke()
 	_play_fire_sound()
 	_play_fire_anim()
+	# Gamepad rumble: every trigger pull snaps the buzz motor; the thump motor
+	# grows with the round's total heft, so a shotgun blast kicks the pad the
+	# way a pistol tap doesn't.
+	Haptics.pulse(0.35, clampf(eff_damage() * float(data.pellets) / 140.0, 0.0, 0.85), 0.09)
 	fired.emit(self)
 
 ## The live cone half-angle in degrees: base spread opened by bloom and

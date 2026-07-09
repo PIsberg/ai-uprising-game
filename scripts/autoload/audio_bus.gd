@@ -200,6 +200,8 @@ func notify_blast(position: Vector3, strength: float = 1.0) -> void:
 	_shock = minf(intensity, 1.0)
 	# The whine plays on the (unmuffled) UI channel so it survives its own muffle.
 	play_synth_ui("ear_ring", lerpf(-18.0, -8.0, _shock), randf_range(0.96, 1.04))
+	# Both pad motors slam with the blast and trail off with the deafen.
+	Haptics.pulse(_shock * 0.8, _shock, 0.5)
 
 ## Lazily insert the muffle low-pass on SFXReverb (kept transparent at rest).
 func _ensure_shock_lp() -> AudioEffectLowPassFilter:

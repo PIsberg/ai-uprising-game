@@ -313,6 +313,10 @@ func _build_pause_audio() -> void:
 	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
+	# Accessibility: gamepad rumble strength live (0 = off).
+	var rumble := _audio_slider_row(vbox, tr("Controller Rumble"), GraphicsSettings.rumble, 0.0, 1.0, 0.05)
+	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
+
 	# Resolution scale live (1.0 = native/sharp; lower for performance). A live
 	# readout shows the effective internal resolution ("70% · 2688×1512").
 	var rscale := _audio_slider_row(vbox, tr("Render Scale"), GraphicsSettings.render_scale, 0.5, 1.0, 0.05)
@@ -1787,6 +1791,7 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 	# confirmation reads as texture, not a metronome.
 	if killed:
 		AudioBus.play_synth_ui("kill_thock", -5.0, randf_range(0.95, 1.05))
+		Haptics.pulse(0.0, 0.45, 0.1) # kill confirm lands in the hands
 	else:
 		AudioBus.play_synth_ui("hit_tick", -12.0, randf_range(0.9, 1.1))
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
