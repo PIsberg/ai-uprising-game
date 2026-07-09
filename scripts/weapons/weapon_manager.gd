@@ -196,25 +196,88 @@ func _register_alt_fire_action() -> void:
 	mb.button_index = MOUSE_BUTTON_XBUTTON1
 	InputMap.action_add_event("alt_fire", mb)
 
-## Diagnostic watchdog for the intermittent "lose my weapon on first shot" report:
-## logs (to the game log) any time the equipped weapon unexpectedly disappears —
-## goes null/freed, or turns invisible while it should be drawn — with the state
-## at that moment. Edge-triggered so it prints once per transition, not per frame.
+## Watchdog for the recurring "I shoot / get shot and lose my weapons" report.
+##
+## The original version only checked `current` for null and `current.visible`.
+## Neither ever fired in a repro attempt (tests/weapon_vanish_probe drives 3000
+## frames of firing, taking hits, wheel-swapping and mid-fight pickups), so the
+## real failure is something it could not see. It now also watches:
+##   - the rack SHRINKING (a Weapon freed out from under us),
+##   - current_index drifting off the end,
+##   - visibility of the whole HOLDER / any ancestor (visible_in_tree), which the
+##     `.visible` check misses entirely,
+##   - the weapon node being detached from the tree.
+##
+## It RECOVERS rather than leaving the player disarmed: a mitigation, not a cure.
+## Every trip prints (so it lands in stdout AND the rotated game log — see
+## project.godot [debug], retention raised from 5 files to 40 because a few
+## headless probe runs were enough to evict the sessions that had the evidence).
 var _watch_ok: bool = true
+var _watch_rack: int = -1
+
 func _watch_weapon() -> void:
+	# Only while actually playing. Cutscenes, menus and the death sequence hide
+	# the viewmodel ON PURPOSE; a watchdog that "recovers" there would yank the
+	# gun back into frame mid-cutscene.
+	if GameState.current_state != GameState.State.PLAYING:
+		_watch_ok = true
+		_watch_rack = weapons.size()
+		return
+	if _watch_rack < 0:
+		_watch_rack = weapons.size()
+	if weapons.size() < _watch_rack:
+		print("[WEAPON-WATCH] rack SHRANK %d -> %d (index=%d state=%d)"
+			% [_watch_rack, weapons.size(), current_index, GameState.current_state])
+	_watch_rack = weapons.size()
+
+	if weapons.is_empty():
+		return
 	if current == null or not is_instance_valid(current):
 		if _watch_ok:
 			_watch_ok = false
-			push_warning("[WEAPON-WATCH] equipped weapon became null/freed (weapons=%d index=%d state=%d)"
+			print("[WEAPON-WATCH] equipped weapon null/freed (weapons=%d index=%d state=%d) — recovering"
 				% [weapons.size(), current_index, GameState.current_state])
+		_recover_weapon()
 		return
-	# While a weapon is drawn (not mid-swap), it must be visible. Flag the drop.
-	var drawn_ok := current.visible or _equip_timer > 0.0
-	if drawn_ok != _watch_ok:
-		_watch_ok = drawn_ok
-		if not drawn_ok:
-			push_warning("[WEAPON-WATCH] '%s' went INVISIBLE while drawn (mag=%d reserve=%d reloading=%s equip_timer=%.2f state=%d)"
-				% [current.name, current.mag, current.reserve, current._reloading, _equip_timer, GameState.current_state])
+	# Something hid an ANCESTOR (the holder, the camera, the head): `current.visible`
+	# stays true and the old watchdog saw nothing, but the player sees no gun.
+	var drawn := _equip_timer > 0.0
+	var ok := current.is_inside_tree() and (current.is_visible_in_tree() or drawn)
+	if ok != _watch_ok:
+		_watch_ok = ok
+		if not ok:
+			var who := "self" if not current.visible else "an ancestor"
+			print("[WEAPON-WATCH] '%s' vanished — hidden by %s (in_tree=%s self.visible=%s holder.visible=%s mag=%d reserve=%d reloading=%s equip_timer=%.2f state=%d) — recovering"
+				% [current.name, who, current.is_inside_tree(), current.visible, visible,
+					current.mag, current.reserve, current._reloading, _equip_timer,
+					GameState.current_state])
+			_recover_weapon()
+
+## Put a usable weapon back in the player's hands. Never leaves them disarmed
+## because of a bug we have not yet caught.
+func _recover_weapon() -> void:
+	if not visible:
+		visible = true
+	# Drop any dead slots first: a freed Weapon left in the rack shows up as an
+	# empty cell in the HUD carousel and makes the number keys point at nothing.
+	var live: Array[Weapon] = []
+	for w in weapons:
+		if w != null and is_instance_valid(w):
+			live.append(w)
+	if live.size() != weapons.size():
+		weapons = live
+		_watch_rack = weapons.size()
+	for i in weapons.size():
+		var w := weapons[i]
+		if w != null and is_instance_valid(w) and w.is_inside_tree():
+			current_index = i
+			w.visible = true
+			w.on_equip()
+			weapon_changed.emit(w)
+			ammo_changed.emit(w.mag, w.reserve)
+			_watch_ok = true
+			print("[WEAPON-WATCH] re-armed '%s' (slot %d)" % [w.name, i])
+			return
 
 func _process(delta: float) -> void:
 	_watch_weapon()

@@ -12,6 +12,15 @@ config_version=5
 
 compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
+[debug]
+
+; Godot keeps 5 rotated logs by default. That is not enough to survive an
+; intermittent bug: a handful of headless probe runs evicted the play sessions
+; that contained the evidence for the "weapon vanished" report.
+file_logging/enable_file_logging=true
+file_logging/enable_file_logging.pc=true
+file_logging/max_log_files=40
+
 [application]
 
 config/name="AI Uprising"
