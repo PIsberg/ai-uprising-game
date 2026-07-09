@@ -2360,14 +2360,22 @@ static func _gpt() -> Dictionary:
 		# threshold 0.82 / vol 0.03) that drowned the hall in a blurry green haze:
 		# glow_bloom 0 keeps a CRISP halo (no smear), a high threshold + thin fog let
 		# the racks and grid read sharp. The green identity stays; the blur is gone.
+		# Colour balance: the hall used to be ~75% green by pixel — a single-hue
+		# wash in which the cyan/magenta neon and the molten channels all read as
+		# "slightly different green". The green identity lives in the SIGNAGE, the
+		# core and the floor grid, which are emissive and don't need help; what was
+		# drowning everything was the green AMBIENT + a 40% green sky bleed. Pulled
+		# both toward a desaturated teal so the accent lamps and the smelt glow
+		# carry the hue instead. Luminance held (checked on the eye-level capture),
+		# so nothing got darker — the greens just stopped fighting the accents.
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.12, 0.3, 0.22),
-			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.38,
-			"sky_contribution": 0.4, "glow": 0.95, "glow_bloom": 0.0, "glow_strength": 0.9,
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.10, 0.22, 0.24),
+			"ambient": Color(0.34, 0.47, 0.46), "ambient_energy": 0.40,
+			"sky_contribution": 0.22, "glow": 0.95, "glow_bloom": 0.0, "glow_strength": 0.9,
 			"glow_threshold": 1.35, "fog_density": 0.009,
-			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.75,
-			"contrast": 1.16, "saturation": 1.2, "brightness": 0.86, "volumetric_density": 0.008,
+			"sun_color": Color(0.82, 1.0, 0.92), "sun_energy": 0.75,
+			"contrast": 1.16, "saturation": 1.14, "brightness": 0.88, "volumetric_density": 0.008,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
 		# 8.4 m, not 5: the towers push room_h to ~10.5 m, and at 5 m the core's top
@@ -2387,14 +2395,22 @@ static func _gpt() -> Dictionary:
 		"light_shafts": [0, 1, 2],
 		# Green core key + neon accent lamps (cyan / magenta) that bloom into the haze.
 		"lights": [
-			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.4, 1, 0.5), "energy": 2.53, "range": 18},
-			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
+			# The two hall keys were saturated green, so every surface they touched
+			# came back green and the hall read as one hue. Industrial white with a
+			# faint green cast lights the RACKS; the green identity now comes from
+			# the things that are actually green — the emissive floor grid, the
+			# signage, the core — with cyan/magenta neon and the molten channels
+			# free to read as themselves.
+			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.82, 1.0, 0.86), "energy": 2.7, "range": 18},
+			{"pos": Vector3(10, 4.5, 10), "color": Color(0.86, 1.0, 0.9), "energy": 2.5, "range": 18},
 			# Lifted from y=4.5 to 9.7: at 4.5 this lamp sat *inside* the core slab
 			# (which spans y 0.85..9.25), lighting the hall from within solid
 			# geometry. Above the slab's crown it reads as the core's own corona.
 			{"pos": Vector3(0, 9.7, 0), "color": Color(0.6, 1, 0.7), "energy": 2.4, "range": 20},
-			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 3.2, "range": 12},
-			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 3.2, "range": 12},
+			# Accent lamps carry the hue now that the ambient stopped shouting green:
+			# pushed up so the cyan/magenta actually tints the racks they sit against.
+			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 4.4, "range": 15},
+			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 4.4, "range": 15},
 			{"pos": Vector3(0, 2.2, 16), "color": Color(0.3, 0.8, 1.0), "energy": 2.6, "range": 12},
 			# Warm gold wash over the vault cache — a "treasure" beacon that pops
 			# against the green hall and draws the eye north.
