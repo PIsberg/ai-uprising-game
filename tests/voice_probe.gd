@@ -41,5 +41,32 @@ func _run() -> void:
 	_check("dog family key", dog.call("_voice_family") == "dog", str(dog.call("_voice_family")))
 	_check("dog pitch chirps", float(EnemyBase.VOICE_PITCH.get("dog", 0.0)) > 1.2)
 	dog.queue_free()
+	# 5. Override-proof death bark. Thirteen subclasses override _on_died and
+	#    seven never call super, so a bark living inside _on_died is silently
+	#    dropped for those chassis. EnemyBase hooks the Damageable's `died`
+	#    signal instead — assert the connection exists on EVERY enemy scene so
+	#    the next _on_died override can't mute a robot's dying gasp again.
+	await _check_death_barks()
 	print("RESULT ", "PASS" if _ok else "FAIL")
 	get_tree().quit()
+
+func _check_death_barks() -> void:
+	var missing: Array[String] = []
+	var checked := 0
+	for f in DirAccess.get_files_at("res://scenes/enemies/"):
+		if not f.ends_with(".tscn"):
+			continue
+		var e: Node = (load("res://scenes/enemies/%s" % f) as PackedScene).instantiate()
+		if not (e is EnemyBase):
+			e.queue_free()
+			continue
+		add_child(e)
+		await get_tree().process_frame
+		var hp: Node = e.get("hp")
+		if hp == null or not hp.died.is_connected(e._on_died_voice):
+			missing.append(f.get_basename())
+		checked += 1
+		e.queue_free()
+		await get_tree().process_frame
+	_check("death bark wired on all enemies", missing.is_empty(),
+		"%d scenes%s" % [checked, "" if missing.is_empty() else " MISSING: " + ", ".join(missing)])

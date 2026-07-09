@@ -1,28 +1,31 @@
 extends Node
-## Dev probe: captures the victory cutscene's key beats to PNG so framing and
-## the dawn-brightening dead-brain shot can be judged by eye. Run WINDOWED
-## (headless renders black):
-##   godot --path . res://tests/victory_shot.tscn --quit-after 400
+## Windowed capture of the victory finale at fixed timeline moments, so the
+## ending can be judged as pixels. Headless renders black frames.
+##   godot --path . res://tests/victory_shot.tscn
+##
+## The late samples (t>=22) land on the closing GLOBAL DEFENSE NET broadcast that
+## victory_cutscene layers on once its 3D timeline ends — that broadcast once sat
+## in phase 0 forever on a black screen (see VictoryTransmission._process), and a
+## capture here is the only thing that showed it.
+const OUT := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private-ai-uprising-game/bec5c1e5-b2af-4e88-b1dd-ce92408127e0/scratchpad/victory"
+const AT := [1.5, 6.5, 12.0, 17.5, 22.5, 26.0, 30.0]
 
 func _ready() -> void:
+	DirAccess.make_dir_recursive_absolute(OUT)
 	var cs: Node = (load("res://scenes/cutscene/victory_cutscene.tscn") as PackedScene).instantiate()
-	add_child(cs)
-	var idx := 0
-	# Beat 1 (dead brain establishing) ~2s, beat 2 (orbit + spark) ~7s,
-	# beat 3 (dawn breaking, mid-tween) ~12.5s, beat 4 (final wide/title) ~17.5s.
-	for t in [2.0, 7.0, 12.5, 17.5]:
-		while _t < t:
-			await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		_frame("victory_%d.png" % idx)
-		idx += 1
+	get_tree().root.add_child.call_deferred(cs)
+	await get_tree().process_frame
+	var t := 0.0
+	var i := 0
+	while i < AT.size():
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		if t >= AT[i]:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("%s/t%04.1f.png" % [OUT, AT[i]])
+			print("SAVED t=", AT[i])
+			i += 1
+		if not is_instance_valid(cs):
+			break
+	print("VICTORY_SHOT_DONE")
 	get_tree().quit()
-
-var _t := 0.0
-func _process(delta: float) -> void:
-	_t += delta
-
-func _frame(fname: String) -> void:
-	var img := get_viewport().get_texture().get_image()
-	img.save_png(OS.get_user_data_dir() + "/" + fname)
-	print("SAVED ", fname, " at t=", String.num(_t, 1))

@@ -287,14 +287,17 @@ func _choose_attack(dist: float) -> void:
 	# Enraged or cornered -> ground slam.
 	if _slam_cd <= 0.0 and (dist <= slam_trigger_range or (_phase() == 3 and dist <= slam_radius * 1.4)):
 		_begin_slam()
+		_bark_attack()
 		return
 	# Wounded -> sweeping beam.
 	if _phase() >= 2 and _beam_cd <= 0.0:
 		_begin_beam()
+		_bark_attack()
 		return
 	# Default -> artillery barrage (volley grows with phase).
 	if _artillery_cd <= 0.0:
 		_fire_artillery()
+		_bark_attack()
 
 # ---------- seismic footfall ----------
 

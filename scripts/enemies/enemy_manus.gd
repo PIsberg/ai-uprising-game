@@ -193,12 +193,15 @@ func _state_attack(delta: float) -> void:
 	if not GameState.attack_grace_active():
 		if _grab_cd <= 0.0 and dist >= 5.0 and dist <= 14.0:
 			_begin_grab()
+			_bark_attack()
 			return
 		if _slam_cd <= 0.0 and dist <= 11.0:
 			_begin_slam()
+			_bark_attack()
 			return
 		if _sweep_cd <= 0.0 and dist <= sweep_range:
 			_begin_sweep()
+			_bark_attack()
 			return
 	if dist > preferred_range:
 		_move_toward(target.global_position, delta)

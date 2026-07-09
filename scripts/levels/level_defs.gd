@@ -175,6 +175,18 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		for r in t.get("reinforce", []):
 			if r.has("pos"):
 				r["pos"] = _sv(r["pos"], s)
+		# …as do the timed waves of a "survive" hold. Same reason as "reinforce":
+		# these are spawn points on the ground plane, and the lava beds / walls they
+		# were authored to clear all stretch with the arena. Missing this lands a
+		# wave short of where it was placed — for GPT Foundry's purge, close enough
+		# to a smelt channel to matter (tests/purge_probe asserts the clearance).
+		for w in t.get("waves", []):
+			for e in w.get("enemies", []):
+				if e.has("pos"):
+					e["pos"] = _sv(e["pos"], s)
+			for sup in w.get("supplies", []):
+				if sup.has("pos"):
+					sup["pos"] = _sv(sup["pos"], s)
 	return def
 
 ## Scale a position/span on the ground plane; heights are sacred.
@@ -300,11 +312,11 @@ static func _guardrails() -> Dictionary:
 		"enemies": [
 			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 2},
 			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 3},
-			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 6},
-			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 8},
-			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 10},
-			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 12},
-			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 14},
+			{"type": "seeker", "pos": Vector3(12, 3, 6), "trigger": 6, "pack": "guardr_p2"},
+			{"type": "gunner", "pos": Vector3(-19, 0.6, 8), "trigger": 8, "pack": "guardr_p1"},
+			{"type": "drone", "pos": Vector3(-12, 3, 10), "trigger": 10, "pack": "guardr_p1"},
+			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 12, "pack": "guardr_p2"},
+			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 14, "pack": "guardr_p2"},
 			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 16},
 		],
 		"pickups": [
@@ -384,12 +396,15 @@ static func _hivemind() -> Dictionary:
 		# (assassinate, above) closes from the far side.
 		"enemies": [
 			{"type": "hive", "pos": Vector3(-14, 1, -10), "trigger": 30},
-			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 30},
-			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 28},
+			{"type": "hive", "pos": Vector3(14, 1, -10), "trigger": 30, "pack": "hivemi_p1"},
+			{"type": "hive", "pos": Vector3(-20, 1, -2), "trigger": 28, "pack": "hivemi_p2"},
 			{"type": "hive", "pos": Vector3(20, 1, 2), "trigger": 28},
-			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 22},
+			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 22, "pack": "hivemi_p2"},
 			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 22},
 			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 18},
+				# Roster variety: ORB and BOWLER were one-level cameos.
+				{"type": "orb", "pos": Vector3(-14, 0.5, 6), "trigger": 20, "pack": "hivemi_p2"},
+				{"type": "bowler", "pos": Vector3(14, 0.5, -6), "trigger": 22, "pack": "hivemi_p1"},
 			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 18},
 		],
 		"lore": [
@@ -545,11 +560,11 @@ static func _nexus() -> Dictionary:
 			# fired a shot, which is how first-time playtests ended in 15 s.
 			{"type": "spider", "pos": Vector3(0, 0, -1), "count": 3},
 			{"type": "android", "pos": Vector3(-3, 0, 5)},
-			{"type": "android", "pos": Vector3(6, 0, 3), "trigger": 14},
-			{"type": "drone", "pos": Vector3(2, 0, 2), "trigger": 14},
-			{"type": "drone", "pos": Vector3(9, 0, 9), "trigger": 16},
-			{"type": "spider", "pos": Vector3(5, 0, 10), "count": 3, "trigger": 16},
-			{"type": "android", "pos": Vector3(10, 0, 14), "trigger": 16},
+			{"type": "android", "pos": Vector3(6, 0, 3), "trigger": 14, "pack": "nx_atrium"},
+			{"type": "drone", "pos": Vector3(2, 0, 2), "trigger": 14, "pack": "nx_atrium"},
+			{"type": "drone", "pos": Vector3(9, 0, 9), "trigger": 16, "pack": "nx_hall"},
+			{"type": "spider", "pos": Vector3(5, 0, 10), "count": 3, "trigger": 16, "pack": "nx_hall"},
+			{"type": "android", "pos": Vector3(10, 0, 14), "trigger": 16, "pack": "nx_hall"},
 			# South-east of the fire trench's end — its old spot (4,0,13) was INSIDE
 			# the south trench bed (enemies are not auto-relocated out of hazard
 			# beds): it stood stranded in fire on carved-out navmesh, unreachable
@@ -560,7 +575,8 @@ static func _nexus() -> Dictionary:
 		# GRAPPLE CACHE: an arc coil on an isolated high pad with no stairs or
 		# ramp — the only way up is the grapple (C). Teaches the tool early.
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(0.55, 0.85, 1.0)},
+			# was the CL-3 Arc Coil (rank 6 of 13) — on the FIRST level. The Breacher (rank 3) is the right reward for this rooftop.
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(1.0, 0.82, 0.3)},
 		],
 	}
 
@@ -661,26 +677,26 @@ static func _frostbreak() -> Dictionary:
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "vacuum", "pos": Vector3(-6, 0.3, 4)},
-			{"type": "reaper", "pos": Vector3(0, 0.5, 8), "trigger": 16},
-			{"type": "sentinel", "pos": Vector3(-12, 0.5, -10), "trigger": 17},
-			{"type": "hunter", "pos": Vector3(12, 0.5, 10), "trigger": 14},
-			{"type": "mauler", "pos": Vector3(0, 0.5, 16), "trigger": 13},
+			{"type": "reaper", "pos": Vector3(0, 0.5, 8), "trigger": 16, "pack": "frostb_p1"},
+			{"type": "sentinel", "pos": Vector3(-12, 0.5, -10), "trigger": 17, "pack": "frostb_p2"},
+			{"type": "hunter", "pos": Vector3(12, 0.5, 10), "trigger": 14, "pack": "frostb_p3"},
+			{"type": "mauler", "pos": Vector3(0, 0.5, 16), "trigger": 13, "pack": "frostb_p1"},
 			# Act III ramp: this relay was near the bottom of the curve (14th of 18);
 			# reinforced to a dense frozen-yard defence that rises toward the finale.
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 8, "trigger": 15},
-			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20},
-			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19},
-			{"type": "gunner", "pos": Vector3(-13, 0.5, 12), "trigger": 17},
-			{"type": "gunner", "pos": Vector3(7, 0.5, -12), "trigger": 16},
-			{"type": "hunter", "pos": Vector3(8, 0.5, 6), "trigger": 16},
-			{"type": "brute", "pos": Vector3(-13, 0.5, -12), "trigger": 21},
-			{"type": "ravager", "pos": Vector3(-8, 0.5, 10), "trigger": 23},
-			{"type": "sentinel", "pos": Vector3(-14, 0.5, 6), "trigger": 20},
-			{"type": "ravager", "pos": Vector3(15, 0.5, 6), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18, "pack": "frostb_p3"},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20, "pack": "frostb_p2"},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19, "pack": "frostb_p4"},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, 12), "trigger": 17, "pack": "frostb_p5"},
+			{"type": "gunner", "pos": Vector3(7, 0.5, -12), "trigger": 16, "pack": "frostb_p4"},
+			{"type": "hunter", "pos": Vector3(8, 0.5, 6), "trigger": 16, "pack": "frostb_p1"},
+			{"type": "brute", "pos": Vector3(-13, 0.5, -12), "trigger": 21, "pack": "frostb_p2"},
+			{"type": "ravager", "pos": Vector3(-8, 0.5, 10), "trigger": 23, "pack": "frostb_p1"},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 6), "trigger": 20, "pack": "frostb_p5"},
+			{"type": "ravager", "pos": Vector3(15, 0.5, 6), "trigger": 24, "pack": "frostb_p3"},
 			{"type": "skitter", "pos": Vector3(-6, 0.5, -8), "count": 6, "trigger": 16},
 			# A HOWITZER walker shelling the yard from the east fins.
-			{"type": "howitzer", "pos": Vector3(16, 0.5, -8), "trigger": 22},
+			{"type": "howitzer", "pos": Vector3(16, 0.5, -8), "trigger": 22, "pack": "frostb_p4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
@@ -790,33 +806,33 @@ static func _neon() -> Dictionary:
 			{"type": "hunter", "pos": Vector3(-8, 0.5, -4)},
 			# GUNSLINGER duelists holding the arcade lanes.
 			{"type": "gunslinger", "pos": Vector3(12, 0.5, 4)},
-			{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10), "trigger": 16},
+			{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10), "trigger": 16, "pack": "neon_p1"},
 			# A BREAKER hammer-drone bobbing over the lanes.
-			{"type": "breaker", "pos": Vector3(0, 3.5, 8), "trigger": 18},
+			{"type": "breaker", "pos": Vector3(0, 3.5, 8), "trigger": 18, "pack": "neon_p2"},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
-			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15},
-			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14},
-			{"type": "hunter", "pos": Vector3(12, 0.5, -10), "trigger": 13},
+			{"type": "reaper", "pos": Vector3(-10, 0.5, 10), "trigger": 15, "pack": "neon_p3"},
+			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 14, "pack": "neon_p4"},
+			{"type": "hunter", "pos": Vector3(12, 0.5, -10), "trigger": 13, "pack": "neon_p5"},
 			# Evil MAITRE-D' serving bots glide out of the arcade's cafe units.
-			{"type": "server", "pos": Vector3(-12, 0.5, 6), "trigger": 15},
-			{"type": "server", "pos": Vector3(10, 0.5, -6), "trigger": 17},
+			{"type": "server", "pos": Vector3(-12, 0.5, 6), "trigger": 15, "pack": "neon_p3"},
+			{"type": "server", "pos": Vector3(10, 0.5, -6), "trigger": 17, "pack": "neon_p5"},
 			# Act III ramp: the arcade was a valley (15th of 18); reinforced into a
 			# dense neon brawl that climbs toward the foundry + titan finale.
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 8, "trigger": 16},
-			{"type": "ravager", "pos": Vector3(13, 0.5, 13), "trigger": 20},
-			{"type": "ravager", "pos": Vector3(-13, 0.5, -13), "trigger": 22},
+			{"type": "ravager", "pos": Vector3(13, 0.5, 13), "trigger": 20, "pack": "neon_p4"},
+			{"type": "ravager", "pos": Vector3(-13, 0.5, -13), "trigger": 22, "pack": "neon_p1"},
 			{"type": "gunner", "pos": Vector3(14, 0.5, 0), "trigger": 18},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
-			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14},
-			{"type": "gunner", "pos": Vector3(-13, 0.5, 13), "trigger": 17},
-			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21},
-			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18},
-			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21},
+			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14, "pack": "neon_p4"},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, 13), "trigger": 17, "pack": "neon_p3"},
+			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21, "pack": "neon_p5"},
+			{"type": "gunner", "pos": Vector3(0, 0.5, 14), "trigger": 18, "pack": "neon_p2"},
+			{"type": "mauler", "pos": Vector3(14, 0.5, 6), "trigger": 21, "pack": "neon_p4"},
 			{"type": "reaper", "pos": Vector3(2, 0.5, -7), "trigger": 14},
 			# RONIN assassins ghost through the cabinet lanes — the arcade's
 			# undefeated duellists.
-			{"type": "ronin", "pos": Vector3(14, 0.5, -14), "trigger": 16},
-			{"type": "ronin", "pos": Vector3(-6, 0.5, -12), "trigger": 19},
+			{"type": "ronin", "pos": Vector3(14, 0.5, -14), "trigger": 16, "pack": "neon_p5"},
+			{"type": "ronin", "pos": Vector3(-6, 0.5, -12), "trigger": 19, "pack": "neon_p1"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
@@ -931,25 +947,25 @@ static func _sublevel() -> Dictionary:
 			# OPTICON cutting-units and a ROLLER — the sublevel's own custodial fleet,
 			# turned hostile.
 			{"type": "optic", "pos": Vector3(8, 0.5, 4)},
-			{"type": "optic", "pos": Vector3(-8, 0.5, -6), "trigger": 14},
-			{"type": "roller", "pos": Vector3(0, 0.5, -10), "trigger": 18},
-			{"type": "vacuum", "pos": Vector3(0, 0.3, 8), "trigger": 16},
-			{"type": "reaper", "pos": Vector3(10, 0.5, 10), "trigger": 14},
-			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15},
-			{"type": "vacuum", "pos": Vector3(12, 0.3, -10), "trigger": 13},
-			{"type": "mauler", "pos": Vector3(0, 0.5, 14), "trigger": 12},
+			{"type": "optic", "pos": Vector3(-8, 0.5, -6), "trigger": 14, "pack": "sublev_p1"},
+			{"type": "roller", "pos": Vector3(0, 0.5, -10), "trigger": 18, "pack": "sublev_p1"},
+			{"type": "vacuum", "pos": Vector3(0, 0.3, 8), "trigger": 16, "pack": "sublev_p2"},
+			{"type": "reaper", "pos": Vector3(10, 0.5, 10), "trigger": 14, "pack": "sublev_p3"},
+			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 15, "pack": "sublev_p4"},
+			{"type": "vacuum", "pos": Vector3(12, 0.3, -10), "trigger": 13, "pack": "sublev_p5"},
+			{"type": "mauler", "pos": Vector3(0, 0.5, 14), "trigger": 12, "pack": "sublev_p2"},
 			# Act III ramp: this off-world sublevel was the easiest level in the game
 			# (13th of 18); reinforced to a proper late-campaign garrison.
 			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 14},
-			{"type": "gunner", "pos": Vector3(13, 0.5, -4), "trigger": 16},
-			{"type": "sentinel", "pos": Vector3(-14, 0.5, 2), "trigger": 18},
-			{"type": "gunner", "pos": Vector3(-12, 0.5, -12), "trigger": 17},
-			{"type": "gunner", "pos": Vector3(12, 0.5, 12), "trigger": 19},
-			{"type": "vacuum", "pos": Vector3(-6, 0.5, -10), "trigger": 13},
-			{"type": "ravager", "pos": Vector3(10, 0.5, -12), "trigger": 22},
-			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 20},
-			{"type": "gunner", "pos": Vector3(-13, 0.5, -4), "trigger": 18},
-			{"type": "sentinel", "pos": Vector3(13, 0.5, 4), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(13, 0.5, -4), "trigger": 16, "pack": "sublev_p5"},
+			{"type": "sentinel", "pos": Vector3(-14, 0.5, 2), "trigger": 18, "pack": "sublev_p4"},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, -12), "trigger": 17, "pack": "sublev_p1"},
+			{"type": "gunner", "pos": Vector3(12, 0.5, 12), "trigger": 19, "pack": "sublev_p3"},
+			{"type": "vacuum", "pos": Vector3(-6, 0.5, -10), "trigger": 13, "pack": "sublev_p1"},
+			{"type": "ravager", "pos": Vector3(10, 0.5, -12), "trigger": 22, "pack": "sublev_p5"},
+			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 20, "pack": "sublev_p3"},
+			{"type": "gunner", "pos": Vector3(-13, 0.5, -4), "trigger": 18, "pack": "sublev_p1"},
+			{"type": "sentinel", "pos": Vector3(13, 0.5, 4), "trigger": 20, "pack": "sublev_p3"},
 			{"type": "skitter", "pos": Vector3(6, 0.5, -6), "count": 6, "trigger": 15},
 		],
 		"pickups": [
@@ -1070,17 +1086,20 @@ static func _crucible() -> Dictionary:
 			{"type": "reaper", "pos": Vector3(-8, 0.5, -4)},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
 			{"type": "sentinel", "pos": Vector3(0, 0.5, -14)},
-			{"type": "hunter", "pos": Vector3(-10, 0.5, 10), "trigger": 16},
-			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15},
-			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14},
-			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			{"type": "hunter", "pos": Vector3(-10, 0.5, 10), "trigger": 16, "pack": "cru_west"},
+			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15, "pack": "cru_north"},
+			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14, "pack": "cru_south"},
+			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18, "pack": "cru_sw"},
 			# Pre-finale foundry: heavier garrison so it's the hardest level before titan.
-			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17},
-			{"type": "gunner", "pos": Vector3(16, 0.5, -6), "trigger": 16},
-			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17, "pack": "cru_west"},
+			{"type": "gunner", "pos": Vector3(16, 0.5, -6), "trigger": 16, "pack": "cru_south"},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19, "pack": "cru_west"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15, "pack": "cru_north"},
 			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
 			# centrepiece boss — a towering melee mech that charges and hammers you.
+				# Roster variety: BREAKER and WHIRLWIND were one-level cameos.
+				{"type": "breaker", "pos": Vector3(9, 0.5, -8), "trigger": 16, "pack": "cru_south"},
+				{"type": "whirlwind", "pos": Vector3(-9, 0.5, -4), "trigger": 15, "pack": "cru_sw"},
 			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
 		],
 		"pickups": [
@@ -1396,21 +1415,21 @@ static func _overseer() -> Dictionary:
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 6)},
 			{"type": "overseer", "pos": Vector3(0, 0.5, 8), "trigger": 30},
-			{"type": "seeker", "pos": Vector3(-10, 2.5, 8), "trigger": 22},
-			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18},
+			{"type": "seeker", "pos": Vector3(-10, 2.5, 8), "trigger": 22, "pack": "overse_p1"},
+			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18, "pack": "overse_p2"},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
-			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 22},
+			{"type": "android", "pos": Vector3(14, 0.5, -8), "trigger": 20, "pack": "overse_p3"},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 22, "pack": "overse_p1"},
 			# This Act II boss arena was under-tuned (lower threat than level 2);
 			# the OVERSEER now fields a real escort — more Seeker swarm + heavies.
-			{"type": "seeker", "pos": Vector3(8, 2.5, 8), "trigger": 24},
-			{"type": "seeker", "pos": Vector3(-8, 2.5, 10), "trigger": 26},
-			{"type": "seeker", "pos": Vector3(10, 2.5, -8), "trigger": 28},
+			{"type": "seeker", "pos": Vector3(8, 2.5, 8), "trigger": 24, "pack": "overse_p2"},
+			{"type": "seeker", "pos": Vector3(-8, 2.5, 10), "trigger": 26, "pack": "overse_p1"},
+			{"type": "seeker", "pos": Vector3(10, 2.5, -8), "trigger": 28, "pack": "overse_p3"},
 			{"type": "android", "pos": Vector3(-16, 0.5, -16), "count": 3, "trigger": 20},
-			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 22},
-			{"type": "gunner", "pos": Vector3(16, 0.5, -4), "trigger": 24},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 22, "pack": "overse_p1"},
+			{"type": "gunner", "pos": Vector3(16, 0.5, -4), "trigger": 24, "pack": "overse_p3"},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 26},
-			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24},
+			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24, "pack": "overse_p2"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -1548,23 +1567,23 @@ static func _alien() -> Dictionary:
 			{"type": "alien", "pos": Vector3(0, 2.5, 8)},
 			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
-			{"type": "alien", "pos": Vector3(10, 2.5, 10), "trigger": 22},
-			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18},
-			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26},
-			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28},
+			{"type": "alien", "pos": Vector3(10, 2.5, 10), "trigger": 22, "pack": "alien_p1"},
+			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18, "pack": "alien_p2"},
+			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26, "pack": "alien_p2"},
+			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28, "pack": "alien_p1"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 7, "trigger": 20},
-			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24},
-			{"type": "mender", "pos": Vector3(-12, 2.5, -8), "trigger": 26},
-			{"type": "alien", "pos": Vector3(18, 2.5, 6), "trigger": 28},
-			{"type": "gunner", "pos": Vector3(-18, 0.5, -14), "trigger": 26},
-			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30},
+			{"type": "alien", "pos": Vector3(14, 2.5, -10), "trigger": 24, "pack": "alien_p3"},
+			{"type": "mender", "pos": Vector3(-12, 2.5, -8), "trigger": 26, "pack": "alien_p4"},
+			{"type": "alien", "pos": Vector3(18, 2.5, 6), "trigger": 28, "pack": "alien_p1"},
+			{"type": "gunner", "pos": Vector3(-18, 0.5, -14), "trigger": 26, "pack": "alien_p4"},
+			{"type": "brute", "pos": Vector3(16, 0.5, -16), "trigger": 30, "pack": "alien_p3"},
 			{"type": "sniper", "pos": Vector3(-22, 0.0, 22), "trigger": 30},
 			# Act III opener: lift it above the Act II finale so the off-world act ramps up.
-			{"type": "alien", "pos": Vector3(0, 2.5, -14), "trigger": 24},
-			{"type": "alien", "pos": Vector3(-16, 2.5, -6), "trigger": 26},
-			{"type": "gunner", "pos": Vector3(16, 0.5, 8), "trigger": 26},
-			{"type": "ravager", "pos": Vector3(-14, 0.5, 16), "trigger": 28},
-			{"type": "skitter", "pos": Vector3(0, 0.5, -18), "count": 6, "trigger": 24},
+			{"type": "alien", "pos": Vector3(0, 2.5, -14), "trigger": 24, "pack": "alien_p5"},
+			{"type": "alien", "pos": Vector3(-16, 2.5, -6), "trigger": 26, "pack": "alien_p4"},
+			{"type": "gunner", "pos": Vector3(16, 0.5, 8), "trigger": 26, "pack": "alien_p1"},
+			{"type": "ravager", "pos": Vector3(-14, 0.5, 16), "trigger": 28, "pack": "alien_p2"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -18), "count": 6, "trigger": 24, "pack": "alien_p5"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-24, 0, -16)},
@@ -1682,26 +1701,26 @@ static func _titan() -> Dictionary:
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 6)},
 			{"type": "titan", "pos": Vector3(12, 0.5, 12), "trigger": 60},
-			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24},
-			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20},
+			{"type": "brute", "pos": Vector3(-12, 0.5, 12), "trigger": 24, "pack": "titan_p1"},
+			{"type": "seeker", "pos": Vector3(12, 2.5, 12), "trigger": 20, "pack": "titan_p2"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 14), "count": 8, "trigger": 22},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, 10), "trigger": 24},
-			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 10), "trigger": 24, "pack": "titan_p1"},
+			{"type": "mender", "pos": Vector3(8, 2.5, 16), "trigger": 30, "pack": "titan_p2"},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 26},
-			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18},
+			{"type": "android", "pos": Vector3(14, 0.5, -10), "trigger": 18, "pack": "titan_p4"},
 			# Late-game density: pour skitter swarms in from every edge so the new
 			# crowd-clearing arsenal (Tempest chain, Vortex grenade, Omega) gets a
 			# stage, with Ravagers as the fierce alphas leaping over the pack.
 			{"type": "skitter", "pos": Vector3(-22, 0.5, 0), "count": 8, "trigger": 22},
-			{"type": "skitter", "pos": Vector3(22, 0.5, -4), "count": 8, "trigger": 24},
+			{"type": "skitter", "pos": Vector3(22, 0.5, -4), "count": 8, "trigger": 24, "pack": "titan_p4"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, -22), "count": 7, "trigger": 20},
-			{"type": "spider", "pos": Vector3(-18, 0.5, -16), "trigger": 24},
-			{"type": "spider", "pos": Vector3(18, 0.5, 18), "trigger": 24},
+			{"type": "spider", "pos": Vector3(-18, 0.5, -16), "trigger": 24, "pack": "titan_p3"},
+			{"type": "spider", "pos": Vector3(18, 0.5, 18), "trigger": 24, "pack": "titan_p2"},
 			{"type": "gunner", "pos": Vector3(24, 0.5, 6), "trigger": 30},
-			{"type": "seeker", "pos": Vector3(-16, 2.5, -8), "trigger": 24},
-			{"type": "ravager", "pos": Vector3(-10, 0.5, 20), "trigger": 28},
+			{"type": "seeker", "pos": Vector3(-16, 2.5, -8), "trigger": 24, "pack": "titan_p3"},
+			{"type": "ravager", "pos": Vector3(-10, 0.5, 20), "trigger": 28, "pack": "titan_p1"},
 			{"type": "ravager", "pos": Vector3(12, 0.5, 22), "trigger": 30},
-			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26},
+			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26, "pack": "titan_p3"},
 			{"type": "warmech", "pos": Vector3(26, 0.5, -24), "trigger": 40},
 		],
 		"pickups": [
@@ -1828,14 +1847,14 @@ static func _archon() -> Dictionary:
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
-			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30},
+			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30, "pack": "archon_p1"},
 			# Heavier seed garrison before the ARCHON brain itself starts manufacturing
 			# waves — gives the finale arsenal a crowd to carve through on entry.
 			{"type": "skitter", "pos": Vector3(8, 0.5, -6), "count": 7, "trigger": 30},
-			{"type": "spider", "pos": Vector3(-10, 0.5, -8), "trigger": 28},
-			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 32},
+			{"type": "spider", "pos": Vector3(-10, 0.5, -8), "trigger": 28, "pack": "archon_p2"},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 32, "pack": "archon_p1"},
 			{"type": "ravager", "pos": Vector3(10, 0.5, 8), "trigger": 30},
-			{"type": "warmech", "pos": Vector3(-16, 0.5, -14), "trigger": 38},
+			{"type": "warmech", "pos": Vector3(-16, 0.5, -14), "trigger": 38, "pack": "archon_p2"},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
 		],
 	}
@@ -1865,7 +1884,8 @@ static func _uplink() -> Dictionary:
 		"exit": Vector3(24, 1.5, 24),
 		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-18, 0, -12), "color": Color(0.45, 0.9, 1.0)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(18, 0, -12), "color": Color(1, 0.4, 0.35)},
+			# was the Devastator (rank 12) on level 9. Gauss (rank 9) lands here instead.
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(18, 0, -12), "color": Color(0.55, 0.8, 1.0)},
 		],
 		"env": {
 			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
@@ -1949,18 +1969,21 @@ static func _uplink() -> Dictionary:
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, 6)},
 			{"type": "drone", "pos": Vector3(0, 2.5, -8)},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 6, "trigger": 20},
-			{"type": "gunner", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
-			{"type": "gunner", "pos": Vector3(14, 0.5, 14), "trigger": 22},
-			{"type": "raptor", "pos": Vector3(0, 3.5, 14), "trigger": 22},
-			{"type": "android", "pos": Vector3(12, 0.5, -12), "trigger": 16},
-			{"type": "seeker", "pos": Vector3(-12, 2.5, -12), "trigger": 18},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 6, "trigger": 20, "pack": "up_north"},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 12), "trigger": 18, "pack": "up_north"},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 14), "trigger": 22, "pack": "up_ne"},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 14), "trigger": 22, "pack": "up_north"},
+			{"type": "android", "pos": Vector3(12, 0.5, -12), "trigger": 16, "pack": "up_south"},
+			{"type": "seeker", "pos": Vector3(-12, 2.5, -12), "trigger": 18, "pack": "up_south"},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 24},
-			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 16},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, -12), "trigger": 24},
-			{"type": "raptor", "pos": Vector3(12, 3.5, 12), "trigger": 26},
-			{"type": "android", "pos": Vector3(-12, 0.5, 6), "trigger": 20},
-			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18},
+			{"type": "skitter", "pos": Vector3(0, 0.5, -12), "count": 8, "trigger": 16, "pack": "up_south"},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -12), "trigger": 24, "pack": "up_south"},
+			{"type": "raptor", "pos": Vector3(12, 3.5, 12), "trigger": 26, "pack": "up_ne"},
+			{"type": "android", "pos": Vector3(-12, 0.5, 6), "trigger": 20, "pack": "up_mid"},
+				# Roster variety: ENFORCER and ROLLER were one-level cameos.
+				{"type": "enforcer", "pos": Vector3(-7, 0.5, -6), "trigger": 18, "pack": "up_mid"},
+				{"type": "roller", "pos": Vector3(7, 0.5, 6), "trigger": 16, "pack": "up_mid"},
+			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18, "pack": "up_ne"},
 		],
 	}
 
@@ -2084,26 +2107,26 @@ static func _assembly() -> Dictionary:
 			{"type": "warbot", "pos": Vector3(6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(0, 0.5, -8)},
 			{"type": "gunner", "pos": Vector3(0, 0.5, 8)},
-			{"type": "warbot", "pos": Vector3(10, 0.5, 10), "trigger": 24},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26},
-			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24},
+			{"type": "warbot", "pos": Vector3(10, 0.5, 10), "trigger": 24, "pack": "assemb_p1"},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, 12), "trigger": 26, "pack": "assemb_p2"},
+			{"type": "gunner", "pos": Vector3(14, 0.5, -12), "trigger": 24, "pack": "assemb_p3"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 10, "trigger": 20},
 			{"type": "skitter", "pos": Vector3(-10, 0.5, -10), "count": 7, "trigger": 22},
-			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 28},
-			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 22},
+			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 28, "pack": "assemb_p1"},
+			{"type": "gunner", "pos": Vector3(-12, 0.5, 10), "trigger": 22, "pack": "assemb_p2"},
 			{"type": "sniper", "pos": Vector3(-24, 0.0, 24), "trigger": 30},
-			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26},
-			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24},
+			{"type": "brute", "pos": Vector3(14, 0.5, 6), "trigger": 26, "pack": "assemb_p1"},
+			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 24, "pack": "assemb_p4"},
 			# Plant floor reinforcements so the production gauntlet keeps climbing.
-			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26},
-			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28},
+			{"type": "gunner", "pos": Vector3(18, 0.5, -18), "trigger": 26, "pack": "assemb_p3"},
+			{"type": "ravager", "pos": Vector3(-18, 0.5, 18), "trigger": 28, "pack": "assemb_p2"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, -16), "count": 6, "trigger": 22},
 			# Fresh off the line: an ENFORCER squad and a RIPPER minigun platform.
-			{"type": "enforcer", "pos": Vector3(8, 0.5, -14), "trigger": 24},
-			{"type": "enforcer", "pos": Vector3(-8, 0.5, 14), "trigger": 26},
-			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28},
+			{"type": "enforcer", "pos": Vector3(8, 0.5, -14), "trigger": 24, "pack": "assemb_p3"},
+			{"type": "enforcer", "pos": Vector3(-8, 0.5, 14), "trigger": 26, "pack": "assemb_p2"},
+			{"type": "ripper", "pos": Vector3(0, 0.5, 18), "trigger": 28, "pack": "assemb_p4"},
 			# A WHIRLWIND buzzsaw drone screaming off the overhead line.
-			{"type": "whirlwind", "pos": Vector3(6, 3.5, 6), "trigger": 22},
+			{"type": "whirlwind", "pos": Vector3(6, 3.5, 6), "trigger": 22, "pack": "assemb_p1"},
 			# MANUS — the plant's colossal master manipulator arm, torn off the
 			# line and feral. It guards the exit quarter: armoured everywhere but
 			# the reactor coupling on its wrist. The Assembly's own hand.
@@ -2133,7 +2156,8 @@ static func _mistral() -> Dictionary:
 		"floor_size": Vector2(48, 48),
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
-		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.4, 0.9, 1.0)},
+		# was the PL-1 Plasma Launcher (rank 8) on level 4 of 23. The Tesla (rank 5) fits the slot.
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.45, 0.9, 1.0)},
 		# Polished cryo-lab floor: cyan light pools across the ice-metal plates.
 		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
@@ -2217,16 +2241,16 @@ static func _mistral() -> Dictionary:
 			{"type": "drone", "pos": Vector3(9, 2.5, -6)},
 			{"type": "android", "pos": Vector3(8, 0.5, -9)},
 			{"type": "drone", "pos": Vector3(-5, 2.5, -11)},
-			{"type": "android", "pos": Vector3(-11, 0.5, 9), "trigger": 15},
-			{"type": "spider", "pos": Vector3(11, 0.5, -7), "trigger": 14},
-			{"type": "drone", "pos": Vector3(13, 2.5, 11), "trigger": 16},
-			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 17},
-			{"type": "mech", "pos": Vector3(15, 0.5, 15), "trigger": 20},
+			{"type": "android", "pos": Vector3(-11, 0.5, 9), "trigger": 15, "pack": "mistra_p1"},
+			{"type": "spider", "pos": Vector3(11, 0.5, -7), "trigger": 14, "pack": "mistra_p2"},
+			{"type": "drone", "pos": Vector3(13, 2.5, 11), "trigger": 16, "pack": "mistra_p3"},
+			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 17, "pack": "mistra_p4"},
+			{"type": "mech", "pos": Vector3(15, 0.5, 15), "trigger": 20, "pack": "mistra_p3"},
 			{"type": "gunner", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
-			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15},
-			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19},
-			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18},
+			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18, "pack": "mistra_p2"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15, "pack": "mistra_p4"},
+			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19, "pack": "mistra_p1"},
+			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18, "pack": "mistra_p3"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -2243,26 +2267,75 @@ static func _gpt() -> Dictionary:
 		"name": "OpenAI Foundry — GPT Core",
 		"objective": "Hack the Foundry, exfiltrate the weights, then survive the core overload to the beacon",
 		"music": "music_techno",
+		# A pure mission arc: hack -> exfiltrate -> hold. Deliberately NO "kill_all".
+		# It contradicted this level's own objective line, and it lied: the portal
+		# drives kill_all off the LIVE enemy count, but 14 of the 19 authored
+		# hostiles (the MECH core guardian and every vault guard among them) are
+		# trigger-gated and haven't spawned yet — so downing the 5 opening enemies
+		# ticked "Eliminate all hostiles ✔" with a mini-boss still asleep. Dropping
+		# it also kills the post-climax chore of hunting the last skitter: once the
+		# purge is survived the beacon opens and you RUN, under a red-alert core.
 		"tasks": [
-			{"type": "kill_all"},
 			{"type": "hack_terminal", "label": "Hack the Foundry mainframe", "pos": Vector3(0, 0, 8), "seconds": 4.0, "color": Color(0.4, 1.0, 0.6),
 				"reinforce": [{"type": "android", "count": 3, "pos": Vector3(0, 0, 2)}]},
 			# The hack cracks the model vault open — grab the weights and go.
 			{"type": "collect_shards", "id": "weights", "after": "hack_terminal",
 				"label": "Exfiltrate the weight fragments",
 				"points": [Vector3(-14, 0, -12), Vector3(14, 0, -10), Vector3(0, 0, -18)],
-				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL — the
-				# overload assault erupts the instant the survive phase begins.
+				# Grabbing the last fragment trips the foundry's PURGE PROTOCOL. This
+				# is the REACTION — a sharp, immediate shove — not the whole assault.
+				# The escalation proper is paced out across the survive waves below,
+				# so the climax builds instead of dumping 17 bodies at second zero.
 				"reinforce": [
-					{"type": "drone", "count": 3, "pos": Vector3(0, 3, 0)},
-					{"type": "android", "count": 3, "pos": Vector3(-12, 0, 0)},
-					{"type": "android", "count": 3, "pos": Vector3(12, 0, 0)},
-					{"type": "skitter", "count": 8, "pos": Vector3(0, 0, -14)},
+					{"type": "drone", "count": 2, "pos": Vector3(0, 3, 0)},
+					{"type": "android", "count": 2, "pos": Vector3(-12, 0, 0)},
+					{"type": "android", "count": 2, "pos": Vector3(12, 0, 0)},
 				]},
 			# CLIMAX: the core goes critical — hold out through the purge, then the
-			# blast doors cycle and the beacon opens. A held, escalating finish.
-			{"type": "survive", "id": "purge", "after": "weights", "seconds": 22.0,
-				"label": "FOUNDRY OVERLOAD — survive the purge protocol"},
+			# blast doors cycle and the beacon opens. Three announced waves ramp the
+			# pressure (swarm -> security -> heavy), so the hold is a fight you win,
+			# not a countdown you sit out behind a rack.
+			{"type": "survive", "id": "purge", "after": "weights", "seconds": 26.0,
+				"label": "FOUNDRY OVERLOAD — survive the purge protocol",
+				"waves": [
+					# Chaff first: skitters boil out of the core, drones pin you down.
+					{"at": 1.0, "label": "PURGE PROTOCOL — CHAFF RELEASE", "enemies": [
+						{"type": "skitter", "count": 6, "pos": Vector3(0, 0, -14)},
+						{"type": "drone", "count": 2, "pos": Vector3(0, 3, 4)},
+					]},
+					# Security answers: real guns, from both aisle mouths. The foundry
+					# also vents its emergency stores — but they eject at the CORE,
+					# which is erupting on a timer (see "overload"). Resupplying is a
+					# run into the blast epicentre, not a freebie.
+					{"at": 9.0, "label": "SECOND WAVE — FOUNDRY SECURITY", "enemies": [
+						{"type": "android", "count": 2, "pos": Vector3(-12, 0, -4)},
+						{"type": "android", "count": 2, "pos": Vector3(12, 0, 4)},
+						# The hall's own racks fight back. SERVER and OPTIC were one-level
+						# cameos (tests/roster_variety_probe); a server foundry is exactly
+						# where they belong, and the OPTIC's cutting beam forces you to keep
+						# moving through the hold instead of camping the vault nook.
+						{"type": "server", "pos": Vector3(-12, 0, 4)},
+						{"type": "optic", "pos": Vector3(12, 0, -4)},
+						# z=18, not 16: the eastern smelt channel's scaled edge sits at
+						# z~20.6, and a clustered pair scatters up to 2.5 m off `pos`.
+						{"type": "spider", "count": 2, "pos": Vector3(0, 0, 18)},
+					], "supplies": [
+						{"type": "ammo", "pos": Vector3(0, 0, -5)},
+					]},
+					# The foundry stops pretending: a BRUTE and covering fire. Landing
+					# at 17 s leaves ~9 s of hold — enough to be a real last stand.
+					{"at": 17.0, "label": "HEAVY RESPONSE — BRUTE INBOUND", "enemies": [
+						{"type": "brute", "pos": Vector3(0, 0, -16)},
+						{"type": "gunner", "pos": Vector3(-14, 0, 2)},
+						# x=14 z=+2, NOT z=-2: tower #1 (base 14,-6 r=3.6) fills
+						# z[-9.6,-2.4] there, and a spawn 0.4 m off its skirt would
+						# drop a gunner into the column.
+						{"type": "gunner", "pos": Vector3(14, 0, 2)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(0, 0, 5)},
+						{"type": "ammo", "pos": Vector3(0, 0, -5)},
+					]},
+				]},
 		],
 		# Climactic set-piece: exfiltrating the last weight fragment trips the core
 		# overload — the hall snaps to red alert (lights strobe red, klaxon, core
@@ -2282,7 +2355,8 @@ static func _gpt() -> Dictionary:
 			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(0, 0, 22), "color": Color(1.0, 0.82, 0.3)},
 			# Rewards the vertical route: climb tower #1, cross the sky-bridge, and a
 			# plasma launcher waits on tower #2's roof — a real payoff for going up.
-			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.4, 1.0, 0.55)},
+			# was the PL-1 Plasma Launcher (rank 8) — a launcher on level 2. The .50 Maelstrom (rank 4) is the right reward for the climb, and otherwise waited until level 13.
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(12, 7.4, -18), "color": Color(0.95, 0.72, 0.3)},
 		],
 		# Burning smelt + wreckage fires — the foundry reads as a live, molten warzone.
 		"fires": [
@@ -2294,30 +2368,68 @@ static func _gpt() -> Dictionary:
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
+		# …and a dark overhead cap for the same reason. An eye-level capture showed
+		# the stock light ceiling panel drinking the hall's green ambient until the
+		# top third of the frame was a featureless green void — brighter than the
+		# racks it was meant to sit behind. Slightly warmer/greyer than the deck so
+		# floor and ceiling don't read as the same surface mirrored.
+		"ceiling_color": Color(0.07, 0.09, 0.08),
 		# Neon-noir foundry: crisp green signage glow against a dark deck. Deliberately
 		# de-fuzzed from the original "soft & fuzzy" tuning (glow 1.5 / bloom 0.6 /
 		# threshold 0.82 / vol 0.03) that drowned the hall in a blurry green haze:
 		# glow_bloom 0 keeps a CRISP halo (no smear), a high threshold + thin fog let
 		# the racks and grid read sharp. The green identity stays; the blur is gone.
+		# Colour balance: the hall used to be ~75% green by pixel — a single-hue
+		# wash in which the cyan/magenta neon and the molten channels all read as
+		# "slightly different green". The green identity lives in the SIGNAGE, the
+		# core and the floor grid, which are emissive and don't need help; what was
+		# drowning everything was the green AMBIENT + a 40% green sky bleed. Pulled
+		# both toward a desaturated teal so the accent lamps and the smelt glow
+		# carry the hue instead. Luminance held (checked on the eye-level capture),
+		# so nothing got darker — the greens just stopped fighting the accents.
 		"env": {
 			"sky_top": Color(0.04, 0.12, 0.07), "sky_horizon": Color(0.1, 0.26, 0.14),
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.12, 0.3, 0.22),
-			"ambient": Color(0.42, 0.6, 0.5), "ambient_energy": 0.38,
-			"sky_contribution": 0.4, "glow": 0.95, "glow_bloom": 0.0, "glow_strength": 0.9,
+			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.10, 0.22, 0.24),
+			"ambient": Color(0.34, 0.47, 0.46), "ambient_energy": 0.40,
+			"sky_contribution": 0.22, "glow": 0.95, "glow_bloom": 0.0, "glow_strength": 0.9,
 			"glow_threshold": 1.35, "fog_density": 0.009,
-			"sun_color": Color(0.8, 1.0, 0.85), "sun_energy": 0.75,
-			"contrast": 1.16, "saturation": 1.2, "brightness": 0.86, "volumetric_density": 0.008,
+			"sun_color": Color(0.82, 1.0, 0.92), "sun_energy": 0.75,
+			"contrast": 1.16, "saturation": 1.14, "brightness": 0.88, "volumetric_density": 0.008,
 		},
 		# A green Foundry core anchors the hall (replaces the central cover block).
-		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 5.0},
+		# 8.4 m, not 5: the towers push room_h to ~10.5 m, and at 5 m the core's top
+		# sat at 5.85 — below the aisle racks' sightline, so the level's namesake
+		# landmark was invisible from the spawn. At 8.4 its top reaches 9.25, well
+		# clear of the 4 m racks and still ~1.2 m under the ceiling. It now draws
+		# the eye to the centre of the hall, which is also where the overload
+		# erupts and where the purge vents its supplies.
+		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.4, 1.0, 0.55), "height": 8.4},
+		# A soft downward key pooled over the core plinth: separates the monolith
+		# from the dark deck and makes the halo ring read. AreaLight3D, so it only
+		# builds on tiers that support them (see _build_hero_lights).
+		"hero_lights": [
+			{"pos": Vector3(0, 9.9, 0), "size": Vector2(6, 6), "color": Color(0.65, 1.0, 0.75),
+				"energy": 4.0, "range": 26.0},
+		],
 		"light_shafts": [0, 1, 2],
 		# Green core key + neon accent lamps (cyan / magenta) that bloom into the haze.
 		"lights": [
-			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.4, 1, 0.5), "energy": 2.53, "range": 18},
-			{"pos": Vector3(10, 4.5, 10), "color": Color(0.5, 1, 0.6), "energy": 2.3, "range": 18},
-			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.7), "energy": 1.84, "range": 16},
-			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 3.2, "range": 12},
-			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 3.2, "range": 12},
+			# The two hall keys were saturated green, so every surface they touched
+			# came back green and the hall read as one hue. Industrial white with a
+			# faint green cast lights the RACKS; the green identity now comes from
+			# the things that are actually green — the emissive floor grid, the
+			# signage, the core — with cyan/magenta neon and the molten channels
+			# free to read as themselves.
+			{"pos": Vector3(-10, 4.5, -10), "color": Color(0.82, 1.0, 0.86), "energy": 2.7, "range": 18},
+			{"pos": Vector3(10, 4.5, 10), "color": Color(0.86, 1.0, 0.9), "energy": 2.5, "range": 18},
+			# Lifted from y=4.5 to 9.7: at 4.5 this lamp sat *inside* the core slab
+			# (which spans y 0.85..9.25), lighting the hall from within solid
+			# geometry. Above the slab's crown it reads as the core's own corona.
+			{"pos": Vector3(0, 9.7, 0), "color": Color(0.6, 1, 0.7), "energy": 2.4, "range": 20},
+			# Accent lamps carry the hue now that the ambient stopped shouting green:
+			# pushed up so the cyan/magenta actually tints the racks they sit against.
+			{"pos": Vector3(-12, 2.6, 6), "color": Color(0.2, 1.0, 1.0), "energy": 4.4, "range": 15},
+			{"pos": Vector3(12, 2.6, -6), "color": Color(1.0, 0.2, 0.8), "energy": 4.4, "range": 15},
 			{"pos": Vector3(0, 2.2, 16), "color": Color(0.3, 0.8, 1.0), "energy": 2.6, "range": 12},
 			# Warm gold wash over the vault cache — a "treasure" beacon that pops
 			# against the green hall and draws the eye north.
@@ -2413,22 +2525,22 @@ static func _gpt() -> Dictionary:
 			# Spider intro: one in the opening fight (no trigger) so it's met early
 			# on every difficulty, plus a reinforcement pair below.
 			{"type": "spider", "pos": Vector3(-8, 0.5, -4)},
-			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 14},
+			{"type": "android", "pos": Vector3(-10, 0.5, 8), "trigger": 14, "pack": "gpt_west"},
 			{"type": "drone", "pos": Vector3(12, 2.5, -12)},
-			{"type": "android", "pos": Vector3(14, 0.5, 10), "trigger": 15},
-			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16},
-			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18},
-			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13},
-			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16},
-			{"type": "gunner", "pos": Vector3(12, 0.5, 10), "trigger": 17},
+			{"type": "android", "pos": Vector3(14, 0.5, 10), "trigger": 15, "pack": "gpt_east"},
+			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 16, "pack": "gpt_west"},
+			{"type": "android", "pos": Vector3(0, 0.5, 14), "trigger": 18, "pack": "gpt_west"},
+			{"type": "spider", "pos": Vector3(10, 0.5, -6), "trigger": 13, "pack": "gpt_east"},
+			{"type": "spider", "pos": Vector3(14, 0.5, -2), "trigger": 17, "pack": "gpt_east"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 6, "trigger": 16, "pack": "gpt_west"},
+			{"type": "gunner", "pos": Vector3(12, 0.5, 10), "trigger": 17, "pack": "gpt_east"},
 			# VAULT GUARD: the cache is defended — approaching it trips an escalating
 			# stand that ramps as you push in, so the reward is earned, not free.
-			{"type": "gunner", "pos": Vector3(-4, 0.5, 20), "trigger": 14},
-			{"type": "android", "pos": Vector3(4, 0.5, 20), "trigger": 14},
-			{"type": "spider", "pos": Vector3(-6, 0.5, 23), "count": 2, "trigger": 12},
-			{"type": "drone", "pos": Vector3(6, 2.5, 23), "trigger": 12},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 23), "count": 5, "trigger": 10},
+			{"type": "gunner", "pos": Vector3(-4, 0.5, 20), "trigger": 14, "pack": "gpt_vault"},
+			{"type": "android", "pos": Vector3(4, 0.5, 20), "trigger": 14, "pack": "gpt_vault"},
+			{"type": "spider", "pos": Vector3(-6, 0.5, 23), "count": 2, "trigger": 12, "pack": "gpt_vault"},
+			{"type": "drone", "pos": Vector3(6, 2.5, 23), "trigger": 12, "pack": "gpt_vault"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 23), "count": 5, "trigger": 10, "pack": "gpt_vault"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, -8)},
@@ -2490,7 +2602,8 @@ static func _gemini() -> Dictionary:
 		"floor_size": Vector2(50, 50),
 		"spawn": Vector3(-20, 0.6, -20),
 		"exit": Vector3(20, 1.5, 20),
-		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-16, 0, -12), "color": Color(0.55, 0.8, 1)},
+		# was the ARC-9 Gauss Lance: a rank-9 piercing laser handed out on level 3 of 23.
+		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-16, 0, -12), "color": Color(1.0, 0.82, 0.3)},
 		"env": {
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
 			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
@@ -2576,19 +2689,19 @@ static func _gemini() -> Dictionary:
 			{"type": "drone", "pos": Vector3(-6, 2.5, 6)},
 			{"type": "drone", "pos": Vector3(8, 3, 8)},
 			{"type": "android", "pos": Vector3(-8, 0.5, -8)},
-			{"type": "drone", "pos": Vector3(12, 3, -2), "trigger": 16},
-			{"type": "drone", "pos": Vector3(-12, 3, 2), "trigger": 16},
-			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 18},
-			{"type": "drone", "pos": Vector3(2, 3, 16), "trigger": 18},
-			{"type": "drone", "pos": Vector3(16, 3, 6), "trigger": 20},
-			{"type": "spider", "pos": Vector3(-6, 0.5, 10), "trigger": 16},
-			{"type": "spider", "pos": Vector3(12, 0.5, -10), "trigger": 18},
+			{"type": "drone", "pos": Vector3(12, 3, -2), "trigger": 16, "pack": "gem_east"},
+			{"type": "drone", "pos": Vector3(-12, 3, 2), "trigger": 16, "pack": "gem_west"},
+			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 18, "pack": "gem_north"},
+			{"type": "drone", "pos": Vector3(2, 3, 16), "trigger": 18, "pack": "gem_north"},
+			{"type": "drone", "pos": Vector3(16, 3, 6), "trigger": 20, "pack": "gem_east"},
+			{"type": "spider", "pos": Vector3(-6, 0.5, 10), "trigger": 16, "pack": "gem_west"},
+			{"type": "spider", "pos": Vector3(12, 0.5, -10), "trigger": 18, "pack": "gem_east"},
 			# Brute intro: slow, distant and shielded — closes in while you clear the
 			# front, teaching you to circle to its unshielded sides/back.
 			{"type": "brute", "pos": Vector3(0, 0.5, 18)},
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 22},
-			{"type": "seeker", "pos": Vector3(14, 2.5, 14), "trigger": 20},
-			{"type": "seeker", "pos": Vector3(-14, 2.5, 6), "trigger": 22},
+			{"type": "seeker", "pos": Vector3(14, 2.5, 14), "trigger": 20, "pack": "gem_north"},
+			{"type": "seeker", "pos": Vector3(-14, 2.5, 6), "trigger": 22, "pack": "gem_west"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-18, 0, -14)},
@@ -2618,7 +2731,8 @@ static func _claude() -> Dictionary:
 		"exit": Vector3(17, 1.5, 17),
 		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-13, 0, -12), "color": Color(1, 0.75, 0.35)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.55, 0.8, 1.0)},
+			# was gauss (rank 9). The MK-VII Longshot (rank 7) otherwise never showed up until level 14.
+			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.6, 0.85, 1.0)},
 		],
 		# Polished metal-plate floor: crisp amber reflections in the dark vault.
 		"floor_material": "res://assets/materials/vault_floor.tres",
@@ -2738,17 +2852,17 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(-2, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -2)},
 			{"type": "drone", "pos": Vector3(0, 2.5, 2)},
-			{"type": "android", "pos": Vector3(-10, 0.5, 6), "trigger": 14},
-			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 18},
-			{"type": "brute", "pos": Vector3(-8, 0.5, 12), "trigger": 16},
-			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16},
-			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16},
-			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14},
+			{"type": "android", "pos": Vector3(-10, 0.5, 6), "trigger": 14, "pack": "cl_west"},
+			{"type": "mech", "pos": Vector3(12, 0.5, 12), "trigger": 18, "pack": "cl_ne"},
+			{"type": "brute", "pos": Vector3(-8, 0.5, 12), "trigger": 16, "pack": "cl_north"},
+			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16, "pack": "cl_north"},
+			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16, "pack": "cl_se"},
+			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14, "pack": "cl_west"},
 			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
-			{"type": "gunner", "pos": Vector3(12, 0.5, -12), "trigger": 18},
-			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20},
-			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20},
-			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16},
+			{"type": "gunner", "pos": Vector3(12, 0.5, -12), "trigger": 18, "pack": "cl_se"},
+			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20, "pack": "cl_ne"},
+			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20, "pack": "cl_west"},
+			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16, "pack": "cl_north"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -10)},
@@ -2777,9 +2891,11 @@ static func _grok() -> Dictionary:
 		"floor_size": Vector2(58, 58),
 		"spawn": Vector3(-23, 0.6, -23),
 		"exit": Vector3(23, 1.5, 23),
-		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-18, 0, -16), "color": Color(1, 0.35, 0.28)},
+		# was the GRK-X Devastator (rank 12 of 13) on level 8 of 23. Plasma (rank 8) fits the slot.
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-18, 0, -16), "color": Color(0.4, 1.0, 0.55)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(8, 0, -8), "color": Color(0.55, 0.8, 1.0)},
+			# was the ARC-9 Gauss Lance (rank 9) — too strong for act II; a Maelstrom re-find instead.
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(8, 0, -8), "color": Color(0.95, 0.72, 0.3)},
 		],
 		"env": {
 			"sky_top": Color(0.08, 0.02, 0.03), "sky_horizon": Color(0.28, 0.07, 0.07),
@@ -2874,22 +2990,28 @@ static func _grok() -> Dictionary:
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(6, 2.5, -4)},
 			{"type": "terminator", "pos": Vector3(14, 0.5, 14), "trigger": 22},
-			{"type": "android", "pos": Vector3(-8, 0.5, 8), "trigger": 18},
-			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 18},
+			{"type": "android", "pos": Vector3(-8, 0.5, 8), "trigger": 18, "pack": "grok_p1"},
+			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 18, "pack": "grok_p2"},
 			{"type": "mech", "pos": Vector3(-14, 0.5, -10), "trigger": 22},
-			{"type": "brute", "pos": Vector3(14, 0.5, -14), "trigger": 22},
-			{"type": "android", "pos": Vector3(14, 0.5, 4), "trigger": 20},
-			{"type": "drone", "pos": Vector3(-4, 2.5, 16), "trigger": 22},
+			{"type": "brute", "pos": Vector3(14, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
+			{"type": "android", "pos": Vector3(14, 0.5, 4), "trigger": 20, "pack": "grok_p4"},
+			{"type": "drone", "pos": Vector3(-4, 2.5, 16), "trigger": 22, "pack": "grok_p1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, 16), "trigger": 24},
-			{"type": "android", "pos": Vector3(10, 0.5, -14), "trigger": 22},
-			{"type": "drone", "pos": Vector3(18, 2.5, -6), "trigger": 24},
-			{"type": "spider", "pos": Vector3(-6, 0.5, 6), "trigger": 16},
-			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20},
-			{"type": "dog", "pos": Vector3(-10, 0.5, 2), "trigger": 18},
-			{"type": "dog", "pos": Vector3(10, 0.5, 0), "trigger": 18},
+			{"type": "android", "pos": Vector3(10, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
+			{"type": "drone", "pos": Vector3(18, 2.5, -6), "trigger": 24, "pack": "grok_p3"},
+			{"type": "spider", "pos": Vector3(-6, 0.5, 6), "trigger": 16, "pack": "grok_p1"},
+			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20, "pack": "grok_p5"},
+			{"type": "dog", "pos": Vector3(-10, 0.5, 2), "trigger": 18, "pack": "grok_p1"},
+			{"type": "dog", "pos": Vector3(10, 0.5, 0), "trigger": 18, "pack": "grok_p4"},
 			{"type": "sniper", "pos": Vector3(-18, 0.0, 18), "trigger": 26},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
-			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24},
+				# Roster variety: RONIN / WARBOT / RIPPER each appeared in exactly one level in
+				# the whole campaign (see tests/roster_variety_probe). Seeded beside already-
+				# validated spawns so a second act-II hall meets them.
+				{"type": "ronin", "pos": Vector3(-4, 0.5, -6), "trigger": 18}, # x=-4: -7 scaled to -9.8, inside the cover box at x[-12.9,-9.5]
+				{"type": "warbot", "pos": Vector3(7, 0.5, -4), "trigger": 20, "pack": "grok_p5"},
+				{"type": "ripper", "pos": Vector3(-7, 0.5, 8), "trigger": 16, "pack": "grok_p1"},
+			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24, "pack": "grok_p2"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-20, 0, -16)},
@@ -3068,21 +3190,21 @@ static func _suburb() -> Dictionary:
 			# woke together with the first androids.
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
-			{"type": "android", "pos": Vector3(13, 0.5, 8), "trigger": 16},
-			{"type": "spider", "pos": Vector3(-10, 0.5, -6), "trigger": 14},
-			{"type": "drone", "pos": Vector3(12, 3, -10), "trigger": 18},
-			{"type": "android", "pos": Vector3(-12, 0.5, 12), "trigger": 18},
-			{"type": "spider", "pos": Vector3(6, 0.5, -10), "trigger": 18},
+			{"type": "android", "pos": Vector3(13, 0.5, 8), "trigger": 16, "pack": "suburb_p1"},
+			{"type": "spider", "pos": Vector3(-10, 0.5, -6), "trigger": 14, "pack": "suburb_p2"},
+			{"type": "drone", "pos": Vector3(12, 3, -10), "trigger": 18, "pack": "suburb_p3"},
+			{"type": "android", "pos": Vector3(-12, 0.5, 12), "trigger": 18, "pack": "suburb_p4"},
+			{"type": "spider", "pos": Vector3(6, 0.5, -10), "trigger": 18, "pack": "suburb_p3"},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},
-			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20},
-			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 13},
-			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 13},
-			{"type": "gunner", "pos": Vector3(-16, 0.5, 10), "trigger": 12},
+			{"type": "android", "pos": Vector3(18, 0.5, 2), "trigger": 20, "pack": "suburb_p1"},
+			{"type": "mech", "pos": Vector3(-16, 0.5, -10), "trigger": 13, "pack": "suburb_p2"},
+			{"type": "brute", "pos": Vector3(16, 0.5, 14), "trigger": 13, "pack": "suburb_p1"},
+			{"type": "gunner", "pos": Vector3(-16, 0.5, 10), "trigger": 12, "pack": "suburb_p4"},
 			{"type": "sniper", "pos": Vector3(7, 4.9, 15), "trigger": 14},
 			# A K-9 HUNTER pack bursts from the yards mid-fight (second wave).
 			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 16},
-			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 16},
-			{"type": "dog", "pos": Vector3(8, 0.5, -8), "trigger": 22},
+			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 16, "pack": "suburb_p1"},
+			{"type": "dog", "pos": Vector3(8, 0.5, -8), "trigger": 22, "pack": "suburb_p3"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-25, 0, -16)},
@@ -3110,7 +3232,8 @@ static func _suburb_boss() -> Dictionary:
 		"floor_color": Color(0.16, 0.15, 0.17),
 		"spawn": Vector3(-36, 0.6, -36),
 		"exit": Vector3(36, 1.5, 36),
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-31, 0, -23), "color": Color(0.45, 0.85, 1)}, # in front of the corner house — (-31,-31) was inside it
+		# was the Tesla (rank 5), now handed out on mistral. The Arc Coil (rank 6) belongs here, not on level 1.
+		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-31, 0, -23), "color": Color(1, 0.75, 0.35)}, # in front of the corner house
 		"env": {
 			"hdri": "res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr", "sky_energy": 0.9,
 			"physical_sky": true, "turbidity": 10.0,
@@ -3198,14 +3321,14 @@ static func _suburb_boss() -> Dictionary:
 		"enemies": [
 			{"type": "android", "pos": Vector3(-8, 0.5, -8)},
 			{"type": "drone", "pos": Vector3(8, 3, -6)},
-			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18},
-			{"type": "drone", "pos": Vector3(-10, 3, 8), "trigger": 18},
-			{"type": "spider", "pos": Vector3(6, 0.5, 14), "trigger": 16},
+			{"type": "android", "pos": Vector3(10, 0.5, 10), "trigger": 18, "pack": "suburb_p1"},
+			{"type": "drone", "pos": Vector3(-10, 3, 8), "trigger": 18, "pack": "suburb_p2"},
+			{"type": "spider", "pos": Vector3(6, 0.5, 14), "trigger": 16, "pack": "suburb_p1"},
 			{"type": "colossus", "pos": Vector3(22, 0.5, 22), "trigger": 34},
-			{"type": "drone", "pos": Vector3(-6, 3, 16), "trigger": 22},
-			{"type": "android", "pos": Vector3(16, 0.5, -12), "trigger": 22},
-			{"type": "seeker", "pos": Vector3(-16, 2.5, 10), "trigger": 24},
-			{"type": "seeker", "pos": Vector3(12, 2.5, -16), "trigger": 26},
+			{"type": "drone", "pos": Vector3(-6, 3, 16), "trigger": 22, "pack": "suburb_p2"},
+			{"type": "android", "pos": Vector3(16, 0.5, -12), "trigger": 22, "pack": "suburb_p3"},
+			{"type": "seeker", "pos": Vector3(-16, 2.5, 10), "trigger": 24, "pack": "suburb_p2"},
+			{"type": "seeker", "pos": Vector3(12, 2.5, -16), "trigger": 26, "pack": "suburb_p3"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-31, 0, -24)},
@@ -3335,27 +3458,27 @@ static func _lava_world() -> Dictionary:
 		"enemies": [
 			{"type": "raptor", "pos": Vector3(-8, 3, -15)},
 			{"type": "raptor", "pos": Vector3(6, 3, 6)},
-			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
-			{"type": "raptor", "pos": Vector3(14, 3, -5), "trigger": 18},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "lava_w_p1"},
+			{"type": "raptor", "pos": Vector3(14, 3, -5), "trigger": 18, "pack": "lava_w_p2"},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "lava_w_p3"},
 			{"type": "raptor", "pos": Vector3(10, 3, 13), "trigger": 14},
-			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 12},
-			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12},
+			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 12, "pack": "lava_w_p4"},
+			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "lava_w_p1"},
 			# Roster was a steep difficulty dip vs. the level before it and the TITAN
 			# boss after (see tests/difficulty_curve.tscn) — more of the same aerial
 			# gauntlet enemies, not new ground types, to keep the hazard-crossing
 			# identity and avoid new catwalk-placement risk.
-			{"type": "raptor", "pos": Vector3(-13, 3, 8), "trigger": 16},
-			{"type": "raptor", "pos": Vector3(8, 3, -6), "trigger": 20},
-			{"type": "raptor", "pos": Vector3(-4, 3, 14), "trigger": 22},
-			{"type": "raptor", "pos": Vector3(12, 3, -12), "trigger": 24},
-			{"type": "seeker", "pos": Vector3(-10, 3, -12), "trigger": 18},
+			{"type": "raptor", "pos": Vector3(-13, 3, 8), "trigger": 16, "pack": "lava_w_p3"},
+			{"type": "raptor", "pos": Vector3(8, 3, -6), "trigger": 20, "pack": "lava_w_p1"},
+			{"type": "raptor", "pos": Vector3(-4, 3, 14), "trigger": 22, "pack": "lava_w_p3"},
+			{"type": "raptor", "pos": Vector3(12, 3, -12), "trigger": 24, "pack": "lava_w_p2"},
+			{"type": "seeker", "pos": Vector3(-10, 3, -12), "trigger": 18, "pack": "lava_w_p4"},
 			{"type": "seeker", "pos": Vector3(8, 3, 4), "trigger": 20},
 			# A STRIKER-9 pitcher commands the forge perch, bowling MOLTEN ORBS
 			# down the ramp at anyone crossing the lanes below.
-			{"type": "bowler", "pos": Vector3(0, 3.0, -1), "trigger": 18},
+			{"type": "bowler", "pos": Vector3(0, 3.0, -1), "trigger": 18, "pack": "lava_w_p1"},
 			{"type": "orb", "pos": Vector3(0, 0.6, -14), "trigger": 15},
-			{"type": "orb", "pos": Vector3(14, 0.6, 0), "trigger": 20},
+			{"type": "orb", "pos": Vector3(14, 0.6, 0), "trigger": 20, "pack": "lava_w_p2"},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -3457,14 +3580,14 @@ static func _water_world() -> Dictionary:
 			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
 			# RAZORFIN sharks lurk under the surface and breach at you on the gantries.
 			{"type": "shark", "pos": Vector3(-4, 0, -8)},
-			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16},
-			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16},
+			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16, "pack": "water__p1"},
+			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "water__p2"},
 			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14},
-			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 22},
-			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14},
+			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "water__p3"},
+			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 22, "pack": "water__p3"},
+			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14, "pack": "water__p1"},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
-			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12},
+			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "water__p2"},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -3603,21 +3726,21 @@ static func _desert() -> Dictionary:
 		"enemies": [
 			{"type": "gunslinger", "pos": Vector3(-14, 0.5, -8)},
 			{"type": "android", "pos": Vector3(-20, 0.5, -10)},
-			{"type": "dog", "pos": Vector3(-10, 0.5, -2), "trigger": 18},
-			{"type": "dog", "pos": Vector3(-8, 0.5, 0), "trigger": 18},
-			{"type": "drone", "pos": Vector3(-4, 3.0, -6), "trigger": 16},
+			{"type": "dog", "pos": Vector3(-10, 0.5, -2), "trigger": 18, "pack": "desert_p1"},
+			{"type": "dog", "pos": Vector3(-8, 0.5, 0), "trigger": 18, "pack": "desert_p1"},
+			{"type": "drone", "pos": Vector3(-4, 3.0, -6), "trigger": 16, "pack": "desert_p1"},
 			{"type": "gunner", "pos": Vector3(2, 0.5, -10), "trigger": 20},
 			{"type": "sniper", "pos": Vector3(20, 4.5, -16), "trigger": 24},
-			{"type": "gunslinger", "pos": Vector3(14, 0.5, 6), "trigger": 22},
-			{"type": "dog", "pos": Vector3(12, 0.5, 12), "trigger": 22},
-			{"type": "android", "pos": Vector3(18, 0.5, 18), "trigger": 24},
+			{"type": "gunslinger", "pos": Vector3(14, 0.5, 6), "trigger": 22, "pack": "desert_p2"},
+			{"type": "dog", "pos": Vector3(12, 0.5, 12), "trigger": 22, "pack": "desert_p2"},
+			{"type": "android", "pos": Vector3(18, 0.5, 18), "trigger": 24, "pack": "desert_p3"},
 			{"type": "drone", "pos": Vector3(8, 3.0, 14), "trigger": 22},
-			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26},
+			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26, "pack": "desert_p3"},
 			{"type": "gunner", "pos": Vector3(-16, 3.8, 12), "trigger": 26},
-			{"type": "android", "pos": Vector3(22, 0.5, 24), "trigger": 26},
+			{"type": "android", "pos": Vector3(22, 0.5, 24), "trigger": 26, "pack": "desert_p3"},
 			# HOWITZER artillery walkers guard the relay across the open flats —
 			# the whole basin is their firing range.
-			{"type": "howitzer", "pos": Vector3(18, 0.5, 10), "trigger": 26},
+			{"type": "howitzer", "pos": Vector3(18, 0.5, 10), "trigger": 26, "pack": "desert_p2"},
 			{"type": "howitzer", "pos": Vector3(24, 0.5, -2), "trigger": 28},
 		],
 		"pickups": [

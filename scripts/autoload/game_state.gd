@@ -11,6 +11,7 @@ signal objective_unlocked(text: String) ## Objective met, portal opened — HUD 
 signal upgrades_changed ## Run upgrade ranks changed (armory buy / "imba" cheat) — HUD re-renders the upgrade chips.
 signal tasks_changed ## The level task checklist changed — HUD re-renders the objective line.
 signal task_completed(label: String) ## A single task was just finished — HUD cheers it.
+signal wave_incoming(label: String) ## A "survive" wave came due — HUD calls the escalation out.
 signal combo_changed(combo: int, mult: float) ## Kill-streak combo updated — HUD shows the multiplier.
 signal level_graded(grade: String, stats: Dictionary) ## Level cleared — end-screen grade + breakdown.
 

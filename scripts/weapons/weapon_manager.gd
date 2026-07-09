@@ -47,6 +47,16 @@ var _kick_pos_vel: Vector3 = Vector3.ZERO
 var _kick_rot_vel: Vector3 = Vector3.ZERO
 const KICK_STIFFNESS := 220.0   # spring constant (snap-back speed)
 const KICK_DAMPING := 22.0      # critical-ish damping (no wobble)
+## Fixed integration step for the kick spring. Explicit Euler needs
+## h < 2/KICK_DAMPING (0.0909 s) to be stable at all; 1/120 s leaves a wide
+## margin and makes the recoil feel identical whatever the framerate.
+const KICK_MAX_STEP := 1.0 / 120.0
+## Never simulate more than this much spring per frame. A 3-second stall (level
+## load, shader compile) should not spend 360 substeps catching up — the kick has
+## long since settled anyway.
+const KICK_MAX_SIM := 0.1
+## A viewmodel kick beyond this is not recoil, it is a blown-up integrator.
+const KICK_SANE := 2.0
 
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
@@ -196,25 +206,104 @@ func _register_alt_fire_action() -> void:
 	mb.button_index = MOUSE_BUTTON_XBUTTON1
 	InputMap.action_add_event("alt_fire", mb)
 
-## Diagnostic watchdog for the intermittent "lose my weapon on first shot" report:
-## logs (to the game log) any time the equipped weapon unexpectedly disappears —
-## goes null/freed, or turns invisible while it should be drawn — with the state
-## at that moment. Edge-triggered so it prints once per transition, not per frame.
+## Watchdog for the recurring "I shoot / get shot and lose my weapons" report.
+##
+## The original version only checked `current` for null and `current.visible`.
+## Neither ever fired in a repro attempt (tests/weapon_vanish_probe drives 3000
+## frames of firing, taking hits, wheel-swapping and mid-fight pickups), so the
+## real failure is something it could not see. It now also watches:
+##   - the rack SHRINKING (a Weapon freed out from under us),
+##   - current_index drifting off the end,
+##   - visibility of the whole HOLDER / any ancestor (visible_in_tree), which the
+##     `.visible` check misses entirely,
+##   - the weapon node being detached from the tree.
+##
+## It RECOVERS rather than leaving the player disarmed: a mitigation, not a cure.
+## Every trip prints (so it lands in stdout AND the rotated game log — see
+## project.godot [debug], retention raised from 5 files to 40 because a few
+## headless probe runs were enough to evict the sessions that had the evidence).
 var _watch_ok: bool = true
+var _watch_rack: int = -1
+
 func _watch_weapon() -> void:
+	# Only while actually playing. Cutscenes, menus and the death sequence hide
+	# the viewmodel ON PURPOSE; a watchdog that "recovers" there would yank the
+	# gun back into frame mid-cutscene.
+	if GameState.current_state != GameState.State.PLAYING:
+		_watch_ok = true
+		_watch_rack = weapons.size()
+		return
+	if _watch_rack < 0:
+		_watch_rack = weapons.size()
+	if weapons.size() < _watch_rack:
+		print("[WEAPON-WATCH] rack SHRANK %d -> %d (index=%d state=%d)"
+			% [_watch_rack, weapons.size(), current_index, GameState.current_state])
+	_watch_rack = weapons.size()
+
+	if weapons.is_empty():
+		return
 	if current == null or not is_instance_valid(current):
 		if _watch_ok:
 			_watch_ok = false
-			push_warning("[WEAPON-WATCH] equipped weapon became null/freed (weapons=%d index=%d state=%d)"
+			print("[WEAPON-WATCH] equipped weapon null/freed (weapons=%d index=%d state=%d) — recovering"
 				% [weapons.size(), current_index, GameState.current_state])
+		_recover_weapon()
 		return
-	# While a weapon is drawn (not mid-swap), it must be visible. Flag the drop.
-	var drawn_ok := current.visible or _equip_timer > 0.0
-	if drawn_ok != _watch_ok:
-		_watch_ok = drawn_ok
-		if not drawn_ok:
-			push_warning("[WEAPON-WATCH] '%s' went INVISIBLE while drawn (mag=%d reserve=%d reloading=%s equip_timer=%.2f state=%d)"
-				% [current.name, current.mag, current.reserve, current._reloading, _equip_timer, GameState.current_state])
+	# Something hid an ANCESTOR (the holder, the camera, the head): `current.visible`
+	# stays true and the old watchdog saw nothing, but the player sees no gun.
+	var drawn := _equip_timer > 0.0
+	var ok := current.is_inside_tree() and (current.is_visible_in_tree() or drawn)
+	if ok != _watch_ok:
+		_watch_ok = ok
+		if not ok:
+			var who := "self" if not current.visible else "an ancestor"
+			print("[WEAPON-WATCH] '%s' vanished — hidden by %s (in_tree=%s self.visible=%s holder.visible=%s mag=%d reserve=%d reloading=%s equip_timer=%.2f state=%d) — recovering"
+				% [current.name, who, current.is_inside_tree(), current.visible, visible,
+					current.mag, current.reserve, current._reloading, _equip_timer,
+					GameState.current_state])
+			_recover_weapon()
+
+## Put a usable weapon back in the player's hands. Never leaves them disarmed
+## because of a bug we have not yet caught.
+## Belt and braces for the kick spring. The substepping above should make this
+## unreachable, but a NaN here is unrecoverable (NaN propagates through every
+## later frame and the viewmodel never comes back), so it is worth a cheap check.
+func _sanitize_kick() -> void:
+	var bad := not (_kick_pos.is_finite() and _kick_pos_vel.is_finite()
+		and _kick_rot.is_finite() and _kick_rot_vel.is_finite())
+	if not bad and (_kick_pos.length() > KICK_SANE or _kick_rot.length() > KICK_SANE):
+		bad = true
+	if not bad:
+		return
+	print("[WEAPON-WATCH] viewmodel kick blew up (pos=%s rot=%s) — reset" % [_kick_pos, _kick_rot])
+	_kick_pos = Vector3.ZERO
+	_kick_pos_vel = Vector3.ZERO
+	_kick_rot = Vector3.ZERO
+	_kick_rot_vel = Vector3.ZERO
+
+func _recover_weapon() -> void:
+	if not visible:
+		visible = true
+	# Drop any dead slots first: a freed Weapon left in the rack shows up as an
+	# empty cell in the HUD carousel and makes the number keys point at nothing.
+	var live: Array[Weapon] = []
+	for w in weapons:
+		if w != null and is_instance_valid(w):
+			live.append(w)
+	if live.size() != weapons.size():
+		weapons = live
+		_watch_rack = weapons.size()
+	for i in weapons.size():
+		var w := weapons[i]
+		if w != null and is_instance_valid(w) and w.is_inside_tree():
+			current_index = i
+			w.visible = true
+			w.on_equip()
+			weapon_changed.emit(w)
+			ammo_changed.emit(w.mag, w.reserve)
+			_watch_ok = true
+			print("[WEAPON-WATCH] re-armed '%s' (slot %d)" % [w.name, i])
+			return
 
 func _process(delta: float) -> void:
 	_watch_weapon()
@@ -260,7 +349,7 @@ func _process(delta: float) -> void:
 	# (Two competing writers used to reset each other every frame, which capped
 	# the RMB zoom at a sliver of the intended ads_fov.)
 	var aiming := Input.is_action_pressed("aim") and current != null
-	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, 10.0 * delta)
+	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, clampf(10.0 * delta, 0.0, 1.0))
 	
 	var ads_offset := Vector3.ZERO
 	if current and current.data:
@@ -274,12 +363,12 @@ func _process(delta: float) -> void:
 	var tilt_amount_z := _mouse_input.x * 0.0012
 	var tilt_amount_x := _mouse_input.y * 0.0008
 	
-	_sway_offset.x = lerpf(_sway_offset.x, clampf(sway_amount_x, -0.04, 0.04), 8.0 * delta)
-	_sway_offset.y = lerpf(_sway_offset.y, clampf(sway_amount_y, -0.04, 0.04), 8.0 * delta)
+	_sway_offset.x = lerpf(_sway_offset.x, clampf(sway_amount_x, -0.04, 0.04), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_offset.y = lerpf(_sway_offset.y, clampf(sway_amount_y, -0.04, 0.04), clampf(8.0 * delta, 0.0, 1.0))
 	
-	_sway_rotation.z = lerpf(_sway_rotation.z, clampf(tilt_amount_z, -0.08, 0.08), 8.0 * delta)
-	_sway_rotation.x = lerpf(_sway_rotation.x, clampf(tilt_amount_x, -0.06, 0.06), 8.0 * delta)
-	_sway_rotation.y = lerpf(_sway_rotation.y, clampf(sway_amount_x * 2.0, -0.08, 0.08), 8.0 * delta)
+	_sway_rotation.z = lerpf(_sway_rotation.z, clampf(tilt_amount_z, -0.08, 0.08), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_rotation.x = lerpf(_sway_rotation.x, clampf(tilt_amount_x, -0.06, 0.06), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_rotation.y = lerpf(_sway_rotation.y, clampf(sway_amount_x * 2.0, -0.08, 0.08), clampf(8.0 * delta, 0.0, 1.0))
 
 	_mouse_input = Vector2.ZERO
 
@@ -300,13 +389,30 @@ func _process(delta: float) -> void:
 		_bob_offset.y = bob_y * ads_bob_reduction
 	else:
 		_bob_time = 0.0
-		_bob_offset = _bob_offset.lerp(Vector3.ZERO, 8.0 * delta)
+		_bob_offset = _bob_offset.lerp(Vector3.ZERO, clampf(8.0 * delta, 0.0, 1.0))
 
 	# Spring the recoil kick back to rest (snappy, lightly underdamped for punch).
-	_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * delta
-	_kick_pos += _kick_pos_vel * delta
-	_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * delta
-	_kick_rot += _kick_rot_vel * delta
+	#
+	# SUBSTEPPED, and not optional. This is an explicit Euler integrator: its
+	# damping term alone diverges once the timestep exceeds 2/KICK_DAMPING, i.e.
+	# ~0.09 s — any single frame slower than about 11 fps. The frame that compiles
+	# the muzzle-flash shader on your FIRST shot is exactly that frame. Measured
+	# (tests/kick_stability_probe): 30 frames at 10 fps drove |_kick_pos| to
+	# 1.9e12 metres; even after the framerate recovers, float precision leaves a
+	# permanent ~1.9 m residual, so the WeaponHolder sits 1.4 m off the hip for
+	# the rest of the level and EVERY weapon in it is out of frame. A longer stall
+	# reaches inf, then NaN, and nothing ever resets _kick_pos — which is why
+	# switching weapons never brought the gun back, and why the old watchdog saw
+	# nothing (the weapon is still in the rack, still `visible`).
+	var sim := minf(delta, KICK_MAX_SIM)
+	var steps := maxi(1, int(ceil(sim / KICK_MAX_STEP)))
+	var h := sim / float(steps)
+	for _i in steps:
+		_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * h
+		_kick_pos += _kick_pos_vel * h
+		_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * h
+		_kick_rot += _kick_rot_vel * h
+	_sanitize_kick()
 
 	# Apply final position and rotation (sway + bob + recoil kick)
 	position = target_pos + _sway_offset + _bob_offset + _kick_pos

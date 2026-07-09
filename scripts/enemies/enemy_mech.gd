@@ -115,6 +115,7 @@ func _state_attack(delta: float) -> void:
 		if _attack_timer <= 0.0 and not GameState.attack_grace_active():
 			_fire_rocket()
 			_attack_timer = attack_interval()
+			_bark_attack()
 
 func _do_stomp_if_close() -> void:
 	if _attack_timer > 0.0 or _slam_windup > 0.0:

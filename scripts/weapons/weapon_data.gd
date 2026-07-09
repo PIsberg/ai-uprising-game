@@ -17,6 +17,11 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var damage: float = 20.0
 @export var fire_rate: float = 6.0
 @export var burst_count: int = 3
+## BURST only: forced gap AFTER a burst finishes, before the next can start.
+## Without it the only limit between bursts is the per-shot cooldown
+## (1/fire_rate), so a fast trigger finger fires bursts nose-to-tail and the
+## weapon's real DPS is its in-burst rate — far above what burst_count implies.
+@export var burst_cooldown: float = 0.0
 @export var range_m: float = 60.0
 @export var spread_deg: float = 1.2
 @export var aim_spread_mult: float = 0.35

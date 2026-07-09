@@ -326,6 +326,10 @@ func _process(delta: float) -> void:
 			_burst_timer = 1.0 / maxf(0.1, eff_fire_rate())
 			_burst_remaining -= 1
 			_do_shot()
+			# Burst spent: hold the trigger off for burst_cooldown so the next
+			# burst can't start nose-to-tail on the per-shot cooldown alone.
+			if _burst_remaining <= 0 and data and data.burst_cooldown > 0.0:
+				_cooldown = maxf(_cooldown, data.burst_cooldown)
 
 func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node) -> void:
 	var just_pressed := trigger_down and not _trigger_held_last
@@ -365,8 +369,17 @@ func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node)
 			if trigger_down:
 				_fire_once(camera, shooter, aiming)
 		WeaponData.FireMode.BURST:
-			if just_pressed:
-				_burst_remaining = data.burst_count
+			# `_burst_remaining <= 0` gates re-arming MID-BURST. _fire_once only
+			# sets a one-shot cooldown (1/fire_rate), but a burst takes
+			# burst_count shots to play out — so a fast trigger finger could start
+			# a fresh burst every 1/fire_rate seconds while the previous one was
+			# still firing from _process, stacking them. Measured on the CL-3 Arc
+			# Coil (tests/ttk_probe): 1224 DPS against a lone robot, ~3x its
+			# intended rate and 5x the OMEGA ultimate. One burst per press.
+			if just_pressed and _burst_remaining <= 0:
+				# burst_count - 1: _fire_once below already lands round 1, so
+				# queuing burst_count more fired burst_count+1 rounds per press.
+				_burst_remaining = maxi(0, data.burst_count - 1)
 				_burst_timer = 0.0
 				_fire_once(camera, shooter, aiming)
 

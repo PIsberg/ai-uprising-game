@@ -180,7 +180,8 @@ func _physics_process(delta: float) -> void:
 		_velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * gravity_scale * delta
 	if homing_turn_rate > 0.0:
 		_steer_homing(delta)
-	global_position += _velocity * delta
+	if not _advance(delta):
+		return
 	if _velocity.length_squared() > 0.01:
 		look_at(global_position + _velocity, Vector3.UP)
 	if energy_pulse:
@@ -193,6 +194,43 @@ func _physics_process(delta: float) -> void:
 		var flick := 0.78 + 0.22 * sin(_exhaust_t * 50.0) + 0.1 * sin(_exhaust_t * 23.0)
 		_exhaust.scale = Vector3(flick, 1.0 + 0.3 * flick, flick)
 		_exhaust_mat.emission_energy_multiplier = 9.0 * flick
+
+## Step the round forward, SWEEPING the gap it crosses instead of teleporting
+## across it. Returns false if the round struck something (and has now exploded).
+##
+## An Area3D only reports overlaps it is standing inside on a physics tick. At
+## 60 Hz a TPX-9 Tempest round covers 1.00 m per tick and an android's capsule is
+## 0.64 m thick, so a round could step from in front of a robot to behind it and
+## never register — measured with tests/ttk_probe: aimed at an android's head the
+## Tempest dealt exactly 0 DPS, while at torso height a luckier sampling phase
+## let it connect. Every projectile weapon but the SW-7 Swarm moves further per
+## tick than a robot is thick (plasma 0.92 m, devastator 0.75 m, omega 0.73 m),
+## so all of them dropped hits at random depending on where the ticks landed.
+##
+## The ray uses the round's OWN collision_mask, so a player round sweeps
+## world+enemy and an enemy round sweeps world+player, exactly as their Area
+## does. The shooter is excluded, or a round spawned inside its owner would
+## detonate on it immediately.
+func _advance(delta: float) -> bool:
+	var step := _velocity * delta
+	if step.length_squared() > 0.000001:
+		var q := PhysicsRayQueryParameters3D.create(global_position, global_position + step)
+		q.collision_mask = collision_mask
+		q.hit_from_inside = false
+		# is_instance_valid: the shooter is frequently DEAD by the time its round
+		# lands (a robot dies to the same volley it fired), and `is` on a freed
+		# instance is a runtime error, not false.
+		if is_instance_valid(_shooter) and _shooter is CollisionObject3D:
+			q.exclude = [(_shooter as CollisionObject3D).get_rid()]
+		var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		if not hit.is_empty():
+			global_position = hit["position"]
+			# Same damage/FX path the Area's own body_entered would have taken.
+			# _explode() is idempotent (_dead), so a later overlap can't double up.
+			_on_body_entered(hit["collider"])
+			return false
+	global_position += step
+	return true
 
 ## Bend the round's velocity toward a locked enemy, re-acquiring the nearest
 ## valid target a few times a second so a swarm spreads across a pack.
@@ -232,7 +270,9 @@ func _find_homing_target() -> Node3D:
 	var best_score := -1.0
 	var fwd := _velocity.normalized()
 	for e in get_tree().get_nodes_in_group("enemy"):
-		if not (e is Node3D):
+		# A robot freed this frame can still be in the group; `is` on a freed
+		# instance is a runtime error, not false.
+		if not is_instance_valid(e) or not (e is Node3D):
 			continue
 		var en := e as Node3D
 		var d := en.get_node_or_null("Damageable")
@@ -259,7 +299,12 @@ func _energy_mesh() -> MeshInstance3D:
 	return null
 
 func _on_body_entered(body: Node) -> void:
-	if body == _shooter:
+	# _advance() calls this directly when its swept ray catches a target the Area
+	# would have tunnelled past. The Area's own body_entered can still fire for
+	# the same body on the same tick, and direct_damage is applied BEFORE
+	# _explode() sets _dead — so without this guard an enemy rocket would land
+	# its hit on the player twice.
+	if _dead or body == _shooter:
 		return
 	# Enemy rounds (splash mask excludes the player) land their hit here instead.
 	var world_hit_damageable: Node = null

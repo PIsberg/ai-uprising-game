@@ -6,15 +6,34 @@ extends Marker3D
 @export var spawn_delay: float = 0.0
 @export var trigger_radius: float = 0.0 # 0 = no trigger, spawn on ready/delay
 
+## Squad id. Every spawner sharing a pack_id wakes the instant ANY of them is
+## tripped, so a mixed squad arrives together instead of trickling in as the
+## player crosses each robot's own trigger circle one at a time. Measured with
+## tests/pack_probe before this existed: 29% of encounters were a lone robot and
+## 32% were a single chassis type repeated.
+@export var pack_id: String = ""
+
+## Seconds between each squadmate materialising. They pour in, they don't pop as
+## one wall of robots.
+const PACK_STAGGER := 0.13
+
 var _spawned: bool = false
+## Claimed for a staggered pack spawn but not yet materialised. Without this a
+## second squadmate tripping during the stagger would queue the same robot again.
+var _pending: bool = false
 
 func _ready() -> void:
+	if pack_id != "":
+		add_to_group(_pack_group())
 	if spawn_on_ready:
 		if spawn_delay > 0.0:
 			await get_tree().create_timer(spawn_delay).timeout
 		_spawn()
 	elif trigger_radius > 0.0:
 		set_process(true)
+
+func _pack_group() -> String:
+	return "pack_" + pack_id
 
 func _process(_delta: float) -> void:
 	if _spawned:
@@ -24,7 +43,33 @@ func _process(_delta: float) -> void:
 	if players.is_empty():
 		return
 	if (players[0] as Node3D).global_position.distance_to(global_position) < trigger_radius:
-		_spawn()
+		if pack_id != "":
+			_trip_pack()
+		else:
+			_spawn()
+
+## One squadmate saw the player: wake the whole squad, staggered.
+func _trip_pack() -> void:
+	var i := 0
+	for n in get_tree().get_nodes_in_group(_pack_group()):
+		if not is_instance_valid(n):
+			continue
+		var sp := n as EnemySpawner
+		if sp == null or sp._spawned or sp._pending:
+			continue
+		sp._spawn_after(float(i) * PACK_STAGGER)
+		i += 1
+
+func _spawn_after(delay: float) -> void:
+	if _spawned or _pending:
+		return
+	_pending = true
+	set_process(false)
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+		if not is_instance_valid(self):
+			return
+	_spawn()
 
 func _spawn() -> void:
 	if _spawned or enemy_scene == null:

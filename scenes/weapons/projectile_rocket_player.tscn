@@ -1,0 +1,57 @@
+[gd_scene load_steps=5 format=3 uid="uid://b0proj0rocketp1"]
+
+; The PLAYER's rocket (GRK-X Devastator). Identical ordnance to
+; projectile_rocket.tscn, which is the MECH/COLOSSUS/TITAN round — but that one
+; sits on layer 5 "enemy_projectile" and masks world+player, so it cannot
+; collide with a robot at all. Fired by the player it flew straight THROUGH its
+; target and only ever hurt anything by splashing off whatever geometry was
+; behind. Aimed at a lone robot in the open it did nothing.
+;
+; This one is layer 4 "player_projectile", masks world+enemy, and leaves
+; direct_damage off — _splash() already folds the direct `damage` into the blast
+; (see Projectile._splash), so enabling it here would double-dip.
+
+[ext_resource type="Script" path="res://scripts/weapons/projectile.gd" id="1_proj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_laser"]
+shading_mode = 0
+emission_enabled = true
+emission = Color(1, 0.1, 0.05, 1)
+emission_energy_multiplier = 9.0
+albedo_color = Color(1, 0.25, 0.15, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_laser"]
+material = SubResource("StandardMaterial3D_laser")
+top_radius = 0.026
+bottom_radius = 0.026
+height = 1.2
+radial_segments = 8
+rings = 2
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.08
+height = 1.2
+
+[node name="ProjectileRocketPlayer" type="Area3D"]
+collision_layer = 8
+collision_mask = 5
+script = ExtResource("1_proj")
+lifetime = 5.0
+gravity_scale = 0.0
+trail_color = Color(1, 0.55, 0.2, 1)
+smoke_trail = true
+exhaust_flame = true
+big_detonation = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_laser")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.15, 0.1, 1)
+light_energy = 3.5
+omni_range = 6.0

@@ -787,7 +787,15 @@ func _build_geometry(def: Dictionary) -> void:
 		# "the true walkable surface the player stands on" by the probe's
 		# find-the-topmost-surface-in-a-column logic — a false headroom/stuck
 		# failure against geometry no one ever stands on.
-		_add_box(Vector3(0, room_h + 0.2, 0), Vector3(fs.x, 0.4, fs.y), MAT_CEIL, "surf_metal", "level_ceiling")
+		# Opt-in "ceiling_color" (mirrors "floor_color"): the shared ceiling_metal
+		# is a light panel, and in a heavily-tinted hall it soaks up the ambient
+		# and turns the top third of the player's view into one flat, saturated
+		# wash. A dark tint pushes it back so the racks, core and signage read as
+		# the bright things. Levels that don't set it keep the stock panel.
+		var ceil_mat: Material = MAT_CEIL
+		if def.has("ceiling_color"):
+			ceil_mat = _color_material(def["ceiling_color"], 0.9)
+		_add_box(Vector3(0, room_h + 0.2, 0), Vector3(fs.x, 0.4, fs.y), ceil_mat, "surf_metal", "level_ceiling")
 	# Interior cover / pillars — alternate two plate materials so adjacent
 	# crates/machinery don't read as copies of one box.
 	var cover_i := 0
@@ -4406,6 +4414,11 @@ func _activate_task(t: Dictionary) -> void:
 			var timer := SurviveTimer.new()
 			timer.task_id = id
 			timer.seconds = t.get("seconds", 45.0)
+			# Escalating waves make a hold a climax instead of a countdown you
+			# can sit out behind cover. Reuses the reinforcement spawner, so a
+			# wave pours in with the same FX/scaling as any objective alarm.
+			timer.waves = t.get("waves", [])
+			timer.wave_due.connect(_on_survive_wave)
 			add_child(timer)
 		"hold_zone":
 			var zone := HoldZone.new()
@@ -4507,6 +4520,37 @@ func _on_tasks_progress() -> void:
 			spec["fired"] = true
 			_spawn_reinforcements.call_deferred(spec["enemies"])
 
+## A "survive" wave came due. Announce it (so the escalation reads as authored,
+## not as enemies wandering in), pour the enemies in through the same alarm
+## spawner, and vent any emergency supplies the wave carries.
+func _on_survive_wave(wave: Dictionary) -> void:
+	var label := String(wave.get("label", ""))
+	if label != "":
+		GameState.wave_incoming.emit(label)
+	var enemies: Array = wave.get("enemies", [])
+	if not enemies.is_empty():
+		_spawn_reinforcements.call_deferred(enemies)
+	var supplies: Array = wave.get("supplies", [])
+	if not supplies.is_empty():
+		_vent_supplies.call_deferred(supplies)
+
+## Emergency stores ejected mid-hold: pickups that pop in ({type, pos}, the same
+## spec as the def's "pickups"). Author them where reaching them costs something
+## and a long hold stays sustainable without handing the sustain over for free.
+func _vent_supplies(supplies: Array) -> void:
+	for s in supplies:
+		var scene: PackedScene = PICKUP_SCENES.get(s.get("type", s.get("kind", "")))
+		if scene == null:
+			continue
+		var inst := scene.instantiate() as Node3D
+		add_child(inst)
+		inst.global_position = s.get("pos", Vector3.ZERO)
+		# Pop-in, like the horde director's between-wave drops, so it reads as a
+		# delivery rather than something that was always lying there.
+		inst.scale = Vector3.ONE * 0.2
+		inst.create_tween().tween_property(inst, "scale", Vector3.ONE, 0.3) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 ## An objective tripped the alarm: pour the authored wave in with the same
 ## machinery as placed enemies (spawn FX, difficulty scaling), staggered so it
 ## reads as a response, not an ambush that was always standing there.
@@ -4599,11 +4643,17 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 		glow.material_override = m
 	add_child(pk)
 
-## Hand-placed supply/powerup pickups (def "pickups": [{kind, pos}]). Campaign
-## levels leave this empty (supplies drop from kills); the editor uses it.
+## Hand-placed supply/powerup pickups (def "pickups": [{type|kind, pos}]).
+##
+## Accepts BOTH spellings on purpose: the level editor emits "kind", but every
+## hand-authored campaign def writes "type" (matching "enemies"/"props"). This
+## only read "kind", so all ~88 authored campaign pickups silently resolved to
+## a null scene and never spawned — GPT Foundry's vault cache and its
+## climb-the-tower overclock reward included. tests/pickup_probe guards it.
 func _build_pickups(def: Dictionary) -> void:
 	for p in def.get("pickups", []):
-		var scene: PackedScene = PICKUP_SCENES.get(p.get("kind", ""))
+		var kind: String = p.get("type", p.get("kind", ""))
+		var scene: PackedScene = PICKUP_SCENES.get(kind)
 		if scene == null:
 			continue
 		var inst := scene.instantiate() as Node3D
@@ -4656,10 +4706,15 @@ func _spawn_enemies(def: Dictionary) -> void:
 		# each its own spawner so they trigger/scale exactly like a single placed one.
 		var count: int = maxi(1, int(en.get("count", 1)))
 		var base_pos: Vector3 = en["pos"]
+		# "pack": entries sharing an id wake as one squad the moment any of them
+		# is tripped, so the player meets a mixed group instead of crossing three
+		# trigger circles in a row and fighting three robots in sequence.
+		var pack: String = String(en.get("pack", ""))
 		for j in count:
 			var sp := EnemySpawner.new()
 			sp.enemy_scene = scene
 			sp.position = base_pos if count == 1 else base_pos + Vector3(randf_range(-2.5, 2.5), 0.0, randf_range(-2.5, 2.5))
+			sp.pack_id = pack
 			if trig > 0.0:
 				sp.spawn_on_ready = false
 				sp.trigger_radius = trig

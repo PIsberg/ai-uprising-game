@@ -226,6 +226,7 @@ func _explode_on_impact() -> void:
 func _perform_attack() -> void:
 	if target == null or muzzle == null or projectile_scene == null:
 		return
+	_bark_attack()
 	recoil = 1.0
 	_muzzle_flash()
 	var proj := projectile_scene.instantiate()

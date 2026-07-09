@@ -244,13 +244,16 @@ func _state_attack(delta: float) -> void:
 	if not GameState.attack_grace_active():
 		if _slam_cd <= 0.0 and dist <= slam_trigger_range:
 			_begin_slam()
+			_bark_attack()
 			return
 		if _smash_cd <= 0.0 and dist <= smash_range:
 			_begin_smash()
+			_bark_attack()
 			return
 		# Mid-range: lunge-rake to close the gap WITH a hit, instead of a plain charge.
 		if _rake_cd <= 0.0 and dist > smash_range and dist <= rake_range:
 			_begin_rake()
+			_bark_attack()
 			return
 	if dist > smash_range * 0.85:
 		_charge(delta)
