@@ -2349,6 +2349,12 @@ static func _gpt() -> Dictionary:
 		# Dark foundry deck so the green tech-grid + server glow read as contrast
 		# instead of a flat bright sheet washed out by auto-exposure.
 		"floor_color": Color(0.05, 0.09, 0.06),
+		# …and a dark overhead cap for the same reason. An eye-level capture showed
+		# the stock light ceiling panel drinking the hall's green ambient until the
+		# top third of the frame was a featureless green void — brighter than the
+		# racks it was meant to sit behind. Slightly warmer/greyer than the deck so
+		# floor and ceiling don't read as the same surface mirrored.
+		"ceiling_color": Color(0.07, 0.09, 0.08),
 		# Neon-noir foundry: crisp green signage glow against a dark deck. Deliberately
 		# de-fuzzed from the original "soft & fuzzy" tuning (glow 1.5 / bloom 0.6 /
 		# threshold 0.82 / vol 0.03) that drowned the hall in a blurry green haze:

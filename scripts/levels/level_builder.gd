@@ -787,7 +787,15 @@ func _build_geometry(def: Dictionary) -> void:
 		# "the true walkable surface the player stands on" by the probe's
 		# find-the-topmost-surface-in-a-column logic — a false headroom/stuck
 		# failure against geometry no one ever stands on.
-		_add_box(Vector3(0, room_h + 0.2, 0), Vector3(fs.x, 0.4, fs.y), MAT_CEIL, "surf_metal", "level_ceiling")
+		# Opt-in "ceiling_color" (mirrors "floor_color"): the shared ceiling_metal
+		# is a light panel, and in a heavily-tinted hall it soaks up the ambient
+		# and turns the top third of the player's view into one flat, saturated
+		# wash. A dark tint pushes it back so the racks, core and signage read as
+		# the bright things. Levels that don't set it keep the stock panel.
+		var ceil_mat: Material = MAT_CEIL
+		if def.has("ceiling_color"):
+			ceil_mat = _color_material(def["ceiling_color"], 0.9)
+		_add_box(Vector3(0, room_h + 0.2, 0), Vector3(fs.x, 0.4, fs.y), ceil_mat, "surf_metal", "level_ceiling")
 	# Interior cover / pillars — alternate two plate materials so adjacent
 	# crates/machinery don't read as copies of one box.
 	var cover_i := 0
