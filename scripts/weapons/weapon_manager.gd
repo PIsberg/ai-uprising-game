@@ -47,6 +47,16 @@ var _kick_pos_vel: Vector3 = Vector3.ZERO
 var _kick_rot_vel: Vector3 = Vector3.ZERO
 const KICK_STIFFNESS := 220.0   # spring constant (snap-back speed)
 const KICK_DAMPING := 22.0      # critical-ish damping (no wobble)
+## Fixed integration step for the kick spring. Explicit Euler needs
+## h < 2/KICK_DAMPING (0.0909 s) to be stable at all; 1/120 s leaves a wide
+## margin and makes the recoil feel identical whatever the framerate.
+const KICK_MAX_STEP := 1.0 / 120.0
+## Never simulate more than this much spring per frame. A 3-second stall (level
+## load, shader compile) should not spend 360 substeps catching up — the kick has
+## long since settled anyway.
+const KICK_MAX_SIM := 0.1
+## A viewmodel kick beyond this is not recoil, it is a blown-up integrator.
+const KICK_SANE := 2.0
 
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
@@ -255,6 +265,22 @@ func _watch_weapon() -> void:
 
 ## Put a usable weapon back in the player's hands. Never leaves them disarmed
 ## because of a bug we have not yet caught.
+## Belt and braces for the kick spring. The substepping above should make this
+## unreachable, but a NaN here is unrecoverable (NaN propagates through every
+## later frame and the viewmodel never comes back), so it is worth a cheap check.
+func _sanitize_kick() -> void:
+	var bad := not (_kick_pos.is_finite() and _kick_pos_vel.is_finite()
+		and _kick_rot.is_finite() and _kick_rot_vel.is_finite())
+	if not bad and (_kick_pos.length() > KICK_SANE or _kick_rot.length() > KICK_SANE):
+		bad = true
+	if not bad:
+		return
+	print("[WEAPON-WATCH] viewmodel kick blew up (pos=%s rot=%s) — reset" % [_kick_pos, _kick_rot])
+	_kick_pos = Vector3.ZERO
+	_kick_pos_vel = Vector3.ZERO
+	_kick_rot = Vector3.ZERO
+	_kick_rot_vel = Vector3.ZERO
+
 func _recover_weapon() -> void:
 	if not visible:
 		visible = true
@@ -323,7 +349,7 @@ func _process(delta: float) -> void:
 	# (Two competing writers used to reset each other every frame, which capped
 	# the RMB zoom at a sliver of the intended ads_fov.)
 	var aiming := Input.is_action_pressed("aim") and current != null
-	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, 10.0 * delta)
+	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, clampf(10.0 * delta, 0.0, 1.0))
 	
 	var ads_offset := Vector3.ZERO
 	if current and current.data:
@@ -337,12 +363,12 @@ func _process(delta: float) -> void:
 	var tilt_amount_z := _mouse_input.x * 0.0012
 	var tilt_amount_x := _mouse_input.y * 0.0008
 	
-	_sway_offset.x = lerpf(_sway_offset.x, clampf(sway_amount_x, -0.04, 0.04), 8.0 * delta)
-	_sway_offset.y = lerpf(_sway_offset.y, clampf(sway_amount_y, -0.04, 0.04), 8.0 * delta)
+	_sway_offset.x = lerpf(_sway_offset.x, clampf(sway_amount_x, -0.04, 0.04), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_offset.y = lerpf(_sway_offset.y, clampf(sway_amount_y, -0.04, 0.04), clampf(8.0 * delta, 0.0, 1.0))
 	
-	_sway_rotation.z = lerpf(_sway_rotation.z, clampf(tilt_amount_z, -0.08, 0.08), 8.0 * delta)
-	_sway_rotation.x = lerpf(_sway_rotation.x, clampf(tilt_amount_x, -0.06, 0.06), 8.0 * delta)
-	_sway_rotation.y = lerpf(_sway_rotation.y, clampf(sway_amount_x * 2.0, -0.08, 0.08), 8.0 * delta)
+	_sway_rotation.z = lerpf(_sway_rotation.z, clampf(tilt_amount_z, -0.08, 0.08), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_rotation.x = lerpf(_sway_rotation.x, clampf(tilt_amount_x, -0.06, 0.06), clampf(8.0 * delta, 0.0, 1.0))
+	_sway_rotation.y = lerpf(_sway_rotation.y, clampf(sway_amount_x * 2.0, -0.08, 0.08), clampf(8.0 * delta, 0.0, 1.0))
 
 	_mouse_input = Vector2.ZERO
 
@@ -363,13 +389,30 @@ func _process(delta: float) -> void:
 		_bob_offset.y = bob_y * ads_bob_reduction
 	else:
 		_bob_time = 0.0
-		_bob_offset = _bob_offset.lerp(Vector3.ZERO, 8.0 * delta)
+		_bob_offset = _bob_offset.lerp(Vector3.ZERO, clampf(8.0 * delta, 0.0, 1.0))
 
 	# Spring the recoil kick back to rest (snappy, lightly underdamped for punch).
-	_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * delta
-	_kick_pos += _kick_pos_vel * delta
-	_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * delta
-	_kick_rot += _kick_rot_vel * delta
+	#
+	# SUBSTEPPED, and not optional. This is an explicit Euler integrator: its
+	# damping term alone diverges once the timestep exceeds 2/KICK_DAMPING, i.e.
+	# ~0.09 s — any single frame slower than about 11 fps. The frame that compiles
+	# the muzzle-flash shader on your FIRST shot is exactly that frame. Measured
+	# (tests/kick_stability_probe): 30 frames at 10 fps drove |_kick_pos| to
+	# 1.9e12 metres; even after the framerate recovers, float precision leaves a
+	# permanent ~1.9 m residual, so the WeaponHolder sits 1.4 m off the hip for
+	# the rest of the level and EVERY weapon in it is out of frame. A longer stall
+	# reaches inf, then NaN, and nothing ever resets _kick_pos — which is why
+	# switching weapons never brought the gun back, and why the old watchdog saw
+	# nothing (the weapon is still in the rack, still `visible`).
+	var sim := minf(delta, KICK_MAX_SIM)
+	var steps := maxi(1, int(ceil(sim / KICK_MAX_STEP)))
+	var h := sim / float(steps)
+	for _i in steps:
+		_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * h
+		_kick_pos += _kick_pos_vel * h
+		_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * h
+		_kick_rot += _kick_rot_vel * h
+	_sanitize_kick()
 
 	# Apply final position and rotation (sway + bob + recoil kick)
 	position = target_pos + _sway_offset + _bob_offset + _kick_pos
