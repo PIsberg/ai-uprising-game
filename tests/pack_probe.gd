@@ -8,7 +8,8 @@ extends Node3D
 ## time; a level with mixed packs of 3-5 gives a fight.
 ##   godot --headless --path . res://tests/pack_probe.tscn
 
-const LEVELS := ["01", "gpt", "gemini", "claude", "grok", "uplink", "crucible", "neon"]
+const LEVELS := ["01", "gpt", "gemini", "mistral", "suburb", "claude", "grok", "uplink",
+	"alien", "assembly", "sublevel", "frostbreak", "desert", "neon", "crucible", "lava_world"]
 const WALK_SPEED := 6.0     ## m/s along the spawn->exit line
 ## Cluster by PLAYER TRAVEL DISTANCE, not by time: a fast walk crosses many
 ## trigger radii at once and flatters the numbers. Two robots that wake within a
