@@ -402,6 +402,9 @@ static func _hivemind() -> Dictionary:
 			{"type": "hive", "pos": Vector3(-16, 1, 6), "trigger": 22},
 			{"type": "hive", "pos": Vector3(16, 1, 6), "trigger": 22},
 			{"type": "hive", "pos": Vector3(-10, 1, 16), "trigger": 18},
+				# Roster variety: ORB and BOWLER were one-level cameos.
+				{"type": "orb", "pos": Vector3(-14, 0.5, 6), "trigger": 20},
+				{"type": "bowler", "pos": Vector3(14, 0.5, -6), "trigger": 22},
 			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 18},
 		],
 		"lore": [
@@ -1094,6 +1097,9 @@ static func _crucible() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15},
 			# Forged on the foundry floor: the BEHEMOTH-X smasher rises as its
 			# centrepiece boss — a towering melee mech that charges and hammers you.
+				# Roster variety: BREAKER and WHIRLWIND were one-level cameos.
+				{"type": "breaker", "pos": Vector3(9, 0.5, -8), "trigger": 16},
+				{"type": "whirlwind", "pos": Vector3(-9, 0.5, -4), "trigger": 15},
 			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
 		],
 		"pickups": [
@@ -1974,6 +1980,9 @@ static func _uplink() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(-14, 0.5, -12), "trigger": 24},
 			{"type": "raptor", "pos": Vector3(12, 3.5, 12), "trigger": 26},
 			{"type": "android", "pos": Vector3(-12, 0.5, 6), "trigger": 20},
+				# Roster variety: ENFORCER and ROLLER were one-level cameos.
+				{"type": "enforcer", "pos": Vector3(-7, 0.5, -6), "trigger": 18},
+				{"type": "roller", "pos": Vector3(7, 0.5, 6), "trigger": 16},
 			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18},
 		],
 	}
@@ -2301,6 +2310,12 @@ static func _gpt() -> Dictionary:
 					{"at": 9.0, "label": "SECOND WAVE — FOUNDRY SECURITY", "enemies": [
 						{"type": "android", "count": 2, "pos": Vector3(-12, 0, -4)},
 						{"type": "android", "count": 2, "pos": Vector3(12, 0, 4)},
+						# The hall's own racks fight back. SERVER and OPTIC were one-level
+						# cameos (tests/roster_variety_probe); a server foundry is exactly
+						# where they belong, and the OPTIC's cutting beam forces you to keep
+						# moving through the hold instead of camping the vault nook.
+						{"type": "server", "pos": Vector3(-12, 0, 4)},
+						{"type": "optic", "pos": Vector3(12, 0, -4)},
 						# z=18, not 16: the eastern smelt channel's scaled edge sits at
 						# z~20.6, and a clustered pair scatters up to 2.5 m off `pos`.
 						{"type": "spider", "count": 2, "pos": Vector3(0, 0, 18)},
@@ -2990,6 +3005,12 @@ static func _grok() -> Dictionary:
 			{"type": "dog", "pos": Vector3(10, 0.5, 0), "trigger": 18},
 			{"type": "sniper", "pos": Vector3(-18, 0.0, 18), "trigger": 26},
 			{"type": "sniper", "pos": Vector3(20, 0.0, -16), "trigger": 26},
+				# Roster variety: RONIN / WARBOT / RIPPER each appeared in exactly one level in
+				# the whole campaign (see tests/roster_variety_probe). Seeded beside already-
+				# validated spawns so a second act-II hall meets them.
+				{"type": "ronin", "pos": Vector3(-4, 0.5, -6), "trigger": 18}, # x=-4: -7 scaled to -9.8, inside the cover box at x[-12.9,-9.5]
+				{"type": "warbot", "pos": Vector3(7, 0.5, -4), "trigger": 20},
+				{"type": "ripper", "pos": Vector3(-7, 0.5, 8), "trigger": 16},
 			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24},
 		],
 		"pickups": [

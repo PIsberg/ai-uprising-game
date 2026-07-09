@@ -135,6 +135,15 @@ func _run() -> void:
 					WEAPONS[i], i + 1, lo, WEAPONS[j], j + 1, hi])
 
 	var ok := true
+	# -1. Range scale. Campaign arenas run 79-178 m corner to corner (median 106),
+	#     and the longest-sighted robot in the game (ARCHON) sees 120 m. A weapon
+	#     reaching past ~150 m isn't a long-range weapon, it's an unbounded one:
+	#     the MK-VII Longshot used to do FULL damage out to 220 m with no falloff.
+	for w in WEAPONS:
+		var d: WeaponData = load("res://assets/weapons/%s_data.tres" % w)
+		if d.range_m > 150.0:
+			print("BAD  %s reaches %.0f m — past every arena's sightline" % [w, d.range_m])
+			ok = false
 	# 0. Every weapon must be able to hurt a robot standing in the open. There is
 	#    no world geometry in this rig, so a projectile whose collision_mask omits
 	#    the enemy layer flies straight through and reads exactly 0 — which is how
