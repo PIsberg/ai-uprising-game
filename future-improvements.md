@@ -58,6 +58,14 @@ side until burnout (`EnemyBase.hijack`, `grenade_hijack.{gd,tscn}`, `tests/hijac
 Still open as bigger swings: an overload that turns a robot into a bomb, weapon-disable,
 idea #4 "glitch warfare".
 
+### Skirmish events (mid-level pacing variety) 🤖🎮
+✅ **Shipped** — rare announced events break up a level's authored rhythm
+(`GameState._tick_events`, `tests/events_probe`): ASSASSIN CONTRACT (a hunter
+warps in pre-marked as the bounty), SUPPLY FLARE (timed cache beacon, 40s),
+GRID SURGE (20s double ultimate charge). Gated off boss/convoy/horde levels,
+max 2/level. 🎮 Needs playtest: frequency (75s first / ~90s interval) and
+whether more event types are wanted (rogue patrol, jammer, double-bounty hour).
+
 ### Nemesis / kill-cam / dismemberment (2026-07-10 pack) 🤖
 ✅ **Nemesis elites** — the elite that kills you returns named + ranked until you settle
 the grudge (`GameState.record_nemesis_killer`, `Elite.apply_nemesis`, `tests/nemesis_probe`).

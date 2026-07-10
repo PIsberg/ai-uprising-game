@@ -615,7 +615,8 @@ func add_ultimate_charge(amount: float) -> void:
 	if current_state != State.PLAYING or ultimate_charge >= 1.0 or amount <= 0.0:
 		return
 	var was := ultimate_charge
-	ultimate_charge = clampf(ultimate_charge + amount, 0.0, 1.0)
+	# GRID SURGE skirmish event: charge builds at double rate while it's live.
+	ultimate_charge = clampf(ultimate_charge + amount * (2.0 if _surge_t > 0.0 else 1.0), 0.0, 1.0)
 	ultimate_changed.emit(ultimate_charge)
 	if was < 1.0 and ultimate_charge >= 1.0:
 		AudioBus.play_synth_ui("combo_up", 0.0, 1.5)
@@ -735,6 +736,138 @@ func claim_bounty() -> void:
 	AudioBus.play_synth_ui("combo_up", -2.0, 0.9)
 	bounty_claimed.emit(pts)
 
+# ---------- skirmish events (mid-level pacing variety) ----------
+## Rare, announced events that break up a level's authored rhythm with a
+## risk/reward beat — the bounty director's sibling. One of:
+##   ASSASSIN     — a hunter warps in near the player with a bounty on its head
+##   SUPPLY FLARE — a marked cache (overclock + ammo) drops nearby, gone in 40s
+##   GRID SURGE   — 20s where ultimate charge builds at double rate
+## Hard-gated: PLAYING only, never on boss/convoy/horde levels, never in the
+## opening minute, never while a bounty is live, max 2 per level. Everything
+## it spawns cleans itself up.
+signal skirmish_event(title: String, desc: String) ## HUD callout.
+
+const EVENT_FIRST_DELAY := 75.0   ## level seconds before the first roll
+const EVENT_INTERVAL := 90.0      ## base seconds between events (jittered)
+const EVENTS_PER_LEVEL := 2
+const EVENT_SUPPLY_LIFETIME := 40.0
+const EVENT_SURGE_TIME := 20.0
+const EVENT_ASSASSIN := preload("res://scenes/enemies/hunter.tscn")
+const EVENT_PICKUP_OVERCLOCK := preload("res://scenes/pickups/overclock.tscn")
+const EVENT_PICKUP_AMMO := preload("res://scenes/pickups/ammo_box.tscn")
+
+var _event_cd: float = EVENT_FIRST_DELAY
+var _level_events: int = 0
+var _surge_t: float = 0.0 ## grid surge seconds left (double ultimate gain)
+
+func _tick_events(delta: float) -> void:
+	_surge_t = maxf(0.0, _surge_t - delta)
+	if current_state != State.PLAYING or _level_events >= EVENTS_PER_LEVEL:
+		return
+	_event_cd -= delta
+	if _event_cd > 0.0:
+		return
+	_event_cd = EVENT_INTERVAL * randf_range(0.85, 1.25)
+	if not _events_allowed_here():
+		return
+	# A live bounty already owns the moment — don't stack callouts.
+	if _bounty != null and _bounty.get_ref() != null:
+		return
+	_level_events += 1
+	match randi() % 3:
+		0: _event_assassin()
+		1: _event_supply_flare()
+		2: _event_grid_surge()
+
+## Set-piece levels keep their authored pacing: no events on boss arenas, the
+## convoy rail ride, or horde mode.
+func _events_allowed_here() -> bool:
+	if is_boss_scene(current_level_path):
+		return false
+	var lid := level_id_from_path(current_level_path)
+	if lid in ["convoy", "horde"]:
+		return false
+	return get_tree().get_first_node_in_group("player") is Node3D
+
+## A clear point on a ring around the player (reuses the spawner's buried-in-
+## geometry test). Falls back to the player's own position offset if every
+## probe point is inside something.
+func _event_point_near_player(dist: float) -> Vector3:
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if p == null:
+		return Vector3.ZERO
+	var space := p.get_world_3d().direct_space_state
+	var start := randf() * TAU
+	for i in 10:
+		var ang := start + TAU * float(i) / 10.0
+		var at := p.global_position + Vector3(cos(ang), 0.0, sin(ang)) * dist
+		var q := PhysicsPointQueryParameters3D.new()
+		q.position = at + Vector3(0, 1.0, 0)
+		q.collision_mask = 1
+		if space.intersect_point(q, 1).is_empty():
+			return at
+	return p.global_position + Vector3(dist * 0.5, 0.0, 0.0)
+
+## ASSASSIN: one dangerous skirmisher warps in close, pre-marked as a bounty —
+## an instant duel with the payoff already on its head.
+func _event_assassin() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var at := _event_point_near_player(16.0)
+	var e := EVENT_ASSASSIN.instantiate() as EnemyBase
+	Elite.maybe_apply(e, 0.5) # even odds it comes up-tiered: it's meant to be a duel
+	e.position = at
+	scene.add_child(e)
+	e.mark_bounty.call_deferred() # after _ready so the marker measures a built model
+	# Register it as THE tracked bounty so the bounty director doesn't stack a
+	# second mark on top, and the kill pays out through the normal claim path.
+	_bounty = weakref(e)
+	_bounty_age = 0.0
+	skirmish_event.emit("ASSASSIN CONTRACT", "A hunter has your signature — it hunts YOU. Down it for the bounty.")
+	AudioBus.play_synth_at("charge", at, -2.0, 0.8)
+
+## SUPPLY FLARE: a marked cache nearby, on a despawn timer — sprint for it or
+## write it off. The beacon light makes it findable without a map ping.
+func _event_supply_flare() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var at := _event_point_near_player(20.0)
+	var root := Node3D.new()
+	root.name = "SupplyFlare"
+	scene.add_child(root)
+	root.global_position = at
+	var oc := EVENT_PICKUP_OVERCLOCK.instantiate() as Node3D
+	root.add_child(oc)
+	oc.position = Vector3(0, 0.4, 0)
+	var ammo := EVENT_PICKUP_AMMO.instantiate() as Node3D
+	root.add_child(ammo)
+	ammo.position = Vector3(1.1, 0.3, 0.4)
+	# The flare itself: a tall beacon light column so it reads across the arena.
+	var beam := OmniLight3D.new()
+	beam.light_color = Color(0.35, 1.0, 0.55)
+	beam.light_energy = 5.0
+	beam.omni_range = 10.0
+	beam.position = Vector3(0, 3.0, 0)
+	root.add_child(beam)
+	var tw := root.create_tween().set_loops()
+	tw.tween_property(beam, "light_energy", 1.8, 0.5)
+	tw.tween_property(beam, "light_energy", 5.0, 0.5)
+	# Gone in EVENT_SUPPLY_LIFETIME — urgency is the point.
+	get_tree().create_timer(EVENT_SUPPLY_LIFETIME).timeout.connect(func() -> void:
+		if is_instance_valid(root):
+			root.queue_free())
+	skirmish_event.emit("SUPPLY FLARE", "A cache beacon just lit nearby — it burns out in %d seconds." % int(EVENT_SUPPLY_LIFETIME))
+	AudioBus.play_synth_at("broadcast_blip", at, 0.0, 1.1)
+
+## GRID SURGE: a power window — ultimate charge builds at double rate. Pure
+## upside, so it's the rarest kind of beat: play HARD right now.
+func _event_grid_surge() -> void:
+	_surge_t = EVENT_SURGE_TIME
+	skirmish_event.emit("GRID SURGE", "Local power spike: OVERLOAD charges at double rate for %d seconds." % int(EVENT_SURGE_TIME))
+	AudioBus.play_synth_ui("combo_up", -4.0, 1.3)
+
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
 var combo: int = 0
@@ -760,6 +893,7 @@ func _process(delta: float) -> void:
 		if combo_timer <= 0.0:
 			_reset_combo()
 	_tick_bounty(delta)
+	_tick_events(delta)
 	if adrenaline_left > 0.0:
 		adrenaline_left = maxf(0.0, adrenaline_left - delta)
 		if adrenaline_left <= 0.0:
@@ -867,6 +1001,9 @@ func reset_level_stats() -> void:
 	level_start_ms = Time.get_ticks_msec()
 	_nemesis_spawned_this_level = false # each level gets one shot at the grudge match
 	level_hijacks = 0
+	_event_cd = EVENT_FIRST_DELAY # skirmish events re-arm per level
+	_level_events = 0
+	_surge_t = 0.0
 	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
