@@ -1,11 +1,13 @@
 class_name EnemyManus
 extends EnemyBase
-## MANUS — a colossal severed robot arm (assets/models/robots/robot_arm_wip_2.glb)
-## that drags itself across the arena on its fingers like a hunting spider. The
-## assembly plant's master manipulator, torn free and feral. It scuttles at you
-## and attacks with its whole body: a backhand SWEEP, a raised-palm SLAM, and
-## its signature GRAB — a finger-spread lunge that snatches you off the floor,
-## squeezes, and hurls you across the arena.
+## MANUS — a colossal severed robot arm (assets/models/robots/robot_arm_wip_2.glb),
+## the assembly plant's master manipulator, torn free and feral — but ROOTED:
+## its wrist trunk is fused through the deck into the plant's drive machinery,
+## so it holds its ground and fights with reach instead of pursuit. In close it
+## has a backhand SWEEP and a raised-palm SLAM; its signature GRAB is now a
+## floor-shaking YANK — a finger-spread tell, then the player is reeled across
+## the arena into the palm, squeezed, and hurled. Beyond arm's reach it strikes
+## THROUGH the floor: servo fingers erupt from the deck under your feet.
 ##
 ## ARMOURED EVERYWHERE BUT ONE SPOT: the exposed reactor coupling on its wrist
 ## (the glowing core). Every hit anywhere else sparks off harmlessly — only the
@@ -28,17 +30,22 @@ extends EnemyBase
 @export var slam_cooldown: float = 6.5
 @export var slam_windup: float = 0.6
 @export_group("Grab")
-@export var grab_lunge_speed: float = 26.0
+@export var grab_reach: float = 14.0           ## The yank connects out to this range.
 @export var grab_squeeze_damage: float = 10.0  ## Per squeeze tick (x3).
 @export var grab_cooldown: float = 9.0
+@export_group("Finger eruption")
+@export var spike_damage: float = 26.0
+@export var spike_radius: float = 3.2
+@export var spike_cooldown: float = 4.5
+@export var spike_windup: float = 0.75
 
 var _sweep_cd: float = 1.5
 var _slam_cd: float = 4.0
 var _grab_cd: float = 6.0
+var _spike_cd: float = 2.5
 var _sweep_windup_t: float = 0.0
 var _slam_windup_t: float = 0.0
 var _slam_point: Vector3
-var _grab_lunge_t: float = 0.0
 var _grabbed: Node3D = null
 var _squeeze_t: float = 0.0
 var _squeeze_tick: float = 0.0
@@ -60,7 +67,7 @@ func _ready() -> void:
 	super._ready()
 	max_health = 2800.0
 	stagger_threshold = 100000.0
-	move_speed = 3.4
+	move_speed = 0.0 # ROOTED — the trunk is fused through the deck; zero also kills evade/frenzy drift
 	turn_speed = 2.6
 	sight_range = 70.0
 	sight_angle_deg = 360.0   # a hand has no face to blindside
@@ -146,24 +153,13 @@ func _physics_process(delta: float) -> void:
 	_sweep_cd = maxf(0.0, _sweep_cd - delta)
 	_slam_cd = maxf(0.0, _slam_cd - delta)
 	_grab_cd = maxf(0.0, _grab_cd - delta)
+	_spike_cd = maxf(0.0, _spike_cd - delta)
 	# Squeeze in progress: crush the catch, then hurl them.
 	if _grabbed != null:
 		_update_squeeze(delta)
 		_decelerate()
 		_apply_gravity(delta)
 		move_and_slide()
-		return
-	# Grab lunge in flight: surge forward, snatch on palm contact.
-	if _grab_lunge_t > 0.0:
-		_grab_lunge_t -= delta
-		_apply_gravity(delta)
-		move_and_slide()
-		if target and is_instance_valid(target) \
-				and _palm.global_position.distance_to(target.global_position) <= 3.0:
-			_connect_grab()
-		elif _grab_lunge_t <= 0.0:
-			velocity.x = 0.0
-			velocity.z = 0.0
 		return
 	if _sweep_windup_t > 0.0:
 		_sweep_windup_t -= delta
@@ -191,7 +187,7 @@ func _state_attack(delta: float) -> void:
 		return
 	var dist := global_position.distance_to(target.global_position)
 	if not GameState.attack_grace_active():
-		if _grab_cd <= 0.0 and dist >= 5.0 and dist <= 14.0:
+		if _grab_cd <= 0.0 and dist >= 5.0 and dist <= grab_reach:
 			_begin_grab()
 			_bark_attack()
 			return
@@ -203,11 +199,88 @@ func _state_attack(delta: float) -> void:
 			_begin_sweep()
 			_bark_attack()
 			return
-	if dist > preferred_range:
-		_move_toward(target.global_position, delta)
-	else:
-		_decelerate()
-		_face_target(delta)
+		# Beyond arm's reach: strike THROUGH the deck it's rooted into —
+		# servo fingers erupt under the player's feet, anywhere in the arena.
+		if _spike_cd <= 0.0 and dist > sweep_range:
+			_begin_spike()
+			_bark_attack()
+			return
+	# Rooted: the trunk never leaves its spot — it plants, tracks, and reaches.
+	_decelerate()
+	_face_target(delta)
+
+## Rooted: there is no pursuit. Anything it can see is already "in range" —
+## close targets meet the arm, far ones meet the deck eruption — so seeing the
+## player IS engaging. Without this the base chase state would idle forever
+## against a player camped beyond attack_range (move_speed is 0).
+func _state_chase(delta: float) -> void:
+	if target and _can_see(target):
+		set_state(State.ATTACK)
+		return
+	_decelerate()
+	if target and _has_last_known:
+		_face_dir((_last_known_target_pos - global_position) * Vector3(1, 0, 1), delta)
+
+## FINGER ERUPTION — the rooted arm's ranged answer: it drives power through
+## the deck it's fused into and servo fingers burst from the floor under the
+## player. Telegraphed with a ground ring (same read as every AoE), so at range
+## the fight is "keep moving and keep shooting the core".
+func _begin_spike() -> void:
+	_spike_cd = spike_cooldown
+	recoil = 1.0
+	var at: Vector3 = target.global_position
+	spawn_ground_warning(at, spike_radius, spike_windup, Color(0.72, 0.95, 1.0))
+	AudioBus.play_synth_at("charge", at, -6.0, 0.7)
+	await get_tree().create_timer(spike_windup).timeout
+	if state == State.DEAD or not is_inside_tree():
+		return
+	AudioBus.play_synth_at("mech_step", at, 2.0, 0.4)
+	spawn_shockwave_ring(spike_radius, Color(0.72, 0.95, 1.0), at)
+	_spawn_spike_fingers(at)
+	var p := get_tree().get_first_node_in_group("player")
+	if p == null or not (p is Node3D):
+		return
+	if (p as Node3D).global_position.distance_to(at) <= spike_radius:
+		var d = p.get_node_or_null("Damageable")
+		if d:
+			d.apply_damage(spike_damage, self)
+		if "velocity" in p:
+			p.velocity += Vector3.UP * 6.0 # knocked off your feet, not just ticked
+		if p.has_method("shake"):
+			p.shake(0.9)
+
+## The eruption made visible: dark servo-finger spears punch up out of the deck
+## in a ring, hold a beat, then withdraw back into the floor.
+func _spawn_spike_fingers(at: Vector3) -> void:
+	var parent := get_tree().current_scene
+	if parent == null:
+		return
+	for i in 5:
+		var ang := TAU * float(i) / 5.0 + randf_range(-0.2, 0.2)
+		var off := Vector3(cos(ang), 0.0, sin(ang)) * spike_radius * randf_range(0.25, 0.8)
+		var spear := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.02
+		cm.bottom_radius = 0.22
+		cm.height = 2.6
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.13, 0.15, 0.18)
+		mat.metallic = 0.8
+		mat.roughness = 0.35
+		mat.emission_enabled = true
+		mat.emission = Color(0.5, 0.85, 1.0)
+		mat.emission_energy_multiplier = 1.2
+		cm.material = mat
+		spear.mesh = cm
+		spear.rotation = Vector3(randf_range(-0.15, 0.15), 0.0, randf_range(-0.15, 0.15))
+		parent.add_child(spear)
+		spear.global_position = at + off + Vector3.DOWN * 2.6 # start buried
+		var tw := spear.create_tween()
+		tw.tween_property(spear, "global_position:y", at.y + 1.1, 0.09) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).set_delay(float(i) * 0.03)
+		tw.tween_interval(0.5)
+		tw.tween_property(spear, "global_position:y", at.y - 2.8, 0.3).set_ease(Tween.EASE_IN)
+		tw.tween_callback(spear.queue_free)
 
 func _begin_sweep() -> void:
 	_sweep_windup_t = sweep_windup
@@ -264,19 +337,17 @@ func _begin_grab() -> void:
 	recoil = 1.0
 	AudioBus.play_synth_at("charge", global_position, -2.0, 0.42)
 	AudioBus.play_synth_ui("overlord_glitch", -8.0)
-	# Finger-spread tell, then the lunge itself.
+	# Finger-spread tell, then the YANK: the rooted arm doesn't lunge — if the
+	# tell lands and you're still inside its reach, it snatches and REELS you
+	# across the floor into the palm (the squeeze pull does the dragging).
 	spawn_ground_warning(target.global_position, 2.4, 0.55, Color(1.0, 0.5, 0.1))
 	await get_tree().create_timer(0.55).timeout
 	if state == State.DEAD or target == null or not is_instance_valid(target):
 		return
-	var dir := target.global_position - global_position
-	dir.y = 0.0
-	dir = dir.normalized()
-	velocity = dir * grab_lunge_speed
-	_grab_lunge_t = 0.6
+	if global_position.distance_to(target.global_position) <= grab_reach + 2.0:
+		_connect_grab()
 
 func _connect_grab() -> void:
-	_grab_lunge_t = 0.0
 	velocity = Vector3.ZERO
 	_grabbed = target
 	_squeeze_t = 1.1
