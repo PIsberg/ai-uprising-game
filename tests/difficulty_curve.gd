@@ -22,6 +22,10 @@ const THREAT := {
 	"fishbot": 21.8, "shark": 13.0,
 	"warbot": 23.0, "enforcer": 9.0, "ripper": 15.0, "whirlwind": 28.7,
 	"optic": 7.1, "roller": 16.4, "gunslinger": 7.6, "breaker": 25.5,
+	# Hand-derived (same DPS + hp/40 scale) for types the table was blind to —
+	# they zeroed whole rosters (hivemind indexed 34 with 17 live hostiles).
+	"hive": 14.0, "orb": 13.0, "bowler": 19.0, "ronin": 18.5,
+	"howitzer": 26.0, "manus": 90.0,
 }
 
 func _ready() -> void:

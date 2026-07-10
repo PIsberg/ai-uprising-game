@@ -320,6 +320,8 @@ static func _guardrails() -> Dictionary:
 		# ignore the terrain the AI throws at YOU, keeping the crossing chaotic.
 		# Flyers engage from the first steps so the crossing is a fight, not a quiet
 		# puzzle — they ignore the terrain the AI throws at YOU, keeping it chaotic.
+		# NOTE: the light roster is DELIBERATE — this level is the breather between
+		# neon and hivemind on the campaign curve; don't "fix" its threat dip.
 		"enemies": [
 			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 2},
 			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 3},
@@ -1970,8 +1972,11 @@ static func _overseer() -> Dictionary:
 			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24, "pack": "overse_p2"},
 			# Landing-ring escorts: a spawn-apron patrol, west-rim prowlers, a
 			# sniper POSTED ON the approach gallery, and exit-pad guardians.
-			{"type": "android", "pos": Vector3(-32, 0.5, -35), "trigger": 18, "pack": "overse_a1"},
-			{"type": "drone", "pos": Vector3(-26, 2.5, -34), "trigger": 18, "pack": "overse_a1"},
+			# (Spawn-heat fix: the apron patrol sat 8 m off the spawn pad with an
+			# 18 m trigger — the whole pack aggroed at 0 s. Pushed ~9 units along
+			# the rim toward the NW bulkhead gap it guards, trigger 18 -> 14.)
+			{"type": "android", "pos": Vector3(-22, 0.5, -36), "trigger": 14, "pack": "overse_a1"},
+			{"type": "drone", "pos": Vector3(-16, 2.5, -35), "trigger": 14, "pack": "overse_a1"},
 			{"type": "seeker", "pos": Vector3(-37, 2.5, -20), "trigger": 18, "pack": "overse_a2"},
 			{"type": "android", "pos": Vector3(-36, 0.5, -4), "trigger": 16, "pack": "overse_a2"},
 			{"type": "sniper", "pos": Vector3(0, 3.8, -39), "trigger": 20},
@@ -2397,8 +2402,12 @@ static func _titan() -> Dictionary:
 			# Data-moat garrison: swarm pressure on the spawn scarp, west-moat
 			# prowlers, a gunner POSTED ON the observation gallery, and a heavy
 			# exit-quarter picket so the last leg isn't a free walk.
-			{"type": "skitter", "pos": Vector3(-32, 0.5, -46), "count": 4, "trigger": 18, "pack": "titan_a1"},
-			{"type": "ravager", "pos": Vector3(-40, 0.5, -44), "trigger": 18, "pack": "titan_a1"},
+			# (Spawn-heat fix: the ravager sat 17 units off spawn with an 18 m
+			# trigger — pack titan_a1 aggroed at 0 s. Both pushed ~10 units along
+			# the scarp toward the NW bulkhead gap they guard; the ring warmech
+			# stays in the exit quarter, nowhere near spawn.)
+			{"type": "skitter", "pos": Vector3(-22, 0.5, -46), "count": 4, "trigger": 18, "pack": "titan_a1"},
+			{"type": "ravager", "pos": Vector3(-28, 0.5, -46), "trigger": 18, "pack": "titan_a1"},
 			{"type": "seeker", "pos": Vector3(-46, 2.5, -26), "trigger": 18, "pack": "titan_a2"},
 			{"type": "gunner", "pos": Vector3(-48, 0.5, -4), "trigger": 16, "pack": "titan_a2"},
 			{"type": "gunner", "pos": Vector3(0, 3.8, -53), "trigger": 20},
@@ -4848,6 +4857,17 @@ static func _lava_world() -> Dictionary:
 			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "lava_w_r2"},
 			{"type": "raptor", "pos": Vector3(14, 3, 20), "trigger": 14, "pack": "lava_w_r2"},
 			{"type": "orb", "pos": Vector3(-21, 0.6, 21), "trigger": 16, "pack": "lava_w_r1"},
+			# Late-campaign buff (difficulty_curve dip: 224 vs the ~380-520 band at
+			# this slot): heavies spread one-per-segment across the walkway network
+			# — ground units ON islands/walkways only, hoverers over the sea.
+			{"type": "mauler", "pos": Vector3(14, 2, -15), "trigger": 18, "pack": "lava_w_g1"},   # NE island
+			{"type": "breaker", "pos": Vector3(14, 3, -6), "trigger": 20, "pack": "lava_w_g1"},   # over east walkway
+			{"type": "whirlwind", "pos": Vector3(19, 3, 12), "trigger": 18, "pack": "lava_w_g1"}, # over the SE pool
+			{"type": "mauler", "pos": Vector3(-21, 2, 21), "trigger": 16, "pack": "lava_w_g2"},   # SW island
+			{"type": "breaker", "pos": Vector3(-22, 3, -4), "trigger": 18, "pack": "lava_w_g2"},  # over west walkway
+			{"type": "whirlwind", "pos": Vector3(-10, 3, 18), "trigger": 18, "pack": "lava_w_g2"},# over the SW pool
+			{"type": "bowler", "pos": Vector3(14, 2, 21), "trigger": 16, "pack": "lava_w_g3"},    # SE island
+			{"type": "orb", "pos": Vector3(0, 0.6, 12), "trigger": 18, "pack": "lava_w_g3"},      # central cross-lane
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -4978,6 +4998,17 @@ static func _water_world() -> Dictionary:
 			{"type": "fishbot", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "water_r2"},
 			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "water_r2"},
 			{"type": "shark", "pos": Vector3(8, 0, 17), "trigger": 20, "pack": "water_r2"},
+			# Late-campaign buff (difficulty_curve dip: 281 vs the ~380-520 band at
+			# this slot): heavy hoverers over the flood + more school. All flyers
+			# hover over open water or walkway lines; the shark hunts under it —
+			# nothing new touches the islands' navmesh.
+			{"type": "breaker", "pos": Vector3(14, 3, -15), "trigger": 18, "pack": "water_h1"},
+			{"type": "whirlwind", "pos": Vector3(18, 3, -4), "trigger": 18, "pack": "water_h1"},
+			{"type": "fishbot", "pos": Vector3(14, 3, 8), "trigger": 16, "pack": "water_h1"},
+			{"type": "breaker", "pos": Vector3(-21, 3, 21), "trigger": 16, "pack": "water_h2"},
+			{"type": "whirlwind", "pos": Vector3(-4, 3, 17), "trigger": 18, "pack": "water_h2"},
+			{"type": "fishbot", "pos": Vector3(-14, 3, 10), "trigger": 16, "pack": "water_h2"},
+			{"type": "shark", "pos": Vector3(4, 0, -6), "trigger": 18},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -5016,12 +5047,20 @@ static func _desert() -> Dictionary:
 			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike"},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(66, 66),
+		# EXPANSION PASS (2× area): the 66² canyon basin is untouched at the
+		# centre — oasis, fissures, mesas and the relay mast all stay put. A new
+		# outer dune ring wraps it: NO gates (open desert — bulkheads would kill
+		# the sightlines the howitzers live on); the ring is routed by new mesas
+		# and dune rocks instead, one of them a stair-climb deck with the
+		# overclock, plus a third fissure smoking across the south drift and a
+		# late-game garrison. Spawn/exit pushed to the new perimeter on their
+		# SW/NE diagonal.
+		"floor_size": Vector2(92, 92),
 		"floor_material": "res://assets/materials/desert_sand.tres", # textured sand, not flat beige
 		"floor_color": Color(0.66, 0.5, 0.31),
-		"spawn": Vector3(-27, 2.0, -27),
-		"exit": Vector3(28, 1.6, 28),
-		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-22, 0.4, -20), "color": Color(1.0, 0.8, 0.4)},
+		"spawn": Vector3(-40, 2.0, -40),
+		"exit": Vector3(40, 1.6, 40),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-35, 0.4, -33), "color": Color(1.0, 0.8, 0.4)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-18, 3.6, 12), "color": Color(0.6, 0.85, 1.0)},
 		],
@@ -5043,6 +5082,14 @@ static func _desert() -> Dictionary:
 		"lights": [
 			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26},
 			{"pos": Vector3(0, 5, 6), "color": Color(0.6, 0.8, 1.0), "energy": 1.8, "range": 18},
+			# Dune-ring lighting (appended AFTER the originals — light_shafts [0]
+			# must keep pointing at the mast lamp). Golden-hour outdoors, so these
+			# are SUBTLE warm fills lifting the new mesas/fissure, not statements.
+			{"pos": Vector3(-34, 6, -14), "color": Color(1.0, 0.75, 0.45), "energy": 1.6, "range": 16},
+			{"pos": Vector3(8, 6.5, -36), "color": Color(1.0, 0.7, 0.4), "energy": 1.7, "range": 16},
+			{"pos": Vector3(36, 5.5, 4), "color": Color(1.0, 0.78, 0.5), "energy": 1.5, "range": 15},
+			{"pos": Vector3(-10, 5, 33), "color": Color(1.0, 0.5, 0.22), "energy": 1.8, "range": 15},
+			{"pos": Vector3(38, 6, 38), "color": Color(1.0, 0.72, 0.42), "energy": 1.6, "range": 15},
 		],
 		# Canyon walls: sandstone slabs at irregular angles carving a winding route
 		# from the SW spawn to the NE relay, leaving the centre open for the oasis.
@@ -5060,17 +5107,31 @@ static func _desert() -> Dictionary:
 			{"pos": Vector3(-18, 3.4, 12), "size": Vector3(11, 0.6, 10), "color": Color(0.62, 0.46, 0.3)},
 			{"pos": Vector3(20, 4.0, -16), "size": Vector3(10, 0.6, 9), "color": Color(0.6, 0.44, 0.28)},
 			{"pos": Vector3(2, 2.2, -2), "size": Vector3(7, 0.5, 7), "color": Color(0.64, 0.48, 0.32)},
+			# Dune-ring relief (routes the ring instead of gates): a west mesa
+			# over the spawn approach, a north rim mesa — the stair-climb deck
+			# with the overclock — and a low dune rock shading the east drift.
+			{"pos": Vector3(-34, 3.0, -14), "size": Vector3(10, 0.6, 9), "color": Color(0.61, 0.45, 0.29)},
+			{"pos": Vector3(8, 3.4, -36), "size": Vector3(11, 0.6, 8), "color": Color(0.6, 0.44, 0.28)},
+			{"pos": Vector3(36, 2.4, 4), "size": Vector3(9, 0.6, 8), "color": Color(0.63, 0.47, 0.31)},
 		],
 		"ramps": [
 			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 0},
 			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 180},
 			{"pos": Vector3(-3, 1.1, -2), "size": Vector3(8, 0.5, 4), "pitch": 18, "yaw": 90},
 		],
+		# Stair-climb onto the north rim mesa (top ≈3.7) — the ring's vantage
+		# deck: a sniper posts up there and the overclock is the climb reward.
+		"stairs": [
+			{"from": Vector3(8, 0.3, -29), "to": Vector3(8, 3.9, -34), "width": 3.0},
+		],
 		# A molten fissure splits the basin diagonally — wade it and you cook, so you
 		# climb the central mesa or skirt the rim.
 		"lava": [
 			{"pos": Vector3(-6, 0, 2), "size": Vector2(30, 4.0), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
 			{"pos": Vector3(10, 0, -8), "size": Vector2(4.0, 22), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
+			# Third fissure smoking across the south dune drift — the ring
+			# carries the basin's hazard language; skirt it east or climb west.
+			{"pos": Vector3(-10, 0, 33), "size": Vector2(30, 4.0), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
 		],
 		"props": [
 			# Oasis: a pond ringed with palms at the heart of the basin.
@@ -5104,10 +5165,24 @@ static func _desert() -> Dictionary:
 			{"type": "sandbags", "pos": Vector3(-14, 0, -1), "yaw": 30},
 			{"type": "barrel", "pos": Vector3(-22, 0, -22)},
 			{"type": "crate", "pos": Vector3(-20, 0, -24)},
+			# Dune-ring dressing: more of the basin's own flora and rock spread
+			# through the outer band, clear of the authored oasis/mesa/dune spots.
+			{"type": "cactus", "pos": Vector3(-36, 0, -28)},
+			{"type": "cactus", "pos": Vector3(32, 0, -32)},
+			{"type": "cactus", "pos": Vector3(40, 0, 14)},
+			{"type": "cactus", "pos": Vector3(-40, 0, 10)},
+			{"type": "dune", "pos": Vector3(-32, 0, 36)},
+			{"type": "dune", "pos": Vector3(34, 0, -22)},
+			{"type": "dune", "pos": Vector3(-4, 0, -41)},
+			{"type": "boulder", "pos": Vector3(28, 0, 34)},
+			{"type": "rock", "pos": Vector3(-36, 0, 24)},
+			{"type": "rock", "pos": Vector3(16, 0, 38)},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 0.04, 2), "size": Vector3(30, 0.08, 0.5), "color": Color(1.0, 0.45, 0.18)},
 			{"pos": Vector3(10, 0.04, -8), "size": Vector3(0.5, 0.08, 22), "color": Color(1.0, 0.45, 0.18)},
+			# Rim glow for the ring fissure, same language as the basin pair.
+			{"pos": Vector3(-10, 0.04, 33), "size": Vector3(30, 0.08, 0.5), "color": Color(1.0, 0.45, 0.18)},
 		],
 		"lore": [
 			{"id": "lore_desert", "title": "RELAY 7 LOG", "pos": Vector3(-24, 0, -18), "color": Color(1.0, 0.7, 0.3),
@@ -5136,11 +5211,33 @@ static func _desert() -> Dictionary:
 			# the whole basin is their firing range.
 			{"type": "howitzer", "pos": Vector3(18, 0.5, 10), "trigger": 26, "pack": "desert_p2"},
 			{"type": "howitzer", "pos": Vector3(24, 0.5, -2), "trigger": 28},
+			# Dune-ring garrison (late-campaign buff — difficulty_curve dip: 237
+			# vs the ~380-520 band at this slot): a heavy relay guard sweeping
+			# the outer band. West approach picket, south fissure patrol, east
+			# drift armour, and a north rim overwatch pair on/under the deck.
+			{"type": "sniper", "pos": Vector3(-34, 4.0, -14), "trigger": 24, "pack": "desert_r1"},
+			{"type": "gunner", "pos": Vector3(-30, 0.5, -18), "trigger": 20, "pack": "desert_r1"},
+			{"type": "brute", "pos": Vector3(-36, 0.5, 2), "trigger": 22, "pack": "desert_r1"},
+			{"type": "warbot", "pos": Vector3(-28, 0.5, 30), "trigger": 24, "pack": "desert_r2"},
+			{"type": "mauler", "pos": Vector3(-6, 0.5, 38), "trigger": 22, "pack": "desert_r2"},
+			{"type": "ravager", "pos": Vector3(12, 0.5, 36), "trigger": 24, "pack": "desert_r2"},
+			{"type": "gunner", "pos": Vector3(30, 0.5, 28), "trigger": 24, "pack": "desert_r3"},
+			{"type": "brute", "pos": Vector3(38, 0.5, 16), "trigger": 22, "pack": "desert_r3"},
+			{"type": "mauler", "pos": Vector3(36, 0.5, -10), "trigger": 24, "pack": "desert_r3"},
+			{"type": "warbot", "pos": Vector3(28, 0.5, -30), "trigger": 26, "pack": "desert_r4"},
+			{"type": "gunner", "pos": Vector3(17, 0.5, -38), "trigger": 24, "pack": "desert_r4"},
+			{"type": "sniper", "pos": Vector3(8, 3.9, -36), "trigger": 28, "pack": "desert_r4"},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(-2, 1.7, 9)},
 			{"kind": "ammo", "pos": Vector3(2, 2.9, -2)},
 			{"kind": "ammo", "pos": Vector3(20, 4.6, -16)},
 			{"kind": "health", "pos": Vector3(18, 0.6, 16)},
+			# Dune-ring supplies + the deck-climb reward.
+			{"kind": "health", "pos": Vector3(-36, 0.6, 6)},
+			{"kind": "ammo", "pos": Vector3(-8, 0.6, 38)},
+			{"kind": "ammo", "pos": Vector3(36, 0.6, 20)},
+			{"kind": "health", "pos": Vector3(30, 0.6, -32)},
+			{"kind": "overclock", "pos": Vector3(8, 4.0, -36)},
 		],
 	}
