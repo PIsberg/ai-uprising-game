@@ -137,7 +137,11 @@ func campaign_elite_mult() -> float:
 ## modes take full damage.
 func campaign_incoming_mult() -> float:
 	var p := campaign_progress()
-	return 1.0 if p < 0.0 else lerpf(0.65, 1.0, clampf(p * 4.0, 0.0, 1.0))
+	# 0.55 at the very first level (was 0.65): the survival regression net's
+	# reckless reference bot still died to overlapping opening bursts ~38% of
+	# runs at 0.65 — the onboarding mercy has to cover the player who walks
+	# at hostiles in the open, because that IS the new player.
+	return 1.0 if p < 0.0 else lerpf(0.55, 1.0, clampf(p * 4.0, 0.0, 1.0))
 
 ## Boss enemy type tokens (matched against a spawner's scene path). Bosses are
 ## hand-tuned, one-off HP bags with scripted phases, so they're EXEMPT from the

@@ -16,6 +16,12 @@ func _ready() -> void:
 	_bake_navmesh.call_deferred()
 	_bake_gi.call_deferred()
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
+	# Opening-seconds fairness — every BUILT level gets this from level_builder,
+	# but this hand-authored scene never did, making the tutorial the only level
+	# in the game that could ambush a fresh spawn instantly (the survival net's
+	# reckless bot died to overlapping opening bursts in ~38% of runs). Longest
+	# window in the game: it's the first thing a new player ever sees.
+	GameState.start_attack_grace(4.5)
 	AudioBus.play_music("music_techno")
 	_setup_objectives()
 

@@ -630,7 +630,15 @@ func set_state(new_state: State) -> void:
 		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
 		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
-		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
+		# First contact rallies the squad — wider net = more enemies pile in at
+		# once. The radius ramps with campaign depth like the other onboarding
+		# mercies: on the small tutorial map a flat 22m was a whole-level alarm
+		# (every squad converged on a new player's first shot at once).
+		var rally := 22.0
+		var prog := GameState.campaign_progress()
+		if prog >= 0.0:
+			rally = lerpf(12.0, 22.0, clampf(prog * 4.0, 0.0, 1.0))
+		_alert_allies(rally, target)
 		if elite != "":
 			GameState.teach_elite(elite) # one-off coaching toast the first time an affix engages you
 	state_changed.emit(new_state)

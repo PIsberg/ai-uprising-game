@@ -254,8 +254,11 @@ func _ready() -> void:
 	_bake_navmesh.call_deferred()
 	## Openings are the deadliest seconds (playtest: 100->16 HP before the
 	## first orientation). Enemies still close in and jockey for position;
-	## they just hold fire briefly so a fresh drop-in isn't an ambush.
-	GameState.start_attack_grace(2.5)
+	## they just hold fire briefly so a fresh drop-in isn't an ambush. The
+	## FIRST campaign level gets a longer window — it's the tutorial fight,
+	## and the survival net showed its squad-rally still overwhelmed a
+	## reckless player inside the old 2.5s.
+	GameState.start_attack_grace(4.5 if is_equal_approx(GameState.campaign_progress(), 0.0) else 2.5)
 
 ## Perf post-pass over the static dressing. Runs before tasks/pickups/enemies
 ## exist, so gameplay objects are never touched. Small decorative meshes
