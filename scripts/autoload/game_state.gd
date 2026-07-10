@@ -403,8 +403,58 @@ func add_kill(points: int = 100, label: String = "HOSTILE") -> void:
 	combo_changed.emit(combo, combo_mult())
 	add_score(int(round(points * combo_mult())))
 	enemy_killed.emit(points, label)
+	# A boss going down earns a cinematic beat, whatever death path it took —
+	# hooked HERE because most bosses override _on_died without calling super.
+	if points >= 1000:
+		boss_killcam(label)
 	_update_rampage()
 	add_ultimate_charge(ULT_PER_KILL)
+
+# ---------- boss kill-cam (deep slow-mo ramp on a boss kill) ----------
+## Not the flat hit_stop the regular kills use: the world DROPS to near-frozen
+## while the wreck blooms, holds a beat, then eases back to full speed — one
+## long savoured moment. Token-shared with hit_stop so the two never fight
+## over Engine.time_scale, and every write is gated on PLAYING so a level
+## transition mid-cam can't strand the game in slow motion.
+signal boss_killcam_started(label: String, duration: float) ## HUD flash/banner hook.
+
+const KILLCAM_SCALE := 0.1   ## the frozen-moment depth
+const KILLCAM_HOLD := 0.55   ## real seconds held at depth before the ease-back
+const KILLCAM_DURATION := 2.3 ## total real seconds to full speed
+
+var _killcam_t0_ms: int = -1 ## wall-clock start of the running kill-cam; -1 = idle
+var _killcam_token: int = 0
+
+func boss_killcam(label: String = "TARGET") -> void:
+	if current_state != State.PLAYING:
+		return
+	_hitstop_token += 1 # void any pending flat-hitstop restore
+	_killcam_token = _hitstop_token
+	_killcam_t0_ms = Time.get_ticks_msec()
+	Engine.time_scale = KILLCAM_SCALE
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("shake"):
+		p.shake(0.9)
+	boss_killcam_started.emit(label, KILLCAM_DURATION)
+
+## The ramp, ticked from _process on WALL-CLOCK ms — deliberately not a tween:
+## tween/timer stepping under a near-zero Engine.time_scale is exactly the kind
+## of engine subtlety that strands a game in slow motion. A newer hitstop/
+## kill-cam (token bump) or leaving PLAYING cancels it instantly; set_state
+## already restores time_scale = 1.0 on the way out to any menu.
+func _tick_killcam() -> void:
+	if _killcam_t0_ms < 0:
+		return
+	if _killcam_token != _hitstop_token or current_state != State.PLAYING:
+		_killcam_t0_ms = -1
+		return
+	var t := float(Time.get_ticks_msec() - _killcam_t0_ms) / 1000.0
+	if t >= KILLCAM_DURATION:
+		Engine.time_scale = 1.0
+		_killcam_t0_ms = -1
+	elif t > KILLCAM_HOLD:
+		var f := (t - KILLCAM_HOLD) / (KILLCAM_DURATION - KILLCAM_HOLD)
+		Engine.time_scale = lerpf(KILLCAM_SCALE, 1.0, f * f * f) # cubic ease-in
 
 # ---------- RAMPAGE: kill-streak power escalation ----------
 ## A streak doesn't just multiply score — it cranks YOUR power. Chain kills inside
@@ -704,6 +754,7 @@ func _reset_combo() -> void:
 		rampage_changed.emit(0, "") # rampage collapses when the streak breaks
 
 func _process(delta: float) -> void:
+	_tick_killcam() # wall-clock — runs correctly even while time_scale is near zero
 	if combo > 0:
 		combo_timer -= delta
 		if combo_timer <= 0.0:

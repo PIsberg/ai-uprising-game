@@ -50,9 +50,23 @@ daily run, a local leaderboard off the existing grade/records system (`GameState
 ### The AI Director's player counter-move 🤖
 ✅ **First cut shipped** — the **EMP grenade** (3rd grenade type) bursts in a radius and
 disables robots for a few seconds (`EnemyBase.emp_disable`, `grenade_emp.{gd,tscn}`).
-Still open as bigger swings: a **hijack** that converts a robot to your side, an overload
-that turns it into a bomb, or weapon-disable. (Ideas #3 "AI patch-notes escalation" and #4
-"glitch warfare" remain on the table.)
+✅ **HIJACK charge shipped** (4th grenade type) — converts the nearest robot to your
+side until burnout (`EnemyBase.hijack`, `grenade_hijack.{gd,tscn}`, `tests/hijack_probe`).
+✅ **AI patch-notes escalation shipped** — the director's per-level read ships as an
+"INTERCEPTED — ROBOT OS PATCH NOTES" terminal card on the next briefing
+(`AIDirector.patch_notes`, `GameState._build_patch_notes`, `tests/patchnotes_probe`).
+Still open as bigger swings: an overload that turns a robot into a bomb, weapon-disable,
+idea #4 "glitch warfare".
+
+### Nemesis / kill-cam / dismemberment (2026-07-10 pack) 🤖
+✅ **Nemesis elites** — the elite that kills you returns named + ranked until you settle
+the grudge (`GameState.record_nemesis_killer`, `Elite.apply_nemesis`, `tests/nemesis_probe`).
+🎮 Needs playtest: rank-1 stat gains (+45% HP) and the once-per-level spawn cadence.
+✅ **Boss kill-cam** — deep slow-mo ramp on boss kills (`GameState.boss_killcam`,
+`tests/killcam_probe`). 🎮 Tune KILLCAM_HOLD/DURATION by feel.
+✅ **Limb dismemberment** — bone-collapse limb loss + flung wreck chunks at crit damage
+and death (`EnemyBase._dismember_limb`, `tests/limbloss_probe`). 🎨 Optional upgrade:
+per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 
 ---
 
