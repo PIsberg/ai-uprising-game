@@ -1287,9 +1287,15 @@ func _on_damaged(_amount: float, source: Node) -> void:
 			_shed_stage = stage
 			var off := global_position - src_pos
 			off.y = 0.0
-			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
+			var fling_dir := off.normalized() if off.length() > 0.01 else Vector3.UP
+			_shed_panel(fling_dir)
 			if first_shed:
 				_expose_weak_core() # first panel gone: bare a crit-able core on the chassis
+			else:
+				# Critical damage tears off a whole LIMB, not just plating: the
+				# bone collapses (the skinned limb folds into its socket) while a
+				# matching wreck-chunk tumbles away and the stump sparks.
+				_dismember_limb(fling_dir)
 
 
 ## The attack wind-up made visible + audible: a charging energy orb that swells
@@ -1582,6 +1588,9 @@ func _on_died(_source: Node) -> void:
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
 	_spawn_part_debris()
+	# The kill also rips a limb off the wreck (bone-collapse + flung chunk) so
+	# the break-apart isn't just generic boxes — the chassis visibly comes apart.
+	_dismember_limb(Vector3(randf() - 0.5, 0.3, randf() - 0.5).normalized())
 	_spawn_wreck_fire()
 
 	_drop_loot()
@@ -1765,6 +1774,151 @@ func weakpoint_multiplier(hit_pos: Vector3) -> float:
 	if _weak_core == null or not is_instance_valid(_weak_core):
 		return 1.0
 	return 1.6 if hit_pos.distance_to(_weak_core.global_position) <= 0.45 else 1.0
+
+# ---------- limb dismemberment (bone-collapse + flung wreck-chunk) ----------
+## Skinned models can't detach geometry, so limb loss uses the classic trick:
+## scale the limb's bone to ~zero (its skinned verts fold into the socket, so
+## the limb visibly VANISHES mid-fight) while a procedural wreck-chunk of about
+## the same size tumbles away and the stump throws sparks. Works on every
+## chassis with a Skeleton3D and named limb bones; others just no-op (they keep
+## the existing panel-shed read). Purely visual — hitboxes are unchanged.
+const LIMB_LOSS_MAX := 2 ## per enemy, so a chassis never disassembles standing up
+## Severable bone-name fragments, mid-limb first so the loss reads without
+## deleting half the silhouette. Excludes IK helpers/fingers/feet by omission.
+const SEVERABLE_BONES := ["lowerarm", "forearm", "lowerleg", "midleg", "leg2", "leg3", "upperarm"]
+var _limb_losses: int = 0
+var _severed_bones: Dictionary = {} ## bone idx -> true (incl. descendants of severed bones)
+
+func _dismember_limb(toward: Vector3) -> bool:
+	if _limb_losses >= LIMB_LOSS_MAX or _visual_root == null:
+		return false
+	var skels := _visual_root.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return false
+	var skel := skels[0] as Skeleton3D
+	var cands: Array = []
+	for i in skel.get_bone_count():
+		if _severed_bones.has(i):
+			continue
+		var nm := skel.get_bone_name(i).to_lower()
+		for pat in SEVERABLE_BONES:
+			if nm.contains(pat) and not nm.ends_with("_end"):
+				cands.append(i)
+				break
+	if cands.is_empty():
+		return false
+	var idx: int = cands.pick_random()
+	_limb_losses += 1
+	# Mark the whole subtree severed so a follow-up never "re-severs" a child
+	# of a limb that's already gone.
+	_severed_bones[idx] = true
+	for i in skel.get_bone_count():
+		var b := i
+		while b != -1:
+			b = skel.get_bone_parent(b)
+			if b == idx:
+				_severed_bones[i] = true
+				break
+	var socket: Vector3 = (skel.global_transform * skel.get_bone_global_pose(idx)).origin
+	skel.set_bone_pose_scale(idx, Vector3.ONE * 0.001) # the collapse — limb folds into the socket
+	_fling_limb_chunk(socket, toward)
+	_stump_fx(socket)
+	AudioBus.play_synth_at("explosion", socket, -10.0, randf_range(1.6, 1.9)) # a dry metallic crack
+	return true
+
+## The severed limb as wreckage: a two-segment metal limb chunk with a hot torn
+## end, flung from the socket, tumbling, then burning out like the other debris.
+func _fling_limb_chunk(socket: Vector3, toward: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var chunk := RigidBody3D.new()
+	chunk.collision_layer = 0
+	chunk.collision_mask = 1 # bounce off the world, ghost through actors
+	chunk.mass = 0.9
+	var seg_len := randf_range(0.28, 0.42)
+	for i in 2:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.11, 0.11, seg_len) * (1.0 if i == 0 else 0.8)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.16, 0.17, 0.2) * randf_range(0.85, 1.15)
+		mat.metallic = 0.75
+		mat.roughness = 0.4
+		bm.material = mat
+		mi.mesh = bm
+		mi.position = Vector3(0, 0, -seg_len * 0.9 * i)
+		mi.rotation.x = -0.35 * i # a bent joint so it reads as a limb, not a plank
+		chunk.add_child(mi)
+	# The torn end: a glowing-hot cap where it ripped free.
+	var cap := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.075; sm.height = 0.15; sm.radial_segments = 6; sm.rings = 4
+	var cmat := StandardMaterial3D.new()
+	cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	cmat.albedo_color = Color(1.0, 0.45, 0.15)
+	cmat.emission_enabled = true
+	cmat.emission = Color(1.0, 0.45, 0.15)
+	cmat.emission_energy_multiplier = 3.5
+	sm.material = cmat
+	cap.mesh = sm
+	cap.position = Vector3(0, 0, seg_len * 0.5)
+	chunk.add_child(cap)
+	var cs := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = 0.14
+	cs.shape = shape
+	chunk.add_child(cs)
+	parent.add_child(chunk)
+	chunk.global_position = socket
+	chunk.linear_velocity = toward * randf_range(3.5, 6.5) + Vector3(0, randf_range(3.0, 5.0), 0)
+	chunk.angular_velocity = Vector3(randf_range(-16, 16), randf_range(-16, 16), randf_range(-16, 16))
+	var tw := chunk.create_tween()
+	tw.tween_interval(randf_range(2.4, 3.4))
+	tw.tween_property(chunk, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(chunk.queue_free)
+
+## One-shot spark fountain + a brief hot flare at the torn socket.
+func _stump_fx(socket: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var p := CPUParticles3D.new()
+	p.amount = 22
+	p.lifetime = 0.45
+	p.one_shot = true
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.08
+	p.gravity = Vector3(0, -14, 0)
+	p.initial_velocity_min = 2.0
+	p.initial_velocity_max = 5.0
+	p.spread = 70.0
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.02, 0.02, 0.09)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1, 0.8, 0.35)
+	mat.emission_enabled = true
+	mat.emission = Color(1, 0.65, 0.2)
+	mat.emission_energy_multiplier = 4.0
+	mesh.material = mat
+	p.mesh = mesh
+	parent.add_child(p)
+	p.global_position = socket
+	p.emitting = true
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(1.0, 0.5, 0.2)
+	flash.light_energy = 3.5
+	flash.omni_range = 3.0
+	parent.add_child(flash)
+	flash.global_position = socket
+	var ft := flash.create_tween()
+	ft.tween_property(flash, "light_energy", 0.0, 0.4)
+	ft.tween_callback(flash.queue_free)
+	get_tree().create_timer(1.2).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
 
 ## A single armour panel torn off the chassis at a damage threshold: a flat
 ## metal plate with a faintly-hot torn edge, flung off toward the impact and
