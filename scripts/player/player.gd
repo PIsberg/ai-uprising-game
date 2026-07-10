@@ -1729,6 +1729,8 @@ func _on_died(source: Node) -> void:
 	var killer := ""
 	if source is EnemyBase:
 		killer = (source as EnemyBase)._kill_label()
+		# An elite that downs you gets PROMOTED — it returns as your nemesis.
+		GameState.record_nemesis_killer(source)
 	elif source is LavaHazard:
 		killer = "THE FLOOD" if (source as LavaHazard).water else "MOLTEN GROUND"
 	elif source != null and source.has_method("_kill_label"):

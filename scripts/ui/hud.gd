@@ -235,6 +235,8 @@ func _ready() -> void:
 	GameState.directive_set.connect(_on_directive_set)
 	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
 	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
+	GameState.nemesis_spawned.connect(func(title: String): _show_toast("☠ NEMESIS: %s HAS RETURNED FOR YOU" % title))
+	GameState.nemesis_down.connect(func(title: String, points: int): _show_toast("☠ GRUDGE SETTLED: %s DESTROYED  +%d" % [title, points]))
 	GameState.wave_incoming.connect(func(label: String): _show_toast("☢ " + tr(label)))
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()

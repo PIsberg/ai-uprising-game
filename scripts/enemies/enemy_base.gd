@@ -21,6 +21,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var telegraph_time: float = 0.35 ## Wind-up before each attack: the unit charges (eye flare + charge whine) for this long so the player can read the shot and dodge it. 0 = no tell (units that telegraph their own way, e.g. the sniper's charged beam).
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
+var nemesis_name: String = "" ## Non-empty = this is the player's NEMESIS (see Elite.apply_nemesis).
 var is_bounty: bool = false ## Marked as a high-value BOUNTY target (bonus score + guaranteed prize). See GameState bounty director.
 var _bounty_marker: Node3D = null
 
@@ -1173,6 +1174,8 @@ func is_enraged() -> bool:
 ## Readable enemy name for the kill feed, derived from the script's class_name
 ## (EnemyAndroid -> "ANDROID").
 func _kill_label() -> String:
+	if nemesis_name != "":
+		return nemesis_name # the grudge-holder dies (and kills) under its OWN name
 	var s: Script = get_script()
 	var n: String = String(s.get_global_name()) if s else ""
 	n = n.replace("Enemy", "")

@@ -814,6 +814,7 @@ func reset_level_stats() -> void:
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
+	_nemesis_spawned_this_level = false # each level gets one shot at the grudge match
 	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
@@ -943,6 +944,7 @@ func reset_run() -> void:
 	_bounty_age = 0.0
 	directive = {}
 	directive_id = ""
+	nemesis = {} # a fresh run starts with a clean slate — no inherited grudges
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------
@@ -1222,6 +1224,7 @@ func save_progress() -> void:
 	# Persist which robots the briefings have introduced — otherwise a resumed
 	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
 	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
+	cf.set_value("run", "nemesis", nemesis) # the grudge survives a quit
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -1243,6 +1246,7 @@ func load_progress() -> bool:
 	seen_enemy_types.clear()
 	for t in cf.get_value("run", "seen_enemies", []):
 		seen_enemy_types[str(t)] = true
+	nemesis = cf.get_value("run", "nemesis", {})
 	return true
 
 func clear_save() -> void:
@@ -1286,6 +1290,65 @@ func on_player_died(killer: String = "") -> void:
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
 	set_state(State.GAME_OVER)
 	player_died.emit()
+
+# ---------- nemesis (the elite that killed you comes back for more) ----------
+## When an ELITE kills the player it gets PROMOTED: a name, a rank, and a
+## standing grudge. It returns in later levels (a spawner substitutes it in,
+## bigger and meaner) until the player puts it down — then the grudge is
+## settled for a rank-scaled score bonus. Killing the player again promotes
+## it further. One nemesis at a time; persisted with the run save.
+signal nemesis_spawned(title: String) ## The grudge-holder just warped in — HUD callout.
+signal nemesis_down(title: String, points: int) ## Grudge settled — HUD payoff.
+
+var nemesis: Dictionary = {} ## {"name","kind","scene","rank"} — empty = no standing grudge.
+var _nemesis_spawned_this_level: bool = false
+
+const NEMESIS_RANK_MAX := 5
+const NEMESIS_CALLSIGNS := [
+	"GRAVEDIGGER", "WIDOWMAKER", "BONESAW", "BLACKOUT", "HEXBANE",
+	"IRONCLAD", "DEADLOCK", "VULTURE", "SCRAPLORD", "NULLPOINT",
+	"OVERKILL", "COLDBOOT", "SEGFAULT", "WARCRIME.EXE", "STACKSMASHER",
+]
+
+## Called with whatever node killed the player. An elite gets promoted to
+## nemesis; a returning nemesis that scores AGAIN ranks up instead.
+func record_nemesis_killer(source: Node) -> void:
+	var eb := source as EnemyBase
+	if eb == null:
+		return
+	if eb.nemesis_name != "" and not nemesis.is_empty():
+		nemesis["rank"] = mini(int(nemesis.get("rank", 1)) + 1, NEMESIS_RANK_MAX)
+		return
+	if eb.elite == "" or not nemesis.is_empty():
+		return # only elites earn a promotion, and one grudge at a time
+	nemesis = {
+		"name": "%s-%d '%s'" % [["KX", "VX", "RZ", "QT", "DX"].pick_random(), randi_range(100, 999), NEMESIS_CALLSIGNS.pick_random()],
+		"kind": eb.elite,
+		"scene": eb.scene_file_path,
+		"rank": 1,
+	}
+
+## A spawner asks: should MY spawn come back as the nemesis? (Once per level.)
+func nemesis_due() -> bool:
+	return not nemesis.is_empty() and not _nemesis_spawned_this_level \
+		and String(nemesis.get("scene", "")) != ""
+
+## Claim the level's single nemesis spawn slot; returns the grudge data.
+func claim_nemesis_spawn() -> Dictionary:
+	_nemesis_spawned_this_level = true
+	return nemesis
+
+func announce_nemesis() -> void:
+	nemesis_spawned.emit(String(nemesis.get("name", "NEMESIS")))
+
+## The nemesis went down — settle the grudge: rank-scaled bonus, slate wiped.
+func nemesis_slain() -> void:
+	var rank: int = int(nemesis.get("rank", 1))
+	var title: String = String(nemesis.get("name", "NEMESIS"))
+	var bonus := 500 * rank
+	add_score(bonus)
+	nemesis_down.emit(title, bonus)
+	nemesis = {}
 
 func on_level_complete() -> void:
 	_reset_combo()
