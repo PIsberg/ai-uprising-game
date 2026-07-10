@@ -56,7 +56,7 @@ const ENEMY_INFO := {
 	"howitzer": {"name": "HOWITZER", "desc": "A four-legged artillery walker. It plants, whines up a charge, and arcs a heavy shell with wide splash at you. Move on the whine — or get under its barrel.", "scale": 0.6, "y": 0.0},
 	"orb": {"name": "MOLTEN ORB", "desc": "A rolling crusher sphere with a magma core. It builds speed and slams into you — and its core ruptures when it dies. Cut sideways; it corners wide.", "scale": 1.0, "y": 0.0},
 	"bowler": {"name": "STRIKER-9", "desc": "A heavy pitcher that BOWLS molten orbs down the ramps at you — every ball lands rolling and hunts. Kill the pitcher to close the lane.", "scale": 0.8, "y": 0.0},
-	"manus": {"name": "MANUS", "desc": "A colossal severed manipulator arm that crawls on its fingers. It sweeps, slams and GRABS. Its plating is impervious — only the glowing wrist core takes damage. Aim.", "scale": 0.35, "y": 0.0},
+	"manus": {"name": "MANUS", "desc": "A colossal severed manipulator arm rooted through the deck. It sweeps, slams, GRABS — and erupts finger-spears from the floor at range. Its plating is impervious — only the glowing wrist core takes damage. Aim.", "scale": 0.35, "y": 0.0},
 }
 
 const TAGLINES := {

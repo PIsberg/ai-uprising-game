@@ -21,6 +21,7 @@ enum State { IDLE, PATROL, ALERT, CHASE, ATTACK, STAGGER, DEAD }
 @export var telegraph_time: float = 0.35 ## Wind-up before each attack: the unit charges (eye flare + charge whine) for this long so the player can read the shot and dodge it. 0 = no tell (units that telegraph their own way, e.g. the sniper's charged beam).
 @export var score_value: int = 100
 var elite: String = "" ## Elite affix id ("shielded"/"volatile"/"swift"), set by Elite.apply.
+var nemesis_name: String = "" ## Non-empty = this is the player's NEMESIS (see Elite.apply_nemesis).
 var is_bounty: bool = false ## Marked as a high-value BOUNTY target (bonus score + guaranteed prize). See GameState bounty director.
 var _bounty_marker: Node3D = null
 
@@ -74,6 +75,12 @@ var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
+var hijacked: bool = false ## Converted to the player's side by a HIJACK charge — hunts robots until burnout.
+var _hijack_t: float = 0.0 ## Seconds of stolen loyalty left; burnout (death) at 0.
+var _hijack_shooter: Node = null ## The player who planted the hijack — kills/damage route credit to them.
+var _hijack_zap_cd: float = 0.0
+var _hijack_base_layer: int = 4 ## Collision layer to restore on cleanup (death mid-hijack).
+var _hijack_fx: Node3D = null ## Friendly green glow while converted.
 var _oil_cd: float = 0.0 ## Throttle so rapid fire doesn't spawn an oil burst every tick.
 var _alerted: bool = false ## True once this enemy has reacted to first spotting the player.
 var _overload_light: OmniLight3D = null ## Flickering red core glow during a last stand.
@@ -194,6 +201,12 @@ func _physics_process(delta: float) -> void:
 		_apply_gravity(delta)
 		move_and_slide()
 		return
+	# Hijacked: this chassis fights for the PLAYER now. A self-contained combat
+	# loop here (seek robot -> chase -> zap) replaces the whole hostile state
+	# machine, so no subclass attack/perception code needs to know about sides.
+	if hijacked:
+		_hijack_process(delta)
+		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	_state_timer += delta
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
@@ -242,6 +255,180 @@ func _spawn_emp_fx() -> void:
 	add_child(p)
 	# Self-clean once the unit reboots.
 	get_tree().create_timer(maxf(_emp_t, 0.2)).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
+
+# ---------- hijack (the player's robot-conversion counter-move) ----------
+## Chassis with this much authored health are set-piece bosses — they resist
+## conversion (a hijack charge only staggers their firmware into a short EMP).
+const HIJACK_BOSS_HP := 500.0
+const HIJACK_ZAP_DAMAGE := 14.0
+const HIJACK_ZAP_INTERVAL := 0.8
+const HIJACK_SEEK_RANGE := 45.0 ## How far a converted unit scans for robots to hunt.
+const HIJACK_TRACER: PackedScene = preload("res://scenes/fx/tracer.tscn")
+
+## Convert this unit to the player's side for `duration` seconds, then burnout
+## (its loyalty firmware violently reasserts itself and the chassis dies).
+## `liberator` (the player) receives damage/kill credit for everything it does.
+## Returns false if the chassis resists (bosses get a short EMP instead).
+func hijack(duration: float, liberator: Node = null) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive():
+		return false
+	if max_health * _health_mult >= HIJACK_BOSS_HP:
+		emp_disable(minf(duration * 0.4, 4.0)) # firmware too hardened — stun, not steal
+		return false
+	if hijacked:
+		_hijack_t = maxf(_hijack_t, duration)
+		return true
+	hijacked = true
+	_hijack_t = duration
+	_hijack_shooter = liberator
+	_hijack_zap_cd = 0.0
+	_emp_t = 0.0
+	_telegraphing = false
+	target = null
+	add_to_group("hijacked")
+	# Sit on the PLAYER's collision layer while converted: hostile hitscans/LOS
+	# (mask world+player) now see and hit it, and the player's own fire (mask
+	# world+enemy) passes through the new ally instead of shredding it.
+	_hijack_base_layer = collision_layer
+	collision_layer = 2
+	# Death mid-hijack must still restore group/layer bookkeeping.
+	hp.died.connect(_cleanup_hijack.unbind(1), CONNECT_ONE_SHOT)
+	_spawn_hijack_fx()
+	GameState.note_hijack() # a logged security incident — the OS patches for it
+	AudioBus.play_synth_at("overlord_glitch", global_position, -2.0, 1.4)
+	return true
+
+## The converted unit's whole brain: countdown to burnout, pick the nearest
+## hostile robot, close in, zap it. Damage is applied directly (src = the
+## player) so score, hit markers and kill quotas all credit the liberator.
+func _hijack_process(delta: float) -> void:
+	_hijack_t -= delta
+	if _hijack_t <= 0.0:
+		_burnout()
+		return
+	_hijack_zap_cd = maxf(0.0, _hijack_zap_cd - delta)
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	var foe := target as EnemyBase
+	if foe == null or not is_instance_valid(foe) or foe.state == State.DEAD \
+			or foe.hijacked or foe.hp == null or not foe.hp.is_alive():
+		target = _hijack_find_foe()
+		foe = target as EnemyBase
+	if foe == null:
+		_decelerate()
+	else:
+		var dist := global_position.distance_to(foe.global_position)
+		if dist <= maxf(attack_range, 10.0) and _hijack_can_see(foe):
+			_decelerate()
+			_face_target(delta)
+			if _hijack_zap_cd <= 0.0:
+				_hijack_zap_cd = HIJACK_ZAP_INTERVAL
+				_hijack_zap(foe)
+		else:
+			_move_toward(foe.global_position, delta)
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## Nearest living, unconverted robot within seek range — the next mark.
+func _hijack_find_foe() -> Node3D:
+	var best: Node3D = null
+	var best_d := HIJACK_SEEK_RANGE
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var eb := e as EnemyBase
+		if eb == null or eb == self or not is_instance_valid(eb):
+			continue
+		if eb.state == State.DEAD or eb.hijacked or eb.hp == null or not eb.hp.is_alive():
+			continue
+		var d := global_position.distance_to(eb.global_position)
+		if d < best_d:
+			best_d = d
+			best = eb
+	return best
+
+## LOS against a ROBOT target — the stock _can_see raycast masks world+player
+## and would sail straight through an enemy chassis.
+func _hijack_can_see(t: Node3D) -> bool:
+	var from: Vector3 = eye.global_position if eye else global_position + Vector3.UP * 1.2
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(from, t.global_position + Vector3.UP * 0.8)
+	q.collision_mask = 0b0000101 # world + enemy
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	return not hit.is_empty() and hit.collider == t
+
+## One arc of turned-gun fire: direct damage (credited to the liberator) + a
+## tracer and shot audio so the betrayal is loud and visible.
+func _hijack_zap(foe: EnemyBase) -> void:
+	recoil = 1.0
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.2
+	var to: Vector3 = foe.global_position + Vector3.UP * 0.9
+	var d: Node = foe.get_node_or_null("Damageable")
+	if d:
+		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
+		d.apply_damage(HIJACK_ZAP_DAMAGE, src)
+	var t: Node = HIJACK_TRACER.instantiate()
+	get_tree().current_scene.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to)
+	if muzzle:
+		var m := MUZZLE_FLASH.instantiate()
+		muzzle.add_child(m)
+	AudioBus.play_synth_at("drone_shot", from, -4.0, 1.3)
+
+## Stolen time is up: the loyalty firmware reasserts itself and the chassis
+## burns out — a guaranteed (player-credited) kill to close the fantasy.
+func _burnout() -> void:
+	_cleanup_hijack()
+	if hp and hp.is_alive():
+		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
+		hp.apply_damage(hp.max_health + 999.0, src)
+
+## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
+func _cleanup_hijack() -> void:
+	if not hijacked:
+		return
+	hijacked = false
+	remove_from_group("hijacked")
+	collision_layer = _hijack_base_layer
+	target = null
+	if _hijack_fx and is_instance_valid(_hijack_fx):
+		_hijack_fx.queue_free()
+	_hijack_fx = null
+
+## Friendly green core glow + a conversion crackle so a turned unit reads as
+## YOURS at a glance (the inverse of the red overload glow).
+func _spawn_hijack_fx() -> void:
+	var l := OmniLight3D.new()
+	l.light_color = Color(0.35, 1.0, 0.55)
+	l.light_energy = 2.4
+	l.omni_range = 3.5
+	l.position = Vector3(0.0, 1.2, 0.0)
+	add_child(l)
+	_hijack_fx = l
+	var p := CPUParticles3D.new()
+	p.amount = 14
+	p.lifetime = 0.4
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.5
+	p.gravity = Vector3.ZERO
+	p.initial_velocity_min = 0.5
+	p.initial_velocity_max = 1.6
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.04; mesh.height = 0.08; mesh.radial_segments = 5; mesh.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(0.35, 1.0, 0.55)
+	mat.albedo_color = Color(0.5, 1.0, 0.6)
+	mesh.material = mat
+	p.mesh = mesh
+	p.position = Vector3(0, 0.7, 0)
+	add_child(p)
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
 		if is_instance_valid(p):
 			p.queue_free())
 
@@ -328,8 +515,33 @@ func _maybe_refresh_locomotion_budget() -> void:
 		_locomotion_allowed_ids[near[i][1]] = true
 
 func _perceive() -> void:
-	if target == null or not is_instance_valid(target):
+	# Drop a freed target FIRST — even a type check (`is`) on a freed instance
+	# raises, and a freed instance compares EQUAL to null (so `!= null` can't
+	# catch it). is_instance_valid covers both null and freed in one test.
+	# (Scene teardown frees targets out from under live enemies.)
+	if not is_instance_valid(target):
+		target = null
+	# A robot target that died or reverted to our side releases aggro back
+	# to the player. (Only hijacked units ever put a robot in `target`.)
+	if target is EnemyBase:
+		var tb := target as EnemyBase
+		if tb.state == State.DEAD or not tb.hijacked:
+			target = null
+	if target == null:
 		target = _find_player()
+	# TRAITOR PRIORITY: a hijacked robot closer than the current target draws
+	# this unit's fire — the swarm turns on the turncoat, which is both the
+	# fantasy and the counterplay. Free when nothing is hijacked (empty group).
+	if not (target is EnemyBase):
+		var best_d := global_position.distance_to(target.global_position) if target else sight_range
+		for h in get_tree().get_nodes_in_group("hijacked"):
+			var hb := h as EnemyBase
+			if hb == null or hb == self or not is_instance_valid(hb) or hb.state == State.DEAD:
+				continue
+			var d := global_position.distance_to(hb.global_position)
+			if d < best_d and d <= sight_range:
+				best_d = d
+				target = hb
 	if target and _can_see(target):
 		_last_known_target_pos = target.global_position
 		_has_last_known = true
@@ -418,7 +630,15 @@ func set_state(new_state: State) -> void:
 		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
 		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
-		_alert_allies(22.0, target) # first contact rallies the squad — wider net = more enemies pile in at once
+		# First contact rallies the squad — wider net = more enemies pile in at
+		# once. The radius ramps with campaign depth like the other onboarding
+		# mercies: on the small tutorial map a flat 22m was a whole-level alarm
+		# (every squad converged on a new player's first shot at once).
+		var rally := 22.0
+		var prog := GameState.campaign_progress()
+		if prog >= 0.0:
+			rally = lerpf(12.0, 22.0, clampf(prog * 4.0, 0.0, 1.0))
+		_alert_allies(rally, target)
 		if elite != "":
 			GameState.teach_elite(elite) # one-off coaching toast the first time an affix engages you
 	state_changed.emit(new_state)
@@ -969,6 +1189,8 @@ func is_enraged() -> bool:
 ## Readable enemy name for the kill feed, derived from the script's class_name
 ## (EnemyAndroid -> "ANDROID").
 func _kill_label() -> String:
+	if nemesis_name != "":
+		return nemesis_name # the grudge-holder dies (and kills) under its OWN name
 	var s: Script = get_script()
 	var n: String = String(s.get_global_name()) if s else ""
 	n = n.replace("Enemy", "")
@@ -1079,9 +1301,15 @@ func _on_damaged(_amount: float, source: Node) -> void:
 			_shed_stage = stage
 			var off := global_position - src_pos
 			off.y = 0.0
-			_shed_panel(off.normalized() if off.length() > 0.01 else Vector3.UP)
+			var fling_dir := off.normalized() if off.length() > 0.01 else Vector3.UP
+			_shed_panel(fling_dir)
 			if first_shed:
 				_expose_weak_core() # first panel gone: bare a crit-able core on the chassis
+			else:
+				# Critical damage tears off a whole LIMB, not just plating: the
+				# bone collapses (the skinned limb folds into its socket) while a
+				# matching wreck-chunk tumbles away and the stump sparks.
+				_dismember_limb(fling_dir)
 
 
 ## The attack wind-up made visible + audible: a charging energy orb that swells
@@ -1374,6 +1602,9 @@ func _on_died(_source: Node) -> void:
 	get_parent().add_child(exp_fx)
 	exp_fx.global_position = global_position + Vector3.UP * 0.9
 	_spawn_part_debris()
+	# The kill also rips a limb off the wreck (bone-collapse + flung chunk) so
+	# the break-apart isn't just generic boxes — the chassis visibly comes apart.
+	_dismember_limb(Vector3(randf() - 0.5, 0.3, randf() - 0.5).normalized())
 	_spawn_wreck_fire()
 
 	_drop_loot()
@@ -1557,6 +1788,151 @@ func weakpoint_multiplier(hit_pos: Vector3) -> float:
 	if _weak_core == null or not is_instance_valid(_weak_core):
 		return 1.0
 	return 1.6 if hit_pos.distance_to(_weak_core.global_position) <= 0.45 else 1.0
+
+# ---------- limb dismemberment (bone-collapse + flung wreck-chunk) ----------
+## Skinned models can't detach geometry, so limb loss uses the classic trick:
+## scale the limb's bone to ~zero (its skinned verts fold into the socket, so
+## the limb visibly VANISHES mid-fight) while a procedural wreck-chunk of about
+## the same size tumbles away and the stump throws sparks. Works on every
+## chassis with a Skeleton3D and named limb bones; others just no-op (they keep
+## the existing panel-shed read). Purely visual — hitboxes are unchanged.
+const LIMB_LOSS_MAX := 2 ## per enemy, so a chassis never disassembles standing up
+## Severable bone-name fragments, mid-limb first so the loss reads without
+## deleting half the silhouette. Excludes IK helpers/fingers/feet by omission.
+const SEVERABLE_BONES := ["lowerarm", "forearm", "lowerleg", "midleg", "leg2", "leg3", "upperarm"]
+var _limb_losses: int = 0
+var _severed_bones: Dictionary = {} ## bone idx -> true (incl. descendants of severed bones)
+
+func _dismember_limb(toward: Vector3) -> bool:
+	if _limb_losses >= LIMB_LOSS_MAX or _visual_root == null:
+		return false
+	var skels := _visual_root.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return false
+	var skel := skels[0] as Skeleton3D
+	var cands: Array = []
+	for i in skel.get_bone_count():
+		if _severed_bones.has(i):
+			continue
+		var nm := skel.get_bone_name(i).to_lower()
+		for pat in SEVERABLE_BONES:
+			if nm.contains(pat) and not nm.ends_with("_end"):
+				cands.append(i)
+				break
+	if cands.is_empty():
+		return false
+	var idx: int = cands.pick_random()
+	_limb_losses += 1
+	# Mark the whole subtree severed so a follow-up never "re-severs" a child
+	# of a limb that's already gone.
+	_severed_bones[idx] = true
+	for i in skel.get_bone_count():
+		var b := i
+		while b != -1:
+			b = skel.get_bone_parent(b)
+			if b == idx:
+				_severed_bones[i] = true
+				break
+	var socket: Vector3 = (skel.global_transform * skel.get_bone_global_pose(idx)).origin
+	skel.set_bone_pose_scale(idx, Vector3.ONE * 0.001) # the collapse — limb folds into the socket
+	_fling_limb_chunk(socket, toward)
+	_stump_fx(socket)
+	AudioBus.play_synth_at("explosion", socket, -10.0, randf_range(1.6, 1.9)) # a dry metallic crack
+	return true
+
+## The severed limb as wreckage: a two-segment metal limb chunk with a hot torn
+## end, flung from the socket, tumbling, then burning out like the other debris.
+func _fling_limb_chunk(socket: Vector3, toward: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var chunk := RigidBody3D.new()
+	chunk.collision_layer = 0
+	chunk.collision_mask = 1 # bounce off the world, ghost through actors
+	chunk.mass = 0.9
+	var seg_len := randf_range(0.28, 0.42)
+	for i in 2:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.11, 0.11, seg_len) * (1.0 if i == 0 else 0.8)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.16, 0.17, 0.2) * randf_range(0.85, 1.15)
+		mat.metallic = 0.75
+		mat.roughness = 0.4
+		bm.material = mat
+		mi.mesh = bm
+		mi.position = Vector3(0, 0, -seg_len * 0.9 * i)
+		mi.rotation.x = -0.35 * i # a bent joint so it reads as a limb, not a plank
+		chunk.add_child(mi)
+	# The torn end: a glowing-hot cap where it ripped free.
+	var cap := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 0.075; sm.height = 0.15; sm.radial_segments = 6; sm.rings = 4
+	var cmat := StandardMaterial3D.new()
+	cmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	cmat.albedo_color = Color(1.0, 0.45, 0.15)
+	cmat.emission_enabled = true
+	cmat.emission = Color(1.0, 0.45, 0.15)
+	cmat.emission_energy_multiplier = 3.5
+	sm.material = cmat
+	cap.mesh = sm
+	cap.position = Vector3(0, 0, seg_len * 0.5)
+	chunk.add_child(cap)
+	var cs := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = 0.14
+	cs.shape = shape
+	chunk.add_child(cs)
+	parent.add_child(chunk)
+	chunk.global_position = socket
+	chunk.linear_velocity = toward * randf_range(3.5, 6.5) + Vector3(0, randf_range(3.0, 5.0), 0)
+	chunk.angular_velocity = Vector3(randf_range(-16, 16), randf_range(-16, 16), randf_range(-16, 16))
+	var tw := chunk.create_tween()
+	tw.tween_interval(randf_range(2.4, 3.4))
+	tw.tween_property(chunk, "scale", Vector3.ONE * 0.05, 0.5).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(chunk.queue_free)
+
+## One-shot spark fountain + a brief hot flare at the torn socket.
+func _stump_fx(socket: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var p := CPUParticles3D.new()
+	p.amount = 22
+	p.lifetime = 0.45
+	p.one_shot = true
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.08
+	p.gravity = Vector3(0, -14, 0)
+	p.initial_velocity_min = 2.0
+	p.initial_velocity_max = 5.0
+	p.spread = 70.0
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(0.02, 0.02, 0.09)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1, 0.8, 0.35)
+	mat.emission_enabled = true
+	mat.emission = Color(1, 0.65, 0.2)
+	mat.emission_energy_multiplier = 4.0
+	mesh.material = mat
+	p.mesh = mesh
+	parent.add_child(p)
+	p.global_position = socket
+	p.emitting = true
+	var flash := OmniLight3D.new()
+	flash.light_color = Color(1.0, 0.5, 0.2)
+	flash.light_energy = 3.5
+	flash.omni_range = 3.0
+	parent.add_child(flash)
+	flash.global_position = socket
+	var ft := flash.create_tween()
+	ft.tween_property(flash, "light_energy", 0.0, 0.4)
+	ft.tween_callback(flash.queue_free)
+	get_tree().create_timer(1.2).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
 
 ## A single armour panel torn off the chassis at a damage threshold: a flat
 ## metal plate with a faintly-hot torn edge, flung off toward the impact and

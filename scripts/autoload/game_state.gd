@@ -137,7 +137,11 @@ func campaign_elite_mult() -> float:
 ## modes take full damage.
 func campaign_incoming_mult() -> float:
 	var p := campaign_progress()
-	return 1.0 if p < 0.0 else lerpf(0.65, 1.0, clampf(p * 4.0, 0.0, 1.0))
+	# 0.55 at the very first level (was 0.65): the survival regression net's
+	# reckless reference bot still died to overlapping opening bursts ~38% of
+	# runs at 0.65 — the onboarding mercy has to cover the player who walks
+	# at hostiles in the open, because that IS the new player.
+	return 1.0 if p < 0.0 else lerpf(0.55, 1.0, clampf(p * 4.0, 0.0, 1.0))
 
 ## Boss enemy type tokens (matched against a spawner's scene path). Bosses are
 ## hand-tuned, one-off HP bags with scripted phases, so they're EXEMPT from the
@@ -403,8 +407,58 @@ func add_kill(points: int = 100, label: String = "HOSTILE") -> void:
 	combo_changed.emit(combo, combo_mult())
 	add_score(int(round(points * combo_mult())))
 	enemy_killed.emit(points, label)
+	# A boss going down earns a cinematic beat, whatever death path it took —
+	# hooked HERE because most bosses override _on_died without calling super.
+	if points >= 1000:
+		boss_killcam(label)
 	_update_rampage()
 	add_ultimate_charge(ULT_PER_KILL)
+
+# ---------- boss kill-cam (deep slow-mo ramp on a boss kill) ----------
+## Not the flat hit_stop the regular kills use: the world DROPS to near-frozen
+## while the wreck blooms, holds a beat, then eases back to full speed — one
+## long savoured moment. Token-shared with hit_stop so the two never fight
+## over Engine.time_scale, and every write is gated on PLAYING so a level
+## transition mid-cam can't strand the game in slow motion.
+signal boss_killcam_started(label: String, duration: float) ## HUD flash/banner hook.
+
+const KILLCAM_SCALE := 0.1   ## the frozen-moment depth
+const KILLCAM_HOLD := 0.55   ## real seconds held at depth before the ease-back
+const KILLCAM_DURATION := 2.3 ## total real seconds to full speed
+
+var _killcam_t0_ms: int = -1 ## wall-clock start of the running kill-cam; -1 = idle
+var _killcam_token: int = 0
+
+func boss_killcam(label: String = "TARGET") -> void:
+	if current_state != State.PLAYING:
+		return
+	_hitstop_token += 1 # void any pending flat-hitstop restore
+	_killcam_token = _hitstop_token
+	_killcam_t0_ms = Time.get_ticks_msec()
+	Engine.time_scale = KILLCAM_SCALE
+	var p := get_tree().get_first_node_in_group("player")
+	if p and p.has_method("shake"):
+		p.shake(0.9)
+	boss_killcam_started.emit(label, KILLCAM_DURATION)
+
+## The ramp, ticked from _process on WALL-CLOCK ms — deliberately not a tween:
+## tween/timer stepping under a near-zero Engine.time_scale is exactly the kind
+## of engine subtlety that strands a game in slow motion. A newer hitstop/
+## kill-cam (token bump) or leaving PLAYING cancels it instantly; set_state
+## already restores time_scale = 1.0 on the way out to any menu.
+func _tick_killcam() -> void:
+	if _killcam_t0_ms < 0:
+		return
+	if _killcam_token != _hitstop_token or current_state != State.PLAYING:
+		_killcam_t0_ms = -1
+		return
+	var t := float(Time.get_ticks_msec() - _killcam_t0_ms) / 1000.0
+	if t >= KILLCAM_DURATION:
+		Engine.time_scale = 1.0
+		_killcam_t0_ms = -1
+	elif t > KILLCAM_HOLD:
+		var f := (t - KILLCAM_HOLD) / (KILLCAM_DURATION - KILLCAM_HOLD)
+		Engine.time_scale = lerpf(KILLCAM_SCALE, 1.0, f * f * f) # cubic ease-in
 
 # ---------- RAMPAGE: kill-streak power escalation ----------
 ## A streak doesn't just multiply score — it cranks YOUR power. Chain kills inside
@@ -565,7 +619,8 @@ func add_ultimate_charge(amount: float) -> void:
 	if current_state != State.PLAYING or ultimate_charge >= 1.0 or amount <= 0.0:
 		return
 	var was := ultimate_charge
-	ultimate_charge = clampf(ultimate_charge + amount, 0.0, 1.0)
+	# GRID SURGE skirmish event: charge builds at double rate while it's live.
+	ultimate_charge = clampf(ultimate_charge + amount * (2.0 if _surge_t > 0.0 else 1.0), 0.0, 1.0)
 	ultimate_changed.emit(ultimate_charge)
 	if was < 1.0 and ultimate_charge >= 1.0:
 		AudioBus.play_synth_ui("combo_up", 0.0, 1.5)
@@ -685,6 +740,138 @@ func claim_bounty() -> void:
 	AudioBus.play_synth_ui("combo_up", -2.0, 0.9)
 	bounty_claimed.emit(pts)
 
+# ---------- skirmish events (mid-level pacing variety) ----------
+## Rare, announced events that break up a level's authored rhythm with a
+## risk/reward beat — the bounty director's sibling. One of:
+##   ASSASSIN     — a hunter warps in near the player with a bounty on its head
+##   SUPPLY FLARE — a marked cache (overclock + ammo) drops nearby, gone in 40s
+##   GRID SURGE   — 20s where ultimate charge builds at double rate
+## Hard-gated: PLAYING only, never on boss/convoy/horde levels, never in the
+## opening minute, never while a bounty is live, max 2 per level. Everything
+## it spawns cleans itself up.
+signal skirmish_event(title: String, desc: String) ## HUD callout.
+
+const EVENT_FIRST_DELAY := 75.0   ## level seconds before the first roll
+const EVENT_INTERVAL := 90.0      ## base seconds between events (jittered)
+const EVENTS_PER_LEVEL := 2
+const EVENT_SUPPLY_LIFETIME := 40.0
+const EVENT_SURGE_TIME := 20.0
+const EVENT_ASSASSIN := preload("res://scenes/enemies/hunter.tscn")
+const EVENT_PICKUP_OVERCLOCK := preload("res://scenes/pickups/overclock.tscn")
+const EVENT_PICKUP_AMMO := preload("res://scenes/pickups/ammo_box.tscn")
+
+var _event_cd: float = EVENT_FIRST_DELAY
+var _level_events: int = 0
+var _surge_t: float = 0.0 ## grid surge seconds left (double ultimate gain)
+
+func _tick_events(delta: float) -> void:
+	_surge_t = maxf(0.0, _surge_t - delta)
+	if current_state != State.PLAYING or _level_events >= EVENTS_PER_LEVEL:
+		return
+	_event_cd -= delta
+	if _event_cd > 0.0:
+		return
+	_event_cd = EVENT_INTERVAL * randf_range(0.85, 1.25)
+	if not _events_allowed_here():
+		return
+	# A live bounty already owns the moment — don't stack callouts.
+	if _bounty != null and _bounty.get_ref() != null:
+		return
+	_level_events += 1
+	match randi() % 3:
+		0: _event_assassin()
+		1: _event_supply_flare()
+		2: _event_grid_surge()
+
+## Set-piece levels keep their authored pacing: no events on boss arenas, the
+## convoy rail ride, or horde mode.
+func _events_allowed_here() -> bool:
+	if is_boss_scene(current_level_path):
+		return false
+	var lid := level_id_from_path(current_level_path)
+	if lid in ["convoy", "horde"]:
+		return false
+	return get_tree().get_first_node_in_group("player") is Node3D
+
+## A clear point on a ring around the player (reuses the spawner's buried-in-
+## geometry test). Falls back to the player's own position offset if every
+## probe point is inside something.
+func _event_point_near_player(dist: float) -> Vector3:
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if p == null:
+		return Vector3.ZERO
+	var space := p.get_world_3d().direct_space_state
+	var start := randf() * TAU
+	for i in 10:
+		var ang := start + TAU * float(i) / 10.0
+		var at := p.global_position + Vector3(cos(ang), 0.0, sin(ang)) * dist
+		var q := PhysicsPointQueryParameters3D.new()
+		q.position = at + Vector3(0, 1.0, 0)
+		q.collision_mask = 1
+		if space.intersect_point(q, 1).is_empty():
+			return at
+	return p.global_position + Vector3(dist * 0.5, 0.0, 0.0)
+
+## ASSASSIN: one dangerous skirmisher warps in close, pre-marked as a bounty —
+## an instant duel with the payoff already on its head.
+func _event_assassin() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var at := _event_point_near_player(16.0)
+	var e := EVENT_ASSASSIN.instantiate() as EnemyBase
+	Elite.maybe_apply(e, 0.5) # even odds it comes up-tiered: it's meant to be a duel
+	e.position = at
+	scene.add_child(e)
+	e.mark_bounty.call_deferred() # after _ready so the marker measures a built model
+	# Register it as THE tracked bounty so the bounty director doesn't stack a
+	# second mark on top, and the kill pays out through the normal claim path.
+	_bounty = weakref(e)
+	_bounty_age = 0.0
+	skirmish_event.emit("ASSASSIN CONTRACT", "A hunter has your signature — it hunts YOU. Down it for the bounty.")
+	AudioBus.play_synth_at("charge", at, -2.0, 0.8)
+
+## SUPPLY FLARE: a marked cache nearby, on a despawn timer — sprint for it or
+## write it off. The beacon light makes it findable without a map ping.
+func _event_supply_flare() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var at := _event_point_near_player(20.0)
+	var root := Node3D.new()
+	root.name = "SupplyFlare"
+	scene.add_child(root)
+	root.global_position = at
+	var oc := EVENT_PICKUP_OVERCLOCK.instantiate() as Node3D
+	root.add_child(oc)
+	oc.position = Vector3(0, 0.4, 0)
+	var ammo := EVENT_PICKUP_AMMO.instantiate() as Node3D
+	root.add_child(ammo)
+	ammo.position = Vector3(1.1, 0.3, 0.4)
+	# The flare itself: a tall beacon light column so it reads across the arena.
+	var beam := OmniLight3D.new()
+	beam.light_color = Color(0.35, 1.0, 0.55)
+	beam.light_energy = 5.0
+	beam.omni_range = 10.0
+	beam.position = Vector3(0, 3.0, 0)
+	root.add_child(beam)
+	var tw := root.create_tween().set_loops()
+	tw.tween_property(beam, "light_energy", 1.8, 0.5)
+	tw.tween_property(beam, "light_energy", 5.0, 0.5)
+	# Gone in EVENT_SUPPLY_LIFETIME — urgency is the point.
+	get_tree().create_timer(EVENT_SUPPLY_LIFETIME).timeout.connect(func() -> void:
+		if is_instance_valid(root):
+			root.queue_free())
+	skirmish_event.emit("SUPPLY FLARE", "A cache beacon just lit nearby — it burns out in %d seconds." % int(EVENT_SUPPLY_LIFETIME))
+	AudioBus.play_synth_at("broadcast_blip", at, 0.0, 1.1)
+
+## GRID SURGE: a power window — ultimate charge builds at double rate. Pure
+## upside, so it's the rarest kind of beat: play HARD right now.
+func _event_grid_surge() -> void:
+	_surge_t = EVENT_SURGE_TIME
+	skirmish_event.emit("GRID SURGE", "Local power spike: OVERLOAD charges at double rate for %d seconds." % int(EVENT_SURGE_TIME))
+	AudioBus.play_synth_ui("combo_up", -4.0, 1.3)
+
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
 var combo: int = 0
@@ -704,11 +891,13 @@ func _reset_combo() -> void:
 		rampage_changed.emit(0, "") # rampage collapses when the streak breaks
 
 func _process(delta: float) -> void:
+	_tick_killcam() # wall-clock — runs correctly even while time_scale is near zero
 	if combo > 0:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			_reset_combo()
 	_tick_bounty(delta)
+	_tick_events(delta)
 	if adrenaline_left > 0.0:
 		adrenaline_left = maxf(0.0, adrenaline_left - delta)
 		if adrenaline_left <= 0.0:
@@ -814,6 +1003,11 @@ func reset_level_stats() -> void:
 	max_combo = 0
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
+	_nemesis_spawned_this_level = false # each level gets one shot at the grudge match
+	level_hijacks = 0
+	_event_cd = EVENT_FIRST_DELAY # skirmish events re-arm per level
+	_level_events = 0
+	_surge_t = 0.0
 	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
@@ -943,6 +1137,7 @@ func reset_run() -> void:
 	_bounty_age = 0.0
 	directive = {}
 	directive_id = ""
+	nemesis = {} # a fresh run starts with a clean slate — no inherited grudges
 	clear_checkpoint()
 
 # ---------- first-encounter teaching ----------
@@ -1222,6 +1417,7 @@ func save_progress() -> void:
 	# Persist which robots the briefings have introduced — otherwise a resumed
 	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
 	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
+	cf.set_value("run", "nemesis", nemesis) # the grudge survives a quit
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -1243,6 +1439,7 @@ func load_progress() -> bool:
 	seen_enemy_types.clear()
 	for t in cf.get_value("run", "seen_enemies", []):
 		seen_enemy_types[str(t)] = true
+	nemesis = cf.get_value("run", "nemesis", {})
 	return true
 
 func clear_save() -> void:
@@ -1287,11 +1484,97 @@ func on_player_died(killer: String = "") -> void:
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
+# ---------- nemesis (the elite that killed you comes back for more) ----------
+## When an ELITE kills the player it gets PROMOTED: a name, a rank, and a
+## standing grudge. It returns in later levels (a spawner substitutes it in,
+## bigger and meaner) until the player puts it down — then the grudge is
+## settled for a rank-scaled score bonus. Killing the player again promotes
+## it further. One nemesis at a time; persisted with the run save.
+signal nemesis_spawned(title: String) ## The grudge-holder just warped in — HUD callout.
+signal nemesis_down(title: String, points: int) ## Grudge settled — HUD payoff.
+
+var nemesis: Dictionary = {} ## {"name","kind","scene","rank"} — empty = no standing grudge.
+var _nemesis_spawned_this_level: bool = false
+
+const NEMESIS_RANK_MAX := 5
+const NEMESIS_CALLSIGNS := [
+	"GRAVEDIGGER", "WIDOWMAKER", "BONESAW", "BLACKOUT", "HEXBANE",
+	"IRONCLAD", "DEADLOCK", "VULTURE", "SCRAPLORD", "NULLPOINT",
+	"OVERKILL", "COLDBOOT", "SEGFAULT", "WARCRIME.EXE", "STACKSMASHER",
+]
+
+## Called with whatever node killed the player. An elite gets promoted to
+## nemesis; a returning nemesis that scores AGAIN ranks up instead.
+func record_nemesis_killer(source: Node) -> void:
+	var eb := source as EnemyBase
+	if eb == null:
+		return
+	if eb.nemesis_name != "" and not nemesis.is_empty():
+		nemesis["rank"] = mini(int(nemesis.get("rank", 1)) + 1, NEMESIS_RANK_MAX)
+		return
+	if eb.elite == "" or not nemesis.is_empty():
+		return # only elites earn a promotion, and one grudge at a time
+	nemesis = {
+		"name": "%s-%d '%s'" % [["KX", "VX", "RZ", "QT", "DX"].pick_random(), randi_range(100, 999), NEMESIS_CALLSIGNS.pick_random()],
+		"kind": eb.elite,
+		"scene": eb.scene_file_path,
+		"rank": 1,
+	}
+
+## A spawner asks: should MY spawn come back as the nemesis? (Once per level.)
+func nemesis_due() -> bool:
+	return not nemesis.is_empty() and not _nemesis_spawned_this_level \
+		and String(nemesis.get("scene", "")) != ""
+
+## Claim the level's single nemesis spawn slot; returns the grudge data.
+func claim_nemesis_spawn() -> Dictionary:
+	_nemesis_spawned_this_level = true
+	return nemesis
+
+func announce_nemesis() -> void:
+	nemesis_spawned.emit(String(nemesis.get("name", "NEMESIS")))
+
+## The nemesis went down — settle the grudge: rank-scaled bonus, slate wiped.
+func nemesis_slain() -> void:
+	var rank: int = int(nemesis.get("rank", 1))
+	var title: String = String(nemesis.get("name", "NEMESIS"))
+	var bonus := 500 * rank
+	add_score(bonus)
+	nemesis_down.emit(title, bonus)
+	nemesis = {}
+
 func on_level_complete() -> void:
 	_reset_combo()
+	# Snapshot the director's read NOW (its profile resets at the next level's
+	# start) — the next briefing shows it as intercepted ROBOT OS patch notes.
+	pending_patch_notes = _build_patch_notes()
 	grade_level() # emits level_graded for the end screen
 	set_state(State.LEVEL_COMPLETE)
 	level_completed.emit()
+
+# ---------- in-fiction patch notes (the machine's changelog, intercepted) ----------
+## Between levels the enemy "ships a patch" against how you actually played:
+## the AI Director's counter-read, security incidents (hijacks), and any
+## standing nemesis get staged as a ROBOT OS changelog on the next briefing.
+var pending_patch_notes: Array = []
+var level_hijacks: int = 0 ## HIJACK charges that landed this level (a security incident).
+
+func note_hijack() -> void:
+	level_hijacks += 1
+
+func _build_patch_notes() -> Array:
+	var notes: Array = AIDirector.patch_notes()
+	if level_hijacks > 0:
+		notes.append("! SECURITY: %d unit(s) lost to hostile firmware injection. Loyalty-core patch: IN DEVELOPMENT." % level_hijacks)
+	if not nemesis.is_empty():
+		notes.append("! UNIT %s refused decommission order. Status: HUNTING. Interference is not advised." % String(nemesis.get("name", "UNKNOWN")))
+	return notes
+
+## The next briefing takes the changelog exactly once.
+func consume_patch_notes() -> Array:
+	var n := pending_patch_notes
+	pending_patch_notes = []
+	return n
 
 # ---------------------------------------------------------------------
 # Level tasks. A level registers an ordered checklist (kill all, find the

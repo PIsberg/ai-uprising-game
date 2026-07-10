@@ -128,9 +128,9 @@ const ENTRIES := {
 	},
 	"manus": {
 		"scene": "res://scenes/enemies/manus.tscn", "name": "MANUS", "scale": 0.35, "y": 0.0,
-		"desc": "The assembly plant's master manipulator arm, torn free and feral — a colossal severed hand that drags itself on its fingers. It backhands, palm-slams, and GRABS: snatched off the floor, you're squeezed and hurled. Armoured everywhere but the glowing reactor coupling on its wrist — ONLY the core takes damage.",
-		"strengths": ["Impervious plating — body shots spark off harmlessly", "The grab crushes and throws you across the arena", "Faster on its fingers than it has any right to be"],
-		"weaknesses": ["The wrist core takes AMPLIFIED damage — aim, don't spray", "Every attack is telegraphed — read the coil-up", "In its palm the core is right in your face: empty a mag"],
+		"desc": "The assembly plant's master manipulator arm, gone feral — a colossal severed hand ROOTED through the deck into the plant's drive machinery. It backhands, palm-slams, and GRABS: yanked across the floor into its palm, you're squeezed and hurled. Keep your distance and servo fingers erupt from the floor under your feet. Armoured everywhere but the glowing reactor coupling on its wrist — ONLY the core takes damage.",
+		"strengths": ["Impervious plating — body shots spark off harmlessly", "The grab reels you across the arena into a crushing palm", "Nowhere is safe: it strikes through the deck at any range"],
+		"weaknesses": ["The wrist core takes AMPLIFIED damage — aim, don't spray", "It cannot move — control your spacing and it can't surprise you", "Every attack is telegraphed — read the ground rings", "In its palm the core is right in your face: empty a mag"],
 		"weapons": ["MK-VII Longshot", "ARC-9 Gauss Lance", "GEM-2 Twin Rail"],
 	},
 	"android": {

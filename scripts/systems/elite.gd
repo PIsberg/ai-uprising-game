@@ -71,6 +71,45 @@ static func maybe_apply(enemy: Node3D, chance: float = -1.0) -> void:
 		kind = c
 	apply(enemy, kind)
 
+# ---------- nemesis (the promoted elite that came back for you) ----------
+## Dress a spawn as the player's NEMESIS: its recorded affix twist plus
+## rank-scaled stat gains, its name in the kill feed, and a burning red-gold
+## identity so it reads as PERSONAL the moment it warps in. Pre-add, like apply.
+static func apply_nemesis(enemy: Node3D, data: Dictionary) -> void:
+	var eb := enemy as EnemyBase
+	if eb == null or eb.is_inside_tree():
+		return
+	var kind := String(data.get("kind", "warden"))
+	if kind not in KINDS:
+		kind = "warden"
+	apply(enemy, kind) # base affix twist + elite visuals/death hooks
+	var rank := maxi(1, int(data.get("rank", 1)))
+	eb.nemesis_name = String(data.get("name", "NEMESIS"))
+	eb.score_value *= 2 # on top of the elite double — a grudge pays well
+	eb._health_mult *= 1.0 + 0.45 * float(rank)
+	eb._speed_mult *= 1.0 + 0.05 * float(rank)
+	eb._cooldown_mult *= maxf(0.6, 1.0 - 0.07 * float(rank))
+	eb.drop_chance = 1.0 # settling a grudge always pays out supplies
+	eb.ready.connect(func(): _finalize_nemesis(eb))
+
+## Post-_ready nemesis dressing: announce the return, wire the grudge
+## settlement, and stack a furnace-red glow over the affix identity.
+static func _finalize_nemesis(eb: EnemyBase) -> void:
+	if eb.hp:
+		eb.hp.died.connect(func(_src: Node): GameState.nemesis_slain())
+	var light := OmniLight3D.new()
+	light.light_color = Color(1.0, 0.25, 0.1)
+	light.light_energy = 3.2
+	light.omni_range = 7.0
+	light.shadow_enabled = false
+	light.position = Vector3(0, 1.4, 0)
+	eb.add_child(light)
+	var model := eb.get_node_or_null("Model") as Node3D
+	if model:
+		model.scale *= 1.1 # on top of the elite bump — visibly the biggest of its pack
+	GameState.announce_nemesis()
+	AudioBus.play_synth_at("overlord_glitch", eb.global_position, 2.0, 0.7)
+
 static func apply(enemy: Node3D, kind: String) -> void:
 	var eb := enemy as EnemyBase
 	if eb == null or eb.is_inside_tree():

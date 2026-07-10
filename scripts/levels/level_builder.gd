@@ -254,8 +254,11 @@ func _ready() -> void:
 	_bake_navmesh.call_deferred()
 	## Openings are the deadliest seconds (playtest: 100->16 HP before the
 	## first orientation). Enemies still close in and jockey for position;
-	## they just hold fire briefly so a fresh drop-in isn't an ambush.
-	GameState.start_attack_grace(2.5)
+	## they just hold fire briefly so a fresh drop-in isn't an ambush. The
+	## FIRST campaign level gets a longer window — it's the tutorial fight,
+	## and the survival net showed its squad-rally still overwhelmed a
+	## reckless player inside the old 2.5s.
+	GameState.start_attack_grace(4.5 if is_equal_approx(GameState.campaign_progress(), 0.0) else 2.5)
 
 ## Perf post-pass over the static dressing. Runs before tasks/pickups/enemies
 ## exist, so gameplay objects are never touched. Small decorative meshes
@@ -535,10 +538,13 @@ func _build_environment(def: Dictionary) -> void:
 	add_child(sun)
 
 	# Shadowed-light budget per tier: every shadowed omni re-renders the scene
-	# up to 6 times, so LOW casts none, MEDIUM only the first two, HIGH all.
+	# up to 6 times, so LOW casts none, MEDIUM the first two, HIGH the first
+	# six. Unlimited is ULTRA-only — measured on the expanded arenas (neon:
+	# 2656 draws/frame at HIGH), the every-light-shadowed policy was the
+	# single biggest draw-call multiplier in the game.
 	var shadow_budget := 99
 	if gs and gs.has_method("tier"):
-		shadow_budget = [0, 2, 99, 99][gs.tier()]
+		shadow_budget = [0, 2, 6, 99][gs.tier()]
 	# 4.7: interior luminaires can emit from a real rectangular AreaLight3D (soft
 	# pool + true soft shadows) instead of a point light. Gated to HIGH/ULTRA.
 	var use_area: bool = gs and gs.has_method("use_area_lights") and gs.use_area_lights()
@@ -562,6 +568,13 @@ func _build_environment(def: Dictionary) -> void:
 			omni.shadow_bias = 0.03
 			omni.shadow_blur = 1.5
 			omni.light_specular = 0.6
+			# In the expanded arenas most luminaires are far from the player at
+			# any given moment — fade them (and their shadow passes sooner)
+			# with distance instead of paying for the whole hall every frame.
+			omni.distance_fade_enabled = true
+			omni.distance_fade_begin = 48.0
+			omni.distance_fade_shadow = 34.0
+			omni.distance_fade_length = 14.0
 			light = omni
 		add_child(light)
 		# Every light gets a visible SOURCE instead of hanging disembodied:
@@ -644,6 +657,12 @@ func _make_interior_area_light(l: Dictionary, shadowed: bool) -> AreaLight3D:
 	area.shadow_enabled = shadowed
 	area.shadow_bias = 0.04
 	area.shadow_blur = 1.5
+	# Same far-luminaire fade as the omni path — the expanded halls hold more
+	# lights than ever sit near the player at once.
+	area.distance_fade_enabled = true
+	area.distance_fade_begin = 48.0
+	area.distance_fade_shadow = 34.0
+	area.distance_fade_length = 14.0
 	# Flush under the ceiling diffuser, face pointing straight down (local -Z).
 	area.position = Vector3(pos.x, WALL_HEIGHT - 0.2, pos.z)
 	area.rotation_degrees = Vector3(-90, 0, 0)

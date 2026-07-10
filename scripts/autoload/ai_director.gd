@@ -143,6 +143,34 @@ func taunt() -> String:
 		return ""
 	return lines[randi() % lines.size()]
 
+## In-fiction PATCH NOTES: the director's post-level read rewritten as a robot-OS
+## changelog, one atomic entry per behavioural signal. Shown as an "intercepted
+## transmission" on the next level's briefing so the player SEES the machine
+## adapting — the same data as assessment(), staged as fiction rather than a
+## debrief line. Empty while calibrating (a quiet level ships no patch).
+func patch_notes() -> Array:
+	if calibrating():
+		return []
+	var notes: Array = []
+	match counter_affix():
+		"warden":
+			notes.append("+ WARDEN rollout: stagger servos hardened fleet-wide. Operator suppression tactics EXCEED tolerance.")
+		"swift":
+			notes.append("+ SWIFT locomotion package pushed to all interceptors. Operator maintains standoff range — close it.")
+		"shielded":
+			notes.append("+ SHIELDED plating requisitioned for frontline units. Sustained-fire damage profile flagged.")
+	if weapon_focus() > 0.7 and dominant_weapon() != "":
+		notes.append("~ Threat model updated: '%s' reclassified as PRIMARY operator armament. Countermeasures live." % dominant_weapon())
+	if headshot_rate > 0.4:
+		notes.append("~ Cranial housings reinforced (operator headshot rate %d%%)." % int(round(headshot_rate * 100.0)))
+	elif accuracy > 0.6:
+		notes.append("~ Evasion subroutines re-weighted (operator accuracy %d%%)." % int(round(accuracy * 100.0)))
+	if mobility < 0.28:
+		notes.append("- Pursuit logic deprioritized: operator is STATIONARY. Converging all units on last known position.")
+	elif mobility > 0.72:
+		notes.append("+ Predictive-lead firing solutions deployed: operator mobility profile 'ERRATIC'.")
+	return notes
+
 ## A one-line post-level readout of what the AI learned and how it answered, shown
 ## on the sector-cleared screen so the player SEES the director adapting (otherwise
 ## it's invisible). "" while calibrating / nothing notable.

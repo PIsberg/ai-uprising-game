@@ -4,7 +4,7 @@ extends Node
 ## geometry in the loaded level and re-measuring the same way.
 ## Run: godot --path . --quit-after 3000 tools/perf_isolate.tscn
 
-const LEVEL_ID := "gpt"
+const LEVEL_ID := "neon"
 
 func _ready() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)

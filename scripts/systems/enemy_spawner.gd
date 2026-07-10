@@ -90,11 +90,25 @@ func _spawn(telegraph: bool = true) -> void:
 		await get_tree().create_timer(WARP_TELEGRAPH).timeout
 		if not is_instance_valid(self) or not is_inside_tree():
 			return
-	var e := enemy_scene.instantiate() as Node3D
+	# NEMESIS return: if the player has a standing grudge, ONE spawn per level
+	# comes back as the promoted elite that killed them — same chassis it died
+	# in, bigger and meaner (see Elite.apply_nemesis). Boss spawners keep their
+	# authored set-piece.
+	var scene := enemy_scene
+	var nemesis_data := {}
+	if GameState.nemesis_due() and not GameState.is_boss_scene(enemy_scene.resource_path):
+		var ns := load(String(GameState.nemesis.get("scene", ""))) as PackedScene
+		if ns != null:
+			nemesis_data = GameState.claim_nemesis_spawn()
+			scene = ns
+	var e := scene.instantiate() as Node3D
 	_apply_difficulty(e)
-	# A small difficulty-scaled share of spawns come up elite (pre-add, so the
-	# boosted exports land before the enemy's _ready wiring).
-	Elite.maybe_apply(e)
+	if not nemesis_data.is_empty():
+		Elite.apply_nemesis(e, nemesis_data)
+	else:
+		# A small difficulty-scaled share of spawns come up elite (pre-add, so the
+		# boosted exports land before the enemy's _ready wiring).
+		Elite.maybe_apply(e)
 	# current_scene is at the world origin, so local == global here. Setting the
 	# position before a *deferred* add_child avoids the "parent is busy setting
 	# up children" failure when spawning during the level's own _ready().
