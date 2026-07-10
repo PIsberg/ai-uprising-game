@@ -63,6 +63,12 @@ Probe-writing rules learned the hard way:
 - `PackedStringArray` has no `pick_random()`; a parse error anywhere in an autoload silently nils the entire autoload.
 - Skinned GLB enemies have no detachable limb nodes — dismemberment collapses bone pose scale (`_dismember_limb`).
 
+## Reference docs (keep updated when touching these systems)
+
+- `docs/LEVEL_DEF_KEYS.md` — every level-def key: effect, consuming builder fn, whether it needs `_scaled`, covering probe. New def key → add a row (and to `_scaled` if positional).
+- `docs/ENEMY_ROSTER.md` — all enemy subclasses with model, role, and per-subclass audit flags (`_on_died`/`_state_attack` overridden without super). New enemy or new override → update the table.
+- `tests/README.md` — index of all probes (suite / headless / windowed) + the full probe-writing rules. New logic probe → add to `tools/run_tests.sh` and the table.
+
 ## Housekeeping
 
 - `future-improvements.md` is the living backlog: delete items when shipped, note it in the commit.
