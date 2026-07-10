@@ -515,13 +515,19 @@ func _maybe_refresh_locomotion_budget() -> void:
 		_locomotion_allowed_ids[near[i][1]] = true
 
 func _perceive() -> void:
+	# Drop a freed target FIRST — even a type check (`is`) on a freed instance
+	# raises, and a freed instance compares EQUAL to null (so `!= null` can't
+	# catch it). is_instance_valid covers both null and freed in one test.
+	# (Scene teardown frees targets out from under live enemies.)
+	if not is_instance_valid(target):
+		target = null
 	# A robot target that died or reverted to our side releases aggro back
 	# to the player. (Only hijacked units ever put a robot in `target`.)
 	if target is EnemyBase:
 		var tb := target as EnemyBase
-		if not is_instance_valid(tb) or tb.state == State.DEAD or not tb.hijacked:
+		if tb.state == State.DEAD or not tb.hijacked:
 			target = null
-	if target == null or not is_instance_valid(target):
+	if target == null:
 		target = _find_player()
 	# TRAITOR PRIORITY: a hijacked robot closer than the current target draws
 	# this unit's fire — the swarm turns on the turncoat, which is both the

@@ -6,7 +6,7 @@ extends Node
 ## the 644-node count found in level_gpt.
 ## Run: godot --headless --path . --quit-after 300 tools/perf_node_census.tscn
 
-const LEVEL_ID := "gpt"
+const LEVEL_ID := "neon"
 
 func _ready() -> void:
 	var lvl: Node = load("res://scenes/levels/level_%s.tscn" % LEVEL_ID).instantiate()
