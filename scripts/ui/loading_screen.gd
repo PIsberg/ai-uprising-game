@@ -48,6 +48,7 @@ var _started: bool = false
 var _path: String = ""        ## scene being threaded-loaded
 var _loading: bool = false    ## a threaded load is in flight
 var _progress: float = 0.0    ## 0..1, smoothed, drives the ring + percent
+var _last_move_t: float = 0.0 ## _t when the fraction last advanced (stall messaging)
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -156,8 +157,13 @@ func _process(delta: float) -> void:
 	if _spinner:
 		_spinner.queue_redraw()
 	if _dots_lbl:
-		# The ring shows the real fraction; the label shows the percent.
-		_dots_lbl.text = "LOADING  %d%%" % int(clampf(_progress, 0.0, 1.0) * 100.0)
+		# The ring shows the real fraction; the label shows the percent. When the
+		# fraction hasn't moved for a while (one big asset chunk mid-load), say so —
+		# a pinned bare percentage reads as a hang even while work continues.
+		var pct := "LOADING  %d%%" % int(clampf(_progress, 0.0, 1.0) * 100.0)
+		if _loading and _t - _last_move_t > 3.0:
+			pct += "  — streaming large assets…"
+		_dots_lbl.text = pct
 
 ## Read threaded-load progress; swap to the scene once it's fully loaded.
 func _poll_load() -> void:
@@ -165,7 +171,10 @@ func _poll_load() -> void:
 	var status := ResourceLoader.load_threaded_get_status(_path, prog)
 	if prog.size() > 0:
 		# Ease toward the reported value so the ring fills smoothly, never backwards.
-		_progress = maxf(_progress, lerpf(_progress, float(prog[0]), 0.35))
+		var next := maxf(_progress, lerpf(_progress, float(prog[0]), 0.35))
+		if next > _progress + 0.001:
+			_last_move_t = _t
+		_progress = next
 	match status:
 		ResourceLoader.THREAD_LOAD_LOADED:
 			_loading = false
@@ -213,7 +222,12 @@ func _go() -> void:
 	if not ResourceLoader.exists(_path):
 		get_tree().change_scene_to_file(_path)
 		return
-	if ResourceLoader.load_threaded_request(_path) == OK:
+	# use_sub_threads: dependencies load in parallel. Without it the heavy
+	# levels (assembly and friends) serialize the shared robot-model chunk and
+	# the ring sits pinned at ~24% for many seconds — long enough that players
+	# reported it as a freeze. Parallel deps cut the total load ~40% and keep
+	# the fraction moving.
+	if ResourceLoader.load_threaded_request(_path, "", true) == OK:
 		_loading = true
 	else:
 		get_tree().change_scene_to_file(_path) # fallback if the request was refused
