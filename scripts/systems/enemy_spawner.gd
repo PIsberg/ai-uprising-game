@@ -28,7 +28,9 @@ func _ready() -> void:
 	if spawn_on_ready:
 		if spawn_delay > 0.0:
 			await get_tree().create_timer(spawn_delay).timeout
-		_spawn()
+		# The level's initial population just EXISTS (no telegraph — the robots
+		# were here before you). Only delayed/triggered arrivals announce.
+		_spawn(spawn_delay > 0.0)
 	elif trigger_radius > 0.0:
 		set_process(true)
 
@@ -71,10 +73,23 @@ func _spawn_after(delay: float) -> void:
 			return
 	_spawn()
 
-func _spawn() -> void:
+## How long the warp pillar hangs before the robot lands. Long enough to read
+## "incoming, THERE", short enough that a tripped ambush still feels immediate.
+const WARP_TELEGRAPH := 0.55
+
+func _spawn(telegraph: bool = true) -> void:
 	if _spawned or enemy_scene == null:
 		return
 	_spawned = true
+	# Reinforcement arrivals announce themselves: a warp pillar rises on the
+	# landing point for a beat before the robot materialises (ported from horde
+	# mode's wave telegraph — campaign spawns used to just pop in from thin air).
+	var pos := _clear_spawn_pos()
+	if telegraph:
+		_warp_pillar(pos)
+		await get_tree().create_timer(WARP_TELEGRAPH).timeout
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
 	var e := enemy_scene.instantiate() as Node3D
 	_apply_difficulty(e)
 	# A small difficulty-scaled share of spawns come up elite (pre-add, so the
@@ -83,8 +98,46 @@ func _spawn() -> void:
 	# current_scene is at the world origin, so local == global here. Setting the
 	# position before a *deferred* add_child avoids the "parent is busy setting
 	# up children" failure when spawning during the level's own _ready().
-	e.position = _clear_spawn_pos()
+	# (pos was resolved before the telegraph so the pillar marks the exact
+	# landing spot, relocations included.)
+	e.position = pos
 	get_tree().current_scene.add_child.call_deferred(e)
+
+## The arrival read: an unshaded emissive pillar snaps up over the landing
+## point with a charge-whine, hangs for the telegraph, then collapses as the
+## robot lands. World-parented and tween-owned, so it self-frees even if this
+## spawner is gone by then.
+func _warp_pillar(pos: Vector3) -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.45
+	cm.bottom_radius = 0.65
+	cm.height = 5.0
+	cm.radial_segments = 10
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.3, 0.15, 0.0)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.35, 0.15)
+	mat.emission_energy_multiplier = 3.0
+	cm.material = mat
+	mi.mesh = cm
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	scene.add_child(mi)
+	mi.global_position = pos + Vector3.UP * 2.5
+	mi.scale = Vector3(0.1, 0.02, 0.1)
+	AudioBus.play_synth_at("charge", pos, -8.0, 1.3)
+	var tw := mi.create_tween()
+	tw.tween_property(mi, "scale", Vector3.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(mat, "albedo_color:a", 0.5, 0.16)
+	tw.tween_interval(maxf(0.0, WARP_TELEGRAPH - 0.32))
+	tw.tween_property(mi, "scale", Vector3(0.05, 1.2, 0.05), 0.18)
+	tw.parallel().tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.chain().tween_callback(mi.queue_free)
 
 ## Authored spawn points aren't validated against the built level, so one can
 ## land inside a building/prop box — the enemy is stuck in solid geometry and

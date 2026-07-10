@@ -62,6 +62,8 @@ func _ready() -> void:
 	_build_light()
 	_build_embers()
 	_build_audio()
+	if not water:
+		_build_heat_haze()
 	# Default molten lava reads as "hot, don't touch" on its own. A RECOLORED bed
 	# (cyan coolant, green acid) or a WATER pool reads as harmless liquid — players
 	# walk in and get cooked. Frame those in a pulsing amber hazard border so the
@@ -106,6 +108,29 @@ func _build_surface() -> void:
 	rim.position = Vector3(0, surface_y - 0.07, 0)
 	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(rim)
+
+## Heat shimmer above the bed: two crossed vertical "curtain" quads running a
+## screen-space refraction shader (shaders/heat_haze.gdshader), so the air over
+## molten rock visibly wobbles from any viewing angle. Screen-texture reads are
+## a per-covered-pixel cost, so LOW quality skips it (matching SSR and the other
+## screen-space effects, which LOW already sheds).
+func _build_heat_haze() -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and int(gs.quality) < 1:
+		return
+	var sh: Shader = load("res://shaders/heat_haze.gdshader")
+	for i in 2:
+		var q := QuadMesh.new()
+		q.size = Vector2((size.x if i == 0 else size.y) * 0.95, 2.4)
+		var m := ShaderMaterial.new()
+		m.shader = sh
+		q.material = m
+		var mi := MeshInstance3D.new()
+		mi.mesh = q
+		mi.rotation.y = 0.0 if i == 0 else PI * 0.5
+		mi.position = Vector3(0, surface_y + 1.25, 0)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 ## A deep-water pool: a translucent, near-mirror blue plane over a darker basin,
 ## so it reads as water you can fall into (not molten rock). No shader needed —

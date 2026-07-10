@@ -429,6 +429,9 @@ func _on_hp_damaged(amount: float, source: Node) -> void:
 	GameState.register_damage_taken(amount) # feeds the end-of-level grade
 	var frac := (amount / hp.max_health) if hp and hp.max_health > 0.0 else 0.0
 	_apply_hit_kick(source, frac)
+	# Taking damage thumps the pad's low motor, scaled with the bite — the
+	# through-the-hands counterpart of the camera kick above.
+	Haptics.pulse(0.0, clampf(0.25 + frac * 1.5, 0.25, 1.0), 0.25)
 	# Micro hit-stop: a ~50ms Engine.time_scale dip, BIG hits only, so it reads
 	# as "that one really landed" instead of nausea-inducing on every graze.
 	# Reuses GameState's existing combat hit-stop primitive (same one per-kill
@@ -481,6 +484,7 @@ const LOW_HEALTH_FRAC := 0.35 ## Effects ramp in below this health fraction.
 
 var _low_health: float = 0.0   # smoothed 0..1 severity driven into the shader
 var _breath: AudioStreamPlayer
+var _heartbeat: AudioStreamPlayer # deeper-danger layer under the breathing
 
 func _handle_low_health(delta: float) -> void:
 	var frac := 1.0
@@ -503,6 +507,22 @@ func _handle_low_health(delta: float) -> void:
 		_breath.pitch_scale = 1.0 + 0.12 * severity
 	elif _breath and _breath.playing:
 		_breath.stop()
+	# Heartbeat kicks in deeper than the breathing (below ~18% HP): a low thump
+	# bed that swells and quickens toward death — the classic "get to cover NOW"
+	# cue, felt more than heard under the breathing loop above.
+	var pulse := clampf((severity - 0.5) * 2.0, 0.0, 1.0)
+	if pulse > 0.02 and hp.current_health > 0.0:
+		if _heartbeat == null:
+			_heartbeat = AudioStreamPlayer.new()
+			_heartbeat.bus = "SFX"
+			_heartbeat.stream = AudioBus.synth("heartbeat")
+			add_child(_heartbeat)
+		if not _heartbeat.playing:
+			_heartbeat.play()
+		_heartbeat.volume_db = lerpf(-24.0, -8.0, pulse)
+		_heartbeat.pitch_scale = 1.0 + 0.25 * pulse # 75 -> ~94 bpm at death's door
+	elif _heartbeat and _heartbeat.playing:
+		_heartbeat.stop()
 
 # --- cheats: type a keyword during play. "god" toggles invincibility; "imba"
 # maxes every permanent upgrade track for the run (testing aids). ---
@@ -1633,6 +1653,7 @@ func _check_landing() -> void:
 			shake(0.12 + impact * 0.24)
 			_fov_kick = maxf(_fov_kick, impact * 5.0)
 			_kick_weapon_holder(Vector3(0, -0.05 - impact * 0.07, 0), 0.05, 0.22)
+			Haptics.pulse(0.0, impact * 0.7, 0.18) # the drop lands in the hands too
 	_was_on_floor = is_on_floor()
 	_fall_speed = 0.0
 

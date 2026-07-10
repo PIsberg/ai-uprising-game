@@ -66,6 +66,7 @@ var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the �
 var _kill_edge: TextureRect = null
 var _kill_x: Control = null
 var _hit_x: Control = null
+var _splatter: KillSplatter = null ## oil on the lens for point-blank kills
 # Kill-streak milestone callouts (arcade-style words on crossing a tier).
 var _streak_label: Label = null
 var _streak_alpha: float = 0.0
@@ -312,6 +313,10 @@ func _build_pause_audio() -> void:
 	# Accessibility: scale full-screen flashes live (photosensitivity safety).
 	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
+
+	# Accessibility: gamepad rumble strength live (0 = off).
+	var rumble := _audio_slider_row(vbox, tr("Controller Rumble"), GraphicsSettings.rumble, 0.0, 1.0, 0.05)
+	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
 
 	# Resolution scale live (1.0 = native/sharp; lower for performance). A live
 	# readout shows the effective internal resolution ("70% · 2688×1512").
@@ -823,6 +828,11 @@ func _build_kill_confirm() -> void:
 		bar.rotation_degrees = ang
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_kill_x.add_child(bar)
+	# Point-blank kills throw robot oil on the lens (scripts/ui/kill_splatter.gd).
+	# Sits just above the vignette layer so all HUD text stays on top of it.
+	_splatter = KillSplatter.new()
+	add_child(_splatter)
+	move_child(_splatter, 1)
 	# A smaller WHITE ✕ that snaps in on every hit (not just kills) — the
 	# per-shot "you connected" tick that makes trading fire feel good.
 	_hit_x = Control.new()
@@ -856,11 +866,20 @@ func _on_level_completed() -> void:
 		var diff_lbl := str(_last_stats.get("difficulty", ""))
 		var best_tag := "   ★ " + tr("NEW BEST") if bool(_last_stats.get("new_best", false)) \
 			else "   " + (tr("Best %s") % str(_last_stats.get("best_grade", _last_grade)))
+		# Time line gains the par context: beating par shows the earned speed
+		# bonus, missing it quietly shows the target to chase on the next run.
+		var par := int(round(float(_last_stats.get("par", 0.0))))
+		var sb := float(_last_stats.get("speed_bonus", 0.0))
+		var time_str := "%02d:%02d" % [t / 60, t % 60]
+		if par > 0 and sb > 0.0:
+			time_str += "  ⚡ " + (tr("PAR %02d:%02d BEATEN +%d") % [par / 60, par % 60, int(round(sb))])
+		elif par > 0:
+			time_str += "  ·  " + (tr("PAR %02d:%02d") % [par / 60, par % 60])
 		win_title.text += "\n\n" + (tr("RANK  %s") % _last_grade) \
 			+ ("  ·  %s" % diff_lbl if diff_lbl != "" else "") + best_tag \
 			+ "\n" + (tr("Accuracy %d%%") % acc) \
 			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
-			+ "   ·   %02d:%02d" % [t / 60, t % 60]
+			+ "   ·   " + time_str
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
@@ -1781,8 +1800,19 @@ func _on_player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, cr
 		# Refresh, don't stack/queue — rapid headshots just re-pop the same label.
 		_headshot_alpha = 1.0
 		_headshot_pop = 1.4
-	# Crisp UI tick on hit; a heftier metallic clang on a kill.
-	AudioBus.play_synth_ui("impact_metal" if killed else "broadcast_blip", -7.0, 1.3 if killed else 1.8)
+	# Crisp UI tick on hit; a heftier thock on the killing blow. Dedicated
+	# shot-confirm streams (the old repurposed radio-blip/clang read as UI
+	# noise rather than "I connected"), with a pitch wobble so full-auto
+	# confirmation reads as texture, not a metronome.
+	if killed:
+		AudioBus.play_synth_ui("kill_thock", -5.0, randf_range(0.95, 1.05))
+		Haptics.pulse(0.0, 0.45, 0.1) # kill confirm lands in the hands
+		# Point-blank kill: robot oil hits the lens. Crits splash a bit harder.
+		var pl := get_tree().get_first_node_in_group("player") as Node3D
+		if _splatter and pl and pl.global_position.distance_to(world_pos) < 4.5:
+			_splatter.splash(1.25 if crit else 1.0)
+	else:
+		AudioBus.play_synth_ui("hit_tick", -12.0, randf_range(0.9, 1.1))
 	# Damage numbers are spawned world-anchored by Damageable (one system, not two).
 
 func _on_enemy_killed(score: int, label: String) -> void:

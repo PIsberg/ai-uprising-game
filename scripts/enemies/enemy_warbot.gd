@@ -20,6 +20,7 @@ var _angry: Node3D
 var _angry_now: bool = false
 var _angry_mat: StandardMaterial3D
 var _furious: bool = false ## Below the rage threshold it snaps to a heavier, faster barrage.
+var _arms: Array[Node3D] = [] ## The two welded arm-cannons — cross-fire origins.
 
 func _ready() -> void:
 	super._ready()
@@ -67,6 +68,7 @@ func _build_weapons() -> void:
 		var arm := Node3D.new()
 		arm.position = Vector3(HAND_X * sx, HAND_Y, HAND_Z)
 		add_child(arm)
+		_arms.append(arm) # cross-fire shoots from these, not one imaginary chest gun
 		_box(arm, Vector3(0.32, 0.32, 0.4), Vector3(0, 0, 0.1), Vector3.ZERO, metal) # housing at hand
 		_box(arm, Vector3(0.12, 0.12, 0.5), Vector3(0, -0.16, -0.2), Vector3.ZERO, metal) # under-barrel rail
 		var barrel := MeshInstance3D.new()
@@ -139,8 +141,61 @@ func _physics_process(delta: float) -> void:
 		burst_count = 8
 		burst_interval = 0.06
 		attack_cooldown = 1.0
+		# The tantrum reads on the FIELD, not just the face: a furious surge
+		# toward you plus a rally cry that pulls nearby allies onto you.
+		if target and is_instance_valid(target):
+			attack_lunge_speed = 13.0
+			_attack_lunge()
+			if target is Node3D:
+				_alert_allies(14.0, target as Node3D)
+		_speak("taunt", 0.9)
 	if _furious and _angry and _angry.visible:
 		var p := 1.0 + sin(_state_timer * 12.0) * 0.09 # a seething throb
 		_angry.scale = Vector3(p, p, 1.0)
 		if _angry_mat:
 			_angry_mat.emission_energy_multiplier = 5.0 + sin(_state_timer * 12.0) * 2.5
+
+## CROSS-FIRE: both welded arm-cannons fire together in a diverging V around
+## the aim line (the android base fires one imaginary chest rifle). Standing
+## in the dead-ahead lane between the streams is safe; strafing walks you
+## across one — and FURIOUS narrows the V, squeezing that lane shut. Per-bolt
+## damage is trimmed so two barrels ≈ the old single-gun burst in total.
+const CROSS_V_DEG := 6.0
+const CROSS_V_FURIOUS_DEG := 2.5
+
+func _fire_one_shot() -> void:
+	if target == null or _arms.size() < 2:
+		super._fire_one_shot()
+		return
+	recoil = 1.0
+	AudioBus.play_synth_at("drone_shot", global_position, -3.0, randf_range(0.88, 0.98))
+	var v_deg := CROSS_V_FURIOUS_DEG if _furious else CROSS_V_DEG
+	var aim := target.global_position + Vector3.UP * 0.6
+	for i in 2:
+		var arm := _arms[i]
+		var origin: Vector3 = arm.global_position - arm.global_basis.z * 0.8
+		var dir := (aim - origin).normalized()
+		dir = dir.rotated(Vector3.UP, deg_to_rad(v_deg * (1.0 if i == 0 else -1.0)))
+		dir = scatter_aim(dir, burst_spread_deg)
+		_cross_bolt(origin, dir)
+		if muzzle_flash_scene:
+			arm.add_child(muzzle_flash_scene.instantiate())
+
+func _cross_bolt(origin: Vector3, dir: Vector3) -> void:
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(origin, origin + dir * 80.0)
+	q.collision_mask = 0b0000011 # world + player
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	var end_point := origin + dir * 80.0
+	if not hit.is_empty():
+		end_point = hit.position
+		var col: Node = hit.collider
+		var d: Node = col.get_node_or_null("Damageable") if col else null
+		if d:
+			d.apply_damage(hitscan_damage * 0.55, self)
+	if tracer_scene:
+		var t := tracer_scene.instantiate()
+		get_tree().current_scene.add_child(t)
+		if t.has_method("setup"):
+			t.setup(origin, end_point)

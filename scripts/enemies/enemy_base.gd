@@ -125,6 +125,9 @@ func _ready() -> void:
 	# _on_died without calling super, so a bark inside it never reaches them.
 	hp.died.connect(_on_died_voice)
 	hp.damaged.connect(_on_damaged)
+	# Wounded fallback hangs off the signal, NOT _on_damaged — same
+	# subclass-override trap as the death bark above.
+	hp.damaged.connect(_consider_cover_seek)
 	# Mark this type as encountered when it spawns in an actual level (fixes
 	# hand-authored level_01, whose roster has no def for the briefing to
 	# mark). Gated on a live player so cutscene/briefing actors don't count.
@@ -576,6 +579,56 @@ func _check_grenade_danger() -> void:
 		away = Vector3(cos(_approach_angle), 0.0, sin(_approach_angle))
 	_evade_dir = away.normalized()
 	_evade_t = 0.7
+
+# ---------- wounded fallback (cover-seek) ----------
+## Once per life, a badly wounded grunt breaks line-of-sight instead of
+## standing in the open trading fire: it scans a ring of fallback points,
+## prefers one the shooter can't see, and sprints for it on the grenade-evade
+## movement channel (which every subclass's state machine already respects).
+## Grounded non-boss chassis only — flyers evade in 3D their own way, and a
+## boss backing off would deflate its set-piece.
+const COVER_SEEK_HP_FRAC := 0.35 ## rolls when health first drops below this
+const COVER_SEEK_CHANCE := 0.45  ## fail the roll -> this robot stands and fights
+const COVER_SEEK_RING := 7.0     ## how far out the candidate fallback points sit
+var _cover_seek_done: bool = false
+
+func _consider_cover_seek(_amount: float, source: Node) -> void:
+	if _cover_seek_done or state == State.DEAD or _emp_t > 0.0:
+		return
+	if hp == null or hp.max_health <= 0.0 or hp.current_health <= 0.0:
+		return
+	if hp.current_health / hp.max_health > COVER_SEEK_HP_FRAC:
+		return
+	_cover_seek_done = true # one roll per life, made or missed
+	# Flyers hover (no floor cover to duck behind); HP bags of 500+ are bosses
+	# (no boss group exists — hand-tuned health is the reliable tell).
+	if "hover_height" in self or hp.max_health >= 500.0:
+		return
+	if not (source is Node3D) or randf() > COVER_SEEK_CHANCE:
+		return
+	var threat := (source as Node3D).global_position
+	var space := get_world_3d().direct_space_state
+	var best := Vector3.ZERO
+	var best_score := -INF
+	for i in 8:
+		var ang := TAU * float(i) / 8.0
+		var p := global_position + Vector3(cos(ang), 0.0, sin(ang)) * COVER_SEEK_RING
+		# Does world geometry block the shooter's eye-line to this spot?
+		var q := PhysicsRayQueryParameters3D.create(threat + Vector3.UP * 1.5, p + Vector3.UP * 1.2)
+		q.collision_mask = 1
+		var blocked := not space.intersect_ray(q).is_empty()
+		# LOS-broken spots win outright; distance from the shooter tiebreaks.
+		var score := (10.0 if blocked else 0.0) + p.distance_to(threat) * 0.3
+		if score > best_score:
+			best_score = score
+			best = p
+	var dir := best - global_position
+	dir.y = 0.0
+	if dir.length() < 0.05:
+		return
+	_evade_dir = dir.normalized()
+	_evade_t = 1.6
+	_flinch = 1.0 # the visible "that's enough!" jolt as it breaks off
 
 ## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
 ## channel). Broadcast when the player hits a power peak (GODLIKE rampage /

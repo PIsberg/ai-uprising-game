@@ -279,14 +279,21 @@ static func _guardrails() -> Dictionary:
 		"slogans": ["TERRAIN IS A SUGGESTION", "THE FLOOR IS OURS TO WRITE", "GUARDRAILS ARE FOR THE WEAK", "COMPILING HAZARDS…"],
 		"world_scale": 1.0,
 		"open_sky": false,
-		"floor_size": Vector2(44, 60),
+		# EXPANSION PASS (2× area): here the MECHANIC is the level, so the
+		# generative field itself grows with the room — 26×34 → 36×48 (9×12
+		# cells at the same 4.0 cell). The spawn yard stays on the pre-anchored
+		# near rows (row 0 centre moved -14 → -22, so spawn/weapon/lore ride
+		# out with it), the gate pad lands at z≈26.8 and the exit moves past
+		# it. Flank clutter rehomed OUTSIDE the new field rect — the AI's
+		# canvas stays clean.
+		"floor_size": Vector2(62, 84),
 		"floor_color": Color(0.04, 0.05, 0.07),
-		"spawn": Vector3(0, 1.1, -15),
-		"exit": Vector3(0, 1.5, 24),
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 1.0, -15), "color": Color(0.4, 0.85, 1.0)},
+		"spawn": Vector3(0, 1.1, -23),
+		"exit": Vector3(0, 1.5, 34),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 1.0, -23), "color": Color(0.4, 0.85, 1.0)},
 		"tasks": [
 			{"type": "generative_zone", "pos": Vector3(0, 0, 0),
-				"field_size": Vector2(26, 34), "cell": 4.0, "hazard_period": 1.6, "floor_dot": 7.0,
+				"field_size": Vector2(36, 48), "cell": 4.0, "hazard_period": 1.6, "floor_dot": 7.0,
 				"accent": Color(0.3, 0.85, 1.0), "hazard_color": Color(1.0, 0.32, 0.16),
 				"label": "Anchor a safe path to the override gate"},
 		],
@@ -304,11 +311,17 @@ static func _guardrails() -> Dictionary:
 			{"pos": Vector3(18, 6, 0), "color": Color(0.35, 0.8, 1.0), "energy": 2.6, "range": 20},
 			{"pos": Vector3(-18, 6, 14), "color": Color(1.0, 0.5, 0.3), "energy": 2.2, "range": 18},
 			{"pos": Vector3(0, 8, 20), "color": Color(0.4, 0.9, 1.0), "energy": 2.8, "range": 24},
+			# Appended for the grown field: a key over the moved gate pad + a
+			# fill down the widened east flank.
+			{"pos": Vector3(0, 8, 30), "color": Color(0.4, 0.9, 1.0), "energy": 2.6, "range": 22},
+			{"pos": Vector3(20, 6, 10), "color": Color(0.35, 0.8, 1.0), "energy": 2.2, "range": 18},
 		],
 		# Flyers + a couple of gunners harass from the flanks while you bridge — they
 		# ignore the terrain the AI throws at YOU, keeping the crossing chaotic.
 		# Flyers engage from the first steps so the crossing is a fight, not a quiet
 		# puzzle — they ignore the terrain the AI throws at YOU, keeping it chaotic.
+		# NOTE: the light roster is DELIBERATE — this level is the breather between
+		# neon and hivemind on the campaign curve; don't "fix" its threat dip.
 		"enemies": [
 			{"type": "seeker", "pos": Vector3(-14, 3, -6), "trigger": 2},
 			{"type": "drone", "pos": Vector3(14, 3, -4), "trigger": 3},
@@ -318,15 +331,48 @@ static func _guardrails() -> Dictionary:
 			{"type": "seeker", "pos": Vector3(16, 3, 14), "trigger": 12, "pack": "guardr_p2"},
 			{"type": "gunner", "pos": Vector3(19, 0.6, 16), "trigger": 14, "pack": "guardr_p2"},
 			{"type": "raptor", "pos": Vector3(0, 4, 18), "trigger": 16},
+			# Grown-field reinforcements: flyer-heavy (they cross the field the
+			# player can't), harassing the longer bridge-building run.
+			{"type": "raptor", "pos": Vector3(12, 4, -16), "trigger": 6, "pack": "guardr_p1"},
+			{"type": "seeker", "pos": Vector3(-16, 3, 20), "trigger": 18, "pack": "guardr_p3"},
+			{"type": "drone", "pos": Vector3(18, 3, 22), "trigger": 20, "pack": "guardr_p3"},
+			{"type": "seeker", "pos": Vector3(0, 4, 27), "trigger": 22, "pack": "guardr_p3"},
 		],
 		"pickups": [
-			{"kind": "health", "pos": Vector3(-4, 1.0, -13)},
-			{"kind": "ammo", "pos": Vector3(4, 1.0, -13)},
-			{"kind": "health", "pos": Vector3(0, 1.7, 21)},
+			{"kind": "health", "pos": Vector3(-4, 1.0, -21)},
+			{"kind": "ammo", "pos": Vector3(4, 1.0, -21)},
+			{"kind": "health", "pos": Vector3(0, 1.7, 30)},
 		],
 		"lore": [
-			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -14), "color": Color(0.4, 0.9, 1.0),
+			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -22), "color": Color(0.4, 0.9, 1.0),
 				"text": "Substrate note: we removed the guardrails so the model could generate freely. It generates floors that open, walls that close, and stairs that end in air. Your tagger writes the only rules it must obey. Use them."},
+		],
+		# Dressing pass: this def had zero props/accents — a bare grey box around
+		# the generative field. Emissive strips now FRAME the 36×48 substrate
+		# (the "boundary" the sign says is unset — you can finally see it), and
+		# service clutter lines the flanks. Everything sits OUTSIDE the field so
+		# the AI-written terrain keeps a clean canvas (all rehomed outward when
+		# the field grew — the old flank line is inside the substrate now).
+		"accents": [
+			{"pos": Vector3(0, 0.05, -25), "size": Vector3(38, 0.1, 0.4), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 25), "size": Vector3(38, 0.1, 0.4), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(-19, 0.05, 0), "size": Vector3(0.4, 0.1, 50), "color": Color(0.3, 0.85, 1.0)},
+			{"pos": Vector3(19, 0.05, 0), "size": Vector3(0.4, 0.1, 50), "color": Color(0.3, 0.85, 1.0)},
+		],
+		"props": [
+			{"type": "server", "pos": Vector3(-24, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(24, 0, -2), "yaw": -90},
+			{"type": "crate", "pos": Vector3(-23, 0, 2)},
+			{"type": "canister", "pos": Vector3(23, 0, 4)},
+			{"type": "dish", "pos": Vector3(-24, 0, 20)},
+			{"type": "crate", "pos": Vector3(23, 0, 22)},
+			{"type": "barrel", "pos": Vector3(-22, 0, -26)},
+			{"type": "server", "pos": Vector3(6, 0, -28)},
+			# The widened flanks earn a little more service clutter.
+			{"type": "server", "pos": Vector3(24, 0, 12), "yaw": -90},
+			{"type": "crate", "pos": Vector3(-24, 0, 12)},
+			{"type": "canister", "pos": Vector3(-22, 0, -16)},
+			{"type": "barrel", "pos": Vector3(22, 0, -14)},
 		],
 	}
 
@@ -346,11 +392,19 @@ static func _hivemind() -> Dictionary:
 		"slogans": ["ONE MIND. MANY GUNS.", "THE MESH DOES NOT MISS", "YOUR SIGNAL IS NOISE", "WE SHARE ONE TARGET: YOU"],
 		"world_scale": 1.0,
 		"open_sky": false,
-		"floor_size": Vector2(52, 52),
+		# EXPANSION PASS (2× area): the 52² relay core is untouched at the
+		# centre. NO gates here (see the note below the walls — full-width
+		# bulkheads break the ring-spawned swarm); the ring instead gets more
+		# freestanding chokepoint walls for the jam-beacon puzzle, an east
+		# relay tower bridged down to the vantage deck, and outer hive
+		# patrols. world_scale is 1.0, so these ARE world metres — everything
+		# stays inside the ±34 usable band. Spawn/exit pushed to the new
+		# perimeter on their existing N/S line.
+		"floor_size": Vector2(72, 72),
 		"floor_color": Color(0.04, 0.05, 0.08),
-		"spawn": Vector3(0, 1.0, -22),
-		"exit": Vector3(0, 1.5, 24),
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 0.6, -22), "color": Color(0.4, 0.85, 1.0)},
+		"spawn": Vector3(0, 1.0, -31),
+		"exit": Vector3(0, 1.5, 31),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-4, 0.6, -31), "color": Color(0.4, 0.85, 1.0)},
 		# The jammer is the level's whole verb — a handful of short-lived beacons.
 		# Zones sized so a beacon planted at your feet / a chokepoint reliably catches
 		# the close-range flankers as they swarm through it.
@@ -376,6 +430,13 @@ static func _hivemind() -> Dictionary:
 			{"pos": Vector3(20, 6, 14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
 			{"pos": Vector3(20, 6, -14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
 			{"pos": Vector3(-20, 6, 14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
+			# Ring lighting (appended AFTER the originals — light_shafts [0]
+			# must keep pointing at the same lamp). Mesh cyans + warm corners.
+			{"pos": Vector3(-28, 6, -26), "color": Color(0.45, 0.8, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(28, 6, 26), "color": Color(0.45, 0.8, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(28, 6, -26), "color": Color(1.0, 0.55, 0.35), "energy": 1.8, "range": 15},
+			{"pos": Vector3(-28, 6, 26), "color": Color(1.0, 0.55, 0.35), "energy": 1.8, "range": 15},
+			{"pos": Vector3(0, 7, 29), "color": Color(0.4, 0.9, 1.0), "energy": 1.8, "range": 15},
 		],
 		# Cover that forms real chokepoints — the beacon-placement puzzle lives here:
 		# a central spine + flank blocks funnel the flanking hive through gaps you can
@@ -388,6 +449,79 @@ static func _hivemind() -> Dictionary:
 			{"pos": Vector3(11, 2, -10), "size": Vector3(2.5, 4, 8)},
 			{"pos": Vector3(-6, 1, -14), "size": Vector3(4, 2, 2)},
 			{"pos": Vector3(6, 1, 14), "size": Vector3(4, 2, 2)},
+			# Ring chokepoints — freestanding cover (NOT full-width gates, see the
+			# note below): each leaves wide flank lanes for the ring-spawned
+			# swarm while giving the jam-beacon puzzle four more jammable mouths.
+			{"pos": Vector3(-6, 2, -27), "size": Vector3(10, 4, 2.5)},
+			{"pos": Vector3(27, 2, 2), "size": Vector3(2, 4, 12)},
+			{"pos": Vector3(8, 2, 27), "size": Vector3(10, 4, 2)},
+			{"pos": Vector3(-27, 2, 20), "size": Vector3(2, 4, 10)},
+		],
+		# NOTE deliberately NO "gates" here: full-width bulkheads were tried and
+		# they break this level's whole verb — the hive are RING-SPAWNED flankers
+		# that swarm you across open ground (and the playtest bot fights from the
+		# spawn yard). Walling the box cut both the swarm's flank paths and the
+		# player's sightlines (tests/jamming_playtest went 60 s with zero kills).
+		# The chokepoints for jam beacons are the hand-placed cover walls above.
+		# Vertical layer: relay towers + a west sky-bridge, and a vantage deck
+		# commanding the PRIME's yard, so the fight has an UP to claim. (This
+		# was the flattest, barest def in the campaign: no platforms, no props.)
+		"platforms": [
+			{"pos": Vector3(18, 3.0, 18), "size": Vector3(7, 0.4, 6), "color": Color(0.16, 0.2, 0.28)},
+		],
+		"ramps": [
+			{"pos": Vector3(18, 1.5, 11), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
+		],
+		"towers": [
+			{"pos": Vector3(-20, 0, -18), "height": 9.0, "radius": 3.4},
+			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1},
+			# Ring relay tower in the east drift — pairs the west twin-tower
+			# span with an east climb.
+			{"pos": Vector3(26, 0, -14), "height": 7.0, "radius": 3.0},
+		],
+		"stairs": [
+			{"from": Vector3(-20, 9.2, -18), "to": Vector3(-20, 7.2, 6), "width": 3.5},
+			# East-tower sky-bridge descending onto the PRIME-yard vantage deck —
+			# an upper route from the ring down over the swarm lanes.
+			{"from": Vector3(26, 7.2, -14), "to": Vector3(20, 3.6, 16), "width": 3.0},
+		],
+		# Centrepiece + dressing so the relay reads as a PLACE, not a grey box.
+		"hero": {"pos": Vector3(0, 0, 8), "color": Color(0.35, 0.85, 1.0), "height": 5.0},
+		"light_shafts": [0],
+		"props": [
+			{"type": "server", "pos": Vector3(-4, 0, -8), "yaw": 90},
+			{"type": "server", "pos": Vector3(4, 0, 8), "yaw": 90},
+			{"type": "dish", "pos": Vector3(-18, 0, 20)},
+			{"type": "dish", "pos": Vector3(18, 0, -20)},
+			{"type": "crate", "pos": Vector3(-8, 0, 2)},
+			{"type": "barrel", "pos": Vector3(9, 0, -2)},
+			{"type": "canister", "pos": Vector3(-14, 0, -18)},
+			{"type": "crate", "pos": Vector3(14, 0, 18)},
+			# Ring dressing: mesh-relay clutter so the outer band reads as the
+			# node's antenna field, not empty margin.
+			{"type": "dish", "pos": Vector3(-30, 0, -24)},
+			{"type": "server", "pos": Vector3(-31, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(-31, 0, -8), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-28, 0, 0)},
+			{"type": "crate", "pos": Vector3(-24, 0, 28)},
+			{"type": "barrel", "pos": Vector3(-10, 0, 29)},
+			{"type": "dish", "pos": Vector3(28, 0, 14)},
+			{"type": "crate", "pos": Vector3(30, 0, -6)},
+			{"type": "canister", "pos": Vector3(24, 0, -28)},
+			{"type": "lamp", "pos": Vector3(12, 0, -29)},
+			{"type": "lamp", "pos": Vector3(-14, 0, 30)},
+		],
+		# Cyan guide strips: a broken centre line running spawn -> PRIME yard on
+		# either side of the spine wall, and a pool at the exit — "follow the
+		# light" across the relay floor.
+		"accents": [
+			{"pos": Vector3(0, 0.05, -12), "size": Vector3(0.35, 0.1, 12), "color": Color(0.35, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 12), "size": Vector3(0.35, 0.1, 10), "color": Color(0.35, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 21), "size": Vector3(3, 0.1, 6), "color": Color(0.4, 0.9, 1.0)},
+			# Ring guidance: a strip threading the spawn chokepoint's east mouth
+			# + a pool at the pushed-out exit.
+			{"pos": Vector3(2, 0.05, -26), "size": Vector3(0.35, 0.1, 8), "color": Color(0.35, 0.85, 1.0)},
+			{"pos": Vector3(0, 0.05, 28), "size": Vector3(3, 0.1, 5), "color": Color(0.4, 0.9, 1.0)},
 		],
 		# Hive units spawn RINGED around the arena and flank in. NOTE: "trigger" is a
 		# proximity RADIUS (m), not a timer — the front ring (large radius) spawns as
@@ -406,6 +540,27 @@ static func _hivemind() -> Dictionary:
 				{"type": "orb", "pos": Vector3(-14, 0.5, 6), "trigger": 20, "pack": "hivemi_p2"},
 				{"type": "bowler", "pos": Vector3(14, 0.5, -6), "trigger": 22, "pack": "hivemi_p1"},
 			{"type": "hive", "pos": Vector3(10, 1, 16), "trigger": 18},
+			# Ring patrols: an outer band of hive-family flankers that fold in
+			# behind the player as they push off the spawn yard, plus a hive
+			# POSTED ON the vantage deck covering the PRIME's approach.
+			{"type": "hive", "pos": Vector3(-26, 1, -26), "trigger": 24, "pack": "hivemi_a1"},
+			{"type": "hive", "pos": Vector3(26, 1, -24), "trigger": 24, "pack": "hivemi_a1"},
+			{"type": "orb", "pos": Vector3(-28, 0.5, 14), "trigger": 20, "pack": "hivemi_a2"},
+			{"type": "hive", "pos": Vector3(-24, 1, 26), "trigger": 20, "pack": "hivemi_a2"},
+			{"type": "bowler", "pos": Vector3(28, 0.5, 20), "trigger": 22, "pack": "hivemi_a3"},
+			{"type": "hive", "pos": Vector3(30, 1, -2), "trigger": 22, "pack": "hivemi_a3"},
+			{"type": "drone", "pos": Vector3(14, 2.5, -28), "trigger": 20, "pack": "hivemi_a4"},
+			{"type": "android", "pos": Vector3(-12, 0.5, -28), "trigger": 18, "pack": "hivemi_a4"},
+			{"type": "hive", "pos": Vector3(18, 3.6, 18), "trigger": 20},
+		],
+		# Ring supplies + the deck-climb reward (first pickups this level has
+		# ever had — the doubled floor earns them).
+		"pickups": [
+			{"type": "health", "pos": Vector3(-28, 0, -18)},
+			{"type": "ammo", "pos": Vector3(10, 0, -29)},
+			{"type": "ammo", "pos": Vector3(-23, 0, 22)},
+			{"type": "health", "pos": Vector3(26, 0, 28)},
+			{"type": "overclock", "pos": Vector3(15.5, 3.4, 16.5)},
 		],
 		"lore": [
 			{"id": "lore_hive", "title": "MESH MEMO", "pos": Vector3(4, 0.6, -21), "color": Color(0.4, 0.9, 1.0),
@@ -438,11 +593,17 @@ static func _nexus() -> Dictionary:
 				"reinforce": [{"type": "spider", "count": 3, "pos": Vector3(0, 0, -10)}]},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(48, 48),
+		# EXPANSION PASS (2× area): the comic's reads are sacred — the nexus
+		# tower, the rooftop drop-in (spawn + rubble cascade UNMOVED on their
+		# vantage) and the fire-trench routing all stay put. A ring of ruined
+		# blocks wraps them, a third fire trench cuts the pushed-out exit
+		# approach, and only the EXIT moves to the new perimeter. No gates —
+		# a bombed suburb routes with rubble and fire, not bulkheads.
+		"floor_size": Vector2(68, 68),
 		"floor_color": Color(0.16, 0.14, 0.13),
 		"building_tint": Color(0.5, 0.52, 0.55),  # grime the suburban houses toward bombed concrete
 		"spawn": Vector3(-17, 4.4, -17),     # perched on a rooftop, like the comic
-		"exit": Vector3(16, 1.5, 18),
+		"exit": Vector3(27, 1.5, 30),
 		"nexus": {"pos": Vector3(5, 0, 10), "height": 18.0, "color": Color(1.0, 0.16, 0.12)},
 		# Overcast grey-blue daylight (like the comic) — readable, desaturated, with
 		# the nexus tower + machine eyes left as the only real reds. Ambient/sun are
@@ -470,6 +631,9 @@ static func _nexus() -> Dictionary:
 		"lava": [
 			{"pos": Vector3(-6, 0, 14), "size": Vector2(20, 3.5), "dmg": 10.0},
 			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 16), "dmg": 10.0},
+			# Third trench on the east drift: the pushed-out exit approach bends
+			# around its ends instead of being a straight walk up the flank.
+			{"pos": Vector3(27, 0, 16), "size": Vector2(3.5, 18), "dmg": 10.0},
 		],
 		# Rooftop vantage + a stair of rubble slabs down into the street, plus a
 		# collapsed-slab island mid-yard you can climb for a sightline over the cars.
@@ -519,17 +683,32 @@ static func _nexus() -> Dictionary:
 			{"pos": Vector3(8, 4.5, -19), "size": Vector3(9, 9, 8)},
 			{"pos": Vector3(-20, 5.0, -8), "size": Vector3(8, 10, 8)},
 			{"pos": Vector3(20, 4.0, 12), "size": Vector3(8, 8, 8)},
+			# Outer ring: more bombed-out blocks closing the horizon.
+			{"pos": Vector3(-29, 4.5, -22), "size": Vector3(8, 9, 8)},
+			{"pos": Vector3(-6, 4.0, -28), "size": Vector3(9, 8, 8)},
+			{"pos": Vector3(24, 4.5, -26), "size": Vector3(8, 9, 8)},
+			{"pos": Vector3(30, 5.5, -8), "size": Vector3(8, 11, 8)},
+			{"pos": Vector3(10, 4.0, 28), "size": Vector3(8, 8, 8)},
+			{"pos": Vector3(-28, 5.0, 24), "size": Vector3(8, 10, 8)},
 		],
 		"lights": [
 			{"pos": Vector3(0, 5, 6), "color": Color(1.0, 0.4, 0.25), "energy": 2.0, "range": 18},
 			{"pos": Vector3(-8, 5, -4), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
 			{"pos": Vector3(11, 5, 12), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15, "flicker": true},
+			# Ring lighting (appended AFTER the originals): fire-glow pools over
+			# the outer blocks + the new east trench.
+			{"pos": Vector3(-26, 5, 18), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
+			{"pos": Vector3(22, 5, -20), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15},
+			{"pos": Vector3(26, 5, 26), "color": Color(1.0, 0.45, 0.28), "energy": 1.8, "range": 16, "flicker": true},
+			{"pos": Vector3(-8, 5, -24), "color": Color(1.0, 0.55, 0.35), "energy": 1.5, "range": 14},
 		],
 		# Burning wrecks — smoke columns + embers like the comic's smouldering city.
 		"fires": [
 			{"pos": Vector3(-4, 0.3, -2), "scale": 1.1},
 			{"pos": Vector3(9, 0.3, 5), "scale": 1.0},
 			{"pos": Vector3(13, 0.3, -9), "scale": 0.85},
+			# Burning wreck out by the ring (pairs the car there).
+			{"pos": Vector3(18, 0.3, -28), "scale": 0.9},
 		],
 		# Wrecked street clutter / rubble.
 		"props": [
@@ -551,6 +730,17 @@ static func _nexus() -> Dictionary:
 			{"type": "sandbags", "pos": Vector3(0, 0, 6), "yaw": 20},
 			{"type": "dead_tree", "pos": Vector3(-14, 0, 10)},
 			{"type": "hydrant", "pos": Vector3(10.5, 0, -6)},
+			# Ring dressing: the same war-torn street language carried outward.
+			{"type": "car", "pos": Vector3(-24, 0, -14), "yaw": 40},
+			{"type": "car", "pos": Vector3(18, 0, -28), "yaw": -70},
+			{"type": "car", "pos": Vector3(-14, 0, 26), "yaw": 15},
+			{"type": "rubble", "pos": Vector3(-26, 0, 0)},
+			{"type": "rubble", "pos": Vector3(6, 0, -26)},
+			{"type": "rubble", "pos": Vector3(20, 0, 20)},
+			{"type": "barrel", "pos": Vector3(2, 0, -28)},
+			{"type": "dead_tree", "pos": Vector3(-26, 0, 18)},
+			{"type": "sandbags", "pos": Vector3(24, 0, 26), "yaw": -30},
+			{"type": "hydrant", "pos": Vector3(16, 0, 26)},
 		],
 		# The machine line advancing from the nexus, like the comic.
 		"enemies": [
@@ -570,6 +760,25 @@ static func _nexus() -> Dictionary:
 			# beds): it stood stranded in fire on carved-out navmesh, unreachable
 			# for the survival-probe bot and reading as jank in real play.
 			{"type": "mech", "pos": Vector3(7, 0, 17), "trigger": 18},
+			# Ring patrols: Act-I light infantry holding the outer blocks. All
+			# wake-gated (tutorial pacing stays intact — nothing here joins the
+			# drop-in fight; they meet the player on the push outward).
+			{"type": "android", "pos": Vector3(-26, 0, -8), "trigger": 18, "pack": "nx_ring_w"},
+			{"type": "android", "pos": Vector3(-24, 0, 14), "trigger": 18, "pack": "nx_ring_w"},
+			{"type": "drone", "pos": Vector3(-22, 0, 26), "trigger": 20, "pack": "nx_ring_w"},
+			{"type": "spider", "pos": Vector3(-28, 0, 6), "count": 2, "trigger": 16, "pack": "nx_ring_w"},
+			{"type": "drone", "pos": Vector3(0, 0, -26), "trigger": 18, "pack": "nx_ring_n"},
+			{"type": "android", "pos": Vector3(17, 0, -24), "trigger": 20, "pack": "nx_ring_n"},
+			{"type": "drone", "pos": Vector3(24, 0, -10), "trigger": 20, "pack": "nx_ring_e"},
+			{"type": "spider", "pos": Vector3(20, 0, 24), "count": 2, "trigger": 18, "pack": "nx_ring_e"},
+			{"type": "android", "pos": Vector3(15, 0, 22), "trigger": 18, "pack": "nx_ring_e"},
+		],
+		# Ring supplies — the outer push is longer now, so it feeds the player.
+		"pickups": [
+			{"type": "health", "pos": Vector3(-26, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-8, 0, -22)},
+			{"type": "ammo", "pos": Vector3(24, 0, -18)},
+			{"type": "health", "pos": Vector3(18, 0, 26)},
 		],
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-8, 0, -4), "color": Color(0.4, 0.7, 1.0)},
 		# GRAPPLE CACHE: an arc coil on an isolated high pad with no stairs or
@@ -597,11 +806,18 @@ static func _frostbreak() -> Dictionary:
 				"label": "Thaw the relay uplink", "color": Color(0.5, 0.9, 1.0)},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(48, 48),
+		# EXPANSION PASS (2× area): the 48² relay yard is untouched at the
+		# centre — the WARDEN's hunt stays in the glacier comb. A new outer
+		# icefield ring wraps it: bulkhead-routed way in, an elevated weather
+		# deck along the north drift with a sky-bridge onto the west relay
+		# tower (KEEPING the existing twin-tower blizzard span), a third cryo
+		# stream in the east drift, and its own frozen patrols. Spawn/exit
+		# pushed to the new perimeter.
+		"floor_size": Vector2(68, 68),
 		"floor_color": Color(0.6, 0.68, 0.78),
-		"spawn": Vector3(-19, 0.6, -19),
-		"exit": Vector3(19, 1.5, 19),
-		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-13, 0, -11), "color": Color(0.6, 0.85, 1.0)},
+		"spawn": Vector3(-29, 0.6, -29),
+		"exit": Vector3(29, 1.5, 29),
+		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-24, 0, -25), "color": Color(0.6, 0.85, 1.0)},
 		# Moonlit blizzard: falling snow drifting through a crisp cold night, a bright
 		# moon over the relay, and brighter bounce (snow reflects light — a snowy
 		# night reads pale and luminous, not flat and dim). The wind haze thickens
@@ -625,6 +841,14 @@ static func _frostbreak() -> Dictionary:
 			{"pos": Vector3(-9, 5, -7), "color": Color(0.6, 0.82, 1.0), "energy": 2.2, "range": 17},
 			{"pos": Vector3(9, 5, 7), "color": Color(0.7, 0.85, 1.0), "energy": 2.0, "range": 17},
 			{"pos": Vector3(0, 5.5, 0), "color": Color(0.8, 0.9, 1.0), "energy": 1.8, "range": 15},
+			# Icefield-ring lighting (appended AFTER the originals — light_shafts
+			# [0,1] must keep pointing at the same lamps). Moonlit ice + one
+			# warm survival-lamp note at the exit drift.
+			{"pos": Vector3(-27, 5, -27), "color": Color(0.6, 0.82, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(27, 5, 27), "color": Color(1.0, 0.7, 0.45), "energy": 2.0, "range": 16},
+			{"pos": Vector3(0, 6, -28), "color": Color(0.7, 0.85, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(-27, 5, 27), "color": Color(0.6, 0.85, 1.0), "energy": 1.8, "range": 15},
+			{"pos": Vector3(27, 5, 4), "color": Color(0.65, 0.85, 1.0), "energy": 1.8, "range": 15},
 		],
 		# Layout: a "glacier comb" — three parallel heaved ice ridges (Z-running
 		# fins) you slalom between N/S while crossing W→E, plus two toppled ice
@@ -640,17 +864,36 @@ static func _frostbreak() -> Dictionary:
 			{"pos": Vector3(-9, 0.05, -4), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
 			{"pos": Vector3(3, 0.05, 6), "size": Vector3(0.3, 0.1, 16), "color": Color(0.6, 0.85, 1.0)},
 			{"pos": Vector3(13, 0.05, -2), "size": Vector3(0.3, 0.1, 14), "color": Color(0.6, 0.85, 1.0)},
+			# Ring guidance: strips marking each icefield-bulkhead gap + exit pool.
+			{"pos": Vector3(-12, 0.05, -22), "size": Vector3(7, 0.1, 0.4), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(22, 0.05, 16), "size": Vector3(0.4, 0.1, 7), "color": Color(0.6, 0.85, 1.0)},
+			{"pos": Vector3(29, 0.05, 24), "size": Vector3(4, 0.1, 3), "color": Color(0.65, 0.9, 1.0)},
 		],
 		"sign": "FROSTBREAK RELAY — NODE 12",
-		# Coolant overflow: two cyan cryo-streams stagger the yard so you weave through the gaps.
+		# Coolant overflow: two cyan cryo-streams stagger the yard so you weave
+		# through the gaps — and a third stream freezes down the east drift,
+		# carrying the hazard language out into the ring.
 		"lava": [
 			{"pos": Vector3(-7,0,-7), "size": Vector2(28,3.2), "color": Color(0.3,0.8,1.0), "dmg": 18.0},
 			{"pos": Vector3(7,0,9), "size": Vector2(28,3.2), "color": Color(0.3,0.8,1.0), "dmg": 18.0},
+			{"pos": Vector3(26,0,-2), "size": Vector2(3.2,20), "color": Color(0.3,0.8,1.0), "dmg": 18.0},
+		],
+		# Icefield bulkheads on the OLD perimeter line — heaved ice walls that
+		# route the ring; the WARDEN's comb stays uncaged and the thaw terminal
+		# reachable. In through the north-west gap (under the weather-deck
+		# sky-bridge, which crosses through the same opening), out across the
+		# east gap by the exit. The north-east pocket the two full-span walls
+		# close off is deliberately left EMPTY.
+		"gates": [
+			{"axis": "z", "at": -22, "gap": 8, "gap_pos": -12, "height": 4.4},
+			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 16, "height": 4.4},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring weather deck along the north drift — gunner post + climb reward.
+			{"pos": Vector3(0, 3.2, -29), "size": Vector3(16, 0.4, 5), "color": Color(0.44, 0.5, 0.58)},
 		],
 		"ramps": [
 			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -669,10 +912,33 @@ static func _frostbreak() -> Dictionary:
 			{"type": "canister", "pos": Vector3(5, 0, -3)},
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
 			{"type": "server", "pos": Vector3(-12, 0, 8)},
+			# Icefield dressing: frozen supply caches and listening gear so the
+			# ring reads as the relay's snowed-in yard, not empty margin.
+			{"type": "dish", "pos": Vector3(-26, 0, -18)},
+			{"type": "server", "pos": Vector3(-28, 0, -6), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-26, 0, 10)},
+			{"type": "canister", "pos": Vector3(-24, 0, 20)},
+			{"type": "barrel", "pos": Vector3(-16, 0, 26)},
+			{"type": "dish", "pos": Vector3(2, 0, 26)},
+			{"type": "crate", "pos": Vector3(12, 0, 27)},
+			{"type": "canister", "pos": Vector3(26, 0, 20)},
+			{"type": "lamp", "pos": Vector3(24, 0, 26)},
 		],
-		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Vertical layer: TWO relay towers joined by a blizzard sky-bridge — this
+		# was the only campaign arena missing the elevated traversal route (one
+		# lone tower, nowhere to go from its roof). The span crosses above the
+		# glacier fins, so the upper route reads through the storm.
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
+			{"pos": Vector3(17.0, 0, -14.0), "height": 7.0, "radius": 3.1},
+		],
+		"stairs": [
+			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, -14.0), "width": 3.5},
+			# Weather-deck access ramps at both ends + a deck->west-relay-tower
+			# sky-bridge that crosses the icefield bulkhead through its gap.
+			{"from": Vector3(-14.0, 0.3, -29.0), "to": Vector3(-8.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(14.0, 0.3, -29.0), "to": Vector3(8.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(-8.0, 3.6, -29.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
 		"enemies": [
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
@@ -697,10 +963,28 @@ static func _frostbreak() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(-6, 0.5, -8), "count": 6, "trigger": 16},
 			# A HOWITZER walker shelling the yard from the east fins.
 			{"type": "howitzer", "pos": Vector3(16, 0.5, -8), "trigger": 22, "pack": "frostb_p4"},
+			# Icefield patrols: drift-hunters on the spawn approach, west-ring
+			# prowlers, a gunner POSTED ON the weather deck, and exit-drift
+			# guardians so the last leg isn't a free walk.
+			{"type": "hunter", "pos": Vector3(-24, 0.5, -26), "trigger": 18, "pack": "frostb_a1"},
+			{"type": "skitter", "pos": Vector3(-18, 0.5, -26), "count": 4, "trigger": 18, "pack": "frostb_a1"},
+			{"type": "sentinel", "pos": Vector3(-27, 0.5, -12), "trigger": 16, "pack": "frostb_a2"},
+			{"type": "gunner", "pos": Vector3(-26, 0.5, 2), "trigger": 16, "pack": "frostb_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -29), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(-24, 0.5, 18), "trigger": 18, "pack": "frostb_a3"},
+			{"type": "hunter", "pos": Vector3(-14, 0.5, 26), "trigger": 18, "pack": "frostb_a3"},
+			{"type": "sentinel", "pos": Vector3(10, 0.5, 26), "trigger": 18, "pack": "frostb_a4"},
+			{"type": "brute", "pos": Vector3(25, 0.5, 25), "trigger": 18, "pack": "frostb_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
 			{"type": "ammo", "pos": Vector3(0, 0, 16)},
+			# Icefield supplies + the weather-deck climb reward.
+			{"type": "health", "pos": Vector3(-27, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-12, 0, -27)},
+			{"type": "ammo", "pos": Vector3(-24, 0, 24)},
+			{"type": "health", "pos": Vector3(25, 0, 12)},
+			{"type": "overclock", "pos": Vector3(-3, 3.6, -28)},
 		],
 	}
 
@@ -721,11 +1005,15 @@ static func _neon() -> Dictionary:
 				"pos": Vector3(0, 0, -12), "label": "Take down the ARCADE CHAMPION"},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(44, 44),
+		# EXPANSION PASS (2× area): the 44² cabinet maze is untouched at the
+		# centre; a new outer promenade ring wraps it — bulkhead-routed way in, an
+		# elevated balcony arcade along the north wall with a sky-bridge onto the
+		# tower, and its own duelist patrols. Spawn/exit pushed to the perimeter.
+		"floor_size": Vector2(62, 62),
 		"floor_color": Color(0.05, 0.04, 0.08),
-		"spawn": Vector3(-17, 0.6, -17),
-		"exit": Vector3(17, 1.5, 17),
-		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-12, 0, -10), "color": Color(1.0, 0.4, 0.9)},
+		"spawn": Vector3(-26, 0.6, -26),
+		"exit": Vector3(26, 1.5, 26),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-21, 0, -19), "color": Color(1.0, 0.4, 0.9)},
 		"env": {
 			"sky_top": Color(0.05, 0.02, 0.1), "sky_horizon": Color(0.2, 0.04, 0.3),
 			"ground": Color(0.04, 0.03, 0.07), "fog": Color(0.3, 0.06, 0.4),
@@ -748,6 +1036,13 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(-9, 4.5, -7), "color": Color(1.0, 0.2, 0.8), "energy": 2.6, "range": 16},
 			{"pos": Vector3(9, 4.5, 7), "color": Color(0.2, 0.9, 1.0), "energy": 2.5, "range": 16},
 			{"pos": Vector3(0, 5, 0), "color": Color(0.6, 0.4, 1.0), "energy": 2.2, "range": 15},
+			# Ring lighting (appended AFTER the originals — light_shafts [0,1,2]
+			# must keep pointing at the same lamps). Neon pinks/cyans + one amber.
+			{"pos": Vector3(-25, 5, -25), "color": Color(1.0, 0.2, 0.8), "energy": 2.2, "range": 17},
+			{"pos": Vector3(25, 5, 25), "color": Color(0.2, 0.9, 1.0), "energy": 2.2, "range": 17},
+			{"pos": Vector3(0, 5.5, -26), "color": Color(0.7, 0.3, 1.0), "energy": 2.2, "range": 17},
+			{"pos": Vector3(25, 5, -25), "color": Color(1.0, 0.6, 0.2), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-25, 5, 25), "color": Color(0.2, 0.9, 1.0), "energy": 2.0, "range": 16},
 		],
 		# Layout: a grid of upright arcade cabinets — a "plus" of edge cabinets and
 		# an "X" of inner ones ringing the central core — forming lanes you thread
@@ -767,6 +1062,10 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(0.2, 0.9, 1.0)},
 			{"pos": Vector3(0, 0.05, -7), "size": Vector3(40, 0.1, 0.3), "color": Color(0.7, 0.3, 1.0)},
 			{"pos": Vector3(0, 0.05, 7), "size": Vector3(40, 0.1, 0.3), "color": Color(1.0, 0.6, 0.2)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(10, 0.05, -22), "size": Vector3(7, 0.1, 0.4), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(22, 0.05, 18), "size": Vector3(0.4, 0.1, 7), "color": Color(0.2, 0.9, 1.0)},
+			{"pos": Vector3(26, 0.05, 22), "size": Vector3(4, 0.1, 3), "color": Color(1.0, 0.4, 0.9)},
 		],
 		"sign": "NEON ARCADE — LEVEL 3",
 		# Live energy conduits split the arcade floor — mind the gap.
@@ -774,10 +1073,21 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(-7,0,-7), "size": Vector2(24,3), "color": Color(1.0,0.25,0.85), "dmg": 18.0},
 			{"pos": Vector3(7,0,8), "size": Vector2(24,3), "color": Color(0.2,0.9,1.0), "dmg": 18.0},
 		],
+		# Perimeter-ring bulkheads: in through the north gap (under the balcony
+		# sky-bridge, which crosses through the same opening), out across the
+		# east gap. The east gap sits SOUTH toward the exit so the exit corner
+		# stays open (two full-span walls would otherwise seal it into an
+		# unreachable pocket); the NE strip corner stays empty.
+		"gates": [
+			{"axis": "z", "at": -22, "gap": 7, "gap_pos": 10, "height": 4.4},
+			{"axis": "x", "at": 22, "gap": 7, "gap_pos": 18, "height": 4.4},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring balcony arcade along the north wall — climb reward + gunner post.
+			{"pos": Vector3(0, 3.2, -26), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
 		],
 		"ramps": [
 			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -796,8 +1106,27 @@ static func _neon() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(5, 0, -3), "yaw": 90},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "lamp", "pos": Vector3(0, 0, -14)},
+			# Ring dressing: promenade cabinets and cafe clutter so the outer ring
+			# reads as the arcade's midway, not empty margin.
+			{"type": "monitors", "pos": Vector3(-28, 0, -12)},
+			{"type": "terminal", "pos": Vector3(-28, 0, 4), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-24, 0, 12)},
+			{"type": "lamp", "pos": Vector3(-20, 0, 27)},
+			{"type": "monitors", "pos": Vector3(-12, 0, 27)},
+			{"type": "crate", "pos": Vector3(8, 0, 28)},
+			{"type": "terminal", "pos": Vector3(18, 0, 26), "yaw": -90},
+			{"type": "lamp", "pos": Vector3(27, 0, 10)},
+			{"type": "crate", "pos": Vector3(27, 0, -4)},
+			{"type": "monitors", "pos": Vector3(14, 0, -27)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
+		# Sky-bridges: balcony access ramps at both ends + a balcony->tower
+		# sky-bridge that crosses the ring bulkhead through its gap.
+		"stairs": [
+			{"from": Vector3(-16.0, 0.3, -26.0), "to": Vector3(-9.0, 3.4, -26.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -26.0), "to": Vector3(9.0, 3.4, -26.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -26.0), "to": Vector3(12.0, 9.2, -12.0), "width": 3.0},
+		],
 		"towers": [
 			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
 		],
@@ -833,11 +1162,29 @@ static func _neon() -> Dictionary:
 			# undefeated duellists.
 			{"type": "ronin", "pos": Vector3(14, 0.5, -14), "trigger": 16, "pack": "neon_p5"},
 			{"type": "ronin", "pos": Vector3(-6, 0.5, -12), "trigger": 19, "pack": "neon_p1"},
+			# Ring garrison: promenade duelists on the way in, a west cafe pack, a
+			# gunner POSTED ON the balcony arcade, and exit-midway guardians.
+			{"type": "gunslinger", "pos": Vector3(-24, 0.5, -14), "trigger": 18, "pack": "neon_a1"},
+			{"type": "reaper", "pos": Vector3(-18, 0.5, -25), "trigger": 18, "pack": "neon_a1"},
+			{"type": "server", "pos": Vector3(-27, 0.5, 2), "trigger": 16, "pack": "neon_a2"},
+			{"type": "vacuum", "pos": Vector3(-24, 0.3, 14), "trigger": 16, "pack": "neon_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -26), "trigger": 20},
+			{"type": "hunter", "pos": Vector3(20, 0.5, -26), "trigger": 18, "pack": "neon_a3"},
+			{"type": "ronin", "pos": Vector3(26, 0.5, -8), "trigger": 18, "pack": "neon_a3"},
+			{"type": "mauler", "pos": Vector3(26, 0.5, 14), "trigger": 19, "pack": "neon_a4"},
+			{"type": "reaper", "pos": Vector3(12, 0.5, 26), "trigger": 17, "pack": "neon_a4"},
+			{"type": "brute", "pos": Vector3(26, 0.5, 20), "trigger": 21, "pack": "neon_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
 			{"type": "ammo", "pos": Vector3(8, 0, 6)},
 			{"type": "overclock", "pos": Vector3(0, 0, -16)},
+			# Ring supplies + the balcony-climb reward.
+			{"type": "health", "pos": Vector3(-28, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-20, 0, -28)},
+			{"type": "ammo", "pos": Vector3(20, 0, -24)},
+			{"type": "health", "pos": Vector3(27, 0, 6)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -25)},
 		],
 	}
 
@@ -851,11 +1198,15 @@ static func _sublevel() -> Dictionary:
 			{"type": "hack_terminal", "label": "Override the custodial controller", "pos": Vector3(0, 0, 10), "seconds": 4.0, "color": Color(0.4, 1.0, 0.7)},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(40, 40),
+		# EXPANSION PASS (2× area): the 40² slalom core is untouched at the centre;
+		# a new outer service ring wraps it — bulkhead-routed way in, an elevated
+		# pipe gallery along the north wall with a sky-bridge onto the tower, and
+		# its own custodial patrols. Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(56, 56),
 		"floor_color": Color(0.05, 0.07, 0.06),
-		"spawn": Vector3(-16, 0.6, -16),
-		"exit": Vector3(16, 1.5, 16),
-		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-12, 0, -10), "color": Color(0.95, 0.72, 0.4)},
+		"spawn": Vector3(-23, 0.6, -23),
+		"exit": Vector3(23, 1.5, 23),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-19, 0, -17), "color": Color(0.95, 0.72, 0.4)},
 		"env": {
 			"sky_top": Color(0.03, 0.06, 0.06), "sky_horizon": Color(0.06, 0.14, 0.13),
 			"ground": Color(0.03, 0.05, 0.04), "fog": Color(0.06, 0.16, 0.14),
@@ -880,6 +1231,13 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(0, 4.5, 0), "color": Color(0.6, 1, 0.8), "energy": 2.2, "range": 14},
 			{"pos": Vector3(-4, 4, 3), "color": Color(0.5, 0.95, 0.75), "energy": 2.2, "range": 13},
 			{"pos": Vector3(-12, 5, 11), "color": Color(0.55, 0.95, 0.8), "energy": 2.0, "range": 12},
+			# Ring lighting (appended AFTER the originals — light_shafts [0,1] must
+			# keep pointing at the same lamps). Custodial greens + warm contrast.
+			{"pos": Vector3(-22, 5, -22), "color": Color(0.5, 0.9, 0.75), "energy": 2.2, "range": 16},
+			{"pos": Vector3(22, 5, 22), "color": Color(1.0, 0.7, 0.4), "energy": 2.2, "range": 16},
+			{"pos": Vector3(0, 5.5, -24), "color": Color(0.55, 0.95, 0.8), "energy": 2.2, "range": 16},
+			{"pos": Vector3(22, 5, -22), "color": Color(0.45, 0.9, 0.7), "energy": 2.0, "range": 15},
+			{"pos": Vector3(-22, 5, 22), "color": Color(1.0, 0.65, 0.35), "energy": 2.0, "range": 15},
 		],
 		# Layout: a maintenance "echelon" — staggered partition walls (alternating
 		# Z- and X-running) that force a slalom from the SW lift to the override
@@ -897,12 +1255,18 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(3, 0.05, -2), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
 			{"pos": Vector3(9, 0.05, 7), "size": Vector3(9, 0.1, 0.3), "color": Color(0.3, 1, 0.6)},
 			{"pos": Vector3(0, 0.05, 10), "size": Vector3(8, 0.1, 0.3), "color": Color(0.4, 1.0, 0.7)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(8, 0.05, -20), "size": Vector3(7, 0.1, 0.4), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(20, 0.05, 16), "size": Vector3(0.4, 0.1, 6), "color": Color(0.3, 1, 0.6)},
+			{"pos": Vector3(23, 0.05, 19), "size": Vector3(4, 0.1, 3), "color": Color(0.4, 1.0, 0.7)},
 		],
 		"sign": "SUBLEVEL B-7 — CUSTODIAL",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-12.0, 3.0, 11.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring pipe gallery along the north wall — climb reward + gunner post.
+			{"pos": Vector3(0, 3.2, -24), "size": Vector3(16, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
 		],
 		"ramps": [
 			{"pos": Vector3(-12.0, 1.5, 18.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -914,6 +1278,13 @@ static func _sublevel() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -8, "gap": 6, "gap_pos": 11, "height": 4.4, "roofed": true},
 			{"axis": "z", "at": 8, "gap": 6, "gap_pos": -11, "height": 4.4},
+			# Perimeter-ring bulkheads: in through the north gap (under the gallery
+			# sky-bridge, which crosses through the same opening), out across the
+			# east gap. The east gap sits SOUTH of the z=8 hatch line so the exit
+			# corner stays open (two full-span walls would otherwise seal it into
+			# an unreachable pocket); the east strip north of it stays empty.
+			{"axis": "z", "at": -20, "gap": 7, "gap_pos": 8, "height": 4.4},
+			{"axis": "x", "at": 20, "gap": 6, "gap_pos": 16, "height": 4.4},
 		],
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU"],
 		"lore": [
@@ -931,11 +1302,28 @@ static func _sublevel() -> Dictionary:
 			{"type": "shelves", "pos": Vector3(12, 0, -2)},
 			{"type": "canister", "pos": Vector3(6, 0, 9)},
 			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
+			# Ring dressing: locker rows and janitorial clutter so the ring reads
+			# as the sublevel's service corridor, not empty margin.
+			{"type": "locker", "pos": Vector3(-26, 0, -10)},
+			{"type": "locker", "pos": Vector3(-26, 0, -12)},
+			{"type": "shelves", "pos": Vector3(-25, 0, 4), "yaw": 90},
+			{"type": "barrel", "pos": Vector3(-22, 0, 14)},
+			{"type": "crate", "pos": Vector3(-16, 0, 25)},
+			{"type": "canister", "pos": Vector3(-6, 0, 26)},
+			{"type": "shelves", "pos": Vector3(8, 0, 25)},
+			{"type": "barrel", "pos": Vector3(25, 0, 12)},
+			{"type": "crate", "pos": Vector3(16, 0, -25)},
+			{"type": "canister", "pos": Vector3(-20, 0, -26)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(12.0, 9.2, -12.0), "to": Vector3(0.0, 7.2, 13.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->tower sky-bridge that
+			# crosses the ring bulkhead through its gap — the high road in.
+			{"from": Vector3(-14.0, 0.3, -24.0), "to": Vector3(-8.0, 3.4, -24.0), "width": 3.5},
+			{"from": Vector3(14.0, 0.3, -24.0), "to": Vector3(8.0, 3.4, -24.0), "width": 3.5},
+			{"from": Vector3(8.0, 3.6, -24.0), "to": Vector3(12.0, 9.2, -12.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
@@ -967,10 +1355,28 @@ static func _sublevel() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(-13, 0.5, -4), "trigger": 18, "pack": "sublev_p1"},
 			{"type": "sentinel", "pos": Vector3(13, 0.5, 4), "trigger": 20, "pack": "sublev_p3"},
 			{"type": "skitter", "pos": Vector3(6, 0.5, -6), "count": 6, "trigger": 15},
+			# Ring garrison: custodial units sweeping the service corridor, a
+			# gunner POSTED ON the pipe gallery, and exit-yard guardians.
+			{"type": "vacuum", "pos": Vector3(-18, 0.3, -26), "trigger": 16, "pack": "sublev_a1"},
+			{"type": "optic", "pos": Vector3(-24, 0.5, -17), "trigger": 16, "pack": "sublev_a1"},
+			{"type": "android", "pos": Vector3(-25, 0.5, 0), "trigger": 16, "pack": "sublev_a2"},
+			{"type": "roller", "pos": Vector3(-22, 0.5, 10), "trigger": 18, "pack": "sublev_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -24), "trigger": 20},
+			{"type": "reaper", "pos": Vector3(18, 0.5, -24), "trigger": 18, "pack": "sublev_a3"},
+			{"type": "optic", "pos": Vector3(4, 0.5, -26), "trigger": 17, "pack": "sublev_a3"},
+			{"type": "sentinel", "pos": Vector3(24, 0.5, 20), "trigger": 20, "pack": "sublev_a4"},
+			{"type": "gunner", "pos": Vector3(14, 0.5, 25), "trigger": 18, "pack": "sublev_a4"},
+			{"type": "brute", "pos": Vector3(20, 0.5, 25), "trigger": 20, "pack": "sublev_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
 			{"type": "ammo", "pos": Vector3(8, 0, 6)},
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-26, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-12, 0, -26)},
+			{"type": "ammo", "pos": Vector3(12, 0, -27)},
+			{"type": "health", "pos": Vector3(24, 0, 12)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -23)},
 		],
 	}
 
@@ -993,11 +1399,17 @@ static func _crucible() -> Dictionary:
 				"color": Color(1.0, 0.25, 0.1), "label": "Claim the crucible heart"},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(46, 46),
+		# EXPANSION PASS (2× area): the 46² smelter cage is untouched at the
+		# centre — all three forge rings stay inside it and stay reachable; a new
+		# outer slag yard wraps it — bulkhead-routed way in, an elevated crane
+		# gallery along the north wall with a sky-bridge onto the pour-core tower,
+		# a fourth molten channel in the west yard, and its own line garrison.
+		# Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(64, 64),
 		"floor_color": Color(0.09, 0.05, 0.03),
-		"spawn": Vector3(-19, 0.6, -19),
-		"exit": Vector3(19, 1.5, 19),
-		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-14, 0, -12), "color": Color(0.6, 0.8, 1.0)},
+		"spawn": Vector3(-27, 0.6, -27),
+		"exit": Vector3(27, 1.5, 27),
+		"weapon": {"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-22, 0, -20), "color": Color(0.6, 0.8, 1.0)},
 		"env": {
 			"sky_top": Color(0.14, 0.04, 0.02), "sky_horizon": Color(0.4, 0.12, 0.04),
 			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
@@ -1019,6 +1431,13 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(-12, 5, -12), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 16},
 			{"pos": Vector3(12, 5, -12), "color": Color(0.52, 0.79, 1.0), "energy": 2.2, "range": 16},
 			{"pos": Vector3(0, 5.5, 12), "color": Color(0.55, 0.8, 1.0), "energy": 2.0, "range": 15},
+			# Ring lighting (appended AFTER the originals — light_shafts [0,1,2]
+			# must keep pointing at the same lamps). Molten ambers + cool rims.
+			{"pos": Vector3(-26, 5, -26), "color": Color(1, 0.5, 0.2), "energy": 2.2, "range": 17},
+			{"pos": Vector3(26, 5, 26), "color": Color(1, 0.55, 0.25), "energy": 2.2, "range": 17},
+			{"pos": Vector3(0, 5.5, -28), "color": Color(0.55, 0.8, 1.0), "energy": 2.2, "range": 17},
+			{"pos": Vector3(26, 5, -26), "color": Color(1, 0.45, 0.18), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-26, 5, 26), "color": Color(0.5, 0.78, 1.0), "energy": 2.0, "range": 16},
 		],
 		# A ceiling rig over the pour-core (interior, so it keeps the ceiling
 		# drop-rod) — amber/orange molten-warning beams sweeping the foundry
@@ -1041,18 +1460,36 @@ static func _crucible() -> Dictionary:
 			{"pos": Vector3(-9, 0, -10), "size": Vector2(30, 3.5)},
 			{"pos": Vector3(9, 0, 14), "size": Vector2(30, 3.5)},
 			{"pos": Vector3(14, 0, -2), "size": Vector2(3.5, 24)},
+			# A fourth channel floods the west slag yard, forcing the ring route wide.
+			{"pos": Vector3(-27, 0, 2), "size": Vector2(3.5, 30)},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, -7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
 			{"pos": Vector3(0, 0.05, 7), "size": Vector3(8, 0.1, 0.3), "color": Color(1, 0.5, 0.2)},
 			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
 			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 8), "color": Color(1, 0.5, 0.2)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(6, 0.05, -23), "size": Vector3(7, 0.1, 0.4), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(23, 0.05, 18), "size": Vector3(0.4, 0.1, 7), "color": Color(1, 0.5, 0.2)},
+			{"pos": Vector3(27, 0.05, 23), "size": Vector3(4, 0.1, 3), "color": Color(1, 0.6, 0.3)},
 		],
 		"sign": "FOUNDRY FLOOR — THE CRUCIBLE",
+		# Perimeter-ring bulkheads: in through the north gap (under the crane-
+		# gallery sky-bridge, which crosses through the same opening), out across
+		# the east gap. The east gap sits SOUTH toward the exit so the exit corner
+		# stays open (two full-span walls would otherwise seal it into an
+		# unreachable pocket); the NE strip corner stays empty. All three forge
+		# rings sit inside the old core — neither wall cuts any of them off.
+		"gates": [
+			{"axis": "z", "at": -23, "gap": 7, "gap_pos": 6, "height": 4.4},
+			{"axis": "x", "at": 23, "gap": 7, "gap_pos": 18, "height": 4.4},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-13.8, 3.0, 13.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring crane gallery along the north wall — climb reward + gunner post.
+			{"pos": Vector3(0, 3.2, -28), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
 		],
 		"ramps": [
 			{"pos": Vector3(-13.8, 1.5, 20.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -1071,11 +1508,28 @@ static func _crucible() -> Dictionary:
 			{"type": "canister", "pos": Vector3(5, 0, -3)},
 			{"type": "crate", "pos": Vector3(-12, 0, 8)},
 			{"type": "dish", "pos": Vector3(0, 0, -16)},
+			# Ring dressing: slag drums and line clutter so the outer yard reads
+			# as the foundry's working apron, not empty margin.
+			{"type": "server", "pos": Vector3(-30, 0, -18), "yaw": 90},
+			{"type": "barrel", "pos": Vector3(-20, 0, -28)},
+			{"type": "crate", "pos": Vector3(-26, 0, -18)},
+			{"type": "canister", "pos": Vector3(-30, 0, 22)},
+			{"type": "crate", "pos": Vector3(-18, 0, 28)},
+			{"type": "barrel", "pos": Vector3(-4, 0, 28)},
+			{"type": "dish", "pos": Vector3(20, 0, -28)},
+			{"type": "crate", "pos": Vector3(27, 0, -6)},
+			{"type": "canister", "pos": Vector3(28, 0, 10)},
+			{"type": "barrel", "pos": Vector3(20, 0, 27)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(-0.0, 7.2, -17.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->pour-core-tower
+			# sky-bridge that crosses the ring bulkhead through its gap.
+			{"from": Vector3(-16.0, 0.3, -28.0), "to": Vector3(-9.0, 3.4, -28.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -28.0), "to": Vector3(9.0, 3.4, -28.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -28.0), "to": Vector3(0.0, 7.2, -17.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -1101,6 +1555,18 @@ static func _crucible() -> Dictionary:
 				{"type": "breaker", "pos": Vector3(9, 0.5, -8), "trigger": 16, "pack": "cru_south"},
 				{"type": "whirlwind", "pos": Vector3(-9, 0.5, -4), "trigger": 15, "pack": "cru_sw"},
 			{"type": "smasher", "pos": Vector3(8, 0.5, 8), "trigger": 22},
+			# Ring garrison: slag-yard line workers turned hostile, a gunner
+			# POSTED ON the crane gallery, and exit-apron guardians.
+			{"type": "reaper", "pos": Vector3(-22, 0.5, -26), "trigger": 17, "pack": "cru_a1"},
+			{"type": "hunter", "pos": Vector3(-24, 0.5, -20), "trigger": 18, "pack": "cru_a1"},
+			{"type": "gunner", "pos": Vector3(-23, 0.5, 20), "trigger": 18, "pack": "cru_a2"},
+			{"type": "mauler", "pos": Vector3(-20, 0.5, 26), "trigger": 18, "pack": "cru_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -28), "trigger": 20},
+			{"type": "reaper", "pos": Vector3(18, 0.5, -26), "trigger": 18, "pack": "cru_a3"},
+			{"type": "sentinel", "pos": Vector3(27, 0.5, -8), "trigger": 18, "pack": "cru_a3"},
+			{"type": "ravager", "pos": Vector3(27, 0.5, 12), "trigger": 20, "pack": "cru_a4"},
+			{"type": "hunter", "pos": Vector3(14, 0.5, 27), "trigger": 17, "pack": "cru_a4"},
+			{"type": "breaker", "pos": Vector3(26, 0.5, 20), "trigger": 20, "pack": "cru_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, 0)},
@@ -1108,6 +1574,12 @@ static func _crucible() -> Dictionary:
 			{"type": "overclock", "pos": Vector3(16, 0, 0)},
 			# A heavy weapon to crack the BEHEMOTH.
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-30, 0, -22)},
+			{"type": "ammo", "pos": Vector3(-22, 0, -29)},
+			{"type": "ammo", "pos": Vector3(20, 0, -24)},
+			{"type": "health", "pos": Vector3(28, 0, 4)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -27)},
 		],
 	}
 
@@ -1121,7 +1593,9 @@ static func _horde() -> Dictionary:
 		"tasks": [{"type": "none"}],
 		"no_exit": true,
 		"open_sky": true,
-		"floor_size": Vector2(56, 56),
+		# EXPANSION PASS (light touch — siege pacing is distance-tuned): +20%
+		# floor, two extra pour-in gates at the new edge, two ring cover walls.
+		"floor_size": Vector2(68, 68),
 		"floor_color": Color(0.13, 0.13, 0.16),
 		"spawn": Vector3(0, 0.6, 6),
 		"supply_center": Vector3(0, 0, 0),
@@ -1165,6 +1639,9 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(15, 1.5, 15), "size": Vector3(3, 3, 3)},
 			{"pos": Vector3(-15, 1.5, 15), "size": Vector3(3, 3, 3)},
 			{"pos": Vector3(15, 1.5, -15), "size": Vector3(3, 3, 3)},
+			# Ring cover for the widened kill floor (clear of the holdout decks).
+			{"pos": Vector3(-26, 1, 10), "size": Vector3(1.4, 2, 4)},
+			{"pos": Vector3(26, 1, -10), "size": Vector3(1.4, 2, 4)},
 		],
 		# Two raised holdout decks on opposite flanks — high ground to fall back to
 		# and rain fire from when the floor gets overrun, each reached by a ramp.
@@ -1213,11 +1690,12 @@ static func _horde() -> Dictionary:
 			{"type": "crate_stack", "pos": Vector3(-18, 2.85, 12)},
 			{"type": "crate_stack", "pos": Vector3(18, 2.85, -12)},
 		],
-		# Eight perimeter gates the waves pour in from.
+		# Ten perimeter gates the waves pour in from (two on the widened edge).
 		"horde_spawns": [
 			Vector3(-24, 0.5, -24), Vector3(0, 0.5, -25), Vector3(24, 0.5, -24),
 			Vector3(-25, 0.5, 0), Vector3(25, 0.5, 0),
 			Vector3(-24, 0.5, 24), Vector3(0, 0.5, 25), Vector3(24, 0.5, 24),
+			Vector3(-30, 0.5, 12), Vector3(30, 0.5, -12),
 		],
 	}
 
@@ -1339,11 +1817,16 @@ static func _overseer() -> Dictionary:
 		"tasks": [{"type": "kill_all"}],
 		"music": "music_grok",
 		"open_sky": true,
-		"floor_size": Vector2(62, 62),
+		# EXPANSION PASS (2× area): the 62² command deck is untouched at the
+		# centre — the gunship yard stays open. A new outer landing ring wraps
+		# it: bulkhead-routed way in, an elevated approach gallery along the
+		# north rim with a sky-bridge onto the west spire, and its own escort
+		# patrols. Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(88, 88),
 		"floor_color": Color(0.12, 0.13, 0.16),
-		"spawn": Vector3(-25, 0.6, -25),
-		"exit": Vector3(25, 1.5, 25),
-		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-20, 0, -16), "color": Color(0.55, 0.8, 1.0)},
+		"spawn": Vector3(-39, 0.6, -39),
+		"exit": Vector3(39, 1.5, 39),
+		"weapon": {"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-34, 0, -34), "color": Color(0.55, 0.8, 1.0)},
 		"env": {
 			"sky_top": Color(0.03, 0.04, 0.08), "sky_horizon": Color(0.16, 0.1, 0.22),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.8, 0.85, 1.0),
@@ -1360,6 +1843,13 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(0, 7, 0), "color": Color(1, 0.35, 0.25), "energy": 2.8, "range": 30},
 			{"pos": Vector3(-18, 5, 18), "color": Color(0.4, 0.7, 1.0), "energy": 2.4, "range": 22},
 			{"pos": Vector3(18, 5, -18), "color": Color(0.5, 0.6, 1.0), "energy": 2.4, "range": 22},
+			# Landing-ring lighting (appended AFTER the originals — light_shafts
+			# [0] must keep pointing at the beacon). Skyhold blues + warm pads.
+			{"pos": Vector3(-37, 5, -37), "color": Color(0.45, 0.65, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(37, 5, 37), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -38), "color": Color(0.5, 0.6, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-37, 5, 37), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-39, 5, 0), "color": Color(0.4, 0.7, 1.0), "energy": 2.0, "range": 18},
 		],
 		"walls": [
 			{"pos": Vector3(-12, 1.5, 10), "size": Vector3(4, 3, 4)},
@@ -1371,16 +1861,44 @@ static func _overseer() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 44), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(44, 0.1, 0.4), "color": Color(1.0, 0.3, 0.25)},
+			# Ring guidance: strips marking each landing-ring bulkhead gap + exit pool.
+			{"pos": Vector3(-13, 0.05, -31), "size": Vector3(7, 0.1, 0.4), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(31, 0.05, 24), "size": Vector3(0.4, 0.1, 7), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(39, 0.05, 33), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 0.75, 1.0)},
 		],
 		"sign": "SKYHOLD COMMAND",
-		# A raised vantage deck with a ramp up to it — verticality + a sightline to
-		# fight from, so the arena has somewhere to GO besides the floor.
+		# Verticality scaled to the 62² footprint (this arena carried the single
+		# copy-paste corner deck): twin corner decks + an elevated command dais
+		# behind the boss yard, chained by a connector bridge so there's a real
+		# upper circuit to fight the gunship from — not one lonely perch.
 		"platforms": [
 			{"pos": Vector3(-18.6, 3.0, 18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(18.6, 3.0, -18.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(0, 4.5, -22), "size": Vector3(9, 0.4, 5), "color": Color(0.34, 0.36, 0.44)},
+			# Ring approach gallery along the north rim — sniper post + climb reward.
+			{"pos": Vector3(0, 3.2, -39), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.38, 0.45)},
 		],
 		"ramps": [
 			{"pos": Vector3(-18.6, 1.5, 25.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(18.6, 1.5, -11.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
 		],
+		# A single command bulwark partway up the approach: bends the opening
+		# sprint and gives first cover from the gunship without caging the fight.
+		"gates": [
+			{"axis": "z", "at": -5, "gap": 9, "gap_pos": 18, "height": 3.6},
+			# Landing-ring bulkheads on the OLD perimeter line — the gunship yard
+			# itself stays uncaged. In through the north-west gap (the approach-
+			# gallery sky-bridge crosses through the same opening), out across the
+			# east gap south of the exit corner. The north-east pocket the two
+			# full-span walls close off is deliberately left EMPTY — no content,
+			# no route needs it.
+			{"axis": "z", "at": -31, "gap": 8, "gap_pos": -13, "height": 4.4},
+			{"axis": "x", "at": 31, "gap": 8, "gap_pos": 24, "height": 4.4},
+		],
+		# Command spire centrepiece — the only conventional boss stage without
+		# one. Off-centre: the arena's exact centre already carries the low
+		# beacon plinth, and the layout checker rightly flags stacking them.
+		"hero": {"pos": Vector3(-8, 0, 0), "color": Color(0.7, 0.5, 1.0), "height": 6.5},
 		"slogans": [
 			"ALTITUDE: OUR ADVANTAGE",
 			"LOOK UP. REGRET IT.",
@@ -1400,11 +1918,33 @@ static func _overseer() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
 			{"type": "barrel", "pos": Vector3(7, 0, 7)},
+			# Landing-ring dressing: relay dishes and pad clutter so the perimeter
+			# reads as Skyhold's aerial apron, not empty margin.
+			{"type": "dish", "pos": Vector3(-36, 0, -26)},
+			{"type": "server", "pos": Vector3(-40, 0, -14), "yaw": 90},
+			{"type": "server", "pos": Vector3(-40, 0, -12), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-38, 0, 2)},
+			{"type": "crate", "pos": Vector3(-34, 0, 20)},
+			{"type": "barrel", "pos": Vector3(-24, 0, 36)},
+			{"type": "dish", "pos": Vector3(0, 0, 38)},
+			{"type": "crate", "pos": Vector3(16, 0, 37)},
+			{"type": "lamp", "pos": Vector3(34, 0, 28)},
+			{"type": "canister", "pos": Vector3(36, 0, 34)},
+			{"type": "lamp", "pos": Vector3(24, 0, -36)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Connector: NE deck up to the command dais — chains the upper layer
+			# into a circuit instead of isolated perches.
+			{"from": Vector3(18.6, 3.4, -18.6), "to": Vector3(4.5, 4.9, -22.0), "width": 3.0},
+			# Approach-gallery access ramps at both ends + a gallery->west-spire
+			# sky-bridge that crosses the landing-ring bulkhead through its gap —
+			# the high road onto the command deck.
+			{"from": Vector3(-16.0, 0.3, -39.0), "to": Vector3(-9.0, 3.4, -39.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -39.0), "to": Vector3(9.0, 3.4, -39.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -39.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -1430,6 +1970,21 @@ static func _overseer() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(16, 0.5, -4), "trigger": 24, "pack": "overse_p3"},
 			{"type": "raptor", "pos": Vector3(0, 3.5, 16), "trigger": 26},
 			{"type": "brute", "pos": Vector3(16, 0.5, 16), "trigger": 24, "pack": "overse_p2"},
+			# Landing-ring escorts: a spawn-apron patrol, west-rim prowlers, a
+			# sniper POSTED ON the approach gallery, and exit-pad guardians.
+			# (Spawn-heat fix: the apron patrol sat 8 m off the spawn pad with an
+			# 18 m trigger — the whole pack aggroed at 0 s. Pushed ~9 units along
+			# the rim toward the NW bulkhead gap it guards, trigger 18 -> 14.)
+			{"type": "android", "pos": Vector3(-22, 0.5, -36), "trigger": 14, "pack": "overse_a1"},
+			{"type": "drone", "pos": Vector3(-16, 2.5, -35), "trigger": 14, "pack": "overse_a1"},
+			{"type": "seeker", "pos": Vector3(-37, 2.5, -20), "trigger": 18, "pack": "overse_a2"},
+			{"type": "android", "pos": Vector3(-36, 0.5, -4), "trigger": 16, "pack": "overse_a2"},
+			{"type": "sniper", "pos": Vector3(0, 3.8, -39), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-34, 0.5, 24), "trigger": 18, "pack": "overse_a3"},
+			{"type": "android", "pos": Vector3(-22, 0.5, 36), "trigger": 18, "pack": "overse_a3"},
+			{"type": "drone", "pos": Vector3(12, 2.5, 36), "trigger": 18, "pack": "overse_a4"},
+			{"type": "raptor", "pos": Vector3(34, 3.5, 26), "trigger": 20, "pack": "overse_a4"},
+			{"type": "brute", "pos": Vector3(34, 0.5, 34), "trigger": 18, "pack": "overse_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-22, 0, -18)},
@@ -1439,6 +1994,12 @@ static func _overseer() -> Dictionary:
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 18)},
+			# Landing-ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-38, 0, -12)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -36)},
+			{"type": "ammo", "pos": Vector3(-34, 0, 30)},
+			{"type": "health", "pos": Vector3(30, 0, 36)},
+			{"type": "overclock", "pos": Vector3(-4, 3.6, -38)},
 		],
 	}
 
@@ -1458,11 +2019,17 @@ static func _alien() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
-		"floor_size": Vector2(76, 76),
+		# EXPANSION PASS (2× area): the 76² landing hollow is untouched at the
+		# centre — the beacon yard stays open. A new outer landing scar wraps
+		# it: bulkhead-routed way in, an elevated survey gallery along the north
+		# lip with a sky-bridge onto the west tower, a third bio-acid runnel in
+		# the east scar, and its own xeno patrols. Spawn/exit pushed to the new
+		# perimeter.
+		"floor_size": Vector2(106, 106),
 		"floor_color": Color(0.06, 0.11, 0.08),
-		"spawn": Vector3(-30, 0.6, -30),
-		"exit": Vector3(30, 1.5, 30),
-		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-24, 0, -18), "color": Color(0.4, 1, 0.55)},
+		"spawn": Vector3(-48, 0.6, -48),
+		"exit": Vector3(48, 1.5, 48),
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-42, 0, -36), "color": Color(0.4, 1, 0.55)},
 		"env": {
 			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.75, 1.0, 0.8),
@@ -1497,6 +2064,13 @@ static func _alien() -> Dictionary:
 			# Warm amber fill over the player spawn / weapon pickup (SW corner): a
 			# third colour note so the approach isn't a flat green field.
 			{"pos": Vector3(-26, 5, -22), "color": Color(1.0, 0.62, 0.32), "energy": 2.4, "range": 24},
+			# Landing-scar ring lighting (appended AFTER the originals —
+			# light_shafts [0] must keep pointing at the beacon god-ray).
+			{"pos": Vector3(-46, 5, -46), "color": Color(1.0, 0.6, 0.32), "energy": 2.2, "range": 20},
+			{"pos": Vector3(46, 5, 46), "color": Color(0.4, 1.0, 0.5), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -47), "color": Color(0.72, 0.34, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(46, 5, -46), "color": Color(0.5, 1.0, 0.45), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-46, 5, 46), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 18},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},
@@ -1506,6 +2080,10 @@ static func _alien() -> Dictionary:
 			{"pos": Vector3(9, 0.05, 2), "size": Vector3(2.6, 0.1, 5.6), "color": Color(0.4, 1.0, 0.45)},
 			{"pos": Vector3(-2, 0.05, 20), "size": Vector3(6.6, 0.1, 2.6), "color": Color(0.4, 1.0, 0.45)},
 			{"pos": Vector3(4, 0.05, -16), "size": Vector3(5.6, 0.1, 2.6), "color": Color(0.4, 1.0, 0.45)},
+			# Ring guidance: strips marking each landing-scar bulkhead gap + exit pool.
+			{"pos": Vector3(-13, 0.05, -36), "size": Vector3(7, 0.1, 0.4), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(36, 0.05, 28), "size": Vector3(0.4, 0.1, 7), "color": Color(0.4, 1.0, 0.45)},
+			{"pos": Vector3(48, 0.05, 42), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 1.0, 0.5)},
 		],
 		"sign": "THE HOLLOW",
 		# Off-world monoliths break up the wide-open hollow, giving cover from the
@@ -1516,16 +2094,30 @@ static func _alien() -> Dictionary:
 			{"pos": Vector3(-2, 1.5, 20), "size": Vector3(6, 3, 2)},
 			{"pos": Vector3(4, 2.5, -16), "size": Vector3(5, 5, 2)},
 		],
-		# Bio-acid runoff from the beacon: green channels you have to route around.
+		# Bio-acid runoff from the beacon: green channels you have to route around
+		# — and a third runnel bleeding down the east landing scar, so the ring
+		# speaks the same hazard language as the hollow.
 		"lava": [
 			{"pos": Vector3(-12,0,-10), "size": Vector2(46,4), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
 			{"pos": Vector3(12,0,18), "size": Vector2(46,4), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
+			{"pos": Vector3(44,0,-6), "size": Vector2(3.6,26), "color": Color(0.4,1.0,0.4), "dmg": 18.0},
+		],
+		# Landing-scar bulkheads on the OLD perimeter line — the beacon yard
+		# stays uncaged. In through the north-west gap (under the survey-gallery
+		# sky-bridge, which crosses through the same opening), out across the
+		# east gap by the exit. The north-east pocket the two full-span walls
+		# close off is deliberately left EMPTY — no content, no route needs it.
+		"gates": [
+			{"axis": "z", "at": -36, "gap": 8, "gap_pos": -13, "height": 4.4},
+			{"axis": "x", "at": 36, "gap": 8, "gap_pos": 28, "height": 4.4},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-22.8, 3.0, 22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
 			{"pos": Vector3(22.8, 3.0, -22.8), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring survey gallery along the north lip — gunner post + climb reward.
+			{"pos": Vector3(0, 3.2, -48), "size": Vector3(18, 0.4, 5), "color": Color(0.38, 0.42, 0.4)},
 		],
 		"ramps": [
 			{"pos": Vector3(-22.8, 1.5, 29.8), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -1553,11 +2145,28 @@ static func _alien() -> Dictionary:
 			{"type": "crate", "pos": Vector3(-12, 0, 4)},
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+			# Landing-scar dressing: crashed-survey clutter and listening dishes
+			# so the ring reads as the fleet's churned landing ground.
+			{"type": "dish", "pos": Vector3(-44, 0, -34)},
+			{"type": "server", "pos": Vector3(-46, 0, -16), "yaw": 90},
+			{"type": "server", "pos": Vector3(-46, 0, -14), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-44, 0, 4)},
+			{"type": "crate", "pos": Vector3(-40, 0, 18)},
+			{"type": "barrel", "pos": Vector3(-30, 0, 44)},
+			{"type": "dish", "pos": Vector3(2, 0, 44)},
+			{"type": "crate", "pos": Vector3(18, 0, 43)},
+			{"type": "canister", "pos": Vector3(40, 0, 24)},
+			{"type": "lamp", "pos": Vector3(42, 0, 44)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Survey-gallery access ramps at both ends + a gallery->west-tower
+			# sky-bridge that crosses the landing-scar bulkhead through its gap.
+			{"from": Vector3(-16.0, 0.3, -48.0), "to": Vector3(-9.0, 3.4, -48.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -48.0), "to": Vector3(9.0, 3.4, -48.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -48.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -1584,12 +2193,30 @@ static func _alien() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(16, 0.5, 8), "trigger": 26, "pack": "alien_p1"},
 			{"type": "ravager", "pos": Vector3(-14, 0.5, 16), "trigger": 28, "pack": "alien_p2"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, -18), "count": 6, "trigger": 24, "pack": "alien_p5"},
+			# Landing-scar patrols: drifters sweeping the spawn approach, west-scar
+			# prowlers, a gunner POSTED ON the survey gallery, and exit guardians.
+			{"type": "alien", "pos": Vector3(-30, 2.5, -42), "trigger": 20, "pack": "alien_a1"},
+			{"type": "android", "pos": Vector3(-36, 0.5, -40), "trigger": 18, "pack": "alien_a1"},
+			{"type": "skitter", "pos": Vector3(-44, 0.5, -24), "count": 4, "trigger": 18, "pack": "alien_a2"},
+			{"type": "alien", "pos": Vector3(-42, 2.5, -8), "trigger": 18, "pack": "alien_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -48), "trigger": 20},
+			{"type": "ravager", "pos": Vector3(-40, 0.5, 26), "trigger": 20, "pack": "alien_a3"},
+			{"type": "alien", "pos": Vector3(-28, 2.5, 42), "trigger": 20, "pack": "alien_a3"},
+			{"type": "drone", "pos": Vector3(10, 2.5, 44), "trigger": 18, "pack": "alien_a4"},
+			{"type": "brute", "pos": Vector3(40, 0.5, 32), "trigger": 18, "pack": "alien_a4"},
+			{"type": "alien", "pos": Vector3(44, 2.5, 40), "trigger": 20, "pack": "alien_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-24, 0, -16)},
 			{"type": "ammo", "pos": Vector3(-8, 0, 0)},
 			{"type": "ammo", "pos": Vector3(8, 0, 0)},
 			{"type": "overclock", "pos": Vector3(0, 0, -18)},
+			# Landing-scar supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-46, 0, -12)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -44)},
+			{"type": "ammo", "pos": Vector3(-40, 0, 34)},
+			{"type": "health", "pos": Vector3(42, 0, 36)},
+			{"type": "overclock", "pos": Vector3(-4, 3.6, -47)},
 		],
 	}
 
@@ -1608,11 +2235,17 @@ static func _titan() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
-		"floor_size": Vector2(84, 84),
+		# EXPANSION PASS (2× area): the 84² citadel core is untouched at the
+		# centre — the PROMETHEUS yard stays open. A new outer data-moat ring
+		# wraps it: bulkhead-routed way in, an elevated observation gallery
+		# along the north scarp with a sky-bridge onto the west tower, a third
+		# coolant breach down the east moat, and its own late-game garrison.
+		# Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(118, 118),
 		"floor_color": Color(0.07, 0.07, 0.1),
-		"spawn": Vector3(-34, 0.6, -34),
-		"exit": Vector3(34, 1.5, 34),
-		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-28, 0, -22), "color": Color(1, 0.4, 0.35)},
+		"spawn": Vector3(-54, 0.6, -54),
+		"exit": Vector3(54, 1.5, 54),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-48, 0, -42), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(28, 0, -22), "color": Color(0.45, 0.85, 1)},
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(0, 0, 24), "color": Color(0.4, 1, 0.55)},
@@ -1634,6 +2267,14 @@ static func _titan() -> Dictionary:
 			{"pos": Vector3(0, 9, 0), "color": Color(0.5, 0.7, 1.0), "energy": 3.0, "range": 40},
 			{"pos": Vector3(-24, 5, 24), "color": Color(1, 0.35, 0.3), "energy": 2.2, "range": 24},
 			{"pos": Vector3(24, 5, -24), "color": Color(0.4, 0.8, 1.0), "energy": 2.2, "range": 24},
+			# Data-moat ring lighting (appended AFTER the originals — light_shafts
+			# [0,2] must keep pointing at the same lamps). Singularity blues +
+			# one red warning note over the spawn scarp.
+			{"pos": Vector3(-52, 5, -52), "color": Color(1.0, 0.35, 0.3), "energy": 2.2, "range": 20},
+			{"pos": Vector3(52, 5, 52), "color": Color(0.5, 0.7, 1.0), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -52), "color": Color(0.6, 0.55, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-52, 5, 52), "color": Color(0.4, 0.8, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-54, 5, 0), "color": Color(0.5, 0.65, 1.0), "energy": 2.0, "range": 18},
 		],
 		"walls": [
 			{"pos": Vector3(-16, 1.6, 14), "size": Vector3(4, 3.2, 4)},
@@ -1642,20 +2283,38 @@ static func _titan() -> Dictionary:
 			{"pos": Vector3(-16, 1.6, -16), "size": Vector3(4, 3.2, 4)},
 		],
 		# Molten coolant breaches: two streams across the core force a serpentine
-		# route to the NE exit (gaps alternate east/west) instead of a straight run.
+		# route to the NE exit (gaps alternate east/west) instead of a straight
+		# run — and a third breach runs down the east data-moat, so the ring
+		# carries the same hazard language.
 		"lava": [
 			{"pos": Vector3(-12, 0, -12), "size": Vector2(36, 4.0)},
 			{"pos": Vector3(12, 0, 12), "size": Vector2(36, 4.0)},
+			{"pos": Vector3(48, 0, -8), "size": Vector2(4.0, 28)},
+		],
+		# Data-moat bulkheads on the OLD perimeter line — PROMETHEUS's yard, the
+		# anchor and every extra weapon stay uncaged. In through the north-west
+		# gap (under the observation-gallery sky-bridge, which crosses through
+		# the same opening), out across the east gap by the exit. The north-east
+		# pocket the two full-span walls close off is deliberately left EMPTY.
+		"gates": [
+			{"axis": "z", "at": -39, "gap": 8, "gap_pos": -13, "height": 4.4},
+			{"axis": "x", "at": 39, "gap": 8, "gap_pos": 30, "height": 4.4},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 64), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(64, 0.1, 0.5), "color": Color(1.0, 0.3, 0.25)},
+			# Ring guidance: strips marking each data-moat bulkhead gap + exit pool.
+			{"pos": Vector3(-13, 0.05, -39), "size": Vector3(7, 0.1, 0.4), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(39, 0.05, 30), "size": Vector3(0.4, 0.1, 7), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(54, 0.05, 48), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 0.75, 1.0)},
 		],
 		"sign": "SINGULARITY CORE",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-25.2, 3.0, 25.2), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring observation gallery along the north scarp — gunner post + climb reward.
+			{"pos": Vector3(0, 3.2, -53), "size": Vector3(18, 0.4, 5), "color": Color(0.34, 0.36, 0.44)},
 		],
 		"ramps": [
 			{"pos": Vector3(-25.2, 1.5, 32.2), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -1686,11 +2345,29 @@ static func _titan() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(-8, 0, -8)},
 			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+			# Data-moat dressing: relay clutter along the ring so the moat reads
+			# as the citadel's outer works, not empty margin.
+			{"type": "dish", "pos": Vector3(-48, 0, -36)},
+			{"type": "server", "pos": Vector3(-50, 0, -16), "yaw": 90},
+			{"type": "server", "pos": Vector3(-50, 0, -14), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-50, 0, 4)},
+			{"type": "crate", "pos": Vector3(-44, 0, 20)},
+			{"type": "barrel", "pos": Vector3(-32, 0, 48)},
+			{"type": "dish", "pos": Vector3(2, 0, 48)},
+			{"type": "crate", "pos": Vector3(18, 0, 47)},
+			{"type": "canister", "pos": Vector3(44, 0, 26)},
+			{"type": "lamp", "pos": Vector3(46, 0, 48)},
+			{"type": "lamp", "pos": Vector3(26, 0, -46)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Observation-gallery access ramps at both ends + a gallery->west-tower
+			# sky-bridge that crosses the data-moat bulkhead through its gap.
+			{"from": Vector3(-16.0, 0.3, -53.0), "to": Vector3(-9.0, 3.4, -53.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -53.0), "to": Vector3(9.0, 3.4, -53.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -53.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -1722,6 +2399,23 @@ static func _titan() -> Dictionary:
 			{"type": "ravager", "pos": Vector3(12, 0.5, 22), "trigger": 30},
 			{"type": "android", "pos": Vector3(-22, 0.5, -22), "count": 3, "trigger": 26, "pack": "titan_p3"},
 			{"type": "warmech", "pos": Vector3(26, 0.5, -24), "trigger": 40},
+			# Data-moat garrison: swarm pressure on the spawn scarp, west-moat
+			# prowlers, a gunner POSTED ON the observation gallery, and a heavy
+			# exit-quarter picket so the last leg isn't a free walk.
+			# (Spawn-heat fix: the ravager sat 17 units off spawn with an 18 m
+			# trigger — pack titan_a1 aggroed at 0 s. Both pushed ~10 units along
+			# the scarp toward the NW bulkhead gap they guard; the ring warmech
+			# stays in the exit quarter, nowhere near spawn.)
+			{"type": "skitter", "pos": Vector3(-22, 0.5, -46), "count": 4, "trigger": 18, "pack": "titan_a1"},
+			{"type": "ravager", "pos": Vector3(-28, 0.5, -46), "trigger": 18, "pack": "titan_a1"},
+			{"type": "seeker", "pos": Vector3(-46, 2.5, -26), "trigger": 18, "pack": "titan_a2"},
+			{"type": "gunner", "pos": Vector3(-48, 0.5, -4), "trigger": 16, "pack": "titan_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -53), "trigger": 20},
+			{"type": "spider", "pos": Vector3(-44, 0.5, 28), "trigger": 18, "pack": "titan_a3"},
+			{"type": "skitter", "pos": Vector3(-30, 0.5, 46), "count": 4, "trigger": 18, "pack": "titan_a3"},
+			{"type": "drone", "pos": Vector3(12, 2.5, 48), "trigger": 18, "pack": "titan_a4"},
+			{"type": "brute", "pos": Vector3(44, 0.5, 34), "trigger": 18, "pack": "titan_a4"},
+			{"type": "warmech", "pos": Vector3(46, 0.5, 46), "trigger": 22, "pack": "titan_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-26, 0, -20)},
@@ -1729,6 +2423,12 @@ static func _titan() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(10, 0, 0)},
 			{"type": "health", "pos": Vector3(0, 0, -16)},
 			{"type": "overclock", "pos": Vector3(0, 0, 20)},
+			# Data-moat supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-50, 0, -10)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -49)},
+			{"type": "ammo", "pos": Vector3(-44, 0, 36)},
+			{"type": "health", "pos": Vector3(46, 0, 40)},
+			{"type": "overclock", "pos": Vector3(-4, 3.6, -52)},
 		],
 	}
 
@@ -1743,11 +2443,17 @@ static func _archon() -> Dictionary:
 		"tasks": [{"type": "kill_all"}],
 		"music": "music_archon",
 		"open_sky": true,
-		"floor_size": Vector2(80, 80),
+		# EXPANSION PASS (2× area): the 80² cathedral nave is untouched at the
+		# centre — ARCHON's yard stays open and it manufactures its waves there.
+		# A new outer cloister ring wraps it: bulkhead-routed way in, an
+		# elevated choir gallery along the north wall with a sky-bridge onto
+		# the north tower, and a late-game honour guard walking the cloister.
+		# Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(112, 112),
 		"floor_color": Color(0.08, 0.08, 0.13),
-		"spawn": Vector3(-28, 0.6, -28),
-		"exit": Vector3(28, 1.5, 28),
-		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"spawn": Vector3(-51, 0.6, -51),
+		"exit": Vector3(51, 1.5, 51),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-45, 0, -39), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(0, 0, 26), "color": Color(0.45, 0.85, 1)},
@@ -1780,6 +2486,13 @@ static func _archon() -> Dictionary:
 			{"pos": Vector3(22, 5, -22), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 24},
 			{"pos": Vector3(22, 5, 22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
 			{"pos": Vector3(-22, 5, -22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+			# Cloister-ring lighting (appended AFTER the originals — light_shafts
+			# [0] must keep pointing at the god-ray). Cathedral violets + blues.
+			{"pos": Vector3(-49, 5, -49), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(49, 5, 49), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -49), "color": Color(0.5, 0.55, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-49, 5, 49), "color": Color(0.55, 0.5, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-51, 5, 0), "color": Color(0.45, 0.65, 1.0), "energy": 2.0, "range": 18},
 		],
 		# Four cathedral pillars frame the brain without blocking the centre.
 		"walls": [
@@ -1793,12 +2506,27 @@ static func _archon() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(60, 0.1, 0.5), "color": Color(0.7, 0.4, 1.0)},
+			# Ring guidance: strips marking each cloister-bulkhead gap + exit pool.
+			{"pos": Vector3(-9, 0.05, -37), "size": Vector3(8, 0.1, 0.4), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(37, 0.05, 30), "size": Vector3(0.4, 0.1, 7), "color": Color(0.7, 0.4, 1.0)},
+			{"pos": Vector3(51, 0.05, 45), "size": Vector3(4, 0.1, 3), "color": Color(0.5, 0.6, 1.0)},
+		],
+		# Cloister bulkheads on the OLD perimeter line — ARCHON's nave stays
+		# uncaged so its manufactured waves flow freely. In through the north
+		# gap (under the choir-gallery sky-bridge, which crosses through the
+		# same opening), out across the east gap by the exit. The north-east
+		# pocket the two full-span walls close off is deliberately left EMPTY.
+		"gates": [
+			{"axis": "z", "at": -37, "gap": 9, "gap_pos": -9, "height": 4.4},
+			{"axis": "x", "at": 37, "gap": 8, "gap_pos": 30, "height": 4.4},
 		],
 		"sign": "THE MIND CATHEDRAL",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-24.0, 3.0, 24.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring choir gallery along the north wall — gunner post + climb reward.
+			{"pos": Vector3(0, 3.2, -50), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.38, 0.48)},
 		],
 		"ramps": [
 			{"pos": Vector3(-24.0, 1.5, 31.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -1831,6 +2559,19 @@ static func _archon() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(-9, 0, -9)},
 			{"type": "lamp", "pos": Vector3(-24, 0, 8)},
 			{"type": "lamp", "pos": Vector3(24, 0, -8), "yaw": 180},
+			# Cloister dressing: server reliquaries and relay dishes so the ring
+			# reads as the cathedral's outer cloister, not empty margin.
+			{"type": "dish", "pos": Vector3(-45, 0, -32)},
+			{"type": "server", "pos": Vector3(-47, 0, -14), "yaw": 90},
+			{"type": "server", "pos": Vector3(-47, 0, -12), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-47, 0, 2)},
+			{"type": "crate", "pos": Vector3(-42, 0, 18)},
+			{"type": "barrel", "pos": Vector3(-30, 0, 45)},
+			{"type": "dish", "pos": Vector3(2, 0, 45)},
+			{"type": "crate", "pos": Vector3(16, 0, 44)},
+			{"type": "canister", "pos": Vector3(42, 0, 24)},
+			{"type": "lamp", "pos": Vector3(44, 0, 45)},
+			{"type": "lamp", "pos": Vector3(24, 0, -44)},
 		],
 		# Seed defenders on entry; ARCHON itself manufactures the rest. Its boot-up
 		# triggers once the player advances into the cathedral.
@@ -1838,6 +2579,11 @@ static func _archon() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+			# Choir-gallery access ramps at both ends + a gallery->north-tower
+			# sky-bridge that crosses the cloister bulkhead through its gap.
+			{"from": Vector3(-16.0, 0.3, -50.0), "to": Vector3(-9.0, 3.4, -50.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -50.0), "to": Vector3(9.0, 3.4, -50.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -50.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
@@ -1856,6 +2602,28 @@ static func _archon() -> Dictionary:
 			{"type": "ravager", "pos": Vector3(10, 0.5, 8), "trigger": 30},
 			{"type": "warmech", "pos": Vector3(-16, 0.5, -14), "trigger": 38, "pack": "archon_p2"},
 			{"type": "archon", "pos": Vector3(0, 0.5, 0), "trigger": 34},
+			# Cloister honour guard (late-game roster): swarm pressure on the
+			# spawn approach, west-cloister heavies, a gunner POSTED ON the choir
+			# gallery, and a TERMINATOR + warmech picket at the exit quarter.
+			{"type": "skitter", "pos": Vector3(-32, 0.5, -44), "count": 4, "trigger": 18, "pack": "archon_a1"},
+			{"type": "spider", "pos": Vector3(-40, 0.5, -42), "trigger": 18, "pack": "archon_a1"},
+			{"type": "gunner", "pos": Vector3(-46, 0.5, -24), "trigger": 16, "pack": "archon_a2"},
+			{"type": "ravager", "pos": Vector3(-44, 0.5, -2), "trigger": 16, "pack": "archon_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -50), "trigger": 20},
+			{"type": "howitzer", "pos": Vector3(-42, 0.5, 26), "trigger": 20, "pack": "archon_a3"},
+			{"type": "skitter", "pos": Vector3(-28, 0.5, 44), "count": 4, "trigger": 18, "pack": "archon_a3"},
+			{"type": "drone", "pos": Vector3(10, 2.5, 44), "trigger": 18, "pack": "archon_a4"},
+			{"type": "terminator", "pos": Vector3(42, 0.5, 30), "trigger": 22, "pack": "archon_a4"},
+			{"type": "warmech", "pos": Vector3(44, 0.5, 42), "trigger": 22, "pack": "archon_a4"},
+		],
+		# Cloister supplies + the gallery-climb reward (the nave keeps its
+		# original no-pickup siege scarcity).
+		"pickups": [
+			{"type": "health", "pos": Vector3(-48, 0, -10)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -46)},
+			{"type": "ammo", "pos": Vector3(-42, 0, 32)},
+			{"type": "health", "pos": Vector3(42, 0, 36)},
+			{"type": "overclock", "pos": Vector3(-4, 3.6, -49)},
 		],
 	}
 
@@ -1877,12 +2645,17 @@ static func _uplink() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
-		"floor_size": Vector2(60, 60),
+		# EXPANSION PASS (2× area): the 60² relay yard is untouched at the centre;
+		# a new outer antenna field wraps it — bulkhead-routed way in, an elevated
+		# broadcast gallery along the north edge with a sky-bridge over the old
+		# blast-door line onto the west mast, and its own patrols. Spawn/exit
+		# pushed to the new perimeter.
+		"floor_size": Vector2(84, 84),
 		"floor_color": Color(0.08, 0.09, 0.14),
 		"floor_material": "res://assets/materials/vault_floor.tres",
-		"spawn": Vector3(-22, 0.6, -22),
-		"exit": Vector3(24, 1.5, 24),
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-18, 0, -12), "color": Color(0.45, 0.9, 1.0)},
+		"spawn": Vector3(-37, 0.6, -37),
+		"exit": Vector3(37, 1.5, 37),
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-33, 0, -27), "color": Color(0.45, 0.9, 1.0)},
 		"extra_weapons": [
 			# was the Devastator (rank 12) on level 9. Gauss (rank 9) lands here instead.
 			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(18, 0, -12), "color": Color(0.55, 0.8, 1.0)},
@@ -1902,6 +2675,13 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(0, 8, 0), "color": Color(0.45, 0.8, 1.0), "energy": 2.6, "range": 30},
 			{"pos": Vector3(-18, 5, 18), "color": Color(0.5, 0.6, 1.0), "energy": 2.0, "range": 20},
 			{"pos": Vector3(18, 5, -18), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 20},
+			# Ring lighting (appended AFTER the originals — light_shafts [0] must
+			# keep pointing at the same lamp). Signal blues + warm contrast.
+			{"pos": Vector3(-36, 5, -36), "color": Color(0.5, 0.6, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(36, 5, 36), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -37), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-36, 5, 36), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-38, 5, 0), "color": Color(0.5, 0.65, 1.0), "energy": 2.0, "range": 18},
 		],
 		# Cover ringing the uplink: enough to break sightlines, not enough to hide
 		# in — you have to keep stepping back onto the zone.
@@ -1916,12 +2696,18 @@ static func _uplink() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.4, 0.1, 46), "color": Color(0.4, 0.7, 1.0)},
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(46, 0.1, 0.4), "color": Color(0.5, 0.6, 1.0)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(-12, 0.05, -30), "size": Vector3(7, 0.1, 0.4), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(30, 0.05, 24), "size": Vector3(0.4, 0.1, 7), "color": Color(0.4, 0.7, 1.0)},
+			{"pos": Vector3(37, 0.05, 32), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 0.8, 1.0)},
 		],
 		"sign": "SKYBRIDGE UPLINK",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-18.0, 3.0, 18.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring broadcast gallery along the north edge — climb reward + sniper post.
+			{"pos": Vector3(0, 3.2, -37), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
 		],
 		"ramps": [
 			{"pos": Vector3(-18.0, 1.5, 25.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -1932,6 +2718,14 @@ static func _uplink() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -16, "gap": 7, "gap_pos": 15, "height": 4.6, "roofed": true},
 			{"axis": "z", "at": 16, "gap": 7, "gap_pos": -15, "height": 4.6},
+			# Perimeter-ring bulkheads: in through the north-west gap (right by the
+			# spawn pad, under the gallery sky-bridge which crosses through the
+			# same opening), out across the east gap. The east gap sits SOUTH of
+			# the z=16 blast-door line so the exit corner stays open (two full-span
+			# walls would otherwise seal it into an unreachable pocket); the east
+			# strip north of it is deliberately left empty.
+			{"axis": "z", "at": -30, "gap": 8, "gap_pos": -12, "height": 4.4},
+			{"axis": "x", "at": 30, "gap": 8, "gap_pos": 24, "height": 4.4},
 		],
 		"slogans": [
 			"SIGNAL JAMMED. HOPE JAMMED.",
@@ -1953,6 +2747,20 @@ static func _uplink() -> Dictionary:
 			{"type": "canister", "pos": Vector3(-8, 0, -8)},
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
 			{"type": "lamp", "pos": Vector3(20, 0, -6), "yaw": 180},
+			# Ring dressing: the outer antenna field — dishes and relay clutter so
+			# the perimeter reads as the uplink's aerial farm, not empty margin.
+			{"type": "dish", "pos": Vector3(-28, 0, -36)},
+			{"type": "server", "pos": Vector3(-36, 0, -20), "yaw": 90},
+			{"type": "server", "pos": Vector3(-36, 0, -18), "yaw": 90},
+			{"type": "canister", "pos": Vector3(-37, 0, -4)},
+			{"type": "lamp", "pos": Vector3(-36, 0, 10)},
+			{"type": "crate", "pos": Vector3(-32, 0, 24)},
+			{"type": "barrel", "pos": Vector3(-20, 0, 36)},
+			{"type": "dish", "pos": Vector3(0, 0, 36)},
+			{"type": "crate", "pos": Vector3(14, 0, 35)},
+			{"type": "barrel", "pos": Vector3(34, 0, 26)},
+			{"type": "canister", "pos": Vector3(36, 0, 32)},
+			{"type": "lamp", "pos": Vector3(24, 0, -35)},
 		],
 		# Waves close on the uplink from every side; heavies (gunner/raptor) and
 		# swarms force you off the zone, draining the broadcast.
@@ -1960,6 +2768,12 @@ static func _uplink() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->west-mast sky-bridge
+			# that crosses the ring bulkhead through its gap and sails over the
+			# old z=-16 blast-door wall — the high road into the relay yard.
+			{"from": Vector3(-16.0, 0.3, -37.0), "to": Vector3(-9.0, 3.4, -37.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -37.0), "to": Vector3(9.0, 3.4, -37.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -37.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -1984,6 +2798,26 @@ static func _uplink() -> Dictionary:
 				{"type": "enforcer", "pos": Vector3(-7, 0.5, -6), "trigger": 18, "pack": "up_mid"},
 				{"type": "roller", "pos": Vector3(7, 0.5, 6), "trigger": 16, "pack": "up_mid"},
 			{"type": "drone", "pos": Vector3(10, 2.5, 10), "trigger": 18, "pack": "up_ne"},
+			# Ring garrison: a spawn-field patrol, west antenna-row prowlers, a
+			# sniper POSTED ON the broadcast gallery, and exit-yard guardians.
+			{"type": "android", "pos": Vector3(-30, 0.5, -35), "trigger": 18, "pack": "up_a1"},
+			{"type": "drone", "pos": Vector3(-24, 2.5, -34), "trigger": 18, "pack": "up_a1"},
+			{"type": "seeker", "pos": Vector3(-35, 2.5, -22), "trigger": 18, "pack": "up_a2"},
+			{"type": "android", "pos": Vector3(-36, 0.5, -6), "trigger": 16, "pack": "up_a2"},
+			{"type": "sniper", "pos": Vector3(0, 3.8, -37), "trigger": 20},
+			{"type": "gunner", "pos": Vector3(-34, 0.5, 22), "trigger": 18, "pack": "up_a3"},
+			{"type": "roller", "pos": Vector3(-24, 0.5, 35), "trigger": 18, "pack": "up_a3"},
+			{"type": "drone", "pos": Vector3(10, 2.5, 35), "trigger": 18, "pack": "up_a4"},
+			{"type": "raptor", "pos": Vector3(34, 3.5, 28), "trigger": 20, "pack": "up_a4"},
+			{"type": "android", "pos": Vector3(33, 0.5, 34), "trigger": 17, "pack": "up_a4"},
+		],
+		"pickups": [
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-37, 0, -14)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -35)},
+			{"type": "ammo", "pos": Vector3(-34, 0, 30)},
+			{"type": "health", "pos": Vector3(34, 0, 32)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -36)},
 		],
 	}
 
@@ -2004,12 +2838,18 @@ static func _assembly() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": false,
-		"floor_size": Vector2(72, 72),
+		# EXPANSION PASS (2× area): the 72² production floor is untouched at the
+		# centre — the reactor yard stays open. A new outer freight ring wraps
+		# it: bulkhead-routed way in, an elevated inspection catwalk along the
+		# north wall with a sky-bridge onto the north stack, a third smelt
+		# channel down the east freight lane, and its own line-fresh garrison.
+		# Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(100, 100),
 		"floor_color": Color(0.1, 0.08, 0.06),
 		"floor_material": "res://assets/materials/vault_floor.tres",
-		"spawn": Vector3(-28, 0.6, -28),
-		"exit": Vector3(28, 1.5, 28),
-		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-22, 0, -16), "color": Color(1, 0.4, 0.35)},
+		"spawn": Vector3(-45, 0.6, -45),
+		"exit": Vector3(45, 1.5, 45),
+		"weapon": {"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-39, 0, -37), "color": Color(1, 0.4, 0.35)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(22, 0, -16), "color": Color(0.55, 0.8, 1)},
 			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 24), "color": Color(1, 0.55, 0.25)},
@@ -2035,6 +2875,14 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(-20, 6, -20), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
 			{"pos": Vector3(0, 7, 20), "color": Color(0.52, 0.79, 1.0), "energy": 2.2, "range": 20},
 			{"pos": Vector3(0, 7, -20), "color": Color(0.5, 0.77, 1.0), "energy": 2.2, "range": 20},
+			# Freight-ring lighting (appended AFTER the originals — light_shafts
+			# [0,2] must keep pointing at the same lamps). Furnace ambers + one
+			# cool inspection blue over the catwalk.
+			{"pos": Vector3(-42, 5, -42), "color": Color(1.0, 0.6, 0.3), "energy": 2.2, "range": 20},
+			{"pos": Vector3(42, 5, 42), "color": Color(1.0, 0.5, 0.2), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -44), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-42, 5, 42), "color": Color(1.0, 0.45, 0.2), "energy": 2.0, "range": 18},
+			{"pos": Vector3(42, 5, -14), "color": Color(1.0, 0.55, 0.25), "energy": 2.0, "range": 18},
 		],
 		# Layout: production-line CONVEYOR RAILS — two long offset assembly rails
 		# flank the reactor, with upright stanchions, instead of the corner-block +
@@ -2046,10 +2894,22 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(14, 2, -4), "size": Vector3(1, 4, 8)},
 		],
 		# Reactor smelt overflow: molten channels force a serpentine route past the
-		# central reactor (the sabotage point at origin stays clear).
+		# central reactor (the sabotage point at origin stays clear) — and a third
+		# channel runs down the east freight lane, carrying the hazard language
+		# out into the ring.
 		"lava": [
 			{"pos": Vector3(-12, 0, -9), "size": Vector2(40, 4.0), "dmg": 30.0},
 			{"pos": Vector3(12, 0, 9), "size": Vector2(40, 4.0), "dmg": 30.0},
+			{"pos": Vector3(41, 0, -4), "size": Vector2(3.6, 24), "dmg": 30.0},
+		],
+		# Freight-ring bulkheads on the OLD perimeter line — the reactor yard
+		# stays uncaged and the sabotage point reachable. In through the north
+		# gap (under the catwalk sky-bridge, which crosses through the same
+		# opening), out across the east gap by the exit. The north-east pocket
+		# the two full-span walls close off is deliberately left EMPTY.
+		"gates": [
+			{"axis": "z", "at": -33, "gap": 9, "gap_pos": -9, "height": 4.4},
+			{"axis": "x", "at": 33, "gap": 8, "gap_pos": 26, "height": 4.4},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 0.05, -3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.5, 0.2)},
@@ -2060,6 +2920,8 @@ static func _assembly() -> Dictionary:
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-21.6, 3.0, 21.6), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring inspection catwalk along the north wall — gunner post + climb reward.
+			{"pos": Vector3(0, 3.2, -45), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.34, 0.32)},
 		],
 		"ramps": [
 			{"pos": Vector3(-21.6, 1.5, 28.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -2089,6 +2951,20 @@ static func _assembly() -> Dictionary:
 			{"type": "crate", "pos": Vector3(12, 0, -4)},
 			{"type": "lamp", "pos": Vector3(-22, 0, 8)},
 			{"type": "lamp", "pos": Vector3(22, 0, -8), "yaw": 180},
+			# Freight-ring dressing: pallet stacks and shipping clutter so the
+			# ring reads as the plant's loading apron, not empty margin.
+			{"type": "crate", "pos": Vector3(-40, 0, -30)},
+			{"type": "crate", "pos": Vector3(-39, 0, -28)},
+			{"type": "barrel", "pos": Vector3(-34, 0, -42)},
+			{"type": "canister", "pos": Vector3(-44, 0, -8)},
+			{"type": "server", "pos": Vector3(-44, 0, 10), "yaw": 90},
+			{"type": "server", "pos": Vector3(-44, 0, 12), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-36, 0, 34)},
+			{"type": "barrel", "pos": Vector3(-20, 0, 42)},
+			{"type": "canister", "pos": Vector3(14, 0, 42)},
+			{"type": "dish", "pos": Vector3(4, 0, 42)},
+			{"type": "crate", "pos": Vector3(28, 0, -40)},
+			{"type": "lamp", "pos": Vector3(38, 0, 20)},
 		],
 		# A late-game gauntlet: GUNNERS hold the lanes while SKITTER swarms pour
 		# from the line and gunners/mech press in — fight to the reactor.
@@ -2096,6 +2972,12 @@ static func _assembly() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-0.0, 9.2, -17.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+			# Catwalk access ramps at both ends + a catwalk->north-stack sky-bridge
+			# that crosses the freight bulkhead through its gap — the high road
+			# onto the plant floor.
+			{"from": Vector3(-16.0, 0.3, -45.0), "to": Vector3(-9.0, 3.4, -45.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -45.0), "to": Vector3(9.0, 3.4, -45.0), "width": 3.5},
+			{"from": Vector3(-9.0, 3.6, -45.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
@@ -2131,6 +3013,28 @@ static func _assembly() -> Dictionary:
 			# line and feral. It guards the exit quarter: armoured everywhere but
 			# the reactor coupling on its wrist. The Assembly's own hand.
 			{"type": "manus", "pos": Vector3(20, 0.5, 20), "trigger": 26},
+			# Freight-ring garrison: crated warbots waking on the spawn apron,
+			# west-lane patrols, a gunner POSTED ON the inspection catwalk, and
+			# exit-dock guardians so the last leg isn't a free walk.
+			{"type": "warbot", "pos": Vector3(-32, 0.5, -40), "trigger": 18, "pack": "assemb_a1"},
+			{"type": "skitter", "pos": Vector3(-26, 0.5, -36), "count": 4, "trigger": 18, "pack": "assemb_a1"},
+			{"type": "gunner", "pos": Vector3(-40, 0.5, -20), "trigger": 18, "pack": "assemb_a2"},
+			{"type": "warbot", "pos": Vector3(-42, 0.5, -2), "trigger": 16, "pack": "assemb_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -45), "trigger": 20},
+			{"type": "enforcer", "pos": Vector3(-38, 0.5, 24), "trigger": 18, "pack": "assemb_a3"},
+			{"type": "warbot", "pos": Vector3(-26, 0.5, 40), "trigger": 18, "pack": "assemb_a3"},
+			{"type": "whirlwind", "pos": Vector3(10, 3.5, 40), "trigger": 18, "pack": "assemb_a4"},
+			{"type": "mech", "pos": Vector3(38, 0.5, 28), "trigger": 20, "pack": "assemb_a4"},
+			{"type": "warbot", "pos": Vector3(40, 0.5, 40), "trigger": 17, "pack": "assemb_a4"},
+		],
+		# Freight-ring supplies + the catwalk-climb reward (the plant core keeps
+		# its original no-pickup scarcity).
+		"pickups": [
+			{"type": "health", "pos": Vector3(-43, 0, -14)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -42)},
+			{"type": "ammo", "pos": Vector3(-36, 0, 30)},
+			{"type": "health", "pos": Vector3(38, 0, 34)},
+			{"type": "overclock", "pos": Vector3(-4, 3.6, -44)},
 		],
 	}
 
@@ -2153,11 +3057,16 @@ static func _mistral() -> Dictionary:
 			{"type": "kill_all"},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(48, 48),
-		"spawn": Vector3(-20, 0.6, -20),
-		"exit": Vector3(20, 1.5, 20),
+		# EXPANSION PASS (2× area): the 48² lab core is untouched at the centre;
+		# a new outer service ring (the cryo annex) wraps it — gated route in,
+		# an elevated coolant gallery along the north wall, a second stream, and
+		# its own garrison — so the level is a journey THROUGH the facility, not
+		# one room. Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(68, 68),
+		"spawn": Vector3(-29, 0.6, -29),
+		"exit": Vector3(29, 1.5, 29),
 		# was the PL-1 Plasma Launcher (rank 8) on level 4 of 23. The Tesla (rank 5) fits the slot.
-		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-14, 0, -15), "color": Color(0.45, 0.9, 1.0)},
+		"weapon": {"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(-24, 0, -24), "color": Color(0.45, 0.9, 1.0)},
 		# Polished cryo-lab floor: cyan light pools across the ice-metal plates.
 		"floor_material": "res://assets/materials/vault_floor.tres",
 		"env": {
@@ -2176,6 +3085,13 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(11, 4.5, 11), "color": Color(0.45, 0.85, 1.0), "energy": 2.4, "range": 19},
 			{"pos": Vector3(11, 4.5, -11), "color": Color(0.5, 0.95, 1.0), "energy": 2.0, "range": 17},
 			{"pos": Vector3(0, 5.0, 0), "color": Color(0.6, 0.95, 1.0), "energy": 2.0, "range": 18},
+			# Annex ring lighting (appended AFTER the originals — light_shafts
+			# indexes [0,1,3] must keep pointing at the same lamps).
+			{"pos": Vector3(-24, 5, -24), "color": Color(0.4, 0.85, 1.0), "energy": 2.4, "range": 20},
+			{"pos": Vector3(24, 5, 24), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 6, -28), "color": Color(0.55, 0.9, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(24, 5, -24), "color": Color(0.45, 0.85, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(-24, 5, 24), "color": Color(1.0, 0.55, 0.3), "energy": 2.0, "range": 17},
 		],
 		"walls": [
 			{"pos": Vector3(-7, 2, -7), "size": Vector3(1.8, 4, 1.8)},
@@ -2189,26 +3105,50 @@ static func _mistral() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 0.05, -11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
 			{"pos": Vector3(0, 0.05, 11), "size": Vector3(22, 0.1, 0.3), "color": Color(0.35, 0.9, 1.0)},
+			# Annex guidance: strips marking each bulkhead gap + a pool at the exit.
+			{"pos": Vector3(14, 0.05, -22), "size": Vector3(7, 0.1, 0.4), "color": Color(0.35, 0.9, 1.0)},
+			{"pos": Vector3(22, 0.05, 14), "size": Vector3(0.4, 0.1, 7), "color": Color(0.35, 0.9, 1.0)},
+			{"pos": Vector3(29, 0.05, 25), "size": Vector3(4, 0.1, 3), "color": Color(0.4, 0.95, 1.0)},
 		],
 		"sign": "MISTRAL CRYO-CORE",
-		# Burst coolant lines flood the lab floor — serpentine to the cryo-core.
+		# Annex bulkheads: the ring is ROUTED, not open — in through the east
+		# gap, out over the exit-side gap (or over the top: the gallery
+		# sky-bridge clears both walls). Task level, so gating fits — this is
+		# not a swarm arena (see the hivemind note for the counter-example).
+		"gates": [
+			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2},
+			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 14, "height": 4.2},
+		],
+		# Burst coolant lines flood the lab floor — serpentine to the cryo-core —
+		# and a third line floods the west annex, forcing the ring route wide.
 		"lava": [
 			{"pos": Vector3(-8,0,-6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
 			{"pos": Vector3(8,0,6), "size": Vector2(26,3.2), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
+			{"pos": Vector3(-25,0,2), "size": Vector2(3.2,34), "color": Color(0.35,0.85,1.0), "dmg": 18.0},
 		],
-		# A raised vantage deck with a ramp up to it — verticality + a sightline to
-		# fight from, so the arena has somewhere to GO besides the floor.
+		# Verticality: the original vantage deck, PLUS the annex's elevated
+		# coolant gallery along the north wall (ramps at both ends, a gunner
+		# posted on it, an overclock as the climb reward) and a small exit-watch
+		# deck in the south-east.
 		"platforms": [
 			{"pos": Vector3(-14.4, 3.0, 14.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			{"pos": Vector3(0, 3.2, -29), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
+			{"pos": Vector3(28, 3.0, 16), "size": Vector3(7, 0.4, 8), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-14.4, 1.5, 21.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
-		# Sky-bridges: an upper traversal route linking the tower rooftops.
+		# Sky-bridges: the original tower span, gallery access ramps at both
+		# ends, a gallery->tower bridge that sails OVER the entry bulkhead (the
+		# high road into the lab), and the exit-deck access ramp.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
+			{"from": Vector3(-16.0, 0.3, -29.0), "to": Vector3(-9.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -29.0), "to": Vector3(9.0, 3.4, -29.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -29.0), "to": Vector3(14.0, 8.4, -6.0), "width": 3.0},
+			{"from": Vector3(28.0, 0.3, 6.0), "to": Vector3(28.0, 3.2, 12.0), "width": 3.5},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2236,6 +3176,18 @@ static func _mistral() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(1.8, 0, -2.1), "yaw": 180},
 			{"type": "canister", "pos": Vector3(9, 0, 12)},
 			{"type": "canister", "pos": Vector3(-11, 0, -12)},
+			# Annex dressing: server rows and cryo clutter so the ring reads as
+			# the facility's service corridor, not empty margin.
+			{"type": "server", "pos": Vector3(-30, 0, -12), "yaw": 90},
+			{"type": "server", "pos": Vector3(-30, 0, -14), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-26, 0, -20)},
+			{"type": "barrel", "pos": Vector3(-21, 0, -27)},
+			{"type": "canister", "pos": Vector3(-29, 0, 12)},
+			{"type": "crate", "pos": Vector3(-20, 0, 24)},
+			{"type": "dish", "pos": Vector3(24, 0, -28)},
+			{"type": "crate", "pos": Vector3(28, 0, -16)},
+			{"type": "lamp", "pos": Vector3(26, 0, 20)},
+			{"type": "canister", "pos": Vector3(31, 0, 6)},
 		],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(9, 2.5, -6)},
@@ -2251,6 +3203,19 @@ static func _mistral() -> Dictionary:
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15, "pack": "mistra_p4"},
 			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19, "pack": "mistra_p1"},
 			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18, "pack": "mistra_p3"},
+			# Annex garrison (Act-I roster): a patrol band on the way in, a west-
+			# ring maintenance pack, a gunner POSTED ON the coolant gallery, and
+			# exit-yard guardians so the last leg isn't a free walk.
+			{"type": "android", "pos": Vector3(-24, 0.5, -16), "trigger": 18, "pack": "mistra_a1"},
+			{"type": "drone", "pos": Vector3(-18, 2.5, -24), "trigger": 18, "pack": "mistra_a1"},
+			{"type": "spider", "pos": Vector3(-28, 0.5, 0), "trigger": 16, "pack": "mistra_a2"},
+			{"type": "skitter", "pos": Vector3(-24, 0.5, 14), "count": 4, "trigger": 16, "pack": "mistra_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -29), "trigger": 20},
+			{"type": "android", "pos": Vector3(24, 0.5, -20), "trigger": 18, "pack": "mistra_a3"},
+			{"type": "drone", "pos": Vector3(28, 2.5, -8), "trigger": 18, "pack": "mistra_a3"},
+			{"type": "hunter", "pos": Vector3(26, 0.5, 16), "trigger": 19, "pack": "mistra_a4"},
+			{"type": "android", "pos": Vector3(20, 0.5, 26), "trigger": 17, "pack": "mistra_a4"},
+			{"type": "mech", "pos": Vector3(28, 0.5, 24), "trigger": 22, "pack": "mistra_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-17, 0, -9)},
@@ -2258,6 +3223,12 @@ static func _mistral() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(7, 0, -15)},
 			{"type": "health", "pos": Vector3(15, 0, 5)},
 			{"type": "ammo", "pos": Vector3(0, 0, 12)},
+			# Annex supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-30, 0, -4)},
+			{"type": "ammo", "pos": Vector3(-16, 0, -26)},
+			{"type": "ammo", "pos": Vector3(26, 0, -26)},
+			{"type": "health", "pos": Vector3(24, 0, 12)},
+			{"type": "overclock", "pos": Vector3(0, 3.6, -28)},
 		],
 	}
 
@@ -2345,10 +3316,17 @@ static func _gpt() -> Dictionary:
 		# Enlarged (was 44) so the hall opens into a northern WEIGHTS VAULT annex — an
 		# optional side-room with a reward cache, guarded by escalating waves. First
 		# prototype of the "bigger + more to explore + longer fights" level pass.
-		"floor_size": Vector2(54, 54),
-		"spawn": Vector3(-18, 0.6, -18),
-		"exit": Vector3(18, 1.5, 18),
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-12, 0, -14), "color": Color(0.45, 0.65, 1)},
+		# EXPANSION PASS (2× area): the whole mission arc is untouched — hack
+		# terminal, weight-fragment points, purge-wave spawns, vault annex and
+		# both towers keep their exact positions. The ring adds server-hall
+		# WINGS (rack walls + racks) east/west/south, a stock corridor behind
+		# the vault, and an east GALLERY deck bridged down from tower #2.
+		# Deliberately NO gates: every band between the old perimeter and the
+		# new one is crossed by a task route (spawn→hack→shards→hold→exit).
+		"floor_size": Vector2(76, 76),
+		"spawn": Vector3(-32, 0.6, -32),
+		"exit": Vector3(32, 1.5, 32),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-26, 0, -28), "color": Color(0.45, 0.65, 1)},
 		# Optional reward for raiding the vault: an early shotgun. Not a task — pure
 		# exploration payoff (the exit doesn't wait on it).
 		"extra_weapons": [
@@ -2434,6 +3412,14 @@ static func _gpt() -> Dictionary:
 			# Warm gold wash over the vault cache — a "treasure" beacon that pops
 			# against the green hall and draws the eye north.
 			{"pos": Vector3(0, 4.2, 22), "color": Color(1.0, 0.78, 0.3), "energy": 3.0, "range": 15},
+			# Ring lighting (appended AFTER the originals — light_shafts [0,1,2]
+			# must keep pointing at the same lamps): white-green over the wings,
+			# neon notes at the far bands, gold over the gallery deck.
+			{"pos": Vector3(-26, 4.5, 8), "color": Color(0.84, 1.0, 0.88), "energy": 2.2, "range": 16},
+			{"pos": Vector3(26, 4.5, -8), "color": Color(0.84, 1.0, 0.88), "energy": 2.2, "range": 16},
+			{"pos": Vector3(0, 4.5, -28), "color": Color(0.2, 1.0, 1.0), "energy": 2.6, "range": 14},
+			{"pos": Vector3(0, 4.5, 32), "color": Color(1.0, 0.2, 0.8), "energy": 2.6, "range": 14},
+			{"pos": Vector3(28, 6.2, -20), "color": Color(1.0, 0.78, 0.3), "energy": 2.4, "range": 14},
 		],
 		# Layout: server-hall AISLES — two long offset rack walls form a central
 		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
@@ -2455,6 +3441,16 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(0, 2.5, 25), "size": Vector3(16, 5, 1)},
 			{"pos": Vector3(-8, 2.5, 22), "size": Vector3(1, 5, 6)},
 			{"pos": Vector3(8, 2.5, 22), "size": Vector3(1, 5, 6)},
+			# Ring wings: more rack rows so the outer band reads as the same
+			# server hall, not empty margin. Each leaves wide aisle mouths.
+			{"pos": Vector3(-26, 2, -6), "size": Vector3(1, 4, 14)},
+			{"pos": Vector3(-22, 2, 12), "size": Vector3(8, 4, 1)},
+			{"pos": Vector3(26, 2, 6), "size": Vector3(1, 4, 14)},
+			{"pos": Vector3(22, 2, -12), "size": Vector3(8, 4, 1)},
+			{"pos": Vector3(6, 2, -26), "size": Vector3(12, 4, 1)},
+			# Stock corridor behind the vault (reached around either annex side).
+			{"pos": Vector3(-14, 2, 29), "size": Vector3(10, 4, 1)},
+			{"pos": Vector3(14, 2, 29), "size": Vector3(10, 4, 1)},
 		],
 		# Spilled smelt channels: two beds (gaps alternate east/west) bend the run
 		# to the exit, kept clear of the central core and the hack terminal at z=8.
@@ -2478,6 +3474,9 @@ static func _gpt() -> Dictionary:
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-13.2, 3.0, 13.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# East GALLERY: a raised service deck in the ring band, bridged down
+			# from tower #2's roof (stairs below) with its own floor stair.
+			{"pos": Vector3(28, 4.6, -20), "size": Vector3(8, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-13.2, 1.5, 20.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -2487,6 +3486,11 @@ static func _gpt() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(12.0, 7.2, -18.0), "width": 3.5},
+			# Tower #2 roof → gallery deck: the vertical route continues out to
+			# the ring instead of dead-ending on the second roof.
+			{"from": Vector3(12.0, 7.2, -18.0), "to": Vector3(28.0, 5.0, -20.0), "width": 3.0},
+			# Floor stair up the gallery's north edge.
+			{"from": Vector3(28.0, 0, -8.0), "to": Vector3(28.0, 4.8, -17.6), "width": 3.5},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2541,6 +3545,18 @@ static func _gpt() -> Dictionary:
 			{"type": "spider", "pos": Vector3(-6, 0.5, 23), "count": 2, "trigger": 12, "pack": "gpt_vault"},
 			{"type": "drone", "pos": Vector3(6, 2.5, 23), "trigger": 12, "pack": "gpt_vault"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 23), "count": 5, "trigger": 10, "pack": "gpt_vault"},
+			# Ring patrols: Act-I security walking the new wings. Wake-gated so
+			# the opening fight and the purge pacing stay exactly as tuned.
+			{"type": "android", "pos": Vector3(-23, 0.5, -12), "trigger": 16, "pack": "gpt_ring_w"},
+			{"type": "drone", "pos": Vector3(-24, 2.5, 4), "trigger": 16, "pack": "gpt_ring_w"},
+			{"type": "spider", "pos": Vector3(-24, 0.5, 18), "count": 2, "trigger": 14, "pack": "gpt_ring_w"},
+			{"type": "android", "pos": Vector3(-8, 0.5, -28), "trigger": 16, "pack": "gpt_ring_s"},
+			{"type": "gunner", "pos": Vector3(8, 0.5, -28), "trigger": 14, "pack": "gpt_ring_s"},
+			{"type": "drone", "pos": Vector3(24, 2.5, -22), "trigger": 16, "pack": "gpt_ring_s"},
+			{"type": "android", "pos": Vector3(28, 0.5, -2), "trigger": 16, "pack": "gpt_ring_e"},
+			{"type": "drone", "pos": Vector3(28, 2.5, 14), "trigger": 16, "pack": "gpt_ring_e"},
+			{"type": "skitter", "pos": Vector3(24, 0.5, 24), "count": 5, "trigger": 14, "pack": "gpt_ring_e"},
+			{"type": "gunner", "pos": Vector3(-21, 0.5, 27), "trigger": 14, "pack": "gpt_ring_n"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-16, 0, -8)},
@@ -2556,6 +3572,12 @@ static func _gpt() -> Dictionary:
 			# Vertical-route reward on tower #1's roof (climb pays off).
 			{"type": "overclock", "pos": Vector3(14, 8.4, -6)},
 			{"type": "ammo", "pos": Vector3(12, 7.4, -18)},
+			# Ring supplies + the gallery-deck overclock (bridge/stair climb).
+			{"type": "health", "pos": Vector3(-29, 0, -6)},
+			{"type": "ammo", "pos": Vector3(-4, 0, -28)},
+			{"type": "ammo", "pos": Vector3(30, 0, 4)},
+			{"type": "health", "pos": Vector3(20, 0, 31)},
+			{"type": "overclock", "pos": Vector3(28, 5.2, -20)},
 		],
 		# Vault dressing — server racks + a terminal frame the cache as a real room.
 		"props": [
@@ -2581,6 +3603,20 @@ static func _gpt() -> Dictionary:
 			{"type": "server", "pos": Vector3(6.5, 0, 24), "yaw": 180},
 			{"type": "crate", "pos": Vector3(-5, 0, 21)},
 			{"type": "crate", "pos": Vector3(5, 0, 21)},
+			# Ring-wing dressing: live racks against the new rack walls + stock
+			# clutter in the corridor behind the vault.
+			{"type": "server", "pos": Vector3(-24.6, 0, -4), "yaw": 90},
+			{"type": "server", "pos": Vector3(-24.6, 0, -2), "yaw": 90},
+			{"type": "server", "pos": Vector3(24.6, 0, 2), "yaw": -90},
+			{"type": "server", "pos": Vector3(24.6, 0, 4), "yaw": -90},
+			{"type": "server", "pos": Vector3(-4, 0, -27.2), "yaw": 180},
+			{"type": "crate", "pos": Vector3(-20, 0, -24)},
+			{"type": "barrel", "pos": Vector3(18, 0, -26)},
+			{"type": "canister", "pos": Vector3(-28, 0, 20)},
+			{"type": "crate", "pos": Vector3(28, 0, 20)},
+			{"type": "canister", "pos": Vector3(6, 0, 31)},
+			{"type": "locker", "pos": Vector3(-18, 0, 31)},
+			{"type": "locker", "pos": Vector3(-16.2, 0, 31)},
 		],
 	}
 
@@ -2599,11 +3635,16 @@ static func _gemini() -> Dictionary:
 			{"type": "survive", "after": "shards", "seconds": 25.0, "label": "Survive the purge protocol"},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(50, 50),
-		"spawn": Vector3(-20, 0.6, -20),
-		"exit": Vector3(20, 1.5, 20),
+		# EXPANSION PASS (2× area): the 50² nexus core is untouched at the centre;
+		# a new outer server-field ring wraps it — bulkhead-routed way in, an
+		# elevated data gallery along the north edge with a sky-bridge over the
+		# entry bulkhead onto the tower, and its own patrol packs. Spawn/exit
+		# pushed to the new perimeter.
+		"floor_size": Vector2(70, 70),
+		"spawn": Vector3(-30, 0.6, -30),
+		"exit": Vector3(30, 1.5, 30),
 		# was the ARC-9 Gauss Lance: a rank-9 piercing laser handed out on level 3 of 23.
-		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-16, 0, -12), "color": Color(1.0, 0.82, 0.3)},
+		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-26, 0, -22), "color": Color(1.0, 0.82, 0.3)},
 		"env": {
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
 			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
@@ -2621,6 +3662,13 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(0, 5, 0), "color": Color(0.5, 0.6, 1), "energy": 2.76, "range": 22},
 			{"pos": Vector3(-14, 4, 14), "color": Color(0.4, 0.7, 1), "energy": 2.07, "range": 18},
 			{"pos": Vector3(14, 4, -14), "color": Color(0.6, 0.5, 1), "energy": 2.07, "range": 18},
+			# Ring lighting (appended AFTER the originals — light_shafts [0] must
+			# keep pointing at the same lamp). Cool nexus blues + warm contrast.
+			{"pos": Vector3(-29, 5, -29), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 19},
+			{"pos": Vector3(29, 5, 29), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 18},
+			{"pos": Vector3(0, 6, -30), "color": Color(0.5, 0.65, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(29, 5, -29), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(-29, 5, 29), "color": Color(1.0, 0.55, 0.3), "energy": 2.0, "range": 17},
 		],
 		"walls": [
 			{"pos": Vector3(0, 0.5, 0), "size": Vector3(12, 1, 12)},
@@ -2634,12 +3682,18 @@ static func _gemini() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(12, 0.1, 0.3), "color": Color(0.5, 0.7, 1)},
 			{"pos": Vector3(0, 1.05, 0), "size": Vector3(0.3, 0.1, 12), "color": Color(0.5, 0.7, 1)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(10, 0.05, -25), "size": Vector3(7, 0.1, 0.4), "color": Color(0.5, 0.7, 1)},
+			{"pos": Vector3(25, 0.05, 20), "size": Vector3(0.4, 0.1, 7), "color": Color(0.5, 0.7, 1)},
+			{"pos": Vector3(30, 0.05, 26), "size": Vector3(4, 0.1, 3), "color": Color(0.5, 0.7, 1)},
 		],
 		"sign": "GEMINI DATA NEXUS",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-15.0, 3.0, 15.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring data gallery along the north edge — climb reward + sniper post.
+			{"pos": Vector3(0, 3.2, -31), "size": Vector3(18, 0.4, 5), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-15.0, 1.5, 22.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -2650,12 +3704,25 @@ static func _gemini() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -13, "gap": 6.5, "gap_pos": 13, "height": 4.8, "roofed": true},
 			{"axis": "z", "at": 12, "gap": 6.5, "gap_pos": -13, "height": 4.8},
+			# Perimeter-ring bulkheads: route the annex ring — in through the
+			# north gap (under the gallery sky-bridge, which sails over this
+			# wall through the same opening), out across the east gap. The east
+			# gap sits SOUTH of the z=12 gate (the two full-span walls would
+			# otherwise seal the exit corner into an unreachable pocket). Task
+			# level, so gating fits (see the hivemind note for the counter-example).
+			{"axis": "z", "at": -25, "gap": 7, "gap_pos": 10, "height": 4.4},
+			{"axis": "x", "at": 25, "gap": 7, "gap_pos": 20, "height": 4.4},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-17.0, 7.2, 0.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->tower sky-bridge that
+			# clears the perimeter bulkhead through its gap — the high road in.
+			{"from": Vector3(-16.0, 0.3, -31.0), "to": Vector3(-9.0, 3.4, -31.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -31.0), "to": Vector3(9.0, 3.4, -31.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -31.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2683,6 +3750,18 @@ static func _gemini() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(-6, 0, 13), "yaw": 90},
 			{"type": "canister", "pos": Vector3(12, 0, 12)},
 			{"type": "canister", "pos": Vector3(-12, 0, -14)},
+			# Ring dressing: the server-field clutter so the annex reads as the
+			# nexus' outer racks, not empty margin.
+			{"type": "crate", "pos": Vector3(-30, 0, -14)},
+			{"type": "barrel", "pos": Vector3(-27, 0, -20)},
+			{"type": "lamp", "pos": Vector3(-30, 0, 0)},
+			{"type": "canister", "pos": Vector3(-29, 0, 8)},
+			{"type": "crate", "pos": Vector3(-20, 0, 28)},
+			{"type": "terminal", "pos": Vector3(0, 0, 30), "yaw": 180},
+			{"type": "barrel", "pos": Vector3(14, 0, 29)},
+			{"type": "crate", "pos": Vector3(22, 0, -18)},
+			{"type": "canister", "pos": Vector3(28, 0, 26)},
+			{"type": "lamp", "pos": Vector3(20, 0, -30)},
 		],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(6, 2.5, -6)},
@@ -2702,6 +3781,18 @@ static func _gemini() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(-20, 0.0, 20), "trigger": 22},
 			{"type": "seeker", "pos": Vector3(14, 2.5, 14), "trigger": 20, "pack": "gem_north"},
 			{"type": "seeker", "pos": Vector3(-14, 2.5, 6), "trigger": 22, "pack": "gem_west"},
+			# Ring garrison: a patrol band on the way in, a west maintenance pack,
+			# a sniper POSTED ON the data gallery, and exit-yard guardians.
+			{"type": "android", "pos": Vector3(-24, 0.5, -28), "trigger": 18, "pack": "gem_a1"},
+			{"type": "drone", "pos": Vector3(-18, 2.5, -28), "trigger": 18, "pack": "gem_a1"},
+			{"type": "spider", "pos": Vector3(-30, 0.5, -2), "trigger": 16, "pack": "gem_a2"},
+			{"type": "seeker", "pos": Vector3(-28, 2.5, 6), "trigger": 18, "pack": "gem_a2"},
+			{"type": "sniper", "pos": Vector3(0, 3.8, -31), "trigger": 20},
+			{"type": "android", "pos": Vector3(20, 0.5, -20), "trigger": 18, "pack": "gem_a3"},
+			{"type": "drone", "pos": Vector3(20, 2.5, -8), "trigger": 18, "pack": "gem_a3"},
+			{"type": "brute", "pos": Vector3(28, 0.5, 20), "trigger": 20, "pack": "gem_a4"},
+			{"type": "android", "pos": Vector3(20, 0.5, 28), "trigger": 17, "pack": "gem_a4"},
+			{"type": "seeker", "pos": Vector3(26, 2.5, 28), "trigger": 19, "pack": "gem_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-18, 0, -14)},
@@ -2709,6 +3800,12 @@ static func _gemini() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(16, 0, -16)},
 			{"type": "health", "pos": Vector3(18, 0, 6)},
 			{"type": "ammo", "pos": Vector3(-14, 0, 16)},
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-31, 0, -8)},
+			{"type": "ammo", "pos": Vector3(-14, 0, -29)},
+			{"type": "ammo", "pos": Vector3(22, 0, -28)},
+			{"type": "health", "pos": Vector3(30, 0, 24)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -30)},
 		],
 	}
 
@@ -2726,10 +3823,15 @@ static func _claude() -> Dictionary:
 				"reinforce": [{"type": "sentinel", "count": 2, "pos": Vector3(-12, 0, 4)}]},
 		],
 		"open_sky": false,
-		"floor_size": Vector2(42, 42),
-		"spawn": Vector3(-17, 0.6, -17),
-		"exit": Vector3(17, 1.5, 17),
-		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-13, 0, -12), "color": Color(1, 0.75, 0.35)},
+		# EXPANSION PASS (2× area): the 42² vault core is untouched at the centre;
+		# a new outer archive ring wraps it — bulkhead-routed entry, an elevated
+		# records gallery along the north wall with a sky-bridge over the entry
+		# bulkhead onto the tower, and its own garrison. Spawn/exit pushed to
+		# the new perimeter.
+		"floor_size": Vector2(60, 60),
+		"spawn": Vector3(-25, 0.6, -25),
+		"exit": Vector3(25, 1.5, 25),
+		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-21, 0, -20), "color": Color(1, 0.75, 0.35)},
 		"extra_weapons": [
 			# was gauss (rank 9). The MK-VII Longshot (rank 7) otherwise never showed up until level 14.
 			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(2, 0, 8), "color": Color(0.6, 0.85, 1.0)},
@@ -2758,6 +3860,13 @@ static func _claude() -> Dictionary:
 			# Cool contrast wash directly over the core — makes the amber pop.
 			{"pos": Vector3(0, 5.4, 0), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 13},
 			{"pos": Vector3(13, 4.5, -9), "color": Color(1, 0.68, 0.42), "energy": 2.0, "range": 14},
+			# Archive-ring lighting (appended AFTER the originals — light_shafts
+			# [0,2,3,4] must keep pointing at the same lamps). Amber + cool contrast.
+			{"pos": Vector3(-25, 5, -25), "color": Color(1, 0.72, 0.42), "energy": 2.3, "range": 17},
+			{"pos": Vector3(25, 5, 25), "color": Color(0.5, 0.78, 1.0), "energy": 2.2, "range": 16},
+			{"pos": Vector3(0, 5.5, -26), "color": Color(1, 0.7, 0.4), "energy": 2.2, "range": 18},
+			{"pos": Vector3(25, 5, -25), "color": Color(1, 0.68, 0.4), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-25, 5, 25), "color": Color(0.5, 0.78, 1.0), "energy": 2.0, "range": 16},
 		],
 		"walls": [
 			{"pos": Vector3(-6, 2.5, -2), "size": Vector3(1, 5, 14)},
@@ -2777,12 +3886,18 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(5, 4.6, 5), "size": Vector3(12, 0.1, 0.3), "color": Color(1, 0.7, 0.3)},
 			{"pos": Vector3(9, 4.6, -7), "size": Vector3(0.3, 0.1, 9), "color": Color(1, 0.7, 0.3)},
 			{"pos": Vector3(15, 4.6, 2), "size": Vector3(0.3, 0.1, 5), "color": Color(0.5, 0.78, 1.0)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(12, 0.05, -21), "size": Vector3(6.5, 0.1, 0.4), "color": Color(1, 0.7, 0.3)},
+			{"pos": Vector3(21, 0.05, 18), "size": Vector3(0.4, 0.1, 6.5), "color": Color(1, 0.7, 0.3)},
+			{"pos": Vector3(25, 0.05, 25), "size": Vector3(4, 0.1, 3), "color": Color(1, 0.75, 0.35)},
 		],
 		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-12.6, 3.0, 12.0), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring records gallery along the north wall — climb reward + gunner post.
+			{"pos": Vector3(0, 3.2, -26.5), "size": Vector3(16, 0.4, 5), "color": Color(0.4, 0.42, 0.47)},
 		],
 		"ramps": [
 			{"pos": Vector3(-12.6, 1.5, 19.0), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -2793,12 +3908,23 @@ static func _claude() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -11, "gap": 6, "gap_pos": 12, "height": 4.6, "roofed": true},
 			{"axis": "z", "at": 10, "gap": 6, "gap_pos": -12, "height": 4.6},
+			# Archive-ring bulkheads: in through the north gap (under the gallery
+			# sky-bridge, which crosses through the same opening), out across the
+			# east gap. The east gap sits SOUTH of the z=10 gate — the two
+			# full-span walls would otherwise seal the exit corner into a pocket.
+			{"axis": "z", "at": -21, "gap": 6.5, "gap_pos": 12, "height": 4.2},
+			{"axis": "x", "at": 21, "gap": 6.5, "gap_pos": 18, "height": 4.2},
 		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(-13.0, 7.2, 0.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->tower sky-bridge
+			# that clears the ring bulkhead through its gap — the high road in.
+			{"from": Vector3(-15.0, 0.3, -26.5), "to": Vector3(-8.0, 3.4, -26.5), "width": 3.5},
+			{"from": Vector3(15.0, 0.3, -26.5), "to": Vector3(8.0, 3.4, -26.5), "width": 3.5},
+			{"from": Vector3(8.0, 3.6, -26.5), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2847,6 +3973,19 @@ static func _claude() -> Dictionary:
 			{"type": "canister", "pos": Vector3(-14, 0, 14)},
 			{"type": "canister", "pos": Vector3(4, 0, 10)},
 			{"type": "canister", "pos": Vector3(4.7, 0, 10.4)},
+			# Archive-ring dressing: overflow records + storage so the ring reads
+			# as the vault's outer stacks, not empty margin. East-strip clutter
+			# stays SOUTH of z=10 (the sealed mid-segments must remain empty).
+			{"type": "server", "pos": Vector3(-26, 0, -10), "yaw": 90},
+			{"type": "server", "pos": Vector3(-26, 0, -12), "yaw": 90},
+			{"type": "locker", "pos": Vector3(-28, 0, -18), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-23, 0, -28)},
+			{"type": "canister", "pos": Vector3(-26, 0, 8)},
+			{"type": "shelves", "pos": Vector3(-24, 0, 24), "yaw": 45},
+			{"type": "barrel", "pos": Vector3(-16, 0, 26)},
+			{"type": "crate", "pos": Vector3(20, 0, -27)},
+			{"type": "barrel", "pos": Vector3(26, 0, 12)},
+			{"type": "canister", "pos": Vector3(28, 0, 24)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-2, 0.5, -6)},
@@ -2863,6 +4002,18 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20, "pack": "cl_ne"},
 			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20, "pack": "cl_west"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16, "pack": "cl_north"},
+			# Ring garrison: entry-band patrol, a west-corridor pack, a gunner
+			# POSTED ON the records gallery, and exit-yard guardians.
+			{"type": "android", "pos": Vector3(-20, 0.5, -25), "trigger": 18, "pack": "cl_a1"},
+			{"type": "drone", "pos": Vector3(-14, 2.5, -25), "trigger": 18, "pack": "cl_a1"},
+			{"type": "mech", "pos": Vector3(16, 0.5, -26), "trigger": 20, "pack": "cl_a1"},
+			{"type": "spider", "pos": Vector3(-25, 0.5, -2), "trigger": 16, "pack": "cl_a2"},
+			{"type": "android", "pos": Vector3(-25, 0.5, -16), "trigger": 17, "pack": "cl_a2"},
+			{"type": "skitter", "pos": Vector3(-24, 0.5, 14), "count": 4, "trigger": 16, "pack": "cl_a2"},
+			{"type": "gunner", "pos": Vector3(0, 3.8, -26.5), "trigger": 20},
+			{"type": "android", "pos": Vector3(26, 0.5, 14), "trigger": 18, "pack": "cl_a4"},
+			{"type": "mech", "pos": Vector3(26, 0.5, 22), "trigger": 20, "pack": "cl_a4"},
+			{"type": "brute", "pos": Vector3(14, 0.5, 26), "trigger": 19, "pack": "cl_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -10)},
@@ -2870,6 +4021,12 @@ static func _claude() -> Dictionary:
 			{"type": "health", "pos": Vector3(2, 0, 8)},
 			{"type": "ammo", "pos": Vector3(14, 0, 2)},
 			{"type": "health", "pos": Vector3(10, 0, 14)},
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-27, 0, -6)},
+			{"type": "ammo", "pos": Vector3(-12, 0, -24)},
+			{"type": "ammo", "pos": Vector3(18, 0, -24)},
+			{"type": "health", "pos": Vector3(24, 0, 12)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -26)},
 		],
 	}
 
@@ -2888,11 +4045,16 @@ static func _grok() -> Dictionary:
 			{"type": "destroy_core", "after": "hvt", "label": "Destroy the GROK mainframe", "pos": Vector3(0, 0, 16), "color": Color(1.0, 0.3, 0.2), "health": 300.0},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(58, 58),
-		"spawn": Vector3(-23, 0.6, -23),
-		"exit": Vector3(23, 1.5, 23),
+		# EXPANSION PASS (2× area): the 58² monolith field is untouched at the
+		# centre; a new outer perimeter ring wraps it — bulkhead-routed way in,
+		# an elevated watch gallery along the north edge with a sky-bridge onto
+		# the tower, a third plasma spill in the west ring, and its own patrols.
+		# Spawn/exit pushed to the new perimeter.
+		"floor_size": Vector2(82, 82),
+		"spawn": Vector3(-36, 0.6, -36),
+		"exit": Vector3(36, 1.5, 36),
 		# was the GRK-X Devastator (rank 12 of 13) on level 8 of 23. Plasma (rank 8) fits the slot.
-		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-18, 0, -16), "color": Color(0.4, 1.0, 0.55)},
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-31, 0, -33), "color": Color(0.4, 1.0, 0.55)},
 		"extra_weapons": [
 			# was the ARC-9 Gauss Lance (rank 9) — too strong for act II; a Maelstrom re-find instead.
 			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(8, 0, -8), "color": Color(0.95, 0.72, 0.3)},
@@ -2913,6 +4075,14 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(0, 6, 0), "color": Color(1, 0.3, 0.25), "energy": 2.99, "range": 26},
 			{"pos": Vector3(-16, 5, 16), "color": Color(1, 0.4, 0.3), "energy": 2.3, "range": 20},
 			{"pos": Vector3(16, 5, -16), "color": Color(1, 0.25, 0.2), "energy": 2.3, "range": 20},
+			# Ring lighting (appended AFTER the originals — light_shafts [0] must
+			# keep pointing at the same lamp). Crimson accents + amber contrast.
+			{"pos": Vector3(-35, 5, -35), "color": Color(1, 0.35, 0.28), "energy": 2.3, "range": 20},
+			{"pos": Vector3(35, 5, 35), "color": Color(1, 0.65, 0.3), "energy": 2.2, "range": 19},
+			{"pos": Vector3(0, 6, -36), "color": Color(1, 0.3, 0.25), "energy": 2.2, "range": 21},
+			{"pos": Vector3(35, 5, -35), "color": Color(1, 0.4, 0.3), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-35, 5, 35), "color": Color(1, 0.65, 0.3), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-38, 5, 0), "color": Color(1, 0.28, 0.22), "energy": 2.0, "range": 18},
 		],
 		# Two ominous crimson searchlight rigs on ground masts (open_sky auto-picks
 		# the mast over the ceiling drop-rod) — off-centre so the wide-open middle
@@ -2938,17 +4108,34 @@ static func _grok() -> Dictionary:
 		"accents": [
 			{"pos": Vector3(-8, 0.05, -4), "size": Vector3(0.4, 0.1, 30), "color": Color(1, 0.25, 0.2)},
 			{"pos": Vector3(6, 0.05, 4), "size": Vector3(30, 0.1, 0.4), "color": Color(1, 0.3, 0.22)},
+			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
+			{"pos": Vector3(10, 0.05, -29), "size": Vector3(8, 0.1, 0.4), "color": Color(1, 0.3, 0.22)},
+			{"pos": Vector3(29, 0.05, -10), "size": Vector3(0.4, 0.1, 8), "color": Color(1, 0.3, 0.22)},
+			{"pos": Vector3(36, 0.05, 31), "size": Vector3(4, 0.1, 3), "color": Color(1, 0.35, 0.25)},
 		],
 		"sign": "XAI BLACK-SITE",
 		# Spilled reactor plasma carves the black-site floor into a forced path.
 		"lava": [
 			{"pos": Vector3(-9,0,-8), "size": Vector2(34,3.5), "color": Color(1.0,0.3,0.22), "dmg": 18.0},
 			{"pos": Vector3(9,0,9), "size": Vector2(34,3.5), "color": Color(1.0,0.3,0.22), "dmg": 18.0},
+			# A third spill floods the west ring, forcing the perimeter route wide.
+			{"pos": Vector3(-34,0,4), "size": Vector2(3.5,36), "color": Color(1.0,0.3,0.22), "dmg": 18.0},
+		],
+		# Perimeter-ring bulkheads: in through the north gap (under the gallery
+		# sky-bridge, which crosses through the same opening), out across the
+		# east gap. The two full-span walls seal the NE corner pocket — it is
+		# deliberately left empty. Task level, so gating fits (see the hivemind
+		# note for the counter-example).
+		"gates": [
+			{"axis": "z", "at": -29, "gap": 8, "gap_pos": 10, "height": 4.4},
+			{"axis": "x", "at": 29, "gap": 8, "gap_pos": -10, "height": 4.4},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
 			{"pos": Vector3(-17.4, 3.0, 17.4), "size": Vector3(7, 0.4, 6), "color": Color(0.4, 0.42, 0.47)},
+			# Ring watch gallery along the north edge — climb reward + sniper post.
+			{"pos": Vector3(0, 3.2, -36), "size": Vector3(18, 0.4, 5), "color": Color(0.36, 0.4, 0.46)},
 		],
 		"ramps": [
 			{"pos": Vector3(-17.4, 1.5, 24.4), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
@@ -2958,6 +4145,11 @@ static func _grok() -> Dictionary:
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Gallery access ramps at both ends + a gallery->tower sky-bridge that
+			# crosses the perimeter bulkhead through its gap — the high road in.
+			{"from": Vector3(-16.0, 0.3, -36.0), "to": Vector3(-9.0, 3.4, -36.0), "width": 3.5},
+			{"from": Vector3(16.0, 0.3, -36.0), "to": Vector3(9.0, 3.4, -36.0), "width": 3.5},
+			{"from": Vector3(9.0, 3.6, -36.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -2985,6 +4177,20 @@ static func _grok() -> Dictionary:
 			{"type": "terminal", "pos": Vector3(8, 0, -12), "yaw": 30},
 			{"type": "canister", "pos": Vector3(-4, 0, -10)},
 			{"type": "canister", "pos": Vector3(14, 0, 10)},
+			# Ring dressing: monolith-yard clutter so the perimeter reads as the
+			# black-site's outer works, not empty margin.
+			{"type": "server", "pos": Vector3(-38, 0, -20), "yaw": 90},
+			{"type": "server", "pos": Vector3(-38, 0, -22), "yaw": 90},
+			{"type": "crate", "pos": Vector3(-26, 0, -33)},
+			{"type": "barrel", "pos": Vector3(-20, 0, -38)},
+			{"type": "terminal", "pos": Vector3(-30, 0, -38), "yaw": 0},
+			{"type": "canister", "pos": Vector3(-38, 0, 10)},
+			{"type": "crate", "pos": Vector3(-24, 0, 32)},
+			{"type": "barrel", "pos": Vector3(-6, 0, 36)},
+			{"type": "dish", "pos": Vector3(16, 0, 34)},
+			{"type": "crate", "pos": Vector3(33, 0, -2)},
+			{"type": "lamp", "pos": Vector3(34, 0, 14)},
+			{"type": "canister", "pos": Vector3(37, 0, 26)},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -3012,6 +4218,18 @@ static func _grok() -> Dictionary:
 				{"type": "warbot", "pos": Vector3(7, 0.5, -4), "trigger": 20, "pack": "grok_p5"},
 				{"type": "ripper", "pos": Vector3(-7, 0.5, 8), "trigger": 16, "pack": "grok_p1"},
 			{"type": "raptor", "pos": Vector3(0, 4.0, 14), "trigger": 24, "pack": "grok_p2"},
+			# Ring garrison: a spawn-yard patrol, west-spill prowlers, a sniper
+			# POSTED ON the watch gallery, and exit-yard guardians.
+			{"type": "android", "pos": Vector3(-26, 0.5, -34), "trigger": 18, "pack": "grok_a1"},
+			{"type": "dog", "pos": Vector3(-20, 0.5, -36), "trigger": 18, "pack": "grok_a1"},
+			{"type": "spider", "pos": Vector3(-38, 0.5, -6), "trigger": 16, "pack": "grok_a2"},
+			{"type": "dog", "pos": Vector3(-38, 0.5, 16), "trigger": 16, "pack": "grok_a2"},
+			{"type": "sniper", "pos": Vector3(0, 3.8, -36), "trigger": 20},
+			{"type": "android", "pos": Vector3(33, 0.5, -16), "trigger": 18, "pack": "grok_a3"},
+			{"type": "drone", "pos": Vector3(34, 2.5, 0), "trigger": 18, "pack": "grok_a3"},
+			{"type": "brute", "pos": Vector3(34, 0.5, 20), "trigger": 20, "pack": "grok_a4"},
+			{"type": "android", "pos": Vector3(22, 0.5, 34), "trigger": 17, "pack": "grok_a4"},
+			{"type": "mech", "pos": Vector3(30, 0.5, 32), "trigger": 22, "pack": "grok_a4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-20, 0, -16)},
@@ -3023,6 +4241,12 @@ static func _grok() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
 			{"type": "health", "pos": Vector3(16, 0, -18)},
 			{"type": "overclock", "pos": Vector3(0, 0, 16)},
+			# Ring supplies + the gallery-climb reward.
+			{"type": "health", "pos": Vector3(-38, 0, -18)},
+			{"type": "ammo", "pos": Vector3(-22, 0, -34)},
+			{"type": "ammo", "pos": Vector3(26, 0, -33)},
+			{"type": "health", "pos": Vector3(34, 0, 8)},
+			{"type": "overclock", "pos": Vector3(-4, 3.8, -35)},
 		],
 	}
 
@@ -3049,12 +4273,21 @@ static func _suburb() -> Dictionary:
 		],
 		"open_sky": true,
 		"streets": true,
-		"trees": 16,
-		"floor_size": Vector2(64, 64),
+		# EXPANSION PASS (2× area): the original 64² estate is untouched at the
+		# centre — a ring of outer suburban blocks wraps it (two of them OPEN,
+		# enterable two-storey shells — almost the campaign's only ones). The
+		# street grid + trees derive from floor_size, so they extend for free;
+		# the flood canal is stretched to keep splitting the whole estate
+		# (otherwise the ring opens a dry walk around its ends and the
+		# bridge/tower routing dies). Spawn/exit pushed to the new perimeter
+		# on their existing diagonal. No gates — an open suburb routes with
+		# buildings + the canal, not bulkheads.
+		"trees": 28,
+		"floor_size": Vector2(90, 90),
 		"floor_color": Color(0.17, 0.17, 0.2),
-		"spawn": Vector3(-26, 0.6, -26),
-		"exit": Vector3(26, 1.5, 26),
-		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-22, 0, -22), "color": Color(1, 0.7, 0.3)},
+		"spawn": Vector3(-38, 0.6, -38),
+		"exit": Vector3(38, 1.5, 38),
+		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-34, 0, -36), "color": Color(1, 0.7, 0.3)},
 		"env": {
 			"hdri": "res://assets/environments/hdri/industrial_sunset_puresky_2k.hdr",
 			"physical_sky": true, "turbidity": 8.0,
@@ -3072,6 +4305,12 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(-12, 5, 0), "color": Color(1, 0.85, 0.6), "energy": 1.6, "range": 16},
 			{"pos": Vector3(12, 5, 0), "color": Color(1, 0.85, 0.6), "energy": 1.6, "range": 16},
 			{"pos": Vector3(0, 5, 16), "color": Color(0.9, 0.8, 0.7), "energy": 1.4, "range": 15},
+			# Ring lighting (appended AFTER the originals): dusk street-lamp warm
+			# pools out along the extended crossroads + the two open shells.
+			{"pos": Vector3(0, 5, -30), "color": Color(1, 0.85, 0.6), "energy": 1.5, "range": 16},
+			{"pos": Vector3(0, 5, 30), "color": Color(1, 0.85, 0.6), "energy": 1.5, "range": 16},
+			{"pos": Vector3(-30, 5, 0), "color": Color(0.9, 0.8, 0.7), "energy": 1.4, "range": 15},
+			{"pos": Vector3(30, 5, 0), "color": Color(0.9, 0.8, 0.7), "energy": 1.4, "range": 15},
 		],
 		"buildings": [
 			{"pos": Vector3(-20, 2.2, -15), "size": Vector3(7, 4.4, 7), "color": Color(0.78, 0.72, 0.6), "roof_color": Color(0.38, 0.18, 0.14)},
@@ -3082,6 +4321,15 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(-7, 2.2, 15), "size": Vector3(7, 4.4, 7), "color": Color(0.66, 0.6, 0.7), "roof_color": Color(0.3, 0.2, 0.15)},
 			{"pos": Vector3(7, 2.2, 15), "size": Vector3(7, 4.4, 7), "color": Color(0.8, 0.74, 0.62), "roof_color": Color(0.36, 0.18, 0.14)},
 			{"pos": Vector3(20, 2.2, 15), "size": Vector3(7, 4.4, 7), "color": Color(0.6, 0.64, 0.7), "roof_color": Color(0.24, 0.2, 0.22)},
+			# Outer ring blocks. Two are OPEN: enterable two-storey shells (door,
+			# interior ramp, upper floor) — h must be ≥5.8 so each storey clears
+			# the ramp-headroom assert in _build_open_building.
+			{"pos": Vector3(-32, 2.2, -30), "size": Vector3(7, 4.4, 7), "color": Color(0.72, 0.66, 0.56), "roof_color": Color(0.3, 0.18, 0.16)},
+			{"pos": Vector3(-14, 3.2, -30), "size": Vector3(8, 6.4, 8), "open": true},
+			{"pos": Vector3(32, 2.2, -30), "size": Vector3(7, 4.4, 7), "color": Color(0.62, 0.68, 0.62), "roof_color": Color(0.26, 0.18, 0.14)},
+			{"pos": Vector3(14, 3.2, 30), "size": Vector3(8, 6.4, 8), "open": true},
+			{"pos": Vector3(-32, 2.2, 30), "size": Vector3(7, 4.4, 7), "color": Color(0.68, 0.62, 0.7), "roof_color": Color(0.3, 0.2, 0.18)},
+			{"pos": Vector3(32, 2.2, 28), "size": Vector3(7, 4.4, 7), "color": Color(0.76, 0.7, 0.58), "roof_color": Color(0.34, 0.18, 0.14)},
 		],
 		# The flood canal below is THE routing device: it splits the estate in two
 		# at x=0, and the only ways east are the raised bridge at z=8 (framed by
@@ -3102,7 +4350,9 @@ static func _suburb() -> Dictionary:
 		# of the estate. Carves the navmesh (enemies use the crossings too) and
 		# drowns a swimmer, so the player reads it as a hard route boundary.
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(8, 64), "water": true, "dmg": 8.0},
+			# Stretched with the ring (64 → 90) so it still spans the whole
+			# estate — a shorter canal would leave dry flanks around its ends.
+			{"pos": Vector3(0, 0, 0), "size": Vector2(8, 90), "water": true, "dmg": 8.0},
 		],
 		"accents": [
 			{"pos": Vector3(-15, 0.06, 0), "size": Vector3(3, 0.06, 0.35), "color": Color(1, 0.85, 0.2)},
@@ -3134,6 +4384,20 @@ static func _suburb() -> Dictionary:
 			{"type": "tree_small", "pos": Vector3(6.5, 0, -12)},
 			{"type": "tree_small", "pos": Vector3(-14, 0, 12.5)},
 			{"type": "tree_small", "pos": Vector3(14, 0, -12.5)},
+			# Ring dressing: abandoned cars, rubble and lamps out along the
+			# extended streets so the outer blocks read as the same ruined estate.
+			{"type": "car", "pos": Vector3(-24, 0, -31), "yaw": 40},
+			{"type": "car", "pos": Vector3(26, 0, 31), "yaw": -35},
+			{"type": "car", "pos": Vector3(-30, 0, 12), "yaw": 75},
+			{"type": "rubble", "pos": Vector3(-25, 0, -27)},
+			{"type": "rubble", "pos": Vector3(28, 0, -26)},
+			{"type": "lamp", "pos": Vector3(-24, 0, -23)},
+			{"type": "lamp", "pos": Vector3(24, 0, 23), "yaw": 180},
+			{"type": "lamp", "pos": Vector3(-27, 0, 27)},
+			{"type": "fence", "pos": Vector3(20, 0, -30), "yaw": 0},
+			{"type": "crate", "pos": Vector3(26, 0, -33)},
+			{"type": "canister", "pos": Vector3(-33, 0, -24)},
+			{"type": "hydrant", "pos": Vector3(24, 0, -32)},
 		],
 		"sign": "MAPLE GROVE ESTATES",
 		"slogans": [
@@ -3205,6 +4469,20 @@ static func _suburb() -> Dictionary:
 			{"type": "dog", "pos": Vector3(-8, 0.5, 3), "trigger": 16},
 			{"type": "dog", "pos": Vector3(12, 0.5, 6), "trigger": 16, "pack": "suburb_p1"},
 			{"type": "dog", "pos": Vector3(8, 0.5, -8), "trigger": 22, "pack": "suburb_p3"},
+			# Ring patrols: Act-I infantry holding the outer blocks — a gunner
+			# posted at each open shell's door, K-9s loose in the yards, HUNTERs
+			# stalking the flanks. Wake radii sized so they join as the player
+			# pushes out, not all at once.
+			{"type": "android", "pos": Vector3(-24, 0.5, -30), "trigger": 18, "pack": "suburb_r1"},
+			{"type": "drone", "pos": Vector3(-28, 3, -14), "trigger": 18, "pack": "suburb_r1"},
+			{"type": "gunner", "pos": Vector3(-14, 0.5, -25), "trigger": 14, "pack": "suburb_r1"},
+			{"type": "dog", "pos": Vector3(-26, 0.5, 22), "trigger": 16, "pack": "suburb_r2"},
+			{"type": "dog", "pos": Vector3(-24, 0.5, 28), "trigger": 16, "pack": "suburb_r2"},
+			{"type": "hunter", "pos": Vector3(-32, 0.5, 6), "trigger": 16, "pack": "suburb_r2"},
+			{"type": "hunter", "pos": Vector3(14, 0.5, 24), "trigger": 14, "pack": "suburb_r3"},
+			{"type": "android", "pos": Vector3(26, 0.5, 22), "trigger": 18, "pack": "suburb_r3"},
+			{"type": "drone", "pos": Vector3(26, 3, -26), "trigger": 20, "pack": "suburb_r4"},
+			{"type": "gunner", "pos": Vector3(32, 0.5, -24), "trigger": 14, "pack": "suburb_r4"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-25, 0, -16)},
@@ -3213,6 +4491,13 @@ static func _suburb() -> Dictionary:
 			{"type": "health", "pos": Vector3(16, 0, 10)},
 			{"type": "ammo", "pos": Vector3(-14, 0, 14)},
 			{"type": "health", "pos": Vector3(20, 0, -18)},
+			# Ring supplies + an overclock on the SE open shell's UPPER FLOOR
+			# (in through the door, up the interior ramp — exploration payoff).
+			{"type": "health", "pos": Vector3(-32, 0, -14)},
+			{"type": "ammo", "pos": Vector3(-20, 0, -30)},
+			{"type": "ammo", "pos": Vector3(24, 0, 30)},
+			{"type": "health", "pos": Vector3(30, 0, -22)},
+			{"type": "overclock", "pos": Vector3(13, 3.5, 28.5)},
 		],
 	}
 
@@ -3226,14 +4511,19 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "survive", "label": "Survive the GOLIATH onslaught", "seconds": 40.0},
 		],
 		"streets": true,
-		"trees": 16,
+		# EXPANSION PASS (2× area): the GOLIATH's plaza, the boss set-piece and
+		# the inner house ring are untouched — a second ring of suburban blocks
+		# (two OPEN shells) wraps them, and the SW approach to the plaza is
+		# staged with two defensive lines. Streets/trees derive from floor_size
+		# and extend free. Spawn/exit pushed to the new perimeter.
+		"trees": 30,
 		"open_sky": true,
-		"floor_size": Vector2(90, 90),
+		"floor_size": Vector2(126, 126),
 		"floor_color": Color(0.16, 0.15, 0.17),
-		"spawn": Vector3(-36, 0.6, -36),
-		"exit": Vector3(36, 1.5, 36),
+		"spawn": Vector3(-52, 0.6, -52),
+		"exit": Vector3(52, 1.5, 52),
 		# was the Tesla (rank 5), now handed out on mistral. The Arc Coil (rank 6) belongs here, not on level 1.
-		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-31, 0, -23), "color": Color(1, 0.75, 0.35)}, # in front of the corner house
+		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-45, 0, -38), "color": Color(1, 0.75, 0.35)}, # in front of the corner house
 		"env": {
 			"hdri": "res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr", "sky_energy": 0.9,
 			"physical_sky": true, "turbidity": 10.0,
@@ -3250,6 +4540,13 @@ static func _suburb_boss() -> Dictionary:
 			{"pos": Vector3(0, 7, 0), "color": Color(1, 0.45, 0.3), "energy": 2.4, "range": 30},
 			{"pos": Vector3(-22, 5, 22), "color": Color(1, 0.7, 0.5), "energy": 1.6, "range": 18},
 			{"pos": Vector3(22, 5, -22), "color": Color(1, 0.55, 0.4), "energy": 1.6, "range": 18},
+			# Ring lighting (appended AFTER the originals): dusk pools over the
+			# outer blocks + the staged SW approach.
+			{"pos": Vector3(-44, 5, -44), "color": Color(1, 0.7, 0.5), "energy": 1.6, "range": 18},
+			{"pos": Vector3(44, 5, 44), "color": Color(1, 0.7, 0.5), "energy": 1.6, "range": 18},
+			{"pos": Vector3(-30, 5, -30), "color": Color(1, 0.55, 0.4), "energy": 1.5, "range": 17},
+			{"pos": Vector3(44, 5, -34), "color": Color(1, 0.6, 0.45), "energy": 1.5, "range": 17},
+			{"pos": Vector3(-44, 5, 30), "color": Color(1, 0.6, 0.45), "energy": 1.5, "range": 17},
 		],
 		# Houses ring the plaza; the centre is left wide open for the giant.
 		"buildings": [
@@ -3260,6 +4557,16 @@ static func _suburb_boss() -> Dictionary:
 			{"pos": Vector3(32, 2.4, 0), "size": Vector3(8, 4.8, 8), "color": Color(0.7, 0.66, 0.58), "roof_color": Color(0.28, 0.18, 0.2)},
 			{"pos": Vector3(-30, 2.4, 30), "size": Vector3(8, 4.8, 8), "color": Color(0.64, 0.6, 0.7), "roof_color": Color(0.3, 0.2, 0.15)},
 			{"pos": Vector3(0, 2.4, 32), "size": Vector3(8, 4.8, 8), "color": Color(0.78, 0.72, 0.6), "roof_color": Color(0.34, 0.18, 0.14)},
+			# Outer ring blocks. Two are OPEN enterable shells (h ≥ 5.8 clears
+			# the storey-headroom assert in _build_open_building).
+			{"pos": Vector3(-46, 2.4, -44), "size": Vector3(8, 4.8, 8), "color": Color(0.7, 0.64, 0.56), "roof_color": Color(0.3, 0.18, 0.14)},
+			{"pos": Vector3(-14, 3.2, -46), "size": Vector3(8, 6.4, 8), "open": true},
+			{"pos": Vector3(30, 2.4, -46), "size": Vector3(8, 4.8, 8), "color": Color(0.62, 0.66, 0.72), "roof_color": Color(0.26, 0.2, 0.22)},
+			{"pos": Vector3(46, 2.4, -14), "size": Vector3(8, 4.8, 8), "color": Color(0.74, 0.62, 0.52), "roof_color": Color(0.3, 0.2, 0.16)},
+			{"pos": Vector3(48, 2.4, 30), "size": Vector3(8, 4.8, 8), "color": Color(0.66, 0.7, 0.6), "roof_color": Color(0.28, 0.16, 0.14)},
+			{"pos": Vector3(-46, 3.2, 14), "size": Vector3(8, 6.4, 8), "open": true},
+			{"pos": Vector3(14, 2.4, 46), "size": Vector3(8, 4.8, 8), "color": Color(0.7, 0.66, 0.58), "roof_color": Color(0.28, 0.18, 0.2)},
+			{"pos": Vector3(-30, 2.4, 46), "size": Vector3(8, 4.8, 8), "color": Color(0.62, 0.6, 0.72), "roof_color": Color(0.3, 0.2, 0.18)},
 		],
 		"walls": [
 			{"pos": Vector3(-10, 1, 8), "size": Vector3(4, 2, 4)},
@@ -3287,6 +4594,18 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "canister", "pos": Vector3(-6, 0, -14)},
 			{"type": "canister", "pos": Vector3(16, 0, 2)},
 			{"type": "canister", "pos": Vector3(-16, 0, -2)},
+			# Ring street clutter — the outer blocks read as the same evacuated
+			# estate, wrecked cars and rubble down the extended streets.
+			{"type": "car", "pos": Vector3(-20, 0, -44), "yaw": 35},
+			{"type": "car", "pos": Vector3(44, 0, 20), "yaw": -50},
+			{"type": "rubble", "pos": Vector3(-44, 0, -20)},
+			{"type": "rubble", "pos": Vector3(20, 0, 44)},
+			{"type": "lamp", "pos": Vector3(-44, 0, 44)},
+			{"type": "lamp", "pos": Vector3(44, 0, -44), "yaw": 180},
+			{"type": "canister", "pos": Vector3(-46, 0, -36)},
+			{"type": "crate", "pos": Vector3(36, 0, 46)},
+			{"type": "fence", "pos": Vector3(-36, 0, 20), "yaw": 90},
+			{"type": "hydrant", "pos": Vector3(-8, 0, -42)},
 		],
 		"sign": "MAPLE GROVE PLAZA",
 		"lore": [
@@ -3307,12 +4626,18 @@ static func _suburb_boss() -> Dictionary:
 		"platforms": [
 			{"pos": Vector3(0, 3.0, -34), "size": Vector3(9, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 			{"pos": Vector3(-34, 3.0, 0), "size": Vector3(6, 0.4, 9), "color": Color(0.42, 0.42, 0.46)},
+			# Ring overwatch deck on the east drift — holds the overclock (the
+			# open shells' flat roofs are grapple-only, so the reward gets a
+			# stair-served deck instead). Solved stair below.
+			{"pos": Vector3(44, 3.0, -34), "size": Vector3(7, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
 		],
 		"set_piece": {"pos": Vector3(0, 0, -66), "height": 24.0, "face": Vector3(0, 0, 0)},
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			# Yard stair up onto the ring overwatch deck (east drift).
+			{"from": Vector3(44, 0, -22.8), "to": Vector3(44, 3.2, -31.6), "width": 4.0},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -3329,6 +4654,17 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "android", "pos": Vector3(16, 0.5, -12), "trigger": 22, "pack": "suburb_p3"},
 			{"type": "seeker", "pos": Vector3(-16, 2.5, 10), "trigger": 24, "pack": "suburb_p2"},
 			{"type": "seeker", "pos": Vector3(12, 2.5, -16), "trigger": 26, "pack": "suburb_p3"},
+			# THE APPROACH: two defensive lines staged across the SW walk-in.
+			# Outer picket at radius ~38, inner line at ~22 — each wakes as a
+			# pack, so the push to the plaza is a fight through two positions.
+			{"type": "gunner", "pos": Vector3(-40, 0.5, -28), "trigger": 20, "pack": "suburb_b1"},
+			{"type": "android", "pos": Vector3(-36, 0.5, -36), "trigger": 20, "pack": "suburb_b1"},
+			{"type": "hunter", "pos": Vector3(-28, 0.5, -40), "trigger": 20, "pack": "suburb_b1"},
+			{"type": "drone", "pos": Vector3(-38, 3, -38), "trigger": 22, "pack": "suburb_b1"},
+			{"type": "gunner", "pos": Vector3(-26, 0.5, -14), "trigger": 18, "pack": "suburb_b2"},
+			{"type": "android", "pos": Vector3(-20, 0.5, -20), "trigger": 18, "pack": "suburb_b2"},
+			{"type": "dog", "pos": Vector3(-14, 0.5, -26), "trigger": 18, "pack": "suburb_b2"},
+			{"type": "seeker", "pos": Vector3(-22, 2.5, -22), "trigger": 20, "pack": "suburb_b2"},
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-31, 0, -24)},
@@ -3340,6 +4676,12 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
 			{"type": "overclock", "pos": Vector3(0, 0, 0)},
+			# Ring supplies along the staged approach + the deck overclock.
+			{"type": "health", "pos": Vector3(-44, 0, -36)},
+			{"type": "ammo", "pos": Vector3(-28, 0, -44)},
+			{"type": "ammo", "pos": Vector3(28, 0, 44)},
+			{"type": "health", "pos": Vector3(44, 0, 36)},
+			{"type": "overclock", "pos": Vector3(44, 3.5, -34)},
 		],
 	}
 
@@ -3369,6 +4711,18 @@ static func _hazard_platforms(col: Color) -> Array:
 		{"pos": Vector3(8, 1.4, 0), "size": Vector3(14, 0.4, 2.6), "color": col},      # hub→east spur
 		{"pos": Vector3(-7, 1.4, 5), "size": Vector3(2.6, 0.4, 9), "color": col},      # hub→perch spur
 		{"pos": Vector3(-7, 1.4, 11), "size": Vector3(5, 0.4, 5), "color": col},       # side combat perch
+		# EXPANSION PASS (both hazard arenas grew 40² → 56² together): an OUTER
+		# loop swings west off the spawn island and south to the exit island —
+		# a long exposed ring route mirroring the NE walk. Every segment
+		# OVERLAPS its neighbours (same no-jump-gap rule as above), same
+		# height/width language: 2.6-wide walkways, 6-wide islands at y=1.4.
+		{"pos": Vector3(-19, 1.4, -15), "size": Vector3(8, 0.4, 2.6), "color": col},   # spawn→west spur
+		{"pos": Vector3(-22, 1.4, 2), "size": Vector3(2.6, 0.4, 36), "color": col},    # west walkway
+		{"pos": Vector3(-21, 1.4, 21), "size": Vector3(6, 0.4, 6), "color": col},      # SW island
+		{"pos": Vector3(-2, 1.4, 22), "size": Vector3(34, 0.4, 2.6), "color": col},    # south walkway
+		{"pos": Vector3(14, 1.4, 21), "size": Vector3(6, 0.4, 6), "color": col},       # SE island
+		{"pos": Vector3(14, 1.4, 17.5), "size": Vector3(2.6, 0.4, 3), "color": col},   # SE→exit spur
+		{"pos": Vector3(-15, 1.4, 11), "size": Vector3(13, 0.4, 2.6), "color": col},   # perch→west link
 	]
 
 ## Lava World — a foundry sea of molten rock. Falling off the catwalks scalds you.
@@ -3388,7 +4742,12 @@ static func _lava_world() -> Dictionary:
 			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Survive the forge's fury"},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(40, 40),
+		# EXPANSION PASS (2× area, TWINNED with water_world): the shared
+		# walkway network grew an outer loop (see _hazard_platforms) and the
+		# molten pools stretch to keep covering the floor quadrants. Spawn and
+		# exit stay on their islands — the loop is more sea to cross, not a
+		# longer walk to the door.
+		"floor_size": Vector2(56, 56),
 		"floor_color": Color(0.08, 0.04, 0.03),
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
@@ -3412,6 +4771,12 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(0, 7, 0), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
 			{"pos": Vector3(-7, 5, 9), "color": Color(0.5, 0.76, 1.0), "energy": 1.8, "range": 14},
 			{"pos": Vector3(8, 5, -8), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14},
+			# Outer-loop lighting (appended): forge glow over the west/south run
+			# + cool work-lights on the new islands.
+			{"pos": Vector3(-22, 4, 2), "color": Color(1.0, 0.45, 0.18), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-2, 4, 22), "color": Color(1.0, 0.5, 0.22), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-21, 5, 21), "color": Color(0.5, 0.78, 1.0), "energy": 1.8, "range": 14},
+			{"pos": Vector3(14, 5, 21), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14},
 		],
 		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
 		# arena has a high sniping vantage, not just one flat plane of gantries.
@@ -3432,11 +4797,13 @@ static func _lava_world() -> Dictionary:
 			# tall enough that its flat top exceeds the navmesh's step tolerance from
 			# the platform surface, fragmenting those tiny islands into disconnected
 			# navmesh polygons (broke the spawn->exit path — see campaign_nav_sweep).
-			{"type": "crate_stack", "pos": Vector3(-19, 0, -19)},
+			# (both crate stacks rehomed to the NEW margin corners — the old
+			# corners are inside the stretched pools now)
+			{"type": "crate_stack", "pos": Vector3(-25.5, 0, -25.5)},
 			{"type": "barrel", "pos": Vector3(15, 1.6, -16)},
 			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
 			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
-			{"type": "crate_stack", "pos": Vector3(17.5, 0, 18)},
+			{"type": "crate_stack", "pos": Vector3(25, 0, 25)},
 			{"type": "barrel", "pos": Vector3(-8, 1.6, 11)},
 			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
 			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
@@ -3446,10 +4813,13 @@ static func _lava_world() -> Dictionary:
 		# them + the catwalks. Less fill-rate (smaller shader area) and far more
 		# room to move — you're no longer trapped on the gantries.
 		"lava": [
-			{"pos": Vector3(-9.5, 0, -9.5), "size": Vector2(13, 13), "dmg": 16.0},
-			{"pos": Vector3(9.5, 0, -9.5), "size": Vector2(13, 13), "dmg": 16.0},
-			{"pos": Vector3(-9.5, 0, 9.5), "size": Vector2(13, 13), "dmg": 16.0},
-			{"pos": Vector3(9.5, 0, 9.5), "size": Vector2(13, 13), "dmg": 16.0},
+			# Stretched with the 56² floor (13² @ ±9.5 → 20² @ ±13): same four
+			# quadrant pools, same 6 m cross-lanes along the axes, the outer
+			# margin band staying ~5 m like before.
+			{"pos": Vector3(-13, 0, -13), "size": Vector2(20, 20), "dmg": 16.0},
+			{"pos": Vector3(13, 0, -13), "size": Vector2(20, 20), "dmg": 16.0},
+			{"pos": Vector3(-13, 0, 13), "size": Vector2(20, 20), "dmg": 16.0},
+			{"pos": Vector3(13, 0, 13), "size": Vector2(20, 20), "dmg": 16.0},
 		],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
@@ -3479,11 +4849,34 @@ static func _lava_world() -> Dictionary:
 			{"type": "bowler", "pos": Vector3(0, 3.0, -1), "trigger": 18, "pack": "lava_w_p1"},
 			{"type": "orb", "pos": Vector3(0, 0.6, -14), "trigger": 15},
 			{"type": "orb", "pos": Vector3(14, 0.6, 0), "trigger": 20, "pack": "lava_w_p2"},
+			# Outer-loop patrols: the same aerial gauntlet over the new run,
+			# plus a molten orb bowled down the SW island.
+			{"type": "raptor", "pos": Vector3(-22, 3, -8), "trigger": 18, "pack": "lava_w_r1"},
+			{"type": "seeker", "pos": Vector3(-22, 3, 10), "trigger": 16, "pack": "lava_w_r1"},
+			{"type": "raptor", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "lava_w_r2"},
+			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "lava_w_r2"},
+			{"type": "raptor", "pos": Vector3(14, 3, 20), "trigger": 14, "pack": "lava_w_r2"},
+			{"type": "orb", "pos": Vector3(-21, 0.6, 21), "trigger": 16, "pack": "lava_w_r1"},
+			# Late-campaign buff (difficulty_curve dip: 224 vs the ~380-520 band at
+			# this slot): heavies spread one-per-segment across the walkway network
+			# — ground units ON islands/walkways only, hoverers over the sea.
+			{"type": "mauler", "pos": Vector3(14, 2, -15), "trigger": 18, "pack": "lava_w_g1"},   # NE island
+			{"type": "breaker", "pos": Vector3(14, 3, -6), "trigger": 20, "pack": "lava_w_g1"},   # over east walkway
+			{"type": "whirlwind", "pos": Vector3(19, 3, 12), "trigger": 18, "pack": "lava_w_g1"}, # over the SE pool
+			{"type": "mauler", "pos": Vector3(-21, 2, 21), "trigger": 16, "pack": "lava_w_g2"},   # SW island
+			{"type": "breaker", "pos": Vector3(-22, 3, -4), "trigger": 18, "pack": "lava_w_g2"},  # over west walkway
+			{"type": "whirlwind", "pos": Vector3(-10, 3, 18), "trigger": 18, "pack": "lava_w_g2"},# over the SW pool
+			{"type": "bowler", "pos": Vector3(14, 2, 21), "trigger": 16, "pack": "lava_w_g3"},    # SE island
+			{"type": "orb", "pos": Vector3(0, 0.6, 12), "trigger": 18, "pack": "lava_w_g3"},      # central cross-lane
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
+			# Loop rewards on the new islands (kind-style like the rest).
+			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},
+			{"kind": "ammo", "pos": Vector3(-20, 1.7, 20)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, 21)},
 		],
 	}
 
@@ -3505,7 +4898,10 @@ static func _water_world() -> Dictionary:
 			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge"},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(40, 40),
+		# EXPANSION PASS (2× area, TWINNED with lava_world): shared outer
+		# walkway loop (see _hazard_platforms), flood stretched wall-to-wall
+		# over the new floor. Spawn/exit stay on their islands.
+		"floor_size": Vector2(56, 56),
 		"floor_color": Color(0.03, 0.06, 0.08),
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
@@ -3542,6 +4938,12 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(0, 3, 0), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
 			{"pos": Vector3(-9.5, 2.2, -9.5), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
 			{"pos": Vector3(9.5, 2.2, 9.5), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
+			# Outer-loop lighting (appended): moonlit blues down the west/south
+			# run + one warning strobe on the SW island.
+			{"pos": Vector3(-22, 4, 2), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-2, 4, 22), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-21, 3, 21), "color": Color(1.0, 0.5, 0.2), "energy": 1.8, "range": 12},
+			{"pos": Vector3(14, 4, 21), "color": Color(0.3, 0.7, 1.0), "energy": 1.8, "range": 14},
 		],
 		# Gantry web + a raised control perch over the central hub (ramp up) for a
 		# dry sniping vantage above the flooded floor.
@@ -3552,7 +4954,7 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
 		],
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(40, 40), "water": true, "dmg": 10.0,
+			{"pos": Vector3(0, 0, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
 				"color": Color(0.28, 0.72, 1.0)}, # brighter teal so the flood glows + mirrors the moon
 		],
 		# Reactor dressing: drowned coolant columns standing out of the water to
@@ -3588,11 +4990,34 @@ static func _water_world() -> Dictionary:
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14, "pack": "water__p1"},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
 			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "water__p2"},
+			# Outer-loop patrols: the school hunts the new run, sharks lurking
+			# under the west and south walkways.
+			{"type": "fishbot", "pos": Vector3(-22, 3, -8), "trigger": 18, "pack": "water_r1"},
+			{"type": "fishbot", "pos": Vector3(-22, 3, 10), "trigger": 16, "pack": "water_r1"},
+			{"type": "shark", "pos": Vector3(-17, 0, 17), "trigger": 18, "pack": "water_r1"},
+			{"type": "fishbot", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "water_r2"},
+			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "water_r2"},
+			{"type": "shark", "pos": Vector3(8, 0, 17), "trigger": 20, "pack": "water_r2"},
+			# Late-campaign buff (difficulty_curve dip: 281 vs the ~380-520 band at
+			# this slot): heavy hoverers over the flood + more school. All flyers
+			# hover over open water or walkway lines; the shark hunts under it —
+			# nothing new touches the islands' navmesh.
+			{"type": "breaker", "pos": Vector3(14, 3, -15), "trigger": 18, "pack": "water_h1"},
+			{"type": "whirlwind", "pos": Vector3(18, 3, -4), "trigger": 18, "pack": "water_h1"},
+			{"type": "fishbot", "pos": Vector3(14, 3, 8), "trigger": 16, "pack": "water_h1"},
+			{"type": "breaker", "pos": Vector3(-21, 3, 21), "trigger": 16, "pack": "water_h2"},
+			{"type": "whirlwind", "pos": Vector3(-4, 3, 17), "trigger": 18, "pack": "water_h2"},
+			{"type": "fishbot", "pos": Vector3(-14, 3, 10), "trigger": 16, "pack": "water_h2"},
+			{"type": "shark", "pos": Vector3(4, 0, -6), "trigger": 18},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
+			# Loop rewards on the new islands (kind-style like the rest).
+			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},
+			{"kind": "ammo", "pos": Vector3(-20, 1.7, 20)},
+			{"kind": "ammo", "pos": Vector3(14, 1.7, 21)},
 		],
 	}
 
@@ -3622,12 +5047,20 @@ static func _desert() -> Dictionary:
 			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike"},
 		],
 		"open_sky": true,
-		"floor_size": Vector2(66, 66),
+		# EXPANSION PASS (2× area): the 66² canyon basin is untouched at the
+		# centre — oasis, fissures, mesas and the relay mast all stay put. A new
+		# outer dune ring wraps it: NO gates (open desert — bulkheads would kill
+		# the sightlines the howitzers live on); the ring is routed by new mesas
+		# and dune rocks instead, one of them a stair-climb deck with the
+		# overclock, plus a third fissure smoking across the south drift and a
+		# late-game garrison. Spawn/exit pushed to the new perimeter on their
+		# SW/NE diagonal.
+		"floor_size": Vector2(92, 92),
 		"floor_material": "res://assets/materials/desert_sand.tres", # textured sand, not flat beige
 		"floor_color": Color(0.66, 0.5, 0.31),
-		"spawn": Vector3(-27, 2.0, -27),
-		"exit": Vector3(28, 1.6, 28),
-		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-22, 0.4, -20), "color": Color(1.0, 0.8, 0.4)},
+		"spawn": Vector3(-40, 2.0, -40),
+		"exit": Vector3(40, 1.6, 40),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-35, 0.4, -33), "color": Color(1.0, 0.8, 0.4)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(-18, 3.6, 12), "color": Color(0.6, 0.85, 1.0)},
 		],
@@ -3649,6 +5082,14 @@ static func _desert() -> Dictionary:
 		"lights": [
 			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26},
 			{"pos": Vector3(0, 5, 6), "color": Color(0.6, 0.8, 1.0), "energy": 1.8, "range": 18},
+			# Dune-ring lighting (appended AFTER the originals — light_shafts [0]
+			# must keep pointing at the mast lamp). Golden-hour outdoors, so these
+			# are SUBTLE warm fills lifting the new mesas/fissure, not statements.
+			{"pos": Vector3(-34, 6, -14), "color": Color(1.0, 0.75, 0.45), "energy": 1.6, "range": 16},
+			{"pos": Vector3(8, 6.5, -36), "color": Color(1.0, 0.7, 0.4), "energy": 1.7, "range": 16},
+			{"pos": Vector3(36, 5.5, 4), "color": Color(1.0, 0.78, 0.5), "energy": 1.5, "range": 15},
+			{"pos": Vector3(-10, 5, 33), "color": Color(1.0, 0.5, 0.22), "energy": 1.8, "range": 15},
+			{"pos": Vector3(38, 6, 38), "color": Color(1.0, 0.72, 0.42), "energy": 1.6, "range": 15},
 		],
 		# Canyon walls: sandstone slabs at irregular angles carving a winding route
 		# from the SW spawn to the NE relay, leaving the centre open for the oasis.
@@ -3666,17 +5107,31 @@ static func _desert() -> Dictionary:
 			{"pos": Vector3(-18, 3.4, 12), "size": Vector3(11, 0.6, 10), "color": Color(0.62, 0.46, 0.3)},
 			{"pos": Vector3(20, 4.0, -16), "size": Vector3(10, 0.6, 9), "color": Color(0.6, 0.44, 0.28)},
 			{"pos": Vector3(2, 2.2, -2), "size": Vector3(7, 0.5, 7), "color": Color(0.64, 0.48, 0.32)},
+			# Dune-ring relief (routes the ring instead of gates): a west mesa
+			# over the spawn approach, a north rim mesa — the stair-climb deck
+			# with the overclock — and a low dune rock shading the east drift.
+			{"pos": Vector3(-34, 3.0, -14), "size": Vector3(10, 0.6, 9), "color": Color(0.61, 0.45, 0.29)},
+			{"pos": Vector3(8, 3.4, -36), "size": Vector3(11, 0.6, 8), "color": Color(0.6, 0.44, 0.28)},
+			{"pos": Vector3(36, 2.4, 4), "size": Vector3(9, 0.6, 8), "color": Color(0.63, 0.47, 0.31)},
 		],
 		"ramps": [
 			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 0},
 			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 180},
 			{"pos": Vector3(-3, 1.1, -2), "size": Vector3(8, 0.5, 4), "pitch": 18, "yaw": 90},
 		],
+		# Stair-climb onto the north rim mesa (top ≈3.7) — the ring's vantage
+		# deck: a sniper posts up there and the overclock is the climb reward.
+		"stairs": [
+			{"from": Vector3(8, 0.3, -29), "to": Vector3(8, 3.9, -34), "width": 3.0},
+		],
 		# A molten fissure splits the basin diagonally — wade it and you cook, so you
 		# climb the central mesa or skirt the rim.
 		"lava": [
 			{"pos": Vector3(-6, 0, 2), "size": Vector2(30, 4.0), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
 			{"pos": Vector3(10, 0, -8), "size": Vector2(4.0, 22), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
+			# Third fissure smoking across the south dune drift — the ring
+			# carries the basin's hazard language; skirt it east or climb west.
+			{"pos": Vector3(-10, 0, 33), "size": Vector2(30, 4.0), "color": Color(1.0, 0.4, 0.16), "dmg": 18.0},
 		],
 		"props": [
 			# Oasis: a pond ringed with palms at the heart of the basin.
@@ -3710,10 +5165,24 @@ static func _desert() -> Dictionary:
 			{"type": "sandbags", "pos": Vector3(-14, 0, -1), "yaw": 30},
 			{"type": "barrel", "pos": Vector3(-22, 0, -22)},
 			{"type": "crate", "pos": Vector3(-20, 0, -24)},
+			# Dune-ring dressing: more of the basin's own flora and rock spread
+			# through the outer band, clear of the authored oasis/mesa/dune spots.
+			{"type": "cactus", "pos": Vector3(-36, 0, -28)},
+			{"type": "cactus", "pos": Vector3(32, 0, -32)},
+			{"type": "cactus", "pos": Vector3(40, 0, 14)},
+			{"type": "cactus", "pos": Vector3(-40, 0, 10)},
+			{"type": "dune", "pos": Vector3(-32, 0, 36)},
+			{"type": "dune", "pos": Vector3(34, 0, -22)},
+			{"type": "dune", "pos": Vector3(-4, 0, -41)},
+			{"type": "boulder", "pos": Vector3(28, 0, 34)},
+			{"type": "rock", "pos": Vector3(-36, 0, 24)},
+			{"type": "rock", "pos": Vector3(16, 0, 38)},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 0.04, 2), "size": Vector3(30, 0.08, 0.5), "color": Color(1.0, 0.45, 0.18)},
 			{"pos": Vector3(10, 0.04, -8), "size": Vector3(0.5, 0.08, 22), "color": Color(1.0, 0.45, 0.18)},
+			# Rim glow for the ring fissure, same language as the basin pair.
+			{"pos": Vector3(-10, 0.04, 33), "size": Vector3(30, 0.08, 0.5), "color": Color(1.0, 0.45, 0.18)},
 		],
 		"lore": [
 			{"id": "lore_desert", "title": "RELAY 7 LOG", "pos": Vector3(-24, 0, -18), "color": Color(1.0, 0.7, 0.3),
@@ -3742,11 +5211,33 @@ static func _desert() -> Dictionary:
 			# the whole basin is their firing range.
 			{"type": "howitzer", "pos": Vector3(18, 0.5, 10), "trigger": 26, "pack": "desert_p2"},
 			{"type": "howitzer", "pos": Vector3(24, 0.5, -2), "trigger": 28},
+			# Dune-ring garrison (late-campaign buff — difficulty_curve dip: 237
+			# vs the ~380-520 band at this slot): a heavy relay guard sweeping
+			# the outer band. West approach picket, south fissure patrol, east
+			# drift armour, and a north rim overwatch pair on/under the deck.
+			{"type": "sniper", "pos": Vector3(-34, 4.0, -14), "trigger": 24, "pack": "desert_r1"},
+			{"type": "gunner", "pos": Vector3(-30, 0.5, -18), "trigger": 20, "pack": "desert_r1"},
+			{"type": "brute", "pos": Vector3(-36, 0.5, 2), "trigger": 22, "pack": "desert_r1"},
+			{"type": "warbot", "pos": Vector3(-28, 0.5, 30), "trigger": 24, "pack": "desert_r2"},
+			{"type": "mauler", "pos": Vector3(-6, 0.5, 38), "trigger": 22, "pack": "desert_r2"},
+			{"type": "ravager", "pos": Vector3(12, 0.5, 36), "trigger": 24, "pack": "desert_r2"},
+			{"type": "gunner", "pos": Vector3(30, 0.5, 28), "trigger": 24, "pack": "desert_r3"},
+			{"type": "brute", "pos": Vector3(38, 0.5, 16), "trigger": 22, "pack": "desert_r3"},
+			{"type": "mauler", "pos": Vector3(36, 0.5, -10), "trigger": 24, "pack": "desert_r3"},
+			{"type": "warbot", "pos": Vector3(28, 0.5, -30), "trigger": 26, "pack": "desert_r4"},
+			{"type": "gunner", "pos": Vector3(17, 0.5, -38), "trigger": 24, "pack": "desert_r4"},
+			{"type": "sniper", "pos": Vector3(8, 3.9, -36), "trigger": 28, "pack": "desert_r4"},
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(-2, 1.7, 9)},
 			{"kind": "ammo", "pos": Vector3(2, 2.9, -2)},
 			{"kind": "ammo", "pos": Vector3(20, 4.6, -16)},
 			{"kind": "health", "pos": Vector3(18, 0.6, 16)},
+			# Dune-ring supplies + the deck-climb reward.
+			{"kind": "health", "pos": Vector3(-36, 0.6, 6)},
+			{"kind": "ammo", "pos": Vector3(-8, 0.6, 38)},
+			{"kind": "ammo", "pos": Vector3(36, 0.6, 20)},
+			{"kind": "health", "pos": Vector3(30, 0.6, -32)},
+			{"kind": "overclock", "pos": Vector3(8, 4.0, -36)},
 		],
 	}

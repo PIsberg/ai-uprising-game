@@ -68,6 +68,9 @@ var screen_shake: float = 1.0
 ## overlay, low-health vignette pulse and kill-edge flash. 1.0 = full, 0 = none.
 ## The HUD reads this each frame (photosensitivity / epilepsy safety).
 var flash_intensity: float = 1.0
+## Accessibility: scales gamepad rumble (1.0 = full, 0 = off). Mirrored into
+## the static Haptics helper so the per-shot call sites stay autoload-free.
+var rumble: float = 1.0
 ## 3D resolution scale, independent of the quality tier. 1.0 = native (sharp, no
 ## upscaling); below 1.0 renders at a lower internal res and FSR2-upscales (faster,
 ## softer in the distance). Lets you keep effects low for perf without the blur.
@@ -454,6 +457,12 @@ func set_screen_shake(v: float) -> void:
 ## Accessibility: 0..1 scale on full-screen flashes (the HUD polls it).
 func set_flash_intensity(v: float) -> void:
 	flash_intensity = clampf(v, 0.0, 1.0)
+	_save_settings()
+
+## Accessibility: 0..1 scale on gamepad rumble (0 = off entirely).
+func set_rumble(v: float) -> void:
+	rumble = clampf(v, 0.0, 1.0)
+	Haptics.strength = rumble
 	_save_settings()
 
 ## 3D resolution scale (0.5..1.0). Applies to the live viewport immediately.
@@ -978,6 +987,7 @@ func _load_settings() -> void:
 		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
 		screen_shake = float(cf.get_value("graphics_adv", "screen_shake", 1.0))
 		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
+		rumble = clampf(float(cf.get_value("input", "rumble", 1.0)), 0.0, 1.0)
 		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
 		color_grade = clampi(int(cf.get_value("graphics_adv", "color_grade", ColorGrade.NEUTRAL)), 0, ColorGrade.size() - 1) as ColorGrade
 		brightness = clampf(float(cf.get_value("display", "brightness", 1.0)), 0.5, 1.5)
@@ -997,6 +1007,8 @@ func _load_settings() -> void:
 	# that's the fallback if the benchmark can't run (e.g. headless).
 	if not (loaded and cf.has_section_key("video", "quality")):
 		needs_auto_quality = true
+	# Mirror into the static helper whether or not a settings file existed.
+	Haptics.strength = rumble
 
 ## First-run render scale: 1.0 (native) up to 1600-row screens, then whatever
 ## scale gives a ~1440p-tall internal resolution, floored at 0.5.
@@ -1029,6 +1041,7 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
 	cf.set_value("graphics_adv", "screen_shake", screen_shake)
 	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
+	cf.set_value("input", "rumble", rumble)
 	cf.set_value("video", "render_scale", render_scale)
 	cf.set_value("graphics_adv", "color_grade", int(color_grade))
 	cf.set_value("display", "brightness", brightness)

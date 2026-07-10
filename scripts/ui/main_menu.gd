@@ -166,6 +166,10 @@ func _build_extra_settings() -> void:
 	var flash := _add_slider_row("Flash Intensity", 0.0, 1.0, 0.05, GraphicsSettings.flash_intensity)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
+	# Accessibility: gamepad rumble strength (0 = off).
+	var rumble := _add_slider_row("Controller Rumble", 0.0, 1.0, 0.05, GraphicsSettings.rumble)
+	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
+
 	# Resolution scale — 1.0 = native/sharp; lower it for performance (FSR2 upscale).
 	# A live readout shows the effective internal resolution ("70% · 2688×1512") so
 	# the slider reads as the resolution/perf control it actually is.

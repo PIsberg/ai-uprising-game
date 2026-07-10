@@ -66,6 +66,23 @@ func _ready() -> void:
 	# standing water by ear — a familiar bubbling vs. a gentle trickle.
 	streams["lava_loop"] = _lava_bubble(4.0)
 	streams["water_loop"] = _water_flow(4.0)
+	# Blast-shock tinnitus: the thin whine after an explosion goes off next to
+	# your head, played while AudioBus's low-pass muffle recovers.
+	streams["ear_ring"] = _ear_ring(2.6)
+	# Deep-danger heartbeat bed, layered under "breathing" as health keeps falling.
+	streams["heartbeat"] = _heartbeat(4.0)
+	# Shot-confirm channel: a tiny neutral tick for any landed round, a heavier
+	# double thock when the round kills.
+	streams["hit_tick"] = _hit_tick(0.05)
+	streams["kill_thock"] = _kill_thock(0.16)
+	# A spent casing striking the floor a beat after ejection.
+	streams["brass_tink"] = _brass_tink(0.09)
+	# Menu sounds campaign_map already referenced but nothing registered — both
+	# calls were silent no-ops.
+	streams["ui_deny"] = _ui_deny(0.24)
+	streams["ui_back"] = _ui_back(0.16)
+	# horde_director plays "victory_sting"; only "victory" existed (silent no-op).
+	streams["victory_sting"] = streams["victory"]
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
@@ -124,6 +141,36 @@ func _breathing(dur: float) -> AudioStreamWAV:
 		lp2 = lp2 * 0.55 + lp * 0.45 # second pole rounds off the hiss
 		_write(bytes, i, lp2 * env * env * 0.9)
 	return _to_stream(bytes, true)
+
+## Deep-danger heartbeat: five lub-dub pairs over a seamless 4 s loop (75 bpm).
+## Pure low thumps with no high content so it sits UNDER the breathing loop and
+## the gunfire instead of competing with them. Carrier frequencies are integer
+## multiples of 1/4 Hz so the loop point is phase-continuous.
+func _heartbeat(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var beat := fmod(t, 0.8) # 75 bpm -> exactly 5 beats per 4 s loop
+		var lub := exp(-pow((beat - 0.06) * 26.0, 2.0))
+		var dub := exp(-pow((beat - 0.34) * 30.0, 2.0)) * 0.7
+		var s := sin(TAU * 52.0 * t) * lub + sin(TAU * 58.0 * t) * dub
+		_write(bytes, i, tanh(s * 1.4) * 0.85)
+	return _to_stream(bytes, true)
+
+## Post-blast tinnitus: a thin, steady high whine decaying to nothing — played
+## non-positionally by AudioBus.notify_blast while the low-pass muffle recovers,
+## so a close explosion "deafens" you the way it does in every modern shooter.
+func _ear_ring(dur: float) -> AudioStreamWAV:
+	var n := int(SR * dur)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var u := t / dur
+		var env := (1.0 - u) * (1.0 - u) * (1.0 - exp(-t * 40.0))
+		var s := sin(TAU * 3400.0 * t) * 0.8 + sin(TAU * 5100.0 * t) * 0.2
+		_write(bytes, i, s * env * 0.4)
+	return _to_stream(bytes)
 
 # ----- helpers -----
 
@@ -869,6 +916,75 @@ func _pickup_clink(duration: float) -> AudioStreamWAV:
 		var ring := sin(phase) * 0.3
 		var s := (randf() * 2.0 - 1.0) * (c1 * 0.7 + c2 * 0.6) + ring * (c1 + c2)
 		_write(bytes, i, tanh(s))
+	return _to_stream(bytes)
+
+## Hit-confirm tick: a tiny dry snap for a landed round. Deliberately neutral,
+## quiet and SHORT — under full-auto it has to read as a texture confirming
+## contact, not a melody fighting the gunfire.
+func _hit_tick(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 160.0)
+		var noise := randf() * 2.0 - 1.0
+		lp = lerpf(lp, noise, 0.6)
+		var s := lp * env + sin(TAU * 2600.0 * t) * env * 0.35
+		_write(bytes, i, tanh(s * 1.1) * 0.8)
+	return _to_stream(bytes)
+
+## Kill-confirm thock: a heavier low knock through the same crosshair channel
+## as hit_tick, so a kill lands with unmistakably more weight than a graze.
+func _kill_thock(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var body := sin(TAU * 150.0 * t) * exp(-t * 30.0)
+		var knock := sin(TAU * 820.0 * t) * exp(-t * 55.0) * 0.5
+		var snap := (randf() * 2.0 - 1.0) * exp(-t * 200.0) * 0.5
+		_write(bytes, i, tanh((body + knock + snap) * 1.5) * 0.9)
+	return _to_stream(bytes)
+
+## A spent casing striking the floor: one tiny bright ping with a fast noise
+## transient. The caller randomises pitch so a burst scatters into a tinkle.
+func _brass_tink(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 90.0)
+		var s := sin(TAU * 4200.0 * t) * 0.5 + sin(TAU * 6300.0 * t) * 0.25
+		s += (randf() * 2.0 - 1.0) * exp(-t * 300.0) * 0.5
+		_write(bytes, i, tanh(s * env * 1.3) * 0.6)
+	return _to_stream(bytes)
+
+## Locked/denied action: a flat low double-buzz — unmistakably "no". Smooth
+## sine-hump gates on each buzz so the hard edges don't click.
+func _ui_deny(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	for i in n:
+		var t := float(i) / SR
+		var g1 := sin(PI * clampf(t / 0.09, 0.0, 1.0))
+		var g2 := sin(PI * clampf((t - 0.13) / 0.09, 0.0, 1.0))
+		var buzz := sin(TAU * 190.0 * t) * 0.5 + sin(TAU * 380.0 * t) * 0.2
+		_write(bytes, i, tanh(buzz * (g1 + g2) * 1.4) * 0.6)
+	return _to_stream(bytes)
+
+## Back/cancel: a soft descending blip — the falling counterpart of the rising
+## navigation chirps, so "leaving" sounds like the opposite of "entering".
+func _ui_back(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var u := t / duration
+		ph += TAU * lerpf(880.0, 470.0, u) / SR
+		var env := exp(-t * 18.0) * (1.0 - exp(-t * 300.0))
+		_write(bytes, i, sin(ph) * env * 0.5)
 	return _to_stream(bytes)
 
 ## Short, quiet mechanical footfall/servo tick for enemy locomotion (the
