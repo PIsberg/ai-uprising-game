@@ -815,6 +815,7 @@ func reset_level_stats() -> void:
 	_reset_combo()
 	level_start_ms = Time.get_ticks_msec()
 	_nemesis_spawned_this_level = false # each level gets one shot at the grudge match
+	level_hijacks = 0
 	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
 func register_shot() -> void:
@@ -1352,9 +1353,36 @@ func nemesis_slain() -> void:
 
 func on_level_complete() -> void:
 	_reset_combo()
+	# Snapshot the director's read NOW (its profile resets at the next level's
+	# start) — the next briefing shows it as intercepted ROBOT OS patch notes.
+	pending_patch_notes = _build_patch_notes()
 	grade_level() # emits level_graded for the end screen
 	set_state(State.LEVEL_COMPLETE)
 	level_completed.emit()
+
+# ---------- in-fiction patch notes (the machine's changelog, intercepted) ----------
+## Between levels the enemy "ships a patch" against how you actually played:
+## the AI Director's counter-read, security incidents (hijacks), and any
+## standing nemesis get staged as a ROBOT OS changelog on the next briefing.
+var pending_patch_notes: Array = []
+var level_hijacks: int = 0 ## HIJACK charges that landed this level (a security incident).
+
+func note_hijack() -> void:
+	level_hijacks += 1
+
+func _build_patch_notes() -> Array:
+	var notes: Array = AIDirector.patch_notes()
+	if level_hijacks > 0:
+		notes.append("! SECURITY: %d unit(s) lost to hostile firmware injection. Loyalty-core patch: IN DEVELOPMENT." % level_hijacks)
+	if not nemesis.is_empty():
+		notes.append("! UNIT %s refused decommission order. Status: HUNTING. Interference is not advised." % String(nemesis.get("name", "UNKNOWN")))
+	return notes
+
+## The next briefing takes the changelog exactly once.
+func consume_patch_notes() -> Array:
+	var n := pending_patch_notes
+	pending_patch_notes = []
+	return n
 
 # ---------------------------------------------------------------------
 # Level tasks. A level registers an ordered checklist (kill all, find the

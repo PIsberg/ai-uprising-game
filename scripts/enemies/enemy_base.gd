@@ -296,6 +296,7 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 	# Death mid-hijack must still restore group/layer bookkeeping.
 	hp.died.connect(_cleanup_hijack.unbind(1), CONNECT_ONE_SHOT)
 	_spawn_hijack_fx()
+	GameState.note_hijack() # a logged security incident — the OS patches for it
 	AudioBus.play_synth_at("overlord_glitch", global_position, -2.0, 1.4)
 	return true
 

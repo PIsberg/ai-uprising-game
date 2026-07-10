@@ -422,6 +422,10 @@ func _setup_briefing() -> void:
 	# Dynamic FX lights setup
 	_build_fx(comic_cfg.get("fx", []), Vector2(w, h))
 
+	# Intercepted ROBOT OS patch notes from the last level's fight (if any):
+	# a terminal card that types itself out over the comic's left edge.
+	_build_patch_panel()
+
 	# Start scene tweens
 	var up := create_tween().set_parallel(true)
 	up.tween_property(_fade, "color:a", 0.0, 0.6)
@@ -429,6 +433,55 @@ func _setup_briefing() -> void:
 	
 	await up.finished
 	_run_timer()
+
+## The machine's changelog, staged as an intercepted transmission: a dark
+## terminal panel that types one patch-note line at a time. Pure fiction layer
+## over data the AI Director already tracks — this is how the player SEES the
+## enemy adapt between levels. Skipped entirely when there's nothing to show.
+func _build_patch_panel() -> void:
+	var notes: Array = GameState.consume_patch_notes()
+	if notes.is_empty():
+		return
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.05, 0.03, 0.86)
+	style.border_color = Color(0.3, 1.0, 0.5, 0.55)
+	style.set_border_width_all(1)
+	style.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.anchor_left = 0.015
+	panel.anchor_top = 0.16
+	panel.anchor_right = 0.36
+	panel.anchor_bottom = 0.16 # grows downward with content
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.modulate.a = 0.0
+	add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vbox)
+	var head := Label.new()
+	head.text = "▚ INTERCEPTED — ROBOT OS v2.%d PATCH NOTES" % (GameState.level_index + 1)
+	head.add_theme_font_size_override("font_size", 15)
+	head.add_theme_color_override("font_color", Color(0.45, 1.0, 0.6))
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(head)
+	var body := Label.new()
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_size_override("font_size", 14)
+	body.add_theme_color_override("font_color", Color(0.62, 0.95, 0.7, 0.95))
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(body)
+	# Fade in, then type the entries on one at a time — a live feed, not a wall.
+	var tw := panel.create_tween()
+	tw.tween_interval(0.7)
+	tw.tween_property(panel, "modulate:a", 1.0, 0.4)
+	for i in notes.size():
+		tw.tween_interval(0.55)
+		tw.tween_callback(func() -> void:
+			if is_instance_valid(body):
+				body.text = "\n".join(notes.slice(0, i + 1))
+				AudioBus.play_synth_ui("broadcast_blip", -14.0, 1.6))
 
 func _build_fx(specs: Array, panel_size: Vector2) -> void:
 	for c in _fx_layer.get_children():
