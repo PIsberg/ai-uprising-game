@@ -80,16 +80,19 @@ var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-trac
 const GRENADE_SCENE := preload("res://scenes/weapons/grenade.tscn")
 const VORTEX_SCENE := preload("res://scenes/weapons/grenade_vortex.tscn")
 const EMP_SCENE := preload("res://scenes/weapons/grenade_emp.tscn")
-enum GrenadeType { FRAG, VORTEX, EMP }
+const HIJACK_SCENE := preload("res://scenes/weapons/grenade_hijack.tscn")
+enum GrenadeType { FRAG, VORTEX, EMP, HIJACK }
 ## Per-type loadout. FRAG is the workhorse; VORTEX is the rare "herd-then-delete"
-## special — fewer carried, picked up later. Cycle with the grenade-cycle key.
+## special — fewer carried, picked up later. HIJACK is the rarest: it steals a
+## robot outright. Cycle with the grenade-cycle key.
 var grenade_kinds := [
 	{"type": GrenadeType.FRAG, "scene": GRENADE_SCENE, "name": "FRAG", "color": Color(1.0, 0.72, 0.2), "max": 3},
 	{"type": GrenadeType.VORTEX, "scene": VORTEX_SCENE, "name": "VORTEX", "color": Color(0.66, 0.4, 1.0), "max": 2},
 	{"type": GrenadeType.EMP, "scene": EMP_SCENE, "name": "EMP", "color": Color(0.35, 0.8, 1.0), "max": 2},
+	{"type": GrenadeType.HIJACK, "scene": HIJACK_SCENE, "name": "HIJACK", "color": Color(0.4, 1.0, 0.5), "max": 1},
 ]
 var grenade_type: int = 0                  # index into grenade_kinds
-var grenade_counts := [3, 1, 2]            # current count per kind (parallel to grenade_kinds)
+var grenade_counts := [3, 1, 2, 1]         # current count per kind (parallel to grenade_kinds)
 var grenades: int = 3                       # mirror of the selected kind's count (HUD + back-compat)
 var _grenade_cd: float = 0.0
 
@@ -958,6 +961,8 @@ func _aim_friction() -> float:
 			continue
 		if e is EnemyBase and (e as EnemyBase).hp != null and not (e as EnemyBase).hp.is_alive():
 			continue
+		if e.get("hijacked") == true:
+			continue # converted ally — don't drag the reticle onto a friendly
 		var to: Vector3 = (e as Node3D).global_position + Vector3(0, 1.0, 0) - origin
 		var dist := to.length()
 		if dist < 1.0 or dist > aim_assist_range:

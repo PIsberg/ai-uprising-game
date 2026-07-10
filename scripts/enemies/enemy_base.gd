@@ -74,6 +74,12 @@ var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
+var hijacked: bool = false ## Converted to the player's side by a HIJACK charge — hunts robots until burnout.
+var _hijack_t: float = 0.0 ## Seconds of stolen loyalty left; burnout (death) at 0.
+var _hijack_shooter: Node = null ## The player who planted the hijack — kills/damage route credit to them.
+var _hijack_zap_cd: float = 0.0
+var _hijack_base_layer: int = 4 ## Collision layer to restore on cleanup (death mid-hijack).
+var _hijack_fx: Node3D = null ## Friendly green glow while converted.
 var _oil_cd: float = 0.0 ## Throttle so rapid fire doesn't spawn an oil burst every tick.
 var _alerted: bool = false ## True once this enemy has reacted to first spotting the player.
 var _overload_light: OmniLight3D = null ## Flickering red core glow during a last stand.
@@ -194,6 +200,12 @@ func _physics_process(delta: float) -> void:
 		_apply_gravity(delta)
 		move_and_slide()
 		return
+	# Hijacked: this chassis fights for the PLAYER now. A self-contained combat
+	# loop here (seek robot -> chase -> zap) replaces the whole hostile state
+	# machine, so no subclass attack/perception code needs to know about sides.
+	if hijacked:
+		_hijack_process(delta)
+		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	_state_timer += delta
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
@@ -242,6 +254,179 @@ func _spawn_emp_fx() -> void:
 	add_child(p)
 	# Self-clean once the unit reboots.
 	get_tree().create_timer(maxf(_emp_t, 0.2)).timeout.connect(func() -> void:
+		if is_instance_valid(p):
+			p.queue_free())
+
+# ---------- hijack (the player's robot-conversion counter-move) ----------
+## Chassis with this much authored health are set-piece bosses — they resist
+## conversion (a hijack charge only staggers their firmware into a short EMP).
+const HIJACK_BOSS_HP := 500.0
+const HIJACK_ZAP_DAMAGE := 14.0
+const HIJACK_ZAP_INTERVAL := 0.8
+const HIJACK_SEEK_RANGE := 45.0 ## How far a converted unit scans for robots to hunt.
+const HIJACK_TRACER: PackedScene = preload("res://scenes/fx/tracer.tscn")
+
+## Convert this unit to the player's side for `duration` seconds, then burnout
+## (its loyalty firmware violently reasserts itself and the chassis dies).
+## `liberator` (the player) receives damage/kill credit for everything it does.
+## Returns false if the chassis resists (bosses get a short EMP instead).
+func hijack(duration: float, liberator: Node = null) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive():
+		return false
+	if max_health * _health_mult >= HIJACK_BOSS_HP:
+		emp_disable(minf(duration * 0.4, 4.0)) # firmware too hardened — stun, not steal
+		return false
+	if hijacked:
+		_hijack_t = maxf(_hijack_t, duration)
+		return true
+	hijacked = true
+	_hijack_t = duration
+	_hijack_shooter = liberator
+	_hijack_zap_cd = 0.0
+	_emp_t = 0.0
+	_telegraphing = false
+	target = null
+	add_to_group("hijacked")
+	# Sit on the PLAYER's collision layer while converted: hostile hitscans/LOS
+	# (mask world+player) now see and hit it, and the player's own fire (mask
+	# world+enemy) passes through the new ally instead of shredding it.
+	_hijack_base_layer = collision_layer
+	collision_layer = 2
+	# Death mid-hijack must still restore group/layer bookkeeping.
+	hp.died.connect(_cleanup_hijack.unbind(1), CONNECT_ONE_SHOT)
+	_spawn_hijack_fx()
+	AudioBus.play_synth_at("overlord_glitch", global_position, -2.0, 1.4)
+	return true
+
+## The converted unit's whole brain: countdown to burnout, pick the nearest
+## hostile robot, close in, zap it. Damage is applied directly (src = the
+## player) so score, hit markers and kill quotas all credit the liberator.
+func _hijack_process(delta: float) -> void:
+	_hijack_t -= delta
+	if _hijack_t <= 0.0:
+		_burnout()
+		return
+	_hijack_zap_cd = maxf(0.0, _hijack_zap_cd - delta)
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	var foe := target as EnemyBase
+	if foe == null or not is_instance_valid(foe) or foe.state == State.DEAD \
+			or foe.hijacked or foe.hp == null or not foe.hp.is_alive():
+		target = _hijack_find_foe()
+		foe = target as EnemyBase
+	if foe == null:
+		_decelerate()
+	else:
+		var dist := global_position.distance_to(foe.global_position)
+		if dist <= maxf(attack_range, 10.0) and _hijack_can_see(foe):
+			_decelerate()
+			_face_target(delta)
+			if _hijack_zap_cd <= 0.0:
+				_hijack_zap_cd = HIJACK_ZAP_INTERVAL
+				_hijack_zap(foe)
+		else:
+			_move_toward(foe.global_position, delta)
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## Nearest living, unconverted robot within seek range — the next mark.
+func _hijack_find_foe() -> Node3D:
+	var best: Node3D = null
+	var best_d := HIJACK_SEEK_RANGE
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var eb := e as EnemyBase
+		if eb == null or eb == self or not is_instance_valid(eb):
+			continue
+		if eb.state == State.DEAD or eb.hijacked or eb.hp == null or not eb.hp.is_alive():
+			continue
+		var d := global_position.distance_to(eb.global_position)
+		if d < best_d:
+			best_d = d
+			best = eb
+	return best
+
+## LOS against a ROBOT target — the stock _can_see raycast masks world+player
+## and would sail straight through an enemy chassis.
+func _hijack_can_see(t: Node3D) -> bool:
+	var from: Vector3 = eye.global_position if eye else global_position + Vector3.UP * 1.2
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(from, t.global_position + Vector3.UP * 0.8)
+	q.collision_mask = 0b0000101 # world + enemy
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	return not hit.is_empty() and hit.collider == t
+
+## One arc of turned-gun fire: direct damage (credited to the liberator) + a
+## tracer and shot audio so the betrayal is loud and visible.
+func _hijack_zap(foe: EnemyBase) -> void:
+	recoil = 1.0
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.2
+	var to: Vector3 = foe.global_position + Vector3.UP * 0.9
+	var d: Node = foe.get_node_or_null("Damageable")
+	if d:
+		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
+		d.apply_damage(HIJACK_ZAP_DAMAGE, src)
+	var t: Node = HIJACK_TRACER.instantiate()
+	get_tree().current_scene.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to)
+	if muzzle:
+		var m := MUZZLE_FLASH.instantiate()
+		muzzle.add_child(m)
+	AudioBus.play_synth_at("drone_shot", from, -4.0, 1.3)
+
+## Stolen time is up: the loyalty firmware reasserts itself and the chassis
+## burns out — a guaranteed (player-credited) kill to close the fantasy.
+func _burnout() -> void:
+	_cleanup_hijack()
+	if hp and hp.is_alive():
+		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
+		hp.apply_damage(hp.max_health + 999.0, src)
+
+## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
+func _cleanup_hijack() -> void:
+	if not hijacked:
+		return
+	hijacked = false
+	remove_from_group("hijacked")
+	collision_layer = _hijack_base_layer
+	target = null
+	if _hijack_fx and is_instance_valid(_hijack_fx):
+		_hijack_fx.queue_free()
+	_hijack_fx = null
+
+## Friendly green core glow + a conversion crackle so a turned unit reads as
+## YOURS at a glance (the inverse of the red overload glow).
+func _spawn_hijack_fx() -> void:
+	var l := OmniLight3D.new()
+	l.light_color = Color(0.35, 1.0, 0.55)
+	l.light_energy = 2.4
+	l.omni_range = 3.5
+	l.position = Vector3(0.0, 1.2, 0.0)
+	add_child(l)
+	_hijack_fx = l
+	var p := CPUParticles3D.new()
+	p.amount = 14
+	p.lifetime = 0.4
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.5
+	p.gravity = Vector3.ZERO
+	p.initial_velocity_min = 0.5
+	p.initial_velocity_max = 1.6
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.04; mesh.height = 0.08; mesh.radial_segments = 5; mesh.rings = 3
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.emission_enabled = true
+	mat.emission = Color(0.35, 1.0, 0.55)
+	mat.albedo_color = Color(0.5, 1.0, 0.6)
+	mesh.material = mat
+	p.mesh = mesh
+	p.position = Vector3(0, 0.7, 0)
+	add_child(p)
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
 		if is_instance_valid(p):
 			p.queue_free())
 
@@ -328,8 +513,27 @@ func _maybe_refresh_locomotion_budget() -> void:
 		_locomotion_allowed_ids[near[i][1]] = true
 
 func _perceive() -> void:
+	# A robot target that died or reverted to our side releases aggro back
+	# to the player. (Only hijacked units ever put a robot in `target`.)
+	if target is EnemyBase:
+		var tb := target as EnemyBase
+		if not is_instance_valid(tb) or tb.state == State.DEAD or not tb.hijacked:
+			target = null
 	if target == null or not is_instance_valid(target):
 		target = _find_player()
+	# TRAITOR PRIORITY: a hijacked robot closer than the current target draws
+	# this unit's fire — the swarm turns on the turncoat, which is both the
+	# fantasy and the counterplay. Free when nothing is hijacked (empty group).
+	if not (target is EnemyBase):
+		var best_d := global_position.distance_to(target.global_position) if target else sight_range
+		for h in get_tree().get_nodes_in_group("hijacked"):
+			var hb := h as EnemyBase
+			if hb == null or hb == self or not is_instance_valid(hb) or hb.state == State.DEAD:
+				continue
+			var d := global_position.distance_to(hb.global_position)
+			if d < best_d and d <= sight_range:
+				best_d = d
+				target = hb
 	if target and _can_see(target):
 		_last_known_target_pos = target.global_position
 		_has_last_known = true

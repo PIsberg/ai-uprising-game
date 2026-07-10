@@ -27,11 +27,16 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	
 	# Enemies should not take damage from OTHER enemies' fire. Self-damage stays
 	# allowed — kamikaze mechanics (the mauler's overload pop) kill their owner
-	# via apply_damage(self) and must keep working.
+	# via apply_damage(self) and must keep working. Hijacked units are the
+	# exception BOTH ways: a converted robot and a loyal robot are on opposite
+	# sides, so their fire lands (robot civil war is the whole point).
 	var victim := get_parent()
 	if victim and source and source != victim \
 			and victim.is_in_group("enemy") and source.is_in_group("enemy"):
-		return
+		var v_hijacked: bool = victim.get("hijacked") == true
+		var s_hijacked: bool = source.get("hijacked") == true
+		if v_hijacked == s_hijacked:
+			return
 	if invulnerable or current_health <= 0.0:
 		var parent := get_parent()
 		if parent and parent.has_method("notify_shield_hit"):
