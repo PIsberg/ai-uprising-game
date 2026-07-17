@@ -1,4 +1,6 @@
+# @lat: [[architecture#Autoloads#GameState]]
 extends Node
+
 
 signal player_died
 signal level_completed

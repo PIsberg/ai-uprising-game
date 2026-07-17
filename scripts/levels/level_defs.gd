@@ -1,4 +1,7 @@
+# @lat: [[level-system#Procedural Generation#Level Definitions]]
+# @lat: [[level-system#Procedural Generation#Coordinate Scaling]]
 class_name LevelDefs
+
 ## Compact data for every builder-driven level. Each entry is consumed by
 ## LevelBuilder. The rogue-AI factions are affectionate parodies of real
 ## assistants — GPT / Gemini / Claude / Grok — themed only by name, colour and

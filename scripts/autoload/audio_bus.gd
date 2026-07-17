@@ -1,4 +1,6 @@
+# @lat: [[architecture#Autoloads#AudioBus and SoundSynth]]
 extends Node
+
 
 # Positional-SFX voice pool. Sized so a dense firefight (or a swarm caught in a
 # blast) doesn't round-robin over still-playing voices and cut its own sounds —

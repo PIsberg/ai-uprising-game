@@ -1,5 +1,8 @@
+# @lat: [[enemies#Enemy Base State Machine]]
+# @lat: [[enemies#Health and Subclass Scaling]]
 class_name EnemyBase
 extends CharacterBody3D
+
 
 signal state_changed(new_state: int)
 

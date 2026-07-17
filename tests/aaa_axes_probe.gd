@@ -1,4 +1,6 @@
+# @lat: [[testing#Verification Philosophy]]
 extends Node3D
+
 ## Verifies batch 3 (five-axis AAA gaps) on a real level (gpt = lava + grunts):
 ##  1. reinforcement warp-in: telegraph pillar first, robot lands after
 ##  2. lava beds grow heat-haze curtains (screen-space refraction quads)

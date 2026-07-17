@@ -1,5 +1,8 @@
+# @lat: [[weapons#Weapon Manager]]
+# @lat: [[weapons#Collision Mask Configuration]]
 class_name WeaponManager
 extends Node3D
+
 
 signal weapon_changed(weapon: Weapon)
 signal ammo_changed(mag: int, reserve: int)

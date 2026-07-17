@@ -1,4 +1,6 @@
+# @lat: [[architecture#Autoloads#GraphicsSettings]]
 extends Node
+
 ## Runtime graphics quality with three tiers. Levels consult this at load time
 ## (heavy screen-space effects, GI, volumetric fog, ambient detail) and the
 ## viewport reacts immediately (render scale, anti-aliasing, shadow filtering).
