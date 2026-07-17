@@ -1,4 +1,6 @@
+# @lat: [[architecture#Autoloads#AIDirector]]
 extends Node
+
 ## ADAPTIVE AI DIRECTOR — the rogue AI actually *learning* the player.
 ##
 ## Most shooters throw a fixed or randomly-scaled horde at you. Here the enemy is
