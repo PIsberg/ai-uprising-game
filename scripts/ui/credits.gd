@@ -16,7 +16,7 @@ const LINES: Array = [
 	{"text": "A game by Peter Isberg", "size": 22, "color": Color(0.75, 0.82, 0.95), "gap": 70},
 	{"text": "CAMPAIGN COMPLETE", "size": 20, "color": Color(1.0, 0.6, 0.3), "gap": 60},
 	{"text": "ENGINE", "size": 16, "color": Color(0.55, 0.62, 0.75), "gap": 8},
-	{"text": "Godot Engine 4.7  —  godotengine.org", "size": 18, "gap": 50},
+	{"text": "Godot Engine 4.7.1  —  godotengine.org", "size": 18, "gap": 50},
 	{"text": "THIRD-PARTY ASSETS  (CC0 unless noted)", "size": 16, "color": Color(0.55, 0.62, 0.75), "gap": 8},
 	{"text": "Quaternius (quaternius.com) — enemy robot models", "size": 18, "gap": 4},
 	{"text": "Kenney (kenney.nl) — weapon models, suburb & car kits", "size": 18, "gap": 4},

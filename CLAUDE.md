@@ -8,7 +8,7 @@ AI Uprising — a 3D FPS in **Godot 4.7+ (Forward+, GDScript, Standard build —
 
 ## Commands
 
-Set `GODOT_BIN` (or pass paths explicitly) to a Godot 4.7 console binary. On the primary dev machine it lives at `C:\Users\isber\Downloads\Godot_v4.7-stable_win64.exe\Godot_v4.7-stable_win64_console.exe`.
+Set `GODOT_BIN` (or pass paths explicitly) to a Godot 4.7 console binary. On the primary dev machine it lives at `C:\Users\isber\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe`.
 
 ```sh
 godot --path .                                  # run the game (main menu)
