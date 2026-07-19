@@ -8,7 +8,7 @@ AI Uprising — a 3D FPS in **Godot 4.7+ (Forward+, GDScript, Standard build —
 
 ## Commands
 
-Set `GODOT_BIN` (or pass paths explicitly) to a Godot 4.7 console binary. On the primary dev machine it lives at `C:\Users\isber\Downloads\Godot_v4.7-stable_win64.exe\Godot_v4.7-stable_win64_console.exe`.
+Set `GODOT_BIN` (or pass paths explicitly) to a Godot 4.7 console binary. On the primary dev machine it lives at `C:\Users\isber\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe`.
 
 ```sh
 godot --path .                                  # run the game (main menu)
@@ -23,6 +23,10 @@ godot --headless --path . --audio-driver Dummy res://tests/<name>_probe.tscn
 
 # Release build (Windows + Linux single-file binaries into build/)
 pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTemplates downloads them
+
+# Publish / update on itch.io (rebuilds fresh, then butler-pushes both channels; live immediately)
+./release itch                      # or: pwsh tools/release.ps1 itch  (add -SkipBuild to re-push without rebuilding)
+                                    # one-time: C:\Users\isber\butler\butler.exe login   |   page: gotrex/ai-uprising
 
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
