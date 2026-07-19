@@ -24,6 +24,10 @@ godot --headless --path . --audio-driver Dummy res://tests/<name>_probe.tscn
 # Release build (Windows + Linux single-file binaries into build/)
 pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTemplates downloads them
 
+# Publish / update on itch.io (rebuilds fresh, then butler-pushes both channels; live immediately)
+./release itch                      # or: pwsh tools/release.ps1 itch  (add -SkipBuild to re-push without rebuilding)
+                                    # one-time: C:\Users\isber\butler\butler.exe login   |   page: gotrex/ai-uprising
+
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
