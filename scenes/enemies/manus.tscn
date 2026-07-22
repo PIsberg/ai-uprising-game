@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://b3manus0boss001"]
+[gd_scene load_steps=8 format=3 uid="uid://b3manus0boss001"]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_manus.gd" id="1_man"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
@@ -6,6 +6,9 @@
 
 [sub_resource type="SphereShape3D" id="Sphere_body"]
 radius = 2.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_core"]
+radius = 1.1
 
 [sub_resource type="StandardMaterial3D" id="Mat_core"]
 shading_mode = 0
@@ -26,6 +29,10 @@ script = ExtResource("1_man")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
 shape = SubResource("Sphere_body")
+
+[node name="CoreCollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1, -3.2)
+shape = SubResource("SphereShape3D_core")
 
 [node name="Model" type="Node3D" parent="."]
 
