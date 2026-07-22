@@ -733,10 +733,10 @@ func _kick_weapon_holder(offset: Vector3, out_time: float, back_time: float) -> 
 		return
 	if _wh_kick_tween and _wh_kick_tween.is_valid():
 		_wh_kick_tween.kill()
-	var home := weapon_holder.position
+	weapon_holder.set("external_kick_pos", Vector3.ZERO)
 	_wh_kick_tween = create_tween()
-	_wh_kick_tween.tween_property(weapon_holder, "position", home + offset, out_time)
-	_wh_kick_tween.tween_property(weapon_holder, "position", home, back_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_wh_kick_tween.tween_property(weapon_holder, "external_kick_pos", offset, out_time)
+	_wh_kick_tween.tween_property(weapon_holder, "external_kick_pos", Vector3.ZERO, back_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 ## Frontal shove: a cone-of-influence kick that damages + knocks back every
 ## hostile right in front of you, on a short cooldown. Your get-off-me button.
@@ -751,10 +751,10 @@ func _handle_melee(delta: float) -> void:
 	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.7) # whoosh
 	# A quick viewmodel jab so the shove reads in first person.
 	if weapon_holder:
-		var home := weapon_holder.position
+		weapon_holder.set("external_kick_pos", Vector3.ZERO)
 		var tw := create_tween()
-		tw.tween_property(weapon_holder, "position", home + Vector3(0, -0.05, -0.14), 0.06)
-		tw.tween_property(weapon_holder, "position", home, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(weapon_holder, "external_kick_pos", Vector3(0, -0.05, -0.14), 0.06)
+		tw.tween_property(weapon_holder, "external_kick_pos", Vector3.ZERO, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_do_melee()
 
 func _do_melee() -> void:
