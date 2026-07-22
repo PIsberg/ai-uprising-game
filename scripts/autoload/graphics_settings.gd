@@ -255,11 +255,34 @@ func _factory_default_events(action: String) -> Array:
 ## registers any action InputMap doesn't have yet (melee/grapple/alt_fire
 ## before their first level load) — see the ordering note above.
 func apply_keybinds() -> void:
+	# First pass: collect all explicit overrides so we know which keys are "taken"
+	var all_overrides: Array[InputEvent] = []
+	for entry in KEYBIND_ACTIONS:
+		var action: String = entry["action"]
+		if keybind_overrides.has(action):
+			all_overrides.append_array(keybind_overrides[action])
+			
+	# Second pass: apply to InputMap
 	for entry in KEYBIND_ACTIONS:
 		var action: String = entry["action"]
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
-		var events: Array = keybind_overrides.get(action, _factory_default_events(action))
+			
+		var events: Array = []
+		if keybind_overrides.has(action):
+			events = keybind_overrides[action]
+		else:
+			# If the user hasn't overridden this action, use factory defaults,
+			# BUT filter out any default event that the user stole for an override!
+			for def_e in _factory_default_events(action):
+				var stolen := false
+				for over_e in all_overrides:
+					if _events_match(def_e, over_e):
+						stolen = true
+						break
+				if not stolen:
+					events.append(def_e)
+					
 		InputMap.action_erase_events(action)
 		for e in events:
 			InputMap.action_add_event(action, e)

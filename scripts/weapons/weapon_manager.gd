@@ -61,6 +61,7 @@ const KICK_MAX_SIM := 0.1
 const KICK_SANE := 2.0
 
 var external_kick_pos: Vector3 = Vector3.ZERO
+var block_ads: bool = false
 
 
 var _bob_time: float = 0.0
@@ -363,7 +364,7 @@ func _process(delta: float) -> void:
 	# is the single fov writer and pulls ads_blend()/ads_target_fov() from us.
 	# (Two competing writers used to reset each other every frame, which capped
 	# the RMB zoom at a sliver of the intended ads_fov.)
-	var aiming := Input.is_action_pressed("aim") and current != null
+	var aiming := Input.is_action_pressed("aim") and current != null and not block_ads
 	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, clampf(10.0 * delta, 0.0, 1.0))
 	
 	var ads_offset := Vector3.ZERO
