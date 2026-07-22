@@ -28,7 +28,7 @@ func _ready() -> void:
 	attack_cooldown = 5.5
 	telegraph_time = 0.55       # the big wind-up IS the tell
 	score_value = 300
-	head_radius = 0.7
+	head_radius = 0.35
 	stagger_threshold = 160.0
 	flinch_knockback = 0.0
 	hp.max_health = max_health

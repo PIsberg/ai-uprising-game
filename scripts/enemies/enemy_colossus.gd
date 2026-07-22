@@ -84,7 +84,7 @@ func _ready() -> void:
 	preferred_range = 26.0
 	attack_cooldown = artillery_cooldown
 	score_value = 3000
-	head_radius = 1.2
+	head_radius = 0.6
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 8.0

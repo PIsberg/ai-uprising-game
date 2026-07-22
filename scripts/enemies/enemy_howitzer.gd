@@ -30,7 +30,7 @@ func _ready() -> void:
 	attack_cooldown = 5.0
 	telegraph_time = 0.0       # the audible spin-up IS the telegraph
 	score_value = 500
-	head_radius = 0.9
+	head_radius = 0.45
 	stagger_threshold = 400.0  # a gun carriage doesn't flinch
 	flinch_knockback = 0.0
 	hp.max_health = max_health

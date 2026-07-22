@@ -33,7 +33,7 @@ func _ready() -> void:
 	preferred_range = heal_range * 0.6
 	attack_cooldown = 0.1
 	score_value = 170           # worth the bullets to silence it
-	head_radius = 0.4
+	head_radius = 0.2
 	flinch_knockback = 1.5
 	hp.max_health = max_health
 	hp.current_health = max_health

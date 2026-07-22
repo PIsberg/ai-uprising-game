@@ -32,7 +32,7 @@ func _ready() -> void:
 	preferred_range = 22.0       # holds at range and suppresses
 	attack_cooldown = 3.2        # long reset between bursts
 	score_value = 260
-	head_radius = 0.7
+	head_radius = 0.35
 	stagger_threshold = 220.0    # shrugs off small-arms; flank or burst it down
 	flinch_knockback = 0.0
 	combat_strafe = true         # reposition between bursts (plants while firing)

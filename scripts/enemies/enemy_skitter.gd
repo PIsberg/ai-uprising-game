@@ -37,7 +37,7 @@ func _ready() -> void:
 	preferred_range = 0.8
 	attack_cooldown = 0.7
 	score_value = 35
-	head_radius = 0.3
+	head_radius = 0.15
 	flinch_knockback = 0.6
 	stagger_threshold = 1.0e9  # too small/fast to stunlock — keeps the swarm relentless
 	drop_chance = 0.06         # swarms must not flood the floor with pickups
