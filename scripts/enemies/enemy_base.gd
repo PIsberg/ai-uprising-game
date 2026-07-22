@@ -161,8 +161,8 @@ func _ready() -> void:
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	# Red damage blink (robots are neutral-toned until hit).
-	_flash_mat.albedo_color = Color(1, 0.18, 0.1, 0)
+	# White damage blink
+	_flash_mat.albedo_color = Color(1, 1, 1, 0)
 	set_state(State.IDLE)
 
 ## Stat multipliers from elite affixes + campaign difficulty. They stack these
