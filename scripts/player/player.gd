@@ -992,7 +992,13 @@ func _sync_grenades() -> void:
 	grenades_changed.emit(grenades)
 
 func _throw_grenade() -> void:
-	if grenade_counts[grenade_type] <= 0 or _grenade_cd > 0.0:
+	if grenade_counts[grenade_type] <= 0:
+		if _grenade_cd <= 0.0:
+			notify_pickup("OUT OF GRENADES")
+			_grenade_cd = 0.5 # Small cooldown so it doesn't spam the message every frame if held
+			AudioBus.play_synth_ui("empty_click", -6.0, 1.2)
+		return
+	if _grenade_cd > 0.0:
 		return
 	grenade_counts[grenade_type] -= 1
 	_grenade_cd = grenade_cooldown
