@@ -44,7 +44,8 @@ switch ($Target.ToLower()) {
             throw "butler not found at $Butler. Install from https://itchio.itch.io/butler or pass -Butler <path>."
         }
         $creds = Join-Path $env:APPDATA 'itch\butler_creds'
-        if (-not (Test-Path $creds)) {
+        $creds2 = Join-Path $env:USERPROFILE '.config\itch\butler_creds'
+        if (-not (Test-Path $creds) -and -not (Test-Path $creds2)) {
             Write-Host ""
             Write-Host "butler is not logged in yet. Run this once, approve in the browser, then re-run release:" -ForegroundColor Yellow
             Write-Host "    $Butler login"
