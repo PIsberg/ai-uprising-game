@@ -49,7 +49,7 @@ func _ready() -> void:
 	preferred_range = 18.0
 	attack_cooldown = 1.9
 	score_value = 185
-	head_radius = 0.6
+	head_radius = 0.3
 	flinch_knockback = 1.0
 	hp.max_health = max_health
 	hp.current_health = max_health

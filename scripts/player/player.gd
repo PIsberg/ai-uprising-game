@@ -733,10 +733,14 @@ func _kick_weapon_holder(offset: Vector3, out_time: float, back_time: float) -> 
 		return
 	if _wh_kick_tween and _wh_kick_tween.is_valid():
 		_wh_kick_tween.kill()
-	var home := weapon_holder.position
+	weapon_holder.set("external_kick_pos", Vector3.ZERO)
+	if "block_ads" in weapon_holder:
+		weapon_holder.block_ads = true
 	_wh_kick_tween = create_tween()
-	_wh_kick_tween.tween_property(weapon_holder, "position", home + offset, out_time)
-	_wh_kick_tween.tween_property(weapon_holder, "position", home, back_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_wh_kick_tween.tween_property(weapon_holder, "external_kick_pos", offset, out_time)
+	_wh_kick_tween.tween_property(weapon_holder, "external_kick_pos", Vector3.ZERO, back_time).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if "block_ads" in weapon_holder:
+		_wh_kick_tween.tween_callback(func(): weapon_holder.block_ads = false)
 
 ## Frontal shove: a cone-of-influence kick that damages + knocks back every
 ## hostile right in front of you, on a short cooldown. Your get-off-me button.
@@ -751,10 +755,7 @@ func _handle_melee(delta: float) -> void:
 	AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.7) # whoosh
 	# A quick viewmodel jab so the shove reads in first person.
 	if weapon_holder:
-		var home := weapon_holder.position
-		var tw := create_tween()
-		tw.tween_property(weapon_holder, "position", home + Vector3(0, -0.05, -0.14), 0.06)
-		tw.tween_property(weapon_holder, "position", home, 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_kick_weapon_holder(Vector3(0, -0.05, -0.14), 0.06, 0.16)
 	_do_melee()
 
 func _do_melee() -> void:
@@ -992,7 +993,13 @@ func _sync_grenades() -> void:
 	grenades_changed.emit(grenades)
 
 func _throw_grenade() -> void:
-	if grenade_counts[grenade_type] <= 0 or _grenade_cd > 0.0:
+	if grenade_counts[grenade_type] <= 0:
+		if _grenade_cd <= 0.0:
+			notify_pickup("OUT OF GRENADES")
+			_grenade_cd = 0.5 # Small cooldown so it doesn't spam the message every frame if held
+			AudioBus.play_synth_ui("empty_click", -6.0, 1.2)
+		return
+	if _grenade_cd > 0.0:
 		return
 	grenade_counts[grenade_type] -= 1
 	_grenade_cd = grenade_cooldown

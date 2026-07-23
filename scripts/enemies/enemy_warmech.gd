@@ -34,7 +34,7 @@ func _ready() -> void:
 	preferred_range = 26.0       # holds at long range and shells you
 	attack_cooldown = 3.2
 	score_value = 360
-	head_radius = 0.8
+	head_radius = 0.4
 	stagger_threshold = 320.0    # only a heavy hit rocks it (plays HitRecieve)
 	flinch_knockback = 0.0
 	hp.max_health = max_health

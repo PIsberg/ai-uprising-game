@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cxihwrx2a5wju"
-path="res://.godot/imported/colormap.png-264fd66480b27060dae3943502db3eb1.ctex"
+uid="uid://ck47jcl2f8k7d"
+path="res://.godot/imported/itch_cover.png-6dfbaaa1b55f6f44deecff64b2fb00d6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/models/suburb/Textures/colormap.png"
-dest_files=["res://.godot/imported/colormap.png-264fd66480b27060dae3943502db3eb1.ctex"]
+source_file="res://docs/itch_cover.png"
+dest_files=["res://.godot/imported/itch_cover.png-6dfbaaa1b55f6f44deecff64b2fb00d6.ctex"]
 
 [params]
 

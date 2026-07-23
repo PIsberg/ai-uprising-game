@@ -58,8 +58,11 @@ const KICK_MAX_STEP := 1.0 / 120.0
 ## load, shader compile) should not spend 360 substeps catching up — the kick has
 ## long since settled anyway.
 const KICK_MAX_SIM := 0.1
-## A viewmodel kick beyond this is not recoil, it is a blown-up integrator.
 const KICK_SANE := 2.0
+
+var external_kick_pos: Vector3 = Vector3.ZERO
+var block_ads: bool = false
+
 
 var _bob_time: float = 0.0
 var _bob_offset: Vector3 = Vector3.ZERO
@@ -361,7 +364,7 @@ func _process(delta: float) -> void:
 	# is the single fov writer and pulls ads_blend()/ads_target_fov() from us.
 	# (Two competing writers used to reset each other every frame, which capped
 	# the RMB zoom at a sliver of the intended ads_fov.)
-	var aiming := Input.is_action_pressed("aim") and current != null
+	var aiming := Input.is_action_pressed("aim") and current != null and not block_ads
 	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, clampf(10.0 * delta, 0.0, 1.0))
 	
 	var ads_offset := Vector3.ZERO
@@ -438,8 +441,8 @@ func _process(delta: float) -> void:
 		_kick_rot += _kick_rot_vel * h
 	_sanitize_kick()
 
-	# Apply final position and rotation (sway + bob + recoil kick + sprint pose)
-	position = target_pos + _sway_offset + _bob_offset + _kick_pos + SPRINT_POSE_POS * sp
+	# Apply final position and rotation (sway + bob + recoil kick + sprint pose + external punch)
+	position = target_pos + _sway_offset + _bob_offset + _kick_pos + SPRINT_POSE_POS * sp + external_kick_pos
 	rotation.x = _sway_rotation.x + _kick_rot.x + SPRINT_POSE_ROT.x * sp
 	rotation.y = _sway_rotation.y + _kick_rot.y + SPRINT_POSE_ROT.y * sp
 	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll + SPRINT_POSE_ROT.z * sp

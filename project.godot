@@ -12,15 +12,6 @@ config_version=5
 
 compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
-[debug]
-
-; Godot keeps 5 rotated logs by default. That is not enough to survive an
-; intermittent bug: a handful of headless probe runs evicted the play sessions
-; that contained the evidence for the "weapon vanished" report.
-file_logging/enable_file_logging=true
-file_logging/enable_file_logging.pc=true
-file_logging/max_log_files=40
-
 [application]
 
 config/name="AI Uprising"
@@ -38,6 +29,11 @@ AudioBus="*res://scripts/autoload/audio_bus.gd"
 SoundSynth="*res://scripts/autoload/sound_synth.gd"
 GraphicsSettings="*res://scripts/autoload/graphics_settings.gd"
 AIDirector="*res://scripts/autoload/ai_director.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/max_log_files=40
 
 [display]
 
@@ -194,7 +190,7 @@ lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
 textures/default_filters/anisotropic_filtering_level=8
 anti_aliasing/quality/msaa_3d=1
 anti_aliasing/quality/use_debanding=true
-environment/defaults/default_environment="res://assets/environments/default_env.tres"
-environment/screen_space_reflection/roughness_quality=2
 environment/volumetric_fog/volume_size=48
 environment/volumetric_fog/volume_depth=48
+environment/defaults/default_environment="res://assets/environments/default_env.tres"
+environment/screen_space_reflection/roughness_quality=2

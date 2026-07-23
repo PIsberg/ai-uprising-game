@@ -77,7 +77,7 @@ func _ready() -> void:
 	preferred_range = 4.0          # it WANTS to be in your face
 	attack_cooldown = smash_cooldown
 	score_value = 3200
-	head_radius = 1.3
+	head_radius = 0.65
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 8.0
