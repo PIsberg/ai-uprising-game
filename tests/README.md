@@ -231,6 +231,9 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
+| screen_shock_probe | Blast screen-warp logic: rings register, cap at 3 evicting the WEAKEST (not newest), expire, pack sane screen-UV/progress, zero out behind camera; glitch decays; post shader carries both uniforms | suite |
+| screen_shock_shot | Unit-tests the warp on a static checker through `post_process.gdshader` (grain/warp/glitch zeroed so the shader is time-invariant) — writes `shock_off/mid/glitch.png` for screen_shock_verify | windowed |
+| screen_shock_verify | Bins the shock_off↔shock_mid pixel diff by radius and asserts a structured ring at the expected crest — run AFTER screen_shock_shot | headless |
 | screens_probe | Rebuilt computer props (terminal/server rack/lore console): CRT screens + bevels | windowed |
 | sens_probe | Pause-menu mouse-sensitivity slider exists, persists to GraphicsSettings, updates the live player | windowed |
 | shark_breach_probe | RAZORFIN shark acquires a target, breaches above the surface, bites | suite |

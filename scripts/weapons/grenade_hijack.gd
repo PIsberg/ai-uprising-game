@@ -74,6 +74,16 @@ func _burst() -> void:
 	if best:
 		best.hijack(hijack_time, _shooter)
 	_spawn_burst_fx(pos)
+	# Firmware injection scrambles nearby signal — including yours. Corrupts the
+	# player's optics briefly and refracts the screen off the spike, scaled by
+	# how close you were standing to it.
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl is Node3D and pl.has_method("pulse_glitch"):
+		var pd := (pl as Node3D).global_position.distance_to(pos)
+		var near := clampf(1.0 - pd / maxf(burst_radius * 2.5, 0.001), 0.0, 1.0)
+		if near > 0.0:
+			pl.pulse_glitch(near * 0.9, 2.0)
+			pl.add_screen_shock(pos, near * 0.7)
 	AudioBus.play_synth_at("overlord_glitch", pos, 1.0, 1.2) # firmware-injection scramble
 	AudioBus.play_synth_at("broadcast_blip", pos, -4.0, 0.7)
 	queue_free()

@@ -23,6 +23,15 @@ uniform vec3 grade_tint : source_color = vec3(1.0, 1.0, 1.0);
 uniform float grade_contrast : hint_range(0.5, 1.5) = 1.0;
 uniform float grade_saturation : hint_range(0.0, 1.5) = 1.0;
 
+// Blast shockwave rings — up to three at once. Each is
+// (centre.x, centre.y, progress 0..1, strength) with the centre in SCREEN UV;
+// Player._handle_screen_shock projects each live blast's world position into
+// UV every frame and packs them here. Unset entries are all-zero (strength 0),
+// so anything reusing this shader without a player driving it stays clean.
+uniform vec4 shockwaves[3];
+// Digital corruption amount (EMP hit / hijack landing); 0 = clean signal.
+uniform float glitch : hint_range(0.0, 1.0) = 0.0;
+
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
 	p += dot(p, p + 34.345);
@@ -44,12 +53,49 @@ void fragment() {
 		r2 = dot(center, center);
 	}
 
-	// Chromatic aberration: shift R/B outward proportional to radius.
+	// Blast shockwaves: expanding rings of screen-space refraction anchored to
+	// each explosion's world position (the player projects every live blast
+	// into screen UV each frame, so a ring stays pinned to its detonation as
+	// the camera turns). The image is dragged outward at the ring's crest and
+	// settles behind it, so the pressure wave becomes something you SEE, not
+	// just camera shake. Aspect-corrected so rings stay circular on widescreen.
+	if (advanced_post_process_enabled) {
+		float aspect = px.y / px.x;
+		for (int i = 0; i < 3; i++) {
+			vec4 sw = shockwaves[i];
+			if (sw.w <= 0.001) { continue; }
+			vec2 d = (uv - sw.xy) * vec2(aspect, 1.0);
+			float dist = length(d);
+			if (dist < 1e-5) { continue; }
+			// Crest sweeps outward with progress; band thins, amplitude decays.
+			float crest = smoothstep(0.11 * (1.0 - sw.z * 0.5), 0.0,
+				abs(dist - sw.z * 0.78));
+			float amp = crest * sw.w * (1.0 - sw.z) * 0.045;
+			uv += (d / dist) * vec2(1.0 / aspect, 1.0) * amp;
+		}
+	}
+
+	// Digital corruption: banded horizontal tearing, driven when the player is
+	// EMP'd or a hijack lands — the fiction's "your optics are under attack".
+	if (glitch > 0.001) {
+		float band = floor(uv.y * 26.0);
+		float n = hash(vec2(band, floor(TIME * 16.0)));
+		uv.x += (n - 0.5) * 0.07 * glitch * step(0.68, n);
+	}
+
+	center = uv - 0.5;
+	r2 = dot(center, center);
+
+	// Chromatic aberration: shift R/B outward proportional to radius. A live
+	// glitch stacks a hard horizontal split on top, so corruption reads as the
+	// signal tearing rather than just a lens artifact.
 	vec2 dir = center * r2 * aberration;
+	vec2 ca = dir * px * 2.0;
+	ca.x += glitch * px.x * 16.0 * sin(TIME * 47.0 + floor(uv.y * 24.0));
 	vec3 col;
-	col.r = texture(screen_tex, uv + dir * px * 2.0).r;
+	col.r = texture(screen_tex, uv + ca).r;
 	col.g = texture(screen_tex, uv).g;
-	col.b = texture(screen_tex, uv - dir * px * 2.0).b;
+	col.b = texture(screen_tex, uv - ca).b;
 
 	// Sprint speed-warp: a few radial samples streaked toward the edges, blended
 	// in proportional to how hard the player is running.

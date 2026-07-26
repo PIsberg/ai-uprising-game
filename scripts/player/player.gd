@@ -106,6 +106,21 @@ var _grenade_cd: float = 0.0
 var _dof_overlay: MeshInstance3D ## Optional depth-of-field fullscreen quad (built in code).
 var _speed_warp: float = 0.0
 
+## --- Blast screen-warp state -------------------------------------------------
+## How many blast rings can warp the screen at once. Three is what the post
+## shader packs; a fourth blast evicts the weakest LIVE ring rather than being
+## dropped, so the newest (usually nearest) detonation always reads.
+const MAX_SCREEN_SHOCKS := 3
+const SCREEN_SHOCK_DUR := 0.55
+## Live blast rings, each {pos: Vector3, t: float, strength: float}.
+var _screen_shocks: Array[Dictionary] = []
+var _shock_packed := PackedVector4Array([Vector4.ZERO, Vector4.ZERO, Vector4.ZERO])
+## True once an all-zero array has been pushed, so an idle screen stops
+## touching the shader every frame instead of re-uploading zeroes forever.
+var _shock_clean: bool = true
+var _glitch: float = 0.0
+var _glitch_decay: float = 2.5
+
 var _dead: bool = false
 var _bob_phase: float = 0.0
 var _was_on_floor: bool = true
@@ -489,6 +504,88 @@ var _low_health: float = 0.0   # smoothed 0..1 severity driven into the shader
 var _breath: AudioStreamPlayer
 var _heartbeat: AudioStreamPlayer # deeper-danger layer under the breathing
 
+## Kick a world-anchored shockwave ring across the screen from `world_pos`.
+## `strength` 0..1 scales the refraction. The ring is re-projected to screen UV
+## every frame (see _handle_screen_shock) so it stays pinned to the blast rather
+## than smearing with the camera. Safe to call from anywhere: it no-ops when
+## Advanced Post-Process is off, which is how LOW/MEDIUM tiers opt out.
+func add_screen_shock(world_pos: Vector3, strength: float = 1.0) -> void:
+	if _post_overlay == null:
+		return
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs and not bool(gs.get("advanced_post_process_enabled")):
+		return
+	var entry := {"pos": world_pos, "t": 0.0, "strength": clampf(strength, 0.0, 1.0)}
+	if _screen_shocks.size() < MAX_SCREEN_SHOCKS:
+		_screen_shocks.append(entry)
+		return
+	# Full: evict the weakest remaining ring so a barrage still shows its newest
+	# blast instead of silently swallowing it.
+	var worst := 0
+	var worst_v := INF
+	for i in _screen_shocks.size():
+		var e: Dictionary = _screen_shocks[i]
+		var left: float = maxf(1.0 - float(e["t"]) / SCREEN_SHOCK_DUR, 0.0)
+		var v: float = float(e["strength"]) * left
+		if v < worst_v:
+			worst_v = v
+			worst = i
+	_screen_shocks[worst] = entry
+
+## Drive a brief signal-corruption burst (EMP hit, hijack landing). Highest
+## pending amount wins so overlapping sources don't cancel each other out.
+func pulse_glitch(amount: float = 1.0, decay: float = 2.5) -> void:
+	_glitch = maxf(_glitch, clampf(amount, 0.0, 1.0))
+	_glitch_decay = maxf(decay, 0.1)
+
+## Age every live blast ring, project it into screen UV, and pack the result for
+## the post shader. Runs every physics tick from _physics_process.
+func _handle_screen_shock(delta: float) -> void:
+	if _post_overlay == null or not (_post_overlay.material is ShaderMaterial):
+		return
+	var sm := _post_overlay.material as ShaderMaterial
+	# Glitch decays on its own clock so a pulse still fades with no blasts live.
+	if _glitch > 0.0:
+		_glitch = maxf(0.0, _glitch - delta * _glitch_decay)
+		sm.set_shader_parameter("glitch", _glitch)
+	# Age first, dropping any ring that has finished expanding.
+	var i := _screen_shocks.size() - 1
+	while i >= 0:
+		var e: Dictionary = _screen_shocks[i]
+		e["t"] = float(e["t"]) + delta
+		if float(e["t"]) >= SCREEN_SHOCK_DUR:
+			_screen_shocks.remove_at(i)
+		i -= 1
+	if _screen_shocks.is_empty():
+		# Push one all-zero array on the way down, then leave the shader alone.
+		if not _shock_clean:
+			_shock_clean = true
+			for k in MAX_SCREEN_SHOCKS:
+				_shock_packed[k] = Vector4.ZERO
+			sm.set_shader_parameter("shockwaves", _shock_packed)
+		return
+	_shock_clean = false
+	for k in MAX_SCREEN_SHOCKS:
+		_shock_packed[k] = Vector4.ZERO
+	var vp := get_viewport()
+	if camera == null or vp == null:
+		return
+	var vp_size := vp.get_visible_rect().size
+	for j in _screen_shocks.size():
+		var e: Dictionary = _screen_shocks[j]
+		var wp: Vector3 = e["pos"]
+		# A blast behind the camera has no on-screen centre to refract around;
+		# leave its slot zeroed but keep ageing it so it expires on schedule.
+		if camera.is_position_behind(wp):
+			continue
+		var sp := camera.unproject_position(wp)
+		_shock_packed[j] = Vector4(
+			sp.x / maxf(vp_size.x, 1.0),
+			sp.y / maxf(vp_size.y, 1.0),
+			clampf(float(e["t"]) / SCREEN_SHOCK_DUR, 0.0, 1.0),
+			float(e["strength"]))
+	sm.set_shader_parameter("shockwaves", _shock_packed)
+
 func _handle_low_health(delta: float) -> void:
 	var frac := 1.0
 	if hp and hp.max_health > 0.0:
@@ -578,6 +675,9 @@ func _toggle_flashlight() -> void:
 func _physics_process(delta: float) -> void:
 	if _dead:
 		# Collapsed: gravity holds you on the deck, momentum bleeds off; no control.
+		# Blast rings still age out down here — otherwise the very blast that
+		# killed you freezes mid-expansion across the whole death screen.
+		_handle_screen_shock(delta)
 		_apply_gravity(delta)
 		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
@@ -587,6 +687,7 @@ func _physics_process(delta: float) -> void:
 	_handle_stamina(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
+	_handle_screen_shock(delta)
 	_handle_low_health(delta)
 	_handle_dash(delta)
 	_handle_melee(delta)
@@ -669,6 +770,12 @@ func _unleash_overload() -> void:
 	_fov_kick = maxf(_fov_kick, 16.0)
 	AudioBus.play_synth_at("explosion", origin, 6.0, 0.5)
 	_spawn_overload_nova(origin)
+	# The screen itself buckles: a full-strength refraction ring off your own
+	# feet, plus a short corruption burst — the EMP washes back over your optics
+	# as well as the robots', which is why it reads as electronic and not just
+	# explosive.
+	add_screen_shock(origin, 1.0)
+	pulse_glitch(0.75, 2.2)
 	# Sweep every hostile in reach: heavy damage + EMP stun + outward knockback.
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsShapeQueryParameters3D.new()

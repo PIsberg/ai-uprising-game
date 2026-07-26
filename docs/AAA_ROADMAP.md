@@ -26,11 +26,20 @@ Items marked ✅ are DONE and **verified in-engine** (Godot 4.6.3 installed; eac
 - ✅ **HDRI sky** — CC0 Poly Haven "Industrial Sunset" wired via `env.hdri` (suburb level); PanoramaSkyMaterial + sky IBL.
 - ✅ **Texture variety** — Concrete031 (weathered outdoor walls) + MetalPlates007 (alternating cover plates); detail-normal overlay on floor/wall to break 1K tiling.
 
+## ✅ Blast screen-warp + signal glitch (2026-07-26)
+- ✅ **World-anchored shockwave refraction** — explosions bend the IMAGE, not just the camera. `post_process.gdshader` carries `uniform vec4 shockwaves[3]` (screen-UV centre, progress, strength); `Player._handle_screen_shock` re-projects each live blast's world position into UV every frame, so a ring stays pinned to its detonation as you turn. Up to 3 at once; a 4th blast evicts the weakest LIVE ring, never the newest.
+- ✅ **Broad reach off one primitive** — `ExplosionFX._kick_player` (every grenade/explosion), the OVERLOAD ultimate, the hijack-grenade spike, and `EnemyBase.spawn_shockwave_ring` (mech stomp, manus finger-drum, smasher wake-slam, titan/colossus entrances) all push a distance-scaled warp.
+- ✅ **Signal-corruption pass** — `uniform float glitch` drives banded horizontal tearing plus a hard RGB split; fires on the OVERLOAD EMP backwash and on a nearby hijack spike, decaying on its own clock.
+- ✅ **Tier-gated + accessible** — the whole pass rides the existing Advanced Post-Process toggle, so LOW/MEDIUM tiers and motion-sensitive players opt out through a control that already exists.
+- ✅ **Verified** — `tests/screen_shock_probe` (suite) covers ring lifecycle/eviction/projection/glitch decay. `tests/screen_shock_shot` + `tests/screen_shock_verify` unit-test the shader against a static checker (grain/warp/glitch zeroed so it is time-invariant) and assert the ring lands at the expected crest: peak 9536× median, bin 11 vs expected 10.
+
+> **Godot 4.8 check (dev-2, 2026-07-26):** of the 46 merged PRs in the 4.8 milestone labelled `topic:rendering`, every one is a bug fix. The only additive graphics items in the whole 4.8 line so far are ASTC 6x6 compression profiles (GH-115003), a shader `bool`→`float` implicit conversion (GH-120715) and skipping shadow rendering for inactive particles (GH-118449). Nothing there justifies moving a shipped build onto a pre-release snapshot — staying on 4.7.1.
+
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
 - **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split + look-at/IK so robots aim while walking.
 - **Curated sampled SFX** (drop CC0 foley into `assets/audio/samples/`); adaptive music layers; reverb buses.
-- Per-surface impact FX, shell casings, time-dilation on boss kills, controller rumble.
+- ~~Per-surface impact FX, shell casings, time-dilation on boss kills, controller rumble.~~ **All four shipped** (audited 2026-07-26): `Impact.set_surface`/`_spawn_debris` (metal/dirt/wood/stone sparks, smoke and fragments), `Weapon._eject_brass` + the `brass_tink` synth, `GameState.boss_killcam`, `Haptics.pulse`.
 - **Production polish** — main-menu cinematic, settings menu exposing quality tiers, key rebinding, save/checkpoints, perf-budget pass, full balance tuning.
 
 > These remaining items are what separate a strong vertical slice from a shipped AAA title: volume of curated art/audio content and long-tail polish, not engine capability.
