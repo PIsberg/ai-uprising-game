@@ -35,6 +35,18 @@ Items marked ✅ are DONE and **verified in-engine** (Godot 4.6.3 installed; eac
 
 > **Godot 4.8 check (dev-2, 2026-07-26):** of the 46 merged PRs in the 4.8 milestone labelled `topic:rendering`, every one is a bug fix. The only additive graphics items in the whole 4.8 line so far are ASTC 6x6 compression profiles (GH-115003), a shader `bool`→`float` implicit conversion (GH-120715) and skipping shadow rendering for inactive particles (GH-118449). Nothing there justifies moving a shipped build onto a pre-release snapshot — staying on 4.7.1.
 
+## ✅ Fluids integrated with the floor (2026-07-27)
+Water and lava beds read as slabs laid ON the ground rather than liquid filling it. Measured cause: a hard-cut plane ~6 cm above an unbroken floor, wrapped in a rim box standing 12 cm proud with vertical sides.
+- ✅ **`shaders/water.gdshader`** (new) — replaces a plain alpha `StandardMaterial3D`. Shoreline that dissolves toward the rim, screen-texture refraction through the ripple normal, depth-graded colour (shallow margins → dark centre), scrolling ripple normals, surf where geometry breaks the surface.
+- ✅ **`shaders/fluid_margin.gdshader`** (new) — flush shoreline band replacing the raised rim box. Solid across the footprint, fading out over ~1.4 m, so floor → shore → fluid carries no silhouette. For water it doubles as the bed.
+- ✅ **`lava.gdshader`** — cooling crust toward the rim, chewed up by the flow field but sealed at the outermost sliver, so the transition runs molten → crust → scorched rock → clean floor.
+- ✅ **Measured, not asserted** — peak adjacent-pixel step at the rim: **water 0.2530 → 0.0169 (93% softer)**, **lava 0.1301 → 0.0401 (69%)**, via a git-stash A/B on an isolated rig (`tests/fluid_shot` + `tests/fluid_edge_verify`).
+
+> Three measurement traps worth remembering, all of which produced confidently wrong answers first:
+> 1. A 10–90% transition **width** is meaningless for lava — its flow veins swing wider than the shore does, so it measures turbulence. Peak gradient at a *known* rim position is robust.
+> 2. The amber hazard frame sits exactly on the rim and is deliberately hard-edged; it swamped the metric until `fluid_shot` hid it (by material signature, so the stashed old build is treated identically).
+> 3. Fixing the water surface **exposed a new hard edge** — the opaque bed plane underneath, whose own silhouette was revealed once the surface above it correctly faded to clear. Measured 2.6× *worse*. Bed and shore had to become one fading plane.
+
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
 - **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split + look-at/IK so robots aim while walking.

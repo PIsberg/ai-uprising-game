@@ -125,6 +125,8 @@ or GPU-timing probes; `--headless` renders these black).
 | explosion_screenshot | Both explosion FX types detonated, frame captured mid-expansion | windowed |
 | eye_glow_probe | A/B: drone/sentinel eye-glow off vs on under a bloom-lit interior env | windowed |
 | feel_audio_probe | AAA feel/audio batch on a live level: synth streams resolve, hazard ambience layers, low-HP heartbeat, sprint lower-ready pose | headless |
+| fluid_edge_verify | Peak adjacent-pixel step at a fluid bed's rim, from the fluid_shot captures — proves water/lava blend into the floor instead of stepping. Run AFTER fluid_shot | headless |
+| fluid_shot | Isolated top-down rig (one floor, one bed, fixed camera, hazard frame hidden) capturing water + lava rims for fluid_edge_verify; also the only check that water/fluid_margin/lava shaders COMPILE | windowed |
 | fierce_probe | Fierce enemy models with real RobotModel tint/material treatment | windowed |
 | fix_models_probe | Models whose auto-framing broke, re-rendered with normalized scale/recenter + fixed camera | windowed |
 | flyer_pose_probe | Whirlwind/breaker/fishbot flyer trio whose codex entries looked broken | windowed |
