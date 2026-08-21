@@ -4,8 +4,8 @@
 #   pwsh tools/build_release.ps1 -Godot "C:\path\to\Godot_console.exe"
 #
 # Requirements:
-#   - Godot 4.7.1 console editor binary (set $Godot or the GODOT env var).
-#   - Matching export templates installed (4.7.1.stable). If missing, run with
+#   - Godot 4.7.2 console editor binary (set $Godot or the GODOT env var).
+#   - Matching export templates installed (4.7.2.stable). If missing, run with
 #     -InstallTemplates to download + install them automatically.
 #
 # Output: build/windows/ai-uprising.exe  and  build/linux/ai-uprising.x86_64
@@ -22,7 +22,7 @@ Set-Location $Root
 
 if (-not $Godot -or -not (Test-Path $Godot)) {
     # Best-effort default to the binary used during development.
-    $guess = "C:\Users\$env:USERNAME\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe"
+    $guess = "C:\Users\$env:USERNAME\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
     if (Test-Path $guess) { $Godot = $guess }
     else { throw "Godot binary not found. Pass -Godot <path> or set `$env:GODOT." }
 }
@@ -30,9 +30,9 @@ Write-Host "Godot: $Godot"
 
 if ($InstallTemplates) {
     $tpz = Join-Path $env:TEMP "godot47_templates.tpz"
-    $dest = Join-Path $env:APPDATA "Godot\export_templates\4.7.1.stable"
-    Write-Host "Downloading 4.7.1 export templates (~1.3 GB)..."
-    Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz" -OutFile $tpz
+    $dest = Join-Path $env:APPDATA "Godot\export_templates\4.7.2.stable"
+    Write-Host "Downloading 4.7.2 export templates (~1.3 GB)..."
+    Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -OutFile $tpz
     $tmp = Join-Path $env:TEMP "godot47_tpz"
     if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
     Expand-Archive -Path $tpz -DestinationPath $tmp -Force

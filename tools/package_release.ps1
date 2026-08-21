@@ -1,7 +1,7 @@
 # Package AI Uprising release builds for itch.io (Windows + Linux).
 # Exports the existing presets headlessly, then zips each build into dist/.
 #
-#   $env:GODOT_BIN = "C:\Program Files (x86)\godotengine4.7\Godot_v4.7-stable_win64_console.exe"
+#   $env:GODOT_BIN = "C:\Users\isber\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
 #   pwsh tools/package_release.ps1            # build + zip Windows and Linux
 #   pwsh tools/package_release.ps1 -SkipTests # skip the probe suite gate
 #
