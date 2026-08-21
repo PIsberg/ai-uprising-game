@@ -8,9 +8,10 @@ on:
   workflow_dispatch:
 
 env:
-  # 4.7 stable has no patch number, so the version string is just "4.7"
-  # (release tag 4.7-stable, file Godot_v4.7-stable_*, templates dir 4.7.stable).
-  GODOT_VERSION: "4.7"
+  # Patch releases keep a uniform naming scheme, so one string drives the
+  # release tag (4.7.2-stable), the binary (Godot_v4.7.2-stable_*) and the
+  # export-templates directory (4.7.2.stable).
+  GODOT_VERSION: "4.7.2"
 
 jobs:
   # GDScript isn't compiled, so "build" for this project means: import all

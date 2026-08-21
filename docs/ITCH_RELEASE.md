@@ -52,10 +52,10 @@ Both desktop presets already **embed the PCK** (one self-contained file) and
 
 ## 2. Prerequisites (one-time)
 
-1. **Godot 4.7** (you have it). Note the console binary path; the scripts use
+1. **Godot 4.7.2** (you have it). Note the console binary path; the scripts use
    `GODOT_BIN`:
    ```powershell
-   $env:GODOT_BIN = "C:\Program Files (x86)\godotengine4.7\Godot_v4.7-stable_win64_console.exe"
+   $env:GODOT_BIN = "C:\Users\isber\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
    ```
 2. **Export templates** for 4.7 — required to export. In the Godot editor:
    *Editor → Manage Export Templates → Download and Install*.
@@ -77,7 +77,7 @@ Both desktop presets already **embed the PCK** (one self-contained file) and
 From the project root:
 
 ```powershell
-$env:GODOT_BIN = "C:\Program Files (x86)\godotengine4.7\Godot_v4.7-stable_win64_console.exe"
+$env:GODOT_BIN = "C:\Users\isber\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
 pwsh tools/package_release.ps1                # runs tests, exports, zips
 # or skip the test gate:
 pwsh tools/package_release.ps1 -SkipTests
@@ -197,7 +197,7 @@ project. Set the page **Public** when ready.
 
 ```powershell
 # one-time
-$env:GODOT_BIN = "C:\Program Files (x86)\godotengine4.7\Godot_v4.7-stable_win64_console.exe"
+$env:GODOT_BIN = "C:\Users\isber\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
 butler login
 
 # every release

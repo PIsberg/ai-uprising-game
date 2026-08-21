@@ -35,11 +35,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-234 probes total: **22** wired into the headless suite (`suite`), **80**
+235 probes total: **22** wired into the headless suite (`suite`), **80**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **132** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **133** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -202,6 +202,7 @@ or GPU-timing probes; `--headless` renders these black).
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |
 | particles_check | `GraphicsSettings.create_particles` sanity on both GPU and CPU particle paths | headless |
 | patchnotes_probe | ROBOT OS patch notes: AIDirector emits changelog only once calibrated, GameState folds in hijacks/nemesis, consumed once | headless |
+| pcss_shadow_shot | Deterministic PCSS penumbra capture (static scene, sun `light_angular_distance` 1.2) so an engine bump can be diffed for shadow changes; byte-identical run to run | windowed |
 | perf_probe | Average frame time on a heavy level at each graphics tier (`PERF_TIER` env var) | windowed |
 | phase0_test | Level def serialize→reload→build level_custom round-trip + custom build + pickups | headless |
 | pickup_lineup | Health/ammo/weapon pickups rendered side by side | windowed |
