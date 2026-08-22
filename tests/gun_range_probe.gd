@@ -38,7 +38,7 @@ func _run() -> void:
 		hud.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.6).timeout # let the player land + settle
+	await _wait_game(0.6) # let the player land + settle
 	_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
 	if _player == null:
 		print("NO PLAYER"); print("RESULT FAIL"); get_tree().quit(); return
@@ -87,7 +87,7 @@ func _arm(path: String) -> Weapon:
 			if _wm.weapons[i].scene_file_path == path:
 				_wm._equip(i)
 				break
-	await get_tree().create_timer(0.65).timeout # equip_time 0.5 blocks firing
+	await _wait_game(0.65) # equip_time 0.5 blocks firing
 	var w: Weapon = _wm.current
 	assert(w.scene_file_path == path)
 	w.mag = w.eff_mag_size()
@@ -110,6 +110,22 @@ func _clear_holes() -> void:
 	await get_tree().process_frame
 
 ## Angular deviation (deg) of each NEW bullet hole from `fwd` out of `origin`.
+## Waits `seconds` of GAME time (fixed physics steps), NOT wall-clock.
+##
+## Every quantity this probe measures evolves on the game clock: bloom decay,
+## the first_shot_delay re-arm, equip_time, recoil settle. A `create_timer` wait
+## is wall-clock, and when a machine cannot hold the physics rate Godot clamps
+## physics steps per frame so game time falls behind — meaning the gun was in a
+## DIFFERENT state than the probe assumed, in proportion to how loaded the
+## machine was. That is what made "pistol ADS tighter" fail in CI (hip=0.25°
+## ads=0.19°, ratio 0.76) while the same assertion reads a rock-steady ~0.31 here
+## over 5 runs, matching the designed aim_spread_mult of 0.3.
+func _wait_game(seconds: float) -> void:
+	var acc := 0.0
+	while acc < seconds:
+		await get_tree().physics_frame
+		acc += get_physics_process_delta_time()
+
 func _new_hole_angles(before: Array, origin: Vector3, fwd: Vector3) -> Array[float]:
 	var angles: Array[float] = []
 	for h in get_tree().get_nodes_in_group("bullet_hole"):
@@ -135,9 +151,13 @@ func _fire_series(w: Weapon, shots: int, gap: float, aiming: bool) -> Array[floa
 		w.mag = maxi(w.mag, 10)
 		w.try_fire(true, aiming, _cam, _player)
 		w.try_fire(false, aiming, _cam, _player)
+		# The hit has to resolve in physics before its decal exists; one
+		# process_frame was enough on a fast machine and could silently drop
+		# shots on a slow one, thinning the sample the means are computed from.
+		await get_tree().physics_frame
 		await get_tree().process_frame
 		all.append_array(_new_hole_angles(before, origin, fwd))
-		await get_tree().create_timer(gap).timeout
+		await _wait_game(gap)
 	return all
 
 static func _mean(a: Array[float]) -> float:
@@ -162,7 +182,7 @@ static func _peak(a: Array[float]) -> float:
 func _test_rifle_bloom_and_cone() -> void:
 	var w: Weapon = await _arm("res://scenes/weapons/rifle.tscn")
 	await _clear_holes()
-	await get_tree().create_timer(0.7).timeout # go in cold
+	await _wait_game(0.7) # go in cold
 	var angles: Array[float] = []
 	var frames := 0
 	while angles.size() < 24 and frames < 600:
@@ -198,7 +218,7 @@ func _test_rifle_first_shot() -> void:
 	await _clear_holes()
 	var cold: Array[float] = []
 	for i in 6:
-		await get_tree().create_timer(0.7).timeout # > first_shot_delay re-arms the bonus
+		await _wait_game(0.7) # > first_shot_delay re-arms the bonus
 		var got := await _fire_series(w, 1, 0.0, false)
 		cold.append_array(got)
 	var d: WeaponData = w.data
@@ -213,8 +233,15 @@ func _test_pistol_ads_vs_hip() -> void:
 	var hip := await _fire_series(w, 14, 0.25, false)
 	await _clear_holes()
 	var ads := await _fire_series(w, 14, 0.25, true)
-	_check("pistol ADS tighter", _mean(ads) < _mean(hip) * 0.75,
-		"hip=%.2f° ads=%.2f°" % [_mean(hip), _mean(ads)])
+	# n= is reported deliberately: these are MEANS, and a mean over a handful of
+	# decals is not evidence. Require a real sample rather than quietly averaging
+	# whatever survived.
+	var enough := hip.size() >= 10 and ads.size() >= 10
+	_check("pistol ADS tighter", enough and _mean(ads) < _mean(hip) * 0.75,
+		"hip=%.2f°(n=%d) ads=%.2f°(n=%d) ratio=%.2f want<0.75%s" % [
+			_mean(hip), hip.size(), _mean(ads), ads.size(),
+			_mean(ads) / maxf(0.0001, _mean(hip)),
+			"" if enough else "  SAMPLE TOO SMALL"])
 
 ## Sniper ADS: effectively pinpoint (spread 0.3° × aim 0.04 ≈ 0.012°).
 func _test_sniper_pinpoint() -> void:
@@ -228,7 +255,7 @@ func _test_sniper_pinpoint() -> void:
 func _test_shotgun_cone() -> void:
 	var w: Weapon = await _arm("res://scenes/weapons/shotgun.tscn")
 	await _clear_holes()
-	await get_tree().create_timer(0.6).timeout
+	await _wait_game(0.6)
 	var angles := await _fire_series(w, 2, 0.9, false)
 	var d: WeaponData = w.data
 	_check("shotgun pellets land", angles.size() >= 10, "decals=%d" % angles.size())
@@ -249,11 +276,11 @@ func _test_recoil_recovery() -> void:
 		w.mag = maxi(w.mag, 10)
 		w.try_fire(true, false, _cam, _player)
 		climbed = maxf(climbed, _head.rotation.x)
-		await get_tree().create_timer(1.05 / w.data.fire_rate).timeout
+		await _wait_game(1.05 / w.data.fire_rate)
 	var peak_climb: float = climbed - pitch0
 	_check("recoil climbs", peak_climb > deg_to_rad(1.0),
 		"climb=%.2f°" % rad_to_deg(peak_climb))
-	await get_tree().create_timer(1.3).timeout # let recovery settle
+	await _wait_game(1.3) # let recovery settle
 	# By design the camera keeps (1 - recoil_return) of the total kick as
 	# permanent drift the player owns; everything else must settle back.
 	var residual: float = _head.rotation.x - pitch0
