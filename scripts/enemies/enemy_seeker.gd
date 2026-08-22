@@ -129,6 +129,15 @@ func _physics_process(delta: float) -> void:
 func _check_detonate() -> void:
 	if _detonated or target == null:
 		return
+	# Opening-seconds grace. EnemyBase applies this gate inside _state_attack, but
+	# this kamikaze deals its damage from _physics_process instead — so without
+	# the gate here it flew in and blew up on a player who had just loaded the
+	# level. Keep closing in (the blink telegraph still reads); just hold the
+	# blast until the player has had their couple of seconds. Deferred, not
+	# defused: it detonates the moment grace lapses.
+	# Covered by tests/seeker_grace_probe and tests/spawn_safety_probe.
+	if GameState.attack_grace_active():
+		return
 	if global_position.distance_to(target.global_position) <= detonate_radius:
 		_detonate(true)
 
