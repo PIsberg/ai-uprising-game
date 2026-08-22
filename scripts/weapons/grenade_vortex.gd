@@ -121,7 +121,7 @@ func _detonate() -> void:
 		done[d] = true
 		var dist: float = (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
 		var falloff := clampf(1.0 - dist / splash_radius, 0.25, 1.0)  # min 0.25 — they're bunched, hit hard
-		d.apply_damage((splash_damage + damage) * falloff, _shooter)
+		d.apply_damage((splash_damage + damage) * falloff, _shooter, false, pos)
 	var fx := EXPLOSION_SCENE.instantiate()
 	get_parent().add_child(fx)
 	(fx as Node3D).global_position = pos

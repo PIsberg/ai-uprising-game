@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-235 probes total: **22** wired into the headless suite (`suite`), **80**
+236 probes total: **23** wired into the headless suite (`suite`), **80**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -63,6 +63,7 @@ or GPU-timing probes; `--headless` renders these black).
 | beam_render_probe | ElectricBeam renders to a PNG (lightning actually draws) | windowed |
 | benchmark_probe | QualityBenchmark run twice; measured avg ms (needs real GPU timings) | windowed |
 | bevel_smoke | BeveledBoxMesh instances from both a `.tscn` sub_resource and code, non-empty geometry | headless |
+| blast_direction_probe | A BRUTE's frontal shield judges an explosion by the BLAST's position, not the thrower's — a grenade behind it lands, one in front is blocked | suite |
 | blur_shot | Clean high-res indoor capture (forced HIGH + full render scale) to diagnose "indoor looks blurry" | windowed |
 | bolt_bare_probe | Bare-scene isolation of the bolt material on distant columns; transparent-surface culling | windowed |
 | bomb_audio_probe | Mega-bomb detonation into a dense cluster; audio bus state before/after (silence-after-bomb regression) | headless |

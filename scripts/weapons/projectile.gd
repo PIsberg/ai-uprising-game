@@ -368,7 +368,7 @@ func _explode(pos: Vector3) -> void:
 				continue
 			var dist := (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
 			var falloff := clampf(1.0 - dist / _splash_radius, 0.0, 1.0)
-			d.apply_damage(_splash_damage * falloff + _damage, _shooter)
+			d.apply_damage(_splash_damage * falloff + _damage, _shooter, false, pos)
 	# Impact blast: a big boom for splash rounds (rocket), a sharp burst otherwise
 	# (plasma), plus a brief colored flash light in the round's energy colour.
 	var scene := get_tree().current_scene
@@ -637,7 +637,7 @@ static func _detonate_bomblet(scene: Node, pos: Vector3, dmg: float, srad: float
 		if d == null:
 			continue
 		var dist := (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
-		d.apply_damage(dmg * clampf(1.0 - dist / srad, 0.0, 1.0), shooter)
+		d.apply_damage(dmg * clampf(1.0 - dist / srad, 0.0, 1.0), shooter, false, pos)
 	var blast := BIG_BLAST.instantiate()
 	scene.add_child(blast)
 	(blast as Node3D).global_position = pos

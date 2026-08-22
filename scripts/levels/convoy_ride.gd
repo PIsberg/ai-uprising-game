@@ -506,7 +506,7 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 			var v = victims[i]
 			i += 1
 			if is_instance_valid(v["d"]):
-				v["d"].apply_damage(v["amt"], player)
+				v["d"].apply_damage(v["amt"], player, false, pos)
 		if i < victims.size():
 			await get_tree().create_timer(BATCH_GAP).timeout
 			if not is_inside_tree():

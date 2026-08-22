@@ -14,7 +14,12 @@ var current_health: float
 func _ready() -> void:
 	current_health = max_health
 
-func apply_damage(amount: float, source = null, crit: bool = false) -> void:
+## `origin` is WHERE THE DAMAGE PHYSICALLY CAME FROM, when that differs from
+## `source`. Splash passes the blast centre: every explosion path credits the
+## SHOOTER as source so kills pay score, which meant a directional defence had no
+## way to tell a grenade at its back from the thrower standing in front of it.
+## Null for hitscan and contact damage, where source's own position is the answer.
+func apply_damage(amount: float, source = null, crit: bool = false, origin = null) -> void:
 	# A stored shooter (a projectile/explosion's source) can be freed before its
 	# hit lands. Passing a freed OR non-Node object to a typed `Node` param crashes
 	# Godot at the call itself ("Cannot convert argument from Object to Object" when
@@ -45,7 +50,7 @@ func apply_damage(amount: float, source = null, crit: bool = false) -> void:
 	# Owners can intercept/scale incoming damage (e.g. a brute's frontal shield).
 	var parent := get_parent()
 	if parent and parent.has_method("modify_incoming_damage"):
-		amount = parent.modify_incoming_damage(amount, source)
+		amount = parent.modify_incoming_damage(amount, source, origin)
 		if amount <= 0.0:
 			return
 	var mitigated := maxf(0.0, amount - armor)

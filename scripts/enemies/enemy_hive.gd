@@ -117,7 +117,7 @@ func _set_jammed(on: bool) -> void:
 # ---------- shield (network link) ----------
 
 ## While networked the shield eats almost everything; jammed, damage lands full.
-func modify_incoming_damage(amount: float, source) -> float:
+func modify_incoming_damage(amount: float, source, _origin = null) -> float:
 	if jammed:
 		return amount
 	_shield_flare = 1.0
