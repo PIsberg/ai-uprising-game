@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-235 probes total: **22** wired into the headless suite (`suite`), **80**
+235 probes total: **24** wired into the headless suite (`suite`), **78**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -95,7 +95,7 @@ or GPU-timing probes; `--headless` renders these black).
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
-| convoy_probe | Highway Breakout ride: hauler rolls, player position tracks the deck, pursuit waves spawn | headless |
+| convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
@@ -263,7 +263,8 @@ or GPU-timing probes; `--headless` renders these black).
 | tree_probe | Suburb level with scattered volumetric trees at eye level | windowed |
 | ttk_probe | Ground-truth weapon DPS against real enemy robots (pellets/falloff/pierce/splash/chain/cluster all counted) | headless |
 | unique_enemy_probe | Batch-5 signature behaviors on real AI: hunter blade dash, raptor strafing run, ripper spin-up saw, sentinel salvo, warbot crossfire | headless |
-| victory_probe | `advance_level()` routes to the victory cutscene once the campaign (ARCHON finale) is exhausted | headless |
+| victory_probe | Clearing the last campaign level routes to the victory cutscene VIA the loading screen (asserts the destination, not the next frame) | suite |
+| victory_watch | Helper parented to `/root`; polls `current_scene` across the campaign-end scene swaps for victory_probe | headless |
 | victory_shot | Victory finale at fixed timeline moments (headless renders black) | windowed |
 | voice_probe | Every `AudioBus.VOICE_CATEGORIES` clip resolves on disk; `play_voice_at` fires; per-family pack resolution + fallback works | suite |
 | wallrun_probe | Sprinting into a wall engages wall-run (tangent velocity hold); wall-jump launches with expected carry | headless |
