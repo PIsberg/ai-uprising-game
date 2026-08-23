@@ -327,6 +327,23 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
 - **`Elite.apply` / `apply_nemesis` must run before `add_child`** — stat
   multipliers applied after the enemy enters the tree get clobbered by
   `_sync_stats`.
+- **Time a bot or a measurement in GAME seconds, not wall-clock.**
+  `create_timer` counts real time, but everything a probe observes — enemy
+  attack cadence, weapon bloom decay, `first_shot_delay`, `equip_time`, recoil
+  settle — advances on the game clock. When a machine cannot hold the physics
+  rate, Godot clamps physics steps per frame and game time falls behind
+  wall-clock, so a wall-clock wait leaves the world in a *different state* than
+  the probe assumed, by an amount that depends on how loaded the machine is.
+  This is why a probe calibrated on a dev box flakes only in CI. Await
+  `get_tree().physics_frame` and accumulate `get_physics_process_delta_time()`
+  instead (see `_wait_game` in `survival_probe.gd` / `gun_range_probe.gd`).
+  It caused every CI failure in a 30-run stretch.
+- **A statistical gate needs a real sample, and must print `n`.** A mean over a
+  handful of samples is not evidence. Report the sample size in the assertion
+  message and fail loudly when it is too small, rather than averaging whatever
+  survived — a thinned sample otherwise reads as a genuine measurement.
+  Widening a flaky gate's threshold treats the symptom; find what makes the
+  measurement environment-dependent and remove it.
 - A **freed instance compares EQUAL to null** but `is`/property access still
   raise — guard with `is_instance_valid(x)`, never `x != null`.
 
