@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cseekergrace001"]
+
+[ext_resource type="Script" path="res://tests/seeker_grace_probe.gd" id="1_p"]
+
+[node name="SeekerGraceProbe" type="Node3D"]
+script = ExtResource("1_p")

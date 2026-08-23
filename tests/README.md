@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-235 probes total: **24** wired into the headless suite (`suite`), **78**
+239 probes total: **26** wired into the headless suite (`suite`), **80**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -100,6 +100,7 @@ or GPU-timing probes; `--headless` renders these black).
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
 | dark_spot_probe | Mean frame luminance from spawn, per campaign level, ranking under-lit "dark spot" levels | windowed |
+| damage_source_probe | `Damageable.apply_damage` survives a FREED or non-Node `source` (shooter died before its projectile landed) and still applies the damage | suite |
 | dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | headless |
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
@@ -238,6 +239,7 @@ or GPU-timing probes; `--headless` renders these black).
 | signature_attack_probe | K-9 pounce, MAITRE-D' cleaver throw, sentinel bomb lob, mauler overload detonation all fire | headless |
 | skel_pose_probe | Candidate ArmRelaxModifier rotations on the George rig, to pick a natural arm-carry angle | windowed |
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
+| seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
@@ -247,6 +249,7 @@ or GPU-timing probes; `--headless` renders these black).
 | suburb_nav_diag | Which leg of the suburb canal crossing fails, chaining spawn→bridgeheads→deck→exit plus the tower route | headless |
 | suburb_screenshot | Player camera walked up to a house on the suburb level, captured | windowed |
 | survival_probe | Reckless-bot regression net for the onboarding survival experience (auto-reload, aggro rings, health-on-kill) | suite |
+| spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level; reports post-grace idle DPS as a difficulty readout (~154s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | synth_probe | Every key procedural sound generates non-silent, non-degenerate audio | suite |
 | task_reach_probe | Every authored level-1 task position resolves clear of solid geometry and near the navmesh | headless |

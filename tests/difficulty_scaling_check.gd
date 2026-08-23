@@ -37,7 +37,7 @@ func _ready() -> void:
 		var alive := 0
 		var spiders := 0
 		for c in level.get_children():
-			if c is EnemySpawner and is_instance_valid(c):
+			if is_instance_valid(c) and c is EnemySpawner:
 				alive += 1
 				if "spider" in (c.enemy_scene.resource_path if c.enemy_scene else ""):
 					spiders += 1
