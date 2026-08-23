@@ -305,5 +305,13 @@ static func _kick_player(root: Node3D, size: float) -> void:
 		return
 	var reach := size * 6.0
 	var d := (p as Node3D).global_position.distance_to(root.global_position)
-	if d < reach:
-		p.shake(clampf(1.0 - d / reach, 0.0, 1.0) * clampf(size / 3.0, 0.35, 0.85))
+	if d >= reach:
+		return
+	var falloff := clampf(1.0 - d / reach, 0.0, 1.0)
+	p.shake(falloff * clampf(size / 3.0, 0.35, 0.85))
+	# The pressure wave also bends the image itself: a refraction ring that
+	# expands from the blast's own screen position, so you read WHERE it went
+	# off, not just that something shook. No-ops on tiers with Advanced
+	# Post-Process off (see Player.add_screen_shock).
+	if p.has_method("add_screen_shock"):
+		p.add_screen_shock(root.global_position, falloff * clampf(size / 2.6, 0.4, 1.0))

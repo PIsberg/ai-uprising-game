@@ -36,6 +36,7 @@ PROBES=(
   res://tests/victory_probe.tscn
   res://tests/convoy_probe.tscn
   res://tests/layout_check.tscn
+  res://tests/screen_shock_probe.tscn
 )
 
 echo "== importing project =="
