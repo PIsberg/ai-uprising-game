@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-236 probes total: **23** wired into the headless suite (`suite`), **80**
+237 probes total: **25** wired into the headless suite (`suite`), **79**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -96,7 +96,7 @@ or GPU-timing probes; `--headless` renders these black).
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
-| convoy_probe | Highway Breakout ride: hauler rolls, player position tracks the deck, pursuit waves spawn | headless |
+| convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
@@ -264,7 +264,8 @@ or GPU-timing probes; `--headless` renders these black).
 | tree_probe | Suburb level with scattered volumetric trees at eye level | windowed |
 | ttk_probe | Ground-truth weapon DPS against real enemy robots (pellets/falloff/pierce/splash/chain/cluster all counted) | headless |
 | unique_enemy_probe | Batch-5 signature behaviors on real AI: hunter blade dash, raptor strafing run, ripper spin-up saw, sentinel salvo, warbot crossfire | headless |
-| victory_probe | `advance_level()` routes to the victory cutscene once the campaign (ARCHON finale) is exhausted | headless |
+| victory_probe | Clearing the last campaign level routes to the victory cutscene VIA the loading screen (asserts the destination, not the next frame) | suite |
+| victory_watch | Helper parented to `/root`; polls `current_scene` across the campaign-end scene swaps for victory_probe | headless |
 | victory_shot | Victory finale at fixed timeline moments (headless renders black) | windowed |
 | voice_probe | Every `AudioBus.VOICE_CATEGORIES` clip resolves on disk; `play_voice_at` fires; per-family pack resolution + fallback works | suite |
 | wallrun_probe | Sprinting into a wall engages wall-run (tangent velocity hold); wall-jump launches with expected carry | headless |
@@ -327,6 +328,23 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
 - **`Elite.apply` / `apply_nemesis` must run before `add_child`** — stat
   multipliers applied after the enemy enters the tree get clobbered by
   `_sync_stats`.
+- **Time a bot or a measurement in GAME seconds, not wall-clock.**
+  `create_timer` counts real time, but everything a probe observes — enemy
+  attack cadence, weapon bloom decay, `first_shot_delay`, `equip_time`, recoil
+  settle — advances on the game clock. When a machine cannot hold the physics
+  rate, Godot clamps physics steps per frame and game time falls behind
+  wall-clock, so a wall-clock wait leaves the world in a *different state* than
+  the probe assumed, by an amount that depends on how loaded the machine is.
+  This is why a probe calibrated on a dev box flakes only in CI. Await
+  `get_tree().physics_frame` and accumulate `get_physics_process_delta_time()`
+  instead (see `_wait_game` in `survival_probe.gd` / `gun_range_probe.gd`).
+  It caused every CI failure in a 30-run stretch.
+- **A statistical gate needs a real sample, and must print `n`.** A mean over a
+  handful of samples is not evidence. Report the sample size in the assertion
+  message and fail loudly when it is too small, rather than averaging whatever
+  survived — a thinned sample otherwise reads as a genuine measurement.
+  Widening a flaky gate's threshold treats the symptom; find what makes the
+  measurement environment-dependent and remove it.
 - A **freed instance compares EQUAL to null** but `is`/property access still
   raise — guard with `is_instance_valid(x)`, never `x != null`.
 

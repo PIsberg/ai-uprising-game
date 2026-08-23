@@ -11,6 +11,11 @@ const KILL_TARGET := 6      # aspiration — reported, not gated (deep waves are
 const GATE_TIME := 30.0     # the hard gate: survive the OPENING with kills on the board
 const GATE_KILLS := 3       # pre-fix runs died at 10-15 s with 1-3 kills
 const TIME_LIMIT := 120.0
+## Wall-clock ceiling per attempt. TIME_LIMIT is measured in GAME seconds, and on
+## a machine running well under the physics rate those are not the same thing —
+## without this cap a badly-loaded CI runner could spend many minutes per attempt.
+## Hitting it is reported, never silently treated as a normal end of fight.
+const WALL_LIMIT_MS := 90_000
 
 var _player: CharacterBody3D
 var _cam: Camera3D
@@ -38,6 +43,7 @@ func _run() -> void:
 	GameState.current_level_path = first
 	var auto_reload_ok := false
 	var passes := 0
+	var capped := 0
 	var fails := 0
 	for attempt in ATTEMPTS:
 		var res: Dictionary = await _attempt(first, attempt == 0)
@@ -45,22 +51,44 @@ func _run() -> void:
 			print("NO PLAYER"); print("RESULT FAIL"); get_tree().quit(); return
 		if attempt == 0:
 			auto_reload_ok = res["auto_reload"]
-		print("SURVIVAL[%d/%d] kills=%d/%d t=%.0fs alive=%s hp=%.0f min_hp=%.0f killer=%s (deep push: telemetry only)" % [
+		print("SURVIVAL[%d/%d] kills=%d/%d t=%.0fs alive=%s hp=%.0f min_hp=%.0f killer=%s pace=%.2f (deep push: telemetry only)" % [
 			attempt + 1, ATTEMPTS, res["kills"], KILL_TARGET, res["t"], res["alive"],
-			res["hp"], res["min_hp"], res["killer"]])
+			res["hp"], res["min_hp"], res["killer"], res["pace"]])
 		if res["gate_ok"]:
 			passes += 1
 		else:
 			fails += 1
+		if res.get("wall_capped", false):
+			capped += 1
 		if passes >= NEEDED or fails > ATTEMPTS - NEEDED:
 			break # majority decided either way — no need to run the rest
 	var gate_ok := passes >= NEEDED
 	var ok := gate_ok and auto_reload_ok
 	print("ok   opening gate (%d/%d attempts)" % [passes, passes + fails] if gate_ok \
 		else "BAD  opening gate (%d/%d attempts passed, want %d)" % [passes, passes + fails, NEEDED])
+	if capped > 0:
+		print("NOTE %d attempt(s) hit the %.0fs wall-clock cap — the runner is far below the physics rate" % [capped, WALL_LIMIT_MS / 1000.0])
 	print("ok   auto-reload" if auto_reload_ok else "BAD  empty trigger did not reload")
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+## Waits `seconds` of GAME time (fixed physics steps), NOT wall-clock.
+##
+## This distinction is the whole reason this probe used to flake in CI. The bot's
+## action cadence has to be measured on the same clock the robots act on. When a
+## machine cannot hold the physics rate, Godot clamps physics steps per frame and
+## game time falls behind wall-clock — so a wall-clock `create_timer(0.25)` fire
+## window covered progressively LESS in-game shooting while the robots kept
+## attacking at their full game-time rate. The bot was silently handicapped in
+## proportion to how slow the machine was: measured per-attempt survival ~0.89 on
+## the dev box versus ~0.14 on the CI runner, which is why every CI failure in the
+## last 30 runs was this one probe (and why widening the gate twice never fixed it).
+func _wait_game(seconds: float) -> float:
+	var acc := 0.0
+	while acc < seconds:
+		await get_tree().physics_frame
+		acc += get_physics_process_delta_time()
+	return acc
 
 ## One full opening run: load the level fresh, fight to the kill target or the
 ## time limit, return gate verdict + telemetry. Kills counted RELATIVE to the
@@ -98,13 +126,18 @@ func _attempt(level_path: String, check_reload: bool) -> Dictionary:
 	# reported for telemetry but not gated: waking the mid-level rings solo
 	# with the starter pistol is allowed to be lethal.
 	var t := 0.0
+	var wall0 := Time.get_ticks_msec()
 	var min_hp := 1e9
 	var gate_alive := false
 	var gate_kills := -1 # -1 = gate not yet sampled (0 kills at gate is a real sample)
 	var kills0: int = GameState.kills # kills accumulate across attempts — count relative
 	var last_pos := Vector3.ZERO
 	var stuck_ticks := 0
+	var wall_capped := false
 	while GameState.kills - kills0 < KILL_TARGET and t < TIME_LIMIT:
+		if Time.get_ticks_msec() - wall0 > WALL_LIMIT_MS:
+			wall_capped = true
+			break
 		var current_pos := _player.global_position
 		if last_pos.distance_to(current_pos) < 0.01:
 			stuck_ticks += 1
@@ -113,7 +146,7 @@ func _attempt(level_path: String, check_reload: bool) -> Dictionary:
 		last_pos = current_pos
 		if stuck_ticks > 3:
 			Input.action_press("jump")
-			await get_tree().create_timer(0.15).timeout
+			await _wait_game(0.15)
 			Input.action_release("jump")
 			stuck_ticks = 0
 		if t >= GATE_TIME and gate_kills < 0:
@@ -148,10 +181,9 @@ func _attempt(level_path: String, check_reload: bool) -> Dictionary:
 				Input.action_release("move_forward")
 				Input.action_press("move_left")
 			Input.action_press("fire") # never presses R — auto-reload covers it
-		await get_tree().create_timer(0.25).timeout
+		t += await _wait_game(0.25)
 		Input.action_release("fire")
-		await get_tree().create_timer(0.08).timeout
-		t += 0.33
+		t += await _wait_game(0.08)
 	for a in ["move_forward", "move_left", "fire"]:
 		Input.action_release(a)
 	# A fast bot can hit the kill target before GATE_TIME — that also clears the gate.
@@ -168,6 +200,11 @@ func _attempt(level_path: String, check_reload: bool) -> Dictionary:
 		"hp": _player.hp.current_health,
 		"min_hp": min_hp,
 		"killer": GameState.last_killer if not alive else "",
+		# Game seconds elapsed per wall-clock second. 1.0 = the machine held the
+		# physics rate; well under 1.0 means it could not, which is exactly the
+		# condition that used to handicap the bot (see _wait_game).
+		"pace": t / maxf(0.001, (Time.get_ticks_msec() - wall0) / 1000.0),
+		"wall_capped": wall_capped,
 	}
 	# Tear the level down cleanly so the next attempt starts fresh.
 	lvl.queue_free()

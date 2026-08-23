@@ -62,13 +62,39 @@ func _run() -> void:
 		player.global_position.z - anchor.global_position.z)
 	var on_platform := player.global_position.y > 5.0 and flat.length() < 6.0
 	print("zip out: player=%s anchor=%s on_platform=%s" % [player.global_position, anchor.global_position, on_platform])
-	# Detonate with the swarm converging on the player: flyers must die en masse.
+	# Detonate with the swarm converging on the player.
+	#
+	# The assertion is "the blast REACHED everything inside its radius", not a raw
+	# body count. A fixed kill quota (this used to demand 4+) is not a property of
+	# the bomb at all: how many robots die depends on which pursuit wave happens to
+	# be alive and how tanky it is, and both vary run to run. That flakiness is why
+	# this probe sat red — see issue #59. Reaching every in-radius Damageable is
+	# deterministic and is the thing that would actually break.
+	var bomb_pos: Vector3 = (p0["bomb"] as Node3D).global_position
+	const BOMB_R := 30.0 # keep in step with ConvoyRide.BOMB_RADIUS
+	var in_radius: Array = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var e3 := e as Node3D
+		if e3 == null:
+			continue
+		var dist: float = bomb_pos.distance_to(e3.global_position)
+		if dist <= BOMB_R:
+			var dn = e3.get_node_or_null("Damageable")
+			if dn != null:
+				in_radius.append({"e": e3, "d": dist, "hp0": dn.current_health, "hp": dn})
 	var live_before := _live_enemies()
 	ride.call("_on_detonator", player, p0)
 	await get_tree().create_timer(2.0).timeout
 	var live_after := _live_enemies()
-	var boom_ok: bool = p0["spent"] and live_after <= live_before - 4
-	print("boom: enemies alive %d -> %d spent=%s" % [live_before, live_after, p0["spent"]])
+	var untouched: PackedStringArray = []
+	for v in in_radius:
+		var still := is_instance_valid(v["e"])
+		var hp_now: float = (v["hp"].current_health if (still and v["hp"] != null) else 0.0)
+		if still and hp_now >= float(v["hp0"]):
+			untouched.append("%s@%.0fm" % [(v["e"] as Node).name, v["d"]])
+	var boom_ok: bool = p0["spent"] and in_radius.size() > 0 		and untouched.is_empty() and live_after < live_before
+	print("boom: enemies alive %d -> %d spent=%s in_radius=%d unreached=[%s]" % [
+		live_before, live_after, p0["spent"], in_radius.size(), ", ".join(untouched)])
 	# Clear the battlefield first: a boarded brute WILL slam the player off the
 	# tail mid-check — fair combat, but this leg asserts the zip, not the fight.
 	for e in get_tree().get_nodes_in_group("enemy"):
