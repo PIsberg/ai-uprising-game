@@ -14,7 +14,17 @@ extends Node3D
 ##   godot --headless --path . --audio-driver Dummy res://tests/spawn_safety_probe.tscn
 
 const BUILD_WAIT := 2.4   ## level build + navmesh bake + spawner first tick
-const POST_GRACE := 3.0   ## seconds of exposure measured after grace lapses
+const POST_GRACE := 6.0   ## seconds of exposure measured after grace lapses
+## The player is given a huge health pool for the post-grace window ONLY.
+## Two reasons, both about making the number mean something:
+##   * Uncensored. With 100 HP the player dies partway through and the measured
+##     total saturates at 100, so every lethal level reports "100" regardless of
+##     whether it was dealing 40/s or 400/s. They are not the same thing.
+##   * Stable. A 3s window sampled once swung 57 -> 44 -> 50 on the same level;
+##     a longer window that runs to completion averages the burst timing out.
+## Grace is measured BEFORE this is applied, so the pass/fail assertion is
+## unaffected — it still watches a normal player.
+const MEASURE_POOL := 1_000_000.0
 const SLICE := 0.25       ## short sampling slices keep autoload _process ticking
 
 var _lvl: Node
@@ -43,6 +53,7 @@ func _check(path: String) -> void:
 	var player: CharacterBody3D = null
 	var hp: Damageable = null
 	var culprits: Dictionary = {}
+	var post_culprits: Dictionary = {}
 	var waited := 0.0
 	while waited < BUILD_WAIT:
 		await get_tree().create_timer(SLICE).timeout
@@ -53,7 +64,7 @@ func _check(path: String) -> void:
 				GameState.set_state(GameState.State.PLAYING)
 				hp = player.get("hp")
 				if hp != null:
-					hp.damaged.connect(_blame.bind(culprits))
+					hp.damaged.connect(_blame.bind(culprits, post_culprits))
 	if player == null:
 		print("SPAWN %-13s NO-PLAYER" % id); _fails.append(id + ":no-player"); await _teardown(); return
 	if hp == null:
@@ -76,15 +87,17 @@ func _check(path: String) -> void:
 	var during: float = 0.0
 	for k in culprits: during += float(culprits[k])
 
-	# Phase 2 — idle a fixed window with grace gone; measure incoming DPS.
+	# Phase 2 — idle a fixed window with grace gone; measure incoming DPS off the
+	# damage ledger rather than the health bar, on a pool deep enough to survive
+	# the whole window (see MEASURE_POOL).
+	hp.max_health = MEASURE_POOL
+	hp.current_health = MEASURE_POOL
 	var t := 0.0
-	var post_low: float = hp.current_health
-	var hp_at_grace_end: float = hp.current_health
-	while t < POST_GRACE and hp.is_alive():
+	while t < POST_GRACE:
 		await get_tree().create_timer(SLICE).timeout
 		t += SLICE
-		post_low = minf(post_low, hp.current_health)
-	var after: float = hp_at_grace_end - post_low
+	var after: float = 0.0
+	for k in post_culprits: after += float(post_culprits[k])
 	var dps: float = after / maxf(t, SLICE)
 
 	var grounded := player.is_on_floor()
@@ -93,29 +106,36 @@ func _check(path: String) -> void:
 	if during > 0.01: flags.append("GRACE-LEAK")
 	if not grounded: flags.append("NOT-GROUNDED")
 	if fell > 3.0: flags.append("FELL")
+	var post_blame := ""
+	if not post_culprits.is_empty():
+		var pp: PackedStringArray = []
+		for k in post_culprits: pp.append("%s=%.0f" % [k, post_culprits[k]])
+		pp.sort()
+		post_blame = "  from: " + ", ".join(pp)
 	var blame := ""
 	if not culprits.is_empty():
 		var parts: PackedStringArray = []
 		for k in culprits: parts.append("%s=%.0f" % [k, culprits[k]])
 		blame = "  <- " + ", ".join(parts)
-	print("SPAWN %-13s %5.0f  %8.1f  %10.1f (%5.1f/s)  %-8s %s%s" % [
-		id, hp_max, during, after, dps, grounded, " ".join(flags), blame])
+	print("SPAWN %-13s %5.0f  %8.1f  %10.1f (%5.1f/s)  %-8s %s%s%s" % [
+		id, hp_max, during, after, dps, grounded, " ".join(flags), blame, post_blame])
 	if not flags.is_empty():
 		_fails.append(id + ":" + "/".join(flags))
 	await _teardown()
 
-## Records what landed on the player while the fairness grace was active. The
-## source NAME is the point — a bare number cannot tell a hazard from an ungated
-## attack, and the two need opposite fixes.
-func _blame(amount: float, source: Node, culprits: Dictionary) -> void:
-	if not GameState.attack_grace_active():
-		return
+## Records what landed on the player, split by whether the fairness grace was
+## still active AT THE MOMENT OF THE HIT. The source NAME is the point — a bare
+## number cannot tell a hazard from an ungated attack, and the two need opposite
+## fixes. The post-grace ledger is what makes a difficulty spike diagnosable
+## rather than merely visible.
+func _blame(amount: float, source: Node, culprits: Dictionary, post: Dictionary) -> void:
 	var who := "unknown"
 	if is_instance_valid(source):
 		who = str(source.name)
 		var sc = source.get_script()
-		if sc: who = str(sc.resource_path).get_file().trim_suffix(".gd")
-	culprits[who] = float(culprits.get(who, 0.0)) + amount
+		if sc: who = str(sc.resource_path).get_file().trim_suffix(".gd").trim_prefix("enemy_")
+	var ledger: Dictionary = culprits if GameState.attack_grace_active() else post
+	ledger[who] = float(ledger.get(who, 0.0)) + amount
 
 func _teardown() -> void:
 	if is_instance_valid(_lvl):
