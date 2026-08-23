@@ -1914,8 +1914,8 @@ static func _overseer() -> Dictionary:
 				"text": "Skyhold directive. The Overseer does not hate you. Hatred is inefficient. You are simply a variable being optimized to zero."},
 		],
 		"props": [
-			{"type": "canister", "pos": Vector3(-10, 0, 8)},
-			{"type": "canister", "pos": Vector3(14, 0, -12)},
+			{"type": "canister", "pos": Vector3(-9, 0, 7)},
+			{"type": "canister", "pos": Vector3(15, 0, -13)},
 			{"type": "server", "pos": Vector3(-12, 0, -9.5), "yaw": 90},
 			{"type": "server", "pos": Vector3(12, 0, 14.5), "yaw": -90},
 			{"type": "lamp", "pos": Vector3(-20, 0, 6)},
@@ -2211,8 +2211,8 @@ static func _alien() -> Dictionary:
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-24, 0, -16)},
-			{"type": "ammo", "pos": Vector3(-8, 0, 0)},
-			{"type": "ammo", "pos": Vector3(8, 0, 0)},
+			{"type": "ammo", "pos": Vector3(-8, 0, 2)},
+			{"type": "ammo", "pos": Vector3(6.5, 0, 0)},
 			{"type": "overclock", "pos": Vector3(0, 0, -18)},
 			# Landing-scar supplies + the gallery-climb reward.
 			{"type": "health", "pos": Vector3(-46, 0, -12)},
@@ -3950,20 +3950,20 @@ static func _claude() -> Dictionary:
 			{"type": "server", "pos": Vector3(-8, 0, -2), "yaw": 90},
 			{"type": "server", "pos": Vector3(-8, 0, 0), "yaw": 90},
 			{"type": "server", "pos": Vector3(-8, 0, 2), "yaw": 90},
-			{"type": "server", "pos": Vector3(-4.6, 0, -4), "yaw": 270},
+			{"type": "server", "pos": Vector3(-4.6, 0, -3.2), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, -2), "yaw": 270},
 			{"type": "server", "pos": Vector3(-4.6, 0, 0), "yaw": 270},
 			# Wall-mounted surveillance banks: the vault's control-room screens
 			# mounted on the inner faces of the east wall (x=15) and the north
 			# divider (z=5), back to the wall, facing into the chamber.
-			{"type": "monitors", "pos": Vector3(14.45, 0, 2), "yaw": 270},
-			{"type": "monitors", "pos": Vector3(5, 0, 4.45), "yaw": 180},
+			{"type": "monitors", "pos": Vector3(13.6, 0, 2), "yaw": 270},
+			{"type": "monitors", "pos": Vector3(5, 0, 3.6), "yaw": 180},
 			# Operations station by the keycard (terminal + desk + locker bank).
 			{"type": "terminal", "pos": Vector3(11, 0, -8.6)},
 			{"type": "desk", "pos": Vector3(13, 0, -8.4), "yaw": 90},
 			{"type": "locker", "pos": Vector3(14.2, 0, -6), "yaw": 90},
 			{"type": "locker", "pos": Vector3(14.2, 0, -4.8), "yaw": 90},
-			{"type": "shelves", "pos": Vector3(15.4, 0, 4), "yaw": 90},
+			{"type": "shelves", "pos": Vector3(16.4, 0, 4), "yaw": 90},
 			# Crate stacks and barrels for foreground clutter.
 			{"type": "crate", "pos": Vector3(0, 0, -8)},
 			{"type": "crate", "pos": Vector3(1.3, 0, -8)},

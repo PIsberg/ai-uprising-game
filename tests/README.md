@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-241 probes total: **27** wired into the headless suite (`suite`), **81**
+241 probes total: **28** wired into the headless suite (`suite`), **80**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -165,7 +165,7 @@ or GPU-timing probes; `--headless` renders these black).
 | kick_stability_probe | Viewmodel-kick spring doesn't diverge to NaN across a frame hitch (shader-compile stall on first shot) | headless |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
 | lava_probe | Lava carves the navmesh and leaves a longer connected spawn→exit path; top-down shot | windowed |
-| layout_check | Any placed entity sitting inside a wall/building AABB (would spawn stuck in geometry) | headless |
+| layout_check | Static def check: no prop, pickup, weapon or lore placement sits inside a wall/building AABB. Enemy-spawn and task overlaps are reported as advisory, since the builder relocates those at load | suite |
 | level01_probe | Rebuilt level 1: overhead layout shot + player-eye shot toward the nexus tower | windowed |
 | level01_task_probe | Level 1's single checklist task (gate lever) spawns live; completing it unseals the exit | headless |
 | level_detail_probe | Eye-level views of a campaign level to judge/iterate environmental detail | windowed |

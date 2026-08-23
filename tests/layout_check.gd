@@ -11,6 +11,25 @@ const IDS := ["frostbreak", "neon", "sublevel", "crucible", "claude",
 
 const MARGIN := 0.15  # small: only flag a center genuinely buried in the box footprint
 
+## Entity kinds the BUILDER relocates at load when it finds them buried:
+##   tasks       — level_builder.gd `_clear_task_pos` (prints "relocated to ...")
+##   enemies     — enemy_spawner.gd `_clear_spawn_pos` (push_warning + relocate)
+## An overlap in one of these is untidy authoring, not a defect a player can
+## meet, so it is REPORTED, not failed.
+##
+## Everything else — props, pickups, weapons, lore, holograms — is placed at its
+## authored position verbatim, with no clearing pass. Those overlaps ARE defects:
+## a prop inside a wall is invisible (and still carves navmesh), and a pickup
+## inside solid cover can never be collected, because collection needs the player
+## to overlap it. Those fail the check.
+const RELOCATED_AT_LOAD := ["enemies", "task"]
+
+static func _is_advisory(label: String) -> bool:
+	for k in RELOCATED_AT_LOAD:
+		if label == k or label.begins_with(k + ":"):
+			return true
+	return false
+
 func _box_hit(p: Vector3, bpos: Vector3, bsize: Vector3) -> bool:
 	# Only TALL boxes can trap a unit; low cover/decals don't.
 	if bsize.y < 1.5:
@@ -33,11 +52,15 @@ func _blockers(def: Dictionary) -> Array:
 func _check_point(label: String, p: Vector3, blockers: Array, hits: Array) -> void:
 	for b in blockers:
 		if _box_hit(p, b["pos"], b["size"]):
-			hits.append("%s at %s inside box %s/%s" % [label, p, b["pos"], b["size"]])
+			hits.append({
+				"txt": "%s at %s inside box %s/%s" % [label, p, b["pos"], b["size"]],
+				"advisory": _is_advisory(label),
+			})
 			return
 
 func _ready() -> void:
 	var total := 0
+	var advisory := 0
 	for id in IDS:
 		var def: Dictionary = LevelDefs.get_def(id)
 		if def.is_empty():
@@ -59,12 +82,20 @@ func _ready() -> void:
 				_check_point("shard", pt, blockers, hits)
 		if def.has("hero"):
 			_check_point("hero", def["hero"].get("pos", Vector3.ZERO), blockers, hits)
+		var bad := 0
+		for h in hits:
+			if not h["advisory"]:
+				bad += 1
 		if hits.is_empty():
 			print("OK  %s" % id)
 		else:
-			total += hits.size()
-			print("XX  %s — %d overlap(s):" % [id, hits.size()])
+			total += bad
+			advisory += hits.size() - bad
+			print("%s  %s — %d overlap(s), %d fatal:" % ["XX" if bad > 0 else "..", id, hits.size(), bad])
 			for h in hits:
-				print("      ", h)
-	print("LAYOUT_CHECK ", "PASS" if total == 0 else "FAIL (%d overlaps)" % total)
+				print("      %s%s" % ["(relocated at load) " if h["advisory"] else "", h["txt"]])
+	print("LAYOUT_CHECK fatal=%d advisory=%d" % [total, advisory])
+	if advisory > 0:
+		print("  advisory = an enemy spawn or task the builder moves clear at load; untidy, not player-visible")
+	print("RESULT %s" % ("PASS" if total == 0 else "FAIL"))
 	get_tree().quit()
