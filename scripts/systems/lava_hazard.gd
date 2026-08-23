@@ -93,21 +93,46 @@ func _build_surface() -> void:
 	mi.position = Vector3(0, surface_y, 0)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
-	# A charred rim so the bed reads as sunken molten rock, not a decal.
-	var rim := MeshInstance3D.new()
-	var rm := BoxMesh.new()
-	rm.size = Vector3(size.x + 0.6, 0.12, size.y + 0.6)
-	var rmat := StandardMaterial3D.new()
-	rmat.albedo_color = Color(0.06, 0.04, 0.04)
-	rmat.roughness = 1.0
-	rmat.emission_enabled = true
-	rmat.emission = Color(hazard_color.r, hazard_color.g, hazard_color.b) * 0.5 if recolor else Color(0.5, 0.12, 0.02)
-	rmat.emission_energy_multiplier = 0.4
-	rm.material = rmat
-	rim.mesh = rm
-	rim.position = Vector3(0, surface_y - 0.07, 0)
-	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(rim)
+	# How wide the flow crusts over at the rim, scaled to the bed so a narrow
+	# stream doesn't crust shut across its entire width.
+	_mat.set_shader_parameter("crust_width", clampf(minf(size.x, size.y) * 0.18, 0.35, 1.6))
+	if recolor:
+		_mat.set_shader_parameter("crust_color",
+			Color(hazard_color.r, hazard_color.g, hazard_color.b) * 0.10)
+	# Scorched rock bleeding heat, lying FLUSH with the floor. This replaces the
+	# old charred rim box, which stood 12 cm proud of the floor with hard
+	# vertical sides — a large part of why the bed read as an object placed on
+	# the ground rather than molten rock sunk into it.
+	var glow_col := Color(hazard_color.r, hazard_color.g, hazard_color.b) if recolor \
+		else Color(0.5, 0.12, 0.02)
+	_build_margin(1.5, Color(0.055, 0.04, 0.038, 1.0), glow_col, 0.55, 1.0)
+
+## The flush shoreline band around a bed: scorched rock for lava, a damp
+## darkened margin for water. Lies flat against the floor and fades out over
+## `band` metres in BOTH directions (shaders/fluid_margin.gdshader), so the
+## transition floor -> shore -> fluid carries no silhouette at all.
+func _build_margin(band: float, tint: Color, glow_color: Color,
+		glow_energy: float, rough: float) -> void:
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(size.x + band * 2.0, size.y + band * 2.0)
+	var m := ShaderMaterial.new()
+	m.shader = preload("res://shaders/fluid_margin.gdshader")
+	m.set_shader_parameter("inner_size", size)
+	m.set_shader_parameter("plane_size", pm.size)
+	m.set_shader_parameter("band", band)
+	m.set_shader_parameter("tint", tint)
+	m.set_shader_parameter("glow", glow_color)
+	m.set_shader_parameter("glow_energy", glow_energy)
+	m.set_shader_parameter("roughness_val", rough)
+	m.set_shader_parameter("noise_tex", FlameMaterial.noise())
+	pm.material = m
+	var mi := MeshInstance3D.new()
+	mi.mesh = pm
+	# Clear of the floor plane so the two never z-fight, and below the fluid
+	# surface so the fluid always draws over it.
+	mi.position = Vector3(0, 0.015, 0)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
 
 ## Heat shimmer above the bed: two crossed vertical "curtain" quads running a
 ## screen-space refraction shader (shaders/heat_haze.gdshader), so the air over
@@ -137,34 +162,44 @@ func _build_heat_haze() -> void:
 ## a glossy transparent surface plus the cool glow + water ambience sell it.
 func _build_water_surface() -> void:
 	var tint := hazard_color
-	var surf := MeshInstance3D.new()
+	# Stand the surface a little higher than a lava bed would sit. The pool has
+	# no real depth to work with (the arena floor is solid under it), so this
+	# gap to the bed below is the ONLY thing the depth buffer can use to tell
+	# "something is standing in the water" from "that's just the bed" — see the
+	# header note in shaders/water.gdshader. Keep it comfortably above the
+	# shader's foam_width.
+	var water_y := maxf(surface_y, 0.10)
 	var mesh := PlaneMesh.new()
 	mesh.size = size
-	var wm := StandardMaterial3D.new()
-	wm.albedo_color = Color(tint.r, tint.g, tint.b, 0.62)
-	wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	wm.roughness = 0.04          # glassy, reflective water sheen
-	wm.metallic = 0.25
-	wm.emission_enabled = true
-	wm.emission = Color(tint.r, tint.g, tint.b) * 0.5
-	wm.emission_energy_multiplier = 0.25
-	mesh.material = wm
+	# Subdivide so the ripple normals shade smoothly across a large pool instead
+	# of banding across two enormous triangles.
+	mesh.subdivide_width = 8
+	mesh.subdivide_depth = 8
+	_mat = ShaderMaterial.new()
+	_mat.shader = preload("res://shaders/water.gdshader")
+	_mat.set_shader_parameter("ripple_tex", FlameMaterial.noise())
+	_mat.set_shader_parameter("plane_size", size)
+	# The shelf can never exceed half the pool, or a narrow channel would read
+	# as uniformly shallow and never deepen at all.
+	_mat.set_shader_parameter("shelf_width", clampf(minf(size.x, size.y) * 0.28, 0.5, 2.4))
+	_mat.set_shader_parameter("shallow_color",
+		Color(tint.r * 0.9, tint.g * 1.05, tint.b) * 0.75)
+	_mat.set_shader_parameter("deep_color",
+		Color(tint.r * 0.10, tint.g * 0.22, tint.b * 0.45))
+	mesh.material = _mat
+	var surf := MeshInstance3D.new()
 	surf.mesh = mesh
-	surf.position = Vector3(0, surface_y, 0)
+	surf.position = Vector3(0, water_y, 0)
 	surf.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(surf)
-	# A dark basin just below so the pool reads as deep, not a painted tile.
-	var basin := MeshInstance3D.new()
-	var bm := BoxMesh.new()
-	bm.size = Vector3(size.x + 0.4, 0.5, size.y + 0.4)
-	var basin_mat := StandardMaterial3D.new()
-	basin_mat.albedo_color = Color(0.02, 0.05, 0.08)
-	basin_mat.roughness = 1.0
-	bm.material = basin_mat
-	basin.mesh = bm
-	basin.position = Vector3(0, surface_y - 0.3, 0)
-	basin.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(basin)
+	# The bed the refraction looks down into AND the damp shore, as one plane.
+	# They must not be separate: a bed plane sized to the pool ends on a hard
+	# silhouette exactly where the surface above it has faded to clear, which
+	# measured 2.6x WORSE at the rim than the flat slab this all replaced. One
+	# plane that is solid under the pool and fades out past it has no edge to
+	# expose. Replaces the old raised basin BOX, whose 0.5 m sides poked out
+	# around the pool and framed it as a tray set down on the floor.
+	_build_margin(1.4, Color(0.025, 0.05, 0.08, 1.0), tint, 0.0, 0.35)
 
 ## A pulsing amber danger frame around the bed perimeter — the universal "hazard,
 ## do not enter" cue. Makes a benign-looking coolant / acid / water pool read as
@@ -180,6 +215,12 @@ func _build_warning_edge() -> void:
 	mat.emission = col
 	mat.emission_energy_multiplier = 2.5
 	var th := 0.3
+	# Grouped so the frame can be addressed as one thing — tests/fluid_shot
+	# hides it to measure the shoreline itself, since these bars sit exactly on
+	# the rim and are (deliberately) hard-edged.
+	var frame := Node3D.new()
+	frame.name = "WarningEdge"
+	add_child(frame)
 	var edges := [
 		[Vector3(0, 0, -hz), Vector3(size.x, 0.05, th)],
 		[Vector3(0, 0, hz), Vector3(size.x, 0.05, th)],
@@ -195,7 +236,7 @@ func _build_warning_edge() -> void:
 		var p: Vector3 = e[0]
 		bar.position = Vector3(p.x, surface_y + 0.09, p.z)
 		bar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(bar)
+		frame.add_child(bar)
 	var tw := create_tween().set_loops()
 	tw.tween_property(mat, "emission_energy_multiplier", 4.5, 0.7).set_trans(Tween.TRANS_SINE)
 	tw.tween_property(mat, "emission_energy_multiplier", 2.0, 0.7).set_trans(Tween.TRANS_SINE)

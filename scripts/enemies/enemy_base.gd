@@ -1430,6 +1430,17 @@ func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), or
 	tw.tween_property(ring, "scale", Vector3(radius * 1.6, 1.0, radius * 1.6), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.45)
 	tw.chain().tween_callback(ring.queue_free)
+	# A heavy ground impact bends the air, not just the camera. Hand the blast to
+	# the player's screen-warp so a boss slam refracts the image FROM where it
+	# landed — every caller of this primitive (mech stomp, manus finger-drum,
+	# smasher wake-slam, titan/colossus entrances) gets it for free. Falls off
+	# with distance, and no-ops when Advanced Post-Process is off.
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl is Node3D and pl.has_method("add_screen_shock"):
+		var reach := maxf(radius * 2.4, 6.0)
+		var pd := (pl as Node3D).global_position.distance_to(at)
+		if pd < reach:
+			pl.add_screen_shock(at, clampf(1.0 - pd / reach, 0.0, 1.0) * 0.85)
 
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
 ## in-progress actions (a charging shot, a slam wind-up, …).
