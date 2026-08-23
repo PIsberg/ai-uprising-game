@@ -69,11 +69,14 @@ switch ($Target.ToLower()) {
         if (-not (Test-Path (Join-Path $linDir 'ai-uprising.x86_64'))) { throw "Missing Linux build (build\linux\ai-uprising.x86_64). Drop -SkipBuild to build it." }
 
         Write-Host "-- Pushing Windows -> ${ItchTarget}:windows" -ForegroundColor Cyan
-        & $Butler push $winDir "${ItchTarget}:windows" --userversion $Version
+        # --fix-permissions: butler detects the Linux/Mac executable and sets its
+        # exec bit. A Windows-built payload carries no POSIX mode, so without this
+        # Linux players can download a game they cannot run.
+        & $Butler push $winDir "${ItchTarget}:windows" --userversion $Version --fix-permissions
         if ($LASTEXITCODE -ne 0) { throw "Windows push failed." }
 
         Write-Host "-- Pushing Linux   -> ${ItchTarget}:linux" -ForegroundColor Cyan
-        & $Butler push $linDir "${ItchTarget}:linux" --userversion $Version
+        & $Butler push $linDir "${ItchTarget}:linux" --userversion $Version --fix-permissions
         if ($LASTEXITCODE -ne 0) { throw "Linux push failed." }
 
         $user, $game = $ItchTarget.Split('/')
