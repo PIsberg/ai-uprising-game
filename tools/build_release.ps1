@@ -56,6 +56,15 @@ Write-Host "Exporting Linux..."
 & $Godot --headless --path . --export-release "Linux" "build\linux\ai-uprising.x86_64"
 if (-not (Test-Path "build\linux\ai-uprising.x86_64")) { throw "Linux export failed." }
 
+# CREDITS.md ships beside the binary, exactly as the CI export job does: the boss
+# model is CC-BY-4.0 and the Orbitron font's OFL requires its licence text to be
+# distributed with the build. Without this a locally-built release pushed to
+# itch.io is missing its attribution.
+foreach ($d in @("build\windows", "build\linux")) {
+    Copy-Item -Force "CREDITS.md" $d
+}
+Write-Host "Bundled CREDITS.md into build/windows and build/linux"
+
 Write-Host ""
 Write-Host "Done:"
 Get-ChildItem "build\windows\ai-uprising.exe", "build\linux\ai-uprising.x86_64" |
