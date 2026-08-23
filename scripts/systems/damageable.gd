@@ -25,9 +25,12 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 	# Godot at the call itself ("Cannot convert argument from Object to Object" when
 	# the `damaged`/`died` signals fan out), so we take `source` untyped and demote
 	# anything that isn't a live Node to null here — shielding every caller and the
-	# source-typed signals below. (is_instance_valid alone missed the freed-Node
-	# case that fires when an enemy dies before its projectile reaches the player.)
-	if not (source is Node and is_instance_valid(source)):
+	# source-typed signals below.
+	# ORDER MATTERS: `is_instance_valid` must come FIRST. `and` short-circuits
+	# left-to-right, and `is` on an already-freed instance raises "Left operand of
+	# 'is' is a previously freed instance" — which aborts apply_damage outright, so
+	# the hit deals ZERO damage. Covered by tests/damage_source_probe.
+	if not (is_instance_valid(source) and source is Node):
 		source = null
 	
 	# Enemies should not take damage from OTHER enemies' fire. Self-damage stays

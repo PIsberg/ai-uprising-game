@@ -38,7 +38,7 @@ func _play(id: String) -> void:
 	await get_tree().create_timer(2.4).timeout  # build + navmesh + spawns
 	_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
 	if _player == null:
-		print("PACE %-12s NO-PLAYER" % id); _teardown(); return
+		print("PACE %-12s NO-PLAYER" % id); await _teardown(); return
 	_cam = _player.get("camera")
 	_head = _player.get_node_or_null("Head")
 	GameState.set_state(GameState.State.PLAYING)
@@ -87,8 +87,12 @@ func _play(id: String) -> void:
 	var verdict := "DIED@%.0fs" % death_t if died else "survived"
 	print("PACE %-12s kills=%2d  hp=%5.1f%%  minHP=%5.1f%%  %s" % [
 		id, GameState.kills, hp_pct, min_pct, verdict])
-	_teardown()
+	await _teardown()
 
+## MUST be awaited. It is a coroutine, and without the await the next level began
+## building while this one's nodes were still in the "player"/"enemy" groups — so
+## the next measurement picked up the PREVIOUS level's already-dead player and
+## logged it as DIED@0s. Every reading after the first death was junk.
 func _teardown() -> void:
 	if is_instance_valid(_lvl):
 		_lvl.queue_free()
