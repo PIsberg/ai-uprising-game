@@ -4752,6 +4752,13 @@ static func _lava_world() -> Dictionary:
 		# longer walk to the door.
 		"floor_size": Vector2(56, 56),
 		"floor_color": Color(0.08, 0.04, 0.03),
+		# Spawn and exit sit on the SAFE cross-lane, not on the pool grid. The four
+		# 20x20 pools at (+/-13, +/-13) span [-23,-3] and [3,23] on both axes, so the
+		# old (-15,-15) spawn and (14,14) exit were both inside molten rock — the
+		# player spawned burning (measured 160 damage in 6 idle seconds) and the exit
+		# stood in the far pool. There are no platforms on this level to stand on.
+		# The outer margin (|x|>23) is clear of lava but falls outside the baked
+		# navmesh, so the lanes are the only safe ground that is also walkable.
 		"spawn": Vector3(-15, 2.2, -15),
 		"exit": Vector3(14, 1.6, 14),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(1.0, 0.5, 0.2)},
@@ -4829,8 +4836,8 @@ static func _lava_world() -> Dictionary:
 				"text": "Reclamation directive: obsolete hardware is fed to the sea. The catwalks were never meant to carry your weight. We are counting on it."},
 		],
 		"enemies": [
-			{"type": "raptor", "pos": Vector3(-8, 3, -15)},
-			{"type": "raptor", "pos": Vector3(6, 3, 6)},
+			{"type": "raptor", "pos": Vector3(8, 3, -15)},
+			{"type": "raptor", "pos": Vector3(6, 3, 6), "trigger": 18},
 			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "lava_w_p1"},
 			{"type": "raptor", "pos": Vector3(14, 3, -5), "trigger": 18, "pack": "lava_w_p2"},
 			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "lava_w_p3"},
@@ -4981,10 +4988,10 @@ static func _water_world() -> Dictionary:
 				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},
 		],
 		"enemies": [
-			{"type": "fishbot", "pos": Vector3(-8, 3, -15)},
-			{"type": "fishbot", "pos": Vector3(6, 3, 6)},
+			{"type": "fishbot", "pos": Vector3(8, 3, -15)},
+			{"type": "fishbot", "pos": Vector3(6, 3, 6), "trigger": 18},
 			# RAZORFIN sharks lurk under the surface and breach at you on the gantries.
-			{"type": "shark", "pos": Vector3(-4, 0, -8)},
+			{"type": "shark", "pos": Vector3(6, 0, -3)},
 			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16, "pack": "water__p1"},
 			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "water__p2"},
 			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},

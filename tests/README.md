@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-241 probes total: **28** wired into the headless suite (`suite`), **80**
+242 probes total: **28** wired into the headless suite (`suite`), **81**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -200,6 +200,7 @@ or GPU-timing probes; `--headless` renders these black).
 | objective_probe | Reworked objectives: kill_all+assassinate HVT, kill_all+hold_zone, level 1 keycard task registration | suite |
 | open_house_check | OPEN building on level 1: hollow interior, solid walls, open doorway, baked walkable upper-floor navmesh | headless |
 | open_house_probe | OPEN building photographed from street + inside; grapple pad exists | windowed |
+| opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start — the campaign's own opening-room convention, and which levels break it | headless |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |
 | pacing_sweep | Auto-player difficulty sweep across campaign levels: kills/HP%/deaths/progress per level | headless |
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |
@@ -251,7 +252,7 @@ or GPU-timing probes; `--headless` renders these black).
 | suburb_nav_diag | Which leg of the suburb canal crossing fails, chaining spawn→bridgeheads→deck→exit plus the tower route | headless |
 | suburb_screenshot | Player camera walked up to a house on the suburb level, captured | windowed |
 | survival_probe | Reckless-bot regression net for the onboarding survival experience (auto-reload, aggro rings, health-on-kill) | suite |
-| spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level; reports post-grace idle DPS as a difficulty readout (~154s, run deliberately) | headless |
+| spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level. Also reports post-grace incoming DPS per level, blamed by source, on a deep health pool so the figure is not censored by the player dying (~155s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | synth_probe | Every key procedural sound generates non-silent, non-degenerate audio | suite |
 | task_reach_probe | Every authored level-1 task position resolves clear of solid geometry and near the navmesh | headless |
