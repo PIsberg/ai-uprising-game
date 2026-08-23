@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-239 probes total: **26** wired into the headless suite (`suite`), **80**
+241 probes total: **27** wired into the headless suite (`suite`), **81**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -48,6 +48,7 @@ or GPU-timing probes; `--headless` renders these black).
 | adrenaline_probe | ADRENALINE SURGE: critical-HP hit fires heal+buff+banner, buffs collapse on end, cooldown blocks immediate re-trigger | windowed |
 | ads_zoom_probe | Holding aim (RMB) converges FOV to the weapon's ads_fov; release restores base FOV | headless |
 | ai_director_probe | Adaptive AI Director's counter logic against synthetic playstyle profiles | suite |
+| aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every one of the 43 enemies vs the rifle (~319s, run deliberately) | headless |
 | alien_probe | ALIEN charges, spits bio-plasma orbs, orbs damage the player without melee | headless |
 | archon_probe | ARCHON boss full lifecycle (boot→wave spawn→exposure→energy fire→death cascade) headlessly for script errors | headless |
 | armed_lineup_probe | Blender-armed bot forks lined up to eyeball welded weapons | windowed |
@@ -63,6 +64,7 @@ or GPU-timing probes; `--headless` renders these black).
 | beam_render_probe | ElectricBeam renders to a PNG (lightning actually draws) | windowed |
 | benchmark_probe | QualityBenchmark run twice; measured avg ms (needs real GPU timings) | windowed |
 | bevel_smoke | BeveledBoxMesh instances from both a `.tscn` sub_resource and code, non-empty geometry | headless |
+| blast_direction_probe | A BRUTE's frontal shield judges an explosion by the BLAST's position, not the thrower's — a grenade behind it lands, one in front is blocked | suite |
 | blur_shot | Clean high-res indoor capture (forced HIGH + full render scale) to diagnose "indoor looks blurry" | windowed |
 | bolt_bare_probe | Bare-scene isolation of the bolt material on distant columns; transparent-surface culling | windowed |
 | bomb_audio_probe | Mega-bomb detonation into a dense cluster; audio bus state before/after (silence-after-bomb regression) | headless |
@@ -95,7 +97,7 @@ or GPU-timing probes; `--headless` renders these black).
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
-| convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius | suite |
+| convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius (kills are telemetry, not asserted — they depend on which wave is alive) | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |

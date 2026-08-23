@@ -396,7 +396,7 @@ func weakpoint_multiplier(hit_pos: Vector3) -> float:
 	_core_hit_fresh = near
 	return core_multiplier if near else 1.0
 
-func modify_incoming_damage(amount: float, src) -> float:
+func modify_incoming_damage(amount: float, src, _origin = null) -> float:
 	if src == self:
 		return amount
 	var on_core := _core_hit_fresh

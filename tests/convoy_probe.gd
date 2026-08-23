@@ -10,24 +10,24 @@ func _run() -> void:
 	# Adding to /root inside _ready fails ("parent busy"); do it deferred.
 	var lvl := (load("res://scenes/levels/level_convoy.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(lvl)
-	await get_tree().create_timer(2.5).timeout
+	await _wait_game(2.5)
 	var ride := lvl.get_node("ConvoyRide")
 	var truck: Node3D = ride.get("_truck")
 	var player := get_tree().get_first_node_in_group("player") as Node3D
 	var pdmg = player.get_node("Damageable")
 	pdmg.invulnerable = true
 	var z0: float = truck.global_position.z
-	await get_tree().create_timer(8.0).timeout
+	await _wait_game(8.0)
 	var z1: float = truck.global_position.z
 	var moved := z0 - z1
 	var rides := absf(player.global_position.z - truck.global_position.z) < 8.0 \
 		and player.global_position.y > 0.9
-	await get_tree().create_timer(6.0).timeout
+	await _wait_game(6.0)
 	var enemies := get_tree().get_nodes_in_group("enemy").size()
 	# Boarding wave: BOARDERS heavies drop onto the deck, not the roadside.
 	ride.set("_wave_i", 5) # WAVES[5] carries a brute
 	ride.call("_spawn_wave")
-	await get_tree().create_timer(2.0).timeout
+	await _wait_game(2.0)
 	var brute := get_tree().get_first_node_in_group("shield_enemies") as Node3D
 	var boarded := false
 	var ff_ok := false
@@ -57,10 +57,17 @@ func _run() -> void:
 	var anchor: Node3D = p0["anchor"]
 	# Outbound zip: winch the player from the truck to the platform.
 	player.call("zipline_to", anchor)
-	await get_tree().create_timer(3.0).timeout
-	var flat := Vector2(player.global_position.x - anchor.global_position.x,
-		player.global_position.z - anchor.global_position.z)
-	var on_platform := player.global_position.y > 5.0 and flat.length() < 6.0
+	# Wait for ARRIVAL, not a fixed duration: a winch takes as long as it takes,
+	# and on a machine that cannot hold the physics rate a fixed wall-clock wait
+	# expires mid-flight and reads as "the zipline is broken".
+	var on_platform := false
+	var t_out := 0.0
+	while t_out < 8.0 and not on_platform:
+		await _wait_game(0.1)
+		t_out += 0.1
+		var f := Vector2(player.global_position.x - anchor.global_position.x,
+			player.global_position.z - anchor.global_position.z)
+		on_platform = player.global_position.y > 5.0 and f.length() < 6.0
 	print("zip out: player=%s anchor=%s on_platform=%s" % [player.global_position, anchor.global_position, on_platform])
 	# Detonate with the swarm converging on the player.
 	#
@@ -84,7 +91,7 @@ func _run() -> void:
 				in_radius.append({"e": e3, "d": dist, "hp0": dn.current_health, "hp": dn})
 	var live_before := _live_enemies()
 	ride.call("_on_detonator", player, p0)
-	await get_tree().create_timer(2.0).timeout
+	await _wait_game(2.0)
 	var live_after := _live_enemies()
 	var untouched: PackedStringArray = []
 	for v in in_radius:
@@ -92,7 +99,11 @@ func _run() -> void:
 		var hp_now: float = (v["hp"].current_health if (still and v["hp"] != null) else 0.0)
 		if still and hp_now >= float(v["hp0"]):
 			untouched.append("%s@%.0fm" % [(v["e"] as Node).name, v["d"]])
-	var boom_ok: bool = p0["spent"] and in_radius.size() > 0 		and untouched.is_empty() and live_after < live_before
+	# NOT "at least one enemy died": that is a property of whichever pursuit wave
+	# happens to be alive, not of the bomb. A blast that reaches five brutes and
+	# kills none is the bomb working correctly against tanky targets. Reaching
+	# every Damageable in radius is the assertion; live_after stays telemetry.
+	var boom_ok: bool = p0["spent"] and in_radius.size() > 0 and untouched.is_empty()
 	print("boom: enemies alive %d -> %d spent=%s in_radius=%d unreached=[%s]" % [
 		live_before, live_after, p0["spent"], in_radius.size(), ", ".join(untouched)])
 	# Clear the battlefield first: a boarded brute WILL slam the player off the
@@ -102,9 +113,12 @@ func _run() -> void:
 	await get_tree().physics_frame
 	# Return zip: the anchor is riding the still-moving truck.
 	player.call("zipline_to", ride.get("_truck_anchor"))
-	await get_tree().create_timer(4.0).timeout
-	var back := absf(player.global_position.z - truck.global_position.z) < 8.0 \
-		and player.global_position.y > 0.9
+	var back := false
+	var t_back := 0.0
+	while t_back < 10.0 and not back:
+		await _wait_game(0.1)
+		t_back += 0.1
+		back = absf(player.global_position.z - truck.global_position.z) < 8.0 and player.global_position.y > 0.9
 	print("zip back: player=%s truck_z=%.1f back=%s" % [player.global_position, truck.global_position.z, back])
 	# Pursuit gun-trucks: at least one spawned by now, with a live crew.
 	var vehicles: Array = ride.get("_vehicles")
@@ -125,3 +139,13 @@ func _live_enemies() -> int:
 		if hp and hp.is_alive():
 			n += 1
 	return n
+
+## Waits `seconds` of GAME time (fixed physics steps), not wall-clock. Everything
+## this probe waits on — the truck rolling, a winch traversing, wave spawns —
+## advances on the game clock, which falls behind wall-clock on a machine that
+## cannot hold the physics rate. See tests/README's probe-writing rules.
+func _wait_game(seconds: float) -> void:
+	var acc := 0.0
+	while acc < seconds:
+		await get_tree().physics_frame
+		acc += get_physics_process_delta_time()

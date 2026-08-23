@@ -137,17 +137,29 @@ func notify_shield_hit(source: Node) -> void:
 			_next_ripple_idx = (_next_ripple_idx + 1) % 3
 
 ## Frontal shield: damage hitting the front arc is mostly absorbed. Flank it.
-func modify_incoming_damage(amount: float, source: Node) -> float:
-	if source is Node3D:
-		var to: Vector3 = (source as Node3D).global_position - global_position
-		to.y = 0.0
-		if to.length() > 0.1:
-			var fwd := -global_transform.basis.z
-			fwd.y = 0.0
-			if fwd.normalized().dot(to.normalized()) > front_cone_dot:
-				_shield_spark()
-				notify_shield_hit(source)
-				return amount * block_factor
+func modify_incoming_damage(amount: float, source: Node, origin = null) -> float:
+	# Judge the shield by where the damage actually came FROM. For splash that is
+	# the blast centre (`origin`); for a bullet it is the shooter. Using `source`
+	# for both meant a grenade landing behind this brute was still blocked 90%
+	# because the thrower stood in front — which quietly deleted the entire point
+	# of flanking a shield. See tests/blast_direction_probe.
+	var from: Vector3
+	if origin is Vector3:
+		from = origin
+	elif source is Node3D:
+		from = (source as Node3D).global_position
+	else:
+		return amount
+	var to := from - global_position
+	to.y = 0.0
+	if to.length() <= 0.1:
+		return amount
+	var fwd := -global_transform.basis.z
+	fwd.y = 0.0
+	if fwd.normalized().dot(to.normalized()) > front_cone_dot:
+		_shield_spark()
+		notify_shield_hit(source)
+		return amount * block_factor
 	return amount
 
 func _shield_spark() -> void:

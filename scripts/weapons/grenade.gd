@@ -83,7 +83,7 @@ func _explode() -> void:
 		done[d] = true
 		var dist: float = (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
 		var falloff := clampf(1.0 - dist / splash_radius, 0.0, 1.0)
-		d.apply_damage((splash_damage + damage) * falloff, _shooter)
+		d.apply_damage((splash_damage + damage) * falloff, _shooter, false, pos)
 	
 	# Spawn visual/audio explosion
 	var exp_fx := EXPLOSION_SCENE.instantiate()
