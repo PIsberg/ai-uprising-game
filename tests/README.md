@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-245 probes total: **30** wired into the headless suite (`suite`), **84**
+246 probes total: **31** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -281,6 +281,7 @@ or GPU-timing probes; `--headless` renders these black).
 | victory_shot | Victory finale at fixed timeline moments (headless renders black) | windowed |
 | voice_probe | Every `AudioBus.VOICE_CATEGORIES` clip resolves on disk; `play_voice_at` fires; per-family pack resolution + fallback works | suite |
 | wallrun_probe | Sprinting into a wall engages wall-run (tangent velocity hold); wall-jump launches with expected carry | headless |
+| warbot_crossfire_probe | WARBOT cross-fire lands: the two-barrel V is a half-width in metres at the target (was a fixed 6 deg that missed a still player by 3 capsule radii at 11 m); asserts >= 40 damage in 12 s at preferred range (old ~10, fixed ~120) | suite |
 | warbot_face_probe | WAR-BOT's mood face flips green/happy idle to red/angry once it engages the player | suite |
 | warbot_view_probe | Warbot's happy-idle then angry-combat face, for tuning procedural face/cannon offsets | windowed |
 | weakpoint_probe | Shot-up android bares a glowing crit core on first panel shed; near-core hits read the bonus multiplier; core doesn't survive the wreck | headless |

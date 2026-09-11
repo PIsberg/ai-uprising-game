@@ -71,7 +71,7 @@ inherit that parent's overrides too.
 | TERMINATOR ("APEX ENDOFRAME") | `enemy_terminator.gd` | Quaternius "Animated Robot" GLB (rigged, animated) | fast mobile ranged boss: dual-muzzle bursts + tracking sweeping "Optic Lance" beam; floor-eruption entrance | `_state_attack` | BOSS |
 | TITAN ("PROMETHEUS-0") | `enemy_titan.gd` (extends EnemyColossus) | "Giant Robot" (Dann Beeson, CC-BY) | boss: phase-gated spatial-fold teleport-blink flanks + charged sweeping beam; overrides `_begin_entrance` (violet rift) | (colossus's; own `_choose_attack` calls super) | BOSS |
 | VACUUM ("Custodian") | `enemy_vacuum.gd` † | fully procedural (code-built disc chassis + legs) | disguised idle floor-cleaner; rises into a walker on detection, fires energy bolts | — | — |
-| WARBOT | `enemy_warbot.gd` (extends EnemyAndroid) | android chassis + code-built arm cannons/face | twin arm-cannon rifleman; mood face, rage-mode burst below 45% HP | (android's) | — |
+| WARBOT | `enemy_warbot.gd` (extends EnemyAndroid) | android chassis + code-built arm cannons/face | twin arm-cannon rifleman (cross-fire V authored as a 0.45 m half-width at the target, 0.15 m furious — `tests/warbot_crossfire_probe`); mood face, rage-mode burst below 45% HP | (android's) | — |
 | WARMECH | `enemy_warmech.gd` | Quaternius Mech, twin shoulder cannons | heavy siege walker; long charged telegraph into 3-shell plasma salvo, plants while firing | — | — |
 | WHIRLWIND | `enemy_whirlwind.gd` (extends EnemyDrone) | scene model (spins `Model/Mesh`) | hovering buzzsaw; dives to melee-slash at close range, no ranged attack | (drone's) | — |
 

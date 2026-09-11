@@ -157,11 +157,19 @@ func _physics_process(delta: float) -> void:
 
 ## CROSS-FIRE: both welded arm-cannons fire together in a diverging V around
 ## the aim line (the android base fires one imaginary chest rifle). Standing
-## in the dead-ahead lane between the streams is safe; strafing walks you
-## across one — and FURIOUS narrows the V, squeezing that lane shut. Per-bolt
-## damage is trimmed so two barrels ≈ the old single-gun burst in total.
-const CROSS_V_DEG := 6.0
-const CROSS_V_FURIOUS_DEG := 2.5
+## dead still in the lane between the streams is (mostly) safe; strafing walks
+## you across one — and FURIOUS narrows the V, squeezing that lane shut.
+## Per-bolt damage is trimmed so two barrels ≈ the old single-gun burst.
+##
+## The V is authored in METRES at the target, not degrees: a fixed 6° V put
+## each stream 1.15 m off the aim line at its 11 m preferred range — three
+## times the player's 0.35 m capsule radius — so both barrels missed a still
+## target every time and the warbot measured 0.4 DPS against the android's
+## 13.5 (tests/threat_probe, 2026-09-11). Bracketing the body by a fixed
+## half-width keeps the lane the same width at every range, and the base
+## burst scatter is what makes standing still only *mostly* safe.
+const CROSS_HALF_WIDTH_M := 0.45         ## each stream this far off the aim line, at the target
+const CROSS_HALF_WIDTH_FURIOUS_M := 0.15 ## inside the capsule: the lane is gone
 
 func _fire_one_shot() -> void:
 	if target == null or _arms.size() < 2:
@@ -169,13 +177,15 @@ func _fire_one_shot() -> void:
 		return
 	recoil = 1.0
 	AudioBus.play_synth_at("drone_shot", global_position, -3.0, randf_range(0.88, 0.98))
-	var v_deg := CROSS_V_FURIOUS_DEG if _furious else CROSS_V_DEG
+	var half_w := CROSS_HALF_WIDTH_FURIOUS_M if _furious else CROSS_HALF_WIDTH_M
 	var aim := target.global_position + Vector3.UP * 0.6
 	for i in 2:
 		var arm := _arms[i]
 		var origin: Vector3 = arm.global_position - arm.global_basis.z * 0.8
 		var dir := (aim - origin).normalized()
-		dir = dir.rotated(Vector3.UP, deg_to_rad(v_deg * (1.0 if i == 0 else -1.0)))
+		# Convert the half-width at the target into this bolt's yaw offset.
+		var v_rad := atan2(half_w, maxf(origin.distance_to(aim), 1.0))
+		dir = dir.rotated(Vector3.UP, v_rad * (1.0 if i == 0 else -1.0))
 		dir = scatter_aim(dir, burst_spread_deg)
 		_cross_bolt(origin, dir)
 		if muzzle_flash_scene:
