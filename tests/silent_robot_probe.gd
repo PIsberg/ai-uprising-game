@@ -10,6 +10,17 @@ extends Node3D
 const WINDOW := 12.0
 const NAMES: Array[String] = ["sniper", "sentinel", "ripper", "mender", "howitzer", "gunslinger", "enforcer"]
 
+## Override the list from the command line to trace any chassis:
+##   godot --headless --path . res://tests/silent_robot_probe.tscn -- robots=warbot,alien
+func _names() -> Array[String]:
+	for a in OS.get_cmdline_user_args():
+		if String(a).begins_with("robots="):
+			var out: Array[String] = []
+			for n in String(a).trim_prefix("robots=").split(",", false):
+				out.append(String(n).strip_edges())
+			return out
+	return NAMES
+
 var _player: Node3D
 var _taken: float = 0.0
 var _hit_events: Array = []
@@ -68,7 +79,7 @@ func _run() -> void:
 	while GameState.attack_grace_active():
 		await get_tree().physics_frame
 
-	for n in NAMES:
+	for n in _names():
 		await _diagnose(n)
 
 	print("\nRESULT PASS")
