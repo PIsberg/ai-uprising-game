@@ -609,6 +609,14 @@ func _compute_can_see(t: Node3D) -> bool:
 	var q := PhysicsRayQueryParameters3D.create(eye.global_position, t.global_position + Vector3.UP * 0.8)
 	q.collision_mask = 0b0000011 # world + player
 	q.exclude = [get_rid()]
+	# Enemies only mask the world, so a leaping skitter or a pressing brute can
+	# end up with its eye INSIDE the player's capsule. A ray that starts inside
+	# a shape never reports it by default, so point-blank read as "no LOS" and
+	# the robot dropped ATTACK -> CHASE toward a target it was already touching,
+	# stuck and passive. Report the shape we start in - but only at point-blank,
+	# so an eye that happens to sit inside a prop's collider at range keeps the
+	# old pass-through behaviour (tests/pointblank_los_probe).
+	q.hit_from_inside = dist <= 2.0
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
 		return false

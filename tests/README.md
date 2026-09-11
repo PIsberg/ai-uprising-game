@@ -217,6 +217,7 @@ or GPU-timing probes; `--headless` renders these black).
 | platform_probe | Vantage platforms + ramp corners built on the floor with a reachable ramp + nearby signage | windowed |
 | player_feel_probe | Dash/hard-landing viewmodel kicks and the weapon-accurate dynamic crosshair | headless |
 | playtest_probe | Real AI live: skitters hop, Ravager leap+slam, Warmech lob salvos; facing/scale/tint/projectiles | windowed |
+| pointblank_los_probe | An enemy whose eye sits INSIDE the player's capsule still sees the player and keeps attacking (LOS ray now reports the shape it starts in at point-blank); a skitter pinned at zero distance: 0 bites and stuck in CHASE before, 5 bites in 6 s after | suite |
 | preset_probe | `GraphicsSettings.apply_preset()`/`set_window_mode()` batch-applies the quality/render-scale/feature-toggle matrix per tier | windowed |
 | projectile_fx_probe | Heavy projectile rounds (incl. glowing head-orb FX): launch, fly, detonate, trail head built, no errors | suite |
 | promo_3d | Cinematic promo: fierce-enemy showcase, Tempest chain lightning, Vortex grenade implosion | windowed |
