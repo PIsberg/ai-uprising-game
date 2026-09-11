@@ -32,6 +32,13 @@ var _cross_time: float = 0.0
 @onready var pause_gfx_down: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxDown
 @onready var pause_gfx_up: Button = $PauseMenu/VBox/PauseGraphicsRow/GfxUp
 @onready var pause_volume: HSlider = $PauseMenu/VBox/PauseVolumeRow/PauseVolume
+# Field Manual overlay (built entirely at runtime -- see _build_field_manual):
+# an in-run peek at the enemy/weapon codex reached from the pause menu, above
+# the pause panel in child order so it paints on top.
+var field_manual_overlay: Panel
+var _fm_title: Label
+var _fm_subtitle: Label
+var _fm_content: VBoxContainer
 @onready var game_over_menu: Control = $GameOverMenu
 @onready var game_over_restart_btn: Button = $GameOverMenu/VBox/Restart
 @onready var win_menu: Control = $WinMenu
@@ -259,6 +266,7 @@ func _ready() -> void:
 	_build_multikill_label()
 	_build_overlord_label()
 	_build_pause_audio()
+	_build_field_manual()
 	_build_editor_return()
 	_render_objective()
 	_maybe_build_tutorial()
@@ -376,6 +384,195 @@ func _build_pause_audio() -> void:
 	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
+
+## Field Manual: an in-run peek at the enemy/weapon codex reached from the pause
+## menu, so the player never has to leave the level to look something up. The
+## overlay is a plain code-built Panel (child of the HUD root, so it paints
+## above PauseMenu in child order) with a ScrollContainer body rebuilt fresh
+## every time it opens (enemy counts and ammo change live). Opening it hides
+## the pause panel but leaves GameState PAUSED; Back / the pause action / ESC
+## return to the pause menu without unpausing (see _unhandled_input).
+func _build_field_manual() -> void:
+	var vbox := pause_menu.get_node_or_null("VBox")
+	if vbox == null:
+		return
+	var btn := Button.new()
+	btn.name = "FieldManual"
+	btn.text = tr("Field Manual")
+	btn.pressed.connect(func(): open_field_manual())
+	vbox.add_child(btn)
+	var quit := vbox.get_node_or_null("Quit") as Control
+	if quit:
+		vbox.move_child(quit, vbox.get_child_count() - 1)
+
+	field_manual_overlay = Panel.new()
+	field_manual_overlay.name = "FieldManualOverlay"
+	field_manual_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	field_manual_overlay.offset_left = 48
+	field_manual_overlay.offset_top = 48
+	field_manual_overlay.offset_right = -48
+	field_manual_overlay.offset_bottom = -48
+	field_manual_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	field_manual_overlay.visible = false
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.03, 0.04, 0.06, 0.92)
+	panel_style.set_border_width_all(2)
+	panel_style.border_color = Color(0.3, 0.5, 0.65, 0.9)
+	panel_style.set_corner_radius_all(6)
+	field_manual_overlay.add_theme_stylebox_override("panel", panel_style)
+	add_child(field_manual_overlay) # appended last -> drawn above PauseMenu
+
+	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_right", 26)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	field_manual_overlay.add_child(margin)
+
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 8)
+	margin.add_child(outer)
+
+	_fm_title = Label.new()
+	_fm_title.add_theme_font_size_override("font_size", 24)
+	_fm_title.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	outer.add_child(_fm_title)
+
+	_fm_subtitle = Label.new()
+	_fm_subtitle.add_theme_font_size_override("font_size", 14)
+	_fm_subtitle.add_theme_color_override("font_color", Color(0.6, 0.68, 0.78))
+	outer.add_child(_fm_subtitle)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	outer.add_child(scroll)
+
+	_fm_content = VBoxContainer.new()
+	_fm_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_fm_content.add_theme_constant_override("separation", 4)
+	scroll.add_child(_fm_content)
+
+	var back := Button.new()
+	back.text = tr("Back")
+	back.custom_minimum_size = Vector2(140, 0)
+	back.pressed.connect(func(): close_field_manual())
+	outer.add_child(back)
+
+## Open the overlay: rebuild its content from the live scene, hide the pause
+## panel, and show the overlay on top. Does not change GameState.current_state.
+func open_field_manual() -> void:
+	if field_manual_overlay == null:
+		return
+	_rebuild_field_manual()
+	pause_menu.visible = false
+	field_manual_overlay.visible = true
+
+## Close the overlay and return to the pause panel (still PAUSED). Safe to call
+## when the overlay is already closed or was never built.
+func close_field_manual() -> void:
+	if field_manual_overlay == null or not field_manual_overlay.visible:
+		return
+	field_manual_overlay.visible = false
+	pause_menu.visible = GameState.current_state == GameState.State.PAUSED
+
+## Rebuild the FIELD MANUAL body: title/level, live threats (grouped by codex
+## key, undiscovered types redacted), and the current arsenal with live stats.
+func _rebuild_field_manual() -> void:
+	_fm_title.text = tr("FIELD MANUAL")
+	var lid := GameState.level_id_from_path(GameState.current_level_path)
+	var level_name := LevelDefs.level_title(lid) if lid != "" else tr("UNKNOWN")
+	_fm_subtitle.text = tr("Level: %s") % level_name
+
+	for c in _fm_content.get_children():
+		c.queue_free()
+
+	_fm_content.add_child(_fm_section_header(tr("THREATS ON THIS LEVEL")))
+
+	# Distinct live codex keys -> count, in EnemyCodex.ORDER order.
+	var counts: Dictionary = {}
+	for n in get_tree().get_nodes_in_group("enemy"):
+		if not is_instance_valid(n) or not n.has_method("codex_key"):
+			continue
+		var dmg: Object = n.get("hp") as Object
+		if dmg != null and is_instance_valid(dmg) and dmg.has_method("is_alive") and not dmg.is_alive():
+			continue
+		var key: String = n.codex_key()
+		counts[key] = int(counts.get(key, 0)) + 1
+
+	if counts.is_empty():
+		var none_lbl := Label.new()
+		none_lbl.text = tr("No hostiles detected.")
+		none_lbl.add_theme_color_override("font_color", Color(0.55, 0.6, 0.65))
+		none_lbl.add_theme_font_size_override("font_size", 14)
+		_fm_content.add_child(none_lbl)
+	else:
+		for key in EnemyCodex.ORDER:
+			if not counts.has(key):
+				continue
+			var n: int = counts[key]
+			if GameState.is_enemy_discovered(key):
+				var entry := EnemyCodex.get_entry(key)
+				var name_lbl := Label.new()
+				name_lbl.text = "%s  x%d" % [String(entry.get("name", key.to_upper())), n]
+				name_lbl.add_theme_font_size_override("font_size", 15)
+				name_lbl.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
+				_fm_content.add_child(name_lbl)
+				var weak_lbl := Label.new()
+				weak_lbl.text = tr("Weak: ") + " . ".join(entry.get("weaknesses", []))
+				weak_lbl.add_theme_font_size_override("font_size", 13)
+				weak_lbl.add_theme_color_override("font_color", Color(0.6, 0.68, 0.78))
+				_fm_content.add_child(weak_lbl)
+				var counter_lbl := Label.new()
+				counter_lbl.text = tr("Counter: ") + ", ".join(entry.get("weapons", []))
+				counter_lbl.add_theme_font_size_override("font_size", 13)
+				counter_lbl.add_theme_color_override("font_color", Color(0.6, 0.68, 0.78))
+				_fm_content.add_child(counter_lbl)
+			else:
+				var undis_lbl := Label.new()
+				undis_lbl.text = tr("UNIDENTIFIED SIGNATURE") + "  x%d" % n
+				undis_lbl.add_theme_font_size_override("font_size", 14)
+				undis_lbl.add_theme_color_override("font_color", Color(0.45, 0.48, 0.52))
+				_fm_content.add_child(undis_lbl)
+
+	_fm_content.add_child(_fm_section_header(tr("YOUR ARSENAL")))
+
+	if _wm == null or _wm.weapons.is_empty():
+		var no_wm := Label.new()
+		no_wm.text = tr("No weapons equipped.")
+		no_wm.add_theme_color_override("font_color", Color(0.55, 0.6, 0.65))
+		no_wm.add_theme_font_size_override("font_size", 14)
+		_fm_content.add_child(no_wm)
+	else:
+		for i in _wm.weapons.size():
+			var w: Weapon = _wm.weapons[i]
+			if w == null or w.data == null:
+				continue
+			var equipped := i == _wm.current_index
+			var name_lbl2 := Label.new()
+			name_lbl2.text = ("> " if equipped else "") + w.data.display_name
+			name_lbl2.add_theme_font_size_override("font_size", 15)
+			name_lbl2.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0) if equipped else Color(0.88, 0.9, 0.94))
+			_fm_content.add_child(name_lbl2)
+			var dmg_val: float = w.eff_damage() if w.has_method("eff_damage") else w.data.damage
+			var band: String
+			if w.data.range_falloff:
+				band = tr("best %d-%d m") % [int(w.data.opt_min), int(w.data.opt_max)]
+			else:
+				band = tr("any range")
+			var stat_lbl := Label.new()
+			stat_lbl.text = "%.0f dmg . %.1f/s . %d/%d . %s" % [dmg_val, w.data.fire_rate, w.mag, w.reserve, band]
+			stat_lbl.add_theme_font_size_override("font_size", 13)
+			stat_lbl.add_theme_color_override("font_color", Color(0.6, 0.68, 0.78))
+			_fm_content.add_child(stat_lbl)
+
+func _fm_section_header(header_text: String) -> Label:
+	var lbl := Label.new()
+	lbl.text = header_text
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.62, 0.3))
+	return lbl
 
 ## Language picker in the pause menu. Static Controls re-translate live on the
 ## locale change; the few code-built labels refresh next time the menu is opened.
@@ -1080,7 +1277,9 @@ func _process(delta: float) -> void:
 			_kill_x.modulate.a = clampf(_kill_flash * 1.4, 0.0, 1.0)
 			var kpop := 0.7 + (1.0 - _kill_flash) * 0.6
 			_kill_x.scale = Vector2.ONE * kpop
-	pause_menu.visible = GameState.current_state == GameState.State.PAUSED
+	if field_manual_overlay and field_manual_overlay.visible and GameState.current_state != GameState.State.PAUSED:
+		field_manual_overlay.visible = false # e.g. a checkpoint respawn or death while it was open
+	pause_menu.visible = GameState.current_state == GameState.State.PAUSED and not (field_manual_overlay and field_manual_overlay.visible)
 	_update_crosshair(delta)
 	# Low-health danger vignette: red edges pulse harder the closer to death.
 	if _low_vig:
@@ -1160,8 +1359,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			GameState.set_state(GameState.State.PAUSED)
 			_enter_pause()
 		elif GameState.current_state == GameState.State.PAUSED:
-			GameState.set_state(GameState.State.PLAYING)
-			_exit_pause()
+			if field_manual_overlay and field_manual_overlay.visible:
+				close_field_manual() # ESC/pause backs out of the overlay first, stays paused
+			else:
+				GameState.set_state(GameState.State.PLAYING)
+				_exit_pause()
 
 ## Free the mouse + sync the settings widgets when the pause menu opens.
 func _enter_pause() -> void:
@@ -1866,6 +2068,7 @@ func _on_continue_pressed() -> void:
 	GameState.advance_level()
 
 func _on_resume_pressed() -> void:
+	close_field_manual() # in case Resume is reached with the overlay still open
 	GameState.set_state(GameState.State.PLAYING)
 	_exit_pause()
 

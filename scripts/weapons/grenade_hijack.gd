@@ -118,7 +118,7 @@ func _spawn_burst_fx(pos: Vector3) -> void:
 	# A quick green flash.
 	var flash := OmniLight3D.new()
 	flash.light_color = Color(0.45, 1.0, 0.55)
-	flash.light_energy = 9.0
+	flash.light_energy = GraphicsSettings.flash_energy(9.0) # accessibility: flash-intensity slider
 	flash.omni_range = burst_radius * 2.0
 	parent.add_child(flash)
 	flash.global_position = pos

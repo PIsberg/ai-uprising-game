@@ -4,6 +4,7 @@ extends Node3D
 
 @export var lifetime: float = 2.5
 var _age: float = 0.0
+var _flash_mult: float = 1.0 # accessibility: flash-intensity multiplier, cached in _ready
 @onready var _decal: Decal = $Decal
 @onready var _light: OmniLight3D = $Light
 @onready var _sparks: CPUParticles3D = $Sparks
@@ -16,6 +17,10 @@ static var _hole_tex: Texture2D = null
 func _ready() -> void:
 	if _decal:
 		_decal.texture_albedo = _bullet_hole_texture()
+	# Accessibility: cache the flash-intensity slider once (headless-safe — the
+	# autoload may be absent under --script).
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	_flash_mult = 1.0 if gs == null else gs.flash_energy(1.0)
 
 static func _bullet_hole_texture() -> Texture2D:
 	if _hole_tex != null:
@@ -130,9 +135,9 @@ func orient(normal: Vector3) -> void:
 
 func _process(delta: float) -> void:
 	_age += delta
-	# Spark flash light snaps out fast.
+	# Spark flash light snaps out fast; scaled by the accessibility flash-intensity slider.
 	if _light:
-		_light.light_energy = maxf(0.0, 3.0 * (1.0 - _age / 0.12))
+		_light.light_energy = maxf(0.0, 3.0 * (1.0 - _age / 0.12) * _flash_mult)
 	# Scorch holds, then fades over the back half of its life.
 	if _decal:
 		_decal.modulate.a = clampf((1.0 - _age / lifetime) / 0.5, 0.0, 1.0)

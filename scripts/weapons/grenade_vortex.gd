@@ -128,7 +128,7 @@ func _detonate() -> void:
 	# A bright violet collapse-flash to sell the implosion payoff.
 	var flash := OmniLight3D.new()
 	flash.light_color = Color(0.7, 0.4, 1.0)
-	flash.light_energy = 12.0
+	flash.light_energy = GraphicsSettings.flash_energy(12.0) # accessibility: flash-intensity slider
 	flash.omni_range = splash_radius * 2.4
 	get_parent().add_child(flash)
 	flash.global_position = pos

@@ -38,9 +38,12 @@ Tune `WeaponData` `.tres` + `weapon.gd` recoil/FX; needs playtest to judge.
 comic-panel briefings like the older levels (`scenes/cutscene/level_comic_briefing.tscn`,
 `assets/comics/`).
 
-### Boss mechanics audit 🎮🤖
-Verify the 5 bosses have real phases/arena mechanics, not just larger HP bars
-(`scripts/enemies/enemy_{terminator,colossus,overseer,titan,archon}.gd`).
+### Boss mechanics audit 🎮
+✅ **Audited (2026-09-11)** — all 7 bosses escalate with health: COLOSSUS/OVERSEER/TITAN/
+ARCHON/SMASHER had 3 HP-keyed phases; TERMINATOR ramps its beam sweep as it is wounded;
+MANUS (the one plain HP bar) now has 3 phases too — cooldowns ×1/0.8/0.62 and a phase-3
+double finger eruption that leads the player (`tests/manus_phase_probe`). 🎮 Still needs
+playtest: whether the MANUS phase-3 cadence is fun or just busy.
 
 ### Meta-progression / replayability 🤖🎮
 Beyond the per-run Armory there's no persistent chase. Options: unlockables, a seeded
@@ -82,15 +85,11 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 
 ### More accessibility toggles 🤖
 - ✅ **Screen Shake** scale and **Flash Intensity** scale shipped (Settings + pause menu).
-- Extend Flash Intensity to muzzle-flash / explosion-light brightness (currently covers the
-  full-screen HUD flashes: damage overlay, low-health vignette, kill-edge).
+- ✅ **Flash Intensity now also scales world light bursts** (muzzle flash, hit/impact pops,
+  explosion and grenade detonation lights; steady lights untouched) — `tests/flash_intensity_probe`.
 - Colourblind-aware FX/HUD palettes (hazard rings already have a text tag; extend to other colour-only cues).
 - Subtitle/damage-number size scaling.
 - Difficulty assists / modifiers (aim-assist exists for gamepad; add for KBM, plus damage-taken sliders).
-
-### Key rebinding UI 🤖
-The input map is fixed in `project.godot`. A rebinding screen in Settings
-(`scripts/ui/main_menu.gd`) writing to a user config.
 
 ### Weapon Codex polish 🤖
 - ✅ **Spinning 3D weapon preview shipped** — lifts each weapon's `Viewmodel` node
@@ -105,8 +104,10 @@ The input map is fixed in `project.godot`. A rebinding screen in Settings
   `discovered_weapons` like the bestiary's `discovered_enemies`).
 
 ### In-run quick reference 🤖
-Let the pause menu peek the enemy/weapon codex without leaving the level
-(needs an overlay rather than a scene change).
+✅ **FIELD MANUAL shipped** — a pause-menu overlay (no scene change) listing the threats alive
+on the current level (discovered ones with weaknesses + counter-weapons, undiscovered as
+"unidentified signature") and your arsenal with each gun's effective band
+(`hud.gd` `open_field_manual`, `tests/field_manual_probe`).
 
 ---
 
@@ -114,7 +115,7 @@ Let the pause menu peek the enemy/weapon codex without leaving the level
 
 - **Performance** — profile big hordes / low-end GPUs (`Last Stand` horde mode is a good stress test); verify the 4 graphics tiers scale cost as intended.
 - **Cleaner CI logs** — the load-test tolerates benign asset errors (missing `colormap.png` weapon texture, generated `.translation` files). Ship the missing texture or scope the error grep so real errors stand out.
-- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, and **EMP**. Still want: combat-damage math (range falloff, headshots, pierce), and save/load round-trip.
+- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). Still want: a boss-phase probe per boss (only MANUS has one), and a Continue-from-every-level sweep.
 
 ---
 

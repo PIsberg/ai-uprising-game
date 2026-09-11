@@ -292,6 +292,10 @@ static func _light_pop(root: Node3D) -> void:
 	if light == null:
 		return
 	var peak := light.light_energy
+	# Accessibility: rides the flash-intensity slider (0 = no strobe pop at all).
+	var gs := root.get_node_or_null("/root/GraphicsSettings")
+	if gs != null:
+		peak = gs.flash_energy(peak)
 	light.light_energy = peak * 0.4
 	var tw := light.create_tween()
 	tw.tween_property(light, "light_energy", peak * 1.6, 0.05)

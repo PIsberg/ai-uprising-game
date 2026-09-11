@@ -27,14 +27,19 @@ $probes = @(
   "res://tests/gun_range_probe.tscn",
   "res://tests/titan_blink_probe.tscn",
   "res://tests/mauler_overload_probe.tscn",
-  "res://tests/blast_direction_probe.tscn",,
+  "res://tests/blast_direction_probe.tscn",
   "res://tests/damage_source_probe.tscn",
   "res://tests/seeker_grace_probe.tscn",
   "res://tests/victory_probe.tscn",
   "res://tests/convoy_probe.tscn",
   "res://tests/layout_check.tscn",
-  "res://tests/mauler_overload_probe.tscn"
-  "res://tests/screen_shock_probe.tscn"
+  "res://tests/mauler_overload_probe.tscn",
+  "res://tests/screen_shock_probe.tscn",
+  "res://tests/save_probe.tscn",
+  "res://tests/manus_phase_probe.tscn",
+  "res://tests/flash_intensity_probe.tscn",
+  "res://tests/damage_math_probe.tscn",
+  "res://tests/field_manual_probe.tscn"
 )
 
 Write-Host "== importing project =="

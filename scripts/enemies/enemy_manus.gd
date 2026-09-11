@@ -12,6 +12,10 @@ extends EnemyBase
 ## ARMOURED EVERYWHERE BUT ONE SPOT: the exposed reactor coupling on its wrist
 ## (the glowing core). Every hit anywhere else sparks off harmlessly — only the
 ## core takes damage, and it takes it AMPLIFIED. Fighting MANUS is aiming.
+##
+## WOUNDED, IT GETS FASTER: three health-keyed phases like the other bosses
+## (see _phase). Every attack cooldown shrinks per phase, and from phase 3 the
+## finger eruption strikes TWICE — the second burst leads where you're running.
 
 @export var boss_name: String = "MANUS"   ## Shown on the HUD boss bar.
 @export var preview: bool = false ## Codex/briefing showcase: idle, skip entrance/boss bar.
@@ -58,6 +62,14 @@ var _armored_fx_cd: float = 0.0
 # with NO fresh position report (splash, shoves) never reaches the core.
 var _core_hit_fresh: bool = false
 var _wake: float = 1.2
+var _last_phase: int = 1
+
+## Cooldown scale per phase (index = phase - 1): a wounded arm lashes out sooner.
+const PHASE_CD_MULT := [1.0, 0.8, 0.62]
+## Phase-3 eruption pair: the second burst lands this far ahead along the
+## player's velocity, this long after the first — punishes running straight.
+const SPIKE_LEAD_SEC := 0.7
+const SPIKE_SECOND_DELAY := 0.35
 
 @onready var _core: MeshInstance3D = $WeakSpot/Core
 @onready var _core_light: OmniLight3D = $WeakSpot/CoreLight
@@ -150,6 +162,17 @@ func _physics_process(delta: float) -> void:
 		if _wake <= 0.0:
 			hp.invulnerable = false
 		return
+	# Phase-change punch: the arm rears, the alarm sounds, the floor shakes —
+	# the tell that the fight just got faster (same read as SMASHER/COLOSSUS).
+	var ph := _phase()
+	if ph != _last_phase:
+		_last_phase = ph
+		recoil = 1.0
+		AudioBus.play_synth_ui("eas_alert", -10.0)
+		var pl := get_tree().get_first_node_in_group("player")
+		if pl and pl.has_method("shake"):
+			pl.shake(0.6)
+		spawn_shockwave_ring(sweep_range * 0.6, Color(0.5, 0.85, 1.0), global_position)
 	_sweep_cd = maxf(0.0, _sweep_cd - delta)
 	_slam_cd = maxf(0.0, _slam_cd - delta)
 	_grab_cd = maxf(0.0, _grab_cd - delta)
@@ -221,14 +244,43 @@ func _state_chase(delta: float) -> void:
 	if target and _has_last_known:
 		_face_dir((_last_known_target_pos - global_position) * Vector3(1, 0, 1), delta)
 
+## Health-keyed phase, 1..3 (same thresholds as the other bosses): the core
+## reads hotter and every attack cycles faster the more damage it has taken.
+func _phase() -> int:
+	var frac := hp.current_health / maxf(hp.max_health, 1.0)
+	if frac <= 0.33:
+		return 3
+	elif frac <= 0.66:
+		return 2
+	return 1
+
+func _cd_mult() -> float:
+	return float(PHASE_CD_MULT[_phase() - 1])
+
 ## FINGER ERUPTION — the rooted arm's ranged answer: it drives power through
 ## the deck it's fused into and servo fingers burst from the floor under the
 ## player. Telegraphed with a ground ring (same read as every AoE), so at range
 ## the fight is "keep moving and keep shooting the core".
 func _begin_spike() -> void:
-	_spike_cd = spike_cooldown
+	_spike_cd = spike_cooldown * _cd_mult()
 	recoil = 1.0
 	var at: Vector3 = target.global_position
+	_erupt_at(at, 0.0)
+	# Wounded (phase 3): a second eruption leads the player's run — standing
+	# still eats the first, sprinting straight eats the second.
+	if _phase() >= 3:
+		var lead := Vector3.ZERO
+		if "velocity" in target:
+			lead = Vector3(target.velocity.x, 0.0, target.velocity.z) * SPIKE_LEAD_SEC
+		_erupt_at(at + lead, SPIKE_SECOND_DELAY)
+
+## One telegraphed finger eruption at `at`, `delay` seconds from now: warning
+## ring for the windup, then the spears, shock ring, and the hit check.
+func _erupt_at(at: Vector3, delay: float) -> void:
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+		if state == State.DEAD or not is_inside_tree():
+			return
 	spawn_ground_warning(at, spike_radius, spike_windup, Color(0.72, 0.95, 1.0))
 	AudioBus.play_synth_at("charge", at, -6.0, 0.7)
 	await get_tree().create_timer(spike_windup).timeout
@@ -284,7 +336,7 @@ func _spawn_spike_fingers(at: Vector3) -> void:
 
 func _begin_sweep() -> void:
 	_sweep_windup_t = sweep_windup
-	_sweep_cd = sweep_cooldown
+	_sweep_cd = sweep_cooldown * _cd_mult()
 	recoil = 1.0
 	AudioBus.play_synth_at("charge", global_position, -4.0, 0.6)
 
@@ -309,7 +361,7 @@ func _do_sweep() -> void:
 
 func _begin_slam() -> void:
 	_slam_windup_t = slam_windup
-	_slam_cd = slam_cooldown
+	_slam_cd = slam_cooldown * _cd_mult()
 	recoil = 1.0
 	_slam_point = target.global_position if target else global_position - global_transform.basis.z * 6.0
 	spawn_ground_warning(_slam_point, slam_radius, _slam_windup_t)
@@ -333,7 +385,7 @@ func _do_slam() -> void:
 			p.shake(1.0)
 
 func _begin_grab() -> void:
-	_grab_cd = grab_cooldown
+	_grab_cd = grab_cooldown * _cd_mult()
 	recoil = 1.0
 	AudioBus.play_synth_at("charge", global_position, -2.0, 0.42)
 	AudioBus.play_synth_ui("overlord_glitch", -8.0)

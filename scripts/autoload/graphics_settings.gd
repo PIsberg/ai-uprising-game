@@ -484,6 +484,14 @@ func set_flash_intensity(v: float) -> void:
 	flash_intensity = clampf(v, 0.0, 1.0)
 	_save_settings()
 
+## Accessibility: scales a light burst's peak energy by flash_intensity (0 =
+## no strobe at all). Shared by every transient FX light (muzzle flash, impact
+## pop, explosion pop, projectile detonation, grenade detonation) so a
+## photosensitive player who zeroes the slider gets zero strobing point lights,
+## not just a dimmer HUD flash.
+func flash_energy(peak: float) -> float:
+	return peak * flash_intensity
+
 ## Accessibility: 0..1 scale on gamepad rumble (0 = off entirely).
 func set_rumble(v: float) -> void:
 	rumble = clampf(v, 0.0, 1.0)
