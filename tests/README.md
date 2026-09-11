@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-247 probes total: **29** wired into the headless suite (`suite`), **83**
+245 probes total: **30** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -157,6 +157,7 @@ or GPU-timing probes; `--headless` renders these black).
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
+| howitzer_hit_probe | HOWITZER lands a hit on the player at its own preferred range (32 m): regression for the shell loft solved with g=9.8 while the project's gravity is 24, which dropped every shell ~7 m short | suite |
 | hud_upgrade_probe | HUD upgrade-chip row shows only bought tracks at the right rank | windowed |
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |
 | indiv_probe | BRUTE shield-in-left-hand idle+punch; VACUUM codex preview rise | windowed |
@@ -245,6 +246,7 @@ or GPU-timing probes; `--headless` renders these black).
 | sens_probe | Pause-menu mouse-sensitivity slider exists, persists to GraphicsSettings, updates the live player | windowed |
 | shark_breach_probe | RAZORFIN shark acquires a target, breaches above the surface, bites | suite |
 | signature_attack_probe | K-9 pounce, MAITRE-D' cleaver throw, sentinel bomb lob, mauler overload detonation all fire | headless |
+| silent_robot_probe | Instrument (always RESULT PASS): per-second state/distance/LOS/shot telemetry for the robots that read as harmless in threat_probe, to separate rig artefacts from unwired attacks | headless |
 | skel_pose_probe | Candidate ArmRelaxModifier rotations on the George rig, to pick a natural arm-carry angle | windowed |
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
 | seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |

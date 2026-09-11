@@ -71,14 +71,20 @@ func _fire_shell() -> void:
 	scene.add_child(proj)
 	(proj as Node3D).global_position = muzzle.global_position
 	# Ballistic solve: lead the runner, then hold the barrel high enough that
-	# the shell's gravity drop lands the arc on them.
+	# the shell's gravity drop lands the arc on them. Must use the PROJECT's
+	# actual gravity (24.0, see project.godot), not a bare 9.8 — the shell
+	# itself falls under ProjectSettings physics/3d/default_gravity *
+	# gravity_scale (projectile.gd _physics_process), and a stale 9.8 here
+	# under-lofts the shot by 2.45x, so every shell undershot and hit the
+	# floor well short of the target instead of reaching it.
 	var aim: Vector3 = target.global_position + Vector3.UP * 0.4
 	if "velocity" in target:
 		aim += (target.velocity as Vector3) * 0.35
 	var dist := muzzle.global_position.distance_to(aim)
 	var t := dist / shell_speed
 	var gs: float = proj.get("gravity_scale") if proj.get("gravity_scale") != null else 0.3
-	aim += Vector3.UP * (0.5 * 9.8 * gs * t * t)
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	aim += Vector3.UP * (0.5 * g * gs * t * t)
 	var dir := (aim - muzzle.global_position).normalized()
 	if proj.has_method("launch"):
 		proj.launch(dir * shell_speed, self, shell_damage, splash_radius, splash_damage)
