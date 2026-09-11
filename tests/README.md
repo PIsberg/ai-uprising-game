@@ -172,6 +172,7 @@ or GPU-timing probes; `--headless` renders these black).
 | layout_check | Static def check: no prop, pickup, weapon or lore placement sits inside a wall/building AABB. Enemy-spawn and task overlaps are reported as advisory, since the builder relocates those at load | suite |
 | level01_probe | Rebuilt level 1: overhead layout shot + player-eye shot toward the nexus tower | windowed |
 | level01_task_probe | Level 1's single checklist task (gate lever) spawns live; completing it unseals the exit | headless |
+| level_def_coverage_probe | Every typed entry in every campaign level def resolves through the builder's own tables: enemy types (enemies, task enemy/reinforce/waves) in ENEMY_SCENES, prop types in PROP_SCENES, pickup kinds in PICKUP_SCENES, task types in the _build_tasks arms, extra_weapons scenes exist; 1404 entries, red on a single injected typo | suite |
 | level_detail_probe | Eye-level views of a campaign level to judge/iterate environmental detail | windowed |
 | level_shot | Elevated 3/4 view of each campaign level: layout/detail/obstacle fit | windowed |
 | level_sky_probe | Horizon/sky of a real open-sky night level: stars+moon | windowed |
