@@ -255,6 +255,7 @@ or GPU-timing probes; `--headless` renders these black).
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
+| sound_id_probe | Every sound id referenced by literal in scripts/ (play_synth_at/ui, synth, play_music, play_ambience_layer, play_lore, level `music` keys) and every weapon .tres sound_id (+_fire) resolves through AudioBus.synth; a never-registered id is a silent event (caught the Armory's silent purchase clink) | suite |
 | stamina_probe | Sprint/grapple stamina drains to exhaustion (walk-only lock), regen + lock clear; HUD bar screenshotted | windowed |
 | startle_probe | Startle-scatter affects only in-radius non-boss non-EMP units; GODLIKE/OVERLOAD broadcasts it | headless |
 | suburb_nav_diag | Which leg of the suburb canal crossing fails, chaining spawn→bridgeheads→deck→exit plus the tower route | headless |
