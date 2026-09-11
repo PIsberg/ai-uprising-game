@@ -164,3 +164,44 @@ Window,Window,Ventana,Fenêtre,Fenster,Janela
 Fullscreen,Fullscreen,Pantalla completa,Plein écran,Vollbild,Ecrã inteiro
 Borderless,Borderless,Sin bordes,Sans bordure,Randlos,Sem bordas
 Windowed,Windowed,Ventana,Fenêtré,Fenster,Janela
+AUTO QUALITY: %s,AUTO QUALITY: %s,CALIDAD AUTO: %s,QUALITÉ AUTO : %s,AUTO-QUALITÄT: %s,QUALIDADE AUTO: %s
+Advanced Post-Process FX,Advanced Post-Process FX,Efectos de posprocesado avanzados,Effets de post-traitement avancés,Erweiterte Post-Processing-Effekte,Efeitos de pós-processamento avançados
+Animated Puddle Ripples,Animated Puddle Ripples,Ondas animadas en charcos,Ondulations animées des flaques,Animierte Pfützenwellen,Ondulações animadas nas poças
+BOUNTIES,BOUNTIES,RECOMPENSAS,PRIMES,KOPFGELDER,RECOMPENSAS
+BOUNTY,BOUNTY,RECOMPENSA,PRIME,KOPFGELD,RECOMPENSA
+Color Grade,Color Grade,Gradación de color,Étalonnage des couleurs,Farbkorrektur,Gradação de cor
+Controller Rumble,Controller Rumble,Vibración del mando,Vibration de la manette,Controller-Vibration,Vibração do controle
+Counter,Counter,Contra,Contre,Konter,Contra
+Depth of Field,Depth of Field,Profundidad de campo,Profondeur de champ,Tiefenschärfe,Profundidade de campo
+EXECUTED,EXECUTED,EJECUTADO,EXÉCUTÉ,HINGERICHTET,EXECUTADO
+EXECUTIONS,EXECUTIONS,EJECUCIONES,EXÉCUTIONS,HINRICHTUNGEN,EXECUÇÕES
+FIELD MANUAL,FIELD MANUAL,MANUAL DE CAMPO,MANUEL DE TERRAIN,FELDHANDBUCH,MANUAL DE CAMPO
+Field Manual,Field Manual,Manual de campo,Manuel de terrain,Feldhandbuch,Manual de campo
+Flash Intensity,Flash Intensity,Intensidad de destellos,Intensité des flashs,Blitzintensität,Intensidade dos flashes
+GPU Particles,GPU Particles,Partículas por GPU,Particules GPU,GPU-Partikel,Partículas na GPU
+GPU: unavailable (headless),GPU: unavailable (headless),GPU: no disponible (sin pantalla),GPU : indisponible (sans affichage),GPU: nicht verfügbar (headless),GPU: indisponível (sem tela)
+"Integrated GPU — on a laptop, set this game to your High-performance GPU.","Integrated GPU — on a laptop, set this game to your High-performance GPU.","GPU integrada: en un portátil, asigna este juego a la GPU de alto rendimiento.","GPU intégré : sur un portable, attribuez ce jeu au GPU haute performance.",Integrierte GPU – auf einem Laptop dieses Spiel der Hochleistungs-GPU zuweisen.,"GPU integrada: em um notebook, atribua este jogo à GPU de alto desempenho."
+Level: %s,Level: %s,Nivel: %s,Niveau : %s,Level: %s,Nível: %s
+Lower = faster. Renders the 3D world at this fraction of screen resolution and upscales it (FSR2). The HUD stays sharp.,Lower = faster. Renders the 3D world at this fraction of screen resolution and upscales it (FSR2). The HUD stays sharp.,Menos = más rápido. Renderiza el mundo 3D a esta fracción de la resolución y lo escala (FSR2). El HUD se mantiene nítido.,Plus bas = plus rapide. Rend le monde 3D à cette fraction de la résolution puis l'agrandit (FSR2). L'ATH reste net.,Niedriger = schneller. Rendert die 3D-Welt mit diesem Bruchteil der Bildschirmauflösung und skaliert hoch (FSR2). Das HUD bleibt scharf.,Menor = mais rápido. Renderiza o mundo 3D nesta fração da resolução e amplia (FSR2). O HUD continua nítido.
+Mouse Sensitivity,Mouse Sensitivity,Sensibilidad del ratón,Sensibilité de la souris,Mausempfindlichkeit,Sensibilidade do mouse
+No hostiles detected.,No hostiles detected.,Sin hostiles detectados.,Aucun hostile détecté.,Keine Feinde erfasst.,Nenhum hostil detectado.
+No weapons equipped.,No weapons equipped.,Sin armas equipadas.,Aucune arme équipée.,Keine Waffen ausgerüstet.,Nenhuma arma equipada.
+PAR %02d:%02d,PAR %02d:%02d,PAR %02d:%02d,PAR %02d:%02d,PAR %02d:%02d,PAR %02d:%02d
+PAR %02d:%02d BEATEN +%d,PAR %02d:%02d BEATEN +%d,PAR %02d:%02d SUPERADO +%d,PAR %02d:%02d BATTU +%d,PAR %02d:%02d GESCHLAGEN +%d,PAR %02d:%02d BATIDO +%d
+PERFECT DODGE,PERFECT DODGE,ESQUIVA PERFECTA,ESQUIVE PARFAITE,PERFEKTES AUSWEICHEN,ESQUIVA PERFEITA
+PERFECT DODGES,PERFECT DODGES,ESQUIVAS PERFECTAS,ESQUIVES PARFAITES,PERFEKTE AUSWEICHMANÖVER,ESQUIVAS PERFEITAS
+Preset…,Preset…,Preajuste…,Préréglage…,Voreinstellung…,Predefinição…
+Render Scale,Render Scale,Escala de renderizado,Échelle de rendu,Renderskalierung,Escala de renderização
+STREAK,STREAK,RACHA,SÉRIE,SERIE,SEQUÊNCIA
+Screen Shake,Screen Shake,Temblor de pantalla,Secousses d'écran,Bildschirmwackeln,Tremor de tela
+Show FPS Counter,Show FPS Counter,Mostrar contador de FPS,Afficher le compteur d'IPS,FPS-Zähler anzeigen,Mostrar contador de FPS
+THREATS ON THIS LEVEL,THREATS ON THIS LEVEL,AMENAZAS EN ESTE NIVEL,MENACES DANS CE NIVEAU,BEDROHUNGEN IN DIESEM LEVEL,AMEAÇAS NESTE NÍVEL
+Triplanar Damage Robots,Triplanar Damage Robots,Daño triplanar en robots,Dégâts triplanaires des robots,Triplanare Roboterschäden,Dano triplanar nos robôs
+UNIDENTIFIED SIGNATURE,UNIDENTIFIED SIGNATURE,FIRMA NO IDENTIFICADA,SIGNATURE NON IDENTIFIÉE,UNBEKANNTE SIGNATUR,ASSINATURA NÃO IDENTIFICADA
+UNKNOWN,UNKNOWN,DESCONOCIDO,INCONNU,UNBEKANNT,DESCONHECIDO
+Volumetric Noise Shafts,Volumetric Noise Shafts,Haces volumétricos con ruido,Rayons volumétriques bruités,Volumetrische Lichtschächte,Feixes volumétricos com ruído
+Weak,Weak,Debilidad,Faiblesse,Schwäche,Fraqueza
+YOUR ARSENAL,YOUR ARSENAL,TU ARSENAL,VOTRE ARSENAL,DEIN ARSENAL,SEU ARSENAL
+any range,any range,cualquier distancia,toute distance,jede Distanz,qualquer distância
+best %d-%d m,best %d-%d m,óptimo %d-%d m,optimal %d-%d m,optimal %d-%d m,ideal %d-%d m
+⚠ Software rendering — install/update your GPU driver for real performance.,⚠ Software rendering — install/update your GPU driver for real performance.,⚠ Renderizado por software: instala o actualiza el controlador de tu GPU para un rendimiento real.,⚠ Rendu logiciel : installez ou mettez à jour le pilote de votre GPU pour de vraies performances.,⚠ Software-Rendering – installiere oder aktualisiere deinen GPU-Treiber für echte Leistung.,⚠ Renderização por software: instale ou atualize o driver da GPU para desempenho real.
