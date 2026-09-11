@@ -99,7 +99,7 @@ func _diagnose(ename: String) -> void:
 	var pref: float = float(e.get("preferred_range"))
 	pref = 8.0 if pref < 4.0 else minf(pref, 40.0)
 	e.global_position = Vector3(0, 0, -pref)
-	e.rotation = Vector3.ZERO
+	e.rotation = Vector3(0, PI, 0) # face the player: sight forward is -Z (see threat_probe)
 	for i in 3:
 		await get_tree().physics_frame
 	print("\n=== %s (preferred_range=%.1f, spawn dist=%.1f) ===" % [ename, float(e.get("preferred_range")), pref])
