@@ -1833,7 +1833,8 @@ func _on_health_changed(cur: float, max_: float) -> void:
 ## Damageable hook: campaign warmup on incoming damage (×0.65 on the opening
 ## level, ×1.0 by ~25% depth) so the first levels teach instead of execute.
 func modify_incoming_damage(amount: float, _source, _origin = null) -> float:
-	return amount * GameState.campaign_incoming_mult() * GameState.directive_incoming_mult()
+	# ...times the accessibility Damage Taken slider (0.5..1.5, default 1.0).
+	return amount * GameState.campaign_incoming_mult() * GameState.directive_incoming_mult() * GraphicsSettings.damage_taken
 
 ## Damageable hook: fires when a hit is negated by our invulnerability. During the
 ## dash i-frame window (and NOT god mode) that means a skillful dodge just phased

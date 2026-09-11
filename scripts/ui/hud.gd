@@ -326,9 +326,9 @@ func _build_pause_audio() -> void:
 	var flash := _audio_slider_row(vbox, tr("Flash Intensity"), GraphicsSettings.flash_intensity, 0.0, 1.0, 0.05)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
-	# Accessibility: size of the floating damage numbers, live.
-	var dmg_size := _audio_slider_row(vbox, tr("Damage Number Size"), GraphicsSettings.damage_number_scale, 0.6, 2.0, 0.1)
-	dmg_size.value_changed.connect(func(v: float): GraphicsSettings.set_damage_number_scale(v))
+	# Accessibility / difficulty assist: scale the damage the player takes, live.
+	var dmg_taken := _audio_slider_row(vbox, tr("Damage Taken"), GraphicsSettings.damage_taken, 0.5, 1.5, 0.05)
+	dmg_taken.value_changed.connect(func(v: float): GraphicsSettings.set_damage_taken(v))
 
 	# Accessibility: gamepad rumble strength live (0 = off).
 	var rumble := _audio_slider_row(vbox, tr("Controller Rumble"), GraphicsSettings.rumble, 0.0, 1.0, 0.05)
