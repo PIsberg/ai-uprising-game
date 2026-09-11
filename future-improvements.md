@@ -115,7 +115,7 @@ on the current level (discovered ones with weaknesses + counter-weapons, undisco
 
 - **Performance** — profile big hordes / low-end GPUs (`Last Stand` horde mode is a good stress test); verify the 4 graphics tiers scale cost as intended.
 - **Cleaner CI logs** — the load-test tolerates benign asset errors (missing `colormap.png` weapon texture, generated `.translation` files). Ship the missing texture or scope the error grep so real errors stand out.
-- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). Still want: a boss-phase probe per boss (only MANUS has one), and a Continue-from-every-level sweep.
+- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). **Continue-from-every-level** now gated by `tests/continue_sweep_probe`. Still want: a boss-phase probe per boss (only MANUS has one).
 
 ---
 
