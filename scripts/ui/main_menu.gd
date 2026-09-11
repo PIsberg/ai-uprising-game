@@ -14,8 +14,15 @@ extends Control
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	GameState.set_state(GameState.State.MENU)
-	# Continue is only offered when a checkpoint exists.
+	# Continue is only offered when a checkpoint exists, and says WHERE the run
+	# resumes (level title, campaign position, difficulty) so a returning player
+	# knows what they are stepping back into before they commit.
 	_continue.visible = GameState.has_save()
+	if _continue.visible:
+		var s: Dictionary = GameState.peek_save()
+		if not s.is_empty():
+			_continue.text = "%s  ·  %s  (%d/%d · %s)" % [tr("Continue"), String(s["title"]),
+				int(s["level_index"]) + 1, int(s["campaign_size"]), String(s["difficulty_label"])]
 	_volume.value = AudioBus.get_master_volume()
 	_refresh_graphics_label()
 	_build_extra_settings()
