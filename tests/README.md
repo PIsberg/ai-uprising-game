@@ -178,7 +178,7 @@ or GPU-timing probes; `--headless` renders these black).
 | level_sky_probe | Horizon/sky of a real open-sky night level: stars+moon | windowed |
 | lightning_probe | Storm-lightning bolt at real in-game distance with fog/exposure as in play | windowed |
 | limbloss_probe | Bone-collapse dismemberment: critical-threshold limb sever, LIMB_LOSS_MAX cap, no-skeleton chassis no-ops cleanly | headless |
-| look_capture | Eye-level forward-looking screenshot of each campaign level for visual audit | windowed |
+| look_capture | Eye-level screenshot of each campaign level for visual audit: stands at the spawn, sweeps yaw for the clearest sightline (world raycast), parks the player so no blast screen-warp smears the frame; `-- --out=<dir> --levels=a,b`; score the frames with `python tools/look_metrics.py <dir> [<baseline dir>]` | windowed |
 | loot_probe | Flyer supply drops over open sea relocate onto a walkway, never stranded in the hazard | suite |
 | lowhealth_screenshot | Post-process shader with `low_health` forced high | windowed |
 | mantle_kick_probe | A successful mantle fires the new viewmodel kick (not just that mantling still works) | headless |

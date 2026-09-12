@@ -240,6 +240,20 @@ static func _convoy() -> Dictionary:
 		"spawn": Vector3(0, 0.5, 178),
 		"floor_size": Vector2(44, 380),
 		"open_sky": true,
+		# Night highway: moonlit sky over sodium-lit tarmac. This was the one
+		# level with no env block, so it rendered the builder's generic grey
+		# default (eye-level capture: saturation 0.19, the flattest frame in
+		# the campaign).
+		"env": {
+			"stars": true, "star_brightness": 1.6, "milkyway": 0.3,
+			"moon_dir": Vector3(-0.35, 0.45, -0.8), "moon_glow": 1.8,
+			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.28, 0.16, 0.1),
+			"ground": Color(0.05, 0.04, 0.04), "fog": Color(0.34, 0.28, 0.26),
+			"fog_density": 0.007, "ambient": Color(0.6, 0.62, 0.78), "ambient_energy": 0.6,
+			"sky_contribution": 0.5, "glow": 0.95,
+			"sun_color": Color(0.8, 0.85, 1.0), "sun_energy": 0.8, "sun_rot": Vector3(-42, 30, 0),
+			"contrast": 1.14, "saturation": 1.12, "brightness": 0.9,
+		},
 		# Everything on this level is positioned against ConvoyRide's
 		# hand-authored world (truck path ±170, platform/scenery z's) — the
 		# def half must not scale away from it. See get_def.
@@ -1834,11 +1848,11 @@ static func _overseer() -> Dictionary:
 			"sky_top": Color(0.03, 0.04, 0.08), "sky_horizon": Color(0.16, 0.1, 0.22),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.8, 0.85, 1.0),
 			"milkyway": 0.45, "milkyway_tint": Color(0.55, 0.5, 0.85),
-			"ground": Color(0.05, 0.05, 0.08), "fog": Color(0.3, 0.4, 0.7),
-			"ambient": Color(0.5, 0.6, 0.9), "ambient_energy": 0.65,
+			"ground": Color(0.05, 0.05, 0.08), "fog": Color(0.32, 0.36, 0.55),
+			"ambient": Color(0.58, 0.6, 0.82), "ambient_energy": 0.65,
 			"sky_contribution": 0.55, "glow": 1.22, "fog_density": 0.01,
-			"sun_color": Color(0.7, 0.5, 1.0), "sun_energy": 0.82,
-			"contrast": 1.15, "saturation": 1.12, "brightness": 0.90,
+			"sun_color": Color(0.85, 0.8, 1.0), "sun_energy": 0.82,
+			"contrast": 1.15, "saturation": 1.06, "brightness": 0.90,
 		},
 		# A god-ray drops from the command beacon at the arena centre.
 		"light_shafts": [0],
@@ -2257,11 +2271,11 @@ static func _titan() -> Dictionary:
 			"sky_top": Color(0.02, 0.02, 0.05), "sky_horizon": Color(0.1, 0.05, 0.16),
 			"stars": true, "star_density": 0.1, "star_brightness": 2.4, "star_tint": Color(0.85, 0.8, 1.0),
 			"milkyway": 0.6, "milkyway_tint": Color(0.6, 0.5, 0.9),
-			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.25, 0.45, 0.8),
-			"ambient": Color(0.4, 0.55, 0.9), "ambient_energy": 0.62,
-			"sky_contribution": 0.5, "glow": 1.42, "fog_density": 0.012,
-			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.72,
-			"contrast": 1.16, "saturation": 1.12, "brightness": 0.90,
+			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.3, 0.42, 0.62),
+			"ambient": Color(0.55, 0.62, 0.85), "ambient_energy": 0.62,
+			"sky_contribution": 0.5, "glow": 1.2, "fog_density": 0.009,
+			"sun_color": Color(0.82, 0.85, 1.0), "sun_energy": 0.72,
+			"contrast": 1.16, "saturation": 1.06, "brightness": 0.90,
 		},
 		# The Singularity Core itself — a tall central monolith under the sky-beam.
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(0.55, 0.72, 1.0), "height": 6.5},
@@ -2468,11 +2482,11 @@ static func _archon() -> Dictionary:
 			"sky_top": Color(0.02, 0.02, 0.06), "sky_horizon": Color(0.12, 0.06, 0.2),
 			"stars": true, "star_brightness": 2.4, "star_tint": Color(0.7, 0.8, 1.0),
 			"milkyway": 0.6, "milkyway_tint": Color(0.5, 0.55, 0.95),
-			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.25, 0.4, 0.8),
-			"ambient": Color(0.45, 0.55, 0.95), "ambient_energy": 0.65,
-			"sky_contribution": 0.55, "glow": 1.42, "fog_density": 0.011,
-			"sun_color": Color(0.6, 0.55, 1.0), "sun_energy": 0.78,
-			"contrast": 1.16, "saturation": 1.13, "brightness": 0.90,
+			"ground": Color(0.04, 0.04, 0.07), "fog": Color(0.3, 0.4, 0.6),
+			"ambient": Color(0.55, 0.6, 0.85), "ambient_energy": 0.65,
+			"sky_contribution": 0.55, "glow": 1.2, "fog_density": 0.009,
+			"sun_color": Color(0.85, 0.82, 1.0), "sun_energy": 0.78,
+			"contrast": 1.16, "saturation": 1.06, "brightness": 0.90,
 		},
 		# A cathedral god-ray pours straight down onto the suspended brain.
 		"light_shafts": [0],
@@ -2487,15 +2501,15 @@ static func _archon() -> Dictionary:
 			{"pos": Vector3(0, 9, 0), "color": Color(0.4, 0.75, 1.0), "energy": 3.2, "range": 40},
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 24},
 			{"pos": Vector3(22, 5, -22), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 24},
-			{"pos": Vector3(22, 5, 22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
-			{"pos": Vector3(-22, 5, -22), "color": Color(0.5, 0.5, 1.0), "energy": 2.0, "range": 22},
+			{"pos": Vector3(22, 5, 22), "color": Color(1.0, 0.6, 0.3), "energy": 2.0, "range": 22},
+			{"pos": Vector3(-22, 5, -22), "color": Color(1.0, 0.6, 0.3), "energy": 2.0, "range": 22},
 			# Cloister-ring lighting (appended AFTER the originals — light_shafts
 			# [0] must keep pointing at the god-ray). Cathedral violets + blues.
 			{"pos": Vector3(-49, 5, -49), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 20},
 			{"pos": Vector3(49, 5, 49), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 19},
 			{"pos": Vector3(0, 6, -49), "color": Color(0.5, 0.55, 1.0), "energy": 2.2, "range": 20},
 			{"pos": Vector3(-49, 5, 49), "color": Color(0.55, 0.5, 1.0), "energy": 2.0, "range": 18},
-			{"pos": Vector3(-51, 5, 0), "color": Color(0.45, 0.65, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-51, 5, 0), "color": Color(1.0, 0.55, 0.3), "energy": 2.0, "range": 18},
 		],
 		# Four cathedral pillars frame the brain without blocking the centre.
 		"walls": [
@@ -2667,11 +2681,11 @@ static func _uplink() -> Dictionary:
 			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
 			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.8, 0.85, 1.0),
 			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
-			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.3, 0.4, 0.75),
-			"ambient": Color(0.5, 0.6, 0.95), "ambient_energy": 0.65,
-			"sky_contribution": 0.6, "glow": 1.32, "fog_density": 0.009,
-			"sun_color": Color(0.6, 0.6, 1.0), "sun_energy": 0.82,
-			"contrast": 1.15, "saturation": 1.13, "brightness": 0.90,
+			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.32, 0.38, 0.58),
+			"ambient": Color(0.58, 0.62, 0.85), "ambient_energy": 0.65,
+			"sky_contribution": 0.6, "glow": 1.15, "fog_density": 0.009,
+			"sun_color": Color(0.85, 0.87, 1.0), "sun_energy": 0.82,
+			"contrast": 1.15, "saturation": 1.06, "brightness": 0.90,
 		},
 		"light_shafts": [0],
 		"lights": [
@@ -2680,7 +2694,7 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(18, 5, -18), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 20},
 			# Ring lighting (appended AFTER the originals — light_shafts [0] must
 			# keep pointing at the same lamp). Signal blues + warm contrast.
-			{"pos": Vector3(-36, 5, -36), "color": Color(0.5, 0.6, 1.0), "energy": 2.2, "range": 20},
+			{"pos": Vector3(-36, 5, -36), "color": Color(1.0, 0.62, 0.35), "energy": 2.2, "range": 20},
 			{"pos": Vector3(36, 5, 36), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 19},
 			{"pos": Vector3(0, 6, -37), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 20},
 			{"pos": Vector3(-36, 5, 36), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 18},
@@ -3652,11 +3666,11 @@ static func _gemini() -> Dictionary:
 			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
 			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
 			"milkyway": 0.4, "milkyway_tint": Color(0.5, 0.6, 0.9),
-			"ground": Color(0.04, 0.05, 0.1), "fog": Color(0.2, 0.26, 0.52),
-			"ambient": Color(0.55, 0.6, 0.88), "ambient_energy": 0.55,
+			"ground": Color(0.04, 0.05, 0.1), "fog": Color(0.26, 0.3, 0.48),
+			"ambient": Color(0.6, 0.63, 0.85), "ambient_energy": 0.55,
 			"sky_contribution": 0.7, "glow": 1.07, "fog_density": 0.008,
 			"sun_color": Color(0.8, 0.88, 1.0), "sun_energy": 1.1,
-			"contrast": 1.14, "saturation": 1.12, "brightness": 0.84,
+			"contrast": 1.14, "saturation": 1.06, "brightness": 0.84,
 		},
 		# A data-spire rises from the central platform (pos.y on the platform top).
 		"hero": {"pos": Vector3(0, 1, 0), "color": Color(0.5, 0.65, 1.0), "height": 5.5},
@@ -4066,11 +4080,11 @@ static func _grok() -> Dictionary:
 			"sky_top": Color(0.08, 0.02, 0.03), "sky_horizon": Color(0.28, 0.07, 0.07),
 			"stars": true, "star_brightness": 2.0, "star_tint": Color(1.0, 0.7, 0.65),
 			"milkyway": 0.4, "milkyway_tint": Color(0.7, 0.3, 0.3), "moon_color": Color(1.0, 0.65, 0.55),
-			"ground": Color(0.06, 0.02, 0.02), "fog": Color(0.32, 0.09, 0.09),
-			"ambient": Color(0.72, 0.42, 0.42), "ambient_energy": 0.42,
-			"sky_contribution": 0.6, "glow": 1.17, "fog_density": 0.01,
-			"sun_color": Color(1.0, 0.6, 0.5), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.13, "brightness": 0.84,
+			"ground": Color(0.06, 0.02, 0.02), "fog": Color(0.28, 0.12, 0.13),
+			"ambient": Color(0.78, 0.52, 0.5), "ambient_energy": 0.6,
+			"sky_contribution": 0.6, "glow": 1.17, "fog_density": 0.008,
+			"sun_color": Color(1.0, 0.72, 0.6), "sun_energy": 0.8,
+			"contrast": 1.15, "saturation": 1.13, "brightness": 0.92,
 		},
 		# A blood-red god-ray drops from the central tower light.
 		"light_shafts": [0],
@@ -4083,9 +4097,9 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(-35, 5, -35), "color": Color(1, 0.35, 0.28), "energy": 2.3, "range": 20},
 			{"pos": Vector3(35, 5, 35), "color": Color(1, 0.65, 0.3), "energy": 2.2, "range": 19},
 			{"pos": Vector3(0, 6, -36), "color": Color(1, 0.3, 0.25), "energy": 2.2, "range": 21},
-			{"pos": Vector3(35, 5, -35), "color": Color(1, 0.4, 0.3), "energy": 2.0, "range": 18},
+			{"pos": Vector3(35, 5, -35), "color": Color(0.5, 0.8, 1.0), "energy": 2.0, "range": 18},
 			{"pos": Vector3(-35, 5, 35), "color": Color(1, 0.65, 0.3), "energy": 2.0, "range": 18},
-			{"pos": Vector3(-38, 5, 0), "color": Color(1, 0.28, 0.22), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-38, 5, 0), "color": Color(0.55, 0.8, 1.0), "energy": 2.0, "range": 18},
 		],
 		# Two ominous crimson searchlight rigs on ground masts (open_sky auto-picks
 		# the mast over the ceiling drop-rod) — off-centre so the wide-open middle
