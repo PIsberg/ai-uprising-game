@@ -211,6 +211,10 @@ func _build_extra_settings() -> void:
 	dmg_numbers.toggled.connect(func(p: bool): GraphicsSettings.set_damage_numbers_enabled(p))
 	_grid.add_child(dmg_numbers)
 
+	# Accessibility: how big those numbers are on screen.
+	var dmg_size := _add_slider_row("Damage Number Size", 0.6, 2.0, 0.1, GraphicsSettings.damage_number_scale)
+	dmg_size.value_changed.connect(func(v: float): GraphicsSettings.set_damage_number_scale(v))
+
 	var rebind_btn := Button.new()
 	rebind_btn.custom_minimum_size = Vector2(360, 48)
 	rebind_btn.text = tr("Rebind Controls")

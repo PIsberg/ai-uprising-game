@@ -88,7 +88,7 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 - ✅ **Flash Intensity now also scales world light bursts** (muzzle flash, hit/impact pops,
   explosion and grenade detonation lights; steady lights untouched) — `tests/flash_intensity_probe`.
 - Colourblind-aware FX/HUD palettes (hazard rings already have a text tag; extend to other colour-only cues).
-- Subtitle/damage-number size scaling.
+- ✅ **Damage Number Size slider shipped** (Settings + pause menu, 60–200%, `GraphicsSettings.damage_number_scale`, `tests/damage_number_size_probe`). Subtitle size scaling still open.
 - Difficulty assists / modifiers (aim-assist exists for gamepad; add for KBM, plus damage-taken sliders).
 
 ### Weapon Codex polish 🤖
