@@ -89,7 +89,7 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
   explosion and grenade detonation lights; steady lights untouched) — `tests/flash_intensity_probe`.
 - Colourblind-aware FX/HUD palettes (hazard rings already have a text tag; extend to other colour-only cues).
 - Subtitle/damage-number size scaling.
-- ✅ **Damage Taken slider shipped** (Settings + pause menu, 50–150%, `GraphicsSettings.damage_taken`, `tests/damage_taken_probe`). Still open: aim-assist for KBM, other modifiers.
+- ✅ **Damage Taken slider shipped** (Settings + pause menu, 50–150%, `GraphicsSettings.damage_taken`, `tests/damage_taken_probe`). ✅ **It counts toward the grade like a tier** (x0.85 at 50%, x1.10 at 150%, named on the debrief next to the tier; `GameState.assist_score_mult`, `tests/grade_assist_probe`, issue #88). Still open: aim-assist for KBM, other modifiers.
 
 ### Weapon Codex polish 🤖
 - ✅ **Spinning 3D weapon preview shipped** — lifts each weapon's `Viewmodel` node

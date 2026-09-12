@@ -1069,6 +1069,11 @@ func _on_level_completed() -> void:
 		var acc := int(round(float(_last_stats.get("accuracy", 0.0)) * 100.0))
 		var t := int(round(float(_last_stats.get("time", 0.0))))
 		var diff_lbl := str(_last_stats.get("difficulty", ""))
+		# Name the Damage Taken assist next to the tier when it was on (it
+		# scales the score like a tier, see GameState.assist_score_mult).
+		var assist := float(_last_stats.get("assist", 1.0))
+		if not is_equal_approx(assist, 1.0):
+			diff_lbl += ("  ·  " if diff_lbl != "" else "") + (tr("ASSIST %d%%") % int(round(assist * 100.0)))
 		var best_tag := "   ★ " + tr("NEW BEST") if bool(_last_stats.get("new_best", false)) \
 			else "   " + (tr("Best %s") % str(_last_stats.get("best_grade", _last_grade)))
 		# Time line gains the par context: beating par shows the earned speed

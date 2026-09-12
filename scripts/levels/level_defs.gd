@@ -1556,7 +1556,7 @@ static func _crucible() -> Dictionary:
 			{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
 			{"type": "reaper", "pos": Vector3(-8, 0.5, -4)},
 			{"type": "vacuum", "pos": Vector3(0, 0.3, 6)},
-			{"type": "sentinel", "pos": Vector3(0, 0.5, -14)},
+			{"type": "sentinel", "pos": Vector3(0, 0.5, -11)},
 			{"type": "hunter", "pos": Vector3(-10, 0.5, 10), "trigger": 16, "pack": "cru_west"},
 			{"type": "mauler", "pos": Vector3(10, 0.5, 10), "trigger": 15, "pack": "cru_north"},
 			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14, "pack": "cru_south"},
@@ -3800,8 +3800,8 @@ static func _gemini() -> Dictionary:
 			{"type": "seeker", "pos": Vector3(-14, 2.5, 6), "trigger": 22, "pack": "gem_west"},
 			# Ring garrison: a patrol band on the way in, a west maintenance pack,
 			# a sniper POSTED ON the data gallery, and exit-yard guardians.
-			{"type": "android", "pos": Vector3(-24, 0.5, -28), "trigger": 18, "pack": "gem_a1"},
-			{"type": "drone", "pos": Vector3(-18, 2.5, -28), "trigger": 18, "pack": "gem_a1"},
+			{"type": "android", "pos": Vector3(-17, 0.5, -26), "trigger": 10, "pack": "gem_a1"},
+			{"type": "drone", "pos": Vector3(-18, 2.5, -28), "trigger": 9, "pack": "gem_a1"},
 			{"type": "spider", "pos": Vector3(-30, 0.5, -2), "trigger": 16, "pack": "gem_a2"},
 			{"type": "seeker", "pos": Vector3(-28, 2.5, 6), "trigger": 18, "pack": "gem_a2"},
 			{"type": "sniper", "pos": Vector3(0, 3.8, -31), "trigger": 20},
@@ -4014,18 +4014,18 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16, "pack": "cl_north"},
 			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16, "pack": "cl_se"},
 			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14, "pack": "cl_west"},
-			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 18},
+			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 15},
 			{"type": "gunner", "pos": Vector3(12, 0.5, -12), "trigger": 18, "pack": "cl_se"},
 			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20, "pack": "cl_ne"},
 			{"type": "android", "pos": Vector3(-14, 0.5, 2), "trigger": 20, "pack": "cl_west"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 5, "trigger": 16, "pack": "cl_north"},
 			# Ring garrison: entry-band patrol, a west-corridor pack, a gunner
 			# POSTED ON the records gallery, and exit-yard guardians.
-			{"type": "android", "pos": Vector3(-20, 0.5, -25), "trigger": 18, "pack": "cl_a1"},
-			{"type": "drone", "pos": Vector3(-14, 2.5, -25), "trigger": 18, "pack": "cl_a1"},
+			{"type": "android", "pos": Vector3(-11, 0.5, -25), "trigger": 11, "pack": "cl_a1"},
+			{"type": "drone", "pos": Vector3(-14, 2.5, -25), "trigger": 8, "pack": "cl_a1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, -26), "trigger": 20, "pack": "cl_a1"},
 			{"type": "spider", "pos": Vector3(-25, 0.5, -2), "trigger": 16, "pack": "cl_a2"},
-			{"type": "android", "pos": Vector3(-25, 0.5, -16), "trigger": 17, "pack": "cl_a2"},
+			{"type": "android", "pos": Vector3(-25, 0.5, -16), "trigger": 6, "pack": "cl_a2"},
 			{"type": "skitter", "pos": Vector3(-24, 0.5, 14), "count": 4, "trigger": 16, "pack": "cl_a2"},
 			{"type": "gunner", "pos": Vector3(0, 3.8, -26.5), "trigger": 20},
 			{"type": "android", "pos": Vector3(26, 0.5, 14), "trigger": 18, "pack": "cl_a4"},
@@ -4856,7 +4856,7 @@ static func _lava_world() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(14, 3, -5), "trigger": 18, "pack": "lava_w_p2"},
 			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "lava_w_p3"},
 			{"type": "raptor", "pos": Vector3(10, 3, 13), "trigger": 14},
-			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 12, "pack": "lava_w_p4"},
+			{"type": "raptor", "pos": Vector3(-13, 3, -6), "trigger": 6, "pack": "lava_w_p4"},
 			{"type": "seeker", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "lava_w_p1"},
 			# Roster was a steep difficulty dip vs. the level before it and the TITAN
 			# boss after (see tests/difficulty_curve.tscn) — more of the same aerial
@@ -4866,29 +4866,29 @@ static func _lava_world() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(8, 3, -6), "trigger": 20, "pack": "lava_w_p1"},
 			{"type": "raptor", "pos": Vector3(-4, 3, 14), "trigger": 22, "pack": "lava_w_p3"},
 			{"type": "raptor", "pos": Vector3(12, 3, -12), "trigger": 24, "pack": "lava_w_p2"},
-			{"type": "seeker", "pos": Vector3(-10, 3, -12), "trigger": 18, "pack": "lava_w_p4"},
+			{"type": "seeker", "pos": Vector3(-3, 3, -8), "trigger": 10, "pack": "lava_w_p4"},
 			{"type": "seeker", "pos": Vector3(8, 3, 4), "trigger": 20},
 			# A STRIKER-9 pitcher commands the forge perch, bowling MOLTEN ORBS
 			# down the ramp at anyone crossing the lanes below.
 			{"type": "bowler", "pos": Vector3(0, 3.0, -1), "trigger": 18, "pack": "lava_w_p1"},
-			{"type": "orb", "pos": Vector3(0, 0.6, -14), "trigger": 15},
+			{"type": "orb", "pos": Vector3(0, 0.6, -14), "trigger": 12},
 			{"type": "orb", "pos": Vector3(14, 0.6, 0), "trigger": 20, "pack": "lava_w_p2"},
 			# Outer-loop patrols: the same aerial gauntlet over the new run,
 			# plus a molten orb bowled down the SW island.
-			{"type": "raptor", "pos": Vector3(-22, 3, -8), "trigger": 18, "pack": "lava_w_r1"},
+			{"type": "raptor", "pos": Vector3(-22, 3, -8), "trigger": 6, "pack": "lava_w_r1"},
 			{"type": "seeker", "pos": Vector3(-22, 3, 10), "trigger": 16, "pack": "lava_w_r1"},
 			{"type": "raptor", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "lava_w_r2"},
 			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "lava_w_r2"},
 			{"type": "raptor", "pos": Vector3(14, 3, 20), "trigger": 14, "pack": "lava_w_r2"},
-			{"type": "orb", "pos": Vector3(-21, 0.6, 21), "trigger": 16, "pack": "lava_w_r1"},
+			{"type": "orb", "pos": Vector3(-19, 0.6, 21), "trigger": 16, "pack": "lava_w_r1"},
 			# Late-campaign buff (difficulty_curve dip: 224 vs the ~380-520 band at
 			# this slot): heavies spread one-per-segment across the walkway network
 			# — ground units ON islands/walkways only, hoverers over the sea.
 			{"type": "mauler", "pos": Vector3(14, 2, -15), "trigger": 18, "pack": "lava_w_g1"},   # NE island
 			{"type": "breaker", "pos": Vector3(14, 3, -6), "trigger": 20, "pack": "lava_w_g1"},   # over east walkway
 			{"type": "whirlwind", "pos": Vector3(19, 3, 12), "trigger": 18, "pack": "lava_w_g1"}, # over the SE pool
-			{"type": "mauler", "pos": Vector3(-21, 2, 21), "trigger": 16, "pack": "lava_w_g2"},   # SW island
-			{"type": "breaker", "pos": Vector3(-22, 3, -4), "trigger": 18, "pack": "lava_w_g2"},  # over west walkway
+			{"type": "mauler", "pos": Vector3(-19, 2, 19), "trigger": 16, "pack": "lava_w_g2"},   # SW island
+			{"type": "breaker", "pos": Vector3(-22, 3, -4), "trigger": 10, "pack": "lava_w_g2"},  # over west walkway
 			{"type": "whirlwind", "pos": Vector3(-10, 3, 18), "trigger": 18, "pack": "lava_w_g2"},# over the SW pool
 			{"type": "bowler", "pos": Vector3(14, 2, 21), "trigger": 16, "pack": "lava_w_g3"},    # SE island
 			{"type": "orb", "pos": Vector3(0, 0.6, 12), "trigger": 18, "pack": "lava_w_g3"},      # central cross-lane
@@ -5010,13 +5010,13 @@ static func _water_world() -> Dictionary:
 			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "water__p2"},
 			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
 			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "water__p3"},
-			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 22, "pack": "water__p3"},
+			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 17, "pack": "water__p3"},
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14, "pack": "water__p1"},
-			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 12},
+			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 6},
 			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "water__p2"},
 			# Outer-loop patrols: the school hunts the new run, sharks lurking
 			# under the west and south walkways.
-			{"type": "fishbot", "pos": Vector3(-22, 3, -8), "trigger": 18, "pack": "water_r1"},
+			{"type": "fishbot", "pos": Vector3(-22, 3, -8), "trigger": 6, "pack": "water_r1"},
 			{"type": "fishbot", "pos": Vector3(-22, 3, 10), "trigger": 16, "pack": "water_r1"},
 			{"type": "shark", "pos": Vector3(-17, 0, 17), "trigger": 18, "pack": "water_r1"},
 			{"type": "fishbot", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "water_r2"},

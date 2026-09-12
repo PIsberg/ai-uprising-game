@@ -1060,7 +1060,13 @@ func grade_level() -> Dictionary:
 	# enemy toughness/speed/cadence, the same play ranks higher on HARD and lower
 	# on EASY — so an S means more on HARD than it does on a cakewalk.
 	var diff_mult: float = [0.9, 1.0, 1.15][clampi(difficulty, 0, 2)]
-	score_pts = clampf(score_pts * diff_mult, 0.0, 100.0)
+	score_pts *= diff_mult
+	# The Damage Taken accessibility assist counts the same way a tier does:
+	# 50% incoming damage is scored like a notch below EASY (x0.85), 150% like a
+	# notch above HARD (x1.10), 100% is neutral. The run is never blocked or
+	# hidden — the debrief simply names the assist next to the tier (issue #88).
+	var assist := assist_score_mult()
+	score_pts = clampf(score_pts * assist, 0.0, 100.0)
 	var grade := "D"
 	if score_pts >= 90.0: grade = "S"
 	elif score_pts >= 75.0: grade = "A"
@@ -1077,9 +1083,28 @@ func grade_level() -> Dictionary:
 		"executions": stat_executions, "bounties": stat_bounties,
 		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
 		"par": par, "speed_bonus": speed_bonus,
+		"assist": _damage_taken_setting(), "assist_mult": assist,
 	}
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
+
+## Damage Taken slider value (0.5..1.5) as the settings autoload reports it;
+## 1.0 when the autoload is absent (probes run without it).
+func _damage_taken_setting() -> float:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	if gs == null:
+		return 1.0
+	return clampf(float(gs.get("damage_taken")), 0.5, 1.5)
+
+## Score multiplier for the Damage Taken assist: linear from x0.85 at 50% to
+## x1.0 at 100% to x1.10 at 150%. Symmetric in spirit with the tier multipliers
+## (EASY 0.9 / NORMAL 1.0 / HARD 1.15) but a little flatter, so a player who
+## needs the assist to finish is not punished harder than picking EASY.
+func assist_score_mult() -> float:
+	var dt := _damage_taken_setting()
+	if dt < 1.0:
+		return lerpf(0.85, 1.0, (dt - 0.5) / 0.5)
+	return lerpf(1.0, 1.10, (dt - 1.0) / 0.5)
 
 ## Par time for a level: a generous baseline plus a slice per authored enemy,
 ## so bigger rosters get proportionally more room. Feeds the SPEED BONUS in
