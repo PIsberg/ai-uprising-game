@@ -69,6 +69,33 @@ per-robot telemetry rig, fix with a red-then-green probe, PR. Each item below na
 - **Open** — every active robot costs ~1 ms of physics-tick time, engine-side (issue #89,
   `docs/PERF_NOTES.md`); MANUS phase-3 cadence and the narrower WARBOT lane need a playtest.
 
+## ✅ Eye-level look audit, measured (2026-09-12)
+Every campaign level shot from the spawn at eye height, then scored (`tests/look_capture` +
+`tools/look_metrics.py`: mean luminance, black/blown share, saturation, hue entropy, Laplacian
+sharpness). Three harness traps had to be fixed before the numbers meant anything: the camera
+stared into the nearest wall on corner spawns (now a raycast yaw sweep picks the clearest
+sightline), it sat inside the player's own body mesh, and the robots engaged the invulnerable
+player during the settle so the blast screen-warp smeared half the frames into rings (the player
+is now parked and frozen for the capture).
+- ✅ **Flash-light regression caught on the way** — `GraphicsSettings.flash_energy` had been
+  dropped by the #87 squash; every muzzle flash / impact / explosion light script-errored.
+  Restored, and `flash_intensity_probe` finally joined both suite lists (PR #98).
+- ✅ **Single-hue night levels** — titan, archon, uplink and overseer lit everything with the
+  same blue: blue sun, blue ambient, saturated blue fog, and archon had not one warm light among
+  ten. Mean saturation 0.89–0.98 (nearly every pixel fully saturated). Moon-white key, greyer
+  haze, lower glow, 1–3 warm accent lamps each: saturation now 0.60–0.76, mean luminance up
+  ~40%, the concrete walls show their texture again. Gemini got the lighter version.
+- ✅ **Convoy had no `env` block at all** — the only level rendering the builder's generic grey
+  default (saturation 0.19, the flattest frame). Now a moonlit night highway under sodium lamps.
+- ✅ **Grok** — darkest frame in the campaign (mean luminance 0.08); ambient/sun lifted, two of
+  the nine red lamps turned cool so the red has something to play against.
+- **Hivemind, left as is** — 77% of the frame under 2% luminance, but it is the Tron-style
+  mesh look (black planes, glowing grid seams): lifting ambient/sun and the floor albedo
+  moved mean luminance 0.06 → 0.06, so the change was reverted rather than shipped blind.
+- Judged fine and left alone: desert, frostbreak, water_world, suburb/suburb_boss, neon (its
+  black is the arcade look), sublevel (dark corridor + light strip, tuned earlier), gpt's blown
+  floor grid (owner-approved crisp look), guardrails' red floor + cyan HUD panel (intentional).
+
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
 - **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split + look-at/IK so robots aim while walking.
