@@ -89,7 +89,7 @@ func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool 
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.no_depth_test = true
 	lbl.fixed_size = true
-	lbl.pixel_size = 0.0028
+	lbl.pixel_size = 0.0028 * GraphicsSettings.damage_number_scale # accessibility: Damage Number Size
 	lbl.outline_size = 12 if crit else 10
 	# Heavier hits read bigger; gold crit > red kill > white->hot-orange by bite.
 	var heavy := clampf(amount / 80.0, 0.0, 1.0)
