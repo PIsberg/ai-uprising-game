@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-244 probes total: **30** wired into the headless suite (`suite`), **83**
+245 probes total: **30** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **135** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **136** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -186,6 +186,7 @@ or GPU-timing probes; `--headless` renders these black).
 | level_shot | Elevated 3/4 view of each campaign level: layout/detail/obstacle fit | windowed |
 | level_sky_probe | Horizon/sky of a real open-sky night level: stars+moon | windowed |
 | lightning_probe | Storm-lightning bolt at real in-game distance with fog/exposure as in play | windowed |
+| loading_screen_deploy_probe | Level 1 reaches the player through the real loading screen on an exported pack, via the new-run path (main menu warm-up joined by the loading screen) or `-- direct` (cold loading-screen request): level_01 is the current scene within 20 s, no failed preload(). Run it via `pwsh tools/load_race_check.ps1` (exports the `Load race check` preset, 10 cold starts alternating the paths): the use_sub_threads race it guards failed 5 of 20 there and never from source or headless | windowed |
 | limbloss_probe | Bone-collapse dismemberment: critical-threshold limb sever, LIMB_LOSS_MAX cap, no-skeleton chassis no-ops cleanly | headless |
 | look_capture | Eye-level screenshot of each campaign level for visual audit: stands at the spawn, sweeps yaw for the clearest sightline (world raycast), parks the player so no blast screen-warp smears the frame; `-- --out=<dir> --levels=a,b`; score the frames with `python tools/look_metrics.py <dir> [<baseline dir>]` | windowed |
 | loot_probe | Flyer supply drops over open sea relocate onto a walkway, never stranded in the hazard | suite |
@@ -283,7 +284,7 @@ or GPU-timing probes; `--headless` renders these black).
 | terminator_entrance_probe | TERMINATOR's eruption entrance (buried rumble→breach→rise→settle) | windowed |
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
-| threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, ResourceLoader.load_threaded_request with use_sub_threads, to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s) | suite |
+| threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s) | suite |
 | threat_probe | Ground-truth per-enemy DPS on the player (report-only, real per-enemy attack vars, not scripted defaults) | headless |
 | titan_blink_probe | PROMETHEUS-0's phase-blink beam charges (`BLINK_BEAM_TELL`) before sweeping instead of firing instantly undodgeable | suite |
 | titan_ingame_probe | Real `titan.tscn` instantiated, sky-drop cancelled, planted boss screenshotted | windowed |

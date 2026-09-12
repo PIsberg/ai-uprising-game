@@ -44,7 +44,7 @@ func _run() -> void:
 	print("warm load finished in %.2fs (status %d)" % [(Time.get_ticks_msec() - t0) / 1000.0, ResourceLoader.load_threaded_get_status(first)])
 	# What the loading screen does next: its own request + get.
 	var t1 := Time.get_ticks_msec()
-	var req := ResourceLoader.load_threaded_request(first, "", true)
+	var req := ResourceLoader.load_threaded_request(first, "", false)
 	var status := ResourceLoader.load_threaded_get_status(first)
 	var packed: PackedScene = ResourceLoader.load_threaded_get(first) as PackedScene if status == ResourceLoader.THREAD_LOAD_LOADED else null
 	var secs := (Time.get_ticks_msec() - t1) / 1000.0

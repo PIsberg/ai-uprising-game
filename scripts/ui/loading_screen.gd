@@ -222,12 +222,9 @@ func _go() -> void:
 	if not ResourceLoader.exists(_path):
 		get_tree().change_scene_to_file(_path)
 		return
-	# use_sub_threads: dependencies load in parallel. Without it the heavy
-	# levels (assembly and friends) serialize the shared robot-model chunk and
-	# the ring sits pinned at ~24% for many seconds — long enough that players
-	# reported it as a freeze. Parallel deps cut the total load ~40% and keep
-	# the fraction moving.
-	if ResourceLoader.load_threaded_request(_path, "", true) == OK:
+	# use_sub_threads stays off: worker-thread script compiles failed their preload()s
+	# and hung the exported build ~1 cold start in 4 (tools/load_race_check.ps1).
+	if ResourceLoader.load_threaded_request(_path, "", false) == OK:
 		_loading = true
 	else:
 		get_tree().change_scene_to_file(_path) # fallback if the request was refused

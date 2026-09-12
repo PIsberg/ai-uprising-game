@@ -1515,7 +1515,8 @@ func warm_level_cache() -> void:
 		if not ResourceLoader.exists(p):
 			continue
 		if ResourceLoader.load_threaded_get_status(p) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			ResourceLoader.load_threaded_request(p, "", true)
+			# use_sub_threads off, like the loading screen that joins this load (see its _go).
+			ResourceLoader.load_threaded_request(p, "", false)
 
 ## Read the checkpoint WITHOUT loading it into the live run: what the main
 ## menu's Continue button shows (level title, campaign position, difficulty).
