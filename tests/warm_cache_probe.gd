@@ -26,6 +26,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	GraphicsSettings.needs_auto_quality = false # the menu would otherwise start a benchmark
+	GameState.allow_warm_headless = true # the warm-up skips headless runs unless told otherwise
 	var first: String = String(GameState.campaign()[0])
 	_check(ResourceLoader.load_threaded_get_status(first) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE,
 		"first level is not loaded before the menu appears")

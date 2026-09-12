@@ -1467,7 +1467,15 @@ func load_progress() -> bool:
 ## behind the main menu, it is invisible. Idempotent: a path already in
 ## flight or loaded is left alone. Errors are ignored - the loading screen
 ## still does its own request and fallback (tests/warm_cache_probe).
+## Probes opt in; a headless run (CI's --quit-after load-test, the probe
+## suite) otherwise skips the warm-up, because quitting the engine with a
+## threaded load in flight spams "Could not preload resource file" errors
+## through teardown, and the strict scene-load gate would read those as real.
+var allow_warm_headless: bool = false
+
 func warm_level_cache() -> void:
+	if DisplayServer.get_name() == "headless" and not allow_warm_headless:
+		return
 	var paths: Array[String] = []
 	if campaign().size() > 0:
 		paths.append(String(campaign()[0]))
