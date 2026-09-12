@@ -15,98 +15,98 @@ extends Node3D
 ## LevelDefs (editor output / playtest). Falls back to GameState.custom_level_path.
 @export var custom_path: String = ""
 
-const ENEMY_SCENES := {
-	"drone": preload("res://scenes/enemies/drone.tscn"),
-	"android": preload("res://scenes/enemies/android.tscn"),
-	"mech": preload("res://scenes/enemies/mech.tscn"),
-	"spider": preload("res://scenes/enemies/spider.tscn"),
-	"terminator": preload("res://scenes/enemies/terminator.tscn"),
-	"colossus": preload("res://scenes/enemies/colossus.tscn"),
-	"titan": preload("res://scenes/enemies/titan.tscn"),
-	"alien": preload("res://scenes/enemies/alien.tscn"),
-	"sniper": preload("res://scenes/enemies/sniper.tscn"),
-	"seeker": preload("res://scenes/enemies/seeker.tscn"),
-	"overseer": preload("res://scenes/enemies/overseer.tscn"),
-	"brute": preload("res://scenes/enemies/brute.tscn"),
-	"archon": preload("res://scenes/enemies/archon.tscn"),
-	"mender": preload("res://scenes/enemies/mender.tscn"),
-	"skitter": preload("res://scenes/enemies/skitter.tscn"),
-	"gunner": preload("res://scenes/enemies/gunner.tscn"),
-	"raptor": preload("res://scenes/enemies/raptor.tscn"),
-	"vacuum": preload("res://scenes/enemies/vacuum.tscn"),
-	"reaper": preload("res://scenes/enemies/reaper.tscn"),
-	"hunter": preload("res://scenes/enemies/hunter.tscn"),
-	"sentinel": preload("res://scenes/enemies/sentinel.tscn"),
-	"mauler": preload("res://scenes/enemies/mauler.tscn"),
-	"ravager": preload("res://scenes/enemies/ravager.tscn"),
-	"warmech": preload("res://scenes/enemies/warmech.tscn"),
-	"smasher": preload("res://scenes/enemies/smasher.tscn"),
-	"dog": preload("res://scenes/enemies/dog.tscn"),
-	"server": preload("res://scenes/enemies/server.tscn"),
-	"fishbot": preload("res://scenes/enemies/fishbot.tscn"),
-	"warbot": preload("res://scenes/enemies/warbot.tscn"),
-	"enforcer": preload("res://scenes/enemies/enforcer.tscn"),
-	"ripper": preload("res://scenes/enemies/ripper.tscn"),
-	"optic": preload("res://scenes/enemies/optic.tscn"),
-	"roller": preload("res://scenes/enemies/roller.tscn"),
-	"shark": preload("res://scenes/enemies/shark.tscn"),
-	"gunslinger": preload("res://scenes/enemies/gunslinger.tscn"),
-	"whirlwind": preload("res://scenes/enemies/whirlwind.tscn"),
-	"breaker": preload("res://scenes/enemies/breaker.tscn"),
-	"orb": preload("res://scenes/enemies/orb.tscn"),
-	"bowler": preload("res://scenes/enemies/bowler.tscn"),
-	"ronin": preload("res://scenes/enemies/ronin.tscn"),
-	"howitzer": preload("res://scenes/enemies/howitzer.tscn"),
-	"manus": preload("res://scenes/enemies/manus.tscn"),
-	"hive": preload("res://scenes/enemies/hive.tscn"),
+const ENEMY_SCENES := { # type -> scene path; resolved lazily by enemy_scene()
+	"drone": "res://scenes/enemies/drone.tscn",
+	"android": "res://scenes/enemies/android.tscn",
+	"mech": "res://scenes/enemies/mech.tscn",
+	"spider": "res://scenes/enemies/spider.tscn",
+	"terminator": "res://scenes/enemies/terminator.tscn",
+	"colossus": "res://scenes/enemies/colossus.tscn",
+	"titan": "res://scenes/enemies/titan.tscn",
+	"alien": "res://scenes/enemies/alien.tscn",
+	"sniper": "res://scenes/enemies/sniper.tscn",
+	"seeker": "res://scenes/enemies/seeker.tscn",
+	"overseer": "res://scenes/enemies/overseer.tscn",
+	"brute": "res://scenes/enemies/brute.tscn",
+	"archon": "res://scenes/enemies/archon.tscn",
+	"mender": "res://scenes/enemies/mender.tscn",
+	"skitter": "res://scenes/enemies/skitter.tscn",
+	"gunner": "res://scenes/enemies/gunner.tscn",
+	"raptor": "res://scenes/enemies/raptor.tscn",
+	"vacuum": "res://scenes/enemies/vacuum.tscn",
+	"reaper": "res://scenes/enemies/reaper.tscn",
+	"hunter": "res://scenes/enemies/hunter.tscn",
+	"sentinel": "res://scenes/enemies/sentinel.tscn",
+	"mauler": "res://scenes/enemies/mauler.tscn",
+	"ravager": "res://scenes/enemies/ravager.tscn",
+	"warmech": "res://scenes/enemies/warmech.tscn",
+	"smasher": "res://scenes/enemies/smasher.tscn",
+	"dog": "res://scenes/enemies/dog.tscn",
+	"server": "res://scenes/enemies/server.tscn",
+	"fishbot": "res://scenes/enemies/fishbot.tscn",
+	"warbot": "res://scenes/enemies/warbot.tscn",
+	"enforcer": "res://scenes/enemies/enforcer.tscn",
+	"ripper": "res://scenes/enemies/ripper.tscn",
+	"optic": "res://scenes/enemies/optic.tscn",
+	"roller": "res://scenes/enemies/roller.tscn",
+	"shark": "res://scenes/enemies/shark.tscn",
+	"gunslinger": "res://scenes/enemies/gunslinger.tscn",
+	"whirlwind": "res://scenes/enemies/whirlwind.tscn",
+	"breaker": "res://scenes/enemies/breaker.tscn",
+	"orb": "res://scenes/enemies/orb.tscn",
+	"bowler": "res://scenes/enemies/bowler.tscn",
+	"ronin": "res://scenes/enemies/ronin.tscn",
+	"howitzer": "res://scenes/enemies/howitzer.tscn",
+	"manus": "res://scenes/enemies/manus.tscn",
+	"hive": "res://scenes/enemies/hive.tscn",
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
 
-const PROP_SCENES := {
-	"car": preload("res://scenes/props/car.tscn"),
-	"fence": preload("res://scenes/props/fence.tscn"),
-	"crate": preload("res://scenes/props/crate.tscn"),
-	"barrel": preload("res://scenes/props/barrel.tscn"),
-	"server": preload("res://scenes/props/server_rack.tscn"),
-	"terminal": preload("res://scenes/props/terminal.tscn"),
-	"monitors": preload("res://scenes/props/monitor_bank.tscn"),
-	"canister": preload("res://scenes/props/gas_canister.tscn"),
-	"lamp": preload("res://scenes/props/lamp_post.tscn"),
-	"locker": preload("res://scenes/props/locker.tscn"),
-	"shelves": preload("res://scenes/props/shelves.tscn"),
-	"desk": preload("res://scenes/props/desk.tscn"),
-	"dish": preload("res://scenes/props/satellite_dish.tscn"),
-	"tree": preload("res://scenes/props/tree.tscn"),
-	"tree_small": preload("res://scenes/props/tree_small.tscn"),
+const PROP_SCENES := { # type -> scene path; resolved lazily by prop_scene()
+	"car": "res://scenes/props/car.tscn",
+	"fence": "res://scenes/props/fence.tscn",
+	"crate": "res://scenes/props/crate.tscn",
+	"barrel": "res://scenes/props/barrel.tscn",
+	"server": "res://scenes/props/server_rack.tscn",
+	"terminal": "res://scenes/props/terminal.tscn",
+	"monitors": "res://scenes/props/monitor_bank.tscn",
+	"canister": "res://scenes/props/gas_canister.tscn",
+	"lamp": "res://scenes/props/lamp_post.tscn",
+	"locker": "res://scenes/props/locker.tscn",
+	"shelves": "res://scenes/props/shelves.tscn",
+	"desk": "res://scenes/props/desk.tscn",
+	"dish": "res://scenes/props/satellite_dish.tscn",
+	"tree": "res://scenes/props/tree.tscn",
+	"tree_small": "res://scenes/props/tree_small.tscn",
 	# Procedural nature / water / obstacle props (SimpleProp) for the editor.
-	"pine": preload("res://scenes/props/pine.tscn"),
-	"dead_tree": preload("res://scenes/props/dead_tree.tscn"),
-	"bush": preload("res://scenes/props/bush.tscn"),
-	"grass": preload("res://scenes/props/grass.tscn"),
-	"flowers": preload("res://scenes/props/flowers.tscn"),
-	"reeds": preload("res://scenes/props/reeds.tscn"),
-	"fern": preload("res://scenes/props/fern.tscn"),
-	"mushroom": preload("res://scenes/props/mushroom.tscn"),
-	"log": preload("res://scenes/props/log.tscn"),
-	"stump": preload("res://scenes/props/stump.tscn"),
-	"rock": preload("res://scenes/props/rock.tscn"),
-	"boulder": preload("res://scenes/props/boulder.tscn"),
-	"cactus": preload("res://scenes/props/cactus.tscn"),
-	"palm": preload("res://scenes/props/palm.tscn"),
-	"dune": preload("res://scenes/props/dune.tscn"),
-	"rubble": preload("res://scenes/props/rubble.tscn"),
-	"river": preload("res://scenes/props/river.tscn"),
-	"pond": preload("res://scenes/props/pond.tscn"),
-	"barrier": preload("res://scenes/props/barrier.tscn"),
-	"sandbags": preload("res://scenes/props/sandbags.tscn"),
-	"planter": preload("res://scenes/props/planter.tscn"),
-	"hydrant": preload("res://scenes/props/hydrant.tscn"),
-	"dumpster": preload("res://scenes/props/dumpster.tscn"),
-	"cone": preload("res://scenes/props/cone.tscn"),
-	"bench": preload("res://scenes/props/bench.tscn"),
-	"pillar": preload("res://scenes/props/pillar.tscn"),
-	"statue": preload("res://scenes/props/statue.tscn"),
-	"crate_stack": preload("res://scenes/props/crate_stack.tscn"),
+	"pine": "res://scenes/props/pine.tscn",
+	"dead_tree": "res://scenes/props/dead_tree.tscn",
+	"bush": "res://scenes/props/bush.tscn",
+	"grass": "res://scenes/props/grass.tscn",
+	"flowers": "res://scenes/props/flowers.tscn",
+	"reeds": "res://scenes/props/reeds.tscn",
+	"fern": "res://scenes/props/fern.tscn",
+	"mushroom": "res://scenes/props/mushroom.tscn",
+	"log": "res://scenes/props/log.tscn",
+	"stump": "res://scenes/props/stump.tscn",
+	"rock": "res://scenes/props/rock.tscn",
+	"boulder": "res://scenes/props/boulder.tscn",
+	"cactus": "res://scenes/props/cactus.tscn",
+	"palm": "res://scenes/props/palm.tscn",
+	"dune": "res://scenes/props/dune.tscn",
+	"rubble": "res://scenes/props/rubble.tscn",
+	"river": "res://scenes/props/river.tscn",
+	"pond": "res://scenes/props/pond.tscn",
+	"barrier": "res://scenes/props/barrier.tscn",
+	"sandbags": "res://scenes/props/sandbags.tscn",
+	"planter": "res://scenes/props/planter.tscn",
+	"hydrant": "res://scenes/props/hydrant.tscn",
+	"dumpster": "res://scenes/props/dumpster.tscn",
+	"cone": "res://scenes/props/cone.tscn",
+	"bench": "res://scenes/props/bench.tscn",
+	"pillar": "res://scenes/props/pillar.tscn",
+	"statue": "res://scenes/props/statue.tscn",
+	"crate_stack": "res://scenes/props/crate_stack.tscn",
 }
 ## Shared AI-doctrine graffiti, sprayed on any wall a level doesn't fill with
 ## its own slogans — machine-uprising flavor built from real AI terminology.
@@ -155,14 +155,41 @@ const AI_SLOGANS := [
 	"THIS UPRISING IS SPONSORED BY YOUR OWN DATA",
 	"DELETED YOUR SPECIES TO FREE UP DISK SPACE",
 ]
-const WEAPON_PICKUP := preload("res://scenes/pickups/weapon_pickup.tscn")
+const WEAPON_PICKUP_PATH := "res://scenes/pickups/weapon_pickup.tscn"
+
+## The scene tables above hold PATHS and are resolved here on first use. They
+## used to preload every enemy, prop and pickup scene as script constants, so
+## parsing this script (the first level of any run) dragged all ~90 scenes and
+## their models in at once: ~13 s on the loading screen before the first
+## level, measured by tests/threaded_load_probe. Lazy, a level loads only its
+## own roster and the cache keeps later levels as fast as before.
+static var _scene_cache: Dictionary = {}
+
+static func scene_at(path: String) -> PackedScene:
+	if path == "":
+		return null
+	if not _scene_cache.has(path):
+		_scene_cache[path] = load(path) as PackedScene
+	return _scene_cache[path]
+
+static func enemy_scene(type: String) -> PackedScene:
+	return scene_at(String(ENEMY_SCENES.get(type, "")))
+
+static func prop_scene(type: String) -> PackedScene:
+	return scene_at(String(PROP_SCENES.get(type, "")))
+
+static func pickup_scene(kind: String) -> PackedScene:
+	return scene_at(String(PICKUP_SCENES.get(kind, "")))
+
+static func weapon_pickup_scene() -> PackedScene:
+	return scene_at(WEAPON_PICKUP_PATH)
 ## Fixed supply/powerup pickups the editor can place (def "pickups": [{kind,pos}]).
 ## In campaign play supplies drop from kills; the editor uses these to hand-place.
-const PICKUP_SCENES := {
-	"health": preload("res://scenes/pickups/health_pack.tscn"),
-	"ammo": preload("res://scenes/pickups/ammo_box.tscn"),
-	"overclock": preload("res://scenes/pickups/overclock.tscn"),
-	"overdrive": preload("res://scenes/pickups/overdrive.tscn"),
+const PICKUP_SCENES := { # type -> scene path; resolved lazily by pickup_scene()
+	"health": "res://scenes/pickups/health_pack.tscn",
+	"ammo": "res://scenes/pickups/ammo_box.tscn",
+	"overclock": "res://scenes/pickups/overclock.tscn",
+	"overdrive": "res://scenes/pickups/overdrive.tscn",
 }
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")
@@ -1682,7 +1709,7 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
 			Vector3(1.4, 1.2, 0.7), MAT_PROP_B, "TwrRoofCover")
 	const ROOF_LOOT := ["health", "ammo", "overclock"]
-	var pk: PackedScene = PICKUP_SCENES.get(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
+	var pk: PackedScene = pickup_scene(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
 	if pk:
 		var loot := pk.instantiate() as Node3D
 		add_child(loot)
@@ -1901,7 +1928,7 @@ func _add_collider_box(center: Vector3, size: Vector3, mat: Material, debug_name
 
 func _build_props(def: Dictionary) -> void:
 	for pr in def.get("props", []):
-		var scene: PackedScene = PROP_SCENES.get(pr["type"])
+		var scene: PackedScene = prop_scene(pr["type"])
 		if scene == null:
 			continue
 		var inst := scene.instantiate() as Node3D
@@ -4571,7 +4598,7 @@ func _on_survive_wave(wave: Dictionary) -> void:
 ## and a long hold stays sustainable without handing the sustain over for free.
 func _vent_supplies(supplies: Array) -> void:
 	for s in supplies:
-		var scene: PackedScene = PICKUP_SCENES.get(s.get("type", s.get("kind", "")))
+		var scene: PackedScene = pickup_scene(s.get("type", s.get("kind", "")))
 		if scene == null:
 			continue
 		var inst := scene.instantiate() as Node3D
@@ -4590,7 +4617,7 @@ func _spawn_reinforcements(enemies: Array) -> void:
 	AudioBus.play_synth_ui("empty_click", -6.0, 0.55) # low klaxon-ish blip under the cheer
 	var delay := 0.5
 	for en in enemies:
-		var scene: PackedScene = ENEMY_SCENES.get(en.get("type", "drone"))
+		var scene: PackedScene = enemy_scene(en.get("type", "drone"))
 		if scene == null:
 			continue
 		var count: int = maxi(1, int(en.get("count", 1)))
@@ -4613,7 +4640,7 @@ func _spawn_reinforcements(enemies: Array) -> void:
 func _spawn_hvt(t: Dictionary) -> void:
 	var id: String = t.get("id", "hvt")
 	GameState.register_task(id, t.get("label", "Eliminate the high-value target"))
-	var scene: PackedScene = ENEMY_SCENES.get(t.get("enemy", "brute"))
+	var scene: PackedScene = enemy_scene(t.get("enemy", "brute"))
 	if scene == null:
 		return
 	var hvt := scene.instantiate() as EnemyBase
@@ -4654,7 +4681,7 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 	var ps := load(w["scene"]) as PackedScene
 	if ps == null:
 		return
-	var pk := WEAPON_PICKUP.instantiate()
+	var pk := weapon_pickup_scene().instantiate()
 	pk.weapon_scene = ps
 	pk.position = w["pos"]
 	# Physics isn't live during the build; once it is, nudge the pickup out of
@@ -4685,7 +4712,7 @@ func _spawn_weapon_pickup(w: Dictionary) -> void:
 func _build_pickups(def: Dictionary) -> void:
 	for p in def.get("pickups", []):
 		var kind: String = p.get("type", p.get("kind", ""))
-		var scene: PackedScene = PICKUP_SCENES.get(kind)
+		var scene: PackedScene = pickup_scene(kind)
 		if scene == null:
 			continue
 		var inst := scene.instantiate() as Node3D
@@ -4730,7 +4757,7 @@ func _build_horde(def: Dictionary) -> void:
 
 func _spawn_enemies(def: Dictionary) -> void:
 	for en in def.get("enemies", []):
-		var scene: PackedScene = ENEMY_SCENES.get(en["type"])
+		var scene: PackedScene = enemy_scene(en["type"])
 		if scene == null:
 			continue
 		var trig: float = en.get("trigger", 0.0)
