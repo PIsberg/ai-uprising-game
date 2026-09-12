@@ -52,3 +52,5 @@ res://tests/field_manual_probe.tscn
 res://tests/autoload_api_probe.tscn
 # Damage Taken assist scores like a tier and is named on the debrief (issue #88).
 res://tests/grade_assist_probe.tscn
+# Continue from every campaign level deploys the saved run into the real level scene (PR #83).
+res://tests/continue_sweep_probe.tscn
