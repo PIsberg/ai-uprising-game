@@ -83,6 +83,10 @@ func _ready() -> void:
 	streams["ui_back"] = _ui_back(0.16)
 	# horde_director plays "victory_sting"; only "victory" existed (silent no-op).
 	streams["victory_sting"] = streams["victory"]
+	# armory.gd plays "pickup_clink" on every purchase; only the _pickup_clink
+	# GENERATOR existed (registered as "pickup_ammo"), so buying anything in the
+	# Armory was silent. tests/sound_id_probe now gates every referenced id.
+	streams["pickup_clink"] = streams["pickup_ammo"]
 
 func get_stream(id: String) -> AudioStream:
 	return streams.get(id)
