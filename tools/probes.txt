@@ -1,0 +1,52 @@
+# The headless probe suite — one scene per line, run by BOTH tools/run_tests.sh
+# and tools/run_tests.ps1 (this file is the single source; the runners never
+# carry their own list). Every entry must be marked `suite` in tests/README.md
+# and vice versa: tools/check_suite_manifest.py enforces that in CI.
+# Render probes (save_png, enemy_view, map, *_shot) need a window — keep them out.
+res://tests/ai_director_probe.tscn
+res://tests/elite_probe.tscn
+res://tests/weapon_stats_probe.tscn
+res://tests/emp_probe.tscn
+res://tests/synth_probe.tscn
+res://tests/codex_count_probe.tscn
+res://tests/teach_probe.tscn
+res://tests/objective_probe.tscn
+res://tests/hazard_probe.tscn
+res://tests/loot_probe.tscn
+res://tests/shark_breach_probe.tscn
+res://tests/tesla_beam_probe.tscn
+res://tests/god_cheat_probe.tscn
+res://tests/enemy_combat_probe.tscn
+res://tests/projectile_fx_probe.tscn
+res://tests/warbot_face_probe.tscn
+res://tests/mission_arc_probe.tscn
+res://tests/survival_probe.tscn
+res://tests/voice_probe.tscn
+res://tests/gun_range_probe.tscn
+res://tests/titan_blink_probe.tscn
+res://tests/mauler_overload_probe.tscn
+res://tests/blast_direction_probe.tscn
+res://tests/damage_source_probe.tscn
+res://tests/seeker_grace_probe.tscn
+res://tests/victory_probe.tscn
+res://tests/convoy_probe.tscn
+res://tests/layout_check.tscn
+res://tests/screen_shock_probe.tscn
+res://tests/damage_number_size_probe.tscn
+res://tests/flash_intensity_probe.tscn
+# Marked `suite` in tests/README.md but never wired into the runners (issue #100).
+res://tests/continue_label_probe.tscn
+res://tests/level_def_coverage_probe.tscn
+res://tests/pointblank_los_probe.tscn
+res://tests/separation_push_probe.tscn
+res://tests/sound_id_probe.tscn
+res://tests/threaded_load_probe.tscn
+res://tests/warm_cache_probe.tscn
+# Described as suite probes by the PRs that added them (#76, #87) but listed nowhere.
+res://tests/damage_taken_probe.tscn
+res://tests/save_probe.tscn
+res://tests/manus_phase_probe.tscn
+res://tests/damage_math_probe.tscn
+res://tests/field_manual_probe.tscn
+# Guards the squash-merge failure class (#87 dropped flash_energy, #92 dropped peek_save).
+res://tests/autoload_api_probe.tscn

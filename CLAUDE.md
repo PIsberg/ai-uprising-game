@@ -15,8 +15,8 @@ godot --path .                                  # run the game (main menu)
 godot --path . --editor-flag --level <id>       # see GameState._handle_cli_boot for CLI boot options (--editor, --level)
 godot --headless --path . --import              # (re)import assets — run once before headless work on a fresh clone
 
-# Full headless probe suite (also: tools/run_tests.ps1 on Windows — a hand-mirrored twin of the
-# PROBES list; a new suite probe goes in BOTH files, see issue #75)
+# Full headless probe suite (Windows: tools/run_tests.ps1). Both runners read the one list in
+# tools/probes.txt; tools/check_suite_manifest.py (CI) fails if it and tests/README.md disagree
 tools/run_tests.sh
 
 # Single probe — every logic probe prints "RESULT PASS" / "RESULT FAIL"
@@ -36,7 +36,7 @@ godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
 
 ## Verification philosophy
 
-**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`. Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to the suite list in `tools/run_tests.sh` **and** `tools/run_tests.ps1` (the two lists are kept in sync by hand).
+**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`. Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to `tools/probes.txt` (the single list both runners read) and mark them `suite` in `tests/README.md`; `tools/check_suite_manifest.py` fails CI if the two disagree.
 
 Probe-writing rules learned the hard way:
 - Spawn a floor (`StaticBody3D`, collision layer 1) or every CharacterBody falls forever and position/range assertions lie.
@@ -72,7 +72,7 @@ Probe-writing rules learned the hard way:
 
 - `docs/LEVEL_DEF_KEYS.md` — every level-def key: effect, consuming builder fn, whether it needs `_scaled`, covering probe. New def key → add a row (and to `_scaled` if positional).
 - `docs/ENEMY_ROSTER.md` — all enemy subclasses with model, role, and per-subclass audit flags (`_on_died`/`_state_attack` overridden without super). New enemy or new override → update the table.
-- `tests/README.md` — index of all probes (suite / headless / windowed) + the full probe-writing rules. New logic probe → add to `tools/run_tests.sh` and the table.
+- `tests/README.md` — index of all probes (suite / headless / windowed) + the full probe-writing rules. New logic probe → add to `tools/probes.txt` and the table (mode `suite`).
 
 ## Housekeeping
 

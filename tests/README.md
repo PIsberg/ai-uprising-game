@@ -21,8 +21,10 @@ render):
 godot --path . res://tests/<name>.tscn
 ```
 
-Full headless suite (imports the project, then runs every probe in
-`tools/run_tests.sh`'s `PROBES` array and checks each printed `RESULT PASS`):
+Full headless suite (imports the project, then runs every probe listed in
+`tools/probes.txt` and checks each printed `RESULT PASS`; both runners read
+that one file, and `tools/check_suite_manifest.py` fails CI if the list and
+the `suite` rows below disagree):
 
 ```sh
 tools/run_tests.sh          # bash / CI
@@ -54,6 +56,7 @@ or GPU-timing probes; `--headless` renders these black).
 | armed_lineup_probe | Blender-armed bot forks lined up to eyeball welded weapons | windowed |
 | armory_probe | GRENADE POWER + LIFELEECH armory tracks; renders the Armory UI (5-upgrade + 3-supply layout) | windowed |
 | armory_shot | Armory shop rendered with partial/empty/maxed upgrade states | windowed |
+| autoload_api_probe | Every `Autoload.method(` call in scripts/scenes/tests resolves to a real method on that autoload (static scan + `has_method`); catches a squash merge deleting a function its callers still use (#87 flash_energy, #92 peek_save) | suite |
 | b3_bowler_throw | STRIKER-9 throws a live MOLTEN ORB that flies/lands/hunts; 3-orb cap | headless |
 | b3_manus_parts | Dumps every MANUS MeshInstance3D with world AABB to locate hand vs base ends | headless |
 | b3_manus_yaw | Four MANUS instances at yaw 0/90/180/270 to pick the orientation facing camera | windowed |
@@ -102,7 +105,9 @@ or GPU-timing probes; `--headless` renders these black).
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
+| damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
 | damage_number_size_probe | Accessibility Damage Number Size (GraphicsSettings.damage_number_scale 0.6..2.0): a real player-dealt hit spawns a Label3D whose fixed-size pixel_size is 0.0028 x the slider (1.0 / 2.0 / 0.6 measured), setter clamps, value persists; restores the user's values | suite |
+| damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |
 | dark_spot_probe | Mean frame luminance from spawn, per campaign level, ranking under-lit "dark spot" levels | windowed |
 | damage_source_probe | `Damageable.apply_damage` survives a FREED or non-Node `source` (shooter died before its projectile landed) and still applies the damage | suite |
 | dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | headless |
@@ -130,6 +135,8 @@ or GPU-timing probes; `--headless` renders these black).
 | explosion_screenshot | Both explosion FX types detonated, frame captured mid-expansion | windowed |
 | eye_glow_probe | A/B: drone/sentinel eye-glow off vs on under a bloom-lit interior env | windowed |
 | feel_audio_probe | AAA feel/audio batch on a live level: synth streams resolve, hazard ambience layers, low-HP heartbeat, sprint lower-ready pose | headless |
+| field_manual_probe | Pause-menu FIELD MANUAL overlay: pause panel hides while it shows (still PAUSED), lists live threats + arsenal bands, closes back to the pause panel | suite |
+| flash_intensity_probe | Flash Intensity accessibility slider reaches world light bursts: `flash_energy` scale, muzzle-flash light pops at 1.0 and is suppressed at 0.0, explosion light pop pinned to zero at 0.0 | suite |
 | fluid_edge_verify | Peak adjacent-pixel step at a fluid bed's rim, from the fluid_shot captures — proves water/lava blend into the floor instead of stepping. Run AFTER fluid_shot | headless |
 | fluid_shot | Isolated top-down rig (one floor, one bed, fixed camera, hazard frame hidden) capturing water + lava rims for fluid_edge_verify; also the only check that water/fluid_margin/lava shaders COMPILE | windowed |
 | fierce_probe | Fierce enemy models with real RobotModel tint/material treatment | windowed |
@@ -182,6 +189,7 @@ or GPU-timing probes; `--headless` renders these black).
 | loot_probe | Flyer supply drops over open sea relocate onto a walkway, never stranded in the hazard | suite |
 | lowhealth_screenshot | Post-process shader with `low_health` forced high | windowed |
 | mantle_kick_probe | A successful mantle fires the new viewmodel kick (not just that mantling still works) | headless |
+| manus_phase_probe | MANUS three health-keyed phases: cooldown multipliers x1/0.8/0.62, one phase-change punch, phase-3 double finger eruption | suite |
 | manus_rooted_probe | ROOTED MANUS: holds spawn position at range, finger-eruption telegraph damage, grab is now a yank within grab_reach | headless |
 | map_probe | Campaign map fully unlocked: lava/water sectors, hazard rings, act grouping, drifting motes | windowed |
 | map_shot | Campaign map driven by keyboard cursor: selection reticle + sector intel | windowed |
@@ -242,6 +250,7 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
+| save_probe | save_progress/load_progress round-trip of every run-scoped field Continue depends on, including the Armory supplies (caught them being lost on Continue) | suite |
 | screen_shock_probe | Blast screen-warp logic: rings register, cap at 3 evicting the WEAKEST (not newest), expire, pack sane screen-UV/progress, zero out behind camera; glitch decays; post shader carries both uniforms | suite |
 | screen_shock_shot | Unit-tests the warp on a static checker through `post_process.gdshader` (grain/warp/glitch zeroed so the shader is time-invariant) — writes `shock_off/mid/glitch.png` for screen_shock_verify | windowed |
 | screen_shock_verify | Bins the shock_off↔shock_mid pixel diff by radius and asserts a structured ring at the expected crest — run AFTER screen_shock_shot | headless |
@@ -302,9 +311,9 @@ or GPU-timing probes; `--headless` renders these black).
 
 ### Candidates to add to the suite
 
-These print the real `RESULT PASS` / `RESULT FAIL` convention `run_tests.sh`
-greps for, run fully headless, and are not currently wired into
-`tools/run_tests.sh`'s `PROBES` array:
+These print the real `RESULT PASS` / `RESULT FAIL` convention the runners
+grep for, run fully headless, and are not currently listed in
+`tools/probes.txt`:
 
 - `checkpoint_probe` — checkpoint/respawn flow
 - `convoy_playtest` — Highway Breakout winnability
@@ -368,7 +377,9 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
 
 ## Maintenance
 
-Adding a new logic probe? Add it to the `PROBES` array in
-`tools/run_tests.sh` **and** to the table above (probe name, one-line
-"verifies", mode). If it can't run headless, mark it `windowed` here instead
-of adding it to the suite.
+Adding a new logic probe? Add it to `tools/probes.txt` (the one list both
+`run_tests.sh` and `run_tests.ps1` read) **and** to the table above with mode
+`suite` (probe name, one-line "verifies", mode). `tools/check_suite_manifest.py`
+runs in CI and fails if the list and the `suite` rows disagree, so a probe
+cannot be described as suite without actually running. If it can't run
+headless, mark it `windowed` here instead of adding it to the list.
