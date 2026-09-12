@@ -1420,6 +1420,14 @@ func save_progress() -> void:
 	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
 	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
 	cf.set_value("run", "nemesis", nemesis) # the grudge survives a quit
+	# Armory supplies are documented "permanent for the run" (player.gd re-applies
+	# them every deploy) — a resumed run must not silently lose what was bought.
+	cf.set_value("run", "supply_ammo", supply_ammo)
+	cf.set_value("run", "supply_grenades", supply_grenades)
+	cf.set_value("run", "supply_health", supply_health)
+	# First-encounter coaching toasts (teach_once) fire once per run — persist
+	# which keys already fired so a resumed run doesn't re-teach everything.
+	cf.set_value("run", "taught", _taught.keys())
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -1442,6 +1450,14 @@ func load_progress() -> bool:
 	for t in cf.get_value("run", "seen_enemies", []):
 		seen_enemy_types[str(t)] = true
 	nemesis = cf.get_value("run", "nemesis", {})
+	# Armory supplies (missing key on an old save -> the documented 0 default).
+	supply_ammo = int(cf.get_value("run", "supply_ammo", 0))
+	supply_grenades = int(cf.get_value("run", "supply_grenades", 0))
+	supply_health = float(cf.get_value("run", "supply_health", 0.0))
+	# First-encounter coaching toasts already shown this run.
+	_taught.clear()
+	for k in cf.get_value("run", "taught", []):
+		_taught[str(k)] = true
 	return true
 
 func clear_save() -> void:

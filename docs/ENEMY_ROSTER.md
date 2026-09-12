@@ -47,7 +47,7 @@ inherit that parent's overrides too.
 | HIVE | `enemy_hive.gd` † | scene model + procedural shield mesh | networked flanker; energy shield until inside a jammer zone, spreads flank angles across siblings | — | — |
 | HOWITZER | `enemy_howitzer.gd` | `assets/models/robots/walking_robot_gun.glb` | slow four-legged artillery walker; charged ballistic splash shells | — | — |
 | HUNTER | `enemy_hunter.gd` † | "quaternius_gunner_bladed" chassis (scene) | circle-strafe skirmisher; bolt bursts + blade-dash gap-closer | — | — |
-| MANUS | `enemy_manus.gd` | `assets/models/robots/robot_arm_wip_2.glb` | rooted giant-arm boss: sweep/slam/grab-hurl/finger spikes; single weak-spot core; finger-drum entrance | `_state_attack` | BOSS |
+| MANUS | `enemy_manus.gd` | `assets/models/robots/robot_arm_wip_2.glb` | rooted giant-arm boss: sweep/slam/grab-hurl/finger spikes; single weak-spot core; finger-drum entrance; 3 HP-keyed phases (cooldowns ×1/0.8/0.62, phase 3 double finger eruption leading the player) — `tests/manus_phase_probe` | `_state_attack` | BOSS |
 | MAULER | `enemy_mauler.gd` † | real robot model in `mauler.tscn` (RobotModel Punch clip) | heavy melee brawler; OVERLOAD at 35% HP — sprint + timed self-detonation | — | — |
 | MECH | `enemy_mech.gd` | imported model on `$Model` (scene) | heavy charger; telegraphed stomp shockwave up close, splash rockets at range | `_state_attack` | — |
 | MENDER | `enemy_mender.gd` | EyeDrone chassis, tinted teal (scene) | support flyer; beam-heals most-wounded ally, flees the player, never attacks | `_on_died` | — |

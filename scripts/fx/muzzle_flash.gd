@@ -7,6 +7,9 @@ extends Node3D
 @export var size_mult: float = 1.0
 var _age: float = 0.0
 var _size: float = 1.0
+## Accessibility: flash-intensity multiplier (1.0 = full, 0 = no strobe light
+## at all), cached once so _process doesn't re-touch the autoload every frame.
+var _flash_mult: float = 1.0
 
 func _ready() -> void:
 	# No two flashes alike: random roll around the bore + per-shot size jitter.
@@ -26,6 +29,11 @@ func _ready() -> void:
 			m.emission = tint_color
 			m.emission_energy_multiplier = 8.0
 			mi.material_override = m
+	# Accessibility: read the flash-intensity slider once up front (headless-safe
+	# — GraphicsSettings may be absent under --script). 0 means the strobe light
+	# is skipped entirely; the emissive mesh + sparks below are unaffected.
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	_flash_mult = 1.0 if gs == null else gs.flash_energy(1.0)
 	# The flash's spill light is the single most-spammed FX light in the game —
 	# one per shot, and the node lingered ~0.45 s for the sparks even after the
 	# light itself zeroed at `lifetime`. Gate it on the global FX-light budget
@@ -34,11 +42,14 @@ func _ready() -> void:
 	# idling in the cluster for the rest of the spark tail.
 	for c in get_children():
 		if c is OmniLight3D:
-			if FXLights.take():
-				(c as OmniLight3D).light_color = tint_color
-				(c as OmniLight3D).tree_exited.connect(FXLights.give)
-			else:
+			# Accessibility: flash_intensity == 0 means no strobe light at all —
+			# free it up front instead of taking an FX-light budget slot for it.
+			if _flash_mult <= 0.0 or not FXLights.take():
 				c.queue_free()
+			else:
+				(c as OmniLight3D).light_color = tint_color
+				(c as OmniLight3D).light_energy *= _flash_mult # rides the accessibility slider
+				(c as OmniLight3D).tree_exited.connect(FXLights.give)
 	_spawn_sparks()
 
 func _process(delta: float) -> void:
@@ -59,8 +70,9 @@ func _process(delta: float) -> void:
 	scale = Vector3.ONE * (0.6 + s * 0.6) * _size
 	for c in get_children():
 		if c is OmniLight3D:
-			# Sharp pop (quadratic decay) that briefly throws light around.
-			(c as OmniLight3D).light_energy = 9.0 * s * s * _size
+			# Sharp pop (quadratic decay) that briefly throws light around;
+			# scaled by the accessibility flash-intensity slider.
+			(c as OmniLight3D).light_energy = 9.0 * s * s * _size * _flash_mult
 
 ## Hot spark darts spat from the bore — the detail that separates a flat
 ## "flash card" from a gunshot. One burst per shot, dies with the node.

@@ -384,7 +384,7 @@ func _explode(pos: Vector3) -> void:
 			ScorchDecal.spawn(scene, pos, _splash_radius * 0.5)
 		var flash := OmniLight3D.new()
 		flash.light_color = trail_color
-		flash.light_energy = 6.0 if not big else 10.0
+		flash.light_energy = GraphicsSettings.flash_energy(6.0 if not big else 10.0) # accessibility: flash-intensity slider
 		flash.omni_range = maxf(5.0, _splash_radius * 2.5)
 		scene.add_child(flash)
 		flash.global_position = pos
@@ -481,7 +481,7 @@ func _spawn_lightning_arc(scene: Node, a: Vector3, b: Vector3) -> void:
 		prev = point
 	var flash := OmniLight3D.new()
 	flash.light_color = trail_color
-	flash.light_energy = 3.5
+	flash.light_energy = GraphicsSettings.flash_energy(3.5) # accessibility: flash-intensity slider
 	flash.omni_range = 4.0
 	root.add_child(flash)
 	flash.global_position = b
@@ -504,7 +504,7 @@ func _spawn_zap_flash(scene: Node, at: Vector3) -> void:
 	mi.mesh = s
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var light := OmniLight3D.new()
-	light.light_color = trail_color; light.light_energy = 4.0; light.omni_range = 4.0
+	light.light_color = trail_color; light.light_energy = GraphicsSettings.flash_energy(4.0); light.omni_range = 4.0 # accessibility: flash-intensity slider
 	mi.add_child(light)
 	scene.add_child(mi)
 	mi.global_position = at

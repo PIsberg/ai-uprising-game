@@ -664,7 +664,7 @@ func _enemy_hit_pop(pos: Vector3, is_head: bool, dmg: float = 10.0) -> void:
 	if FXLights.take():
 		light = OmniLight3D.new()
 		light.light_color = col
-		light.light_energy = 4.0
+		light.light_energy = GraphicsSettings.flash_energy(4.0) # accessibility: flash-intensity slider
 		light.omni_range = 3.0
 		orb.add_child(light)
 		light.tree_exited.connect(FXLights.give)
@@ -907,7 +907,7 @@ func _energy_muzzle() -> void:
 	if FXLights.take():
 		light = OmniLight3D.new()
 		light.light_color = col
-		light.light_energy = 5.0
+		light.light_energy = GraphicsSettings.flash_energy(5.0) # accessibility: flash-intensity slider
 		light.omni_range = 5.0
 		orb.add_child(light)
 		light.tree_exited.connect(FXLights.give)
