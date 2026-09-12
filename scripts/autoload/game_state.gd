@@ -1460,24 +1460,37 @@ func load_progress() -> bool:
 		_taught[str(k)] = true
 	return true
 
-## Read the checkpoint WITHOUT loading it into the live run: what the main
-## menu's Continue button shows (level title, campaign position, difficulty).
-## Empty dictionary when there is no save.
-func peek_save() -> Dictionary:
-	var cf := ConfigFile.new()
-	if cf.load(SAVE_PATH) != OK:
-		return {}
-	var idx := clampi(int(cf.get_value("run", "level_index", 0)), 0, maxi(campaign().size() - 1, 0))
-	var id := level_id_from_path(String(campaign()[idx])) if campaign().size() > 0 else ""
-	var diff := int(cf.get_value("run", "difficulty", Difficulty.NORMAL))
-	return {
-		"level_index": idx,
-		"level_id": id,
-		"title": LevelDefs.level_title(id) if id != "" else "",
-		"difficulty": diff,
-		"difficulty_label": String(DIFFICULTY_CONFIG.get(diff, DIFFICULTY_CONFIG[Difficulty.NORMAL]).get("label", "NORMAL")),
-		"campaign_size": campaign().size(),
-	}
+## Warm the level scenes the player is most likely to enter next while a menu
+## is on screen, on the loading screen's own path (threaded, sub-threads), so
+## its later request finds them loaded. The first campaign level pays ~13 s
+## for the shared robot-model chunk every enemy scene preloads; paid here,
+## behind the main menu, it is invisible. Idempotent: a path already in
+## flight or loaded is left alone. Errors are ignored - the loading screen
+## still does its own request and fallback (tests/warm_cache_probe).
+## Probes opt in; a headless run (CI's --quit-after load-test, the probe
+## suite) otherwise skips the warm-up, because quitting the engine with a
+## threaded load in flight spams "Could not preload resource file" errors
+## through teardown, and the strict scene-load gate would read those as real.
+var allow_warm_headless: bool = false
+
+func warm_level_cache() -> void:
+	if DisplayServer.get_name() == "headless" and not allow_warm_headless:
+		return
+	var paths: Array[String] = []
+	if campaign().size() > 0:
+		paths.append(String(campaign()[0]))
+	if has_save():
+		var cf := ConfigFile.new()
+		if cf.load(SAVE_PATH) == OK:
+			var idx := clampi(int(cf.get_value("run", "level_index", 0)), 0, maxi(campaign().size() - 1, 0))
+			var p := String(campaign()[idx])
+			if not paths.has(p):
+				paths.append(p)
+	for p in paths:
+		if not ResourceLoader.exists(p):
+			continue
+		if ResourceLoader.load_threaded_get_status(p) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(p, "", true)
 
 func clear_save() -> void:
 	if FileAccess.file_exists(SAVE_PATH):
