@@ -742,7 +742,7 @@ func _add_label(root: Node3D, category: String, holder: Dictionary, col: Color) 
 func _real_visual(category: String, holder: Dictionary):
 	match category:
 		"enemy", "boss":
-			var scn: PackedScene = LevelBuilder.ENEMY_SCENES.get(String(holder.get("type", "")))
+			var scn: PackedScene = LevelBuilder.enemy_scene(String(holder.get("type", "")))
 			if scn == null:
 				return null
 			var bot: Node3D = scn.instantiate()
@@ -753,7 +753,7 @@ func _real_visual(category: String, holder: Dictionary):
 				bot.rotation.y = deg_to_rad(holder["yaw"])
 			return bot
 		"prop":
-			var scn: PackedScene = LevelBuilder.PROP_SCENES.get(String(holder.get("type", "")))
+			var scn: PackedScene = LevelBuilder.prop_scene(String(holder.get("type", "")))
 			if scn == null:
 				return null
 			var p: Node3D = scn.instantiate()

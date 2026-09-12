@@ -12,7 +12,7 @@ func _run() -> void:
 		var fwd := -player.global_transform.basis.z
 		var right := player.global_transform.basis.x
 		for i in TYPES.size():
-			var scn: PackedScene = LevelBuilder.ENEMY_SCENES.get(TYPES[i])
+			var scn: PackedScene = LevelBuilder.enemy_scene(TYPES[i])
 			if scn == null: continue
 			var e: Node3D = scn.instantiate(); add_child(e)
 			e.global_position = player.global_position + fwd * (9.0 + i * 1.5) \

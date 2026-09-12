@@ -8,7 +8,7 @@ func _count_meshes(n: Node) -> int:
 func _run():
 	var fails: Array = []
 	for k in LevelBuilder.PROP_SCENES:
-		var inst = (LevelBuilder.PROP_SCENES[k] as PackedScene).instantiate()
+		var inst = LevelBuilder.prop_scene(k).instantiate()
 		add_child(inst)
 		await get_tree().process_frame
 		var meshes := _count_meshes(inst)
