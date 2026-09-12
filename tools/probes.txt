@@ -50,3 +50,5 @@ res://tests/damage_math_probe.tscn
 res://tests/field_manual_probe.tscn
 # Guards the squash-merge failure class (#87 dropped flash_energy, #92 dropped peek_save).
 res://tests/autoload_api_probe.tscn
+# Damage Taken assist scores like a tier and is named on the debrief (issue #88).
+res://tests/grade_assist_probe.tscn

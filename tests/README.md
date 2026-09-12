@@ -148,6 +148,7 @@ or GPU-timing probes; `--headless` renders these black).
 | gate_shot | Gated levels' bulkhead gates/tunnel mouths/guide beacons for clipping/readability | windowed |
 | god_cheat_probe | "god" cheat toggles invincibility; a god-mode player survives lethal damage | suite |
 | grace_probe | Opening attack grace: enemies close in but land no damage for ~2.5s, then fire resumes | headless |
+| grade_assist_probe | Damage Taken accessibility assist counts toward the grade like a tier (x0.85 at 50%, x1.10 at 150%, neutral at 100%): a fixed S-run drops to an A at 50%, and stats carry the slider for the debrief | suite |
 | graphics_probe | Rain-slick clearcoat ground + explosion scorch decals at ULTRA tier | windowed |
 | graphics_shot | Clean first-person ULTRA captures across visually distinct levels — a graphics baseline | windowed |
 | grapple_probe | Grapple hook: HUD validity cue, tether attach, winch pull, tether visual lifecycle, release | headless |
@@ -213,7 +214,7 @@ or GPU-timing probes; `--headless` renders these black).
 | objective_probe | Reworked objectives: kill_all+assassinate HVT, kill_all+hold_zone, level 1 keycard task registration | suite |
 | open_house_check | OPEN building on level 1: hollow interior, solid walls, open doorway, baked walkable upper-floor navmesh | headless |
 | open_house_probe | OPEN building photographed from street + inside; grapple pad exists | windowed |
-| opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start — the campaign's own opening-room convention, and which levels break it | headless |
+| opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start (no `trigger`, or a trigger radius that already contains the spawn) — the campaign's own opening-room convention, and which levels break it | headless |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |
 | pacing_sweep | Auto-player difficulty sweep across campaign levels: kills/HP%/deaths/progress per level | headless |
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |
