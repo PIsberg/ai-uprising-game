@@ -70,6 +70,10 @@ var screen_shake: float = 1.0
 ## overlay, low-health vignette pulse and kill-edge flash. 1.0 = full, 0 = none.
 ## The HUD reads this each frame (photosensitivity / epilepsy safety).
 var flash_intensity: float = 1.0
+## Accessibility / difficulty assist: scales every hit the PLAYER takes
+## (0.5 = half damage, 1.5 = half again). Stacks with the difficulty tier
+## and the campaign warm-up; read by Player.modify_incoming_damage.
+var damage_taken: float = 1.0
 ## Accessibility: scales gamepad rumble (1.0 = full, 0 = off). Mirrored into
 ## the static Haptics helper so the per-shot call sites stay autoload-free.
 var rumble: float = 1.0
@@ -487,13 +491,10 @@ func set_flash_intensity(v: float) -> void:
 	flash_intensity = clampf(v, 0.0, 1.0)
 	_save_settings()
 
-## Accessibility: scales a light burst's peak energy by flash_intensity (0 =
-## no strobe at all). Shared by every transient FX light (muzzle flash, impact
-## pop, explosion pop, projectile detonation, grenade detonation) so a
-## photosensitive player who zeroes the slider gets zero strobing point lights,
-## not just a dimmer HUD flash.
-func flash_energy(peak: float) -> float:
-	return peak * flash_intensity
+## Accessibility: 0.5..1.5 scale on damage the player takes.
+func set_damage_taken(v: float) -> void:
+	damage_taken = clampf(v, 0.5, 1.5)
+	_save_settings()
 
 ## Accessibility: 0..1 scale on gamepad rumble (0 = off entirely).
 func set_rumble(v: float) -> void:
@@ -1028,6 +1029,7 @@ func _load_settings() -> void:
 		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
 		screen_shake = float(cf.get_value("graphics_adv", "screen_shake", 1.0))
 		flash_intensity = float(cf.get_value("graphics_adv", "flash_intensity", 1.0))
+		damage_taken = clampf(float(cf.get_value("accessibility", "damage_taken", 1.0)), 0.5, 1.5)
 		rumble = clampf(float(cf.get_value("input", "rumble", 1.0)), 0.0, 1.0)
 		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
 		color_grade = clampi(int(cf.get_value("graphics_adv", "color_grade", ColorGrade.NEUTRAL)), 0, ColorGrade.size() - 1) as ColorGrade
@@ -1083,6 +1085,7 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
 	cf.set_value("graphics_adv", "screen_shake", screen_shake)
 	cf.set_value("graphics_adv", "flash_intensity", flash_intensity)
+	cf.set_value("accessibility", "damage_taken", damage_taken)
 	cf.set_value("input", "rumble", rumble)
 	cf.set_value("video", "render_scale", render_scale)
 	cf.set_value("graphics_adv", "color_grade", int(color_grade))

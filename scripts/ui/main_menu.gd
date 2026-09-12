@@ -177,6 +177,10 @@ func _build_extra_settings() -> void:
 	var flash := _add_slider_row("Flash Intensity", 0.0, 1.0, 0.05, GraphicsSettings.flash_intensity)
 	flash.value_changed.connect(func(v: float): GraphicsSettings.set_flash_intensity(v))
 
+	# Accessibility / difficulty assist: scale the damage the player takes.
+	var dmg_taken := _add_slider_row("Damage Taken", 0.5, 1.5, 0.05, GraphicsSettings.damage_taken)
+	dmg_taken.value_changed.connect(func(v: float): GraphicsSettings.set_damage_taken(v))
+
 	# Accessibility: gamepad rumble strength (0 = off).
 	var rumble := _add_slider_row("Controller Rumble", 0.0, 1.0, 0.05, GraphicsSettings.rumble)
 	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
