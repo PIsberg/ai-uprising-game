@@ -37,9 +37,13 @@ func _measure(ename: String) -> float:
 	var pref: float = float(e.get("preferred_range"))
 	pref = 8.0 if pref < 4.0 else minf(pref, 40.0)
 	e.global_position = Vector3(0, 0, -pref)
-	# Face the player by construction (robot models face +Z, player sits at +Z of
-	# the robot). look_at() here errors on flyers whose basis is still identity.
-	e.rotation = Vector3.ZERO
+	# Face the player by construction. The sight cone's forward is -basis.z of
+	# the eye (Godot's -Z convention; the +Z-facing models are flipped inside
+	# their scenes), so an identity rotation looks AWAY from a player at +Z:
+	# six robots read as harmless in the 2026-09-11 sweep purely because they
+	# spawned backwards and fell ATTACK->CHASE->IDLE. look_at() errors on
+	# flyers whose basis is still identity, so set the yaw directly.
+	e.rotation = Vector3(0, PI, 0)
 	_taken = 0.0 # count from the instant it exists — a seeker may pop immediately
 	for i in 3:
 		await get_tree().physics_frame
