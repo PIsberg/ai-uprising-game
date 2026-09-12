@@ -55,6 +55,9 @@ jobs:
           godot --headless --path . res://tests/bevel_smoke.tscn
           godot --headless --path . res://tests/robot_models_check.tscn
 
+      - name: Check the probe manifest agrees with tests/README.md
+        run: python3 tools/check_suite_manifest.py
+
       - name: Run probe suite
         # Logic/integration probes (objectives, hazards, loot, teaching, the
         # adaptive AI director). The runner asserts each printed "RESULT PASS".

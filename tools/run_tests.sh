@@ -1,57 +1,47 @@
 #!/usr/bin/env bash
-# Headless probe suite — imports the project, then runs every logic probe and
-# checks it printed "RESULT PASS". Exits non-zero if any probe fails (for CI).
-# Override the binary with GODOT_BIN=/path/to/godot.
+# Headless probe suite — imports the project, then runs every probe listed in
+# tools/probes.txt and checks it printed "RESULT PASS". Exits non-zero if any
+# probe fails (for CI). Override the binary with GODOT_BIN=/path/to/godot.
+#
+# The probe list lives in tools/probes.txt (shared with run_tests.ps1 — never
+# add a probe here). Each probe runs with stdout AND stderr captured, under a
+# timeout, so a probe that script-errors or hangs before printing RESULT shows
+# its cause instead of a truncated list of "ok" lines (issues #74, #75, #100).
 set -uo pipefail
 GODOT="${GODOT_BIN:-godot}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MANIFEST="${PROBE_MANIFEST:-$HERE/probes.txt}"   # PROBE_MANIFEST=<file> runs a subset
+PROBE_TIMEOUT="${PROBE_TIMEOUT:-900}"   # seconds per probe; the slowest suite probe takes ~4 min
 
-# Logic/integration probes that run fully headless (no GPU). Render probes
-# (enemy_view, map) need a window and are intentionally excluded here.
-PROBES=(
-  res://tests/ai_director_probe.tscn
-  res://tests/elite_probe.tscn
-  res://tests/weapon_stats_probe.tscn
-  res://tests/emp_probe.tscn
-  res://tests/synth_probe.tscn
-  res://tests/codex_count_probe.tscn
-  res://tests/teach_probe.tscn
-  res://tests/objective_probe.tscn
-  res://tests/hazard_probe.tscn
-  res://tests/loot_probe.tscn
-  res://tests/shark_breach_probe.tscn
-  res://tests/tesla_beam_probe.tscn
-  res://tests/god_cheat_probe.tscn
-  res://tests/enemy_combat_probe.tscn
-  res://tests/projectile_fx_probe.tscn
-  res://tests/warbot_face_probe.tscn
-  res://tests/mission_arc_probe.tscn
-  res://tests/survival_probe.tscn
-  res://tests/voice_probe.tscn
-  res://tests/gun_range_probe.tscn
-  res://tests/titan_blink_probe.tscn
-  res://tests/mauler_overload_probe.tscn
-  res://tests/blast_direction_probe.tscn
-  res://tests/damage_source_probe.tscn
-  res://tests/seeker_grace_probe.tscn
-  res://tests/victory_probe.tscn
-  res://tests/convoy_probe.tscn
-  res://tests/layout_check.tscn
-  res://tests/screen_shock_probe.tscn
-  res://tests/damage_number_size_probe.tscn
-  res://tests/flash_intensity_probe.tscn
-)
+PROBES=()
+while IFS= read -r line || [ -n "$line" ]; do
+  line="${line%%#*}"
+  line="${line//[[:space:]]/}"
+  [ -n "$line" ] && PROBES+=("$line")
+done < "$MANIFEST"
 
 echo "== importing project =="
 "$GODOT" --headless --path . --import >/dev/null 2>&1 || true
 
 failed=0
 for p in "${PROBES[@]}"; do
-  out="$("$GODOT" --headless --path . --audio-driver Dummy "$p" 2>/dev/null || true)"
+  if command -v timeout >/dev/null 2>&1; then
+    out="$(timeout "$PROBE_TIMEOUT" "$GODOT" --headless --path . --audio-driver Dummy "$p" 2>&1)"; rc=$?
+  else
+    out="$("$GODOT" --headless --path . --audio-driver Dummy "$p" 2>&1)"; rc=$?
+  fi
   if grep -q "RESULT PASS" <<<"$out"; then
     echo "PASS  $p"
   else
-    echo "FAIL  $p"
-    echo "$out" | tail -n 15
+    if [ "$rc" -eq 124 ]; then
+      echo "FAIL  $p  (timed out after ${PROBE_TIMEOUT}s - no RESULT line)"
+    else
+      echo "FAIL  $p  (exit $rc)"
+    fi
+    # The cause first: script errors are what a dead-before-RESULT probe hides.
+    grep -E "SCRIPT ERROR|ERROR:|Parse Error" <<<"$out" | head -n 10 | sed "s/^/      /"
+    echo "      --- last 20 lines ---"
+    tail -n 20 <<<"$out" | sed "s/^/      /"
     failed=$((failed + 1))
   fi
 done
@@ -60,4 +50,4 @@ if [ "$failed" -ne 0 ]; then
   echo "== $failed probe(s) failed =="
   exit 1
 fi
-echo "== all probes passed =="
+echo "== all ${#PROBES[@]} probes passed =="
