@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-248 probes total: **34** wired into the headless suite (`suite`), **83**
+249 probes total: **35** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -161,6 +161,7 @@ or GPU-timing probes; `--headless` renders these black).
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
 | hud_upgrade_probe | HUD upgrade-chip row shows only bought tracks at the right rank | windowed |
+| i18n_coverage_probe | Every tr() literal in scripts/ resolves in all 5 shipped locales, checked against the IMPORTED .translation resources (not the CSV); guards against a vacuous pass by requiring >= 60 keys found | suite |
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |
 | indiv_probe | BRUTE shield-in-left-hand idle+punch; VACUUM codex preview rise | windowed |
 | intro_screenshot | Intro cutscene's calm phase and post-turn frame | windowed |

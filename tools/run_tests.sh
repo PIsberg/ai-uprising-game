@@ -42,6 +42,7 @@ PROBES=(
   res://tests/flash_intensity_probe.tscn
   res://tests/damage_math_probe.tscn
   res://tests/field_manual_probe.tscn
+  res://tests/i18n_coverage_probe.tscn
 )
 
 echo "== importing project =="
