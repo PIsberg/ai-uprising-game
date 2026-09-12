@@ -1460,6 +1460,25 @@ func load_progress() -> bool:
 		_taught[str(k)] = true
 	return true
 
+## Read the checkpoint WITHOUT loading it into the live run: what the main
+## menu's Continue button shows (level title, campaign position, difficulty).
+## Empty dictionary when there is no save.
+func peek_save() -> Dictionary:
+	var cf := ConfigFile.new()
+	if cf.load(SAVE_PATH) != OK:
+		return {}
+	var idx := clampi(int(cf.get_value("run", "level_index", 0)), 0, maxi(campaign().size() - 1, 0))
+	var id := level_id_from_path(String(campaign()[idx])) if campaign().size() > 0 else ""
+	var diff := int(cf.get_value("run", "difficulty", Difficulty.NORMAL))
+	return {
+		"level_index": idx,
+		"level_id": id,
+		"title": LevelDefs.level_title(id) if id != "" else "",
+		"difficulty": diff,
+		"difficulty_label": String(DIFFICULTY_CONFIG.get(diff, DIFFICULTY_CONFIG[Difficulty.NORMAL]).get("label", "NORMAL")),
+		"campaign_size": campaign().size(),
+	}
+
 func clear_save() -> void:
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
