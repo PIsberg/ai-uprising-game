@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Spawn-camping packs on claude, gemini, lava_world and water_world: squadmates placed 5–12 m from the spawn with trigger radii that already contained it warped in and rushed an idle player the moment the opening grace lapsed. Moved or re-radiused so the player has to step toward them: idle post-grace damage (`spawn_safety_probe`) water_world 84 → 22/s, lava_world 44 → 9/s, claude 41 → 0/s, gemini 35 → 0/s.
 - Two authored enemy spawns sat inside geometry (crucible tower, lava_world lamp post) and were being nudged by the spawner on every load.
-- The three heaviest robot models carried 2K PBR maps for chassis that fill a few hundred pixels; embedded images downscaled to 1K in place with `tools/glb_shrink.py` (scene graph untouched), 66 MB → 28 MB and 41 MB → 32 MB on disk.
+- The three heaviest robot models carried 2K PBR maps for chassis that fill a few hundred pixels; embedded images downscaled to 1K in place with `tools/glb_shrink.py` (scene graph untouched), 66 MB → 28 MB and 41 MB → 32 MB on disk. `rusty_claws_robot` was 57 MB of mesh instead: decimated to 35% in headless Blender (`tools/blender/decimate.py`, 950k → 333k triangles, 58 MB → 25 MB), every node and material name preserved.
 - Added an "OUT OF GRENADES" message that appears when trying to throw a grenade with an empty inventory.
 - The Manus Boss's weak spot (core) now has collision, allowing it to correctly take damage.
 - New headless probes covering the fixes below, all wired into `tools/run_tests.sh`: `damage_source_probe`, `seeker_grace_probe`, `blast_direction_probe`.
