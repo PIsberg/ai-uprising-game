@@ -245,6 +245,7 @@ or GPU-timing probes; `--headless` renders these black).
 | screen_shock_verify | Bins the shock_off↔shock_mid pixel diff by radius and asserts a structured ring at the expected crest — run AFTER screen_shock_shot | headless |
 | screens_probe | Rebuilt computer props (terminal/server rack/lore console): CRT screens + bevels | windowed |
 | sens_probe | Pause-menu mouse-sensitivity slider exists, persists to GraphicsSettings, updates the live player | windowed |
+| separation_push_probe | The player's soft enemy-separation push is a velocity FLOOR capped at separation_max_speed, not a per-frame impulse: an enemy-layer body parked inside the probe moves the player at most a walk (was 10.2 m/s peak and 4.4 m in one second, enough to fling a player off a walkway) | suite |
 | shark_breach_probe | RAZORFIN shark acquires a target, breaches above the surface, bites | suite |
 | signature_attack_probe | K-9 pounce, MAITRE-D' cleaver throw, sentinel bomb lob, mauler overload detonation all fire | headless |
 | skel_pose_probe | Candidate ArmRelaxModifier rotations on the George rig, to pick a natural arm-carry angle | windowed |

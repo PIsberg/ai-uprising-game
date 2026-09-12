@@ -701,8 +701,17 @@ func _physics_process(delta: float) -> void:
 	_handle_grapple(delta)
 	_handle_movement(delta)
 	_update_enemy_separation()
-	velocity.x += _separation_push.x
-	velocity.z += _separation_push.z
+	# The push is a velocity FLOOR along its direction, never an impulse. Adding
+	# it to velocity every physics frame turned the documented separation_max_speed
+	# cap into a per-frame kick (~360 m/s^2 at full depth): a fishbot brushing the
+	# idle player on water_world's spawn island flung them 5.8 m in half a second,
+	# straight into the flood (tests/separation_push_probe).
+	if _separation_push.length_squared() > 0.0001:
+		var push_speed := _separation_push.length()
+		var push_dir := _separation_push / push_speed
+		var along := Vector3(velocity.x, 0.0, velocity.z).dot(push_dir)
+		if along < push_speed:
+			velocity += push_dir * (push_speed - along)
 	_handle_camera_feel(delta)
 	if not is_on_floor():
 		_fall_speed = -velocity.y   # peak downward speed this fall (read on landing)
