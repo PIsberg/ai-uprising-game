@@ -15,7 +15,8 @@ godot --path .                                  # run the game (main menu)
 godot --path . --editor-flag --level <id>       # see GameState._handle_cli_boot for CLI boot options (--editor, --level)
 godot --headless --path . --import              # (re)import assets — run once before headless work on a fresh clone
 
-# Full headless probe suite (also: tools/run_tests.ps1 on Windows)
+# Full headless probe suite (also: tools/run_tests.ps1 on Windows — a hand-mirrored twin of the
+# PROBES list; a new suite probe goes in BOTH files, see issue #75)
 tools/run_tests.sh
 
 # Single probe — every logic probe prints "RESULT PASS" / "RESULT FAIL"
@@ -35,7 +36,7 @@ godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
 
 ## Verification philosophy
 
-**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`. Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to the suite list in `tools/run_tests.sh`.
+**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`. Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to the suite list in `tools/run_tests.sh` **and** `tools/run_tests.ps1` (the two lists are kept in sync by hand).
 
 Probe-writing rules learned the hard way:
 - Spawn a floor (`StaticBody3D`, collision layer 1) or every CharacterBody falls forever and position/range assertions lie.

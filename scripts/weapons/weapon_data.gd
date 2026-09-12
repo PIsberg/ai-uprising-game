@@ -85,7 +85,7 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
 @export var empty_sound: AudioStream
-@export var sound_id: String = "" ## Looked up in SoundSynth.streams when fire_sound is null. Suffixes _reload, _empty resolved automatically.
+@export var sound_id: String = "" ## Fire sound: weapon.gd plays SoundSynth stream "<sound_id>_fire" when fire_sound is null. Reload and empty use the shared "reload" / "empty_click" streams (see Weapon._play_empty / _finish_reload), not per-weapon suffixes.
 @export var has_pump_action: bool = false ## If true, viewmodel "Pump" node cycles after each shot
 @export var slide_kick: float = 0.025 ## Distance the "Slide" node travels backward on fire
 @export var pump_throw: float = 0.09 ## Distance the "Pump" node travels backward when cycling

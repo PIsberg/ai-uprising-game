@@ -47,6 +47,28 @@ Water and lava beds read as slabs laid ON the ground rather than liquid filling 
 > 2. The amber hazard frame sits exactly on the rim and is deliberately hard-edged; it swamped the metric until `fluid_shot` hid it (by material signature, so the stashed old build is treated identically).
 > 3. Fixing the water surface **exposed a new hard edge** — the opaque bed plane underneath, whose own silhouette was revealed once the surface above it correctly faded to clear. Measured 2.6× *worse*. Bed and shore had to become one fading plane.
 
+## ✅ Playtest loop pass (2026-09-11 → 09-12, PRs #76–#96, open for review)
+Headless "play it and find things" loop: run the sweep instruments, chase every outlier with a
+per-robot telemetry rig, fix with a red-then-green probe, PR. Each item below names its probe.
+- ✅ **Real bugs** — Continue lost Armory supplies (`save_probe`); HOWITZER shells fell 7 m short
+  (loft solved for g=9.8 vs project gravity 24, `howitzer_hit_probe`); WARBOT cross-fire never hit
+  (fixed 6° V ≈ three capsule radii at 11 m, `warbot_crossfire_probe`); an enemy inside the player's
+  capsule stopped attacking (LOS ray started inside the shape, `pointblank_los_probe`); the soft
+  enemy-separation push was a per-frame impulse, flinging players off walkways
+  (`separation_push_probe`); Armory purchases were silent (`sound_id_probe`).
+- ✅ **Coverage gates** — every `tr()` literal in 5 locales (`i18n_coverage_probe`, 41 strings
+  translated), every sound id (`sound_id_probe`), every typed level-def entry
+  (`level_def_coverage_probe`), Continue from every level (`continue_sweep_probe`), every scene through
+  the loading screen's threaded path (`threaded_load_probe`), damage math measured in-engine
+  (`damage_math_probe`).
+- ✅ **Load time** — first level 13.5 s → 1.7 s by resolving `LevelBuilder`'s scene tables lazily, plus
+  a menu-time warm-up (`warm_cache_probe`).
+- ✅ **Polish** — MANUS got real phases (`manus_phase_probe`), Flash Intensity now covers world light
+  bursts (`flash_intensity_probe`), pause-menu FIELD MANUAL (`field_manual_probe`), Continue names the
+  saved level, Damage Taken / Damage Number Size / Subtitle Size accessibility sliders.
+- **Open** — every active robot costs ~1 ms of physics-tick time, engine-side (issue #89,
+  `docs/PERF_NOTES.md`); MANUS phase-3 cadence and the narrower WARBOT lane need a playtest.
+
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
 - **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split + look-at/IK so robots aim while walking.
