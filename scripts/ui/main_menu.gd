@@ -30,6 +30,10 @@ func _ready() -> void:
 	_add_version_label()
 	if GraphicsSettings.needs_auto_quality:
 		_run_auto_quality_benchmark()
+	# Start loading the first (or saved) level behind the menu, so "Begin
+	# Operation" / Continue do not sit on the loading screen for the shared
+	# robot-model chunk. Deferred one frame so the menu paints first.
+	GameState.warm_level_cache.call_deferred()
 
 ## A small, dim build-version tag pinned to the bottom-right corner. Reads the
 ## single source of truth (project.godot `application/config/version`) so bumping

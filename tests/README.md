@@ -287,6 +287,7 @@ or GPU-timing probes; `--headless` renders these black).
 | wallrun_probe | Sprinting into a wall engages wall-run (tangent velocity hold); wall-jump launches with expected carry | headless |
 | warbot_face_probe | WAR-BOT's mood face flips green/happy idle to red/angry once it engages the player | suite |
 | warbot_view_probe | Warbot's happy-idle then angry-combat face, for tuning procedural face/cannon offsets | windowed |
+| warm_cache_probe | The main menu warms the first (or saved) level on the loading screen's threaded path (GameState.warm_level_cache): after the real menu's _ready the load is in flight, and once done the loading screen's own request finds it LOADED in 0.00 s instead of paying ~13 s for the shared robot-model chunk | suite |
 | weakpoint_probe | Shot-up android bares a glowing crit core on first panel shed; near-core hits read the bonus multiplier; core doesn't survive the wreck | headless |
 | weapon_codex_probe | Weapon Codex layout/stats screenshotted | windowed |
 | weapon_fx_probe | Laser-beam-into-wall and rocket-in-flight FX, mid-flight and post-detonation | windowed |
