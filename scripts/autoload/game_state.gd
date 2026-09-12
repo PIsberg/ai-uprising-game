@@ -1492,6 +1492,26 @@ func warm_level_cache() -> void:
 		if ResourceLoader.load_threaded_get_status(p) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			ResourceLoader.load_threaded_request(p, "", true)
 
+## Read the checkpoint WITHOUT loading it into the live run: what the main
+## menu's Continue button shows (level title, campaign position, difficulty).
+## Empty dictionary when there is no save. (Added by #85, dropped by the #92
+## squash while main_menu.gd kept calling it; restored here.)
+func peek_save() -> Dictionary:
+	var cf := ConfigFile.new()
+	if cf.load(SAVE_PATH) != OK:
+		return {}
+	var idx := clampi(int(cf.get_value("run", "level_index", 0)), 0, maxi(campaign().size() - 1, 0))
+	var id := level_id_from_path(String(campaign()[idx])) if campaign().size() > 0 else ""
+	var diff := int(cf.get_value("run", "difficulty", Difficulty.NORMAL))
+	return {
+		"level_index": idx,
+		"level_id": id,
+		"title": LevelDefs.level_title(id) if id != "" else "",
+		"difficulty": diff,
+		"difficulty_label": String(DIFFICULTY_CONFIG.get(diff, DIFFICULTY_CONFIG[Difficulty.NORMAL]).get("label", "NORMAL")),
+		"campaign_size": campaign().size(),
+	}
+
 func clear_save() -> void:
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
