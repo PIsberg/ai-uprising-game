@@ -35,7 +35,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-248 probes total: **34** wired into the headless suite (`suite`), **83**
+245 probes total: **29** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -99,10 +99,10 @@ or GPU-timing probes; `--headless` renders these black).
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
 | convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius (kills are telemetry, not asserted — they depend on which wave is alive) | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
+| cpu_cost_sweep | Report-only: per campaign level, wakes every enemy and reports median physics and process ms per tick (full fight / navigation map off / enemy scripts frozen) plus body, pair, agent and polygon counts; flags levels over 2x the median. See docs/PERF_NOTES.md | headless |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
 | dark_spot_probe | Mean frame luminance from spawn, per campaign level, ranking under-lit "dark spot" levels | windowed |
-| damage_math_probe | Combat damage math measured from real fired shots at real Damageable targets: range falloff (mid-band / far / point-blank at the raycast's measured hit distance, plus a flat-damage control), headshot multiplier + crit reporting, pierce vs a pierce=0 twin | suite |
 | damage_source_probe | `Damageable.apply_damage` survives a FREED or non-Node `source` (shooter died before its projectile landed) and still applies the damage | suite |
 | dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | headless |
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
@@ -117,6 +117,7 @@ or GPU-timing probes; `--headless` renders these black).
 | emp_probe | `emp_disable()` timer/inertness and the EMP grenade's fuse-triggered radius disable | suite |
 | enemy_behavior_probe | Optic (cutting beam) and Roller (ground ram) signature behaviour against a stationary dummy | windowed |
 | enemy_combat_probe | Every new enemy engages (>=CHASE), damages the player, dies cleanly | suite |
+| enemy_cost_probe | Report-only: spawns 8 copies of every ENEMY_SCENES chassis (2 for bosses) on a flat navmesh, wakes them, and reports median microseconds per robot per physics tick, sorted; `-- types=a,b` restricts it. See docs/PERF_NOTES.md | headless |
 | enemy_eval_probe | Objective 1v1 balance eval per enemy: real DPS, closing distance, lateral strafe spread | headless |
 | enemy_lineup_probe | Each humanoid model playing its Idle clip front-on, catching models stuck in a Y-pose | windowed |
 | enemy_preview_probe | New/changed enemy scenes (AI frozen) post RobotModel auto-fit, for tuning scale/orientation/offsets | windowed |
@@ -129,8 +130,6 @@ or GPU-timing probes; `--headless` renders these black).
 | explosion_screenshot | Both explosion FX types detonated, frame captured mid-expansion | windowed |
 | eye_glow_probe | A/B: drone/sentinel eye-glow off vs on under a bloom-lit interior env | windowed |
 | feel_audio_probe | AAA feel/audio batch on a live level: synth streams resolve, hazard ambience layers, low-HP heartbeat, sprint lower-ready pose | headless |
-| field_manual_probe | Pause-menu FIELD MANUAL overlay: threat rows equal the distinct live codex keys, discovered types show codex name/weaknesses/counters, undiscovered are redacted to UNIDENTIFIED SIGNATURE, arsenal rows equal the rack with one equipped marker, open/close/resume never unpause by accident (backs up and restores user://bestiary.cfg) | suite |
-| flash_intensity_probe | Flash Intensity accessibility slider reaches world light BURSTS: `flash_energy` scales linearly, muzzle-flash light pops at 1.0 and is freed/zero at 0.0, explosion `_light_pop` rises at 1.0 and stays pinned at zero at 0.0 (restores the user's setting) | suite |
 | fluid_edge_verify | Peak adjacent-pixel step at a fluid bed's rim, from the fluid_shot captures — proves water/lava blend into the floor instead of stepping. Run AFTER fluid_shot | headless |
 | fluid_shot | Isolated top-down rig (one floor, one bed, fixed camera, hazard frame hidden) capturing water + lava rims for fluid_edge_verify; also the only check that water/fluid_margin/lava shaders COMPILE | windowed |
 | fierce_probe | Fierce enemy models with real RobotModel tint/material treatment | windowed |
@@ -182,7 +181,6 @@ or GPU-timing probes; `--headless` renders these black).
 | loot_probe | Flyer supply drops over open sea relocate onto a walkway, never stranded in the hazard | suite |
 | lowhealth_screenshot | Post-process shader with `low_health` forced high | windowed |
 | mantle_kick_probe | A successful mantle fires the new viewmodel kick (not just that mantling still works) | headless |
-| manus_phase_probe | MANUS wounded escalation: 3 HP-keyed phases, cooldowns shrink per phase (behavioural bar + exact table), phase-3 finger eruption fires twice with the second burst leading the player's velocity | suite |
 | manus_rooted_probe | ROOTED MANUS: holds spawn position at range, finger-eruption telegraph damage, grab is now a yank within grab_reach | headless |
 | map_probe | Campaign map fully unlocked: lava/water sectors, hazard rings, act grouping, drifting motes | windowed |
 | map_shot | Campaign map driven by keyboard cursor: selection reticle + sector intel | windowed |
@@ -242,7 +240,6 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
-| save_probe | save_progress()/load_progress() round-trip every run field incl. Armory supplies + first-encounter `_taught` keys (backs up and restores the real user://savegame.cfg) | suite |
 | screen_shock_probe | Blast screen-warp logic: rings register, cap at 3 evicting the WEAKEST (not newest), expire, pack sane screen-UV/progress, zero out behind camera; glitch decays; post shader carries both uniforms | suite |
 | screen_shock_shot | Unit-tests the warp on a static checker through `post_process.gdshader` (grain/warp/glitch zeroed so the shader is time-invariant) — writes `shock_off/mid/glitch.png` for screen_shock_verify | windowed |
 | screen_shock_verify | Bins the shock_off↔shock_mid pixel diff by radius and asserts a structured ring at the expected crest — run AFTER screen_shock_shot | headless |
