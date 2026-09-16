@@ -1,3 +1,4 @@
+# @lat: [[meta-systems#Campaign Map]]
 extends Control
 ## Campaign map: a holographic tactical screen of the whole campaign as a winding
 ## chain of nodes — a strike route across rogue-AI territory. Cleared sectors glow

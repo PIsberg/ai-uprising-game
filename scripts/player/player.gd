@@ -10,6 +10,7 @@ signal pickup_message(text: String) ## Fired when a non-weapon pickup is collect
 func notify_pickup(text: String) -> void:
 	pickup_message.emit(text)
 
+# @lat: [[player#Locomotion and Stances]]
 @export_group("Movement")
 @export var walk_speed: float = 5.5
 @export var sprint_speed: float = 9.0
@@ -23,6 +24,7 @@ func notify_pickup(text: String) -> void:
 @export var sprint_jump_mult: float = 1.3 ## Jump boost after a sustained sprint (running jump).
 @export var sprint_jump_charge: float = 0.5 ## Seconds of full-speed sprinting needed to bank the boost.
 
+# @lat: [[player#Stamina and Exhaustion]]
 @export_group("Stamina")
 ## Sprinting and grappling burn stamina; standing/walking recovers it. Hit zero
 ## and you're EXHAUSTED — locked out of both until it climbs back to the recover
@@ -57,6 +59,7 @@ var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-trac
 @export var crouch_height: float = 1.0
 @export var stance_lerp_speed: float = 12.0
 
+# @lat: [[player#Camera Feel and Combat Feedback]]
 @export_group("Camera Feel")
 @export var bob_amplitude: float = 0.04
 @export var bob_frequency: float = 11.0
@@ -66,6 +69,7 @@ var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-trac
 @export var hit_kick_amount: float = 0.05 ## Lateral camera punch (m), AWAY from the hit source, at full-fraction damage.
 @export var hit_kick_roll_deg: float = 3.0 ## Camera roll punch (deg) at full-fraction damage, same sense as the lateral kick.
 
+# @lat: [[player#Tactical Maneuvers: Dash, Slide, and Grapple]]
 @export_group("Dash & Slide")
 @export var dash_speed: float = 20.0
 @export var dash_duration: float = 0.16
@@ -85,6 +89,7 @@ enum GrenadeType { FRAG, VORTEX, EMP, HIJACK }
 ## Per-type loadout. FRAG is the workhorse; VORTEX is the rare "herd-then-delete"
 ## special — fewer carried, picked up later. HIJACK is the rarest: it steals a
 ## robot outright. Cycle with the grenade-cycle key.
+# @lat: [[weapons#Grenades]]
 var grenade_kinds := [
 	{"type": GrenadeType.FRAG, "scene": GRENADE_SCENE, "name": "FRAG", "color": Color(1.0, 0.72, 0.2), "max": 3},
 	{"type": GrenadeType.VORTEX, "scene": VORTEX_SCENE, "name": "VORTEX", "color": Color(0.66, 0.4, 1.0), "max": 2},

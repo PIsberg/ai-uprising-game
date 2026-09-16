@@ -23,3 +23,27 @@ Defines collision filtering rules and hijack-behavior mechanics.
   * Layer 2: Player collision.
   * Layer 4: Enemy collision.
 * **Hijacking:** When an enemy is hijacked, they switch from Layer 4 to Layer 2 and target other enemies. Damage calculation blocks enemy-to-enemy damage unless their hijack alliances differ.
+
+## Elite Affixes
+<!-- lat: { "require-code-mention": true } -->
+The elite system (`scripts/systems/elite.gd`) upgrades standard hostile units into formidable variants with distinct combat twists:
+* **SHIELDED:** Heavy armor plating, amplified health pool, flat damage reduction, cold blue tint.
+* **VOLATILE:** High-explosive core that detonates violently upon unit destruction, damaging surrounding enemies and the player.
+* **SWIFT:** Accelerated movement speed, faster attack animations, and shortened reaction delays with a bright teal glow.
+* **WARDEN:** Immune to stagger and poise interrupts; forces tactical dodging rather than suppression fire.
+* **SPLITTER:** Splits into two active `Skitter` swarmers upon fatal damage, punishing blind cluster clearing.
+
+## Nemesis System
+<!-- lat: { "require-code-mention": true } -->
+A persistent nemesis mechanic creates high-stakes grudge matches across campaign runs:
+* **Promotion:** Elite units that kill the player can be promoted to Nemesis rank (`Elite.apply_nemesis`).
+* **Visual & Combat Cues:** Marked by furnace-red glow, scaled model size (+10%), increased health/speed multipliers, and custom kill-feed alerts.
+* **Settling Grudges:** Eliminating a Nemesis awards double score value, guaranteed supply drop rewards, and logs progression via `GameState.nemesis_slain`.
+
+## Archetype Roster
+Categorizes the rogue AI combat units into distinct tactical roles.
+
+* **Swarms & Minions:** `Skitter`, `Spider`, `Drone` — rapid, low-health harassment units that flank or overwhelm.
+* **Frontline & Heavies:** `Brute`, `Ravager`, `Warmech`, `Smasher` — heavily armored pressure units with shields, cleaves, and ground slams.
+* **Ranged & Support:** `Sniper`, `Howitzer`, `Mender`, `Optic` — long-range artillery, beam chargers, and unit repair specialists.
+* **Overlords & Bosses:** `Colossus`, `Manus`, `Titan`, `Archon` — multi-phase autonomous war machines with unique attack patterns and stagger resistance.

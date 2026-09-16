@@ -274,6 +274,7 @@ const HIJACK_TRACER: PackedScene = preload("res://scenes/fx/tracer.tscn")
 ## (its loyalty firmware violently reasserts itself and the chassis dies).
 ## `liberator` (the player) receives damage/kill credit for everything it does.
 ## Returns false if the chassis resists (bosses get a short EMP instead).
+# @lat: [[enemies#Collisions and Hijacking]]
 func hijack(duration: float, liberator: Node = null) -> bool:
 	if state == State.DEAD or hp == null or not hp.is_alive():
 		return false

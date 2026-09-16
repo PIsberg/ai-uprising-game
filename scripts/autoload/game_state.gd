@@ -1960,6 +1960,7 @@ func _ready() -> void:
 
 ## `AIUprising.exe --level res://dev_levels/foo.lvl` boots straight into that
 ## custom level (the editor's Playtest shells out this way).
+# @lat: [[architecture#CLI Boot Logic]]
 func _handle_cli_boot() -> void:
 	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
 	# "--editor" (or a dedicated editor build, custom feature "editor_build") boots

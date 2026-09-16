@@ -39,3 +39,6 @@ desktop.ini
 .idea/
 *.swp
 .godot/
+
+# Node / lat.md
+node_modules/

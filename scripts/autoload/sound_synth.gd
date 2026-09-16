@@ -1,3 +1,4 @@
+# @lat: [[architecture#Autoloads#AudioBus and SoundSynth]]
 extends Node
 ## Procedural audio synthesizer. Generates AudioStreamWAV samples at startup
 ## so the project ships with sound without bundling .ogg/.wav files.

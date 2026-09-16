@@ -1,3 +1,4 @@
+# @lat: [[enemies#Elite Affixes]]
 class_name Elite
 extends Object
 ## Elite enemy affixes: a small random share of spawns come up-tiered with a
@@ -75,6 +76,7 @@ static func maybe_apply(enemy: Node3D, chance: float = -1.0) -> void:
 ## Dress a spawn as the player's NEMESIS: its recorded affix twist plus
 ## rank-scaled stat gains, its name in the kill feed, and a burning red-gold
 ## identity so it reads as PERSONAL the moment it warps in. Pre-add, like apply.
+# @lat: [[enemies#Nemesis System]]
 static func apply_nemesis(enemy: Node3D, data: Dictionary) -> void:
 	var eb := enemy as EnemyBase
 	if eb == null or eb.is_inside_tree():

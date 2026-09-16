@@ -28,3 +28,17 @@ Command-line tools to execute single probes or the entire test suite.
   ```sh
   godot --headless --path . --audio-driver Dummy res://tests/<test_name>_probe.tscn
   ```
+
+## Integrity and Lattice Verification
+Ensures suite manifests stay synchronized and architectural references remain intact.
+
+* Verify probe manifest consistency against `tests/README.md`:
+  ```sh
+  python tools/check_suite_manifest.py
+  ```
+* Validate Agent Lattice documentation links and code references:
+  ```sh
+  lat check
+  # Or via npm script:
+  npm run lat:check
+  ```

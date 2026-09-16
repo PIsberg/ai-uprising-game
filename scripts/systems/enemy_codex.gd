@@ -1,3 +1,4 @@
+# @lat: [[meta-systems#3D Enemy Codex]]
 class_name EnemyCodex
 extends Object
 ## Single source of truth for the enemy bestiary. Each entry carries everything

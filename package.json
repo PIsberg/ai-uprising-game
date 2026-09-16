@@ -1,0 +1,17 @@
+{
+  "name": "ai-uprising-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A 3D realistic first-person shooter — humans fight back against rogue AI.",
+  "scripts": {
+    "lat": "lat",
+    "lat:check": "lat check",
+    "lat:check:md": "lat check md",
+    "lat:check:code-refs": "lat check code-refs",
+    "lat:check:index": "lat check index",
+    "lat:check:sections": "lat check sections"
+  },
+  "devDependencies": {
+    "lat.md": "^0.12.1"
+  }
+}

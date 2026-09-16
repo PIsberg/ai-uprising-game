@@ -1,3 +1,4 @@
+# @lat: [[meta-systems#Armory Shop]]
 class_name Armory
 extends CanvasLayer
 ## Between-levels upgrade shop, shown by the level briefing before deploying.
