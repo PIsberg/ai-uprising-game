@@ -13,19 +13,20 @@ The campaign map interface (`scripts/ui/campaign_map.gd`) renders an interactive
 <!-- lat: { "require-code-mention": true } -->
 The Armory (`scripts/ui/armory.gd`) provides a meta-progression shop between combat missions:
 * **Score Economy:** Converts player mission score and bounty rewards into credits for persistent equipment investments.
-* **Permanent Upgrades:** Weapon tuning tiers (recoil compensation, clip extensions, faster reload, damage amplification) and stamina upgrades.
-* **Consumable Supplies:** Field supplies (medical nanites, reserve ammo packs, extra starting grenades) purchasable for immediate deployment on the next level.
+* **Permanent Upgrades:** Six run-long tracks (`Armory.KEYS`): `damage`, `mag` (clip size), `reload`, `blast` (grenade radius), `leech` (heal from damage dealt) and `stamina`.
+* **Consumable Supplies:** Three supply keys (`Armory.SKEYS`): `ammo`, `grenades` and `health` (max HP on deploy). These persist for the whole run and are re-applied on every deploy.
 
 ## 3D Enemy Codex
 <!-- lat: { "require-code-mention": true } -->
-The enemy codex (`scripts/ui/enemy_codex.gd`) provides a comprehensive intelligence database on the rogue AI forces:
-* **Discovery Unlocks:** Entries unlock dynamically as players encounter each hostile unit in campaign or custom missions via `GameState.mark_enemy_seen`.
-* **Interactive 3D Inspector:** Features interactive 3D model rotation, zoom, wireframe view, and animation playback.
-* **Combat Intelligence:** Details armor thickness, critical headshot zones, behavioral states, weapon types, and recommended counter-weapons.
+The roster data lives in `scripts/systems/enemy_codex.gd` (`EnemyCodex.ENTRIES`, ordered by
+`EnemyCodex.ORDER`); the bestiary screen that renders it is `scripts/ui/encyclopedia.gd`:
+* **Discovery Unlocks:** Entries unlock as the player meets each hostile unit; `EnemyBase` calls `GameState.mark_enemy_seen`, and `GameState.has_seen_enemy` gates the entry. Undiscovered robots stay classified.
+* **Live 3D Model:** Each entry instantiates the robot's real scene on a turntable that spins slowly on its own (`_turntable`, 0.5 rad/s). There is no zoom, wireframe or animation-playback control.
+* **Entry Fields:** An entry carries only what the screen shows: `scene`, display `name`, `desc` dossier line, and the `scale`/`y`/`yaw` framing values that pose the model.
 
 ## Weapon Codex
 <!-- lat: { "require-code-mention": true } -->
 The weapon codex (`scripts/ui/weapon_codex.gd`) documents the full arsenal available to the human resistance:
-* **Arsenal Roster:** Covers 17 wieldable weapons spanning kinetic firearms, energy beam platforms, and heavy ordinance.
+* **Arsenal Roster:** Covers the 13 wieldable weapons in `GameState.WEAPON_ORDER` (weakest to strongest, pistol through OMEGA-X), spanning kinetic firearms, energy beam platforms, and heavy ordnance. Only weapons the player has held appear, plus the `STANDARD_ISSUE` trio.
 * **Comparative Statistics:** Normalized comparative bar graphs for raw DPS, effective range, fire rate, recoil severity, and handling.
 * **Firing Profiles:** Explains primary hitscan/projectile dynamics, alt-fire charge cycles, and special mechanics (piercing, splash, chain lightning, homing).

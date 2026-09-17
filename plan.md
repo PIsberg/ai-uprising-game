@@ -31,12 +31,14 @@ Create core markdown files in the [lat.md/](file:///C:/dev/private/ai-uprising-g
 
 ### Phase 3: Anchoring Code to Markdown (Code Annotations)
 - [x] Add `# @lat: [[section-id]]` annotations to key GDScript files.
-- [x] Focus initial annotations on:
-  - Autoload scripts: [game_state.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/game_state.gd), [ai_director.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/ai_director.gd), [audio_bus.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/audio_bus.gd), [sound_synth.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/sound_synth.gd), [graphics_settings.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/graphics_settings.gd)
-  - Core mechanics: [enemy_base.gd](file:///C:/dev/private/ai-uprising-game/scripts/enemies/enemy_base.gd), [player.gd](file:///C:/dev/private/ai-uprising-game/scripts/player/player.gd)
-  - Builder scripts: [level_defs.gd](file:///C:/dev/private/ai-uprising-game/scripts/levels/level_defs.gd), [level_builder.gd](file:///C:/dev/private/ai-uprising-game/scripts/levels/level_builder.gd)
-  - Weapons: [weapon_manager.gd](file:///C:/dev/private/ai-uprising-game/scripts/weapons/weapon_manager.gd)
-  - Tests: [aaa_axes_probe.gd](file:///C:/dev/private/ai-uprising-game/tests/aaa_axes_probe.gd)
+- [x] Annotated so far (one `# @lat:` backlink each, all resolving):
+  - Autoloads: `scripts/autoload/game_state.gd` (CLI boot), `scripts/autoload/sound_synth.gd`
+  - Core mechanics: `scripts/enemies/enemy_base.gd` (hijack), `scripts/player/player.gd` (4 groups)
+  - Systems: `scripts/systems/elite.gd` (affixes, nemesis), `scripts/systems/enemy_codex.gd`
+  - UI: `scripts/ui/armory.gd`, `scripts/ui/campaign_map.gd`, `scripts/ui/weapon_codex.gd`, `scripts/editor/level_editor.gd`
+- [ ] Still unannotated, and each needs a lattice section before it can be:
+  `ai_director.gd`, `audio_bus.gd`, `graphics_settings.gd`, `level_defs.gd`,
+  `level_builder.gd`, `weapon_manager.gd`, `scripts/ui/encyclopedia.gd`
 
 ### Phase 4: Enforcing Referential Integrity & CI Integration
 - [x] Provide [tools/check_lat.sh](file:///C:/dev/private/ai-uprising-game/tools/check_lat.sh) and [tools/check_lat.ps1](file:///C:/dev/private/ai-uprising-game/tools/check_lat.ps1) to run `lat check` locally.
