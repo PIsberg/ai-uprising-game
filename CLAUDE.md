@@ -29,6 +29,9 @@ pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTempla
 ./release itch                      # or: pwsh tools/release.ps1 itch  (add -SkipBuild to re-push without rebuilding)
                                     # one-time: C:\Users\isber\butler\butler.exe login   |   page: gotrex/ai-uprising
 
+# Loading-screen hang check (windowed; exports a pack, cold-starts level 1 10x through the menu)
+pwsh tools/load_race_check.ps1
+
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
@@ -59,7 +62,7 @@ Probe-writing rules learned the hard way:
 
 **Weapons.** `WeaponManager` under the player camera holds `Weapon` instances configured by `WeaponData` `.tres` in `assets/weapons/`; the rack self-sorts weakest→strongest. Grenade types live on the player (`grenade_kinds` in `player.gd`), not in the weapon rack.
 
-**Flow between levels:** level complete → `advance_level` → comic briefing (`level_comic_briefing.gd`, shows intercepted patch notes) → optional Armory → `loading_screen.gd` (threaded load with `use_sub_threads=true`) → level.
+**Flow between levels:** level complete → `advance_level` → comic briefing (`level_comic_briefing.gd`, shows intercepted patch notes) → optional Armory → `loading_screen.gd` (threaded load, `use_sub_threads=false`) → level.
 
 ## GDScript gotchas that have caused real bugs here
 
@@ -78,4 +81,4 @@ Probe-writing rules learned the hard way:
 
 - `future-improvements.md` is the living backlog: delete items when shipped, note it in the commit.
 - `docs/AAA_ROADMAP.md` records completed visual/feel passes and what's still open.
-- Keep the loading screen's threaded-load path intact; the big levels' shared robot-model chunk stalls a serialized load for many seconds (reported as a freeze).
+- Keep the loading screen's threaded-load path intact (a blocking load freezes on a grey window), but keep `use_sub_threads` **off** there and in `GameState.warm_level_cache`: with it on, worker-thread script compiles fail their `preload()`s and the exported build hung on level 1 in about 1 cold start in 4. Only an exported pack shows it, never source or headless: run `pwsh tools/load_race_check.ps1` after touching either load or before a release.

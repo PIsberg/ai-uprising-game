@@ -1,13 +1,13 @@
 extends Node
 ## Every scene the loading screen hands to the player survives the loading
 ## screen's actual load path: ResourceLoader.load_threaded_request with
-## use_sub_threads = true (scripts/ui/loading_screen.gd). campaign_smoke loads
-## levels with a plain load(); the threaded path exercises dependency loading
-## in parallel and is the one that has stalled on the big levels' shared
-## robot-model chunk before. The loading screen falls back to a blocking
-## change_scene_to_file on THREAD_LOAD_FAILED, which would hide a broken
-## resource behind a hitch - this probe does not. It also reports the wall
-## time per scene so a load that has crept past a few seconds is visible.
+## use_sub_threads = false (scripts/ui/loading_screen.gd). campaign_smoke loads
+## levels with a plain load(). Headless, this cannot see the sub-thread preload
+## race that hung the exported build; tools/load_race_check.ps1 does. The loading
+## screen falls back to a blocking change_scene_to_file on THREAD_LOAD_FAILED,
+## which would hide a broken resource behind a hitch - this probe does not. It
+## also reports the wall time per scene so a load that has crept past a few
+## seconds is visible.
 ##   godot --headless --path . --audio-driver Dummy res://tests/threaded_load_probe.tscn
 
 const TIMEOUT_S := 90.0
@@ -45,7 +45,7 @@ func _run() -> void:
 			_check(false, "%s exists" % path)
 			continue
 		var t0 := Time.get_ticks_msec()
-		var req := ResourceLoader.load_threaded_request(path, "", true)
+		var req := ResourceLoader.load_threaded_request(path, "", false)
 		if req != OK:
 			_check(false, "%s: load_threaded_request accepted (err %d)" % [path, req])
 			continue
