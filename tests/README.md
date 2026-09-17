@@ -385,4 +385,6 @@ Adding a new logic probe? Add it to `tools/probes.txt` (the one list both
 `suite` (probe name, one-line "verifies", mode). `tools/check_suite_manifest.py`
 runs in CI and fails if the list and the `suite` rows disagree, so a probe
 cannot be described as suite without actually running. If it can't run
-headless, mark it `windowed` here instead of adding it to the list.
+headless, mark it `windowed` here instead of adding it to the list. Bump the
+counts in the sentence above the table too - the same check compares all four
+against the rows, so a stale number fails CI.
