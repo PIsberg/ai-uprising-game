@@ -16,27 +16,34 @@ This plan outlines the steps to integrate `lat.md` (Agent Lattice) into the [ai-
 
 ### Phase 1: Environment & Tooling Setup
 - [x] **Initialize Agent Lattice:** Run `lat init` to create the `lat.md/` configuration directory.
-- [ ] **Manage Dependencies:** Create a minimal [package.json](file:///C:/dev/private/ai-uprising-game/package.json) in the project root to manage the `lat.md` CLI version locally (as a `devDependency`) so all contributors use the same version.
+- [x] **Manage Dependencies:** Create a minimal [package.json](file:///C:/dev/private/ai-uprising-game/package.json) in the project root to manage the `lat.md` CLI version locally (as a `devDependency`) so all contributors use the same version.
 - [ ] **Configure MCP (Model Context Protocol):** Register the `lat mcp` server in the Antigravity configuration settings (`C:\Users\isber\.gemini\config\mcp_servers.json`) so the agent has direct tool access to search and query the lattice.
 
 ### Phase 2: Building the Knowledge Graph Nodes
 Create core markdown files in the [lat.md/](file:///C:/dev/private/ai-uprising-game/lat.md) directory to map out the codebase:
-1. **`lat.md/architecture.md`**: High-level game flow, core state machine, and Autoloads mapping (`GameState`, `AIDirector`, etc.).
-2. **`lat.md/level-system.md`**: Procedural building system, def keys (`docs/LEVEL_DEF_KEYS.md`), scales, and coordinate mappings.
-3. **`lat.md/enemies.md`**: CharacterBody3D state machines (`scripts/enemies/enemy_base.gd`), scaling, and roster (`docs/ENEMY_ROSTER.md`).
-4. **`lat.md/weapons.md`**: Weapon management, weapon resource data (.tres), and collision layer definitions.
-5. **`lat.md/testing.md`**: Verification philosophy, probe-writing rules, and test runner configurations.
+- [x] **`lat.md/architecture.md`**: High-level game flow, core state machine, and Autoloads mapping (`GameState`, `AIDirector`, etc.).
+- [x] **`lat.md/level-system.md`**: Procedural building system, def keys (`docs/LEVEL_DEF_KEYS.md`), scales, and coordinate mappings.
+- [x] **`lat.md/enemies.md`**: CharacterBody3D state machines (`scripts/enemies/enemy_base.gd`), scaling, and roster (`docs/ENEMY_ROSTER.md`).
+- [x] **`lat.md/weapons.md`**: Weapon management, weapon resource data (.tres), and collision layer definitions.
+- [x] **`lat.md/player.md`**: Player locomotion, stamina/exhaustion, dash/slide, grapple, and camera feel.
+- [x] **`lat.md/meta-systems.md`**: Campaign map progression, armory upgrades, and 3D codex compendiums.
+- [x] **`lat.md/testing.md`**: Verification philosophy, probe-writing rules, and test runner configurations.
 
 ### Phase 3: Anchoring Code to Markdown (Code Annotations)
-- [ ] Add `# @lat: [[section-id]]` annotations to key GDScript files.
-- [ ] Focus initial annotations on:
-  - Autoload scripts: [game_state.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/game_state.gd), [ai_director.gd](file:///C:/dev/private/ai-uprising-game/scripts/autoload/ai_director.gd)
-  - Core mechanics: [enemy_base.gd](file:///C:/dev/private/ai-uprising-game/scripts/enemies/enemy_base.gd), [player.gd](file:///C:/dev/private/ai-uprising-game/scripts/player.gd)
-  - Builder script: [level_builder.gd](file:///C:/dev/private/ai-uprising-game/scripts/levels/level_builder.gd)
+- [x] Add `# @lat: [[section-id]]` annotations to key GDScript files.
+- [x] Annotated so far (one `# @lat:` backlink each, all resolving):
+  - Autoloads: `scripts/autoload/game_state.gd` (CLI boot), `scripts/autoload/sound_synth.gd`
+  - Core mechanics: `scripts/enemies/enemy_base.gd` (hijack), `scripts/player/player.gd` (4 groups)
+  - Systems: `scripts/systems/elite.gd` (affixes, nemesis), `scripts/systems/enemy_codex.gd`
+  - UI: `scripts/ui/armory.gd`, `scripts/ui/campaign_map.gd`, `scripts/ui/weapon_codex.gd`, `scripts/editor/level_editor.gd`
+- [ ] Still unannotated, and each needs a lattice section before it can be:
+  `ai_director.gd`, `audio_bus.gd`, `graphics_settings.gd`, `level_defs.gd`,
+  `level_builder.gd`, `weapon_manager.gd`, `scripts/ui/encyclopedia.gd`
 
 ### Phase 4: Enforcing Referential Integrity & CI Integration
-- [ ] Update [tools/run_tests.ps1](file:///C:/dev/private/ai-uprising-game/tools/run_tests.ps1) and [tools/run_tests.sh](file:///C:/dev/private/ai-uprising-game/tools/run_tests.sh) to run `lat check` as part of the validation suite.
-- [ ] Add `lat check` validation to pre-commit git hooks using `husky` or simple shell scripts to prevent dirty commits that break documentation links.
+- [x] Provide [tools/check_lat.sh](file:///C:/dev/private/ai-uprising-game/tools/check_lat.sh) and [tools/check_lat.ps1](file:///C:/dev/private/ai-uprising-game/tools/check_lat.ps1) to run `lat check` locally.
+- [x] Add automated `lat-check` job in [.github/workflows/ci.yml](file:///C:/dev/private/ai-uprising-game/.github/workflows/ci.yml) to gate PRs and releases.
+- [ ] Add `lat check` validation to pre-commit git hooks using simple shell scripts to prevent dirty commits that break documentation links.
 
 ### Phase 5: Generating AI Profiles
 - [ ] Add rules to [CLAUDE.md](file:///C:/dev/private/ai-uprising-game/CLAUDE.md) instructing external agents to run `lat search <query>` or `lat check` before proposing code changes.

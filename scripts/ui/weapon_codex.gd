@@ -1,3 +1,4 @@
+# @lat: [[meta-systems#Weapon Codex]]
 extends Control
 ## The arsenal reference: every weapon in the game with its class, a dossier line,
 ## and full stats (damage, rate, DPS, magazine, reload, range, headshot, pierce,

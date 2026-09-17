@@ -34,3 +34,9 @@ Manages graphics quality presets (LOW, MEDIUM, HIGH, ULTRA). These presets drive
 * Viewport quality and post-processing quality
 * Environment settings (shadows, light counts)
 * Light budgets consumed by the level builder
+
+## CLI Boot Logic
+<!-- lat: { "require-code-mention": true } -->
+Command-line invocation arguments handled during engine startup (`_handle_cli_boot` in `scripts/autoload/game_state.gd`):
+* `--editor`: Boots directly into the built-in 3D Level Editor environment (`EDITOR_SCENE`).
+* `--level <path>`: Bypasses menus and loads directly into a authored `.lvl` file via `LEVEL_CUSTOM`.

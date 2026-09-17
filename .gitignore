@@ -39,3 +39,10 @@ desktop.ini
 .idea/
 *.swp
 .godot/
+
+# Node / lat.md
+node_modules/
+# lat.md's scan cache. lat_init.json is tracked on purpose: it records the
+# init version, and without it every `lat check` warns "No init version recorded".
+lat.md/.cache/*
+!lat.md/.cache/lat_init.json

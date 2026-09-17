@@ -1,3 +1,4 @@
+# @lat: [[level-system#Level Editor]]
 extends Node3D
 ## In-game LEVEL EDITOR (dev tool). Edits a level def Dictionary (the same data
 ## LevelBuilder consumes) with a cheap marker preview, a hybrid top-down/free-fly

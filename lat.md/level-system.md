@@ -27,3 +27,16 @@ Specifies non-procedural levels and user-made content exceptions.
 
 * **Level 1 (`level_01.tscn`):** The only hand-authored `.tscn` level file in the repository.
 * **Custom Editor Levels (`level_custom.tscn`):** Loads user-made custom level layouts saved in `.lvl` formats.
+
+## Level Editor
+<!-- lat: { "require-code-mention": true } -->
+The built-in level editor (`scripts/editor/level_editor.gd`, launched via `--editor`) enables rapid in-engine authoring:
+* **Data Format:** Reads and writes plain data `.lvl` files and procedural dictionary profiles.
+* **3D Viewport & Gizmos:** Full interactive 3D translation/rotation gizmos for placing obstacles, lights, jump pads, and spawners.
+* **One-Click Playtest:** Instant in-editor simulation testing with live player spawn and telemetry verification.
+
+## Hazards and Objectives
+Defines environmental challenges and mission completion criteria across generated maps.
+
+* **Interactive Hazards:** Acid hazard pools, explosive volatile drums, moving defense laser barriers, and Tesla shock coils.
+* **Mission Objectives:** Extermination waves, defense node holdouts, power core sabotage, and extraction beacon activations.

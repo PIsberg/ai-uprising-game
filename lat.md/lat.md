@@ -4,4 +4,6 @@ This directory defines the high-level concepts, business logic, and architecture
 - [[enemies]] — Enemy state machine behaviors and roster scaling
 - [[level-system]] — Procedural level definitions and building blocks
 - [[weapons]] — Weapon manager, resources, and physics layers
+- [[player]] — Player movement physics, stamina, abilities, and camera feel
+- [[meta-systems]] — Campaign map progression, armory upgrades, and 3D codex compendiums
 - [[testing]] — Verification philosophy and headless testing probes

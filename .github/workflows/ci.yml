@@ -86,12 +86,33 @@ jobs:
           done
           exit $fail
 
+  lat-check:
+    name: Validate Agent Lattice (lat.md)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # npm ci installs the exact lat.md in package-lock.json. `npx lat.md@^0.12.1`
+      # floated inside 0.x, where a patch bump can add a rule: the gate could go red
+      # with no commit behind it, and it blocks the release export.
+      - name: Install pinned lat.md
+        run: npm ci
+
+      - name: Run lat check
+        run: npx lat check
+
   # Real game binaries (Linux + Windows, pck embedded). Runs on version tags
   # and manual dispatch — the export templates are a ~1 GB download, so this
   # is kept off the per-push path.
   export:
     name: Export game binaries
-    needs: verify
+    needs: [verify, lat-check]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
