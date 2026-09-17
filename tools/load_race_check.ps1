@@ -12,7 +12,7 @@
 param(
     [int]$Runs = 10,
     [switch]$SkipExport,
-    [string]$Godot = $env:GODOT
+    [string]$Godot = $env:GODOT_BIN
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,7 +21,7 @@ $Root = Split-Path -Parent $PSScriptRoot
 if (-not $Godot -or -not (Test-Path $Godot)) {
     $guess = "C:\Users\$env:USERNAME\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe"
     if (Test-Path $guess) { $Godot = $guess }
-    else { throw "Godot binary not found. Pass -Godot <path> or set `$env:GODOT." }
+    else { throw "Godot binary not found. Pass -Godot <path> or set `$env:GODOT_BIN." }
 }
 
 # "Load race check" is the shipped Windows preset plus tests/, exported as a .pck.

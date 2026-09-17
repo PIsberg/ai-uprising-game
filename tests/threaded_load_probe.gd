@@ -5,8 +5,9 @@ extends Node
 ## levels with a plain load(). Headless, this cannot see the sub-thread preload
 ## race that hung the exported build; tools/load_race_check.ps1 does. The loading
 ## screen falls back to a blocking change_scene_to_file on THREAD_LOAD_FAILED,
-## which would hide a broken resource behind a hitch - this probe does not. It also reports the wall
-## time per scene so a load that has crept past a few seconds is visible.
+## which would hide a broken resource behind a hitch - this probe does not. It
+## also reports the wall time per scene so a load that has crept past a few
+## seconds is visible.
 ##   godot --headless --path . --audio-driver Dummy res://tests/threaded_load_probe.tscn
 
 const TIMEOUT_S := 90.0

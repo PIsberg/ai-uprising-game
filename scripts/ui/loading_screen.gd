@@ -224,6 +224,10 @@ func _go() -> void:
 		return
 	# use_sub_threads stays off: worker-thread script compiles failed their preload()s
 	# and hung the exported build ~1 cold start in 4 (tools/load_race_check.ps1).
+	# It was on to parallelise dependency loading, and turning it off does cost a
+	# little: measured cold, one process per scene, the heaviest level (assembly)
+	# went 1.48s -> 1.75s and convoy stayed inside its own noise (2.8-3.7s both
+	# ways). A quarter-second against a hang in a quarter of starts.
 	if ResourceLoader.load_threaded_request(_path, "", false) == OK:
 		_loading = true
 	else:
