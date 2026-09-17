@@ -13,5 +13,8 @@
   },
   "devDependencies": {
     "lat.md": "0.12.2"
+  },
+  "overrides": {
+    "toml": "5.0.0"
   }
 }
