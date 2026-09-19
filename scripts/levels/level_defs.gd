@@ -2032,7 +2032,30 @@ static func _alien() -> Dictionary:
 			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.82, 0.32, 1.0), "health": 320.0,
 				"reinforce": [{"type": "alien", "count": 4, "pos": Vector3(0, 0, 10)}]},
 			# Breaking the beacon doesn't end the call — something answers it.
-			{"type": "survive", "after": "core", "seconds": 30.0, "label": "Survive the Hollow's answer"},
+			{"type": "survive", "after": "core", "seconds": 30.0, "label": "Survive the Hollow's answer",
+				"waves": [
+					# The beacon sits between the two acid channels (z -12..-8 and
+					# z 16..20), so every ground spawn stays in that z -4..+10 band or
+					# well south of the far channel: enemies are NOT moved out of hazards.
+					{"at": 1.0, "label": "THE HOLLOW ANSWERS — SPAWNLINGS", "enemies": [
+						{"type": "skitter", "count": 6, "pos": Vector3(0, 0, 4)},
+						{"type": "alien", "count": 2, "pos": Vector3(-24, 0, 8)},
+					]},
+					# The health vents just off the WEST tip of the south channel
+					# (bed starts at x=-11): reachable without crossing acid, but it
+					# pulls you out of the beacon's cover into the spitters' lane.
+					{"at": 11.0, "label": "SECOND CHORUS — SPITTERS", "enemies": [
+						{"type": "alien", "count": 3, "pos": Vector3(25, 0, 8)},
+						{"type": "mender", "pos": Vector3(0, 3, -2)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(-15, 0, 18)},
+						{"type": "ammo", "pos": Vector3(-15, 0, 14)},
+					]},
+					{"at": 20.0, "label": "THE HOLLOW'S CHAMPION", "enemies": [
+						{"type": "ravager", "pos": Vector3(0, 0, -3)},
+						{"type": "alien", "count": 2, "pos": Vector3(-6, 0, 30)},
+					]},
+				]},
 		],
 		"music": "music_grok",
 		"open_sky": true,
@@ -3649,7 +3672,31 @@ static func _gemini() -> Dictionary:
 			{"type": "collect_shards", "label": "Recover the Gemini data shards", "points": [Vector3(-16, 0, -10), Vector3(16, 0, -14), Vector3(-15, 0, 16), Vector3(10, 0, 16), Vector3(0, 0, 18)],
 				"reinforce": [{"type": "seeker", "count": 4, "pos": Vector3(0, 0, 0)}]},
 			# Pulling the last shard trips the nexus purge — ride it out.
-			{"type": "survive", "after": "shards", "seconds": 25.0, "label": "Survive the purge protocol"},
+			{"type": "survive", "after": "shards", "seconds": 25.0, "label": "Survive the purge protocol",
+				"waves": [
+					# Campaign slot 3, so the purge teaches the wave hold gently: chaff
+					# from the air, then security on foot, then ONE heavy to finish.
+					{"at": 1.0, "label": "PURGE PROTOCOL — SEEKER SWARM", "enemies": [
+						{"type": "seeker", "count": 4, "pos": Vector3(0, 3, -22)},
+						{"type": "drone", "count": 2, "pos": Vector3(0, 3, 22)},
+					]},
+					# Health vents beside the central dais: the most overlooked spot in
+					# the room (both towers and all four pillars see it).
+					{"at": 9.0, "label": "SECOND WAVE — TWIN-CORE SECURITY", "enemies": [
+						{"type": "android", "count": 2, "pos": Vector3(-21, 0, 8)},
+						# x=21, not 25: the east ring bulkhead ("gates", axis x at 25) runs
+						# down that line, and a pair spawned on it had no route to the
+						# player (caught live by tests/survive_waves_probe).
+						{"type": "android", "count": 2, "pos": Vector3(21, 0, 4)},
+						{"type": "spider", "count": 2, "pos": Vector3(0, 0, 25)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(5, 0, -8)},
+					]},
+					{"at": 17.0, "label": "MIRROR PROTOCOL — HEAVY UNIT", "enemies": [
+						{"type": "brute", "pos": Vector3(-23, 0, -23)},
+						{"type": "sniper", "pos": Vector3(21, 0, 21)},
+					]},
+				]},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area): the 50² nexus core is untouched at the centre;
@@ -4756,7 +4803,29 @@ static func _lava_world() -> Dictionary:
 				"pos": Vector3(0, 3, 0), "label": "Destroy the FORGE WARDEN",
 				"reinforce": [{"type": "raptor", "count": 3, "pos": Vector3(0, 3, 0)}]},
 			# The warden's death vents the forge — the floor answers in fire.
-			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Survive the forge's fury"},
+			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Survive the forge's fury",
+				"waves": [
+					# The whole floor is lava, so waves are flyers (y=3): scatter is
+					# harmless in the air. The ONE ground unit is a single spawn on a
+					# 6x6 island: a clustered "count" scatters 2.5 m, wider than a catwalk.
+					{"at": 1.0, "label": "FORGE VENTS OPEN — SEEKER FLIGHT", "enemies": [
+						{"type": "seeker", "count": 4, "pos": Vector3(0, 3, -8)},
+					]},
+					# Ammo ejects at the END of the hub-to-east spur: a 2.6 m catwalk
+					# with lava both sides and raptors overhead.
+					{"at": 9.0, "label": "SECOND WAVE — SLAG RAPTORS", "enemies": [
+						{"type": "raptor", "count": 3, "pos": Vector3(8, 3, 8)},
+						{"type": "breaker", "pos": Vector3(-22, 3, 2)},
+					], "supplies": [
+						{"type": "ammo", "pos": Vector3(14, 1.7, 0)},
+					]},
+					# A MAULER drops on the exit island: the way out is now guarded.
+					{"at": 17.0, "label": "THE WARDEN'S LAST ORDER", "enemies": [
+						{"type": "mauler", "pos": Vector3(14, 2, 14)},
+						{"type": "whirlwind", "pos": Vector3(-8, 3, -8)},
+						{"type": "raptor", "count": 2, "pos": Vector3(0, 3, 12)},
+					]},
+				]},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area, TWINNED with water_world): the shared
@@ -4919,7 +4988,28 @@ static func _water_world() -> Dictionary:
 				"pos": Vector3(0, 3, 0), "label": "Harpoon the ANGLER LEVIATHAN",
 				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(0, 3, 0)}]},
 			# The leviathan's death roils the basin — its school comes up angry.
-			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge"},
+			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge",
+				"waves": [
+					# Sharks spawn IN the flood (y=0) on purpose: they are the one
+					# unit that belongs in the hazard. Everything else flies (y=3).
+					{"at": 1.0, "label": "TIDE SURGE — THE SHOAL RISES", "enemies": [
+						{"type": "fishbot", "count": 4, "pos": Vector3(0, 3, -8)},
+						{"type": "shark", "pos": Vector3(6, 0, 6)},
+					]},
+					# Health surfaces on the side combat perch, a dead-end spur with
+					# sharks circling both flanks.
+					{"at": 9.0, "label": "SECOND SURGE — FEEDING FRENZY", "enemies": [
+						{"type": "shark", "count": 2, "pos": Vector3(-8, 0, -6)},
+						{"type": "seeker", "count": 3, "pos": Vector3(10, 3, 10)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(-7, 1.7, 12)},
+					]},
+					{"at": 17.0, "label": "THE BASIN EMPTIES ITS CAGES", "enemies": [
+						{"type": "breaker", "pos": Vector3(14, 3, -8)},
+						{"type": "whirlwind", "pos": Vector3(-10, 3, 6)},
+						{"type": "fishbot", "count": 3, "pos": Vector3(0, 3, 14)},
+					]},
+				]},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area, TWINNED with lava_world): shared outer
@@ -5068,7 +5158,31 @@ static func _desert() -> Dictionary:
 				"reinforce": [{"type": "gunner", "count": 3, "pos": Vector3(10, 0, 10)}]},
 			# The mast's last transmission called in the cavalry — hold until the
 			# sandstorm swallows their signal.
-			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike"},
+			{"type": "survive", "after": "core", "seconds": 25.0, "label": "Weather the counterstrike",
+				"waves": [
+					# The mast falls at (24,24); the counterstrike converges on it from
+					# open sand. All spawns sit clear of the three fire trenches
+					# (z 0..4 west, x 8..12 north, z 31..35 south) by the 2.5 m scatter.
+					{"at": 1.0, "label": "COUNTERSTRIKE — HUNTER PACK", "enemies": [
+						{"type": "dog", "count": 4, "pos": Vector3(30, 0, 8)},
+						{"type": "drone", "count": 2, "pos": Vector3(24, 3, 36)},
+					]},
+					# Supplies air-drop back toward the canyon mouth, away from the
+					# mast's cover and into the gunners' firing line.
+					{"at": 9.0, "label": "SECOND WAVE — RELAY GARRISON", "enemies": [
+						{"type": "gunner", "count": 2, "pos": Vector3(6, 0, 28)},
+						{"type": "android", "count": 2, "pos": Vector3(38, 0, 20)},
+						{"type": "sniper", "pos": Vector3(36, 3.0, 4)},
+					], "supplies": [
+						{"type": "ammo", "pos": Vector3(10, 0, 12)},
+						{"type": "health", "pos": Vector3(8, 0, 24)},
+					]},
+					{"at": 17.0, "label": "HEAVY ARMOUR INBOUND", "enemies": [
+						{"type": "warbot", "pos": Vector3(38, 0, 38)},
+						{"type": "howitzer", "pos": Vector3(-8, 0, 26)},
+						{"type": "raptor", "pos": Vector3(24, 3, 10)},
+					]},
+				]},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area): the 66² canyon basin is untouched at the

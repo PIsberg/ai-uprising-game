@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-265 probes total: **46** wired into the headless suite (`suite`), **83**
+266 probes total: **47** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -274,6 +274,7 @@ or GPU-timing probes; `--headless` renders these black).
 | startle_probe | Startle-scatter affects only in-radius non-boss non-EMP units; GODLIKE/OVERLOAD broadcasts it | headless |
 | suburb_nav_diag | Which leg of the suburb canal crossing fails, chaining spawn→bridgeheads→deck→exit plus the tower route | headless |
 | suburb_screenshot | Player camera walked up to a house on the suburb level, captured | windowed |
+| survive_waves_probe | Every campaign `survive` hold escalates (>= 2 announced waves inside the hold, types resolve, flyers-only in the air, sharks only in water, ground spawns clear lava/water beds by the 2.5 m scatter); then builds each level and requires walking wave spawns to sit on the baked navmesh with a path to the player (caught a pair authored on gemini's x=25 gate bulkhead) | suite |
 | survival_probe | Reckless-bot regression net for the onboarding survival experience (auto-reload, aggro rings, health-on-kill) | suite |
 | spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level. Also reports post-grace incoming DPS per level, blamed by source, on a deep health pool so the figure is not censored by the player dying (~155s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
