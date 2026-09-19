@@ -4793,7 +4793,8 @@ static func _suburb_boss() -> Dictionary:
 # even after WORLD_SCALE; the challenge is staying ON them under fire.
 # ===================================================================
 
-## Shared walkway network for both hazard arenas (coords pre-WORLD_SCALE).
+## Vulcan Forge walkway network (coords pre-WORLD_SCALE). water_world used to
+## share this list verbatim; it now has its own (tests/hazard_layout_probe).
 ## A continuous path spawn(NW) → north walk → NE → east walk → exit(SE), plus a
 ## central hub spur and a side perch, all narrow so you can be knocked off.
 static func _hazard_platforms(col: Color) -> Array:
@@ -4808,7 +4809,7 @@ static func _hazard_platforms(col: Color) -> Array:
 		{"pos": Vector3(8, 1.4, 0), "size": Vector3(14, 0.4, 2.6), "color": col},      # hub→east spur
 		{"pos": Vector3(-7, 1.4, 5), "size": Vector3(2.6, 0.4, 9), "color": col},      # hub→perch spur
 		{"pos": Vector3(-7, 1.4, 11), "size": Vector3(5, 0.4, 5), "color": col},       # side combat perch
-		# EXPANSION PASS (both hazard arenas grew 40² → 56² together): an OUTER
+		# EXPANSION PASS (the arena grew 40² → 56²): an OUTER
 		# loop swings west off the spawn island and south to the exit island —
 		# a long exposed ring route mirroring the NE walk. Every segment
 		# OVERLAPS its neighbours (same no-jump-gap rule as above), same
@@ -4861,7 +4862,7 @@ static func _lava_world() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
-		# EXPANSION PASS (2× area, TWINNED with water_world): the shared
+		# EXPANSION PASS (2× area): the
 		# walkway network grew an outer loop (see _hazard_platforms) and the
 		# molten pools stretch to keep covering the floor quadrants. Spawn and
 		# exit stay on their islands — the loop is more sea to cross, not a
@@ -5018,8 +5019,9 @@ static func _water_world() -> Dictionary:
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "assassinate", "enemy": "fishbot", "elite": "swift", "bulk": 2.2,
-				"pos": Vector3(0, 3, 0), "label": "Harpoon the ANGLER LEVIATHAN",
-				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(0, 3, 0)}]},
+				# West basin, over open water: (0,3,0) is now inside the reactor cap deck.
+				"pos": Vector3(-8, 3, -6), "label": "Harpoon the ANGLER LEVIATHAN",
+				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(8, 3, -6)}]},
 			# The leviathan's death roils the basin — its school comes up angry.
 			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge",
 				"waves": [
@@ -5029,13 +5031,13 @@ static func _water_world() -> Dictionary:
 						{"type": "fishbot", "count": 4, "pos": Vector3(0, 3, -8)},
 						{"type": "shark", "pos": Vector3(6, 0, 6)},
 					]},
-					# Health surfaces on the side combat perch, a dead-end spur with
-					# sharks circling both flanks.
+					# Health surfaces on PUMP C, the dead-end island at the far SW of
+					# the network: the longest run from the reactor, over shark water.
 					{"at": 9.0, "label": "SECOND SURGE — FEEDING FRENZY", "enemies": [
 						{"type": "shark", "count": 2, "pos": Vector3(-8, 0, -6)},
 						{"type": "seeker", "count": 3, "pos": Vector3(10, 3, 10)},
 					], "supplies": [
-						{"type": "health", "pos": Vector3(-7, 1.7, 12)},
+						{"type": "health", "pos": Vector3(-20, 1.7, 20)},
 					]},
 					{"at": 17.0, "label": "THE BASIN EMPTIES ITS CAGES", "enemies": [
 						{"type": "breaker", "pos": Vector3(14, 3, -8)},
@@ -5045,14 +5047,19 @@ static func _water_world() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
-		# EXPANSION PASS (2× area, TWINNED with lava_world): shared outer
-		# walkway loop (see _hazard_platforms), flood stretched wall-to-wall
-		# over the new floor. Spawn/exit stay on their islands.
+		# OWN LAYOUT (was a reskinned twin of lava_world: same _hazard_platforms
+		# list, ramp, spawn, exit and pickups). Vulcan Forge is a corner-to-corner
+		# crossing on one tier; Tidecore is a journey INWARD and UP: spawn on the NW
+		# island, work round a BROKEN ring of gantries (no west side), and climb to
+		# the exit on the reactor cap. Three dead-end pump islands carry the
+		# rewards; a high gantry runs west off the cap to a lookout over the basin
+		# the LEVIATHAN hunts in. tests/hazard_layout_probe keeps the two apart and
+		# walks every segment of both networks on the built navmesh.
 		"floor_size": Vector2(56, 56),
 		"floor_color": Color(0.03, 0.06, 0.08),
-		"spawn": Vector3(-15, 2.2, -15),
-		"exit": Vector3(14, 1.6, 14),
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(0.45, 0.65, 1)},
+		"spawn": Vector3(-20, 2.2, -20),
+		"exit": Vector3(0, 3.4, 0),
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-13, 1.9, -20), "color": Color(0.45, 0.65, 1)},
 		# Haunting moonlit flooded reactor: a low moon and Milky Way over the basin
 		# (the flat dark gradient read as an empty void), moonlight silvering the
 		# water and its reflection, with the storm still rolling through — rain +
@@ -5077,28 +5084,54 @@ static func _water_world() -> Dictionary:
 			"weather": "rain",
 		},
 		"lights": [
-			{"pos": Vector3(0, 5, 0), "color": Color(0.3, 0.7, 1.0), "energy": 2.6, "range": 22},
-			{"pos": Vector3(-14, 4, -14), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
-			{"pos": Vector3(14, 4, 14), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+			# Every outdoor light builds a SOLID mast from the floor up to the lamp
+			# (_add_light_pylon). So none of these stands on a deck: they rise out of
+			# the flood beside the gantries, like channel markers. A lamp authored on
+			# the spawn island put the player on top of a 4 m pole (tests/hazard_probe).
+			{"pos": Vector3(2.5, 7, -6.3), "color": Color(0.3, 0.7, 1.0), "energy": 2.6, "range": 22},
+			{"pos": Vector3(-25, 4, -25), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(25, 4, -5), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
 			# Failing-reactor warning lights: warm strobes cutting the all-blue basin
-			# with hazard colour, so the scene isn't one flat teal wash.
-			{"pos": Vector3(0, 3, 0), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
-			{"pos": Vector3(-9.5, 2.2, -9.5), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
-			{"pos": Vector3(9.5, 2.2, 9.5), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
-			# Outer-loop lighting (appended): moonlit blues down the west/south
-			# run + one warning strobe on the SW island.
-			{"pos": Vector3(-22, 4, 2), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
-			{"pos": Vector3(-2, 4, 22), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
-			{"pos": Vector3(-21, 3, 21), "color": Color(1.0, 0.5, 0.2), "energy": 1.8, "range": 12},
-			{"pos": Vector3(14, 4, 21), "color": Color(0.3, 0.7, 1.0), "energy": 1.8, "range": 14},
+			# with hazard colour, so the scene isn't one flat teal wash. The cap
+			# strobe doubles as the "climb here" beacon for the exit.
+			{"pos": Vector3(-3, 5, 6.3), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
+			{"pos": Vector3(-6.3, 2.2, -6.3), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
+			{"pos": Vector3(6.3, 2.2, 6.3), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
+			# Moonlit blues down the causeway and the SW run, a strobe on PUMP C,
+			# and a cold work-light on the west lookout.
+			{"pos": Vector3(5, 4, -25), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-22, 4, 13), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
+			{"pos": Vector3(-25, 3, 25), "color": Color(1.0, 0.5, 0.2), "energy": 1.8, "range": 12},
+			{"pos": Vector3(-16, 5.5, 4.5), "color": Color(0.3, 0.7, 1.0), "energy": 1.8, "range": 14},
 		],
-		# Gantry web + a raised control perch over the central hub (ramp up) for a
-		# dry sniping vantage above the flooded floor.
-		"platforms": _hazard_platforms(Color(0.16, 0.2, 0.24)) + [
-			{"pos": Vector3(0, 2.4, -1), "size": Vector3(4, 0.4, 4), "color": Color(0.2, 0.24, 0.28)},
+		# Every segment OVERLAPS its neighbours (no jump gaps: a missed jump is a
+		# swim with the sharks). Low tier y=1.4 (deck top 1.6): 2.6-wide gantries,
+		# 7x7 islands. High tier y=3.2 (deck top 3.4). Nothing on the high tier
+		# runs above a low gantry: 1.4 m of headroom would block the walk below,
+		# which is why the high gantry leaves by the ring's missing WEST side.
+		"platforms": [
+			{"pos": Vector3(-20, 1.4, -20), "size": Vector3(7, 0.4, 7), "color": Color(0.16, 0.2, 0.24)},    # spawn island (NW)
+			{"pos": Vector3(-10, 1.4, -20), "size": Vector3(16, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)}, # north causeway
+			{"pos": Vector3(0, 1.4, -20), "size": Vector3(7, 0.4, 7), "color": Color(0.16, 0.2, 0.24)},      # PUMP A (N)
+			{"pos": Vector3(0, 1.4, -13.5), "size": Vector3(2.6, 0.4, 8), "color": Color(0.16, 0.2, 0.24)},  # PUMP A -> ring spur
+			{"pos": Vector3(0, 1.4, -10), "size": Vector3(22.6, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)}, # ring north
+			{"pos": Vector3(10, 1.4, 0), "size": Vector3(2.6, 0.4, 22.6), "color": Color(0.16, 0.2, 0.24)},  # ring east
+			{"pos": Vector3(0, 1.4, 10), "size": Vector3(22.6, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)},  # ring south (no ring west)
+			{"pos": Vector3(16, 1.4, 0), "size": Vector3(10, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)},    # ring -> PUMP B spur
+			{"pos": Vector3(20, 1.4, 0), "size": Vector3(7, 0.4, 7), "color": Color(0.16, 0.2, 0.24)},       # PUMP B (E, dead end)
+			{"pos": Vector3(-14, 1.4, 10), "size": Vector3(8, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)},   # ring south -> SW link
+			{"pos": Vector3(-18, 1.4, 14.5), "size": Vector3(2.6, 0.4, 11), "color": Color(0.16, 0.2, 0.24)},# SW run
+			{"pos": Vector3(-20, 1.4, 20), "size": Vector3(7, 0.4, 7), "color": Color(0.16, 0.2, 0.24)},     # PUMP C (SW, dead end)
+			{"pos": Vector3(0, 3.2, 0), "size": Vector3(8, 0.4, 8), "color": Color(0.2, 0.24, 0.28)},        # reactor cap (exit)
+			{"pos": Vector3(-9, 3.2, 0), "size": Vector3(11, 0.4, 2.6), "color": Color(0.2, 0.24, 0.28)},    # high gantry west
+			{"pos": Vector3(-16, 3.2, 0), "size": Vector3(5, 0.4, 5), "color": Color(0.2, 0.24, 0.28)},      # west lookout
 		],
-		"ramps": [
-			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
+		# Two climbs onto the cap, from the ring's south and east sides, so the top
+		# is a loop and not a cul-de-sac. "stairs", not "ramps": stair endpoints
+		# scale with the arena, a ramp's length does not (see _scaled).
+		"stairs": [
+			{"from": Vector3(0, 1.6, 9.2), "to": Vector3(0, 3.4, 3.9), "width": 3.0},
+			{"from": Vector3(9.2, 1.6, 0), "to": Vector3(3.9, 3.4, 0), "width": 3.0},
 		],
 		"lava": [
 			{"pos": Vector3(0, 0, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
@@ -5107,64 +5140,69 @@ static func _water_world() -> Dictionary:
 		# Reactor dressing: drowned coolant columns standing out of the water to
 		# break sightlines + canisters/servers/crates for cover on the gantries.
 		"props": [
-			{"type": "pillar", "pos": Vector3(-9.5, 0, -9.5)},
-			{"type": "pillar", "pos": Vector3(9.5, 0, 9.5)},
-			{"type": "pillar", "pos": Vector3(-9.5, 0, 9.5)},
-			{"type": "pillar", "pos": Vector3(9.5, 0, -9.5)},
-			{"type": "canister", "pos": Vector3(-16, 1.6, -13)},
-			{"type": "crate", "pos": Vector3(-14, 1.6, -16)},
-			{"type": "barrier", "pos": Vector3(15, 1.6, -16), "yaw": 90},
-			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
-			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
-			{"type": "crate", "pos": Vector3(13, 1.6, 13)},
-			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
-			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
+			# Columns stand in the moat between the cap (+-4) and the ring (+-8.7),
+			# on the diagonals so they clear both stair runs.
+			{"type": "pillar", "pos": Vector3(-6.3, 0, -6.3)},
+			{"type": "pillar", "pos": Vector3(6.3, 0, 6.3)},
+			{"type": "pillar", "pos": Vector3(-6.3, 0, 6.3)},
+			{"type": "pillar", "pos": Vector3(6.3, 0, -6.3)},
+			{"type": "canister", "pos": Vector3(-22, 1.6, -18)},
+			{"type": "crate", "pos": Vector3(-18, 1.6, -22)},
+			{"type": "server", "pos": Vector3(-2, 1.6, -22), "yaw": 90},
+			{"type": "barrier", "pos": Vector3(22, 1.6, 2), "yaw": 90},
+			{"type": "canister", "pos": Vector3(18, 1.6, -2)},
+			{"type": "crate", "pos": Vector3(-22, 1.6, 18)},
+			{"type": "dish", "pos": Vector3(-18, 1.6, 22)},
+			{"type": "canister", "pos": Vector3(3, 3.6, -3)},
 		],
 		"lore": [
-			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(14, 1.7, 14), "color": Color(0.4, 0.8, 1.0),
+			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(21, 1.7, -2), "color": Color(0.4, 0.8, 1.0),
 				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},
 		],
 		"enemies": [
-			{"type": "fishbot", "pos": Vector3(8, 3, -15)},
+			# Same roster, counts, triggers and packs as the twin layout: only the
+			# positions moved, to follow the new network (flyers over gantry lines
+			# and open water at y=3, clear of the y=3.2 high tier; sharks under it).
+			{"type": "fishbot", "pos": Vector3(3, 3, -16)},
 			{"type": "fishbot", "pos": Vector3(6, 3, 6), "trigger": 18},
 			# RAZORFIN sharks lurk under the surface and breach at you on the gantries.
-			{"type": "shark", "pos": Vector3(6, 0, -3)},
-			{"type": "shark", "pos": Vector3(9, 0, 9), "trigger": 16, "pack": "water__p1"},
-			{"type": "seeker", "pos": Vector3(0, 3, -2), "trigger": 16, "pack": "water__p2"},
+			{"type": "shark", "pos": Vector3(6, 0, -14)},
+			{"type": "shark", "pos": Vector3(13, 0, 6), "trigger": 16, "pack": "water__p1"},
+			{"type": "seeker", "pos": Vector3(0, 3, -6), "trigger": 16, "pack": "water__p2"},
 			{"type": "fishbot", "pos": Vector3(14, 3, -5), "trigger": 18},
-			{"type": "seeker", "pos": Vector3(-7, 3, 11), "trigger": 14, "pack": "water__p3"},
+			{"type": "seeker", "pos": Vector3(-12, 3, 13), "trigger": 14, "pack": "water__p3"},
 			{"type": "shark", "pos": Vector3(-11, 0, 5), "trigger": 17, "pack": "water__p3"},
 			{"type": "fishbot", "pos": Vector3(10, 3, 13), "trigger": 14, "pack": "water__p1"},
 			{"type": "fishbot", "pos": Vector3(-13, 3, -6), "trigger": 6},
-			{"type": "fishbot", "pos": Vector3(4, 3, -10), "trigger": 12, "pack": "water__p2"},
-			# Outer-loop patrols: the school hunts the new run, sharks lurking
-			# under the west and south walkways.
-			{"type": "fishbot", "pos": Vector3(-22, 3, -8), "trigger": 6, "pack": "water_r1"},
-			{"type": "fishbot", "pos": Vector3(-22, 3, 10), "trigger": 16, "pack": "water_r1"},
-			{"type": "shark", "pos": Vector3(-17, 0, 17), "trigger": 18, "pack": "water_r1"},
-			{"type": "fishbot", "pos": Vector3(-10, 3, 22), "trigger": 18, "pack": "water_r2"},
-			{"type": "seeker", "pos": Vector3(6, 3, 22), "trigger": 16, "pack": "water_r2"},
-			{"type": "shark", "pos": Vector3(8, 0, 17), "trigger": 20, "pack": "water_r2"},
+			{"type": "fishbot", "pos": Vector3(4, 3, -13), "trigger": 12, "pack": "water__p2"},
+			# The school hunts the causeway and the SW run, sharks lurking under both.
+			{"type": "fishbot", "pos": Vector3(-12, 3, -16), "trigger": 6, "pack": "water_r1"},
+			{"type": "fishbot", "pos": Vector3(-22, 3, 12), "trigger": 16, "pack": "water_r1"},
+			{"type": "shark", "pos": Vector3(-14, 0, 16), "trigger": 18, "pack": "water_r1"},
+			{"type": "fishbot", "pos": Vector3(-12, 3, 22), "trigger": 18, "pack": "water_r2"},
+			{"type": "seeker", "pos": Vector3(6, 3, 16), "trigger": 16, "pack": "water_r2"},
+			{"type": "shark", "pos": Vector3(6, 0, 14), "trigger": 20, "pack": "water_r2"},
 			# Late-campaign buff (difficulty_curve dip: 281 vs the ~380-520 band at
 			# this slot): heavy hoverers over the flood + more school. All flyers
 			# hover over open water or walkway lines; the shark hunts under it —
 			# nothing new touches the islands' navmesh.
-			{"type": "breaker", "pos": Vector3(14, 3, -15), "trigger": 18, "pack": "water_h1"},
-			{"type": "whirlwind", "pos": Vector3(18, 3, -4), "trigger": 18, "pack": "water_h1"},
-			{"type": "fishbot", "pos": Vector3(14, 3, 8), "trigger": 16, "pack": "water_h1"},
-			{"type": "breaker", "pos": Vector3(-21, 3, 21), "trigger": 16, "pack": "water_h2"},
+			{"type": "breaker", "pos": Vector3(12, 3, -18), "trigger": 18, "pack": "water_h1"},
+			{"type": "whirlwind", "pos": Vector3(22, 3, -6), "trigger": 18, "pack": "water_h1"},
+			{"type": "fishbot", "pos": Vector3(16, 3, 6), "trigger": 16, "pack": "water_h1"},
+			{"type": "breaker", "pos": Vector3(-22, 3, 16), "trigger": 16, "pack": "water_h2"},
 			{"type": "whirlwind", "pos": Vector3(-4, 3, 17), "trigger": 18, "pack": "water_h2"},
-			{"type": "fishbot", "pos": Vector3(-14, 3, 10), "trigger": 16, "pack": "water_h2"},
+			{"type": "fishbot", "pos": Vector3(-14, 3, 6), "trigger": 16, "pack": "water_h2"},
 			{"type": "shark", "pos": Vector3(4, 0, -6), "trigger": 18},
 		],
 		"pickups": [
-			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
-			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
-			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
-			# Loop rewards on the new islands (kind-style like the rest).
-			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},
-			{"kind": "ammo", "pos": Vector3(-20, 1.7, 20)},
-			{"kind": "ammo", "pos": Vector3(14, 1.7, 21)},
+			# Rewards sit at the ends of the dead ends: each pump island and the
+			# west lookout is a detour off the route to the cap, paid for in sharks.
+			{"kind": "health", "pos": Vector3(-16, 3.5, 0)},   # west lookout
+			{"kind": "ammo", "pos": Vector3(2, 1.7, -21)},     # PUMP A
+			{"kind": "ammo", "pos": Vector3(19, 1.7, 2)},      # PUMP B
+			{"kind": "health", "pos": Vector3(-21, 1.7, 21)},  # PUMP C
+			{"kind": "ammo", "pos": Vector3(-19, 1.7, 19)},    # PUMP C
+			{"kind": "ammo", "pos": Vector3(10, 1.7, 10)},     # ring SE corner
 		],
 	}
 

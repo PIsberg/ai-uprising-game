@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-266 probes total: **47** wired into the headless suite (`suite`), **83**
+267 probes total: **48** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -160,6 +160,7 @@ or GPU-timing probes; `--headless` renders these black).
 | gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model | suite |
 | gunner_probe | GUNNER suppresses a player at range; spin-up burst connects, dies cleanly | headless |
 | haptics_probe | Gamepad-rumble plumbing without a pad: accessibility scalar mirrors into Haptics, `pulse()` no-ops safely at zero pads/strength | headless |
+| hazard_layout_probe | The two sea levels (lava_world, water_world) keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | headless |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
