@@ -1212,7 +1212,19 @@ static func _sublevel() -> Dictionary:
 		"objective": "Sweep the maintenance sublevel and reach the lift",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "hack_terminal", "label": "Override the custodial controller", "pos": Vector3(0, 0, 10), "seconds": 4.0, "color": Color(0.4, 1.0, 0.7)},
+			# The 2x expansion built a pipe gallery along the north wall that no
+			# objective ever sent the player up to. The override key now lives on
+			# it (deck top y=3.4, stairs at x=+-14), so the route is: climb the
+			# ring, come back down into the slalom core, then hold the floor.
+			{"type": "key", "label": "Recover the shift supervisor's override key", "pos": Vector3(0, 3.6, -24)},
+			{"type": "hack_terminal", "after": "key", "label": "Override the custodial controller", "pos": Vector3(0, 0, 10), "seconds": 4.0, "color": Color(0.4, 1.0, 0.7),
+				# The controller's last act is to clock the whole night shift in.
+				"reinforce": [
+					{"type": "vacuum", "count": 4, "pos": Vector3(-14, 0, 14)},
+					{"type": "roller", "count": 2, "pos": Vector3(14, 0, 2)},
+				]},
+			{"type": "kill_quota", "id": "shift", "after": "hack_terminal", "count": 6,
+				"label": "Scrap the emergency night shift"},
 		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 40² slalom core is untouched at the centre;
@@ -1831,7 +1843,28 @@ static func _overseer() -> Dictionary:
 	return {
 		"name": "Skyhold Command — OVERSEER",
 		"objective": "Destroy the OVERSEER gunship and seize the command deck",
-		"tasks": [{"type": "kill_all"}],
+		"tasks": [
+			{"type": "kill_all"},
+			# The objective text always said "seize the command deck"; the arc now
+			# does. Nothing here chains on kill_all: Portal completes that from the
+			# LIVE count, and this roster is trigger-gated (see the gpt note).
+			# Stage 1 sits at the EAST end of the north landing ring, the opposite
+			# way from the x=-13 gap into the deck, so the ring gets walked.
+			{"type": "hack_terminal", "id": "aa", "label": "Blind the deck's AA grid", "pos": Vector3(24, 0, -37),
+				"seconds": 4.0, "color": Color(0.55, 0.8, 1.0),
+				"reinforce": [{"type": "raptor", "count": 2, "pos": Vector3(0, 4, -30)}]},
+			# Stage 2 is behind the gunship's yard (OVERSEER wakes at 0,8).
+			{"type": "destroy_core", "id": "mast", "after": "aa", "label": "Destroy the fleet uplink mast",
+				"pos": Vector3(6, 0, 26), "color": Color(0.7, 0.5, 1.0), "health": 300.0,
+				"reinforce": [
+					{"type": "gunner", "count": 2, "pos": Vector3(-22, 0, -16)},
+					{"type": "android", "count": 2, "pos": Vector3(22, 0, -18)},
+				]},
+			# Stage 3: north half of the deck, clear of the z=-5 bulkhead and the
+			# (12,-10) cover block. The mast's garrison arrives as the hold starts.
+			{"type": "hold_zone", "id": "seize", "after": "mast", "pos": Vector3(0, 0, -14), "seconds": 12.0,
+				"radius": 4.5, "color": Color(0.7, 0.5, 1.0), "label": "Seize the command deck"},
+		],
 		"music": "music_grok",
 		"open_sky": true,
 		# EXPANSION PASS (2× area): the 62² command deck is untouched at the

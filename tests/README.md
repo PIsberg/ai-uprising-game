@@ -202,7 +202,7 @@ or GPU-timing probes; `--headless` renders these black).
 | mender_probe | MENDER flies to a wounded android and beam-heals it, flight/death without errors | headless |
 | menu_probe | Main menu scene exercises its `_ready` path | windowed |
 | menu_screenshot | Main menu captured | windowed |
-| mission_arc_probe | Every level def's task graph: unique ids, "after" refs resolve (no self-refs/cycles), positions inside floor, reinforcement types exist | suite |
+| mission_arc_probe | Every level def's task graph: unique ids, "after" refs resolve (no self-refs/cycles), positions inside floor, reinforcement types exist; no level is kill_all-only (archon exempt, with the reason); runtime drives the assembly, uplink, overseer (hack -> mast -> seize) and sublevel (gallery key -> hack -> night-shift quota) arcs, and requires each overseer/sublevel objective to be walkable from spawn on the built navmesh (3D, so a deck key cannot pass from the floor under it) | suite |
 | model_gallery_probe | Available CC0 enemy models side by side, for picking distinct bases for hazard-world flyers | windowed |
 | model_mat_probe | Import-cache corruption sweep: each imported texture vs source PNG catches a garbage `.ctex` whose md5 still matches | headless |
 | model_view_probe | Arbitrary model scene front/side/3-quarter, to judge its pose | windowed |
