@@ -151,7 +151,7 @@ no `tasks` key defaults to a single `kill_all` task.
 | `color` | Color | Accent color override for `destroy_core`/`hack_terminal`/`hold_zone`/`generative_zone` objective props | `_activate_task` | n/a | — |
 | `health` | float | `destroy_core` max health | `_activate_task` | n/a | — |
 | `radius` | float | `hold_zone` capture radius | `_activate_task` | n/a | — |
-| `waves` | Array<{enemies,supplies?,label?,seconds?}> | Escalating enemy waves (and optional mid-hold supply vents) fired during a `survive` task, reusing the reinforcement spawner | `_activate_task` → `SurviveTimer`, `_on_survive_wave`, `_spawn_reinforcements`, `_vent_supplies` | Yes (waves[].enemies/supplies pos) | `tests/purge_probe` |
+| `waves` | Array<{at,enemies,supplies?,label?}> | Escalating enemy waves (and optional mid-hold supply vents) fired during a `survive` task, reusing the reinforcement spawner | `_activate_task` → `SurviveTimer`, `_on_survive_wave`, `_spawn_reinforcements`, `_vent_supplies` | Yes (waves[].enemies/supplies pos) | `tests/purge_probe` (timer + GPT arc), `tests/survive_waves_probe` (every hold, live navmesh) |
 | `enemy` | String | `assassinate` — the HVT's enemy type (default `"brute"`) | `_spawn_hvt` | n/a | — |
 | `elite` | String | `assassinate` — elite affix applied to the HVT (default `"warden"`) | `_spawn_hvt` | n/a | — |
 | `bulk` | float | `assassinate` — extra HP multiplier on top of the elite affix (default 2.2) | `_spawn_hvt` | n/a | — |
