@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2026.09.21] - 2026-09-21
 
 ### Added
+- **Dedicated enemy models & combat profiles**:
+  - **HIVE**: Custom uplink mast model (`quaternius_bot_hive.glb`) with relay pack, yagi uplink mast, dish, whip antenna, and pulsating link beacon that clearly shows networked vs. jammed state (`hive_uplink_probe`).
+  - **GUNNER**: Planted rotary siege cannon model (`quaternius_gunner_siege.glb`) featuring spin-up acceleration, barrel heat, and overheat cooldown periods (`gunner_siege_probe`).
+  - **RAPTOR**: Aerodynamic flyer strike model (`quaternius_flyergun_strike.glb`) executing predatory high-speed stoop dives (`raptor_stoop_probe`).
+- **Tidecore Basin (`water_world`) Layout**: Distinct catwalk gantry network, reactor cap exit climb, and pump islands separating it from `lava_world` (`hazard_layout_probe`).
+- **Sublevel & Overseer mission arcs**: Multi-stage combat and objective progression for sublevel and overseer levels (`mission_arc_probe`).
+- **Campaign Escalation**: Escalating wave hold sequences across campaign survive objectives (`survive_waves_probe`).
+- **Architecture Lattice (`lat.md`)**: Full referential integrity checks and section backlinks integrated with `lat check`.
 - The Damage Taken accessibility assist now counts toward the level grade the way a difficulty tier does (x0.85 at 50%, x1.10 at 150%) and is named on the debrief next to the tier. `grade_assist_probe` (suite).
 - `opening_distance_check` treats a triggered enemy whose trigger radius already contains the spawn as awake from the start; that was the shape of every idle-DPS spike.
+
+### Fixed
+- Level loading subthread race condition resolved, ensuring clean headless and exported boots without level 1 hangs.
+- Added CI concurrency cancellation to prevent simultaneous redundant builds from exhausting runner minutes.
 
 ### Fixed
 - Spawn-camping packs on claude, gemini, lava_world and water_world: squadmates placed 5–12 m from the spawn with trigger radii that already contained it warped in and rushed an idle player the moment the opening grace lapsed. Moved or re-radiused so the player has to step toward them: idle post-grace damage (`spawn_safety_probe`) water_world 84 → 22/s, lava_world 44 → 9/s, claude 41 → 0/s, gemini 35 → 0/s.
