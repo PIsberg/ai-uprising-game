@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-267 probes total: **48** wired into the headless suite (`suite`), **83**
+269 probes total: **49** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **136** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **137** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -168,6 +168,8 @@ or GPU-timing probes; `--headless` renders these black).
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
+| hive_uplink_probe | HIVE uplink-mast model fork is wired + keeps its clips; link beacon rides the Head bone at the mast tip, is beacon-sized, lit while networked and dead while jammed | suite |
+| hive_uplink_shot | Look-check of the HIVE uplink fork: networked unit (beacon lit, shield up) beside a jammed one (beacon dead, shield down) | windowed |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
 | hud_upgrade_probe | HUD upgrade-chip row shows only bought tracks at the right rank | windowed |
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |

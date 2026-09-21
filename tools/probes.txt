@@ -58,3 +58,4 @@ res://tests/continue_sweep_probe.tscn
 res://tests/survive_waves_probe.tscn
 # The two sea levels keep separate catwalk networks, and every segment of each is walkable.
 res://tests/hazard_layout_probe.tscn
+res://tests/hive_uplink_probe.tscn

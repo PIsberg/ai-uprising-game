@@ -44,7 +44,7 @@ inherit that parent's overrides too.
 | FISHBOT ("ANGLER UNIT") | `enemy_fishbot.gd` (extends EnemyDrone) | drone chassis + code-built fins/bubble trail | fast fragile hit-and-run swimmer; spits water bolts | (drone's) | — |
 | GUNNER | `enemy_gunner.gd` | Quaternius "Robot Enemy Large Gun" | tanky suppressor; telegraphed spin-up into 12-round burst, plants while firing | — | — |
 | GUNSLINGER | `enemy_gunslinger.gd` (extends EnemyAndroid) | android chassis (inherited) | duelist; single heavy slugs on slow cadence, sidestep weave | (android's) | — |
-| HIVE | `enemy_hive.gd` † | scene model + procedural shield mesh | networked flanker; energy shield until inside a jammer zone, spreads flank angles across siblings | — | — |
+| HIVE | `enemy_hive.gd` † | `quaternius_bot_hive.glb` (Blender fork: uplink mast, dish, relay pack, shield-emitter prongs) + procedural shield mesh + mast-tip link beacon | networked flanker; energy shield until inside a jammer zone (beacon goes dark with it), spreads flank angles across siblings | — | — |
 | HOWITZER | `enemy_howitzer.gd` | `assets/models/robots/walking_robot_gun.glb` | slow four-legged artillery walker; charged ballistic splash shells | — | — |
 | HUNTER | `enemy_hunter.gd` † | "quaternius_gunner_bladed" chassis (scene) | circle-strafe skirmisher; bolt bursts + blade-dash gap-closer | — | — |
 | MANUS | `enemy_manus.gd` | `assets/models/robots/robot_arm_wip_2.glb` | rooted giant-arm boss: sweep/slam/grab-hurl/finger spikes; single weak-spot core; finger-drum entrance; 3 HP-keyed phases (cooldowns ×1/0.8/0.62, phase 3 double finger eruption leading the player) — `tests/manus_phase_probe` | `_state_attack` | BOSS |

@@ -4,7 +4,10 @@ from mathutils import Vector
 # blender --background --python fierce2.py -- <config.json>
 cfgp = sys.argv[sys.argv.index("--")+1:][0]
 cfg = json.load(open(cfgp))
-IN, OUT, RENDER = cfg["in"], cfg["out"], cfg["render"]
+IN, OUT = cfg["in"], cfg["out"]
+# Blender resolves a relative render path against the DRIVE ROOT (C:\tools\...), not the
+# cwd, so previews silently landed outside the repo. Pin it to the cwd.
+RENDER = os.path.abspath(cfg["render"])
 RIG = cfg.get("rig", "skin")            # "skin" (weight+join) | "boneparent"
 parts = cfg["parts"]
 
