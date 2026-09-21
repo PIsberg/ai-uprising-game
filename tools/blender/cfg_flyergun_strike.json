@@ -1,0 +1,72 @@
+{
+  "in": "assets/models/robots/quaternius_flyergun.glb",
+  "out": "assets/models/robots/quaternius_flyergun_strike.glb",
+  "render": "tools/blender/preview_flyergun_strike.png",
+  "cam": [
+    1.6,
+    -2.6,
+    1.2
+  ],
+  "tgt": [
+    0,
+    0,
+    0.4
+  ],
+  "views": [
+    {
+      "cam": [
+        -1.8,
+        2.2,
+        1.3
+      ],
+      "tgt": [
+        0,
+        0,
+        0.4
+      ],
+      "render": "tools/blender/preview_flyergun_strike_rear.png"
+    },
+    {
+      "cam": [
+        0.01,
+        -0.3,
+        3.4
+      ],
+      "tgt": [
+        0,
+        0,
+        0.4
+      ],
+      "render": "tools/blender/preview_flyergun_strike_top.png"
+    }
+  ],
+  "rig": "skin",
+  "parts": [
+    {"type":"blade","name":"WingL","loc":[0.52,0.14,0.52],"rot":[0,-8,24],"size":[0.5,0.32,0.035],"bone":"Head"},
+    {"type":"blade","name":"WingTipL","loc":[0.8,0.3,0.57],"rot":[0,-8,40],"size":[0.22,0.18,0.03],"bone":"Head"},
+    {"type":"blade","name":"WingletL","loc":[0.9,0.4,0.63],"rot":[0,0,10],"size":[0.025,0.16,0.14],"bone":"Head"},
+    {"type":"cyl","name":"IntakeL","loc":[0.22,0.04,0.1],"rot":[-90,0,0],"len":0.04,"r":0.115,"verts":10,"bone":"Head"},
+    {"type":"cyl","name":"NacelleL","loc":[0.22,0.26,0.1],"rot":[-90,0,0],"len":0.42,"r":0.1,"verts":10,"bone":"Head"},
+    {"type":"cyl","name":"NozzleL","loc":[0.22,0.52,0.1],"rot":[-90,0,0],"len":0.1,"r":0.085,"verts":10,"bone":"Head","r2":0.05},
+    {"type":"blade","name":"TailFinL","loc":[0.13,0.38,0.5],"rot":[-25,25,0],"size":[0.025,0.24,0.26],"bone":"Head"},
+    {"type":"spike","name":"TalonL0","loc":[0.92,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.L"},
+    {"type":"spike","name":"TalonL1","loc":[1.0,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.L"},
+    {"type":"spike","name":"TalonL2","loc":[1.08,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.L"},
+    {"type":"blade","name":"WingR","loc":[-0.52,0.14,0.52],"rot":[0,8,-24],"size":[0.5,0.32,0.035],"bone":"Head"},
+    {"type":"blade","name":"WingTipR","loc":[-0.8,0.3,0.57],"rot":[0,8,-40],"size":[0.22,0.18,0.03],"bone":"Head"},
+    {"type":"blade","name":"WingletR","loc":[-0.9,0.4,0.63],"rot":[0,0,-10],"size":[0.025,0.16,0.14],"bone":"Head"},
+    {"type":"cyl","name":"IntakeR","loc":[-0.22,0.04,0.1],"rot":[-90,0,0],"len":0.04,"r":0.115,"verts":10,"bone":"Head"},
+    {"type":"cyl","name":"NacelleR","loc":[-0.22,0.26,0.1],"rot":[-90,0,0],"len":0.42,"r":0.1,"verts":10,"bone":"Head"},
+    {"type":"cyl","name":"NozzleR","loc":[-0.22,0.52,0.1],"rot":[-90,0,0],"len":0.1,"r":0.085,"verts":10,"bone":"Head","r2":0.05},
+    {"type":"blade","name":"TailFinR","loc":[-0.13,0.38,0.5],"rot":[-25,-25,0],"size":[0.025,0.24,0.26],"bone":"Head"},
+    {"type":"spike","name":"TalonR0","loc":[-0.92,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.R"},
+    {"type":"spike","name":"TalonR1","loc":[-1.0,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.R"},
+    {"type":"spike","name":"TalonR2","loc":[-1.08,-0.05,0.19],"rot":[160,0,0],"len":0.2,"r":0.03,"verts":4,"bone":"Hand.R"},
+    {"type":"blade","name":"TailBoom","loc":[0,0.34,0.3],"rot":[0,0,0],"size":[0.12,0.3,0.1],"bone":"Head"},
+    {"type":"spike","name":"Beak","loc":[0,-0.35,0.38],"rot":[110,0,0],"len":0.22,"r":0.06,"verts":4,"bone":"Head"},
+    {"type":"blade","name":"Brow","loc":[0,-0.24,0.44],"rot":[-30,0,0],"size":[0.34,0.1,0.04],"bone":"Head"},
+    {"type":"blade","name":"BellyPod","loc":[0,-0.1,-0.1],"rot":[35,0,0],"size":[0.12,0.3,0.1],"bone":"Head"},
+    {"type":"blade","name":"BellyBarrelL","loc":[0.035,-0.3,-0.22],"rot":[35,0,0],"size":[0.025,0.22,0.025],"bone":"Head"},
+    {"type":"blade","name":"BellyBarrelR","loc":[-0.035,-0.3,-0.22],"rot":[35,0,0],"size":[0.025,0.22,0.025],"bone":"Head"}
+  ]
+}

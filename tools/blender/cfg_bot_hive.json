@@ -1,0 +1,29 @@
+{
+  "in":  "assets/models/robots/quaternius_bot.glb",
+  "out": "assets/models/robots/quaternius_bot_hive.glb",
+  "render": "tools/blender/preview_bot_hive.png",
+  "rig": "skin",
+  "parts": [
+    {"type":"blade","name":"GunRecv","loc":[0.0,-0.16,0.55],"rot":[0,0,0],"size":[0.15,0.18,0.13],"bone":"Gun"},
+    {"type":"blade","name":"BarrelL","loc":[0.05,-0.42,0.55],"rot":[0,0,0],"size":[0.04,0.36,0.04],"bone":"Gun"},
+    {"type":"blade","name":"BarrelR","loc":[-0.05,-0.42,0.55],"rot":[0,0,0],"size":[0.04,0.36,0.04],"bone":"Gun"},
+    {"type":"blade","name":"ShoulderGunL","loc":[0.2,-0.12,0.46],"rot":[0,0,0],"size":[0.08,0.3,0.08],"bone":"Body"},
+    {"type":"blade","name":"ShoulderGunR","loc":[-0.2,-0.12,0.46],"rot":[0,0,0],"size":[0.08,0.3,0.08],"bone":"Body"},
+
+    {"type":"blade","name":"RelayPack","loc":[0.0,0.27,0.52],"rot":[0,0,0],"size":[0.30,0.10,0.22],"bone":"Head"},
+    {"type":"spike","name":"UplinkMast","loc":[0.0,0.27,0.97],"rot":[0,0,0],"len":0.62,"r":0.034,"bone":"Head"},
+    {"type":"blade","name":"YagiA","loc":[0.0,0.27,0.86],"rot":[0,0,0],"size":[0.30,0.02,0.02],"bone":"Head"},
+    {"type":"blade","name":"YagiB","loc":[0.0,0.27,0.98],"rot":[0,0,0],"size":[0.22,0.02,0.02],"bone":"Head"},
+    {"type":"blade","name":"YagiC","loc":[0.0,0.27,1.10],"rot":[0,0,0],"size":[0.14,0.02,0.02],"bone":"Head"},
+    {"type":"blade","name":"DishArm","loc":[0.17,0.27,0.68],"rot":[0,0,0],"size":[0.03,0.03,0.12],"bone":"Head"},
+    {"type":"spike","name":"Dish","loc":[0.17,0.30,0.76],"rot":[145,0,0],"len":0.07,"r":0.13,"verts":12,"bone":"Head"},
+    {"type":"spike","name":"WhipL","loc":[-0.13,0.27,0.76],"rot":[0,-14,0],"len":0.30,"r":0.014,"bone":"Head"},
+
+    {"type":"blade","name":"EmitBaseL","loc":[0.375,0.0,0.48],"rot":[0,0,0],"size":[0.05,0.14,0.14],"bone":"Head"},
+    {"type":"blade","name":"EmitBaseR","loc":[-0.375,0.0,0.48],"rot":[0,0,0],"size":[0.05,0.14,0.14],"bone":"Head"},
+    {"type":"spike","name":"EmitL","loc":[0.46,0.0,0.48],"rot":[0,90,0],"len":0.16,"r":0.045,"bone":"Head"},
+    {"type":"spike","name":"EmitR","loc":[-0.46,0.0,0.48],"rot":[0,-90,0],"len":0.16,"r":0.045,"bone":"Head"},
+    {"type":"spike","name":"EmitTopL","loc":[0.27,-0.02,0.59],"rot":[0,50,0],"len":0.14,"r":0.035,"bone":"Head"},
+    {"type":"spike","name":"EmitTopR","loc":[-0.27,-0.02,0.59],"rot":[0,-50,0],"len":0.14,"r":0.035,"bone":"Head"}
+  ]
+}

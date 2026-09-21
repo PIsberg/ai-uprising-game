@@ -46,3 +46,5 @@ node_modules/
 # init version, and without it every `lat check` warns "No init version recorded".
 lat.md/.cache/*
 !lat.md/.cache/lat_init.json
+# Blender iteration previews (tools/blender/fierce2.py)
+tools/blender/preview_*

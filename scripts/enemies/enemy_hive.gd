@@ -22,6 +22,15 @@ var _jam_count: int = 0            ## number of jam zones currently containing m
 var _shield: MeshInstance3D
 var _shield_mat: StandardMaterial3D
 var _shield_flare := 0.0
+var _uplink: MeshInstance3D        ## link beacon on the model's uplink mast tip
+var _uplink_mat: StandardMaterial3D
+var _uplink_glow := 0.0            ## 0 = link dead (jammed), 1 = networked
+
+## Mast tip of quaternius_bot_hive.glb in the GLB's own space (Blender (0, 0.27, 1.28)
+## from tools/blender/cfg_bot_hive.json, as glTF x, z, -y). Move the mast -> move this.
+const UPLINK_LIVE := Color(0.35, 0.85, 1.0)
+const UPLINK_DEAD := Color(0.02, 0.03, 0.04)
+const UPLINK_TIP := Vector3(0.0, 1.28, -0.27)
 
 # Hive coordination — every live unit registers here so approach angles can be
 # spread evenly across the survivors (perfect flank).
@@ -46,6 +55,7 @@ func _ready() -> void:
 	combat_strafe = true # circle-strafe at close range — a moving, flanking target
 	super._ready()
 	_build_shield()
+	_build_uplink()
 	_hive.append(self)
 	_reflow()
 	hp.died.connect(func(_s): _deregister())
@@ -72,6 +82,62 @@ func _build_shield() -> void:
 	_shield.position = Vector3(0, 1.0, 0)
 	_shield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_shield)
+
+## The model wears an uplink mast (the network link made physical). A beacon on its
+## tip shows the link state at a glance: breathing cyan while networked, dead while a
+## jam zone has cut the unit off - the same read as the shield, visible from behind
+## cover where the faint bubble is not. It rides the Head bone so it stays on the
+## mast through the run/shoot clips.
+func _build_uplink() -> void:
+	var mesh_root := get_node_or_null("Model/Mesh") as Node3D
+	if mesh_root == null:
+		return
+	var skel := mesh_root.find_child("Skeleton3D", true, false) as Skeleton3D
+	var bone := skel.find_bone("Head") if skel else -1
+	if bone < 0:
+		return
+	var att := BoneAttachment3D.new()
+	att.name = "UplinkAttach"
+	skel.add_child(att)
+	att.bone_name = "Head"
+	_uplink = MeshInstance3D.new()
+	_uplink.name = "UplinkBeacon"
+	var sm := SphereMesh.new()
+	sm.radius = 0.045 # world metres; the rig's internal scale is cancelled below
+	sm.height = 0.09
+	sm.radial_segments = 8
+	sm.rings = 4
+	_uplink_mat = StandardMaterial3D.new()
+	_uplink_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Unshaded DROPS emission, so the glow is driven through albedo (HDR values bloom).
+	_uplink_mat.albedo_color = UPLINK_DEAD
+	sm.material = _uplink_mat
+	_uplink.mesh = sm
+	_uplink.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	att.add_child(_uplink)
+	# Place against the bone's REST frame, not its current pose, so the offset is the
+	# same whichever animation frame the model happens to be on when we spawn.
+	var tip_in_skel := skel.global_transform.affine_inverse() * (mesh_root.global_transform * UPLINK_TIP)
+	var rest_global := skel.global_transform * skel.get_bone_global_rest(bone)
+	_uplink.position = skel.get_bone_global_rest(bone).affine_inverse() * tip_in_skel
+	# The rig carries a large internal scale (the skin scales the verts back down), so
+	# anything bone-attached inherits it: an uncorrected 4 cm beacon rendered 6.5 m wide.
+	_uplink.scale = Vector3.ONE / rest_global.basis.get_scale().abs()
+
+## 0..1 link-beacon brightness (probe hook: tests/hive_uplink_probe).
+func uplink_glow() -> float:
+	return _uplink_glow
+
+func _update_uplink_vis(delta: float) -> void:
+	if _uplink == null:
+		return
+	var want := 0.0 if (jammed or is_dead()) else 1.0
+	_uplink_glow = move_toward(_uplink_glow, want, delta * 6.0)
+	# Networked: slow breathing pulse. Losing the link: it stutters on the way down.
+	var pulse := 0.75 + sin(_state_timer * 5.0) * 0.25
+	if want == 0.0 and _uplink_glow > 0.0:
+		pulse = 1.0 if randf() < 0.5 else 0.1
+	_uplink_mat.albedo_color = UPLINK_DEAD.lerp(UPLINK_LIVE * 4.0, _uplink_glow * pulse)
 
 func _deregister() -> void:
 	_hive.erase(self)
@@ -136,6 +202,7 @@ func _physics_process(delta: float) -> void:
 		emp_disable(0.2)
 	super._physics_process(delta)
 	_update_shield_vis(delta)
+	_update_uplink_vis(delta)
 
 func _update_shield_vis(delta: float) -> void:
 	if _shield == null:

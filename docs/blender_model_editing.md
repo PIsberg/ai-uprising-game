@@ -12,7 +12,15 @@ to the right bone, and exports a new GLB plus a quick preview render. The render
 loop is the fast iteration path; the real check is re-importing into Godot.
 
 > Status: `reaper`, `hunter`, `gunner`, `raptor` ship fierce forks (see
-> `assets/models/robots/quaternius_*_fierce.glb` / `*_bladed.glb`). The humanoid
+> `assets/models/robots/quaternius_*_fierce.glb` / `*_bladed.glb`). `hive` ships a
+> character fork (`quaternius_bot_hive.glb`, `cfg_bot_hive.json`): its network link
+> made physical as an uplink mast, with a Godot-side beacon on the tip (see
+> [Attaching Godot nodes to an edited model](#attaching-godot-nodes-to-an-edited-model)). `gunner`
+> ships a second character fork (`quaternius_gunner_siege.glb`, `cfg_gunner_siege.json`):
+> recoil spades, gun shield, ammo drum and a rotary mount, with the barrel cluster itself
+> built in Godot on the `Gun` bone because it has to spin. `raptor` ships a third
+> (`quaternius_flyergun_strike.glb`, `cfg_flyergun_strike.json`): wings, engines, V tail,
+> beak, belly gun and talons, with its strafing run reflown as a stoop to match. The humanoid
 > (`quaternius_heavy` = `RobotExpressive`, used by terminator/sentinel/mauler) is a
 > known-hard case — see [Gotchas](#gotchas).
 
@@ -71,8 +79,12 @@ Facts worth knowing up front:
 ### 2. Write a parts config
 
 A config is JSON: input GLB, output fork, preview path, rig mode, and a list of
-parts. Each part is a `spike` (cone) or `blade` (box) placed at `loc` (the model's
-own Blender space), rotated `rot` (degrees), sized, and bound to a `bone`.
+parts. Each part is a `spike` (cone), `blade` (box) or `cyl` (drum/tube: `r`, `len`,
+optional `r2` taper, axis +Z before `rot`) placed at `loc` (the model's own Blender
+space), rotated `rot` (degrees), sized, and bound to a `bone`. Optional `cam`/`tgt` pin
+the preview camera, and `views` renders extra angles
+(`[{"cam":[x,y,z],"tgt":[x,y,z],"render":"path.png"}]`): the auto-framed camera is thrown
+off by the junk Icosphere's bounds, and one angle hides half the parts.
 
 See `tools/blender/cfg_gunner_bladed.json` for a complete example. Coordinates come
 straight from the probe extents.
@@ -106,6 +118,31 @@ model `ext_resource` `path` **and** `uid` (read the uid from the new `.glb.impor
 Anim names (`CharacterArmature|Idle` …) and the mesh scale transform are preserved
 by the fork, so it's a drop-in.
 
+## Attaching Godot nodes to an edited model
+
+When game state should show on an added part (HIVE's mast-tip beacon dies when the
+unit is jammed), mount a node on the bone the part is skinned to, as
+`EnemyHive._build_uplink` does:
+
+- Convert the part's Blender position to the GLB's space (`x, z, -y`), push it
+  through the instanced `Mesh` node's transform, and express it in the bone's
+  **rest** frame (`get_bone_global_rest`), so the offset does not depend on which
+  animation frame the model is on at spawn.
+- **Cancel the rig's internal scale.** These skeletons carry a large scale that the
+  skin undoes for vertices, but a `BoneAttachment3D` child inherits it: an
+  uncorrected 4 cm beacon rendered 6.5 m wide and blacked out the screen. Position
+  checks pass regardless, so assert the world size too (`tests/hive_uplink_probe`).
+- Unshaded materials drop emission. Drive the glow through albedo instead.
+- For a part that needs the model's facing and scale, not only a position (GUNNER's
+  barrel cluster, `EnemyGunner._build_rotor`), set the whole transform:
+  `rest_global.affine_inverse() * (mesh_root.global_transform * Transform3D(Basis.IDENTITY, pos))`.
+  The node then lives in the GLB's own units and axes, so it is built at model scale
+  and the rig's internal scale cancels without a separate correction.
+- **Check the model against its hitbox.** The Quaternius gunner is authored about 0.5
+  units ahead of its own origin, so at the scene's 2.1 scale the visible body stood
+  1.27 m in front of the collision box. `gunner.tscn` now offsets the `Mesh` node by
+  +0.99 on Z; `tests/gunner_siege_probe` asserts body-over-hitbox.
+
 ## Rig modes (`"rig"` in the config)
 
 | mode | when | how parts attach |
@@ -126,6 +163,9 @@ by the fork, so it's a drop-in.
   correct fix for this model is a Godot-side `BoneAttachment3D` on the Head bone with
   a measured dome offset (the project already does bone-driven attachment in
   `ModelPoser`). Deferred; the three Quaternius bots don't have this problem.
+- **Relative render paths land on the drive root.** Blender resolved
+  `tools/blender/preview_x.png` to `C:	oolslender\`, not the repo. `fierce2.py`
+  now absolutizes the path against the cwd; previews are gitignored.
 - **`Date.now()` / random** aren't needed; keep configs deterministic so a re-run
   reproduces the exact fork.
 

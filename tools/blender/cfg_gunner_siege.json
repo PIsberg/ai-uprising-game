@@ -1,0 +1,72 @@
+{
+  "in": "assets/models/robots/quaternius_gunner.glb",
+  "out": "assets/models/robots/quaternius_gunner_siege.glb",
+  "render": "tools/blender/preview_gunner_siege.png",
+  "cam": [
+    1.5,
+    -2.7,
+    1.3
+  ],
+  "tgt": [
+    0,
+    -0.5,
+    0.65
+  ],
+  "views": [
+    {
+      "cam": [
+        -1.7,
+        1.6,
+        1.4
+      ],
+      "tgt": [
+        0,
+        -0.5,
+        0.65
+      ],
+      "render": "tools/blender/preview_gunner_siege_rear.png"
+    },
+    {
+      "cam": [
+        2.7,
+        -0.5,
+        0.7
+      ],
+      "tgt": [
+        0,
+        -0.5,
+        0.65
+      ],
+      "render": "tools/blender/preview_gunner_siege_side.png"
+    }
+  ],
+  "rig": "skin",
+  "parts": [
+    {"type":"cyl","name":"RotorCollar","loc":[0,-1.05,1.13],"rot":[90,0,0],"len":0.12,"r":0.17,"verts":12,"bone":"Gun"},
+    {"type":"blade","name":"Cradle","loc":[0,-1.25,0.97],"rot":[0,0,0],"size":[0.07,0.34,0.04],"bone":"Gun"},
+    {"type":"blade","name":"CradleYoke","loc":[0,-1.40,1.0],"rot":[0,0,0],"size":[0.16,0.04,0.1],"bone":"Gun"},
+    {"type":"blade","name":"ShieldL","loc":[0.55,-0.93,1.12],"rot":[0,0,-28],"size":[0.26,0.04,0.32],"bone":"Gun"},
+    {"type":"blade","name":"ShieldR","loc":[-0.55,-0.93,1.12],"rot":[0,0,28],"size":[0.26,0.04,0.32],"bone":"Gun"},
+    {"type":"blade","name":"ShieldBrow","loc":[0,-0.98,1.32],"rot":[-20,0,0],"size":[0.6,0.1,0.05],"bone":"Gun"},
+    {"type":"cyl","name":"AmmoDrum","loc":[0.6,-0.5,1.1],"rot":[90,0,0],"len":0.3,"r":0.17,"verts":16,"bone":"Gun"},
+    {"type":"cyl","name":"DrumHub","loc":[0.6,-0.67,1.1],"rot":[90,0,0],"len":0.05,"r":0.07,"verts":8,"bone":"Gun"},
+    {"type":"blade","name":"FeedChute","loc":[0.47,-0.78,1.1],"rot":[0,0,20],"size":[0.1,0.3,0.08],"bone":"Gun"},
+    {"type":"blade","name":"OpticBox","loc":[-0.5,-0.55,1.2],"rot":[0,0,0],"size":[0.1,0.26,0.1],"bone":"Gun"},
+    {"type":"cyl","name":"OpticLens","loc":[-0.5,-0.7,1.2],"rot":[90,0,0],"len":0.05,"r":0.04,"verts":8,"bone":"Gun"},
+    {"type":"blade","name":"Fin0","loc":[0,-0.3,1.31],"rot":[0,0,0],"size":[0.34,0.025,0.1],"bone":"Gun"},
+    {"type":"blade","name":"Fin1","loc":[0,-0.37,1.31],"rot":[0,0,0],"size":[0.34,0.025,0.1],"bone":"Gun"},
+    {"type":"blade","name":"Fin2","loc":[0,-0.44,1.31],"rot":[0,0,0],"size":[0.34,0.025,0.1],"bone":"Gun"},
+    {"type":"blade","name":"Fin3","loc":[0,-0.51,1.31],"rot":[0,0,0],"size":[0.34,0.025,0.1],"bone":"Gun"},
+    {"type":"blade","name":"Glacis","loc":[0,-0.84,0.86],"rot":[-35,0,0],"size":[0.52,0.05,0.15],"bone":"Body"},
+    {"type":"blade","name":"SkirtL","loc":[0.44,-0.47,0.62],"rot":[0,12,0],"size":[0.05,0.32,0.24],"bone":"Body"},
+    {"type":"blade","name":"SkirtR","loc":[-0.44,-0.47,0.62],"rot":[0,-12,0],"size":[0.05,0.32,0.24],"bone":"Body"},
+    {"type":"spike","name":"SpadeL","loc":[0.65,-0.36,0.13],"rot":[-115,0,0],"len":0.36,"r":0.055,"verts":4,"bone":"Leg3.L"},
+    {"type":"blade","name":"SpadeBraceL","loc":[0.65,-0.45,0.22],"rot":[0,0,0],"size":[0.05,0.14,0.1],"bone":"Leg3.L"},
+    {"type":"spike","name":"ToeClawL","loc":[0.65,-0.68,0.07],"rot":[105,0,0],"len":0.22,"r":0.04,"verts":4,"bone":"Foot.L"},
+    {"type":"spike","name":"KneeSpurL","loc":[0.6890000000000001,-0.54,0.44],"rot":[0,18,0],"len":0.16,"r":0.05,"verts":4,"bone":"Leg3.L"},
+    {"type":"spike","name":"SpadeR","loc":[-0.65,-0.36,0.13],"rot":[-115,0,0],"len":0.36,"r":0.055,"verts":4,"bone":"Leg3.R"},
+    {"type":"blade","name":"SpadeBraceR","loc":[-0.65,-0.45,0.22],"rot":[0,0,0],"size":[0.05,0.14,0.1],"bone":"Leg3.R"},
+    {"type":"spike","name":"ToeClawR","loc":[-0.65,-0.68,0.07],"rot":[105,0,0],"len":0.22,"r":0.04,"verts":4,"bone":"Foot.R"},
+    {"type":"spike","name":"KneeSpurR","loc":[-0.6890000000000001,-0.54,0.44],"rot":[0,-18,0],"len":0.16,"r":0.05,"verts":4,"bone":"Leg3.R"}
+  ]
+}
