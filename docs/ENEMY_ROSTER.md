@@ -54,7 +54,7 @@ inherit that parent's overrides too.
 | OPTIC ("OPTICON") | `enemy_optic.gd` (extends EnemyAndroid) | android chassis (inherited) | charged sweeping cutting beam + android burst rifle filler (both overrides call super) | (android's) | — |
 | ORB ("MOLTEN ORB") | `enemy_orb.gd` (extends EnemyDog) | `assets/models/robots/robot_ball.glb` | rolling crusher sphere; bounce-charges, ruptures into magma AoE on death (calls super) | — | — |
 | OVERSEER | `enemy_overseer.gd` | giant imported EyeDrone (`$Model` in scene) | hovering gunship boss: escalating volleys + rocket barrage, spawns Seekers in phase 3; portal entrance | `_on_died` | BOSS |
-| RAPTOR | `enemy_raptor.gd` | Quaternius "Robot Enemy Flying Gun" | flying gunner; hover-strafe bursts + committed strafing-run fly-bys | `_on_died`, `_state_attack` | — |
+| RAPTOR | `enemy_raptor.gd` | `quaternius_flyergun_strike.glb` (Blender fork of Quaternius "Robot Enemy Flying Gun": swept wings, engine nacelles, V tail, beak, belly gun pod, talons) | flying gunner; hover-strafe bursts + a committed stoop: dives along a locked line raking belly-gun bolts ahead, talon rake (14) at the bottom, climbs out guns quiet; nose follows the flight path, thrusters vector hover/run | `_on_died`, `_state_attack` | — |
 | RAVAGER | `enemy_ravager.gd` † | bladed fierce chassis, scaled up (scene) | telegraphed high-arc leap into AoE ground-slam; melee swipes between leaps | — | — |
 | REAPER | `enemy_reaper.gd` † | real robot model in `reaper.tscn` | fast hovering melee killer; glides in, lunges into a slashing strike | — | — |
 | RIPPER | `enemy_ripper.gd` (extends EnemyAndroid) | `robot_minigun.glb` | minigun platform; spin-up telegraph, walking saw stream that trails the player (calls super) | (android's) | — |

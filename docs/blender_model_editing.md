@@ -18,7 +18,9 @@ loop is the fast iteration path; the real check is re-importing into Godot.
 > [Attaching Godot nodes to an edited model](#attaching-godot-nodes-to-an-edited-model)). `gunner`
 > ships a second character fork (`quaternius_gunner_siege.glb`, `cfg_gunner_siege.json`):
 > recoil spades, gun shield, ammo drum and a rotary mount, with the barrel cluster itself
-> built in Godot on the `Gun` bone because it has to spin. The humanoid
+> built in Godot on the `Gun` bone because it has to spin. `raptor` ships a third
+> (`quaternius_flyergun_strike.glb`, `cfg_flyergun_strike.json`): wings, engines, V tail,
+> beak, belly gun and talons, with its strafing run reflown as a stoop to match. The humanoid
 > (`quaternius_heavy` = `RobotExpressive`, used by terminator/sentinel/mauler) is a
 > known-hard case — see [Gotchas](#gotchas).
 

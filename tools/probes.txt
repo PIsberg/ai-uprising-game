@@ -60,3 +60,4 @@ res://tests/survive_waves_probe.tscn
 res://tests/hazard_layout_probe.tscn
 res://tests/hive_uplink_probe.tscn
 res://tests/gunner_siege_probe.tscn
+res://tests/raptor_stoop_probe.tscn

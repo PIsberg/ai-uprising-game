@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-271 probes total: **50** wired into the headless suite (`suite`), **83**
+273 probes total: **51** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **138** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **139** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -170,6 +170,8 @@ or GPU-timing probes; `--headless` renders these black).
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | gunner_siege_probe | GUNNER siege model fork is wired + keeps its clips; visible body sits on the hitbox; barrel rotor rides the Gun bone at barrel size along the aim line; spins up in the windup before any round, heats through the burst, cools and spins down in the 1.3 s gap | suite |
 | gunner_siege_shot | Look-check of the GUNNER siege fork: one unit mid-burst (rotor spinning, barrels glowing) beside an idle one showing drum, fins and recoil spades | windowed |
+| raptor_stoop_probe | RAPTOR strike model fork is wired + keeps its clips; the strafing run dives to talon height and climbs back out, nose follows the flight path, talons hit a target on the line exactly once and miss one that sidestepped, guns go quiet after the pass, thrusters vector hover/run | suite |
+| raptor_stoop_shot | Look-check of the RAPTOR strike fork: chase view of one unit mid-stoop over a target dummy with a second holding its hover beyond | windowed |
 | hive_uplink_probe | HIVE uplink-mast model fork is wired + keeps its clips; link beacon rides the Head bone at the mast tip, is beacon-sized, lit while networked and dead while jammed | suite |
 | hive_uplink_shot | Look-check of the HIVE uplink fork: networked unit (beacon lit, shield up) beside a jammed one (beacon dead, shield down) | windowed |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
