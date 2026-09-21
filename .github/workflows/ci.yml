@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Patch releases keep a uniform naming scheme, so one string drives the
   # release tag (4.7.2-stable), the binary (Godot_v4.7.2-stable_*) and the
