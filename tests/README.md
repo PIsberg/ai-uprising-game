@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-269 probes total: **49** wired into the headless suite (`suite`), **83**
+271 probes total: **50** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **137** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **138** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -168,6 +168,8 @@ or GPU-timing probes; `--headless` renders these black).
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
+| gunner_siege_probe | GUNNER siege model fork is wired + keeps its clips; visible body sits on the hitbox; barrel rotor rides the Gun bone at barrel size along the aim line; spins up in the windup before any round, heats through the burst, cools and spins down in the 1.3 s gap | suite |
+| gunner_siege_shot | Look-check of the GUNNER siege fork: one unit mid-burst (rotor spinning, barrels glowing) beside an idle one showing drum, fins and recoil spades | windowed |
 | hive_uplink_probe | HIVE uplink-mast model fork is wired + keeps its clips; link beacon rides the Head bone at the mast tip, is beacon-sized, lit while networked and dead while jammed | suite |
 | hive_uplink_shot | Look-check of the HIVE uplink fork: networked unit (beacon lit, shield up) beside a jammed one (beacon dead, shield down) | windowed |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |

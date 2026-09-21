@@ -15,7 +15,10 @@ loop is the fast iteration path; the real check is re-importing into Godot.
 > `assets/models/robots/quaternius_*_fierce.glb` / `*_bladed.glb`). `hive` ships a
 > character fork (`quaternius_bot_hive.glb`, `cfg_bot_hive.json`): its network link
 > made physical as an uplink mast, with a Godot-side beacon on the tip (see
-> [Attaching Godot nodes to an edited model](#attaching-godot-nodes-to-an-edited-model)). The humanoid
+> [Attaching Godot nodes to an edited model](#attaching-godot-nodes-to-an-edited-model)). `gunner`
+> ships a second character fork (`quaternius_gunner_siege.glb`, `cfg_gunner_siege.json`):
+> recoil spades, gun shield, ammo drum and a rotary mount, with the barrel cluster itself
+> built in Godot on the `Gun` bone because it has to spin. The humanoid
 > (`quaternius_heavy` = `RobotExpressive`, used by terminator/sentinel/mauler) is a
 > known-hard case — see [Gotchas](#gotchas).
 
@@ -74,8 +77,12 @@ Facts worth knowing up front:
 ### 2. Write a parts config
 
 A config is JSON: input GLB, output fork, preview path, rig mode, and a list of
-parts. Each part is a `spike` (cone) or `blade` (box) placed at `loc` (the model's
-own Blender space), rotated `rot` (degrees), sized, and bound to a `bone`.
+parts. Each part is a `spike` (cone), `blade` (box) or `cyl` (drum/tube: `r`, `len`,
+optional `r2` taper, axis +Z before `rot`) placed at `loc` (the model's own Blender
+space), rotated `rot` (degrees), sized, and bound to a `bone`. Optional `cam`/`tgt` pin
+the preview camera, and `views` renders extra angles
+(`[{"cam":[x,y,z],"tgt":[x,y,z],"render":"path.png"}]`): the auto-framed camera is thrown
+off by the junk Icosphere's bounds, and one angle hides half the parts.
 
 See `tools/blender/cfg_gunner_bladed.json` for a complete example. Coordinates come
 straight from the probe extents.
@@ -124,6 +131,15 @@ unit is jammed), mount a node on the bone the part is skinned to, as
   uncorrected 4 cm beacon rendered 6.5 m wide and blacked out the screen. Position
   checks pass regardless, so assert the world size too (`tests/hive_uplink_probe`).
 - Unshaded materials drop emission. Drive the glow through albedo instead.
+- For a part that needs the model's facing and scale, not only a position (GUNNER's
+  barrel cluster, `EnemyGunner._build_rotor`), set the whole transform:
+  `rest_global.affine_inverse() * (mesh_root.global_transform * Transform3D(Basis.IDENTITY, pos))`.
+  The node then lives in the GLB's own units and axes, so it is built at model scale
+  and the rig's internal scale cancels without a separate correction.
+- **Check the model against its hitbox.** The Quaternius gunner is authored about 0.5
+  units ahead of its own origin, so at the scene's 2.1 scale the visible body stood
+  1.27 m in front of the collision box. `gunner.tscn` now offsets the `Mesh` node by
+  +0.99 on Z; `tests/gunner_siege_probe` asserts body-over-hitbox.
 
 ## Rig modes (`"rig"` in the config)
 

@@ -41,6 +41,9 @@ def make(p):
                                          depth=p["len"], location=loc)
     elif t == "blade":
         bpy.ops.mesh.primitive_cube_add(size=1.0, location=loc)
+    elif t == "cyl":   # drum/tube along +Z before "rot"; r2 tapers it
+        bpy.ops.mesh.primitive_cone_add(vertices=p.get("verts",12), radius1=p["r"],
+                                         radius2=p.get("r2",p["r"]), depth=p["len"], location=loc)
     o = bpy.context.active_object
     o.name = p["name"]
     if t == "blade":
@@ -101,6 +104,14 @@ sd=bpy.data.lights.new("S",'SUN'); s=bpy.data.objects.new("S",sd)
 s.rotation_euler=(math.radians(55),0,math.radians(40)); sd.energy=4
 bpy.context.scene.collection.objects.link(s)
 sc=bpy.context.scene; sc.render.engine='BLENDER_WORKBENCH'
+# dark added parts vanish against the default near-black backdrop
+sc.display.shading.background_type='VIEWPORT'; sc.display.shading.background_color=(0.42,0.47,0.53)
 sc.render.resolution_x=720; sc.render.resolution_y=720; sc.render.filepath=RENDER
 bpy.ops.render.render(write_still=True)
 print("RENDERED", RENDER)
+# extra angles: "views": [{"cam":[x,y,z], "tgt":[x,y,z], "render":"path.png"}]
+for v in cfg.get("views", []):
+    cam.location = tuple(v["cam"]); tgt.location = tuple(v.get("tgt", list(ctr)))
+    sc.render.filepath = os.path.abspath(v["render"])
+    bpy.ops.render.render(write_still=True)
+    print("RENDERED", sc.render.filepath)
