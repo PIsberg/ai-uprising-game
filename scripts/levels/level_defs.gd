@@ -4192,15 +4192,30 @@ static func _claude() -> Dictionary:
 static func _grok() -> Dictionary:
 	return {
 		"name": "xAI Black-Site — GROK",
-		"objective": "Destroy the GROK war-machines and extract",
+		"objective": "Destroy the GROK mainframe and get out before the purge",
+		# No kill_all: the arc ends on a timed escape, and a trigger-gated
+		# straggler nobody woke would keep the exit sealed while the purge burns
+		# the player. Optional fights stay optional.
 		"tasks": [
-			{"type": "kill_all"},
 			# The mainframe's handler prowls the site; drop it to expose the racks —
 			# and brace for the hounds it whistles up on its way down.
 			{"type": "assassinate", "enemy": "hunter", "elite": "warden", "bulk": 2.2,
 				"pos": Vector3(8, 0, -8), "label": "Eliminate the GROK enforcer",
 				"reinforce": [{"type": "dog", "count": 3, "pos": Vector3(0, 0, 8)}]},
-			{"type": "destroy_core", "after": "hvt", "label": "Destroy the GROK mainframe", "pos": Vector3(0, 0, 16), "color": Color(1.0, 0.3, 0.2), "health": 300.0},
+			{"type": "destroy_core", "after": "hvt", "label": "Destroy the GROK mainframe", "pos": Vector3(0, 0, 16), "color": Color(1.0, 0.3, 0.2), "health": 300.0,
+				# The site's kill team drops into the escape corridor as the racks go.
+				"reinforce": [
+					{"type": "dog", "count": 2, "pos": Vector3(34, 0, 2)},
+					{"type": "android", "count": 2, "pos": Vector3(36, 0, 20)},
+				]},
+			# GUARDRAILS NOT FOUND: killing the mainframe trips the site purge.
+			# Out through the east bulkhead gap and down the exit corridor, through
+			# the kill team and past the corridor scanner, before the clock runs
+			# out. ~115 m of route at ~6 m/s is ~20 s of running; 40 s leaves the
+			# fight. Ring sits short of the portal, which shoves a player standing
+			# in it while still locked.
+			{"type": "escape", "id": "escape", "after": "core", "pos": Vector3(36, 0, 29), "seconds": 40.0,
+				"radius": 4.0, "label": "Reach extraction before the purge"},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area): the 58² monolith field is untouched at the
@@ -4272,6 +4287,17 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(36, 0.05, 31), "size": Vector3(4, 0.1, 3), "color": Color(1, 0.35, 0.25)},
 		],
 		"sign": "XAI BLACK-SITE",
+		# Black-site surveillance, cold cyan beams cutting the crimson. The
+		# watchtower eye crowns the climbable tower over the monolith field (its
+		# head sits 2.3 m over the rooftop the sky-bridge lands on, out of the
+		# way); the corridor scanner stares up the exit corridor the purge run
+		# has to take.
+		"scanners": [
+			{"pos": Vector3(14, 10.5, -6), "sweep": 360, "period": 11.0, "reach": 27, "tilt": 30, "cone": 9,
+				"alarm": [{"type": "raptor", "count": 2, "pos": Vector3(0, 4, 0)}]},
+			{"pos": Vector3(39, 6.5, 26), "yaw": 0, "sweep": 70, "period": 5.0, "tilt": 22,
+				"alarm": [{"type": "dog", "count": 3, "pos": Vector3(37, 0, 12)}]},
+		],
 		# Spilled reactor plasma carves the black-site floor into a forced path.
 		"lava": [
 			{"pos": Vector3(-9,0,-8), "size": Vector2(34,3.5), "color": Color(1.0,0.3,0.22), "dmg": 18.0},

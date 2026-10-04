@@ -67,9 +67,17 @@ func _ready() -> void:
 					pick = p
 					break
 			if sc.sweep_deg >= 359.0 or not sc.mast:
-				# A full-turn head usually crowns a centrepiece: frame it from 13 m south, clear of
-				# the towers whose visual-only lattice skins swallow a side-on camera.
-				pick = foot + Vector3(0, 1.7, 13.0)
+				# A full-turn head usually crowns a tower or centrepiece, among
+				# towers whose visual-only lattice skins swallow a ground camera
+				# (no collision, so the ray test cannot see them). Frame it from
+				# above tower height instead: first of 8 directions with a clear ray.
+				for k in 8:
+					var dir := Vector3.FORWARD.rotated(Vector3.UP, TAU * k / 8.0)
+					var p2: Vector3 = Vector3(head.x, head.y + 2.0, head.z) + dir * 16.0
+					var hit2 := space.intersect_ray(PhysicsRayQueryParameters3D.create(p2, head, 1))
+					if hit2.is_empty() or (hit2["position"] as Vector3).distance_to(head) < 0.8:
+						pick = p2
+						break
 			cam.global_position = pick
 			cam.look_at(head + Vector3(0, -2.5, 0) if (sc.sweep_deg >= 359.0 or not sc.mast) else foot + fwd * 5.0 + Vector3(0, 2.2, 0), Vector3.UP)
 			await _save(out_dir, "%s_scan%d" % [id, n])

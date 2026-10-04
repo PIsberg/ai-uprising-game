@@ -1720,6 +1720,15 @@ func complete_task(id: String) -> void:
 			set_checkpoint()
 			return
 
+## Rewrite a task's HUD label in place (an escape countdown carries its
+## remaining seconds here, since a progress meter reads as counting up).
+func relabel_task(id: String, label: String) -> void:
+	for t in level_tasks:
+		if t["id"] == id and t["label"] != label:
+			t["label"] = label
+			tasks_changed.emit()
+			return
+
 ## Set a progress task's value; auto-completes when it reaches the goal.
 func set_task_progress(id: String, value: float) -> void:
 	for t in level_tasks:

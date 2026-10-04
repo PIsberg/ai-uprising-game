@@ -4429,6 +4429,7 @@ func _task_id(t: Dictionary) -> String:
 		"hold_zone": return t.get("id", "hold")
 		"assassinate": return t.get("id", "hvt")
 		"generative_zone": return t.get("id", "guardrails")
+		"escape": return t.get("id", "escape")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4468,6 +4469,9 @@ func _register_task_entry(t: Dictionary) -> void:
 			# Goal 1.0: the manager feeds a 0..1 crossing fraction and completes it
 			# when the player reaches the override gate.
 			GameState.register_task(id, t.get("label", "Anchor a safe path to the override gate"), 1.0, staged)
+		"escape":
+			# No goal meter: the countdown lives in the label (EscapeZone).
+			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
 
 ## Spawn the task's world objects / hooks — the stage going "live".
 func _activate_task(t: Dictionary) -> void:
@@ -4537,6 +4541,18 @@ func _activate_task(t: Dictionary) -> void:
 			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
+		"escape":
+			var ez := EscapeZone.new()
+			ez.task_id = id
+			ez.base_label = t.get("label", "Reach extraction before the purge")
+			ez.seconds = t.get("seconds", 45.0)
+			ez.purge_dps = t.get("purge_dps", 18.0)
+			ez.hold_seconds = 0.0
+			ez.radius = t.get("radius", 4.0)
+			ez.accent = t.get("color", Color(0.45, 1.0, 0.55))
+			ez.position = t.get("pos", Vector3.ZERO)
+			add_child(ez)
+			_relocate_when_clear(ez)
 		"generative_zone":
 			var gz := GenerativeZone.new()
 			gz.task_id = id

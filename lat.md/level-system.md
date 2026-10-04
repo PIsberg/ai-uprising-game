@@ -54,6 +54,17 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
+## Escape Countdown
+<!-- lat: { "require-code-mention": true } -->
+An `escape` task turns a level's last stage into a timed run: the purge clock starts when the stage goes live.
+
+* Stepping into the extraction ring (an `EscapeZone`, a `HoldZone` subclass) completes the task, which unlocks the exit portal.
+* After the clock runs out, a player outside the ring takes `purge_dps` per second, so a late run still lands if there is health to spend.
+* The remaining seconds live in the task label (`GameState.relabel_task`): a progress meter would read as counting up.
+* Death restarts the clock in full: checkpoint respawn is in place (no reload) back at the last objective, so an expired clock would be a death loop.
+* Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
+* `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
+
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
 

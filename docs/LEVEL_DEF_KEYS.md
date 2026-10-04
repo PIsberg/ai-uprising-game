@@ -141,7 +141,7 @@ no `tasks` key defaults to a single `kill_all` task.
 | Key | Type | Effect | Consumed in | Scaled? | Probe |
 |---|---|---|---|---|---|
 | `tasks` | Array<Dictionary> | The mission checklist (see per-type rows below) | `_build_tasks`, `_register_task_entry`, `_activate_task` | Yes (pos/points/reinforce[].pos/waves[].enemies\|supplies[].pos) | `tests/objective_probe`, `tests/level01_task_probe` |
-| `type` | String | One of `kill_all`, `kill_quota`, `key`, `destroy_core`, `collect_shards`, `hack_terminal`, `sabotage`, `survive`, `hold_zone`, `assassinate`, `generative_zone`, `none` | `_task_id`, `_register_task_entry`, `_activate_task` | n/a | — |
+| `type` | String | One of `kill_all`, `kill_quota`, `key`, `destroy_core`, `collect_shards`, `hack_terminal`, `sabotage`, `survive`, `hold_zone`, `assassinate`, `generative_zone`, `escape`, `none` | `_task_id`, `_register_task_entry`, `_activate_task` | n/a | — |
 | `id` | String | Explicit checklist id (else a per-type default, e.g. `"key"`/`"hold"`/`"hvt"`) — required when multiple tasks of the same type coexist (e.g. staged `hold_zone` chains) | `_task_id` | n/a | — |
 | `after` | String or Array<String> | Marks the task as a later STAGE: registers immediately (sealed/dimmed on the HUD) but only spawns once every listed prerequisite task id is complete | `_prereqs_of`, `_on_tasks_progress` | n/a | `tests/mission_arc_probe` |
 | `reinforce` | Array (enemy specs) | On this task's completion, pours in a staggered enemy wave via the same spawner as placed enemies (an "objective tripped the alarm" reaction) | `_build_tasks`, `_on_tasks_progress`, `_spawn_reinforcements` | Yes (pos, within the `_scaled` tasks pass) | `tests/mission_arc_probe` |
@@ -149,11 +149,12 @@ no `tasks` key defaults to a single `kill_all` task.
 | `pos` | Vector3 | World placement of the task's object (keycard, core, console, HVT, hold-zone center, generative-zone field center) | `_activate_task` (all placed task types), `_reachable_task_pos` | Yes | `tests/task_reach_probe` |
 | `count` | int | `kill_quota` goal — number of kills required | `_register_task_entry` | n/a | — |
 | `points` | Array<Vector3 \| {pos}> | `collect_shards` pickup locations (hand-authored = raw Vector3; editor-authored = `{"pos":...}` dicts) | `_register_task_entry` (goal = count), `_activate_task` | Yes | — |
-| `seconds` | float | Duration for `hack_terminal`/`sabotage` (hold-to-hack time), `survive` (hold length), `hold_zone` (dwell time) | `_register_task_entry`, `_activate_task` | n/a | — |
+| `seconds` | float | Duration for `hack_terminal`/`sabotage` (hold-to-hack time), `survive` (hold length), `hold_zone` (dwell time), `escape` (purge countdown, default 45) | `_register_task_entry`, `_activate_task` | n/a | — |
 | `color` | Color | Accent color override for `destroy_core`/`hack_terminal`/`hold_zone`/`generative_zone` objective props | `_activate_task` | n/a | — |
 | `health` | float | `destroy_core` max health | `_activate_task` | n/a | — |
-| `radius` | float | `hold_zone` capture radius | `_activate_task` | n/a | — |
+| `radius` | float | `hold_zone` capture radius; `escape` extraction-ring radius (default 4) | `_activate_task` | n/a | — |
 | `waves` | Array<{at,enemies,supplies?,label?}> | Escalating enemy waves (and optional mid-hold supply vents) fired during a `survive` task, reusing the reinforcement spawner | `_activate_task` → `SurviveTimer`, `_on_survive_wave`, `_spawn_reinforcements`, `_vent_supplies` | Yes (waves[].enemies/supplies pos) | `tests/purge_probe` (timer + GPT arc), `tests/survive_waves_probe` (every hold, live navmesh) |
+| `purge_dps` | float | `escape` — damage per second the purge deals a player still outside the ring once the clock runs out (default 18). The `escape` task itself: a countdown that starts when the stage goes live; stepping into the ring at `pos` completes it (place it short of the exit portal, which shoves a player standing in it while locked). Do not combine with `kill_all`, or a trigger-gated straggler keeps the exit sealed while the purge burns | `_activate_task` → `EscapeZone` | n/a | `tests/escape_probe` (countdown, purge, extraction; every authored route runs inside 60% of the clock) |
 | `enemy` | String | `assassinate` — the HVT's enemy type (default `"brute"`) | `_spawn_hvt` | n/a | — |
 | `elite` | String | `assassinate` — elite affix applied to the HVT (default `"warden"`) | `_spawn_hvt` | n/a | — |
 | `bulk` | float | `assassinate` — extra HP multiplier on top of the elite affix (default 2.2) | `_spawn_hvt` | n/a | — |
