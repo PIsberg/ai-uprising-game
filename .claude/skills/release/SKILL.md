@@ -27,6 +27,8 @@ which rebuilds fresh Windows + Linux binaries and pushes them to itch.io with `b
 
    - Add `-SkipBuild` when the user only wants to re-push the current `build/` artifacts
      without the ~10-minute rebuild (e.g. they already built, or only page metadata changed).
+   - Add `-SkipRaceCheck` only for a re-push of a build that already passed the gate; never
+     to get past a failed race check.
 
 3. What the script does, in order:
    - Verifies `butler` is installed and **logged in**. If not logged in it stops and prints
@@ -34,6 +36,11 @@ which rebuilds fresh Windows + Linux binaries and pushes them to itch.io with `b
      must run it themselves; it opens a browser to authorize. Never attempt to log in for them
      or handle their credentials.
    - Rebuilds the release binaries via `tools/build_release.ps1` (unless `-SkipBuild`).
+   - Runs `tools/load_race_check.ps1` (exported pack, 10 windowed cold starts through the
+     loading screen, ~5 min; unless `-SkipRaceCheck`). Any hang or failed `preload()` aborts
+     the release before the push. **Report a failure to the user with the run lines it
+     printed and stop**; the hang it guards never reproduces in the headless suite.
+     Build and gate use one Godot binary (`-Godot`, else `$env:GODOT`, else the 4.7.2 one).
    - `butler push`es both channels (`:windows`, `:linux`) with a version stamp derived from
      the date + git short SHA.
 
