@@ -40,6 +40,10 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_strings_csv.py
   ```
+* Verify no texture extracted from a GLB is left beside a model that embeds its own images (the export ships every such file unused; 207 of them were 179 MB of the pack):
+  ```sh
+  python tools/check_glb_leftovers.py
+  ```
 * Validate Agent Lattice documentation links and code references:
   ```sh
   lat check

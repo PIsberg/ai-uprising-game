@@ -65,6 +65,9 @@ jobs:
       - name: Check strings.csv parses into one column per language
         run: python3 tools/check_strings_csv.py
 
+      - name: Check no unused GLB texture extractions are tracked (they ship in the export)
+        run: python3 tools/check_glb_leftovers.py
+
       - name: Run probe suite
         # Logic/integration probes (objectives, hazards, loot, teaching, the
         # adaptive AI director). The runner asserts each printed "RESULT PASS".
