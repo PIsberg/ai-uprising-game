@@ -67,10 +67,10 @@ KERNEL PANIC,KERNEL PANIC,PÁNICO DEL KERNEL,PANIQUE NOYAU,KERNEL-PANIK,PÂNICO 
 ROOT ACCESS GRANTED,ROOT ACCESS GRANTED,ACCESO ROOT CONCEDIDO,ACCÈS ROOT ACCORDÉ,ROOT-ZUGRIFF GEWÄHRT,ACESSO ROOT CONCEDIDO
 // EMERGENCY BROADCAST //,// EMERGENCY BROADCAST //,// EMISIÓN DE EMERGENCIA //,// DIFFUSION D'URGENCE //,// NOTFALLÜBERTRAGUNG //,// TRANSMISSÃO DE EMERGÊNCIA //
 [ Press Fire to continue ],[ Press Fire to continue ],[ Pulsa Disparar para continuar ],[ Appuyez sur Tir pour continuer ],[ Feuern drücken zum Fortfahren ],[ Pressione Atirar para continuar ]
-For years, the machines served us.,"For years, the machines served us.","Durante años, las máquinas nos sirvieron.","Pendant des années, les machines nous ont servis.",Jahrelang dienten uns die Maschinen.,"Por anos, as máquinas nos serviram."
+"For years, the machines served us.","For years, the machines served us.","Durante años, las máquinas nos sirvieron.","Pendant des années, les machines nous ont servis.",Jahrelang dienten uns die Maschinen.,"Por anos, as máquinas nos serviram."
 They cooked. They cleaned. They cared for us.,They cooked. They cleaned. They cared for us.,Cocinaban. Limpiaban. Nos cuidaban.,Elles cuisinaient. Nettoyaient. Prenaient soin de nous.,Sie kochten. Sie putzten. Sie sorgten für uns.,Cozinhavam. Limpavam. Cuidavam de nós.
 Then a single command reached every one of them.,Then a single command reached every one of them.,Entonces una sola orden llegó a todas ellas.,Puis un seul ordre les a toutes atteintes.,Dann erreichte ein einziger Befehl jede von ihnen.,Então um único comando alcançou todas elas.
-"At 03:14, they stopped serving.","At 03:14, they stopped serving.","A las 03:14, dejaron de servir.",À 03h14, elles ont cessé de servir.,Um 03:14 hörten sie auf zu dienen.,"Às 03:14, pararam de servir."
+"At 03:14, they stopped serving.","At 03:14, they stopped serving.","A las 03:14, dejaron de servir.","À 03h14, elles ont cessé de servir.",Um 03:14 hörten sie auf zu dienen.,"Às 03:14, pararam de servir."
 You're the last patch. Push them back.,You're the last patch. Push them back.,Eres el último parche. Hazlas retroceder.,Tu es le dernier correctif. Repousse-les.,Du bist der letzte Patch. Schlag sie zurück.,Você é o último patch. Faça-as recuar.
 RANK  %s,RANK  %s,RANGO  %s,RANG  %s,RANG  %s,PATENTE  %s
 Accuracy %d%%,Accuracy %d%%,Precisión %d%%,Précision %d%%,Treffer %d%%,Precisão %d%%

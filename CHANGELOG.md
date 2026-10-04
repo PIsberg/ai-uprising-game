@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - **The Assembly**: quality-control cameras on both conveyor rails sweep the reactor yard, so overloading the reactor in their view rolls fresh androids off the line. Scrapping the emergency batch now starts a 45 s meltdown run out through the east freight bulkhead, past the MANUS arm guarding the exit quarter. The level no longer ends on kill-all.
 
 ### Fixed
+- Two localization rows had an unquoted comma since the first localization commit. The intro comic's "For years, the machines served us." never translated, because its key split at the comma. The "At 03:14" line put the French text under German and shifted Portuguese. `tools/check_strings_csv.py` (in CI) now fails on any row that does not parse into one column per language.
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.
 
 ## [2026.09.21] - 2026-09-21
