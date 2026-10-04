@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Security firewalls** (`firewalls` level-def key): an energy sheet that stops only the player (new collision layer 8), dropped by shooting its relay node or by completing a linked objective. Placed on claude, gemini and mistral, so the server aisle, the shielded conduit and the exit bulkheads become things you open rather than walk through. `firewall_probe` (suite), `firewall_shot` (windowed).
+
+### Fixed
+- mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.
+
 ## [2026.09.21] - 2026-09-21
 
 ### Added

@@ -146,6 +146,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		for k in ["at", "gap", "gap_pos"]:
 			if e.has(k):
 				e[k] = float(e[k]) * s
+	# Firewalls span a route like a gate: centre, relay node and span all sit on
+	# the ground plane. Height stays authored.
+	for e in def.get("firewalls", []):
+		for k in ["pos", "node"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
+		if e.has("length"):
+			e["length"] = float(e["length"]) * s
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms", "towers"]:
@@ -3121,7 +3129,8 @@ static func _mistral() -> Dictionary:
 			# expose it, and expect the maintenance swarm to object. Labels are
 			# numbered so the required ORDER (pumps -> core) reads at a glance; the
 			# core task stays locked (and hidden on the HUD) until both pumps blow.
-			{"type": "sabotage", "id": "pump_a", "pos": Vector3(-14, 0, 4), "seconds": 3.0,
+			# x=-12, not -14: the west divider wall (x -14.7..-13.3) buried the pump.
+			{"type": "sabotage", "id": "pump_a", "pos": Vector3(-12, 0, 4), "seconds": 3.0,
 				"label": "① Vent the WEST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0)},
 			{"type": "sabotage", "id": "pump_b", "pos": Vector3(14, 0, 4), "seconds": 3.0,
 				"label": "① Vent the EAST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0),
@@ -3184,6 +3193,12 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(29, 0.05, 25), "size": Vector3(4, 0.1, 3), "color": Color(0.4, 0.95, 1.0)},
 		],
 		"sign": "MISTRAL CRYO-CORE",
+		# The annex exit bulkhead is firewalled off the cryo-core's power: it only
+		# drops when the core does.
+		"firewalls": [
+			{"pos": Vector3(22, 0, 14), "length": 8, "height": 4.2, "yaw": 90, "opens_on": "core",
+				"label": "Cryo-core down. The annex firewall has lost power."},
+		],
 		# Annex bulkheads: the ring is ROUTED, not open — in through the east
 		# gap, out over the exit-side gap (or over the top: the gallery
 		# sky-bridge clears both walls). Task level, so gating fits — this is
@@ -3785,6 +3800,15 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(30, 0.05, 26), "size": Vector3(4, 0.1, 3), "color": Color(0.5, 0.7, 1)},
 		],
 		"sign": "GEMINI DATA NEXUS",
+		# Nexus security: the shielded conduit is firewalled from a relay in the
+		# entry band (the gallery sky-bridge is the way round it), and the exit
+		# bulkhead stays sealed until the purge is survived.
+		"firewalls": [
+			{"pos": Vector3(13, 0, -13), "length": 6.5, "height": 4.1, "node": Vector3(-6, 0, -19),
+				"label": "Relay destroyed. The conduit is open."},
+			{"pos": Vector3(25, 0, 20), "length": 7, "height": 4.4, "yaw": 90, "opens_on": "survive",
+				"label": "Purge survived. The nexus firewall is down."},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
@@ -3989,6 +4013,15 @@ static func _claude() -> Dictionary:
 			{"pos": Vector3(25, 0.05, 25), "size": Vector3(4, 0.1, 3), "color": Color(1, 0.75, 0.35)},
 		],
 		"sign": "ANTHROPIC CONSTITUTIONAL VAULT",
+		# Vault security. The roofed server aisle is sealed by a firewall fed from a
+		# relay in the entry band (or skip it: the gallery sky-bridge lands on the
+		# tower behind it); the exit bulkhead only drops once the vault decrypts.
+		"firewalls": [
+			{"pos": Vector3(12, 0, -11), "length": 6, "height": 3.9, "node": Vector3(-4, 0, -16),
+				"label": "Relay destroyed. The server aisle is open."},
+			{"pos": Vector3(21, 0, 18), "length": 6.5, "height": 4.2, "yaw": 90, "opens_on": "decrypt",
+				"label": "Vault decrypted. The archive firewall is down."},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
