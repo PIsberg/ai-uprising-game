@@ -245,7 +245,8 @@ func _ready() -> void:
 	GameState.nemesis_spawned.connect(func(title: String): _show_toast("☠ NEMESIS: %s HAS RETURNED FOR YOU" % title))
 	GameState.nemesis_down.connect(func(title: String, points: int): _show_toast("☠ GRUDGE SETTLED: %s DESTROYED  +%d" % [title, points]))
 	GameState.boss_killcam_started.connect(func(label: String, _dur: float): _show_toast("☠ %s NEUTRALIZED" % label))
-	GameState.skirmish_event.connect(func(title: String, desc: String): _show_toast("⚡ %s — %s" % [title, desc]))
+	# tr() both halves: firewall breaches send their def "label" as the desc.
+	GameState.skirmish_event.connect(func(title: String, desc: String): _show_toast("⚡ %s — %s" % [tr(title), tr(desc)]))
 	GameState.wave_incoming.connect(func(label: String): _show_toast("☢ " + tr(label)))
 	GameState.level_graded.connect(_on_level_graded)
 	_build_kill_confirm()

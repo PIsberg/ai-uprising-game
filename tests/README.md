@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-279 probes total: **56** wired into the headless suite (`suite`), **82**
+280 probes total: **57** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -170,6 +170,7 @@ or GPU-timing probes; `--headless` renders these black).
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name | windowed |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
+| i18n_label_probe | Every task, wave, firewall and terrain label in the campaign defs translates under es/fr/de/pt (`tr()` hands back the English key when a row is missing; 64 of 78 labels were, #116); a long-standing row is the control that translations load at all | suite |
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | gunner_siege_probe | GUNNER siege model fork is wired + keeps its clips; visible body sits on the hitbox; barrel rotor rides the Gun bone at barrel size along the aim line; spins up in the windup before any round, heats through the burst, cools and spins down in the 1.3 s gap | suite |

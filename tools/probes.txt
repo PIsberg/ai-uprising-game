@@ -71,3 +71,5 @@ res://tests/escape_probe.tscn
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).
 res://tests/task_reach_probe.tscn
+# Every campaign task, wave, firewall and terrain label translates in es/fr/de/pt.
+res://tests/i18n_label_probe.tscn

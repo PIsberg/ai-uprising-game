@@ -455,7 +455,7 @@ func _set_intel(i: int) -> void:
 		lines += "\n☠ BOSS SECTOR"
 	var hz: Dictionary = d["hazard"]
 	if hz.get("hazard", false):
-		lines += "\n⚠ TERRAIN: %s" % hz["label"]
+		lines += "\n⚠ TERRAIN: %s" % tr(hz["label"])
 	var obj: String = String(def.get("objective", ""))
 	if obj != "":
 		lines += "\n\nObjective:\n%s" % obj
