@@ -609,10 +609,12 @@ func _build_environment(def: Dictionary) -> void:
 			light = omni
 		add_child(light)
 		# Every light gets a visible SOURCE instead of hanging disembodied:
-		# ceiling luminaires indoors, slim floodlight pylons outdoors.
+		# ceiling luminaires indoors, slim floodlight pylons outdoors. An
+		# outdoor god-ray authored straight over an objective opts out with
+		# "mast": false, or the solid pole would stand inside the target.
 		if indoor:
 			_add_light_fixture(l["pos"], l.get("color", Color(1, 1, 1)))
-		else:
+		elif l.get("mast", true):
 			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
 		# infrastructure failing, and motion in otherwise static lighting. Any
@@ -4541,7 +4543,7 @@ func _activate_task(t: Dictionary) -> void:
 				zone.accent = t["color"]
 			zone.position = t.get("pos", Vector3.ZERO)
 			add_child(zone)
-			_relocate_when_clear(zone)
+			_relocate_when_clear(zone, zone.radius)
 		"assassinate":
 			_spawn_hvt(t)
 		"haul":
@@ -4567,7 +4569,7 @@ func _activate_task(t: Dictionary) -> void:
 			ez.accent = t.get("color", Color(0.45, 1.0, 0.55))
 			ez.position = t.get("pos", Vector3.ZERO)
 			add_child(ez)
-			_relocate_when_clear(ez)
+			_relocate_when_clear(ez, ez.radius)
 		"generative_zone":
 			var gz := GenerativeZone.new()
 			gz.task_id = id
@@ -4586,23 +4588,30 @@ func _activate_task(t: Dictionary) -> void:
 				gz.floor_dot = t["floor_dot"]
 			add_child(gz)
 
+# @lat: [[level-system#Objective Placement]]
 ## Objective items must be reachable. Authored task positions are NOT validated
 ## against the built geometry, so a def edit (or a building later dropped onto
 ## the spot) can bury a keycard/console inside a solid box — an impossible
 ## objective (level 1 shipped one). If the point sits inside world geometry,
 ## walk outward in rings and return the first clear spot near the navmesh.
-func _reachable_task_pos(pos: Vector3) -> Vector3:
+## `node` is the task object itself: its own bodies are left out of the test
+## (an ObjectiveCore is a world-layer StaticBody, so every core used to find
+## itself "buried" and slide 1.5 m). `radius` > 0 marks a zone the player only
+## has to stand somewhere inside: it is buried only when its centre AND the
+## whole ring at half its radius are solid (uplink's hold ring encircles a mast).
+func _reachable_task_pos(pos: Vector3, node: Node = null, radius: float = 0.0) -> Vector3:
 	if not is_inside_tree():
 		return pos
 	var space := get_world_3d().direct_space_state
-	if _point_clear(space, pos):
+	var own := _own_bodies(node)
+	if _point_clear(space, pos, own) or _ring_clear(space, pos, radius * 0.5, own):
 		return pos
 	var nav_map := get_world_3d().navigation_map
 	for r: float in [1.5, 2.5, 4.0, 6.0, 8.5]:
 		for i in 12:
 			var ang := TAU * float(i) / 12.0
 			var p: Vector3 = pos + Vector3(cos(ang), 0.0, sin(ang)) * r
-			if not _point_clear(space, p):
+			if not _point_clear(space, p, own):
 				continue
 			# Only accept spots the navmesh can actually deliver a player to —
 			# unless the bake hasn't landed yet (closest point comes back ZERO),
@@ -4618,19 +4627,42 @@ func _reachable_task_pos(pos: Vector3) -> Vector3:
 ## Deferred variant for items placed during the build (physics not yet live):
 ## waits until physics AND the deferred navmesh bake have landed, then applies
 ## the same burial rescue.
-func _relocate_when_clear(node: Node3D) -> void:
+func _relocate_when_clear(node: Node3D, radius: float = 0.0) -> void:
 	if not is_inside_tree():
 		return
 	await get_tree().create_timer(1.0).timeout
 	if is_instance_valid(node) and is_inside_tree() and node.is_inside_tree():
-		node.position = _reachable_task_pos(node.position)
+		node.position = _reachable_task_pos(node.position, node, radius)
 
 ## True when nothing solid (world layer) occupies the point at pickup height.
-func _point_clear(space: PhysicsDirectSpaceState3D, pos: Vector3) -> bool:
+## `exclude` lists body RIDs to ignore (the task object's own collider).
+func _point_clear(space: PhysicsDirectSpaceState3D, pos: Vector3, exclude: Array[RID] = []) -> bool:
 	var q := PhysicsPointQueryParameters3D.new()
 	q.position = pos + Vector3(0, 1.0, 0)
 	q.collision_mask = 1
+	q.exclude = exclude
 	return space.intersect_point(q, 1).is_empty()
+
+## True when any of 12 points on the ring of radius `r` around `pos` is clear.
+func _ring_clear(space: PhysicsDirectSpaceState3D, pos: Vector3, r: float, exclude: Array[RID]) -> bool:
+	if r <= 0.0:
+		return false
+	for i in 12:
+		var ang := TAU * float(i) / 12.0
+		if _point_clear(space, pos + Vector3(cos(ang), 0.0, sin(ang)) * r, exclude):
+			return true
+	return false
+
+## RIDs of every physics body in `node`'s subtree (including `node`).
+func _own_bodies(node: Node) -> Array[RID]:
+	var out: Array[RID] = []
+	if node == null:
+		return out
+	if node is CollisionObject3D:
+		out.append((node as CollisionObject3D).get_rid())
+	for c in node.find_children("*", "CollisionObject3D", true, false):
+		out.append((c as CollisionObject3D).get_rid())
+	return out
 
 func _on_quota_kill(_pts: int, _lbl: String, id: String) -> void:
 	GameState.advance_task(id, 1.0)

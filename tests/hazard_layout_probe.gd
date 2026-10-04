@@ -29,7 +29,8 @@ func _ready() -> void:
 func _run() -> void:
 	await get_tree().process_frame
 	_check_not_twins()
-	_check_masts_off_decks("water_world")
+	for id in SEA_LEVELS:
+		_check_masts_off_decks(id)
 	for id in SEA_LEVELS:
 		await _check_network(id)
 		await _check_player_lands_on_spawn_deck(id)
@@ -63,8 +64,7 @@ func _check_not_twins() -> void:
 ## Every outdoor light builds a solid mast from the floor up to the lamp
 ## (LevelBuilder._add_light_pylon). On a sea level a mast on a deck is a pole in
 ## the middle of a 3.6 m gantry, or under the player spawn. Masts belong in the
-## water. (lava_world predates this rule and still has masts on its
-## islands, so it is not held to it here.)
+## water (or the molten pools).
 func _check_masts_off_decks(id: String) -> void:
 	var def: Dictionary = LevelDefs.get_def(id)
 	for l in def.get("lights", []):

@@ -75,6 +75,14 @@ A `haul` task is a heavy core that has to be carried, on foot, from `pos` into a
 * `GameState.reset_tasks` clears the flag, so a level change never leaves the player slowed.
 * `tests/haul_probe` checks the carry rules on the real player against an uncarried control, the drop and re-pickup, the death drop and delivery.
 
+## Objective Placement
+
+The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.
+
+* The test ignores the task object's own bodies (an `ObjectiveCore` is a world-layer StaticBody), and a hold or escape zone counts as clear while any point on the ring at half its radius is clear.
+* Every outdoor light builds a solid mast from the floor to the lamp, so a light authored over an objective buries it. A god-ray over a target opts out with `"mast": false`.
+* `tests/task_reach_probe` builds every campaign level and fails if any objective or weapon pickup moved, so the log line only ever fires for a real authoring mistake.
+
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
 
