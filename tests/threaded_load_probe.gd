@@ -1,9 +1,11 @@
 extends Node
 ## Every scene the loading screen hands to the player survives the loading
-## screen's actual load path: ResourceLoader.load_threaded_request with
-## use_sub_threads = false (scripts/ui/loading_screen.gd). campaign_smoke loads
-## levels with a plain load(). Headless, this cannot see the sub-thread preload
-## race that hung the exported build; tools/load_race_check.ps1 does. The loading
+## screen's actual load path: GameState.warm_scripts, then
+## ResourceLoader.load_threaded_request with use_sub_threads = false
+## (scripts/ui/loading_screen.gd). campaign_smoke loads levels with a plain
+## load(). Without the warm-up this probe wedged at IN_PROGRESS in 10 of 94 solo
+## runs (#125), so a hang here is that race back, not a slow machine. The
+## exported-pack variant of the race is tools/load_race_check.ps1's. The loading
 ## screen falls back to a blocking change_scene_to_file on THREAD_LOAD_FAILED,
 ## which would hide a broken resource behind a hitch - this probe does not. It
 ## also reports the wall time per scene so a load that has crept past a few
@@ -44,6 +46,8 @@ func _run() -> void:
 		if not ResourceLoader.exists(path):
 			_check(false, "%s exists" % path)
 			continue
+		# The game's own path: compile on the main thread, then the threaded load.
+		GameState.warm_scripts(path)
 		var t0 := Time.get_ticks_msec()
 		var req := ResourceLoader.load_threaded_request(path, "", false)
 		if req != OK:

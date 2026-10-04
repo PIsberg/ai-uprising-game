@@ -1498,6 +1498,37 @@ func load_progress() -> bool:
 ## through teardown, and the strict scene-load gate would read those as real.
 var allow_warm_headless: bool = false
 
+## Scripts compiled by warm_scripts, held so the cache cannot drop them before
+## the threaded load that needs them runs.
+var _warm_held: Array[Script] = []
+
+## Compile every script `path` depends on (through nested scenes and resources)
+## on the MAIN thread, before it goes to load_threaded_request. A threaded load
+## that has to compile scripts itself can wedge for good at THREAD_LOAD_IN_PROGRESS
+## while the main thread runs on (#125): threaded_load_probe hung 10 times in 94
+## solo runs from source, always on the first load of a large script graph
+## (level_01's LevelBuilder graph, convoy_ride, the cutscenes), and 0 times in
+## 60 with this warm-up first. Costs about 1 s on the main thread for those
+## first loads from source, near nothing once compiled. Call it before every
+## load_threaded_request.
+func warm_scripts(path: String) -> void:
+	_warm_scripts(path, {})
+
+func _warm_scripts(path: String, seen: Dictionary) -> void:
+	if seen.has(path):
+		return
+	seen[path] = true
+	for d in ResourceLoader.get_dependencies(path):
+		var p: String = d.get_slice("::", 2) if d.contains("::") else d
+		if p.begins_with("uid://"):
+			p = ResourceUID.get_id_path(ResourceUID.text_to_id(p))
+		if p.ends_with(".gd"):
+			var s := load(p) as Script
+			if s and not _warm_held.has(s):
+				_warm_held.append(s)
+		elif p.ends_with(".tscn") or p.ends_with(".tres") or p.ends_with(".scn") or p.ends_with(".res"):
+			_warm_scripts(p, seen)
+
 func warm_level_cache() -> void:
 	if DisplayServer.get_name() == "headless" and not allow_warm_headless:
 		return
@@ -1516,6 +1547,7 @@ func warm_level_cache() -> void:
 			continue
 		if ResourceLoader.load_threaded_get_status(p) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			# use_sub_threads off, like the loading screen that joins this load (see its _go).
+			warm_scripts(p) # compile on the main thread first (#125)
 			ResourceLoader.load_threaded_request(p, "", false)
 
 ## Read the checkpoint WITHOUT loading it into the live run: what the main

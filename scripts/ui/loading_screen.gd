@@ -228,6 +228,10 @@ func _go() -> void:
 	# little: measured cold, one process per scene, the heaviest level (assembly)
 	# went 1.48s -> 1.75s and convoy stayed inside its own noise (2.8-3.7s both
 	# ways). A quarter-second against a hang in a quarter of starts.
+	# Scripts compile here on the main thread, not on the loader thread: a
+	# threaded load that compiles them itself can wedge at IN_PROGRESS forever,
+	# and this screen has no way out of that (#125, GameState.warm_scripts).
+	GameState.warm_scripts(_path)
 	if ResourceLoader.load_threaded_request(_path, "", false) == OK:
 		_loading = true
 	else:
