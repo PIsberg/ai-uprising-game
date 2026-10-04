@@ -69,3 +69,5 @@ res://tests/scanner_probe.tscn
 res://tests/escape_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
+# Every campaign objective and weapon pickup stays where authored (no burial nudge).
+res://tests/task_reach_probe.tscn

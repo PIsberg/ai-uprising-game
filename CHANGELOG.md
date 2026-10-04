@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Two localization rows had an unquoted comma since the first localization commit. The intro comic's "For years, the machines served us." never translated, because its key split at the comma. The "At 03:14" line put the French text under German and shifted Portuguese. `tools/check_strings_csv.py` (in CI) now fails on any row that does not parse into one column per language.
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.
+- Seven objectives and three weapon pickups were nudged 1.5 m off their spot on every load. Destroy-cores found their own collider; outdoor light masts stood on the alien beacon, the desert relay mast, the lava_world HVT and the level 1 and archon weapons; assembly's reactor console sat inside the reactor monolith. Each now stays where it was placed (`"mast": false` lets a god-ray over a target skip its pole). `task_reach_probe` (now in the suite) builds every campaign level and fails on any nudge.
+- Vulcan Forge (lava_world): 9 of its 11 lamp masts stood on the catwalks, one through the hub's HVT. Every mast now stands in the molten pool beside the deck it lights.
 
 ## [2026.09.21] - 2026-09-21
 

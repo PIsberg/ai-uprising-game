@@ -730,7 +730,9 @@ static func _nexus() -> Dictionary:
 		],
 		"lights": [
 			{"pos": Vector3(0, 5, 6), "color": Color(1.0, 0.4, 0.25), "energy": 2.0, "range": 18},
-			{"pos": Vector3(-8, 5, -4), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
+			# Beside the rifle pickup at (-8,-4), not over it: an outdoor lamp
+			# builds a solid mast, which stood on the pickup and nudged it.
+			{"pos": Vector3(-9.5, 5, -4), "color": Color(1.0, 0.6, 0.4), "energy": 1.6, "range": 15},
 			{"pos": Vector3(11, 5, 12), "color": Color(1.0, 0.5, 0.3), "energy": 1.6, "range": 15, "flicker": true},
 			# Ring lighting (appended AFTER the originals): fire-glow pools over
 			# the outer blocks + the new east trench.
@@ -1350,7 +1352,8 @@ static func _sublevel() -> Dictionary:
 			{"type": "locker", "pos": Vector3(-14, 0, -8)},
 			{"type": "shelves", "pos": Vector3(12, 0, -2)},
 			{"type": "canister", "pos": Vector3(6, 0, 9)},
-			{"type": "terminal", "pos": Vector3(0, 0, 10), "yaw": 180},
+			# (no prop terminal at (0,0,10): the hack_terminal task builds the
+			# custodial controller there, and the prop pushed it 1.5 m aside)
 			# Ring dressing: locker rows and janitorial clutter so the ring reads
 			# as the sublevel's service corridor, not empty margin.
 			{"type": "locker", "pos": Vector3(-26, 0, -10)},
@@ -2141,7 +2144,8 @@ static func _alien() -> Dictionary:
 		"floor_color": Color(0.06, 0.11, 0.08),
 		"spawn": Vector3(-48, 0.6, -48),
 		"exit": Vector3(48, 1.5, 48),
-		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-42, 0, -36), "color": Color(0.4, 1, 0.55)},
+		# Spawn side of the z=-36 route gate (it stood inside the gate wall).
+		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-42, 0, -39), "color": Color(0.4, 1, 0.55)},
 		# The Hollow: a violet-black alien night. Green used to be the sky, the
 		# fog, the ambient AND the sun, so the haze tinted every surface the same
 		# green (look_capture 2026-10-04: hue entropy 0.88, contrast std 0.14,
@@ -2165,7 +2169,9 @@ static func _alien() -> Dictionary:
 			# Beacon god-ray now pours down ALIEN VIOLET (green's complement) — an
 			# unnatural off-world signal colour amid the green, and the focal
 			# contrast that breaks the monochrome. light_shafts[0] tracks this light.
-			{"pos": Vector3(0, 8, 14), "color": Color(0.72, 0.34, 1.0), "energy": 3.4, "range": 34},
+			# No mast: it stands over the beacon core, and a pole through the
+			# core made the builder nudge the objective 1.5 m off its shaft.
+			{"pos": Vector3(0, 8, 14), "color": Color(0.72, 0.34, 1.0), "energy": 3.4, "range": 34, "mast": false},
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.4, 1.0, 0.5), "energy": 2.0, "range": 22},
 			{"pos": Vector3(22, 5, -22), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 22},
 			# Warm amber fill over the player spawn / weapon pickup (SW corner): a
@@ -2592,7 +2598,8 @@ static func _archon() -> Dictionary:
 			{"pos": Vector3(-22, 5, 22), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 24},
 			{"pos": Vector3(22, 5, -22), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 24},
 			{"pos": Vector3(22, 5, 22), "color": Color(1.0, 0.6, 0.3), "energy": 2.0, "range": 22},
-			{"pos": Vector3(-22, 5, -22), "color": Color(1.0, 0.6, 0.3), "energy": 2.0, "range": 22},
+			# Beside the OMEGA pickup at (-22,-22): its mast stood on the pickup.
+			{"pos": Vector3(-20.5, 5, -22), "color": Color(1.0, 0.6, 0.3), "energy": 2.0, "range": 22},
 			# Cloister-ring lighting (appended AFTER the originals — light_shafts
 			# [0] must keep pointing at the god-ray). Cathedral violets + blues.
 			{"pos": Vector3(-49, 5, -49), "color": Color(0.7, 0.4, 1.0), "energy": 2.2, "range": 20},
@@ -2952,7 +2959,10 @@ static func _assembly() -> Dictionary:
 		# No kill_all: the arc ends on the meltdown run, and an unwoken straggler
 		# would keep the exit sealed while the clock burns (see the grok note).
 		"tasks": [
-			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18),
+			# The console stands at the foot of the reactor monolith (the hero at
+			# the origin, plinth radius 2.6), on the side that faces the spawn.
+			# Authored at the origin it sat inside the monolith and was nudged.
+			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, -2.6), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18),
 				"reinforce": [{"type": "android", "count": 6, "pos": Vector3(0, 0, 8)}]},
 			# The dying reactor dumps its power into one last production run.
 			{"type": "kill_quota", "id": "batch", "after": "sabotage", "count": 6,
@@ -5035,21 +5045,28 @@ static func _lava_world() -> Dictionary:
 			"volumetric_density": 0.007,
 			"ash": true,
 		},
+		# Every outdoor light builds a solid mast from the floor to the lamp, so
+		# each one stands in a molten pool BESIDE the deck it lights (1-2 m off
+		# the edge), never on the deck: on the hub the two masts buried the
+		# raptor HVT and stood in the fight, on the islands they were poles in
+		# a 6 m square. The hub pair flank the hub off the spawn->hub diagonal,
+		# so no pole stands between the spawn and the HVT. Held by
+		# tests/hazard_layout_probe (both sea levels) and tests/task_reach_probe.
 		"lights": [
-			{"pos": Vector3(0, 5, 0), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},
-			{"pos": Vector3(-14, 4, -14), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16},
-			{"pos": Vector3(14, 4, 14), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},
+			{"pos": Vector3(5, 5, -5), "color": Color(1.0, 0.5, 0.2), "energy": 2.6, "range": 22},    # hub, NE pool
+			{"pos": Vector3(-19, 4, -11), "color": Color(1.0, 0.45, 0.18), "energy": 2.2, "range": 16}, # spawn island, W (behind the opening view)
+			{"pos": Vector3(19, 4, 12), "color": Color(1.0, 0.5, 0.22), "energy": 2.2, "range": 16},   # exit island
 			# Cool contrast fills: cold work-lights over the walkways/hub so hostiles
 			# rim out against the all-red forge instead of dissolving into it.
-			{"pos": Vector3(0, 7, 0), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
-			{"pos": Vector3(-7, 5, 9), "color": Color(0.5, 0.76, 1.0), "energy": 1.8, "range": 14},
+			{"pos": Vector3(-5, 7, 4), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},    # hub, SW pool
+			{"pos": Vector3(-10, 5, 7), "color": Color(0.5, 0.76, 1.0), "energy": 1.8, "range": 14},   # perch spur, W
 			{"pos": Vector3(8, 5, -8), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14},
 			# Outer-loop lighting (appended): forge glow over the west/south run
 			# + cool work-lights on the new islands.
-			{"pos": Vector3(-22, 4, 2), "color": Color(1.0, 0.45, 0.18), "energy": 2.0, "range": 16},
-			{"pos": Vector3(-2, 4, 22), "color": Color(1.0, 0.5, 0.22), "energy": 2.0, "range": 16},
-			{"pos": Vector3(-21, 5, 21), "color": Color(0.5, 0.78, 1.0), "energy": 1.8, "range": 14},
-			{"pos": Vector3(14, 5, 21), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14},
+			{"pos": Vector3(-19, 4, 5), "color": Color(1.0, 0.45, 0.18), "energy": 2.0, "range": 16},  # west walkway
+			{"pos": Vector3(-6, 4, 19), "color": Color(1.0, 0.5, 0.22), "energy": 2.0, "range": 16},   # south walkway
+			{"pos": Vector3(-17, 5, 17), "color": Color(0.5, 0.78, 1.0), "energy": 1.8, "range": 14},  # SW island
+			{"pos": Vector3(18.5, 5, 19), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14}, # SE island
 		],
 		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
 		# arena has a high sniping vantage, not just one flat plane of gantries.
@@ -5435,7 +5452,8 @@ static func _desert() -> Dictionary:
 		# Low sun pools warm light down the central mast; a cool fill lifts the shade.
 		"light_shafts": [0],
 		"lights": [
-			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26},
+			# No floodlight pole: the relay mast objective IS the column under this lamp.
+			{"pos": Vector3(24, 7, 24), "color": Color(1.0, 0.7, 0.35), "energy": 2.8, "range": 26, "mast": false},
 			{"pos": Vector3(0, 5, 6), "color": Color(0.6, 0.8, 1.0), "energy": 1.8, "range": 18},
 			# Dune-ring lighting (appended AFTER the originals — light_shafts [0]
 			# must keep pointing at the mast lamp). Golden-hour outdoors, so these

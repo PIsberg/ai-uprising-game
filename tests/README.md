@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-279 probes total: **55** wired into the headless suite (`suite`), **83**
+279 probes total: **56** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -164,7 +164,7 @@ or GPU-timing probes; `--headless` renders these black).
 | gunner_probe | GUNNER suppresses a player at range; spin-up burst connects, dies cleanly | headless |
 | haptics_probe | Gamepad-rumble plumbing without a pad: accessibility scalar mirrors into Haptics, `pulse()` no-ops safely at zero pads/strength | headless |
 | haul_probe | Haul payload: walking into the core shoulders it; the real player.gd then ignores sprint, holds a heavy walk and refuses to dash (each against an uncarried control); hits under drop_damage keep it, crossing it knocks the core behind the player and clears the flag; re-pickup; dying drops it; carrying it into the ring completes the task; every campaign haul core and ring on walkable ground joined by a route (red-checked: removing the player.gd guards fails three checks) | suite |
-| hazard_layout_probe | The two sea levels (lava_world, water_world) keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
+| hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | headless |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
@@ -292,7 +292,7 @@ or GPU-timing probes; `--headless` renders these black).
 | spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level. Also reports post-grace incoming DPS per level, blamed by source, on a deep health pool so the figure is not censored by the player dying (~155s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | synth_probe | Every key procedural sound generates non-silent, non-degenerate audio | suite |
-| task_reach_probe | Every authored level-1 task position resolves clear of solid geometry and near the navmesh | headless |
+| task_reach_probe | On every built campaign level, each authored objective (key, core, console, zone, shard, payload, escape ring, HVT spawn) and weapon pickup stays where the def put it, clear of geometry and near the navmesh; controls prove the burial rescue still moves a point inside a hero monolith, leaves a ring zone around it alone, and no longer moves an ObjectiveCore off its own collider (verified red by dropping the self-exclusion) | suite |
 | teach_probe | Each first-encounter teaching hint fires once, repeats suppressed, a new run re-arms them | suite |
 | terminator_beam_probe | TERMINATOR's Optic Lance charges/fires/tracks/renders/burns the player | windowed |
 | terminator_entrance_probe | TERMINATOR's eruption entrance (buried rumble→breach→rise→settle) | windowed |
