@@ -45,6 +45,10 @@ func _build_floor() -> void:
 ## Median of the per-frame physics-tick time over `seconds`: TIME_PHYSICS_PROCESS
 ## reports the last physics tick (calibrated: a 2 ms busy-wait reads 2.07 ms),
 ## and the median is what a typical tick pays; the mean is dragged by spikes.
+var _base_pairs := 0
+var _base_active := 0
+var _base_islands := 0
+
 func _sample_physics_ms(seconds: float) -> float:
 	var s: Array[float] = []
 	var t := 0.0
@@ -69,6 +73,9 @@ func _run() -> void:
 	for i in 30:
 		await get_tree().physics_frame
 	var baseline := await _sample_physics_ms(0.6)
+	_base_pairs = int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS))
+	_base_active = int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS))
+	_base_islands = int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT))
 
 	var rows: Array = []
 	var types: Array = LevelBuilder.ENEMY_SCENES.keys()
@@ -77,7 +84,9 @@ func _run() -> void:
 		if String(a).begins_with("types="):
 			types = Array(String(a).trim_prefix("types=").split(",", false))
 	for t in types:
-		var scene: PackedScene = LevelBuilder.ENEMY_SCENES[t]
+		# ENEMY_SCENES holds paths since the lazy scene tables (#94); this line
+		# still indexed it as a PackedScene and the probe hung on a script error.
+		var scene: PackedScene = LevelBuilder.enemy_scene(t)
 		var count: int = BOSS_COUNT if BOSSES.has(t) else COUNT
 		var spawned: Array[Node] = []
 		for i in count:
@@ -95,12 +104,18 @@ func _run() -> void:
 				if e.has_method("set_state"):
 					e.call("set_state", 3) # CHASE
 		var ms := await _sample_physics_ms(SAMPLE)
+		# Physics-server counters are counts, not times, so they hold still
+		# where the tick timing swings 10x between runs.
+		var pairs := int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS))
+		var active := int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS))
+		var islands := int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT))
 		var alive := 0
 		for e in spawned:
 			if is_instance_valid(e):
 				alive += 1
 		var per_us := (ms - baseline) * 1000.0 / maxf(alive, 1)
-		rows.append({"type": t, "n": alive, "ms": ms, "per_us": per_us})
+		rows.append({"type": t, "n": alive, "ms": ms, "per_us": per_us,
+			"pairs": pairs, "active": active, "islands": islands})
 		for e in spawned:
 			if is_instance_valid(e):
 				e.queue_free()
@@ -111,9 +126,10 @@ func _run() -> void:
 			await get_tree().physics_frame
 	rows.sort_custom(func(a, b): return float(a["per_us"]) > float(b["per_us"]))
 	print("baseline physics (player + floor): %.2f ms" % baseline)
-	print("ENEMY_COST  chassis        n   phys ms   us/robot/frame")
+	print("baseline physics server: pairs=%d active=%d islands=%d" % [_base_pairs, _base_active, _base_islands])
+	print("ENEMY_COST  chassis        n   phys ms   us/robot/frame   pairs active islands")
 	for r in rows:
-		print("ENEMY_COST  %-12s %3d   %6.2f   %8.0f" % [r["type"], r["n"], r["ms"], r["per_us"]])
+		print("ENEMY_COST  %-12s %3d   %6.2f   %8.0f   %5d %6d %7d" % [r["type"], r["n"], r["ms"], r["per_us"], r["pairs"], r["active"], r["islands"]])
 	print("ENEMY_COST_DONE")
 	print("RESULT PASS")
 	get_tree().quit()

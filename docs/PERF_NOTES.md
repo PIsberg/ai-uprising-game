@@ -60,6 +60,23 @@ particles did not move the number decisively inside the noise. Navigation
 avoidance is enabled on 21 enemy scenes but nothing consumes `velocity_computed`;
 it measured only ~13 us per robot, so it is not the cost.
 
+## Follow-up 2026-10-04 (#89)
+
+- `enemy_cost_probe` had hung on a script error since the lazy scene tables
+  (#94) turned `ENEMY_SCENES` into paths; it now uses `LevelBuilder.enemy_scene`.
+- The physics server is not the cost. With 8 woken robots of each chassis, the
+  server reports 9-12 collision pairs, 8 active objects and 8-11 islands, against
+  1 / 0 / 0 for the player and floor alone. Broadphase and contact work for a
+  handful of pairs cannot add up to milliseconds.
+- Jolt does not help measurably. Five interleaved processes each (8 androids,
+  `physics/3d/physics_engine` through a temporary override.cfg): medians 1904 us
+  per robot (GodotPhysics3D) and 3728 us (Jolt).
+- Tick timing on the dev machine was far noisier that day than the 2x noted
+  above: one config read 283 to 52827 us per robot across runs, and two chassis
+  once reported the identical median, which suggests `TIME_PHYSICS_PROCESS` was
+  re-read from the same tick across frames. Headless timing cannot attribute this
+  further; the profiler step below is still the way.
+
 **Open:** attribute the ~1 ms per active robot with the editor profiler on a
 windowed run (the script profiler shows engine-side time per callback), then
 decide between fewer per-tick transform writes, a cheaper child-node layout,
