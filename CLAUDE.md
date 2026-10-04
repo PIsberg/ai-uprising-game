@@ -25,11 +25,14 @@ godot --headless --path . --audio-driver Dummy res://tests/<name>_probe.tscn
 # Release build (Windows + Linux single-file binaries into build/)
 pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTemplates downloads them
 
-# Publish / update on itch.io (rebuilds fresh, then butler-pushes both channels; live immediately)
-./release itch                      # or: pwsh tools/release.ps1 itch  (add -SkipBuild to re-push without rebuilding)
+# Publish / update on itch.io (rebuilds fresh, runs the loading-screen race check, then butler-pushes
+# both channels; live immediately). A failed race check aborts before anything is pushed.
+./release itch                      # or: pwsh tools/release.ps1 itch  (-SkipBuild re-pushes build/ without rebuilding,
+                                    #   -SkipRaceCheck skips the ~5 min gate, -Godot <exe> picks the binary for both)
                                     # one-time: C:\Users\isber\butler\butler.exe login   |   page: gotrex/ai-uprising
 
-# Loading-screen hang check (windowed; exports a pack, cold-starts level 1 10x through the menu)
+# Loading-screen hang check (windowed; exports a pack, cold-starts level 1 10x through the menu).
+# ./release itch runs it automatically; run it by hand after touching the threaded load paths.
 pwsh tools/load_race_check.ps1
 
 # Perf measurement (windowed — render stats need a real window)
@@ -81,4 +84,4 @@ Probe-writing rules learned the hard way:
 
 - `future-improvements.md` is the living backlog: delete items when shipped, note it in the commit.
 - `docs/AAA_ROADMAP.md` records completed visual/feel passes and what's still open.
-- Keep the loading screen's threaded-load path intact (a blocking load freezes on a grey window), but keep `use_sub_threads` **off** there and in `GameState.warm_level_cache`: with it on, worker-thread script compiles fail their `preload()`s and the exported build hung on level 1 in about 1 cold start in 4. Only an exported pack shows it, never source or headless: run `pwsh tools/load_race_check.ps1` after touching either load or before a release.
+- Keep the loading screen's threaded-load path intact (a blocking load freezes on a grey window), but keep `use_sub_threads` **off** there and in `GameState.warm_level_cache`: with it on, worker-thread script compiles fail their `preload()`s and the exported build hung on level 1 in about 1 cold start in 4. Only an exported pack shows it, never source or headless: run `pwsh tools/load_race_check.ps1` after touching either load (`./release itch` runs it before every push).

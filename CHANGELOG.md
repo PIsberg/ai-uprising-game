@@ -18,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - **Anthropic Constitutional Vault**: a third act. After the decrypt, the constitution is a heavy core you carry 51 m out through the archive firewall to an uplink by the exit, with the decrypt's sentinels on you.
 - **The Assembly**: quality-control cameras on both conveyor rails sweep the reactor yard, so overloading the reactor in their view rolls fresh androids off the line. Scrapping the emergency batch now starts a 45 s meltdown run out through the east freight bulkhead, past the MANUS arm guarding the exit quarter. The level no longer ends on kill-all.
 
+### Changed
+- `./release itch` now runs the loading-screen race check (`tools/load_race_check.ps1`, an exported pack cold-started 10 times) before pushing, and pushes nothing if it fails. The hang it catches never shows in the headless suite. `-SkipRaceCheck` skips it for a re-push of a build that already passed; `-Godot` picks the one binary used for both the build and the check.
+
 ### Fixed
 - 64 of the 78 mission labels (objectives, wave banners, firewall messages) and the builder's default labels had no translation row, so es/fr/de/pt players read English mid-mission. All now have rows, firewall breach toasts and the campaign map's terrain warning now go through `tr()`, `tools/check_strings_csv.py` fails on any label without a row, and `i18n_label_probe` (suite) checks each one translates in-engine.
 - Two localization rows had an unquoted comma since the first localization commit. The intro comic's "For years, the machines served us." never translated, because its key split at the comma. The "At 03:14" line put the French text under German and shifted Portuguese. `tools/check_strings_csv.py` (in CI) now fails on any row that does not parse into one column per language.
