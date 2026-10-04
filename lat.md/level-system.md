@@ -35,6 +35,16 @@ The built-in level editor (`scripts/editor/level_editor.gd`, launched via `--edi
 * **3D Viewport & Gizmos:** Full interactive 3D translation/rotation gizmos for placing obstacles, lights, jump pads, and spawners.
 * **One-Click Playtest:** Instant in-editor simulation testing with live player spawn and telemetry verification.
 
+## Security Firewalls
+<!-- lat: { "require-code-mention": true } -->
+The `firewalls` def key places energy sheets across a route that stop the player and nothing else.
+
+* Collision layer 8 (value 128), masked only by the player body in `player.tscn` (mask 129). Layer value 16 is enemy projectiles, so it is the wrong pick.
+* Robots, rounds and grenades pass, and the navmesh never sees the sheet, so enemy pathing is unchanged.
+* A sheet drops when its relay node (`node`) is shot, or when every task in `opens_on` completes.
+* Collision stands 1.5 m above `height`: keep firewalls out of gaps a sky-bridge threads at sheet height.
+* `tests/firewall_probe` proves every relay, objective and the exit is reachable without crossing a sheet that cannot be open yet.
+
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
 

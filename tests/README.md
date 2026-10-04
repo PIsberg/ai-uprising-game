@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-273 probes total: **51** wired into the headless suite (`suite`), **83**
+275 probes total: **52** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **139** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **140** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -141,6 +141,8 @@ or GPU-timing probes; `--headless` renders these black).
 | fluid_edge_verify | Peak adjacent-pixel step at a fluid bed's rim, from the fluid_shot captures — proves water/lava blend into the floor instead of stepping. Run AFTER fluid_shot | headless |
 | fluid_shot | Isolated top-down rig (one floor, one bed, fixed camera, hazard frame hidden) capturing water + lava rims for fluid_edge_verify; also the only check that water/fluid_margin/lava shaders COMPILE | windowed |
 | fierce_probe | Fierce enemy models with real RobotModel tint/material treatment | windowed |
+| firewall_probe | Firewall barriers: the real player.tscn body masks the firewall layer (and not enemy projectiles), a player-masked body stops at the sheet while a robot-masked one walks through, the relay and the linked objective each drop it, a checkpoint-resumed level starts it open; then on every campaign level that authors firewalls, each relay, objective and the exit is reachable on the built navmesh without crossing a firewall that cannot be open yet (red-checked: relay moved behind its own wall fails) | suite |
+| firewall_shot | Each campaign firewall framed from the spawn side, its relay node, and the first one mid-collapse, to judge the firewall shader in-level | windowed |
 | fix_models_probe | Models whose auto-framing broke, re-rendered with normalized scale/recenter + fixed camera | windowed |
 | flyer_pose_probe | Whirlwind/breaker/fishbot flyer trio whose codex entries looked broken | windowed |
 | flyer_screenshot | Drone and seeker side by side to compare silhouettes | windowed |

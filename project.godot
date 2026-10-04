@@ -177,6 +177,7 @@ locale/translations=PackedStringArray("res://assets/i18n/strings.en.translation"
 3d_physics/layer_5="enemy_projectile"
 3d_physics/layer_6="pickup"
 3d_physics/layer_7="trigger"
+3d_physics/layer_8="firewall"
 
 [physics]
 

@@ -278,6 +278,7 @@ func _ready() -> void:
 	_build_overload(def)
 	_build_jammer(def)
 	_build_lava(def)
+	_build_firewalls(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
@@ -2330,6 +2331,29 @@ func _build_jammer(def: Dictionary) -> void:
 	if cfg.has("color"):
 		jc.color = cfg["color"]
 	add_child(jc)
+
+## Security firewalls: energy sheets that stop the player (robots walk through)
+## until their relay node is shot or their linked objective completes. Built
+## after _build_tasks so `opens_on` ids are already on the checklist. See
+## firewall_barrier.gd; tests/firewall_probe checks every campaign firewall's
+## opener is reachable without crossing a later firewall.
+func _build_firewalls(def: Dictionary) -> void:
+	for e in def.get("firewalls", []):
+		var fw := FirewallBarrier.new()
+		fw.length = e.get("length", 8.0)
+		fw.height = e.get("height", 3.4)
+		if e.has("color"):
+			fw.accent = e["color"]
+		var o = e.get("opens_on", [])
+		for id in ([o] if o is String else o):
+			fw.opens_on.append(String(id))
+		if e.has("node"):
+			fw.has_relay = true
+			fw.node_pos = e["node"]
+		fw.label = e.get("label", "")
+		fw.position = e.get("pos", Vector3.ZERO)
+		fw.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
+		add_child(fw)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
