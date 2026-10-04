@@ -63,3 +63,5 @@ res://tests/gunner_siege_probe.tscn
 res://tests/raptor_stoop_probe.tscn
 # Firewalls block only the player, drop on relay/objective, and never lock a level.
 res://tests/firewall_probe.tscn
+# Vision scanners raise the alarm only on a held sightline, and their squads land on the navmesh.
+res://tests/scanner_probe.tscn

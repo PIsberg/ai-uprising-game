@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Security firewalls** (`firewalls` level-def key): an energy sheet that stops only the player (new collision layer 8), dropped by shooting its relay node or by completing a linked objective. Placed on claude, gemini and mistral, so the server aisle, the shielded conduit and the exit bulkheads become things you open rather than walk through. `firewall_probe` (suite), `firewall_shot` (windowed).
+- **Vision scanners** (`scanners` level-def key): sweeping surveillance heads that call in a reinforcement squad when they hold the player in their beam for 0.7 s, at most twice each. Shoot the head to blind one. Skyhold Command (overseer) gets three: the north landing ring, the east exit corridor, and a full-circle command eye on the spire. `scanner_probe` (suite), `scanner_shot` (windowed).
 
 ### Fixed
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.

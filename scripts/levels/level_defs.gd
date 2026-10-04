@@ -154,6 +154,15 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Scanners: the mast and its alarm squad's landing spot sit on the ground
+	# plane. Mount height, reach and cone stay authored: detection is metres
+	# of sightline, not arena proportion.
+	for e in def.get("scanners", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		for a in e.get("alarm", []):
+			if a.has("pos"):
+				a["pos"] = _sv(a["pos"], s)
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
 			"buildings", "targets", "lore", "holograms", "towers"]:
@@ -1925,6 +1934,25 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(39, 0.05, 33), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 0.75, 1.0)},
 		],
 		"sign": "SKYHOLD COMMAND",
+		# "THE OVERSEER SEES ALL": vision scanners. One pans the north landing
+		# ring the player walks twice (out to the AA terminal, back to the deck
+		# gap), one watches the east exit corridor, and the command eye on the
+		# spire turns a full circle over the gunship yard. Shoot the heads out
+		# from beyond their reach, or move between sweeps.
+		"scanners": [
+			{"pos": Vector3(6, 6.0, -33), "yaw": 0, "sweep": 150, "period": 8.0, "tilt": 35,
+				"alarm": [{"type": "android", "count": 2, "pos": Vector3(14, 0, -38)},
+					{"type": "drone", "pos": Vector3(-4, 3, -36)}]},
+			{"pos": Vector3(34, 6.0, 12), "yaw": 180, "sweep": 100, "period": 6.5, "tilt": 30,
+				"alarm": [{"type": "android", "count": 2, "pos": Vector3(40, 0, 30)},
+					{"type": "drone", "pos": Vector3(38, 3, 0)}]},
+			# On the command spire: "hero" is NOT world-scaled (it builds at -8)
+			# while scanners are, so -8 / 1.4 puts the mast inside the crystal
+			# slab and the head on its 7.35 m top.
+			{"pos": Vector3(-5.714, 7.9, 0), "sweep": 360, "period": 10.0, "reach": 26,
+				"tilt": 28, "cone": 9,
+				"alarm": [{"type": "seeker", "count": 2, "pos": Vector3(-8, 3, 4)}]},
+		],
 		# Verticality scaled to the 62² footprint (this arena carried the single
 		# copy-paste corner deck): twin corner decks + an elevated command dais
 		# behind the boss yard, chained by a connector bridge so there's a real

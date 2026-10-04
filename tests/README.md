@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-275 probes total: **52** wired into the headless suite (`suite`), **83**
+277 probes total: **53** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **140** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **141** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -263,6 +263,8 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
 | save_probe | save_progress/load_progress round-trip of every run-scoped field Continue depends on, including the Armory supplies (caught them being lost on Continue) | suite |
+| scanner_probe | Vision scanners: a player held in the cone raises the alarm after detect_time and hands the reinforcement hook the authored squad, a wall in the sightline blocks it, max_alarms caps it, a shot-out head stays blind; then on every campaign level that authors scanners, all of them build and each alarm squad spawns on walkable ground with a route to the spawn | suite |
+| scanner_shot | Each campaign scanner framed from the floor in front of it, idle and mid-alarm, to judge the head, mast and beam in-level | windowed |
 | screen_shock_probe | Blast screen-warp logic: rings register, cap at 3 evicting the WEAKEST (not newest), expire, pack sane screen-UV/progress, zero out behind camera; glitch decays; post shader carries both uniforms | suite |
 | screen_shock_shot | Unit-tests the warp on a static checker through `post_process.gdshader` (grain/warp/glitch zeroed so the shader is time-invariant) — writes `shock_off/mid/glitch.png` for screen_shock_verify | windowed |
 | screen_shock_verify | Bins the shock_off↔shock_mid pixel diff by radius and asserts a structured ring at the expected crest — run AFTER screen_shock_shot | headless |
