@@ -9,6 +9,8 @@ const CASES := [
 	["smasher", "res://scenes/enemies/smasher.tscn", 0.3],
 	["reaper",  "res://scenes/enemies/reaper.tscn", 1.0],
 	["gunner",  "res://scenes/enemies/gunner.tscn", 1.0],
+	# the HIVE uplink fork stands 2.18 m to the mast tip (was 1.41): #121
+	["hive",    "res://scenes/enemies/hive.tscn", 1.0],
 ]
 
 var _cam: Camera3D
