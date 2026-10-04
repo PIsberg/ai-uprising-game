@@ -1680,8 +1680,14 @@ func consume_patch_notes() -> Array:
 
 var level_tasks: Array = []
 
+## True while the player shoulders a haul payload (HaulPayload): player.gd caps
+## them at CARRY_SPEED_MULT x walk and blocks sprint, dash and grapple.
+var carrying: bool = false
+const CARRY_SPEED_MULT := 0.72
+
 func reset_tasks() -> void:
 	level_tasks.clear()
+	carrying = false
 	tasks_changed.emit()
 
 ## `goal` > 0 gives the task a progress meter (e.g. shards collected, seconds

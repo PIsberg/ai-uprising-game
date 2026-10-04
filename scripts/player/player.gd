@@ -946,7 +946,7 @@ func _handle_dash(delta: float) -> void:
 	# double-tap of a movement key dodges in that direction (classic dodge feel,
 	# works without a spare button — the bound "dash" key/stick still works too).
 	var tap_dir := _double_tap_dir()
-	if _dash_cd > 0.0 or _sliding:
+	if _dash_cd > 0.0 or _sliding or GameState.carrying:
 		return
 	if Input.is_action_just_pressed("dash") or tap_dir != Vector3.ZERO:
 		var dir := tap_dir
@@ -1374,11 +1374,12 @@ func _handle_grapple(delta: float) -> void:
 	_gv_t -= delta
 	if _gv_t <= 0.0:
 		_gv_t = 0.12
-		_grapple_valid = _grapple_cd <= 0.0 and not _stamina_exhausted and not _grapple_ray().is_empty()
+		_grapple_valid = _grapple_cd <= 0.0 and not _stamina_exhausted and not GameState.carrying and not _grapple_ray().is_empty()
 	if _grapple_cd > 0.0 or not Input.is_action_just_pressed("grapple"):
 		return
-	# No tether while exhausted — you don't have the arm strength to rappel.
-	if _stamina_exhausted:
+	# No tether while exhausted — you don't have the arm strength to rappel —
+	# or while both arms are round a haul payload.
+	if _stamina_exhausted or GameState.carrying:
 		AudioBus.play_synth_ui("empty_click", -10.0, 1.2)
 		return
 	var hit := _grapple_ray()
@@ -1626,6 +1627,9 @@ func _current_speed() -> float:
 		* GameState.adrenaline_speed_mult() * GameState.directive_move_mult())
 	if _is_crouching:
 		return crouch_speed * mult
+	# Shouldering a haul payload: a heavy walk, sprint ignored.
+	if GameState.carrying:
+		return walk_speed * GameState.CARRY_SPEED_MULT * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
 	if Input.is_action_pressed("sprint") and not _is_crouching and not _stamina_exhausted:
 		return sprint_speed * mult

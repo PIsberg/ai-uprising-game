@@ -67,3 +67,5 @@ res://tests/firewall_probe.tscn
 res://tests/scanner_probe.tscn
 # Escape countdowns burn a stray player, and every authored escape route fits its clock.
 res://tests/escape_probe.tscn
+# Haul payloads slow the real player, drop on heavy hits or death, and deliver.
+res://tests/haul_probe.tscn

@@ -12,6 +12,9 @@ All notable changes to this project will be documented in this file.
 - **Skybridge Uplink**: re-graded from one flat blue (hue entropy 0.48, the lowest of the levels measured) to a signal-storm night, with a magenta horizon, a teal milky way, sodium-amber lamps around the antenna field and the uplink core kept cyan (entropy 1.11). The roofed east shutter into the relay yard is now firewalled from a relay up on the broadcast gallery: climb up and shoot it, or take the sky-bridge high road over the wall.
 - **First Contact (The Hollow)**: no longer a green fog soup. The sky, fog, ambient light and sun were all green, so the haze tinted every surface the same colour (hue entropy 0.88, contrast std 0.14). It's now a violet-black alien night: green lives in the milky-way band, the bioluminescent accents and the field lamps, and two ring lamps take the beacon's violet. Hue entropy 1.81.
 
+- **Haul payloads** (`haul` task type): a heavy core that has to be carried on foot to an uplink ring. While carrying, you walk at 72% speed with no sprint, dash or grapple; 30 HP of hits knocks it a few metres behind you, and dying drops it where you fell. The HUD waypoint switches between the core and the ring. `haul_probe` (suite).
+- **Anthropic Constitutional Vault**: a third act. After the decrypt, the constitution is a heavy core you carry 51 m out through the archive firewall to an uplink by the exit, with the decrypt's sentinels on you.
+
 ### Fixed
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.
 

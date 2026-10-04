@@ -191,6 +191,9 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				else:
 					pp.append(_sv(p, s))
 			t["points"] = pp
+		# A haul task's delivery ring sits on the ground plane like its pickup.
+		if t.has("to"):
+			t["to"] = _sv(t["to"], s)
 		# Reinforcement waves triggered by the task land at authored spots too.
 		for r in t.get("reinforce", []):
 			if r.has("pos"):
@@ -3971,7 +3974,7 @@ static func _gemini() -> Dictionary:
 static func _claude() -> Dictionary:
 	return {
 		"name": "Anthropic Constitutional Vault",
-		"objective": "Clear the Claude Vault and reach the beacon",
+		"objective": "Decrypt the Claude Vault and carry its constitution out",
 		"tasks": [
 			{"type": "kill_all"},
 			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9)},
@@ -3979,6 +3982,12 @@ static func _claude() -> Dictionary:
 			{"type": "hold_zone", "id": "decrypt", "after": "key", "pos": Vector3(-12, 0, 10), "seconds": 12.0, "radius": 4.0,
 				"color": Color(1.0, 0.75, 0.35), "label": "Decrypt the constitutional vault",
 				"reinforce": [{"type": "sentinel", "count": 2, "pos": Vector3(-12, 0, 4)}]},
+			# Third act: the decrypted constitution is a heavy core that has to be
+			# CARRIED out, at a walk, through the archive firewall the decrypt just
+			# dropped, to the uplink by the exit, with the decrypt's sentinels on
+			# you. 30 HP of hits knocks it loose.
+			{"type": "haul", "id": "weights", "after": "decrypt", "pos": Vector3(-12, 0, 14), "to": Vector3(24, 0, 20),
+				"label": "Carry the decrypted constitution to the uplink"},
 		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 42² vault core is untouched at the centre;

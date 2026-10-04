@@ -4430,6 +4430,7 @@ func _task_id(t: Dictionary) -> String:
 		"assassinate": return t.get("id", "hvt")
 		"generative_zone": return t.get("id", "guardrails")
 		"escape": return t.get("id", "escape")
+		"haul": return t.get("id", "haul")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4469,6 +4470,8 @@ func _register_task_entry(t: Dictionary) -> void:
 			# Goal 1.0: the manager feeds a 0..1 crossing fraction and completes it
 			# when the player reaches the override gate.
 			GameState.register_task(id, t.get("label", "Anchor a safe path to the override gate"), 1.0, staged)
+		"haul":
+			GameState.register_task(id, t.get("label", "Haul the weights to the uplink"), 0.0, staged)
 		"escape":
 			# No goal meter: the countdown lives in the label (EscapeZone).
 			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
@@ -4541,6 +4544,18 @@ func _activate_task(t: Dictionary) -> void:
 			_relocate_when_clear(zone)
 		"assassinate":
 			_spawn_hvt(t)
+		"haul":
+			var hp := HaulPayload.new()
+			hp.task_id = id
+			hp.base_label = t.get("label", "Haul the weights to the uplink")
+			hp.deliver_pos = t.get("to", Vector3.ZERO)
+			hp.deliver_radius = t.get("radius", 4.0)
+			hp.drop_damage = t.get("drop_damage", 30.0)
+			if t.has("color"):
+				hp.accent = t["color"]
+			hp.position = t.get("pos", Vector3.ZERO)
+			add_child(hp)
+			_relocate_when_clear(hp)
 		"escape":
 			var ez := EscapeZone.new()
 			ez.task_id = id
