@@ -2769,12 +2769,17 @@ static func _uplink() -> Dictionary:
 			# was the Devastator (rank 12) on level 9. Gauss (rank 9) lands here instead.
 			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(18, 0, -12), "color": Color(0.55, 0.8, 1.0)},
 		],
+		# Signal-storm night: the horizon burns magenta with jamming interference
+		# and the milky way runs teal, so the uplink's cyan core, the amber
+		# sodium lamps on the antenna field and the sky are three separate hues
+		# instead of one flat blue (look_capture hue entropy 0.48, the lowest
+		# measured on 2026-10-04).
 		"env": {
-			"sky_top": Color(0.02, 0.03, 0.08), "sky_horizon": Color(0.12, 0.1, 0.24),
-			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.8, 0.85, 1.0),
-			"milkyway": 0.5, "milkyway_tint": Color(0.55, 0.5, 0.9),
-			"ground": Color(0.04, 0.05, 0.09), "fog": Color(0.32, 0.38, 0.58),
-			"ambient": Color(0.58, 0.62, 0.85), "ambient_energy": 0.65,
+			"sky_top": Color(0.03, 0.02, 0.08), "sky_horizon": Color(0.3, 0.08, 0.26),
+			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.85, 0.85, 1.0),
+			"milkyway": 0.55, "milkyway_tint": Color(0.3, 0.75, 0.85),
+			"ground": Color(0.05, 0.04, 0.09), "fog": Color(0.36, 0.26, 0.5),
+			"ambient": Color(0.68, 0.6, 0.85), "ambient_energy": 0.65,
 			"sky_contribution": 0.6, "glow": 1.15, "fog_density": 0.009,
 			"sun_color": Color(0.85, 0.87, 1.0), "sun_energy": 0.82,
 			"contrast": 1.15, "saturation": 1.06, "brightness": 0.90,
@@ -2782,15 +2787,16 @@ static func _uplink() -> Dictionary:
 		"light_shafts": [0],
 		"lights": [
 			{"pos": Vector3(0, 8, 0), "color": Color(0.45, 0.8, 1.0), "energy": 2.6, "range": 30},
-			{"pos": Vector3(-18, 5, 18), "color": Color(0.5, 0.6, 1.0), "energy": 2.0, "range": 20},
-			{"pos": Vector3(18, 5, -18), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 20},
+			{"pos": Vector3(-18, 5, 18), "color": Color(0.85, 0.35, 0.85), "energy": 2.0, "range": 20},
+			{"pos": Vector3(18, 5, -18), "color": Color(0.85, 0.35, 0.85), "energy": 2.0, "range": 20},
 			# Ring lighting (appended AFTER the originals — light_shafts [0] must
-			# keep pointing at the same lamp). Signal blues + warm contrast.
+			# keep pointing at the same lamp). The antenna field is sodium amber
+			# all the way round; only the uplink core and gallery stay cyan.
 			{"pos": Vector3(-36, 5, -36), "color": Color(1.0, 0.62, 0.35), "energy": 2.2, "range": 20},
 			{"pos": Vector3(36, 5, 36), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 19},
 			{"pos": Vector3(0, 6, -37), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 20},
-			{"pos": Vector3(-36, 5, 36), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 18},
-			{"pos": Vector3(-38, 5, 0), "color": Color(0.5, 0.65, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-36, 5, 36), "color": Color(1.0, 0.58, 0.32), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-38, 5, 0), "color": Color(1.0, 0.6, 0.33), "energy": 2.0, "range": 18},
 		],
 		# Cover ringing the uplink: enough to break sightlines, not enough to hide
 		# in — you have to keep stepping back onto the zone.
@@ -2811,6 +2817,14 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(37, 0.05, 32), "size": Vector3(4, 0.1, 3), "color": Color(0.45, 0.8, 1.0)},
 		],
 		"sign": "SKYBRIDGE UPLINK",
+		# The east shutter (the roofed tunnel into the relay yard) is firewalled
+		# from a relay up on the broadcast gallery: climb to it and shoot it, or
+		# take the high road, the gallery sky-bridge onto the west mast, which
+		# never touches the shutter.
+		"firewalls": [
+			{"pos": Vector3(15, 0, -16), "length": 7, "height": 4.2, "node": Vector3(4, 3.4, -37),
+				"color": Color(1.0, 0.55, 0.3), "label": "Gallery relay down. The east shutter is open."},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
