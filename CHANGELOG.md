@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 - **Haul payloads** (`haul` task type): a heavy core that has to be carried on foot to an uplink ring. While carrying, you walk at 72% speed with no sprint, dash or grapple; 30 HP of hits knocks it a few metres behind you, and dying drops it where you fell. The HUD waypoint switches between the core and the ring. `haul_probe` (suite).
 - **Anthropic Constitutional Vault**: a third act. After the decrypt, the constitution is a heavy core you carry 51 m out through the archive firewall to an uplink by the exit, with the decrypt's sentinels on you.
+- **The Assembly**: quality-control cameras on both conveyor rails sweep the reactor yard, so overloading the reactor in their view rolls fresh androids off the line. Scrapping the emergency batch now starts a 45 s meltdown run out through the east freight bulkhead, past the MANUS arm guarding the exit quarter. The level no longer ends on kill-all.
 
 ### Fixed
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.

@@ -2948,14 +2948,22 @@ static func _uplink() -> Dictionary:
 static func _assembly() -> Dictionary:
 	return {
 		"name": "The Assembly — Robotics Plant",
-		"objective": "Overload the assembly reactor and purge the plant",
+		"objective": "Overload the assembly reactor and get out before it melts down",
+		# No kill_all: the arc ends on the meltdown run, and an unwoken straggler
+		# would keep the exit sealed while the clock burns (see the grok note).
 		"tasks": [
-			{"type": "kill_all"},
 			{"type": "sabotage", "label": "Overload the assembly reactor", "pos": Vector3(0, 0, 0), "seconds": 4.5, "color": Color(1.0, 0.55, 0.18),
 				"reinforce": [{"type": "android", "count": 6, "pos": Vector3(0, 0, 8)}]},
 			# The dying reactor dumps its power into one last production run.
 			{"type": "kill_quota", "id": "batch", "after": "sabotage", "count": 6,
 				"label": "Scrap the emergency batch"},
+			# Meltdown: with the batch scrapped there is nothing left to bleed the
+			# overloaded reactor. Out through the east freight bulkhead, past the
+			# MANUS arm guarding the exit quarter, to the dock ring short of the
+			# portal (which shoves a player standing in it while it is locked).
+			# The probe times the run from the spawn, the longest start: 45 s.
+			{"type": "escape", "id": "meltdown", "after": "batch", "pos": Vector3(44, 0, 37), "seconds": 45.0,
+				"radius": 4.0, "color": Color(1.0, 0.6, 0.2), "label": "Reach the dock before the reactor melts down"},
 		],
 		"music": "music_grok",
 		"open_sky": false,
@@ -2985,6 +2993,16 @@ static func _assembly() -> Dictionary:
 		},
 		# A molten reactor core anchors the plant under a god-ray.
 		"hero": {"pos": Vector3(0, 0, 0), "color": Color(1.0, 0.5, 0.15), "height": 6.0},
+		# Quality control: inspection cameras on top of both conveyor rails (each
+		# mast runs inside its rail) sweep the reactor yard. Hold still in one to
+		# overload the reactor and the line flags you as a defect and rolls out
+		# fresh androids. Their cold beams are the only blue on the plant floor.
+		"scanners": [
+			{"pos": Vector3(-10, 6.2, -3), "yaw": -90, "sweep": 120, "period": 7.5, "tilt": 30,
+				"alarm": [{"type": "android", "count": 2, "pos": Vector3(-22, 0, 0)}]},
+			{"pos": Vector3(10, 6.2, 3), "yaw": 90, "sweep": 120, "period": 6.5, "tilt": 30,
+				"alarm": [{"type": "android", "count": 2, "pos": Vector3(22, 0, 0)}]},
+		],
 		"light_shafts": [0, 2],
 		"lights": [
 			{"pos": Vector3(0, 8, 0), "color": Color(1.0, 0.5, 0.18), "energy": 3.0, "range": 34},
