@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - **The Assembly**: quality-control cameras on both conveyor rails sweep the reactor yard, so overloading the reactor in their view rolls fresh androids off the line. Scrapping the emergency batch now starts a 45 s meltdown run out through the east freight bulkhead, past the MANUS arm guarding the exit quarter. The level no longer ends on kill-all.
 
 ### Changed
+- Release builds are 28% smaller: Windows 644 -> 462 MB, Linux 610 -> 428 MB. 207 textures the glTF importer had extracted beside the robot models (2048x2048 copies from before the 1K shrink) were tracked in git and shipped in every export, though every model embeds its own images and never reads them: 179 MB of the 540 MB pack. They are gone, `tools/check_glb_leftovers.py` (in CI) fails if one comes back, and the export no longer packs `node_modules/` or the npm manifests.
 - `./release itch` now runs the loading-screen race check (`tools/load_race_check.ps1`, an exported pack cold-started 10 times) before pushing, and pushes nothing if it fails. The hang it catches never shows in the headless suite. `-SkipRaceCheck` skips it for a re-push of a build that already passed; `-Godot` picks the one binary used for both the build and the check.
 
 ### Fixed
