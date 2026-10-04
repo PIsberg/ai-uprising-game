@@ -4480,7 +4480,7 @@ static func _grok() -> Dictionary:
 static func _suburb() -> Dictionary:
 	return {
 		"name": "Maple Grove Estates — Overrun",
-		"objective": "Clear the streets of Maple Grove and reach the beacon",
+		"objective": "Clear Maple Grove, cross the canal and hold the evac pickup",
 		"tasks": [
 			{"type": "kill_all"},
 			# On the spawn-side bank (the flood canal below splits the map at x=0;
@@ -4490,9 +4490,26 @@ static func _suburb() -> Dictionary:
 			# The blast scrambles the evac net — pull the codes before you leave.
 			# (Spawn-side bank like the relay: the flood canal at x=0 stays wet.)
 			{"type": "key", "after": "sabotage", "pos": Vector3(-16, 0, 10), "label": "Grab the evac codes"},
+			# Every task used to sit on the spawn-side bank, so the far half was
+			# a walk to the exit. The codes now call the evac in on the far bank:
+			# cross under the security cams, then hold the pickup in the open.
+			{"type": "hold_zone", "id": "evac", "after": "key", "pos": Vector3(26, 0, 38), "seconds": 10.0,
+				"radius": 4.5, "color": Color(0.45, 1.0, 0.55), "label": "Hold the evac pickup"},
 		],
 		"open_sky": true,
 		"streets": true,
+		# NEIGHBOURHOOD WATCH: the estate's smart-home security cams answer to
+		# the machines now: CCTV poles on the kerb in front of a house by the
+		# bridge landing and one on the street to the evac (building footprints
+		# keep their authored size while positions scale, so these stand just
+		# clear of the houses). Get flagged and they set the dogs on you.
+		# Level 5, so the alarms are K-9s only.
+		"scanners": [
+			{"pos": Vector3(7, 6.6, 12), "yaw": 27, "sweep": 110, "period": 7.0, "tilt": 26,
+				"alarm": [{"type": "dog", "count": 2, "pos": Vector3(16, 0, 4)}]},
+			{"pos": Vector3(32, 6.6, 25), "yaw": 90, "sweep": 120, "period": 8.0, "tilt": 26,
+				"alarm": [{"type": "dog", "count": 2, "pos": Vector3(24, 0, 22)}]},
+		],
 		# EXPANSION PASS (2× area): the original 64² estate is untouched at the
 		# centre — a ring of outer suburban blocks wraps it (two of them OPEN,
 		# enterable two-storey shells — almost the campaign's only ones). The
