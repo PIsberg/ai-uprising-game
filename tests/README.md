@@ -93,7 +93,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_audit_probe | Encyclopedia stage audit: boss FX + a switch test (boss→drone) for FX sticking to the next entry | windowed |
 | codex_check_probe | Specific codex entries (drone/raptor/gunner/overseer) render once discovered | windowed |
 | codex_count_probe | Warp cheat's `discover_all_enemies()` count of enemies the Codex would show | suite |
-| codex_frame_probe | Blender-edited/re-exported models still frame correctly in the codex viewer's bone-AABB framing | windowed |
+| codex_frame_probe | Blender-edited/re-exported models (smasher, reaper, gunner, hive) still frame correctly in the codex viewer's bone-AABB framing; the HIVE's 2.18 m uplink mast sits whole inside the frame | windowed |
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
