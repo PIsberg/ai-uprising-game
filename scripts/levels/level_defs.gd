@@ -2139,27 +2139,22 @@ static func _alien() -> Dictionary:
 		"spawn": Vector3(-48, 0.6, -48),
 		"exit": Vector3(48, 1.5, 48),
 		"weapon": {"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-42, 0, -36), "color": Color(0.4, 1, 0.55)},
+		# The Hollow: a violet-black alien night. Green used to be the sky, the
+		# fog, the ambient AND the sun, so the haze tinted every surface the same
+		# green (look_capture 2026-10-04: hue entropy 0.88, contrast std 0.14,
+		# the flattest frame measured). Green now lives where the alien is: the
+		# milky-way band, the bioluminescent accents and the field lamps, against
+		# a violet sky that is the beacon's own colour. Thinner, darker haze so
+		# the landing scar has depth.
 		"env": {
-			"sky_top": Color(0.02, 0.06, 0.04), "sky_horizon": Color(0.08, 0.16, 0.1),
-			"stars": true, "star_brightness": 2.0, "star_tint": Color(0.75, 1.0, 0.8),
-			"milkyway": 0.5, "milkyway_tint": Color(0.4, 0.8, 0.5), "moon_color": Color(0.7, 1.0, 0.75),
-			# Fog pulled down from a near-neon (0.4,0.9,0.5) to a deeper, less
-			# saturated green so the open-sky haze stops washing the whole arena a
-			# flat uniform green — lets the violet beacon + warm spawn light read.
-			"ground": Color(0.03, 0.06, 0.04), "fog": Color(0.26, 0.55, 0.38),
-			# Ambient desaturated (was 0.5,0.9,0.6) + per-level saturation pulled to
-			# 1.0 (below the 1.14 global): this level is so mono-green that LESS
-			# saturation actually reads richer — it stops every surface being shoved
-			# to the same green and lets the violet beacon + amber spawn light hold
-			# their own hue. The green identity stays; the flatness goes.
-			"ambient": Color(0.58, 0.82, 0.66), "ambient_energy": 0.5,
-			# glow pulled from 1.42 (2nd-highest in the game) to 1.1: on this mono-green
-			# arena that much bloom smeared green over every surface and flattened depth.
-			# Lower bloom + slightly thinner haze lets the background separate and the
-			# robots' own hues read, without losing the off-world green mood.
-			"sky_contribution": 0.5, "glow": 1.1, "fog_density": 0.011,
-			"sun_color": Color(0.6, 1.0, 0.7), "sun_energy": 0.6,
-			"contrast": 1.15, "saturation": 1.0, "brightness": 0.84,
+			"sky_top": Color(0.03, 0.02, 0.07), "sky_horizon": Color(0.15, 0.06, 0.21),
+			"stars": true, "star_brightness": 2.2, "star_tint": Color(0.85, 0.9, 1.0),
+			"milkyway": 0.65, "milkyway_tint": Color(0.35, 0.9, 0.55), "moon_color": Color(0.85, 0.75, 1.0),
+			"ground": Color(0.03, 0.03, 0.05), "fog": Color(0.2, 0.17, 0.3),
+			"ambient": Color(0.66, 0.66, 0.82), "ambient_energy": 0.8,
+			"sky_contribution": 0.5, "glow": 1.1, "fog_density": 0.007,
+			"sun_color": Color(0.78, 0.72, 1.0), "sun_energy": 0.85,
+			"contrast": 1.15, "saturation": 1.05, "brightness": 0.95,
 		},
 		# An off-world green god-ray pours down over the contact beacon.
 		"light_shafts": [0],
@@ -2178,8 +2173,8 @@ static func _alien() -> Dictionary:
 			{"pos": Vector3(-46, 5, -46), "color": Color(1.0, 0.6, 0.32), "energy": 2.2, "range": 20},
 			{"pos": Vector3(46, 5, 46), "color": Color(0.4, 1.0, 0.5), "energy": 2.2, "range": 19},
 			{"pos": Vector3(0, 6, -47), "color": Color(0.72, 0.34, 1.0), "energy": 2.2, "range": 20},
-			{"pos": Vector3(46, 5, -46), "color": Color(0.5, 1.0, 0.45), "energy": 2.0, "range": 18},
-			{"pos": Vector3(-46, 5, 46), "color": Color(0.6, 1.0, 0.4), "energy": 2.0, "range": 18},
+			{"pos": Vector3(46, 5, -46), "color": Color(0.72, 0.34, 1.0), "energy": 2.0, "range": 18},
+			{"pos": Vector3(-46, 5, 46), "color": Color(0.72, 0.34, 1.0), "energy": 2.0, "range": 18},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.5, 0.1, 60), "color": Color(0.4, 1.0, 0.45)},
