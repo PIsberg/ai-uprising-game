@@ -36,6 +36,10 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_suite_manifest.py
   ```
+* Verify every localization row parses into one column per language (an unquoted comma in `assets/i18n/strings.csv` silently re-keys or shifts a row):
+  ```sh
+  python tools/check_strings_csv.py
+  ```
 * Validate Agent Lattice documentation links and code references:
   ```sh
   lat check

@@ -62,6 +62,9 @@ jobs:
       - name: Check the probe manifest agrees with tests/README.md
         run: python3 tools/check_suite_manifest.py
 
+      - name: Check strings.csv parses into one column per language
+        run: python3 tools/check_strings_csv.py
+
       - name: Run probe suite
         # Logic/integration probes (objectives, hazards, loot, teaching, the
         # adaptive AI director). The runner asserts each printed "RESULT PASS".
