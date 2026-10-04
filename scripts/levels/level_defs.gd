@@ -3815,15 +3815,21 @@ static func _gemini() -> Dictionary:
 		"exit": Vector3(30, 1.5, 30),
 		# was the ARC-9 Gauss Lance: a rank-9 piercing laser handed out on level 3 of 23.
 		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-26, 0, -22), "color": Color(1.0, 0.82, 0.3)},
+		# Twin twilight, for the twin model: a deep blue zenith over a peach
+		# horizon with a low warm sun, so every wall carries a warm side and a
+		# cold side. It was the third copy of the same blue starry night
+		# (overseer, uplink, gemini; look_capture 2026-10-04 hue entropy 0.48).
+		# Stars dimmed to a twilight few; the nexus lamps stay blue and the ring
+		# corners alternate warm and cold.
 		"env": {
-			"sky_top": Color(0.05, 0.07, 0.2), "sky_horizon": Color(0.22, 0.27, 0.5),
-			"stars": true, "star_brightness": 1.8, "star_tint": Color(0.8, 0.9, 1.0),
-			"milkyway": 0.4, "milkyway_tint": Color(0.5, 0.6, 0.9),
-			"ground": Color(0.04, 0.05, 0.1), "fog": Color(0.26, 0.3, 0.48),
-			"ambient": Color(0.6, 0.63, 0.85), "ambient_energy": 0.55,
+			"sky_top": Color(0.05, 0.08, 0.22), "sky_horizon": Color(0.72, 0.43, 0.3),
+			"stars": true, "star_brightness": 1.1, "star_tint": Color(0.9, 0.9, 1.0),
+			"milkyway": 0.15, "milkyway_tint": Color(0.6, 0.6, 0.9),
+			"ground": Color(0.06, 0.05, 0.09), "fog": Color(0.44, 0.36, 0.38),
+			"ambient": Color(0.6, 0.63, 0.85), "ambient_energy": 0.6,
 			"sky_contribution": 0.7, "glow": 1.07, "fog_density": 0.008,
-			"sun_color": Color(0.8, 0.88, 1.0), "sun_energy": 1.1,
-			"contrast": 1.14, "saturation": 1.06, "brightness": 0.84,
+			"sun_color": Color(1.0, 0.62, 0.45), "sun_energy": 1.25,
+			"contrast": 1.14, "saturation": 1.08, "brightness": 0.88,
 		},
 		# A data-spire rises from the central platform (pos.y on the platform top).
 		"hero": {"pos": Vector3(0, 1, 0), "color": Color(0.5, 0.65, 1.0), "height": 5.5},
@@ -3837,7 +3843,7 @@ static func _gemini() -> Dictionary:
 			{"pos": Vector3(-29, 5, -29), "color": Color(0.4, 0.7, 1.0), "energy": 2.2, "range": 19},
 			{"pos": Vector3(29, 5, 29), "color": Color(1.0, 0.6, 0.35), "energy": 2.2, "range": 18},
 			{"pos": Vector3(0, 6, -30), "color": Color(0.5, 0.65, 1.0), "energy": 2.2, "range": 20},
-			{"pos": Vector3(29, 5, -29), "color": Color(0.6, 0.5, 1.0), "energy": 2.0, "range": 17},
+			{"pos": Vector3(29, 5, -29), "color": Color(1.0, 0.5, 0.45), "energy": 2.0, "range": 17},
 			{"pos": Vector3(-29, 5, 29), "color": Color(1.0, 0.55, 0.3), "energy": 2.0, "range": 17},
 		],
 		"walls": [
