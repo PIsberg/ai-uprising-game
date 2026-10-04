@@ -65,3 +65,5 @@ res://tests/raptor_stoop_probe.tscn
 res://tests/firewall_probe.tscn
 # Vision scanners raise the alarm only on a held sightline, and their squads land on the navmesh.
 res://tests/scanner_probe.tscn
+# Escape countdowns burn a stray player, and every authored escape route fits its clock.
+res://tests/escape_probe.tscn

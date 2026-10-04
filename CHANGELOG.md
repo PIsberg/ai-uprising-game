@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Security firewalls** (`firewalls` level-def key): an energy sheet that stops only the player (new collision layer 8), dropped by shooting its relay node or by completing a linked objective. Placed on claude, gemini and mistral, so the server aisle, the shielded conduit and the exit bulkheads become things you open rather than walk through. `firewall_probe` (suite), `firewall_shot` (windowed).
 - **Vision scanners** (`scanners` level-def key): sweeping surveillance heads that call in a reinforcement squad when they hold the player in their beam for 0.7 s, at most twice each. Shoot the head to blind one. Skyhold Command (overseer) gets three: the north landing ring, the east exit corridor, and a full-circle command eye on the spire. `scanner_probe` (suite), `scanner_shot` (windowed).
+- **Escape countdown** (`escape` task type): the last stage of a level can be a timed run to an extraction ring; once the clock runs out the purge burns the player until they get there. The remaining seconds show in the objective line. `escape_probe` (suite).
+- **xAI Black-Site (grok)**: the mainframe now trips a 40 s site purge. You run out through the east bulkhead, past a kill team that drops into the corridor, to extraction. A watchtower scanner crowns the climbable tower over the monolith field, and a second one stares up the exit corridor; both throw cold cyan beams across the crimson site. The level no longer ends on kill-all.
 
 ### Fixed
 - mistral's west coolant pump was authored inside the divider wall; moved 2 m clear so it can be stood on.
