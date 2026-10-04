@@ -279,6 +279,7 @@ func _ready() -> void:
 	_build_jammer(def)
 	_build_lava(def)
 	_build_firewalls(def)
+	_build_scanners(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
@@ -2354,6 +2355,26 @@ func _build_firewalls(def: Dictionary) -> void:
 		fw.position = e.get("pos", Vector3.ZERO)
 		fw.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(fw)
+
+## Vision scanners: sweeping surveillance heads on masts. Hold the player in the
+## cone with a clear line of sight and the authored `alarm` squad pours in
+## through the task reinforcement spawner. See vision_scanner.gd;
+## tests/scanner_probe checks every alarm squad lands on walkable ground.
+func _build_scanners(def: Dictionary) -> void:
+	for e in def.get("scanners", []):
+		var sc := VisionScanner.new()
+		sc.sweep_deg = float(e.get("sweep", 90.0))
+		sc.period = float(e.get("period", 7.0))
+		sc.reach = float(e.get("reach", 22.0))
+		sc.cone_deg = float(e.get("cone", 11.0))
+		sc.tilt_deg = float(e.get("tilt", 24.0))
+		sc.mast = e.get("mast", true)
+		sc.max_alarms = int(e.get("alarms", 2))
+		sc.alarm_specs = e.get("alarm", [])
+		sc.alarm = func(specs: Array) -> void: _spawn_reinforcements.call_deferred(specs)
+		sc.position = e.get("pos", Vector3(0, 5, 0))
+		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
+		add_child(sc)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):

@@ -45,6 +45,15 @@ The `firewalls` def key places energy sheets across a route that stop the player
 * Collision stands 1.5 m above `height`: keep firewalls out of gaps a sky-bridge threads at sheet height.
 * `tests/firewall_probe` proves every relay, objective and the exit is reachable without crossing a sheet that cannot be open yet.
 
+## Vision Scanners
+<!-- lat: { "require-code-mention": true } -->
+The `scanners` def key mounts sweeping surveillance heads that call reinforcements when they see the player.
+
+* Detection needs the player's chest inside the cone, within `reach`, with a clear world-layer ray, held for `detect_time` (0.7 s).
+* An alarm hands the authored `alarm` squad to the task reinforcement spawner, then the head tracks the player and cools down. `alarms` caps how often it can fire.
+* The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
+* `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
+
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
 
