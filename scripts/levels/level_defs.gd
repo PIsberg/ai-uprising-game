@@ -5036,12 +5036,18 @@ static func _lava_world() -> Dictionary:
 		"exit": Vector3(14, 1.6, 14),
 		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-9, 1.9, -15), "color": Color(1.0, 0.5, 0.2)},
 		"env": {
-			"sky_top": Color(0.12, 0.03, 0.02), "sky_horizon": Color(0.42, 0.12, 0.03),
-			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.45, 0.15, 0.05),
-			"ambient": Color(1.0, 0.55, 0.3), "ambient_energy": 0.5,
+			# HUE SPLIT (look audit 2026-09-19): the eye-level frame measured hue
+			# 357-10 at 95-99% saturation in every cell, sky included (hue entropy
+			# 1.05 bits): red sky + red fog + orange ambient + orange sun. The lava
+			# is the light source here, so it keeps its colour; the SKY goes to a
+			# cold ash-night and the sun to cool moonlight, the complementary key
+			# that makes molten rock read as hot instead of as a red filter.
+			"sky_top": Color(0.04, 0.04, 0.07), "sky_horizon": Color(0.26, 0.12, 0.08),
+			"ground": Color(0.1, 0.04, 0.02), "fog": Color(0.3, 0.17, 0.12),
+			"ambient": Color(0.8, 0.66, 0.58), "ambient_energy": 0.5,
 			"sky_contribution": 0.3, "glow": 1.25, "fog_density": 0.012,
-			"sun_color": Color(1.0, 0.55, 0.3), "sun_energy": 0.6,
-			"contrast": 1.2, "saturation": 1.03, "brightness": 0.9,
+			"sun_color": Color(0.78, 0.85, 1.0), "sun_energy": 0.6,
+			"contrast": 1.2, "saturation": 0.98, "brightness": 0.9,
 			"volumetric_density": 0.007,
 			"ash": true,
 		},
@@ -5229,12 +5235,18 @@ static func _water_world() -> Dictionary:
 		# auto lightning. A touch more sun/ambient so the basin reads without losing
 		# the ominous dark, and richer saturation for the teal-vs-warning contrast.
 		"env": {
-			"sky_top": Color(0.02, 0.05, 0.11), "sky_horizon": Color(0.06, 0.22, 0.36),
-			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.1, 0.26, 0.42),
-			"ambient": Color(0.45, 0.72, 1.0), "ambient_energy": 0.55,
+			# HUE SPLIT (look audit 2026-09-19): the eye-level frame measured hue
+			# 220-235 at 90-99% saturation in EVERY cell but the moon (hue entropy
+			# 0.60 bits): blue sky + blue fog + blue ambient + blue sun, pushed by
+			# saturation 1.24. Same cure as the night levels: moon-white sun,
+			# greyer fog and ambient, saturation down, so the teal flood, the navy
+			# sky and the warm hazard lamps read as three colours, not one.
+			"sky_top": Color(0.02, 0.04, 0.09), "sky_horizon": Color(0.09, 0.17, 0.26),
+			"ground": Color(0.02, 0.05, 0.08), "fog": Color(0.17, 0.23, 0.3),
+			"ambient": Color(0.72, 0.8, 0.9), "ambient_energy": 0.55,
 			"sky_contribution": 0.4, "glow": 1.1, "fog_density": 0.012,
-			"sun_color": Color(0.62, 0.82, 1.0), "sun_energy": 0.9,
-			"contrast": 1.16, "saturation": 1.24, "brightness": 0.92,
+			"sun_color": Color(0.88, 0.92, 1.0), "sun_energy": 0.9,
+			"contrast": 1.16, "saturation": 1.06, "brightness": 0.92,
 			"volumetric_density": 0.012,
 			# Moonlit night sky (stars + Milky Way + a bright low moon that the water
 			# mirrors) layered under the ongoing storm.
@@ -5257,9 +5269,9 @@ static func _water_world() -> Dictionary:
 			# Failing-reactor warning lights: warm strobes cutting the all-blue basin
 			# with hazard colour, so the scene isn't one flat teal wash. The cap
 			# strobe doubles as the "climb here" beacon for the exit.
-			{"pos": Vector3(-3, 5, 6.3), "color": Color(1.0, 0.32, 0.2), "energy": 2.4, "range": 13},
-			{"pos": Vector3(-6.3, 2.2, -6.3), "color": Color(1.0, 0.55, 0.2), "energy": 1.8, "range": 11},
-			{"pos": Vector3(6.3, 2.2, 6.3), "color": Color(1.0, 0.45, 0.2), "energy": 1.8, "range": 11},
+			{"pos": Vector3(-3, 5, 6.3), "color": Color(1.0, 0.32, 0.2), "energy": 3.2, "range": 16},
+			{"pos": Vector3(-6.3, 2.2, -6.3), "color": Color(1.0, 0.55, 0.2), "energy": 2.6, "range": 14},
+			{"pos": Vector3(6.3, 2.2, 6.3), "color": Color(1.0, 0.45, 0.2), "energy": 2.6, "range": 14},
 			# Moonlit blues down the causeway and the SW run, a strobe on PUMP C,
 			# and a cold work-light on the west lookout.
 			{"pos": Vector3(5, 4, -25), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
@@ -5298,7 +5310,7 @@ static func _water_world() -> Dictionary:
 		],
 		"lava": [
 			{"pos": Vector3(0, 0, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
-				"color": Color(0.28, 0.72, 1.0)}, # brighter teal so the flood glows + mirrors the moon
+				"color": Color(0.2, 0.78, 0.74)}, # true teal (was sky-blue 0.28/0.72/1.0): separates the flood from the navy sky
 		],
 		# Reactor dressing: drowned coolant columns standing out of the water to
 		# break sightlines + canisters/servers/crates for cover on the gantries.
