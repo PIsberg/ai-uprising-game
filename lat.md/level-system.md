@@ -65,6 +65,16 @@ An `escape` task turns a level's last stage into a timed run: the purge clock st
 * Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
 * `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
 
+## Haul Payload
+<!-- lat: { "require-code-mention": true } -->
+A `haul` task is a heavy core that has to be carried, on foot, from `pos` into an uplink ring at `to`.
+
+* Walking into the core shoulders it and sets `GameState.carrying`. `player.gd` reads that one flag: a heavy walk (`CARRY_SPEED_MULT` x walk), sprint ignored, no dash, no grapple.
+* `drop_damage` worth of hits (default 30) knocks the core 2.5 m behind the player, onto whatever floor is below. Dying drops it where the player fell.
+* The HUD waypoint follows the job: the core while it is on the ground, the uplink ring while it is carried.
+* `GameState.reset_tasks` clears the flag, so a level change never leaves the player slowed.
+* `tests/haul_probe` checks the carry rules on the real player against an uncarried control, the drop and re-pickup, the death drop and delivery.
+
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
 

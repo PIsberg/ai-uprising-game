@@ -16,7 +16,7 @@ extends Node
 ## task type means adding it here, and this probe going red is the reminder.
 ##   godot --headless --path . --audio-driver Dummy res://tests/level_def_coverage_probe.tscn
 
-const TASK_TYPES := ["assassinate", "collect_shards", "destroy_core", "escape", "generative_zone",
+const TASK_TYPES := ["assassinate", "collect_shards", "destroy_core", "escape", "generative_zone", "haul",
 	"hack_terminal", "hold_zone", "key", "kill_all", "kill_quota", "none", "sabotage", "survive"]
 const MIN_ENTRIES := 300 ## fewer than this and the walk itself is broken
 
