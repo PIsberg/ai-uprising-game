@@ -9,7 +9,8 @@ extends HoldZone
 ##
 ## The HUD line carries the remaining seconds in the task label: a (n/goal)
 ## meter would read as counting UP, the opposite of what a countdown means.
-## The clock only runs while the game is PLAYING (not paused / in a menu).
+## The clock only runs while the game is PLAYING (not paused / in a menu),
+## and restarts in full when the player dies (see _restart_clock).
 
 @export var seconds: float = 45.0
 @export var purge_dps: float = 18.0
@@ -23,6 +24,11 @@ var _beep_t: float = 0.0
 func _ready() -> void:
 	remaining = seconds
 	super._ready()
+	# Checkpoint respawn is IN PLACE (GameState.respawn_at_checkpoint, no
+	# reload), back at the last objective. A clock left at zero would purge the
+	# respawned player all the way here, a death loop. Death holds the clock
+	# (GAME_OVER is not PLAYING) and this hands the respawn a fresh one.
+	GameState.player_died.connect(_restart_clock)
 	GameState.skirmish_event.emit("PURGE INITIATED", "%d seconds to extraction." % int(seconds))
 	if has_node("/root/AudioBus"):
 		AudioBus.play_synth_ui("overlord_glitch", -2.0, 0.7)
@@ -69,6 +75,13 @@ func _process(delta: float) -> void:
 	if _light:
 		_light.light_color = col
 		_light.light_energy = 2.0 + sin(_t * rate) * 0.8
+
+func _restart_clock() -> void:
+	if _done:
+		return
+	remaining = seconds
+	purging = false
+	_shown = -1
 
 func _extract() -> void:
 	GameState.relabel_task(task_id, base_label)

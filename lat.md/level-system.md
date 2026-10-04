@@ -61,6 +61,7 @@ An `escape` task turns a level's last stage into a timed run: the purge clock st
 * Stepping into the extraction ring (an `EscapeZone`, a `HoldZone` subclass) completes the task, which unlocks the exit portal.
 * After the clock runs out, a player outside the ring takes `purge_dps` per second, so a late run still lands if there is health to spend.
 * The remaining seconds live in the task label (`GameState.relabel_task`): a progress meter would read as counting up.
+* Death restarts the clock in full: checkpoint respawn is in place (no reload) back at the last objective, so an expired clock would be a death loop.
 * Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
 * `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
 

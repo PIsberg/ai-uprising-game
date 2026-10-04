@@ -2,7 +2,8 @@ extends Node3D
 ## Escape countdown (escape_zone.gd): the task label carries the remaining
 ## seconds; once the clock runs out a player outside the ring takes purge
 ## damage; stepping into the ring completes the task, restores the plain label
-## and stops the burn; the clock holds while the game is not PLAYING. Then on
+## and stops the burn; the clock holds while the game is not PLAYING, and
+## dying mid-purge hands the in-place checkpoint respawn a fresh clock. Then on
 ## every campaign level that authors an "escape" task, the ring is reachable on
 ## the built navmesh from the prerequisite objective, and that route can be RUN
 ## (player sprint_speed) inside 60% of the clock, leaving the rest for the
@@ -86,6 +87,18 @@ func _unit() -> void:
 	var lost: float = hp0 - p.hp.current_health
 	_check(lost > 10.0 and lost < 30.0, "purge burns a stray player (~20 HP over 0.5 s, got %.1f)" % lost)
 	_check(_label("esc").ends_with("PURGE ACTIVE"), "label flags the live purge (%s)" % _label("esc"))
+	# Death mid-purge: checkpoint respawn is IN PLACE (no reload), so a clock
+	# left at zero would burn the respawned player all the way back from the
+	# last objective. Dying must hand them a fresh clock.
+	var lvl_deaths: int = GameState.level_deaths
+	GameState.on_player_died("probe")
+	GameState.current_state = GameState.State.PLAYING
+	await _frames(3)
+	GameState.level_deaths = lvl_deaths
+	_check(not z.purging and z.remaining > 1.3, "dying mid-purge resets the clock for the respawn (purging=%s, %.2f s)" % [z.purging, z.remaining])
+	var hp_r: float = p.hp.current_health
+	await _frames(20)
+	_check(is_equal_approx(hp_r, p.hp.current_health), "no purge burn on the fresh clock")
 	p.global_position = Vector3(0, 0, 0)
 	await _frames(6)
 	_check(GameState.is_task_done("esc"), "stepping into the ring completes the escape")
