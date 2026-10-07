@@ -73,3 +73,5 @@ res://tests/haul_probe.tscn
 res://tests/task_reach_probe.tscn
 # Every campaign task, wave, firewall and terrain label translates in es/fr/de/pt.
 res://tests/i18n_label_probe.tscn
+# The HDRI skies ship VRAM-compressed (2 MB, not 8) without losing their HDR sun.
+res://tests/sky_hdri_probe.tscn

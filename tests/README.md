@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-282 probes total: **57** wired into the headless suite (`suite`), **84**
+283 probes total: **58** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -282,6 +282,7 @@ or GPU-timing probes; `--headless` renders these black).
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
 | seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
+| sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
