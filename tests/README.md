@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-285 probes total: **60** wired into the headless suite (`suite`), **84**
+286 probes total: **61** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -77,6 +77,7 @@ or GPU-timing probes; `--headless` renders these black).
 | boss_entrance_probe | GOLIATH-IX sky-drop and OVERSEER portal entrances; timed frames | windowed |
 | boss_ingame_probe | Real boss scene, entrance cancelled, screenshots idle + walking; lists animation clips | windowed |
 | boss_move_probe | COLOSSUS seismic footfall crush/fling and TERMINATOR circle-strafe (lateral velocity) signatures | headless |
+| boss_phase_probe | Every boss other than MANUS (which has `manus_phase_probe`) escalates in what it does as it is wounded: OVERSEER volley 3 -> 5 bolts plus a phase-3 Seeker and a bigger barrage; COLOSSUS volley 3 -> 5 and, at the same range, artillery / beam / slam by phase; TITAN blinks only once wounded; ARCHON's 30% wave is bigger; TERMINATOR's beam sweeps faster; SMASHER's attacks come back faster | suite |
 | boss_signature_probe | SMASHER claw-rake lunge and OVERSEER rocket-barrage signature attacks land | windowed |
 | bounty_probe | BOUNTY director: tagged-enemy kill awards bonus + clears director + always drops the rare prize | windowed |
 | briefing_probe | Real finale (archon) level_briefing: preview mode shows the boss with no minion waves/portal | windowed |
