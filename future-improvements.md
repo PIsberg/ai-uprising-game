@@ -44,6 +44,9 @@ ARCHON/SMASHER had 3 HP-keyed phases; TERMINATOR ramps its beam sweep as it is w
 MANUS (the one plain HP bar) now has 3 phases too — cooldowns ×1/0.8/0.62 and a phase-3
 double finger eruption that leads the player (`tests/manus_phase_probe`). 🎮 Still needs
 playtest: whether the MANUS phase-3 cadence is fun or just busy.
+✅ **Measured (2026-10-08)** — `tests/boss_phase_probe` drives every other boss's escalation and
+found SMASHER's phases were glow-only; it now shortens smash/slam/rake cooldowns ×1/0.8/0.62
+like MANUS. 🎮 Needs playtest: whether a 1.5 s smash at low HP is too much in the crucible.
 
 ### Meta-progression / replayability 🤖🎮
 Beyond the per-run Armory there's no persistent chase. Options: unlockables, a seeded
@@ -114,8 +117,7 @@ on the current level (discovered ones with weaknesses + counter-weapons, undisco
 ## 4. Tech & quality 🤖
 
 - **Performance** — profile big hordes / low-end GPUs (`Last Stand` horde mode is a good stress test); verify the 4 graphics tiers scale cost as intended.
-- **Cleaner CI logs** — the load-test tolerates benign asset errors (missing `colormap.png` weapon texture, generated `.translation` files). Ship the missing texture or scope the error grep so real errors stand out.
-- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). **Continue-from-every-level** now gated by `tests/continue_sweep_probe`. Still want: a boss-phase probe per boss (only MANUS has one).
+- **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). **Continue-from-every-level** now gated by `tests/continue_sweep_probe`. Every boss's wounded escalation is gated by `tests/boss_phase_probe` (MANUS by `tests/manus_phase_probe`).
 
 ---
 

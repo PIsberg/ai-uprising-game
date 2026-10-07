@@ -65,7 +65,7 @@ inherit that parent's overrides too.
 | SERVER ("MAITRE-D'") | `enemy_server.gd` † | `assets/models/robots/serving_bot.glb` | slow tanky basher; spinning thrown cleavers at range, knockback tray-bash up close | — | — |
 | SHARK ("RAZORFIN") | `enemy_shark.gd` (extends EnemyDrone) | scene model | submerged stalker; cruises underwater, breaches in an arc to bite | `_state_attack` (+ drone's) | — |
 | SKITTER | `enemy_skitter.gd` | trilobite crawler, tinted red (scene) | swarm chaff; fast scuttle, brief windup, ballistic pounce-bite; lean custom death | `_on_died` | — |
-| SMASHER ("BEHEMOTH-X") | `enemy_smasher.gd` | "rusty_claws_robot" via RobotModel (auto-fit 10 m) | melee boss: overhead smash, ground-slam AoE, claw-rake lunge; molten wake-slam entrance | `_state_attack` | BOSS |
+| SMASHER ("BEHEMOTH-X") | `enemy_smasher.gd` | "rusty_claws_robot" via RobotModel (auto-fit 10 m) | melee boss: overhead smash, ground-slam AoE, claw-rake lunge; molten wake-slam entrance; attack cooldowns ×1/0.8/0.62 by phase (`boss_phase_probe`) | `_state_attack` | BOSS |
 | SNIPER | `enemy_sniper.gd` † | RobotModel on `$Model` (scene) | stationary long-range hitscan; visible charged-beam telegraph, stagger interrupts the charge | — | — |
 | SPIDER | `enemy_spider.gd` | trilobite crawler (scene) | fast melee harasser; dart-freeze-dart cadence, telegraphed leap-pounce bite | — | — |
 | TERMINATOR ("APEX ENDOFRAME") | `enemy_terminator.gd` | Quaternius "Animated Robot" GLB (rigged, animated) | fast mobile ranged boss: dual-muzzle bursts + tracking sweeping "Optic Lance" beam; floor-eruption entrance | `_state_attack` | BOSS |
