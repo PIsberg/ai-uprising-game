@@ -48,6 +48,10 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_large_files.py
   ```
+* Verify the imported assets a release ships stay inside their size budget (the pack is almost all `.godot/imported`, so this tracks build size without exporting). Needs a populated `.godot`; the budgets in the script are a ratchet, lowered when an asset pass lands:
+  ```sh
+  python tools/check_import_budget.py
+  ```
 * Validate Agent Lattice documentation links and code references:
   ```sh
   lat check
