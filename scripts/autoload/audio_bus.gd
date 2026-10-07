@@ -467,6 +467,13 @@ func _process(delta: float) -> void:
 func _start_music() -> void:
 	if not _music_enabled:
 		return
+	# SoundSynth builds the theme on a worker thread at boot. Wait for it rather
+	# than let get_stream() build a second copy on the main thread, which would
+	# put the ~0.5 s back in front of the first frame (tests/synth_boot_probe).
+	var s := _get_synth()
+	if s and s.has_method("is_ready") and not s.is_ready("music_techno") and _resolve_sample("music_techno") == null:
+		get_tree().create_timer(0.05, true).timeout.connect(_start_music)
+		return
 	play_music("music_techno")
 	# If the synth wasn't ready yet (stream unresolved), play_music is a no-op and
 	# _current_music_id stays empty — retry next frame so launch is never silent.

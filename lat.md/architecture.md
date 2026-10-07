@@ -27,6 +27,7 @@ Profiles player performance and adjusts gameplay dynamics:
 ### AudioBus and SoundSynth
 <!-- lat: { "require-code-mention": true } -->
 All sound effects in the game are procedurally synthesized using `SoundSynth`. Real audio files can be placed at `assets/audio/samples/<sound_id>.{ogg,wav,mp3}` to transparently override these procedurally generated sounds.
+* Synthesis runs on a `WorkerThreadPool` task started in `SoundSynth._ready`, menu theme first. `get_stream()` builds any stream that is not ready yet on the calling thread, so early callers never get silence; `AudioBus._start_music` instead waits for `is_ready("music_techno")`, so the first frame is not held up (boot 5.1 s -> 0.8 s to the first frame). The generators must stay pure: no shared state, no scene tree.
 
 ### GraphicsSettings
 <!-- lat: { "require-code-mention": true } -->

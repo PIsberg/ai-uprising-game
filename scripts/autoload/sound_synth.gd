@@ -2,95 +2,185 @@
 extends Node
 ## Procedural audio synthesizer. Generates AudioStreamWAV samples at startup
 ## so the project ships with sound without bundling .ogg/.wav files.
+##
+## Synthesis runs on a WorkerThreadPool task: in _ready it took 4.3 s of the
+## 5.1 s before the first frame (57 streams, 9.3 MB of PCM, all GDScript).
+## get_stream() builds a stream that is not ready yet on the calling thread, so
+## an early caller pays for that one stream instead of getting silence.
+## tests/synth_boot_probe holds both halves. The generators below are pure
+## (they touch no shared state and no scene tree), which is what makes the
+## worker safe; keep them that way.
 
 const SR := 44100
 
+## Finished streams by id. Filled from the worker thread: read through
+## get_stream(), which takes the mutex, rather than directly.
 var streams: Dictionary = {}
 
+var _jobs: Dictionary = {}           # id -> Callable that builds the stream
+var _order: Array[String] = []       # build order: the boot theme first, music last
+var _aliases := {
+	# horde_director plays "victory_sting"; only "victory" existed (silent no-op).
+	"victory_sting": "victory",
+	# armory.gd plays "pickup_clink" on every purchase; only the _pickup_clink
+	# GENERATOR existed (registered as "pickup_ammo"), so buying anything in the
+	# Armory was silent. tests/sound_id_probe now gates every referenced id.
+	"pickup_clink": "pickup_ammo",
+}
+var _mutex := Mutex.new()
+var _task := -1
+var _cancel := false
+
 func _ready() -> void:
-	streams["pistol_fire"] = _gun_fire(0.22, 240.0, 0.9, 1.6, false)
-	streams["rifle_fire"] = _gun_fire(0.18, 180.0, 0.7, 1.4, false)
-	streams["shotgun_fire"] = _gun_fire(0.35, 120.0, 1.2, 2.0, true)
-	streams["plasma_fire"] = _plasma_fire(0.4)
-	streams["drone_shot"] = _laser_zap(0.18, 1400.0, 600.0)
-	streams["rocket_fire"] = _rocket_fire(0.55)
+	_stop_worker()
+	_mutex.lock()
+	streams.clear()
+	_mutex.unlock()
+	_register_jobs()
+	_cancel = false
+	_task = WorkerThreadPool.add_task(_build_pending, false, "SoundSynth")
+
+func _exit_tree() -> void:
+	_stop_worker()
+
+func _stop_worker() -> void:
+	if _task >= 0:
+		_cancel = true
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+
+func _job(id: String, gen: Callable) -> void:
+	_jobs[id] = gen
+	_order.append(id)
+
+func _register_jobs() -> void:
+	_jobs.clear()
+	_order.clear()
+	# The boot theme first: AudioBus starts it on the first frame.
+	_job("music_techno", _techno_loop)
+	_job("pistol_fire", _gun_fire.bind(0.22, 240.0, 0.9, 1.6, false))
+	_job("rifle_fire", _gun_fire.bind(0.18, 180.0, 0.7, 1.4, false))
+	_job("shotgun_fire", _gun_fire.bind(0.35, 120.0, 1.2, 2.0, true))
+	_job("plasma_fire", _plasma_fire.bind(0.4))
+	_job("drone_shot", _laser_zap.bind(0.18, 1400.0, 600.0))
+	_job("rocket_fire", _rocket_fire.bind(0.55))
 	# Heavy electromagnetic coil-gun thump for the gauss sniper (was referenced by
 	# sniper_data.tres but never registered -> the sniper fired silently).
-	streams["gauss_fire"] = _gun_fire(0.34, 90.0, 1.1, 1.9, true)
-	streams["empty_click"] = _click(0.12, 1800.0)
-	streams["reload"] = _reload_chunk(0.45)
-	streams["pump_action"] = _pump(0.35)
-	streams["footstep"] = _footstep(0.16)
-	streams["impact_metal"] = _impact_metal(0.14)
-	streams["impact_concrete"] = _impact(0.16, 0.3)
+	_job("gauss_fire", _gun_fire.bind(0.34, 90.0, 1.1, 1.9, true))
+	_job("empty_click", _click.bind(0.12, 1800.0))
+	_job("reload", _reload_chunk.bind(0.45))
+	_job("pump_action", _pump.bind(0.35))
+	_job("footstep", _footstep.bind(0.16))
+	_job("impact_metal", _impact_metal.bind(0.14))
+	_job("impact_concrete", _impact.bind(0.16, 0.3))
 	# Material-specific bullet impacts so wood, stone and metal each read distinctly
 	# (previously every prop clinked like metal regardless of what it was made of).
-	streams["impact_wood"] = _impact_wood(0.16)
-	streams["impact_stone"] = _impact_stone(0.14)
-	streams["drone_hum"] = _drone_hum(1.2)
-	streams["mech_step"] = _mech_step(0.32)
+	_job("impact_wood", _impact_wood.bind(0.16))
+	_job("impact_stone", _impact_stone.bind(0.14))
+	_job("drone_hum", _drone_hum.bind(1.2))
+	_job("mech_step", _mech_step.bind(0.32))
 	# Continuous locomotion audio: short, quiet one-shot ticks (NOT loops) so
 	# moving enemies read as active without a per-enemy looping player. Light/
 	# heavy servo-step variants for ground chassis, a soft rotor tick for
 	# flyers. Deliberately smaller and quieter than mech_step, which stays
 	# reserved for the big scripted boss stomps.
-	streams["servo_step_light"] = _servo_step(0.09, 1450.0, false)
-	streams["servo_step_heavy"] = _servo_step(0.14, 620.0, true)
-	streams["rotor_whir"] = _rotor_whir(0.16)
-	streams["pickup_health"] = _chime(0.3, 660.0, 990.0)
-	streams["pickup_ammo"] = _pickup_clink(0.22)
-	streams["explosion"] = _explosion(0.7)
-	streams["grenade_throw"] = _whoosh(0.25)
-	streams["eas_alert"] = _eas_alert(1.4)
-	streams["broadcast_blip"] = _broadcast_blip(0.14)
-	streams["victory"] = _victory_sting(1.3)
-	streams["combo_up"] = _combo_up(0.34)
-	streams["headshot"] = _headshot_ding(0.18)
-	streams["overlord_glitch"] = _glitch_comms(0.32)
-	streams["acid_spit"] = _acid_spit(0.3)
-	streams["radio_static"] = _radio_static(1.6)
-	streams["music_techno"] = _techno_loop()
-	streams["music_grok"] = _music_grok()
-	streams["music_gemini"] = _music_gemini()
-	streams["music_suburb"] = _music_suburb()
-	streams["music_archon"] = _music_archon()
-	streams["music_lava"] = _music_lava()
-	streams["music_water"] = _music_water()
-	streams["ambience_drone"] = _ambient_drone(4.0)
-	streams["ambience_wind"] = _ambient_wind(4.0)
-	streams["breathing"] = _breathing(4.0)
-	streams["player_hurt"] = _hurt(0.3)
-	streams["charge"] = _charge_up(0.32)
-	streams["ambience_rain"] = _rain(4.0)
-	streams["thunder"] = _thunder(1.8)
-	# Looping environment beds so a player recognises lava (or a hazard river) and
-	# standing water by ear — a familiar bubbling vs. a gentle trickle.
-	streams["lava_loop"] = _lava_bubble(4.0)
-	streams["water_loop"] = _water_flow(4.0)
+	_job("servo_step_light", _servo_step.bind(0.09, 1450.0, false))
+	_job("servo_step_heavy", _servo_step.bind(0.14, 620.0, true))
+	_job("rotor_whir", _rotor_whir.bind(0.16))
+	_job("pickup_health", _chime.bind(0.3, 660.0, 990.0))
+	_job("pickup_ammo", _pickup_clink.bind(0.22))
+	_job("explosion", _explosion.bind(0.7))
+	_job("grenade_throw", _whoosh.bind(0.25))
+	_job("eas_alert", _eas_alert.bind(1.4))
+	_job("broadcast_blip", _broadcast_blip.bind(0.14))
+	_job("victory", _victory_sting.bind(1.3))
+	_job("combo_up", _combo_up.bind(0.34))
+	_job("headshot", _headshot_ding.bind(0.18))
+	_job("overlord_glitch", _glitch_comms.bind(0.32))
+	_job("acid_spit", _acid_spit.bind(0.3))
+	_job("radio_static", _radio_static.bind(1.6))
+	_job("player_hurt", _hurt.bind(0.3))
+	_job("charge", _charge_up.bind(0.32))
+	_job("thunder", _thunder.bind(1.8))
 	# Blast-shock tinnitus: the thin whine after an explosion goes off next to
 	# your head, played while AudioBus's low-pass muffle recovers.
-	streams["ear_ring"] = _ear_ring(2.6)
-	# Deep-danger heartbeat bed, layered under "breathing" as health keeps falling.
-	streams["heartbeat"] = _heartbeat(4.0)
+	_job("ear_ring", _ear_ring.bind(2.6))
 	# Shot-confirm channel: a tiny neutral tick for any landed round, a heavier
 	# double thock when the round kills.
-	streams["hit_tick"] = _hit_tick(0.05)
-	streams["kill_thock"] = _kill_thock(0.16)
+	_job("hit_tick", _hit_tick.bind(0.05))
+	_job("kill_thock", _kill_thock.bind(0.16))
 	# A spent casing striking the floor a beat after ejection.
-	streams["brass_tink"] = _brass_tink(0.09)
+	_job("brass_tink", _brass_tink.bind(0.09))
 	# Menu sounds campaign_map already referenced but nothing registered — both
 	# calls were silent no-ops.
-	streams["ui_deny"] = _ui_deny(0.24)
-	streams["ui_back"] = _ui_back(0.16)
-	# horde_director plays "victory_sting"; only "victory" existed (silent no-op).
-	streams["victory_sting"] = streams["victory"]
-	# armory.gd plays "pickup_clink" on every purchase; only the _pickup_clink
-	# GENERATOR existed (registered as "pickup_ammo"), so buying anything in the
-	# Armory was silent. tests/sound_id_probe now gates every referenced id.
-	streams["pickup_clink"] = streams["pickup_ammo"]
+	_job("ui_deny", _ui_deny.bind(0.24))
+	_job("ui_back", _ui_back.bind(0.16))
+	_job("ambience_drone", _ambient_drone.bind(4.0))
+	_job("ambience_wind", _ambient_wind.bind(4.0))
+	_job("breathing", _breathing.bind(4.0))
+	_job("ambience_rain", _rain.bind(4.0))
+	# Looping environment beds so a player recognises lava (or a hazard river) and
+	# standing water by ear — a familiar bubbling vs. a gentle trickle.
+	_job("lava_loop", _lava_bubble.bind(4.0))
+	_job("water_loop", _water_flow.bind(4.0))
+	# Deep-danger heartbeat bed, layered under "breathing" as health keeps falling.
+	_job("heartbeat", _heartbeat.bind(4.0))
+	_job("music_grok", _music_grok)
+	_job("music_gemini", _music_gemini)
+	_job("music_suburb", _music_suburb)
+	_job("music_archon", _music_archon)
+	_job("music_lava", _music_lava)
+	_job("music_water", _music_water)
+
+## Worker task: build every stream nobody has asked for yet, in _order.
+func _build_pending() -> void:
+	for id in _order:
+		if _cancel:
+			return
+		_mutex.lock()
+		var done := streams.has(id)
+		_mutex.unlock()
+		if not done:
+			_store(id, _jobs[id].call())
+
+## Keeps the first stream stored for an id (the worker and an early caller can
+## both build the same one) and returns it.
+func _store(id: String, s: AudioStream) -> AudioStream:
+	_mutex.lock()
+	if streams.has(id):
+		s = streams[id]
+	else:
+		streams[id] = s
+	_mutex.unlock()
+	return s
+
+## Every id get_stream() answers, aliases included.
+func ids() -> Array:
+	return _order + _aliases.keys()
+
+## True once `id` is built, without building it (get_stream would).
+func is_ready(id: String) -> bool:
+	id = _aliases.get(id, id)
+	_mutex.lock()
+	var has := streams.has(id)
+	_mutex.unlock()
+	return has
+
+func is_all_ready() -> bool:
+	_mutex.lock()
+	var n := streams.size()
+	_mutex.unlock()
+	return n >= _order.size()
 
 func get_stream(id: String) -> AudioStream:
-	return streams.get(id)
+	id = _aliases.get(id, id)
+	_mutex.lock()
+	var s: AudioStream = streams.get(id)
+	_mutex.unlock()
+	if s != null or not _jobs.has(id):
+		return s
+	# Not built yet: build it here rather than hand back silence.
+	return _store(id, _jobs[id].call())
 
 # ----- ambience beds (seamless 4s loops) -----
 

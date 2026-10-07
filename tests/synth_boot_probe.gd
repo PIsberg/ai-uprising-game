@@ -57,8 +57,17 @@ func _run() -> void:
 	if not _all_ready():
 		_bad("background synthesis not finished after %.0f s" % FINISH_TIMEOUT_S)
 
+	# AudioBus starts the theme once the worker has built it (it polls on a
+	# short timer instead of building it on the main thread), so give it a moment.
 	var music: AudioStreamPlayer = AudioBus.get("_music")
-	var playing := music != null and music.stream != null and music.playing
+	var playing := false
+	waited = 0.0
+	while waited < 5.0:
+		playing = music != null and music.stream != null and music.playing
+		if playing:
+			break
+		await get_tree().process_frame
+		waited += get_process_delta_time()
 	print("menu music: id=%s playing=%s" % [AudioBus.get("_current_music_id"), playing])
 	if not playing:
 		_bad("the boot theme is not playing")
