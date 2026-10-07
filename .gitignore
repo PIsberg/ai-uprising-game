@@ -21,6 +21,19 @@ dev_levels/_phase0.lvl
 dev_levels/*_export.gd.txt
 dev_levels/*.bak
 
+# Capture-tool output (frame dumps, galleries, verification shots). The tools
+# regenerate them on demand; at 3840x2400 they were 1.31 GiB of every checkout
+# (#42). README gallery stills stay tracked at docs/screenshots/*.png, under
+# the 3 MB budget tools/check_large_files.py enforces.
+docs/screenshots/action/
+docs/screenshots/boss/
+docs/screenshots/boss_landing/
+docs/screenshots/gunrange/
+docs/screenshots/models/
+docs/screenshots/objectives/
+docs/screenshots/playtest/
+docs/screenshots/weapon/
+
 # Imported translations
 *.translation
 

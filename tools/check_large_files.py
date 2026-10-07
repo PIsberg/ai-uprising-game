@@ -3,8 +3,8 @@
 GitHub warns on any file over 50 MB and refuses one over 100 MB. In
 September 2026 three Sketchfab robots sat at 41 to 66 MB; #102 and #143
 shrank them below 25 MB. The bigger weight was never the models, though:
-on 2026-10-08 the tree carried 1.44 GB of 3840x2400 PNG screenshots under
-docs/screenshots, 1.2 GB of them frame dumps from the capture tools that
+on 2026-10-08 the tree carried 1.34 GiB of PNG screenshots (most 3840x2400) under
+docs/screenshots, 1.31 GiB of them frame dumps from the capture tools that
 nothing referenced, all downloaded by each of the three CI jobs.
 
 Two budgets:
