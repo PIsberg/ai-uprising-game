@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-283 probes total: **58** wired into the headless suite (`suite`), **84**
+284 probes total: **59** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -303,6 +303,7 @@ or GPU-timing probes; `--headless` renders these black).
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
 | threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60 | suite |
+| tick_clock_probe | The per-tick CPU instrument (`tests/tick_clock.gd`, used by `enemy_cost_probe` and `cpu_cost_sweep`) reads a rig's known 2 ms physics tick as ~2 ms despite a 50 ms spike once a second. `Performance.TIME_PHYSICS_PROCESS` is the worst tick of the last second, so its median read 50 ms (#89) | suite |
 | threat_probe | Ground-truth per-enemy DPS on the player (report-only, real per-enemy attack vars, not scripted defaults) | headless |
 | titan_blink_probe | PROMETHEUS-0's phase-blink beam charges (`BLINK_BEAM_TELL`) before sweeping instead of firing instantly undodgeable | suite |
 | titan_ingame_probe | Real `titan.tscn` instantiated, sky-drop cancelled, planted boss screenshotted | windowed |

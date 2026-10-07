@@ -75,3 +75,5 @@ res://tests/task_reach_probe.tscn
 res://tests/i18n_label_probe.tscn
 # The HDRI skies ship VRAM-compressed (2 MB, not 8) without losing their HDR sun.
 res://tests/sky_hdri_probe.tscn
+# The per-tick CPU clock reads a typical tick, not the worst tick of each second.
+res://tests/tick_clock_probe.tscn
