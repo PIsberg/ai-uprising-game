@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-284 probes total: **59** wired into the headless suite (`suite`), **84**
+285 probes total: **60** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -295,6 +295,7 @@ or GPU-timing probes; `--headless` renders these black).
 | survival_probe | Reckless-bot regression net for the onboarding survival experience (auto-reload, aggro rings, health-on-kill) | suite |
 | spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level. Also reports post-grace incoming DPS per level, blamed by source, on a deep health pool so the figure is not censored by the player dying (~155s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
+| synth_boot_probe | SoundSynth does not block boot: re-running its `_ready` returns within 1 s (it synthesized all 57 streams on the main thread, 4.3 s of the 5.1 s before the first frame), every stream id still resolves to non-empty PCM right away, the background pass finishes, and the menu theme plays | suite |
 | synth_probe | Every key procedural sound generates non-silent, non-degenerate audio | suite |
 | task_reach_probe | On every built campaign level, each authored objective (key, core, console, zone, shard, payload, escape ring, HVT spawn) and weapon pickup stays where the def put it, clear of geometry and near the navmesh; controls prove the burial rescue still moves a point inside a hero monolith, leaves a ring zone around it alone, and no longer moves an ObjectiveCore off its own collider (verified red by dropping the self-exclusion) | suite |
 | teach_probe | Each first-encounter teaching hint fires once, repeats suppressed, a new run re-arms them | suite |
