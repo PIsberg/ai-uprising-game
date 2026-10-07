@@ -11,6 +11,10 @@ only on purpose, in the same commit as the asset that needs it.
   * all shipped imports together: TOTAL_BUDGET
   * any single imported file:      FILE_BUDGET
 
+Also fails on a tracked `.import` whose source file is gone: a screenshot a
+probe once saved into res:// leaves its stub behind (16 at the project root on
+2026-10-08), and the editor re-imports nothing for it.
+
     python tools/check_import_budget.py     # needs a populated .godot (run --import first)
 """
 import os
@@ -31,9 +35,13 @@ def main() -> int:
     total = 0
     missing = []
     rows = []
+    stale = []
     for imp in out.stdout.splitlines():
         src = imp[: -len(".import")]
-        if src.startswith(EXCLUDED) or not os.path.isfile(os.path.join(ROOT, src)):
+        if not os.path.isfile(os.path.join(ROOT, src)):
+            stale.append(imp)
+            continue
+        if src.startswith(EXCLUDED):
             continue
         with open(os.path.join(ROOT, imp), encoding="utf-8") as f:
             m = DEST.search(f.read())
@@ -54,7 +62,7 @@ def main() -> int:
             print("  " + d)
         return 1
     rows.sort(reverse=True)
-    errors = []
+    errors = ["%s: tracked, but its source file is gone (git rm it)" % s for s in stale]
     if total > TOTAL_BUDGET:
         errors.append("shipped imports total %.1f MB, budget %d MB" % (total / MB, TOTAL_BUDGET // MB))
     for size, src in rows:
@@ -65,7 +73,7 @@ def main() -> int:
     for size, src in rows[:5]:
         print("  %6.1f MB  %s" % (size / MB, src))
     if errors:
-        print("Over budget:")
+        print("Failed:")
         for e in errors:
             print("  " + e)
         return 1
