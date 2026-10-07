@@ -55,11 +55,15 @@ func _ready() -> void:
 	print("PERF_ISOLATE_DONE")
 	get_tree().quit()
 
+## process_ms is the median frame's _process time (tests/tick_clock.gd), not
+## Performance.TIME_PROCESS, which holds the worst frame of the last second (#89).
 func _measure(label: String) -> void:
+	var clock = load("res://tests/tick_clock.gd").attach(self)
 	var t0 := Time.get_ticks_usec()
 	var n := 100
 	for f in n:
 		await get_tree().process_frame
 	var dt := (Time.get_ticks_usec() - t0) / 1000000.0
-	var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var proc_ms: float = clock.process_percentile(0.5)
+	clock.queue_free()
 	print("ISOLATE %-45s fps=%6.1f  process_ms=%6.2f" % [label, n / dt, proc_ms])

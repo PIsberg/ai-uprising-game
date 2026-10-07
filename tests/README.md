@@ -96,7 +96,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_frame_probe | Blender-edited/re-exported models (smasher, reaper, gunner, hive) still frame correctly in the codex viewer's bone-AABB framing; the HIVE's 2.18 m uplink mast sits whole inside the frame | windowed |
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
-| cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints avg/max process and physics ms per frame and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
+| cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
@@ -172,7 +172,7 @@ or GPU-timing probes; `--headless` renders these black).
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name | windowed |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
 | i18n_label_probe | Every task, wave, firewall and terrain label in the campaign defs translates under es/fr/de/pt (`tr()` hands back the English key when a row is missing; 64 of 78 labels were, #116); a long-standing row is the control that translations load at all | suite |
-| enemy_cost_probe | Report-only: 8 woken copies of each chassis (2 per boss) on a flat navmesh; prints physics ms per robot per tick plus the physics server's collision pairs, active objects and islands (`-- types=android,drone` to restrict) | headless |
+| enemy_cost_probe | Report-only: 8 woken copies of each chassis (2 per boss) on a flat navmesh; prints the median physics tick (`tests/tick_clock.gd`) and us per robot above the empty rig, plus the physics server's collision pairs, active objects and islands (`-- types=android,drone` to restrict) | headless |
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | gunner_siege_probe | GUNNER siege model fork is wired + keeps its clips; visible body sits on the hitbox; barrel rotor rides the Gun bone at barrel size along the aim line; spins up in the windup before any round, heats through the burst, cools and spins down in the 1.3 s gap | suite |

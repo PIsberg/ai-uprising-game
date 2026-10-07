@@ -7,15 +7,57 @@ separately with `tools/perf_measure.tscn` (windowed).
 
 ## How to read the numbers
 
-`Performance.TIME_PHYSICS_PROCESS` reports the cost of the **last physics tick**,
-not a per-frame average (calibrated 2026-09-12: a node busy-waiting 2000 us in
-`_physics_process` reads a median of 2.07 ms). Both instruments therefore report
-the **median** over a window; the mean is dragged around by rare spikes. Runs on
-the primary dev machine vary by up to 2x for the same configuration, so compare
-ratios between variants measured in the same session, not absolute values across
-sessions.
+Both instruments time each physics tick with `tests/tick_clock.gd`: a node that
+runs the first physics callback of the tick and the first process callback of
+the frame, so the gap is one step as the main loop runs it (every node's physics
+callback, the navigation server, the physics step, deferred calls). It leaves
+out the physics server's sync and query flush before the first callback.
+`tests/tick_clock_probe` (suite) calibrates it: a rig spending 2 ms per tick plus
+50 ms once a second reads a median of 2.03 ms. They report the **median** tick;
+the mean is dragged around by rare spikes. Repeat runs agree to within ~10%.
 
-## Findings 2026-09-12 (dev machine, Godot 4.7.2, headless)
+**Do not use `Performance.TIME_PHYSICS_PROCESS`, `TIME_PROCESS` or
+`TIME_NAVIGATION_PROCESS` for this.** `main.cpp` (4.7.2, lines 5121-5141) sets
+them once a second to the **worst** tick or frame of that second. A median of
+per-frame reads is the spike: the same rig reads 50.04 ms. Every number in the
+two sections below dated 2026-09-12 and 2026-10-04 was read that way and is
+wrong; they are kept only for the record of what was tried. The 2026-09-12
+"calibration" (a constant 2 ms busy-wait read 2.07 ms) could not catch this,
+because for a constant cost the worst tick is the typical tick.
+
+For attribution (which function, which physics stage), `tools/remote_profile.gd`
+is the headless stand-in for the editor's Profiler tab: it runs a scene in a
+child process under `--remote-debug`, enables the engine's "servers" profiler
+with native calls recorded, and prints per-tick percentiles, the physics
+server's step breakdown and the top script functions by self time.
+
+## Corrected findings 2026-10-08 (#89)
+
+Per-chassis rig (`enemy_cost_probe`, 8 woken copies, 2 for bosses), two runs:
+
+| chassis | us per robot per tick |
+|---|---|
+| colossus | 138-141 |
+| drone | 73-74 |
+| android | 62-67 |
+| spider | 46-47 |
+
+The old instrument had put the android at 700-1300 us and the colossus at
+12-14 ms. `tools/remote_profile.gd` on 8 woken androids agrees independently:
+whole-tick p50 0.62 ms, p90 1.32 ms (about 75 us per robot with the player).
+`tools/perf_combat.tscn` with 28 robots fighting on gpt: 1.5-3.4 ms per tick.
+
+Campaign sweep (`cpu_cost_sweep`, every enemy present 2.4 s after load woken
+onto the player): physics median 0.36-1.02 ms per tick on all 24 levels, p90
+under 1.4 ms, process median 0.24-0.42 ms per frame, no level flagged HOT. The
+worst single ticks (5-7 ms on suburb_boss, convoy, assembly, sublevel,
+frostbreak, water_world, neon, lava_world) are one-offs inside the sample window,
+not a steady cost.
+
+So an 8-robot fight costs well under 1 ms of a 16.7 ms frame on the dev CPU.
+There is no per-robot physics problem to fix; #89 is closed on this evidence.
+
+## Findings 2026-09-12 (SUPERSEDED: read from the once-a-second worst-tick monitor)
 
 Campaign sweep (`cpu_cost_sweep`, every enemy woken onto the player):
 
@@ -60,7 +102,7 @@ particles did not move the number decisively inside the noise. Navigation
 avoidance is enabled on 21 enemy scenes but nothing consumes `velocity_computed`;
 it measured only ~13 us per robot, so it is not the cost.
 
-## Follow-up 2026-10-04 (#89)
+## Follow-up 2026-10-04 (#89; SUPERSEDED, same monitor)
 
 - `enemy_cost_probe` had hung on a script error since the lazy scene tables
   (#94) turned `ENEMY_SCENES` into paths; it now uses `LevelBuilder.enemy_scene`.
@@ -77,8 +119,5 @@ it measured only ~13 us per robot, so it is not the cost.
   re-read from the same tick across frames. Headless timing cannot attribute this
   further; the profiler step below is still the way.
 
-**Open:** attribute the ~1 ms per active robot with the editor profiler on a
-windowed run (the script profiler shows engine-side time per callback), then
-decide between fewer per-tick transform writes, a cheaper child-node layout,
-or a lower AI tick rate for distant robots. Tracked in the issue linked from the
-PR that added these notes.
+~~Open: attribute the ~1 ms per active robot with the editor profiler.~~
+Resolved 2026-10-08: there was no ~1 ms; see "Corrected findings" above.

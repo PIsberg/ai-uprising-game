@@ -1,16 +1,22 @@
 extends Node
 ## CPU-cost sweep (report-only instrument): for every campaign level, build it,
-## wake every enemy onto the player, and sample the main-thread process and
-## physics time per frame for a few seconds. Headless has no GPU, so this is the
-## pure script + physics cost the level carries in combat - the number that
-## decides whether a busy fight stutters on a low-end CPU. Prints one line per
-## level (enemies, avg/max process ms, avg/max physics ms) and flags any level
-## whose average is more than 2x the campaign median. Findings live in
-## docs/PERF_NOTES.md.
+## wake every enemy onto the player, and sample the main-thread process time per
+## frame and physics time per tick for a few seconds (tests/tick_clock.gd).
+## Headless has no GPU, so this is the pure script + physics cost the level
+## carries in combat - the number that decides whether a busy fight stutters on
+## a low-end CPU. Prints one line per level (enemies, median/p90 process ms,
+## median/p90/max physics ms) and flags any level whose typical cost is more
+## than 2x the campaign median. Until 2026-10-08 it read
+## Performance.TIME_PROCESS/TIME_PHYSICS_PROCESS, which hold the worst tick of
+## the last second, and so reported spikes as the typical cost (#89).
+## Findings live in docs/PERF_NOTES.md.
 ##   godot --headless --path . --audio-driver Dummy res://tests/cpu_cost_sweep.tscn
 
 const BUILD_WAIT := 2.4
 const SAMPLE_SECONDS := 5.0
+const TickClock := preload("res://tests/tick_clock.gd")
+
+var _clock
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -22,23 +28,16 @@ func _wait(seconds: float) -> void:
 		t += 0.25
 
 func _sample(seconds: float) -> Dictionary:
-	var n := 0
-	var p_sum := 0.0
-	var p_max := 0.0
-	var ph_sum := 0.0
-	var ph_max := 0.0
+	_clock.reset()
 	var t := 0.0
 	while t < seconds:
 		await get_tree().process_frame
 		t += get_process_delta_time()
-		var p := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-		var ph := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-		p_sum += p; ph_sum += ph
-		p_max = maxf(p_max, p); ph_max = maxf(ph_max, ph)
-		n += 1
-	return {"n": n, "p_avg": p_sum / maxf(n, 1), "p_max": p_max, "ph_avg": ph_sum / maxf(n, 1), "ph_max": ph_max}
+	return {"n": _clock.count(), "p_med": _clock.process_percentile(0.5), "p_p90": _clock.process_percentile(0.9),
+		"ph_med": _clock.percentile(0.5), "ph_p90": _clock.percentile(0.9), "ph_max": _clock.percentile(1.0)}
 
 func _run() -> void:
+	_clock = TickClock.attach(self)
 	var rows: Array = []
 	for path in GameState.campaign():
 		var id := GameState.level_id_from_path(String(path))
@@ -74,9 +73,9 @@ func _run() -> void:
 				e.set_physics_process(false)
 		var frozen := await _sample(SAMPLE_SECONDS * 0.6)
 		var objs := Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
-		rows.append({"id": id, "enemies": enemies.size(), "p_avg": full["p_avg"], "p_max": full["p_max"],
-			"ph_avg": full["ph_avg"], "ph_max": full["ph_max"], "nodes": objs, "frames": full["n"],
-			"ph_nonav": nonav["ph_avg"], "ph_frozen": frozen["ph_avg"],
+		rows.append({"id": id, "enemies": enemies.size(), "p_med": full["p_med"], "p_p90": full["p_p90"],
+			"ph_med": full["ph_med"], "ph_p90": full["ph_p90"], "ph_max": full["ph_max"], "nodes": objs, "ticks": full["n"],
+			"ph_nonav": nonav["ph_med"], "ph_frozen": frozen["ph_med"],
 			"bodies": Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS),
 			"pairs": Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS),
 			"nav_agents": Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT),
@@ -87,22 +86,22 @@ func _run() -> void:
 				e.queue_free()
 		await get_tree().process_frame
 		await get_tree().process_frame
-	# Median of the combined average cost, for the outlier flag.
+	# Median of the combined typical cost, for the outlier flag.
 	var costs: Array[float] = []
 	for r in rows:
-		costs.append(float(r["p_avg"]) + float(r["ph_avg"]))
+		costs.append(float(r["p_med"]) + float(r["ph_med"]))
 	costs.sort()
 	var median: float = costs[costs.size() / 2] if costs.size() > 0 else 0.0
-	print("CPU  %-13s enemies  proc avg/max ms   phys avg/max ms  phys:nonav frozen   bodies pairs agents polys  flag" % "level")
+	print("CPU  %-13s enemies  proc p50/p90 ms   phys p50/p90/max ms     phys p50:nonav frozen   bodies pairs agents polys  flag" % "level")
 	var flagged := 0
 	for r in rows:
-		var total: float = float(r["p_avg"]) + float(r["ph_avg"])
+		var total: float = float(r["p_med"]) + float(r["ph_med"])
 		var flag := ""
 		if median > 0.0 and total > median * 2.0:
 			flag = "HOT x%.1f" % (total / median)
 			flagged += 1
-		print("CPU  %-13s %5d   %6.2f / %6.2f     %6.2f / %6.2f   %6.2f   %6.2f   %5d %5d %5d %5d  %s" % [
-			r["id"], r["enemies"], r["p_avg"], r["p_max"], r["ph_avg"], r["ph_max"], r["ph_nonav"], r["ph_frozen"],
+		print("CPU  %-13s %5d   %6.2f / %6.2f     %6.2f / %6.2f / %7.2f   %6.2f   %6.2f   %5d %5d %5d %5d  %s" % [
+			r["id"], r["enemies"], r["p_med"], r["p_p90"], r["ph_med"], r["ph_p90"], r["ph_max"], r["ph_nonav"], r["ph_frozen"],
 			r["bodies"], r["pairs"], r["nav_agents"], r["nav_polys"], flag])
 	print("CPU_COST_SWEEP_DONE median=%.2fms flagged=%d" % [median, flagged])
 	print("RESULT PASS")

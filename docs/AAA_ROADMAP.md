@@ -66,8 +66,9 @@ per-robot telemetry rig, fix with a red-then-green probe, PR. Each item below na
 - ✅ **Polish** — MANUS got real phases (`manus_phase_probe`), Flash Intensity now covers world light
   bursts (`flash_intensity_probe`), pause-menu FIELD MANUAL (`field_manual_probe`), Continue names the
   saved level, Damage Taken / Damage Number Size / Subtitle Size accessibility sliders.
-- **Open** — every active robot costs ~1 ms of physics-tick time, engine-side (issue #89,
-  `docs/PERF_NOTES.md`); MANUS phase-3 cadence and the narrower WARBOT lane need a playtest.
+- **Open** — MANUS phase-3 cadence and the narrower WARBOT lane need a playtest. (The "~1 ms of
+  physics per active robot" once listed here was a measurement artifact, about 0.07 ms per robot in
+  fact; see `docs/PERF_NOTES.md`, #89.)
 
 ## ✅ Eye-level look audit, measured (2026-09-12)
 Every campaign level shot from the spawn at eye height, then scored (`tests/look_capture` +
