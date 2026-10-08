@@ -116,7 +116,7 @@ on the current level (discovered ones with weaknesses + counter-weapons, undisco
 
 ## 4. Tech & quality 🤖
 
-- **Performance** — ✅ horde CPU measured (2026-10-08, `tests/horde_cost_probe`): ~55 us physics + 25 us process per robot, 60 robots ~5.5 ms (`docs/PERF_NOTES.md`). Still open: the GPU side with a big horde, and verifying the 4 graphics tiers scale render cost as intended (windowed: `tools/perf_measure.tscn`).
+- **Performance** — ✅ horde CPU measured (2026-10-08, `tests/horde_cost_probe`): ~55 us physics + 25 us process per robot, 60 robots ~5.5 ms (`docs/PERF_NOTES.md`). ✅ Graphics tiers measured (2026-10-08, `tools/perf_tiers.tscn`): each tier costs more than the one below (x1.3-1.6, x1.8-2.1, x1.5 per step at 4K on an Arc A370M); a live ULTRA -> HIGH switch keeps ~ULTRA cost until restart (#156). Still open: the GPU side with a big horde.
 - **Wider probe coverage** — the suite (`tools/run_tests.sh`) now covers objectives, hazards, loot, teaching, director, elites, **weapon stats**, **EMP**, **combat-damage math** (range falloff, headshots, pierce — measured in-engine, `tests/damage_math_probe`) and **save/load round-trip** (`tests/save_probe`, which caught Armory supplies being lost on Continue). **Continue-from-every-level** now gated by `tests/continue_sweep_probe`. Every boss's wounded escalation is gated by `tests/boss_phase_probe` (MANUS by `tests/manus_phase_probe`).
 
 ---

@@ -16,7 +16,7 @@ func _ready() -> void:
 	Engine.max_fps = 0
 	DisplayServer.window_set_size(Vector2i(1280, 720))
 	if GraphicsSettings:
-		GraphicsSettings.quality = 2          # highest tier (in-memory only)
+		GraphicsSettings.quality = 2          # HIGH (ULTRA is 3; in-memory only)
 		GraphicsSettings._apply_viewport()
 	await _run()
 	get_tree().quit()
@@ -24,6 +24,12 @@ func _ready() -> void:
 
 func _run() -> void:
 	for id in LEVELS:
+		# Levels spawn FX, pickups and enemies into current_scene (this node)
+		# and some into root, outside `holder`; free everything new after each
+		# level, or the next one is measured with the last one's leftovers.
+		var before := {}
+		for n in get_children() + get_tree().root.get_children():
+			before[n] = true
 		var holder := Node3D.new()
 		add_child(holder)
 		var lvl: Node = load("res://scenes/levels/level_%s.tscn" % id).instantiate()
@@ -41,5 +47,7 @@ func _run() -> void:
 		var vmem := rs.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / 1048576.0
 		print("PERF %-12s fps=%6.1f draws=%5d objects=%5d prims=%8d vmem=%6.1fMB" % [
 			id, MEASURE / dt, draws, objs, prims, vmem])
-		holder.free()
+		for n in get_children() + get_tree().root.get_children():
+			if not before.has(n):
+				n.free()
 		await get_tree().process_frame
