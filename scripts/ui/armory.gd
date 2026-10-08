@@ -26,8 +26,20 @@ const SUPPLY_META := {
 	"health":   {"icon": "✚", "desc": "+%d max HP on deploy", "color": Color(1.0, 0.4, 0.45)},
 }
 
+## Weapon mods (GameState.MOD_DEFS): bought once, fitted to one hitscan/beam gun.
+const MKEYS := ["arc", "thermite", "ricochet", "override"]
+const MOD_META := {
+	"arc":      {"icon": "ϟ", "color": Color(0.45, 0.8, 1.0)},
+	"thermite": {"icon": "♨", "color": Color(1.0, 0.55, 0.2)},
+	"ricochet": {"icon": "↯", "color": Color(0.85, 0.85, 0.6)},
+	"override": {"icon": "⌬", "color": Color(0.5, 1.0, 0.55)},
+}
+
 var _cards: Dictionary = {}        # upgrade key -> {segs, cost, buy, box, accent}
 var _supply_cards: Dictionary = {} # supply key -> {cost, buy, box, accent, queued}
+var _mod_cards: Dictionary = {}    # mod id -> {buy, box, accent, status, gun, pick}
+var _mod_guns: Array[String] = []  # moddable weapon scene paths, weakest -> strongest
+var _gun_names: Dictionary = {}    # scene path -> display name
 var _score_lbl: Label
 var _scan: ColorRect
 
@@ -108,6 +120,16 @@ func _ready() -> void:
 	vbox.add_child(srack)
 	for i in SKEYS.size():
 		_make_supply_card(srack, SKEYS[i], i)
+
+	# --- weapon mods (change what a hit does; one per gun) ---
+	_mod_guns = GameState.moddable_weapons()
+	vbox.add_child(_section_label("WEAPON MODS  ·  one per gun, refit for free  ·  hitscan and beam guns"))
+	var mrack := HBoxContainer.new()
+	mrack.add_theme_constant_override("separation", 16)
+	mrack.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(mrack)
+	for k in MKEYS:
+		_make_mod_card(mrack, k)
 
 	# --- footer: hint + deploy ---
 	var footer := HBoxContainer.new()
@@ -280,8 +302,144 @@ func _make_supply_card(rack: HBoxContainer, k: String, idx: int) -> void:
 	vb.add_child(buy)
 	_supply_cards[k] = {"cost": null, "buy": buy, "box": box, "accent": accent, "queued": queued}
 
+func _gun_name(path: String) -> String:
+	if not _gun_names.has(path):
+		var w = (load(path) as PackedScene).instantiate()
+		_gun_names[path] = (w as Weapon).data.display_name if w is Weapon and (w as Weapon).data else path.get_file().get_basename()
+		w.free()
+	return String(_gun_names[path])
+
+func _make_mod_card(rack: HBoxContainer, k: String) -> void:
+	var m: Dictionary = MOD_META[k]
+	var accent: Color = m["color"]
+	var defn: Dictionary = GameState.MOD_DEFS[k]
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(250, 150)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.06, 0.08, 0.11, 0.96)
+	box.set_corner_radius_all(12)
+	box.set_border_width_all(2)
+	box.border_color = accent
+	box.set_content_margin_all(12)
+	card.add_theme_stylebox_override("panel", box)
+	rack.add_child(card)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 10)
+	card.add_child(hb)
+	var icon := Label.new()
+	icon.text = m["icon"]
+	icon.add_theme_font_size_override("font_size", 38)
+	icon.add_theme_color_override("font_color", accent)
+	icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(icon)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 3)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(vb)
+	var name := Label.new()
+	name.text = defn["label"]
+	name.add_theme_font_size_override("font_size", 16)
+	name.add_theme_color_override("font_color", Color(0.92, 0.97, 1.0))
+	vb.add_child(name)
+	var desc := Label.new()
+	desc.text = defn["desc"]
+	desc.add_theme_font_size_override("font_size", 12)
+	desc.add_theme_color_override("font_color", Color(0.6, 0.7, 0.76))
+	vb.add_child(desc)
+	var status := Label.new()
+	status.add_theme_font_size_override("font_size", 12)
+	status.add_theme_color_override("font_color", accent)
+	vb.add_child(status)
+	# Gun picker: which weapon a FIT puts this mod on.
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	vb.add_child(row)
+	var prev := Button.new()
+	prev.text = "◀"
+	prev.focus_mode = Control.FOCUS_NONE
+	prev.pressed.connect(_cycle_gun.bind(k, -1))
+	row.add_child(prev)
+	var gun := Label.new()
+	gun.add_theme_font_size_override("font_size", 12)
+	gun.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	gun.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	gun.clip_text = true
+	row.add_child(gun)
+	var nxt := Button.new()
+	nxt.text = "▶"
+	nxt.focus_mode = Control.FOCUS_NONE
+	nxt.pressed.connect(_cycle_gun.bind(k, 1))
+	row.add_child(nxt)
+	var buy := Button.new()
+	buy.focus_mode = Control.FOCUS_NONE
+	buy.custom_minimum_size = Vector2(0, 32)
+	buy.pressed.connect(_buy_mod.bind(k))
+	vb.add_child(buy)
+	# Start the picker on the gun it is fitted to, else the armed gun, else the first.
+	var pick := 0
+	var on := GameState.mod_fitted_to(k)
+	var want := on if on != "" else GameState.equipped_weapon
+	if _mod_guns.has(want):
+		pick = _mod_guns.find(want)
+	_mod_cards[k] = {"buy": buy, "box": box, "accent": accent, "status": status, "gun": gun, "pick": pick}
+
+func _cycle_gun(k: String, step: int) -> void:
+	if _mod_guns.is_empty():
+		return
+	var c: Dictionary = _mod_cards[k]
+	c["pick"] = posmod(int(c["pick"]) + step, _mod_guns.size())
+	_refresh()
+
+## BUY an unowned mod (it is fitted to the picked gun straight away), or FIT an
+## owned one onto the picked gun.
+func _buy_mod(k: String) -> void:
+	get_viewport().set_input_as_handled()
+	var c: Dictionary = _mod_cards[k]
+	if _mod_guns.is_empty():
+		return
+	var path: String = _mod_guns[int(c["pick"])]
+	var ok := true
+	if not GameState.owned_mods.has(k):
+		ok = GameState.buy_mod(k)
+	if ok:
+		ok = GameState.fit_mod(k, path)
+	if ok:
+		AudioBus.play_synth_ui("pickup_clink", -4.0, 0.9)
+		_pop_button(c["buy"])
+	else:
+		AudioBus.play_synth_ui("empty_click", -8.0, 0.8)
+	_refresh()
+
+func _refresh_mods() -> void:
+	for k in MKEYS:
+		var c: Dictionary = _mod_cards[k]
+		var accent: Color = c["accent"]
+		var owned: bool = GameState.owned_mods.has(k)
+		var on := GameState.mod_fitted_to(k)
+		var path: String = _mod_guns[int(c["pick"])] if not _mod_guns.is_empty() else ""
+		(c["gun"] as Label).text = _gun_name(path) if path != "" else "-"
+		var held := GameState.mod_for(path)
+		(c["status"] as Label).text = ("ON  " + _gun_name(on)) if on != "" else ("ON THE SHELF" if owned else "")
+		var buy: Button = c["buy"]
+		var box: StyleBoxFlat = c["box"]
+		if not owned:
+			var price := int(GameState.MOD_DEFS[k]["cost"])
+			var afford := GameState.score >= price
+			buy.disabled = not afford or path == ""
+			buy.text = ("BUY + FIT  %d cr" % price) if afford else ("NEED %d cr" % price)
+			box.border_color = accent if afford else Color(accent.r, accent.g, accent.b, 0.35)
+		elif on == path:
+			buy.disabled = true
+			buy.text = "✓ FITTED"
+			box.border_color = Color(1.0, 0.82, 0.35)
+		else:
+			buy.disabled = path == ""
+			buy.text = ("SWAP FOR %s" % GameState.MOD_DEFS[held]["label"]) if held != "" else "FIT HERE"
+			box.border_color = accent
+
 func _refresh() -> void:
 	_score_lbl.text = "CREDITS  %d" % GameState.score
+	_refresh_mods()
 	for k in KEYS:
 		var c: Dictionary = _cards[k]
 		var accent: Color = c["accent"]

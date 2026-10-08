@@ -266,7 +266,7 @@ func _shrapnel(source: Node, at: Vector3) -> void:
 		seen[d] = true
 		var dist := (c as Node3D).global_position.distance_to(at)
 		var falloff := clampf(1.0 - dist / s.radius, 0.2, 1.0)
-		d.apply_damage(SHRAPNEL_DAMAGE * falloff, source, false, at)
+		GameState.apply_secondary_damage(d, SHRAPNEL_DAMAGE * falloff, source, at) # not a fresh hit
 
 func _dust(parent: Node, at: Vector3) -> void:
 	if parent == null:

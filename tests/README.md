@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-298 probes total: **73** wired into the headless suite (`suite`), **82**
+299 probes total: **74** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -338,6 +338,7 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_codex_probe | Weapon Codex layout/stats screenshotted | windowed |
 | weapon_fx_probe | Laser-beam-into-wall and rocket-in-flight FX, mid-flight and post-detonation | windowed |
 | weapon_lineup | Every player weapon scene with real models, rendered in a grid | windowed |
+| weapon_mods_probe | Weapon mods: `GameState.BASE_LOADOUT` matches `player.tscn`'s rack; buy / fit / refit rules, projectile guns refused, save + load round trip; through the rifle's real hitscan, CHAIN ARC hits a robot 4 m away (not one at 22 m), THERMITE burns exactly 30% over 3 s, RICOCHET bounces off a wall into a robot, OVERRIDE turns a robot under 25%, mod damage is not a hit for accuracy, procs are rate-limited | suite |
 | weapon_order_probe | Weapon rack auto-sorts weakest→strongest; HUD carousel builds a cell per weapon | headless |
 | weapon_pacing_probe | Weapons are first offered in campaign in power-rank order (no weaker gun handed out after a stronger one) | headless |
 | weapon_recover_probe | Every way the equipped weapon can "vanish" is injected; WeaponManager watchdog notices + re-arms the player | headless |

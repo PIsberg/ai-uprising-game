@@ -1819,6 +1819,8 @@ func _on_weapon_changed(w: Weapon) -> void:
 	_current_weapon = w
 	if w and w.data:
 		weapon_label.text = w.data.display_name
+		if w.mod_id != "" and GameState.MOD_DEFS.has(w.mod_id):
+			weapon_label.text += "  ·  " + String(GameState.MOD_DEFS[w.mod_id]["label"]) # fitted Armory mod
 		# Once per level: tell the player the gun they just drew is patched against.
 		if not _countermeasure_warned and AIDirector.countermeasure_weapon() == w.data.display_name:
 			_countermeasure_warned = true
