@@ -36,7 +36,8 @@ func _ready() -> void:
 	# GameState.report_player_hit -> player_dealt_damage(crit=true) -> HUD).
 	GameState.report_player_hit(25.0, Vector3.ZERO, false, true)
 	await get_tree().process_frame
-	if hud._headshot_alpha > 0.9 and hud._headshot_label.text == "HEADSHOT":
+	# The label reads "◎ HEADSHOT!" (arcade style); match the word, not the dressing.
+	if hud._headshot_alpha > 0.9 and "HEADSHOT" in hud._headshot_label.text:
 		print("PASS: crit hit armed the headshot callout (alpha=%.2f, text=%s)" % [hud._headshot_alpha, hud._headshot_label.text])
 	else:
 		print("FAIL: crit hit did not arm the headshot callout (alpha=%.2f)" % hud._headshot_alpha); failures += 1
@@ -51,4 +52,5 @@ func _ready() -> void:
 		print("FAIL: headshot callout did not fade (modulate.a=%.2f)" % hud._headshot_label.modulate.a); failures += 1
 
 	print("=== %s ===" % ("ALL PASS" if failures == 0 else "%d FAILURE(S)" % failures))
+	print("RESULT ", "PASS" if failures == 0 else "FAIL")
 	get_tree().quit(0 if failures == 0 else 1)

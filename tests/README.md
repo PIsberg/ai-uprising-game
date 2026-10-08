@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-286 probes total: **61** wired into the headless suite (`suite`), **84**
+286 probes total: **64** wired into the headless suite (`suite`), **81**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -100,7 +100,7 @@ or GPU-timing probes; `--headless` renders these black).
 | cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
-| content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
+| content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | suite |
 | continue_label_probe | Main-menu Continue button names where the run resumes (saved level title, campaign position N/24, difficulty) via GameState.peek_save, which reads the save without touching the live run; hidden without a save (backs up and restores user://savegame.cfg) | suite |
 | continue_sweep_probe | Continue works from every campaign level: saves a returning player's run (two bonus weapons, one equipped, Armory supplies, an upgrade), wipes the singleton, loads it back and deploys the real level scene, asserting the spawned player carries all of it; ~90 s | suite |
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
@@ -113,7 +113,7 @@ or GPU-timing probes; `--headless` renders these black).
 | damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |
 | dark_spot_probe | Mean frame luminance from spawn, per campaign level, ranking under-lit "dark spot" levels | windowed |
 | damage_source_probe | `Damageable.apply_damage` survives a FREED or non-Node `source` (shooter died before its projectile landed) and still applies the damage | suite |
-| dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | headless |
+| dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | suite |
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |
@@ -168,7 +168,7 @@ or GPU-timing probes; `--headless` renders these black).
 | haul_probe | Haul payload: walking into the core shoulders it; the real player.gd then ignores sprint, holds a heavy walk and refuses to dash (each against an uncarried control); hits under drop_damage keep it, crossing it knocks the core behind the player and clears the flag; re-pickup; dying drops it; carrying it into the ring completes the task; every campaign haul core and ring on walkable ground joined by a route (red-checked: removing the player.gd guards fails three checks) | suite |
 | hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
-| headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | headless |
+| headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name | windowed |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
