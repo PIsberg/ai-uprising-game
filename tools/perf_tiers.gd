@@ -15,11 +15,15 @@ extends Node
 ## is whatever no knob explains.
 ##
 ## Reading GPU numbers from a laptop (docs/PERF_NOTES.md, "Graphics tiers"):
-##   * run ONE configuration per process and take the median of repeats: GPU
-##     state leaks between runs in one process, and identical configurations
-##     measured 112 and 224 ms in separate processes;
+##   * run ONE configuration per process and take the median of repeats: an
+##     earlier build's allocator blocks can leave the process over its VRAM
+##     budget, paging memory to shared system RAM (#156: HIGH 118-134 ms
+##     first, 222-239 ms after ULTRA);
 ##   * `burn=S` renders the first level for S seconds before measuring, since
 ##     the first ~30 s run ~40% faster than the throttled steady state;
+##     `burn_scale=X` renders that burn at render scale X;
+##   * the `vram_mb` column is Godot's allocated video memory. It cannot show
+##     the spill above; the process's "GPU Process Memory" counters can.
 ##   * `repeat=N` repeats the run list in one process (quick look only).
 ## Each run frees everything it added under this node and root, or the next
 ## run would be measured with the last level's FX, pickups and enemies.
@@ -31,6 +35,7 @@ var _frames := 180
 var _ablate: PackedStringArray = []
 var _repeat := 1
 var _burn := 0.0
+var _burn_scale := 1.0 ## render scale during the burn only (burn_scale=0.5 keeps an ULTRA burn under a 4 GB card's VRAM budget, #156)
 var _base_tier := 3
 var _tiers: Array = [0, 1, 2, 3]
 
@@ -46,6 +51,8 @@ func _ready() -> void:
 			_tiers = Array(a.trim_prefix("tiers=").split(",")).map(func(s): return clampi(int(s), 0, 3))
 		elif a.begins_with("tier="):
 			_base_tier = clampi(int(a.trim_prefix("tier=")), 0, 3)
+		elif a.begins_with("burn_scale="):
+			_burn_scale = clampf(float(a.trim_prefix("burn_scale=")), 0.25, 1.0)
 		elif a.begins_with("burn="):
 			_burn = float(a.trim_prefix("burn="))
 		elif a.begins_with("repeat="):
@@ -70,6 +77,7 @@ func _run() -> void:
 	print("GPU: %s" % gs.gpu_summary())
 	if _burn > 0.0:
 		gs.quality = _base_tier
+		gs.render_scale = _burn_scale
 		gs._apply_viewport()
 		var keep := {}
 		for n in get_children() + get_tree().root.get_children():
@@ -78,11 +86,13 @@ func _run() -> void:
 		var until := Time.get_ticks_msec() + int(_burn * 1000.0)
 		while Time.get_ticks_msec() < until:
 			await get_tree().process_frame
+		print("burn done at t=%d, vram %d MB" % [Time.get_unix_time_from_system(), _vram_mb()])
 		for n in get_children() + get_tree().root.get_children():
 			if not keep.has(n):
 				n.queue_free()
+		gs.render_scale = 1.0
 		await get_tree().process_frame
-	print("level   tier     gpu_ms  cpu_ms  draws   prims")
+	print("level   tier     gpu_ms  cpu_ms  draws   prims  vram_mb  t")
 	var runs: Array = _tiers.duplicate()
 	if not _ablate.is_empty():
 		runs = ["=" + TIER_NAMES[_base_tier]]
@@ -118,9 +128,10 @@ func _run() -> void:
 				cpu += RenderingServer.viewport_get_measured_render_time_cpu(vp)
 			var rs := RenderingServer
 			var label: String = TIER_NAMES[t] if run is int else String(run)
-			print("%-7s %-7s %7.2f %7.2f %6d %8d" % [id, label, gpu / _frames, cpu / _frames,
+			print("%-7s %-7s %7.2f %7.2f %6d %8d %8d  %d" % [id, label, gpu / _frames, cpu / _frames,
 				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
-				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)])
+				rs.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+				_vram_mb(), Time.get_unix_time_from_system()])
 			for n in get_children() + get_tree().root.get_children():
 				if not before.has(n):
 					n.queue_free()
@@ -129,6 +140,12 @@ func _run() -> void:
 	gs.quality = saved_q
 	gs.render_scale = saved_rs
 	gs._apply_viewport()
+
+## Video memory Godot has allocated (textures + buffers + render targets), MB.
+## The OS may place part of it in shared system memory; compare with the
+## process's "GPU Process Memory" counters (docs/PERF_NOTES.md).
+func _vram_mb() -> int:
+	return int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_VIDEO_MEM_USED) / (1024 * 1024))
 
 ## One ULTRA knob back to HIGH's value (GraphicsSettings._apply_viewport,
 ## _apply_shadow_quality, _apply_ss_effect_quality, apply_to_environment).

@@ -92,9 +92,39 @@ per process, after a 40 s burn-in:
 
 Every step up costs more, by x1.3-1.4 (LOW to MEDIUM, except neon x1.6),
 x1.8-2.1 (to HIGH) and x1.5 (to ULTRA). (*) neon at HIGH measures 206-236 ms
-instead when the process rendered ULTRA first: see #156. Until the cause is found, dropping below the
-tier a session started at shows a "Restart to apply" button in Settings and a hint in the pause menu
-(`GraphicsSettings.launch_quality` / `restart_recommended`, `tests/quality_restart_probe`).
+instead when the process rendered ULTRA first: the GPU memory below. Dropping below the tier a
+session started at therefore shows a "Restart to apply" button in Settings and a hint in the pause
+menu (`GraphicsSettings.launch_quality` / `restart_recommended`, `tests/quality_restart_probe`).
+
+### Why HIGH stays slow after ULTRA (#156)
+
+Not pipeline or driver state: video memory. ULTRA at 4K fills the A370M's dedicated memory up to
+the budget Windows gives the process (3,009 MB on this machine). Freeing the ULTRA level returns
+the resources to Godot's Vulkan allocator (VMA), but not the memory blocks they lived in: the
+long-lived resources the next level keeps using (cached meshes and textures) sit scattered across
+those blocks, so no block empties and none is released. The process stays over its budget, Windows
+moves part of its device memory to shared system memory, and every frame reads from there.
+
+Device-local heap during the HIGH measurement on neon, two processes each (VMA statistics printed by
+an instrumented 4.7.2 build that logs `vmaGetHeapBudgets` in `get_total_memory_used`):
+
+| first tier | VMA blocks | allocated in them | driver usage / budget | HIGH GPU ms |
+|---|---|---|---|---|
+| HIGH | 2,055 MB in 10 blocks | 1,877 MB | 2,055 / 3,009 MB | 129, 137 |
+| ULTRA | 3,092-3,095 MB in 32 blocks | 1,876 MB | 3,095 / 3,009 MB | 222, 239 |
+
+The same 1,876 MB of live resources, held in 32 blocks instead of 10. Godot's own
+`RENDERING_INFO_VIDEO_MEM_USED` (the `vram_mb` column `perf_tiers` prints) counts the allocations,
+so it reads about 2,060 MB either way and cannot show this. The process's
+`\GPU Process Memory(*)\Shared Usage` counter does, and HIGH's GPU time follows it across 8
+processes: 327 MB shared (the baseline) gave 118-134 ms, 502-665 MB gave 227-230 ms, 722-740 MB gave
+330-356 ms. A half-resolution ULTRA burn (`burn_scale=0.5`) made it worse (330-356 ms), not better:
+it is the first build's block layout plus the next build's demand that crosses the budget, not
+ULTRA's own peak.
+
+Only a restart compacts the allocator, so "Restart to apply" is the fix inside the game. A GPU with
+more memory than the tier's peak never crosses its budget. The engine side (Godot could defragment,
+or keep long-lived resources out of blocks a level frees) is drafted as an upstream report in #171.
 
 Splits measured with `ablate=` (titan, one process each):
 - **MSAA** at HIGH: none 60.1, 2x 68.6 (shipped), 4x 74.5 ms.
@@ -110,8 +140,9 @@ Four traps, all of which produced wrong numbers on the way here:
    new under the tool and root after each level.
 2. **Throttling.** The first ~30 s run about 40% faster than steady state, so
    whatever is measured first looks cheap. Burn in with `burn=`.
-3. **In-process state.** GPU cost depends on what the process rendered before
-   (#156). Run one configuration per process.
+3. **In-process state.** GPU cost depends on what the process rendered before:
+   allocator blocks left over budget by an earlier build (#156, above). Run one
+   configuration per process.
 4. **Variance.** Identical configurations in separate processes still ranged
    112-236 ms before trap 3 was understood. Read medians of repeats, never one
    run.
