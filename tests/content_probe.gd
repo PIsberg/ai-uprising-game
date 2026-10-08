@@ -88,7 +88,9 @@ func _ready() -> void:
 	var sk := SKITTER.instantiate()
 	add_child(sk)
 	await get_tree().physics_frame
-	var skitter_ok: bool = sk.leap_cooldown <= 0.5 and sk.leap_min <= 1.5 \
+	# 3af4dd9 (2026-06-25) slowed the swarm to a 1.1 s "measured beat" on purpose;
+	# the bar is "still hops often and close", not the original 0.5 s blur.
+	var skitter_ok: bool = sk.leap_cooldown <= 1.5 and sk.leap_min <= 1.5 \
 		and sk.hop_side > 0.0 and sk.has_method("_launch_leap")
 	print("SKITTER cd=%.2f min=%.1f side=%.1f  %s" % [sk.leap_cooldown, sk.leap_min, sk.hop_side, "PASS" if skitter_ok else "FAIL"])
 	ok_all = ok_all and skitter_ok
@@ -109,8 +111,9 @@ func _ready() -> void:
 	var wm := preload("res://scenes/enemies/warmech.tscn").instantiate()
 	add_child(wm)
 	await get_tree().physics_frame
+	# 50ea09d (2026-06-30) de-sponged it to 380 HP on purpose; "a wall" is >= 300.
 	var warmech_ok: bool = is_instance_valid(wm) and wm.has_method("_fire_shell") \
-		and wm.max_health >= 400.0 and wm.salvo_count >= 2 \
+		and wm.max_health >= 300.0 and wm.salvo_count >= 2 \
 		and "warmech" in LevelBuilder.ENEMY_SCENES and EnemyCodex.has("warmech") \
 		and ResourceLoader.exists("res://scenes/weapons/projectile_warmech.tscn")
 	print("WARMECH hp=%.0f salvo=%d registered=%s  %s" % [
@@ -128,4 +131,5 @@ func _ready() -> void:
 	ok_all = ok_all and weapon_ok
 
 	print("CONTENT_PROBE ", "ALL PASS" if ok_all else "FAIL")
-	get_tree().quit()
+	print("RESULT ", "PASS" if ok_all else "FAIL")
+	get_tree().quit(0 if ok_all else 1)

@@ -81,3 +81,7 @@ res://tests/tick_clock_probe.tscn
 res://tests/synth_boot_probe.tscn
 # Every boss escalates by behaviour as it is wounded (MANUS has its own probe).
 res://tests/boss_phase_probe.tscn
+# Revived 2026-10-08: had gone stale outside the suite (firewall layer, callout text, retunes).
+res://tests/content_probe.tscn
+res://tests/dash_probe.tscn
+res://tests/headshot_callout_probe.tscn

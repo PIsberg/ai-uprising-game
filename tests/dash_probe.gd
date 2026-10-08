@@ -1,8 +1,10 @@
 extends Node
 ## Headless check of dash phase-through. Player<->enemy collision is no longer
-## hard at all (the player's resting collision_mask is world-only, 1 — enemies
-## were always mask=1 too, so neither side ever solidly collided with the
-## other); a soft separation push stands in for it instead (see player.gd
+## hard at all (the player's resting collision_mask never includes the enemy
+## layer, 4 — enemies were always mask=1 too, so neither side ever solidly
+## collided with the other; the mask is world 1 plus the firewall layer 128 that
+## only the player collides with, #123); a soft separation push stands in for it
+## instead (see player.gd
 ## _update_enemy_separation). During the dash's i-frame window that push is
 ## suspended so a dodge can pass THROUGH a body-blocking brute, and both the
 ## push and invulnerability restore cleanly when the dash ends.
@@ -17,8 +19,9 @@ func _run() -> void:
 	await get_tree().create_timer(2.0).timeout
 	var player := get_tree().get_first_node_in_group("player") as CharacterBody3D
 	var fails := 0
-	if player.collision_mask != 1:
-		print("FAIL: resting mask %d != 1 (world only — no hard enemy collision)" % player.collision_mask)
+	var resting_mask := player.collision_mask
+	if resting_mask & 4 != 0 or resting_mask & 1 == 0:
+		print("FAIL: resting mask %d must hit the world (1) and never enemies (4)" % resting_mask)
 		fails += 1
 	Input.action_press("dash")
 	await get_tree().physics_frame
@@ -36,8 +39,8 @@ func _run() -> void:
 	# Wait out the dash and confirm everything restores.
 	await get_tree().create_timer(float(player.get("dash_duration")) + 0.3).timeout
 	print("post-dash mask=%d invulnerable=%s" % [player.collision_mask, player.get("hp").invulnerable])
-	if player.collision_mask != 1:
-		print("FAIL: mask changed after dash (should always stay world-only)")
+	if player.collision_mask != resting_mask:
+		print("FAIL: mask changed by the dash (%d -> %d)" % [resting_mask, player.collision_mask])
 		fails += 1
 	if player.get("hp").invulnerable:
 		print("FAIL: i-frames stuck on after dash")
