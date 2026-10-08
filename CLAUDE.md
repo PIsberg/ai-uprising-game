@@ -38,6 +38,7 @@ pwsh tools/load_race_check.ps1
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
+godot --path . tools/perf_tiers.tscn -- levels=neon tiers=2 burn=30   # GPU ms per tier; ONE config per process, median of repeats (docs/PERF_NOTES.md)
 # Headless editor profiler: runs a scene under --remote-debug and prints per-tick physics
 # percentiles, the physics server's step breakdown and the top script functions (native calls included)
 godot --headless --path . --script res://tools/remote_profile.gd -- scene=res://tests/enemy_cost_probe.tscn warmup=1 capture=30 "args=types=android"

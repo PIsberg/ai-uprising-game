@@ -1,9 +1,10 @@
-# Performance notes (CPU, headless)
+# Performance notes
 
 Headless runs have no GPU, so `tests/cpu_cost_sweep` and `tests/enemy_cost_probe`
 measure the pure main-thread script + physics cost. That is the number that
-decides whether a busy fight stutters on a low-end CPU; render cost is measured
-separately with `tools/perf_measure.tscn` (windowed).
+decides whether a busy fight stutters on a low-end CPU. Render cost is measured
+windowed with `tools/perf_measure.tscn` (per level) and `tools/perf_tiers.tscn`
+(per graphics tier; see "Graphics tiers" below for how to read it).
 
 ## How to read the numbers
 
@@ -74,6 +75,44 @@ cost about 5.5 ms of CPU per frame, a third of the 60 fps budget, so horde mode
 is not CPU-bound on the dev machine. Single ticks peak at 5-8 ms (spawn
 telegraphs instantiating). The GPU side (draw calls and lights per tier with 60
 robots) still needs a windowed run.
+
+## Graphics tiers (GPU), 2026-10-08
+
+`tools/perf_tiers.tscn` (windowed) builds a level per tier with render scale
+pinned to 1.0 and prints the viewport's measured GPU time. Dev laptop: Intel
+Arc A370M, fullscreen 3840x2400 (the window mode in settings.cfg wins over any
+size the tool asks for, so it prints the size it measured). One configuration
+per process, after a 40 s burn-in:
+
+| level | LOW | MEDIUM | HIGH | ULTRA | (GPU ms) |
+|---|---|---|---|---|---|
+| 01 | 31.1 | 42.3 | 76.2 | 117.0 | |
+| titan | 29.6 | 39.8 | 72.1 | 109.1 | |
+| neon | 34.8-36.0 | 55.8-59.2 | 112-134 (*) | 172-229 | 3 to 8 runs each |
+
+Every step up costs more, by x1.3-1.4 (LOW to MEDIUM, except neon x1.6),
+x1.8-2.1 (to HIGH) and x1.5 (to ULTRA). (*) neon at HIGH measures 206-236 ms
+instead when the process rendered ULTRA first: see #156.
+
+Splits measured with `ablate=` (titan, one process each):
+- **MSAA** at HIGH: none 60.1, 2x 68.6 (shipped), 4x 74.5 ms.
+- **MSAA** at ULTRA: none 100.4, 4x 109.9 (shipped), 2x 202.6 ms. 2x with
+  ULTRA's effects hits a slow path on this GPU; no tier ships that pairing.
+- **SSR** at HIGH on neon: about 10 ms of 112-123. Volumetric fog: within noise.
+
+Four traps, all of which produced wrong numbers on the way here:
+1. **A level spawns outside its own subtree.** FX, pickups and enemies go into
+   `current_scene` (the tool itself) and some go into root. Freeing only the
+   level's holder left them alive, adding about 13k primitives per run (166k
+   to 257k over 8 runs). `perf_tiers` and `perf_measure` now free everything
+   new under the tool and root after each level.
+2. **Throttling.** The first ~30 s run about 40% faster than steady state, so
+   whatever is measured first looks cheap. Burn in with `burn=`.
+3. **In-process state.** GPU cost depends on what the process rendered before
+   (#156). Run one configuration per process.
+4. **Variance.** Identical configurations in separate processes still ranged
+   112-236 ms before trap 3 was understood. Read medians of repeats, never one
+   run.
 
 ## Findings 2026-09-12 (SUPERSEDED: read from the once-a-second worst-tick monitor)
 
