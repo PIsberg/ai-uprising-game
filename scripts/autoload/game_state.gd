@@ -755,12 +755,19 @@ var directive_id: String = ""
 var directive: Dictionary = {}
 
 func roll_directive() -> void:
+	var id := ""
+	if randf() <= DIRECTIVE_CHANCE:
+		id = String(DIRECTIVES[randi() % DIRECTIVES.size()]["id"])
+	_set_directive(id)
+
+## Set the level's directive by id ("" for none) and announce it.
+func _set_directive(id: String) -> void:
 	directive = {}
 	directive_id = ""
-	if randf() <= DIRECTIVE_CHANCE:
-		var d: Dictionary = DIRECTIVES[randi() % DIRECTIVES.size()]
-		directive = d
-		directive_id = String(d["id"])
+	for d in DIRECTIVES:
+		if String(d["id"]) == id:
+			directive = d
+			directive_id = id
 	directive_set.emit(String(directive.get("name", "")), String(directive.get("desc", "")))
 
 func directive_damage_mult() -> float: return float(directive.get("damage", 1.0))
@@ -1479,6 +1486,8 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		_deaths_level_id = scene_path
 	current_level_path = scene_path
 	var found := campaign().find(scene_path)
+	if is_daily_op():
+		found = -1 # a Daily Op borrows a campaign level; it is not campaign progress (no save, no frontier)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -1486,7 +1495,10 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		reset_run()
 		# Roll this level's COMBAT DIRECTIVE (skip bosses — those fights stay pure).
 		# Only on a genuine new level; a TRY-AGAIN retry (reset=false) keeps it.
-		if not LevelDefs.level_is_boss(level_id_from_path(scene_path)):
+		# A Daily Op always runs the directive its date picked.
+		if is_daily_op():
+			_set_directive(String(daily_op.get("directive", "")))
+		elif not LevelDefs.level_is_boss(level_id_from_path(scene_path)):
 			roll_directive()
 		else:
 			directive = {}
@@ -1525,6 +1537,8 @@ func has_save() -> bool:
 
 ## Write a checkpoint of the current run so the player can Continue later.
 func save_progress() -> void:
+	if is_daily_op():
+		return # a Daily Op is a one-off run: the campaign checkpoint stays as it was (#172)
 	var cf := ConfigFile.new()
 	cf.set_value("run", "level_index", level_index)
 	cf.set_value("run", "max_level_reached", max_level_reached)
@@ -1698,6 +1712,9 @@ func has_next_level() -> bool:
 
 ## Called by the level-complete "Continue" button.
 func advance_level() -> void:
+	if is_daily_op():
+		finish_daily_op()
+		return
 	if has_next_level():
 		go_to_level(campaign()[level_index + 1], false)
 	else:
@@ -1713,6 +1730,142 @@ func advance_level() -> void:
 		# final boss"). The loading screen paints a frame first so the build stalls on
 		# a proper loading screen instead.
 		_enter_level_scene(VICTORY_CUTSCENE)
+
+# ---------- DAILY OP (#172): one seeded level a day, best score + streak ----------
+# @lat: [[meta-systems#Daily Op]]
+## A Daily Op borrows one campaign level for a one-off run: the same level, directive
+## and arsenal for every player on the same date, on HARD. It never touches the
+## campaign: load_level skips the save and the progress bookkeeping while `daily_op`
+## is set, and leaving restores the run state start_daily_op found (DAILY_RUN_KEYS),
+## so Continue or the campaign map never inherit the op's difficulty or guns.
+const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
+const DAILY_DIFFICULTY := Difficulty.HARD
+const DAILY_RUN_KEYS := ["difficulty", "score", "kills", "unlocked_weapons", "equipped_weapon",
+	"upgrades", "owned_mods", "weapon_mods", "supply_ammo", "supply_grenades", "supply_health",
+	"nemesis", "level_index", "max_level_reached", "current_level_path", "intro_played",
+	"controls_taught", "seen_enemy_types", "directive", "directive_id"]
+var daily_op: Dictionary = {}     ## the op being played ({} outside one)
+var daily_result: Dictionary = {} ## the last clear's {score, best, new_best, streak} for the win screen
+var _daily_saved: Dictionary = {}
+
+func is_daily_op() -> bool:
+	return not daily_op.is_empty()
+
+## The player's local date, "YYYY-MM-DD": a day is the player's day.
+func today_string() -> String:
+	return Time.get_date_string_from_system()
+
+## The op for `date`, the same on every machine (String.hash and PCG32 are both
+## deterministic): one non-boss campaign level other than the first, and a directive.
+func daily_op_for(date: String) -> Dictionary:
+	var camp := campaign()
+	var pool: Array[String] = []
+	for i in range(1, camp.size()):
+		if not LevelDefs.level_is_boss(level_id_from_path(String(camp[i]))):
+			pool.append(String(camp[i]))
+	if pool.is_empty():
+		return {}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("daily-op:" + date).hash()
+	var level: String = pool[rng.randi() % pool.size()]
+	var d: Dictionary = DIRECTIVES[rng.randi() % DIRECTIVES.size()]
+	return {"date": date, "level": level, "directive": String(d["id"]),
+		"title": LevelDefs.level_title(level_id_from_path(level)), "directive_name": String(d["name"]),
+		"directive_desc": String(d["desc"])}
+
+## The guns the campaign has handed out before `level`: every weapon offered on an
+## earlier level (the starting rack comes from player.tscn; the level's own
+## pickups spawn in it as usual).
+func daily_arsenal(level: String) -> Array[String]:
+	var out: Array[String] = []
+	var camp := campaign()
+	for i in range(0, maxi(camp.find(level), 0)):
+		var def: Dictionary = LevelDefs.get_def(level_id_from_path(String(camp[i])))
+		var scenes: Array[String] = []
+		var w: Dictionary = def.get("weapon", {})
+		if w.has("scene"):
+			scenes.append(String(w["scene"]))
+		for x in def.get("extra_weapons", []):
+			scenes.append(String((x as Dictionary).get("scene", "")))
+		for sc in scenes:
+			if sc != "" and not out.has(sc) and not BASE_LOADOUT.has(sc):
+				out.append(sc)
+	return out
+
+## Today's standing: {best (0 = no clear today), streak (0 once it has lapsed), cleared_today}.
+func daily_record(date: String = "") -> Dictionary:
+	if date == "":
+		date = today_string()
+	var cf := ConfigFile.new()
+	cf.load(RECORDS_PATH)
+	var last := String(cf.get_value("daily", "last_clear", ""))
+	var streak := int(cf.get_value("daily", "streak", 0))
+	if last != date and last != _day_before(date):
+		streak = 0 # a streak is alive while its last clear was today or yesterday
+	return {"best": int(cf.get_value("daily", "best_" + date, 0)), "streak": streak,
+		"cleared_today": last == date}
+
+## Fold a clear into records.cfg: the day's best score, and the streak of consecutive
+## days with a clear (same day: unchanged; the day after the last: +1; a gap: 1).
+func record_daily_clear(date: String, points: int) -> Dictionary:
+	var cf := ConfigFile.new()
+	cf.load(RECORDS_PATH) # keep the campaign and horde sections
+	var prev := int(cf.get_value("daily", "best_" + date, 0))
+	var last := String(cf.get_value("daily", "last_clear", ""))
+	var streak := int(cf.get_value("daily", "streak", 0))
+	if last != date:
+		streak = streak + 1 if last == _day_before(date) else 1
+	cf.set_value("daily", "best_" + date, maxi(prev, points))
+	cf.set_value("daily", "last_clear", date)
+	cf.set_value("daily", "streak", streak)
+	cf.save(RECORDS_PATH)
+	return {"score": points, "best": maxi(prev, points), "new_best": points > prev, "streak": streak}
+
+func _day_before(date: String) -> String:
+	var unix := Time.get_unix_time_from_datetime_string(date + "T12:00:00")
+	return Time.get_date_string_from_unix_time(unix - 86400)
+
+## Set up the op for `date` (today by default) and load it.
+func start_daily_op(date: String = "") -> void:
+	var op := daily_op_for(today_string() if date == "" else date)
+	if op.is_empty():
+		return
+	if not is_daily_op(): # a restart from inside an op keeps the first snapshot
+		_daily_saved = {}
+		for k in DAILY_RUN_KEYS:
+			var v = get(k)
+			_daily_saved[k] = v.duplicate(true) if (v is Array or v is Dictionary) else v
+	daily_op = op
+	daily_result = {}
+	difficulty = DAILY_DIFFICULTY
+	unlocked_weapons.clear() # assigned in place: the typed array keeps its type
+	unlocked_weapons.append_array(daily_arsenal(String(op["level"])))
+	equipped_weapon = ""
+	upgrades = {}
+	for k in UPGRADE_DEFS:
+		upgrades[k] = 0
+	owned_mods.clear()
+	weapon_mods = {}
+	intro_played = true
+	controls_taught = true
+	load_level(String(op["level"]))
+
+## The clear screen's button: leave the op and go back to the menu.
+func finish_daily_op() -> void:
+	end_daily_op()
+	set_state(State.MENU)
+	get_tree().change_scene_to_file(MAIN_MENU)
+
+## Leave the op however it ended (cleared, quit, abandoned) and hand back the run
+## state it replaced. The main menu calls this on every visit, so no path out of an
+## op can leave it running.
+func end_daily_op() -> void:
+	if not is_daily_op():
+		return
+	for k in _daily_saved:
+		set(k, _daily_saved[k])
+	daily_op = {}
+	_daily_saved = {}
 
 var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
 
@@ -1791,6 +1944,8 @@ func on_level_complete() -> void:
 	AIDirector.fold_level()
 	pending_patch_notes = _build_patch_notes()
 	grade_level() # emits level_graded for the end screen
+	if is_daily_op():
+		daily_result = record_daily_clear(String(daily_op["date"]), score)
 	set_state(State.LEVEL_COMPLETE)
 	level_completed.emit()
 

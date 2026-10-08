@@ -17,6 +17,14 @@ The Armory (`scripts/ui/armory.gd`) provides a meta-progression shop between com
 * **Consumable Supplies:** Three supply keys (`Armory.SKEYS`): `ammo`, `grenades` and `health` (max HP on deploy). These persist for the whole run and are re-applied on every deploy.
 * **Weapon Mods:** Four cards (`Armory.MKEYS`) with a gun picker: BUY + FIT buys a mod and fits it to the picked gun; owned mods FIT or SWAP for free. See [[weapons#Weapon Mods]].
 
+## Daily Op
+<!-- lat: { "require-code-mention": true } -->
+One seeded level a day, outside the campaign (main menu, under Last Stand):
+* **Seed:** `GameState.daily_op_for(date)` hashes the local date, so every player gets the same op on the same day: one non-boss campaign level other than the first, and one directive (always rolled).
+* **Loadout:** HARD, with `GameState.daily_arsenal(level)`, the guns the campaign hands out before that level (weapon pacing); no Armory upgrades or mods.
+* **Isolation:** `start_daily_op` snapshots the run state (`DAILY_RUN_KEYS`); while `daily_op` is set, `load_level` skips the campaign bookkeeping and `save_progress` refuses to write. `end_daily_op` (called by the main menu on every visit) restores the snapshot, so no path out of an op leaves its difficulty or guns behind.
+* **Records:** `record_daily_clear` keeps the day's best score and a streak of consecutive days with a clear in `records.cfg` `[daily]`; the win screen shows score, best and streak and returns to the menu (`advance_level` -> `finish_daily_op`). `tests/daily_op_probe` (suite).
+
 ## 3D Enemy Codex
 <!-- lat: { "require-code-mention": true } -->
 The roster data lives in `scripts/systems/enemy_codex.gd` (`EnemyCodex.ENTRIES`, ordered by

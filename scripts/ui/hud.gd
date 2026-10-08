@@ -1082,7 +1082,10 @@ func _on_level_completed() -> void:
 	win_menu.visible = true
 	# Triumphant sting on clear.
 	AudioBus.play_synth_ui("victory", -1.0, 1.0)
-	if GameState.has_next_level():
+	if GameState.is_daily_op():
+		win_title.text = tr("DAILY OP COMPLETE")
+		win_continue.text = tr("Main Menu")
+	elif GameState.has_next_level():
 		win_title.text = tr("SECTOR CLEARED")
 		win_continue.text = "Continue  ▸"
 	else:
@@ -1113,6 +1116,8 @@ func _on_level_completed() -> void:
 			+ "\n" + (tr("Accuracy %d%%") % acc) \
 			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
 			+ "   ·   " + time_str
+	if GameState.is_daily_op() and not GameState.daily_result.is_empty():
+		win_title.text += "\n" + _daily_result_line(GameState.daily_result)
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
 	# the Continue button still lets the player skip the wait. The finale waits
 	# for a manual Finish so the ending screen isn't rushed.
@@ -1122,10 +1127,20 @@ func _on_level_completed() -> void:
 	if assess != "":
 		win_title.text += "\n\n" + assess
 	_update_debrief_block()
-	if GameState.has_next_level() and not _auto_advance_armed:
+	# A Daily Op waits on the button: it goes back to the menu, not on to a next level.
+	if GameState.has_next_level() and not GameState.is_daily_op() and not _auto_advance_armed:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
 		tmr.timeout.connect(_auto_advance)
+
+## "Score: 12,340  ·  ★ NEW BEST  ·  3-day streak" for a Daily Op clear (#172).
+func _daily_result_line(r: Dictionary) -> String:
+	var line := tr("Score: %d") % int(r.get("score", 0))
+	line += "   ·   " + ("★ " + tr("NEW BEST") if bool(r.get("new_best", false)) \
+		else tr("Best %s") % str(r.get("best", 0)))
+	if int(r.get("streak", 0)) > 1:
+		line += "   ·   " + (tr("%d-day streak") % int(r["streak"]))
+	return line
 
 func _auto_advance() -> void:
 	_auto_advance_armed = false

@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-301 probes total: **75** wired into the headless suite (`suite`), **83**
+302 probes total: **76** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -114,6 +114,7 @@ or GPU-timing probes; `--headless` renders these black).
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
+| daily_op_probe | Daily Op (#172): `daily_op_for` is deterministic per date and varies over 14 days (never a boss or the first level); the arsenal follows campaign pacing; best score and streak rules incl. month/leap boundaries; the real flow from a watcher under root: start today's op (HARD, its directive and arsenal, savegame.cfg byte-identical), clear it (DAILY OP COMPLETE + score on the win screen, records.cfg updated), Continue returns to the menu with the campaign state handed back and the button showing the clear. Never writes savegame.cfg; backs records.cfg up to disk first | suite |
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
 | settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |

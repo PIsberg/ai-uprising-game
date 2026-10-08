@@ -103,3 +103,5 @@ res://tests/dash_probe.tscn
 res://tests/headshot_callout_probe.tscn
 # Colourblind Mode corrects confusable colour pairs; Off changes nothing.
 res://tests/colorblind_probe.tscn
+# Daily Op: seeded per date, campaign untouched, best + streak recorded (#172).
+res://tests/daily_op_probe.tscn
