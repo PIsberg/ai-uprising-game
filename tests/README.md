@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-293 probes total: **68** wired into the headless suite (`suite`), **82**
+292 probes total: **68** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **142** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -80,7 +80,6 @@ or GPU-timing probes; `--headless` renders these black).
 | boss_phase_probe | Every boss other than MANUS (which has `manus_phase_probe`) escalates in what it does as it is wounded: OVERSEER volley 3 -> 5 bolts plus a phase-3 Seeker and a bigger barrage; COLOSSUS volley 3 -> 5 and, at the same range, artillery / beam / slam by phase; TITAN blinks only once wounded; ARCHON's 30% wave is bigger; TERMINATOR's beam sweeps faster; SMASHER's attacks come back faster | suite |
 | boss_signature_probe | SMASHER claw-rake lunge and OVERSEER rocket-barrage signature attacks land | windowed |
 | bounty_probe | BOUNTY director: tagged-enemy kill awards bonus + clears director + always drops the rare prize | windowed |
-| briefing_probe | Real finale (archon) level_briefing: preview mode shows the boss with no minion waves/portal | windowed |
 | briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective all show | windowed |
 | brute_shield_probe | BRUTE still visibly carries its frontal shield slab (front + 3/4 shots) | windowed |
 | campaign_dump | SceneTree script dumping `max_level_reached` + full campaign roster for inspection | headless |
