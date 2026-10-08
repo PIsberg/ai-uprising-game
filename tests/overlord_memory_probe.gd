@@ -11,7 +11,9 @@ extends Node
 ##     wipes the level read, but teaches the dossier nothing: five deaths on one gun
 ##     earn no countermeasure (a struggling player is never escalated against);
 ##     the greeting still cites the deaths;
-## (5) the dossier survives a save + load round trip through a probe-only file.
+## (5) the dossier survives a save + load round trip through a probe-only file;
+## (6) Settings' "Wipe Overlord Memory" button arms on one press and wipes the
+##     dossier (and its file) on the second, then goes idle (#166).
 ##   godot --headless --path . --audio-driver Dummy res://tests/overlord_memory_probe.tscn
 
 const SHOTGUN := "SG-12 Breacher"
@@ -138,6 +140,26 @@ func _run() -> void:
 			same = false
 			print("  diff %s: %s vs %s" % [k, snap[k], AIDirector.dossier.get(k)])
 	_check("dossier survives save + load", same)
+
+	# (6) The Settings "Wipe Overlord Memory" button (#166): two presses, file reset.
+	var menu: Node = (load("res://scenes/ui/main_menu.tscn") as PackedScene).instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	var wipe := menu.find_child("WipeOverlordBtn", true, false) as Button
+	_check("settings has a Wipe Overlord Memory button", wipe != null)
+	if wipe:
+		_check("it is live while the overlord remembers something", not wipe.disabled, wipe.text)
+		wipe.pressed.emit()
+		_check("one press only arms it", int(AIDirector.dossier["reads"]) > 0)
+		wipe.pressed.emit()
+		var on_disk := ConfigFile.new()
+		on_disk.load(PROBE_PATH)
+		_check("a second press wipes the dossier and its file", int(AIDirector.dossier["reads"]) == 0
+			and int(AIDirector.dossier["deaths"]) == 0 and int(on_disk.get_value("dossier", "reads", -1)) == 0)
+		_check("the button goes idle with nothing on file", wipe.disabled, wipe.text)
+	menu.queue_free()
+	await get_tree().process_frame
+
 	AIDirector.persist = false
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE_PATH))
 	AIDirector.forget_dossier(false)
