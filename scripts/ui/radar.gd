@@ -1,6 +1,9 @@
 extends Control
-## Player-relative HUD radar: enemies (red) + objective (green) blips around a
+## Player-relative HUD radar: enemy, elite and objective blips around a
 ## central player arrow. "Up" is always the direction the player faces.
+## Each kind has its own SHAPE as well as colour (red against green is what
+## protanopia/deuteranopia confuse): enemies are filled dots, elites a dot inside
+## a ring, objectives a hollow diamond (tests/radar_shape_probe).
 
 @export var world_range: float = 45.0  ## metres mapped to the radar edge
 @export var enemy_color: Color = Color(1.0, 0.3, 0.25)
@@ -67,7 +70,10 @@ func _draw() -> void:
 
 	for o in get_tree().get_nodes_in_group("objective"):
 		if o is Node3D:
-			_blip(o as Node3D, pp, right, fwd, scale, c, r, objective_color, 4.0)
+			var at := _blip_pos(o as Node3D, pp, right, fwd, scale, c, r, 7.0)
+			var d := 6.5
+			draw_polyline(PackedVector2Array([at + Vector2(0, -d), at + Vector2(d, 0),
+				at + Vector2(0, d), at + Vector2(-d, 0), at + Vector2(0, -d)]), objective_color, 2.0, true)
 	for e in get_tree().get_nodes_in_group("enemy"):
 		if e is EnemyBase and not (e as EnemyBase).hp.is_alive():
 			continue
@@ -75,19 +81,25 @@ func _draw() -> void:
 			# Elites read as a bigger gold blip so a priority threat is spottable
 			# on the radar, not just by its in-world glow.
 			var is_elite: bool = e is EnemyBase and (e as EnemyBase).elite != ""
-			var col := elite_color if is_elite else enemy_color
-			_blip(e as Node3D, pp, right, fwd, scale, c, r, col, 4.5 if is_elite else 3.5)
+			var at := _blip_pos(e as Node3D, pp, right, fwd, scale, c, r, 7.5 if is_elite else 3.5)
+			if is_elite:
+				draw_circle(at, 3.5, elite_color)
+				draw_arc(at, 6.75, 0.0, TAU, 20, elite_color, 1.5, true)
+			else:
+				draw_circle(at, 3.5, enemy_color)
 
 	# Player marker (triangle pointing up = forward).
 	draw_colored_polygon(PackedVector2Array([
 		c + Vector2(0, -7), c + Vector2(-5, 6), c + Vector2(5, 6)]),
 		Color(1, 1, 1, 0.95))
 
-func _blip(n: Node3D, pp: Vector3, right: Vector2, fwd: Vector2, scale: float, c: Vector2, r: float, col: Color, radius: float) -> void:
+## Where `n` lands on the dish; `radius` is the blip's extent, so a clamped
+## blip still sits fully inside the rim.
+func _blip_pos(n: Node3D, pp: Vector3, right: Vector2, fwd: Vector2, scale: float, c: Vector2, r: float, radius: float) -> Vector2:
 	var rel := n.global_position - pp
 	var flat := Vector2(rel.x, rel.z)
 	var screen := Vector2(flat.dot(right), -flat.dot(fwd)) * scale
 	# Clamp out-of-range blips to the rim so off-radar threats still show.
 	if screen.length() > r - radius:
 		screen = screen.normalized() * (r - radius)
-	draw_circle(c + screen, radius, col)
+	return c + screen

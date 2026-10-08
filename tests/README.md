@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-290 probes total: **66** wired into the headless suite (`suite`), **82**
+291 probes total: **66** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **142** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -99,6 +99,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
 | cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |
+| radar_shape_probe | HUD radar blips differ by shape, not colour alone: renders the real radar x4 with an enemy, an elite and an objective, simulates protanopia and requires every pair of lit-pixel masks to overlap at most 0.5 (IoU); was 0.77 / 0.60 / 0.79 with same-shape dots | windowed |
 | colorblind_render_probe | Colourblind overlay on a real render: a menu swatch on layer 60 and a level swatch under a layer-0 screen read both come out as `colorblind_matrix(2) * colour` within 0.03, and unchanged when Off | windowed |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
