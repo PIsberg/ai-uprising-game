@@ -23,7 +23,7 @@ Profiles player performance and adjusts gameplay dynamics:
 * Drives Elite enemy affixes based on player profiles
 * Triggers overlord/boss taunts
 * Generates procedural patch notes presented between levels
-* Keeps a long-term dossier (`dossier`, persisted to `user://overlord.cfg`) folded from every cleared level's read (`fold_level`); `note_death` only counts deaths and killers, so retries never escalate the AI. It pre-adapts `counter_affix` while a level calibrates, picks a `countermeasure_weapon` that `Weapon.eff_damage` scales by `COUNTERMEASURE_MULT`, and feeds the HUD's level-opening `greeting`. `persist` is false when the boot scene lives under `res://tests/` or `res://tools/`, so probes never touch a player's file
+* Keeps a long-term dossier (`dossier`, persisted to `user://overlord.cfg`) folded from every cleared level's read (`fold_level`); `note_death` only counts deaths and killers, so retries never escalate the AI. It pre-adapts `counter_affix` while a level calibrates, picks a `countermeasure_weapon` that `Weapon.eff_damage` scales by `COUNTERMEASURE_MULT`, and feeds the HUD's level-opening `greeting`. `persist` is false when the boot scene lives under `res://tests/` or `res://tools/`, so probes never touch a player's file. The main menu's Settings > Wipe Overlord Memory button calls `forget_dossier`
 
 ### AudioBus and SoundSynth
 <!-- lat: { "require-code-mention": true } -->
@@ -39,7 +39,7 @@ Manages graphics quality presets (LOW, MEDIUM, HIGH, ULTRA). These presets drive
 * Environment settings (shadows, light counts)
 * Light budgets consumed by the level builder
 
-It also owns the accessibility display options. Colourblind Mode (`colorblind_mode`) is applied as a 3x3 daltonize matrix (`colorblind_matrix`) by one overlay the autoload owns (`ColorblindOverlay`, CanvasLayer `COLORBLIND_LAYER` 128, above every other layer), so a single pass covers gameplay, the HUD, cutscenes and every menu. It is hidden when Off. Greys are fixed points of the matrix, so neutral text is unchanged. Subtitle Size (`subtitle_scale`, 0.8-2.0) scales timed spoken text; each label reads it through `subtitle_px(base)` when it is built (cutscene subtitles, overlord taunts, the victory transmission).
+It also owns the accessibility display options. Colourblind Mode (`colorblind_mode`) is applied as a 3x3 daltonize matrix (`colorblind_matrix`) by one overlay the autoload owns (`ColorblindOverlay`, CanvasLayer `COLORBLIND_LAYER` 128, above every other layer), so a single pass covers gameplay, the HUD, cutscenes and every menu. It is hidden when Off. Greys are fixed points of the matrix, so neutral text is unchanged. `launch_quality` records the tier a session started at: dropping below it keeps most of the higher tier's GPU cost until a restart (#156, cause open), so `restart_recommended` drives a Restart-to-apply button in Settings (`restart_game` relaunches via `OS.set_restart_on_exit`) and a pause-menu hint. Subtitle Size (`subtitle_scale`, 0.8-2.0) scales timed spoken text; each label reads it through `subtitle_px(base)` when it is built (cutscene subtitles, overlord taunts, the victory transmission).
 
 ## CLI Boot Logic
 <!-- lat: { "require-code-mention": true } -->

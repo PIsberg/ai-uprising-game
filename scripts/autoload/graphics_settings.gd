@@ -401,6 +401,7 @@ func reset_keybinds_to_default() -> void:
 
 func _ready() -> void:
 	_load_settings()
+	launch_quality = int(quality)
 	TranslationServer.set_locale(language)
 	apply_keybinds() # after GameState's default gamepad injection — see ordering note above
 	_apply_viewport.call_deferred()
@@ -503,6 +504,23 @@ func set_quality(q: int) -> void:
 	_apply_viewport()
 	_apply_to_live_environment()
 	_save_settings()
+
+## The tier this process started at. Dropping below it mid-session keeps most of
+## the higher tier's GPU cost until a restart (#156: neon at HIGH ~125 ms when the
+## game started at HIGH, ~220 ms when it started at ULTRA, Intel Arc A370M); no
+## node, setting or feature toggle explains it, so it looks like engine/driver
+## state fixed by the first rendering configuration. Until that is found, the
+## menus offer a restart.
+var launch_quality: int = Quality.HIGH
+
+func restart_recommended() -> bool:
+	return int(quality) < launch_quality
+
+## Save and relaunch with the same arguments, so the new tier starts clean.
+func restart_game() -> void:
+	_save_settings()
+	OS.set_restart_on_exit(true, OS.get_cmdline_args())
+	get_tree().quit()
 
 ## Step quality up/down without wrapping, so a struggling machine can go
 ## straight from HIGH to MEDIUM without passing through ULTRA.

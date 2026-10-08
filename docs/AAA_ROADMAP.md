@@ -26,6 +26,21 @@ Items marked ✅ are DONE and **verified in-engine** (Godot 4.6.3 installed; eac
 - ✅ **HDRI sky** — CC0 Poly Haven "Industrial Sunset" wired via `env.hdri` (suburb level); PanoramaSkyMaterial + sky IBL.
 - ✅ **Texture variety** — Concrete031 (weathered outdoor walls) + MetalPlates007 (alternating cover plates); detail-normal overlay on floor/wall to break 1K tiling.
 
+## ✅ Look pass after the BeveledBoxMesh winding fix (2026-10-08, #162)
+Every builder box rendered inside-out until 2026-10-08, so every grade before it was judged against far inner faces. All 24 campaign levels were captured with `tests/look_capture.tscn` twice, with the fixed and with the inside-out mesh, and scored with `tools/look_metrics.py <new> <old>`.
+
+| level | luma old -> new | contrast (std) old -> new | what the frames show |
+|---|---|---|---|
+| grok | 0.19 -> 0.28 | 0.10 -> 0.23 | walls lit from the right side |
+| gemini, convoy | 0.30 / 0.26 -> 0.30 / 0.33 | 0.13 / 0.12 -> 0.20 / 0.20 | solid walls instead of see-through ones |
+| sublevel | 0.14 -> 0.24 | 0.14 -> 0.18 | was the darkest interior |
+| gpt | 0.36 -> 0.19 | 0.13 -> 0.14 | the old 0.36 was light bouncing off inner faces; 0.19 sits with neon (0.19) and lava_world (0.20) |
+| titan | 0.22 -> 0.31 | 0.21 -> 0.10 | old frame: a pale quad over a black void where the floor was; the "contrast" was the void |
+| desert | 0.38 -> 0.38 | 0.13 -> 0.08 | old floor was the slab's inner bottom face; now the sand texture, evenly lit |
+| claude | 0.29 -> 0.33 | 0.19 -> 0.18 | old frame showed sky through the perimeter walls |
+
+Every metric that got worse traced to an artifact of the broken render, so no level's `env` grade was changed. The remaining FLAT/MONO flags (alien, archon, overseer, uplink, water_world, lava_world) carried the same flags before the fix and are themed single-hue levels.
+
 ## ✅ Blast screen-warp + signal glitch (2026-07-26)
 - ✅ **World-anchored shockwave refraction** — explosions bend the IMAGE, not just the camera. `post_process.gdshader` carries `uniform vec4 shockwaves[3]` (screen-UV centre, progress, strength); `Player._handle_screen_shock` re-projects each live blast's world position into UV every frame, so a ring stays pinned to its detonation as you turn. Up to 3 at once; a 4th blast evicts the weakest LIVE ring, never the newest.
 - ✅ **Broad reach off one primitive** — `ExplosionFX._kick_player` (every grenade/explosion), the OVERLOAD ultimate, the hijack-grenade spike, and `EnemyBase.spawn_shockwave_ring` (mech stomp, manus finger-drum, smasher wake-slam, titan/colossus entrances) all push a distance-scaled warp.

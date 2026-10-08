@@ -78,6 +78,7 @@ func _build_extra_settings() -> void:
 		gpu_lbl.modulate = Color(1.0, 0.85, 0.4)
 	_settings.add_child(gpu_lbl)
 	_settings.move_child(gpu_lbl, 1) # just below the "Settings" prompt, above the grid
+	_build_restart_button()
 
 	var fov_slider := _add_slider_row("Field of View", 60.0, 110.0, 1.0, GraphicsSettings.fov)
 	fov_slider.value_changed.connect(func(v: float): GraphicsSettings.set_fov(v))
@@ -243,6 +244,15 @@ func _build_extra_settings() -> void:
 	rebind_btn.text = tr("Rebind Controls")
 	rebind_btn.pressed.connect(_on_rebind_controls_pressed)
 	_grid.add_child(rebind_btn)
+
+	# The overlord's dossier outlives every campaign by design; this is the one way
+	# to make it forget (#166). Two presses: the first arms it for a few seconds.
+	_wipe_btn = Button.new()
+	_wipe_btn.name = "WipeOverlordBtn"
+	_wipe_btn.custom_minimum_size = Vector2(360, 48)
+	_wipe_btn.pressed.connect(_on_wipe_overlord_pressed)
+	_grid.add_child(_wipe_btn)
+	_refresh_wipe_btn()
 	# (Back lives in the panel VBox below the grid, so it stays at the bottom.)
 
 ## Preset picker: a one-shot batch applicator, not a stored state. The row
@@ -371,6 +381,35 @@ func _add_slider_row(label: String, mn: float, mx: float, step: float, val: floa
 	row.add_child(s)
 	_grid.add_child(row)
 	return s
+
+var _wipe_btn: Button
+var _wipe_armed_ms: int = -100000
+const WIPE_CONFIRM_MS := 4000
+
+func _refresh_wipe_btn() -> void:
+	if _wipe_btn == null:
+		return
+	var reads := int(AIDirector.dossier.get("reads", 0))
+	var deaths := int(AIDirector.dossier.get("deaths", 0))
+	var empty := reads <= 0 and deaths <= 0
+	_wipe_btn.disabled = empty
+	if empty:
+		_wipe_btn.text = tr("Overlord Memory: empty")
+	elif Time.get_ticks_msec() - _wipe_armed_ms < WIPE_CONFIRM_MS:
+		_wipe_btn.text = tr("Press again to wipe the overlord's memory")
+	else:
+		_wipe_btn.text = tr("Wipe Overlord Memory (%d levels; %d deaths on file)") % [reads, deaths]
+
+func _on_wipe_overlord_pressed() -> void:
+	if Time.get_ticks_msec() - _wipe_armed_ms < WIPE_CONFIRM_MS:
+		_wipe_armed_ms = -100000
+		AIDirector.forget_dossier()
+		AudioBus.play_synth_ui("overlord_glitch", -6.0, 0.8)
+	else:
+		_wipe_armed_ms = Time.get_ticks_msec()
+		# Fall back to the plain label if the second press never comes.
+		get_tree().create_timer(WIPE_CONFIRM_MS / 1000.0 + 0.05).timeout.connect(_refresh_wipe_btn)
+	_refresh_wipe_btn()
 
 func _on_fps_pressed() -> void:
 	GraphicsSettings.cycle_fps()
@@ -538,6 +577,23 @@ func _refresh_graphics_label() -> void:
 	_graphics_label.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 	_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
 	_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
+	if _restart_btn:
+		_restart_btn.visible = GraphicsSettings.restart_recommended()
+
+## Lowering the tier below the one the game started at only pays off fully after a
+## restart (GraphicsSettings.launch_quality, #156), so offer one right there.
+var _restart_btn: Button
+
+func _build_restart_button() -> void:
+	_restart_btn = Button.new()
+	_restart_btn.name = "RestartToApplyBtn"
+	_restart_btn.text = tr("Restart to apply the lower quality (full speed-up)")
+	_restart_btn.custom_minimum_size = Vector2(360, 44)
+	_restart_btn.modulate = Color(1.0, 0.85, 0.45)
+	_restart_btn.pressed.connect(GraphicsSettings.restart_game)
+	_settings.add_child(_restart_btn)
+	_settings.move_child(_restart_btn, 2) # under the GPU readout, above the grid
+	_restart_btn.visible = GraphicsSettings.restart_recommended()
 
 ## First launch ever (no persisted quality key): runs QualityBenchmark as an
 ## async child so it never blocks menu interactivity — its SubViewport isn't

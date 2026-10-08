@@ -92,7 +92,9 @@ per process, after a 40 s burn-in:
 
 Every step up costs more, by x1.3-1.4 (LOW to MEDIUM, except neon x1.6),
 x1.8-2.1 (to HIGH) and x1.5 (to ULTRA). (*) neon at HIGH measures 206-236 ms
-instead when the process rendered ULTRA first: see #156.
+instead when the process rendered ULTRA first: see #156. Until the cause is found, dropping below the
+tier a session started at shows a "Restart to apply" button in Settings and a hint in the pause menu
+(`GraphicsSettings.launch_quality` / `restart_recommended`, `tests/quality_restart_probe`).
 
 Splits measured with `ablate=` (titan, one process each):
 - **MSAA** at HIGH: none 60.1, 2x 68.6 (shipped), 4x 74.5 ms.
