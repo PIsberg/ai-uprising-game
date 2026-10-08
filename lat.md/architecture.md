@@ -36,7 +36,7 @@ Manages graphics quality presets (LOW, MEDIUM, HIGH, ULTRA). These presets drive
 * Environment settings (shadows, light counts)
 * Light budgets consumed by the level builder
 
-It also owns the accessibility display options. Colourblind Mode (`colorblind_mode`) is applied as a 3x3 daltonize matrix (`colorblind_matrix`) by one overlay the autoload owns (`ColorblindOverlay`, CanvasLayer `COLORBLIND_LAYER` 128, above every other layer), so a single pass covers gameplay, the HUD, cutscenes and every menu. It is hidden when Off. Greys are fixed points of the matrix, so neutral text is unchanged.
+It also owns the accessibility display options. Colourblind Mode (`colorblind_mode`) is applied as a 3x3 daltonize matrix (`colorblind_matrix`) by one overlay the autoload owns (`ColorblindOverlay`, CanvasLayer `COLORBLIND_LAYER` 128, above every other layer), so a single pass covers gameplay, the HUD, cutscenes and every menu. It is hidden when Off. Greys are fixed points of the matrix, so neutral text is unchanged. Subtitle Size (`subtitle_scale`, 0.8-2.0) scales timed spoken text; each label reads it through `subtitle_px(base)` when it is built (cutscene subtitles, overlord taunts, the victory transmission).
 
 ## CLI Boot Logic
 <!-- lat: { "require-code-mention": true } -->
