@@ -20,8 +20,9 @@ Defines the custom resource configuration files that govern weapon attributes.
 Bought in the Armory, a mod changes what a gun's hit does, not how hard it lands. One mod per hitscan or beam gun, refitted for free.
 
 * `GameState.MOD_DEFS`, `owned_mods`, `weapon_mods` (scene path -> mod id), saved with the run and cleared by `start_campaign`. `BASE_LOADOUT` must match `player.tscn`'s rack (`tests/weapon_mods_probe` checks).
-* `WeaponMods` runs the effect from `Weapon._do_hitscan` and `_update_beam`: CHAIN ARC (35% to the nearest robot within 7 m), THERMITE (30% of the hit over 3 s, six ticks, refreshed not stacked), RICOCHET (a wall hit bounces 60% into a robot within 15 m and 35 degrees of the reflection), OVERRIDE (a hit leaving a non-boss below 25% hijacks it for 6 s, 8 s cooldown per gun).
-* Procs are limited to one per 120 ms per gun, so shotgun pellets and beam ticks proc once.
+* `WeaponMods` runs the effect from `Weapon._do_hitscan` and `_update_beam`: CHAIN ARC (35% to the nearest robot within 7 m), THERMITE (30% of every hit over 3 s, six ticks; one burn per robot that each hit adds to and restarts, ticks ignore armour), RICOCHET (a wall hit bounces 60% into a robot within 15 m and 35 degrees of the reflection), OVERRIDE (a hit leaving a non-boss below 25% hijacks it for 6 s, 8 s cooldown per gun).
+* ARC and RICOCHET proc at most once per 120 ms per gun, so shotgun pellets and beam ticks draw one arc or bounce. The limit thins the effect, not the damage: `WeaponMods._bank` holds the hits in between and the next proc carries them, so a fast gun gets its full share. THERMITE is not limited.
+* `tests/mod_value_probe` (headless report) measures each mod's damage per gun against an unarmoured and an armour-4 pack.
 * Proc damage goes through `GameState.apply_secondary_damage`, which pays score, leech and OVERLOAD charge but is not a new hit for accuracy or the AI Director. Breakable-cover shrapnel uses it too.
 * `WeaponMods` and `GameState.mod_compatible` duck-type robots and weapons: naming `EnemyBase` or `Weapon` there closes a load cycle through the pickup scenes and `pickup.gd` fails to load.
 

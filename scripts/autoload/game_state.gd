@@ -360,11 +360,11 @@ func moddable_weapons() -> Array[String]:
 ## accuracy past 100%).
 var _secondary_hit: bool = false
 
-func apply_secondary_damage(d: Node, amount: float, source: Node, origin = null) -> void:
+func apply_secondary_damage(d: Node, amount: float, source: Node, origin = null, ignore_armor: bool = false) -> void:
 	if d == null or not d.has_method("apply_damage"):
 		return
 	_secondary_hit = true
-	d.apply_damage(amount, source, false, origin)
+	d.apply_damage(amount, source, false, origin, ignore_armor)
 	_secondary_hit = false
 var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0, "stamina": 0}
 
