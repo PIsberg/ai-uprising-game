@@ -123,8 +123,6 @@ func _build_overlay() -> void:
 	mat.set_shader_parameter("vignette_strength", 0.6)
 	mat.set_shader_parameter("grain_amount", 0.05)
 	mat.set_shader_parameter("aberration", 1.6)
-	# The colourblind correction covers cutscenes too, not just gameplay.
-	mat.set_shader_parameter("cb_matrix", GraphicsSettings.colorblind_matrix(int(GraphicsSettings.colorblind_mode)))
 	_post.material = mat
 	layer.add_child(_post)
 

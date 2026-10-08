@@ -23,11 +23,6 @@ uniform vec3 grade_tint : source_color = vec3(1.0, 1.0, 1.0);
 uniform float grade_contrast : hint_range(0.5, 1.5) = 1.0;
 uniform float grade_saturation : hint_range(0.0, 1.5) = 1.0;
 
-// Colourblind correction: GraphicsSettings.colorblind_matrix(mode), applied last
-// so the grade, vignette and low-health rim (and the HUD under this layer) are
-// corrected too. Identity = off.
-uniform mat3 cb_matrix = mat3(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0));
-
 // Blast shockwave rings — up to three at once. Each is
 // (centre.x, centre.y, progress 0..1, strength) with the centre in SCREEN UV;
 // Player._handle_screen_shock projects each live blast's world position into
@@ -167,8 +162,6 @@ void fragment() {
 	// Animated film grain (luminance-only so it stays neutral).
 	float g = hash(uv * vec2(1920.0, 1080.0) + fract(TIME) * 91.7) - 0.5;
 	col += g * grain_amount;
-
-	col = clamp(cb_matrix * col, 0.0, 1.0);
 
 	COLOR = vec4(col, 1.0);
 }
