@@ -34,14 +34,26 @@ const LIGHTS := {
 ## LIGHTS glow above and the TINTS material recolor). Kept distinct from both so
 ## a marker reads at combat range even when the tint/light are hard to make out
 ## against a busy level — this is the identity cue the first-encounter toast
-## ("ELITE · SHIELDED — ...") promises the player they can then rely on. warden/
-## splitter reuse their existing LIGHTS tone so every affix still gets a marker.
+## ("ELITE · SHIELDED — ...") promises the player they can then rely on. warden
+## reuses its LIGHTS tone; splitter is yellow, since its green LIGHTS tone sat
+## 0.16 from swift's. Colour is the second cue: MARKER_SHAPES is the first, so
+## the marker still reads for colourblind players (tests/elite_marker_probe).
 const AFFIX_COLORS := {
 	"shielded": Color(0.35, 0.75, 1.0),  # cold shield blue
 	"volatile": Color(1.0, 0.45, 0.12),  # detonation orange
 	"swift": Color(0.55, 1.0, 0.35),     # stim green
 	"warden": Color(0.7, 0.4, 1.0),
-	"splitter": Color(0.4, 1.0, 0.3),
+	"splitter": Color(1.0, 0.9, 0.25),
+}
+## One silhouette per affix: a shield bubble, a warning spike, a double-cone
+## diamond, a guard pillar, and a block broken in two (stacked with a gap). The
+## marker spins about Y, so all but the spike keep their outline at every angle.
+const MARKER_SHAPES := {
+	"shielded": "sphere",
+	"volatile": "prism",
+	"swift": "diamond",
+	"warden": "pillar",
+	"splitter": "split",
 }
 
 ## Per-difficulty elite share (EASY, NORMAL, HARD).
@@ -197,10 +209,6 @@ static func _add_marker(eb: EnemyBase, kind: String) -> void:
 	pivot.name = "EliteMarker"
 	pivot.position = Vector3(0, top + 0.45, 0)
 	eb.add_child(pivot)
-	var gem := MeshInstance3D.new()
-	var pm := PrismMesh.new()
-	pm.size = Vector3(0.22, 0.28, 0.22)
-	gem.mesh = pm
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # reads the same colour from every angle
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -208,9 +216,10 @@ static func _add_marker(eb: EnemyBase, kind: String) -> void:
 	mat.emission_enabled = true
 	mat.emission = col
 	mat.emission_energy_multiplier = 4.0
-	gem.material_override = mat
-	gem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	pivot.add_child(gem)
+	for gem in _marker_meshes(String(MARKER_SHAPES.get(kind, "prism"))):
+		gem.material_override = mat # shared, so _fade_marker fades every piece
+		gem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pivot.add_child(gem)
 	# Slow identity spin (~1.5 rad/s): a full TAU turn every TAU/1.5 seconds.
 	# `as_relative()` keeps looping without snapping back to 0 each cycle.
 	var tw := pivot.create_tween().set_loops()
@@ -220,6 +229,51 @@ static func _add_marker(eb: EnemyBase, kind: String) -> void:
 	# spin stops and it fades out instead of looking like a still-live implant.
 	if eb.hp:
 		eb.hp.died.connect(func(_src): _fade_marker(pivot, tw))
+
+static func _marker_meshes(shape: String) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	var mi := MeshInstance3D.new()
+	match shape:
+		"sphere":
+			var sm := SphereMesh.new()
+			sm.radius = 0.13
+			sm.height = 0.26
+			mi.mesh = sm
+		"diamond":
+			for up in [1.0, -1.0]:
+				var cone := MeshInstance3D.new()
+				var cn := CylinderMesh.new()
+				cn.top_radius = 0.0 if up > 0.0 else 0.12
+				cn.bottom_radius = 0.12 if up > 0.0 else 0.0
+				cn.height = 0.15
+				cone.mesh = cn
+				cone.position.y = up * 0.075
+				out.append(cone)
+			mi.free() # the two cones replace the single gem
+			return out
+		"pillar":
+			var cm := CylinderMesh.new()
+			cm.top_radius = 0.07
+			cm.bottom_radius = 0.07
+			cm.height = 0.3
+			mi.mesh = cm
+		"split":
+			for up in [1.0, -1.0]:
+				var half := MeshInstance3D.new()
+				var hb := BoxMesh.new()
+				hb.size = Vector3(0.17, 0.1, 0.17)
+				half.mesh = hb
+				half.position.y = up * 0.09
+				half.rotation.z = up * 0.12
+				out.append(half)
+			mi.free() # the two halves replace the single gem
+			return out
+		_:
+			var pm := PrismMesh.new()
+			pm.size = Vector3(0.22, 0.28, 0.22)
+			mi.mesh = pm
+	out.append(mi)
+	return out
 
 static func _fade_marker(pivot: Node3D, tw: Tween) -> void:
 	if tw and tw.is_valid():
