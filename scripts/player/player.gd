@@ -440,6 +440,7 @@ func update_post_process_settings() -> void:
 		sm.set_shader_parameter("grade_tint", params.get("tint", Color.WHITE))
 		sm.set_shader_parameter("grade_contrast", params.get("contrast", 1.0))
 		sm.set_shader_parameter("grade_saturation", params.get("saturation", 1.0))
+		sm.set_shader_parameter("cb_matrix", gs.colorblind_matrix(int(gs.colorblind_mode)))
 
 var _hurt_cd: float = 0.0
 ## Fraction of max HP a single hit must take to count as BIG (triggers the

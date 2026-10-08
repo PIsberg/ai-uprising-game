@@ -331,6 +331,22 @@ func _build_pause_audio() -> void:
 	var dmg_taken := _audio_slider_row(vbox, tr("Damage Taken"), GraphicsSettings.damage_taken, 0.5, 1.5, 0.05)
 	dmg_taken.value_changed.connect(func(v: float): GraphicsSettings.set_damage_taken(v))
 
+	# Accessibility: colourblind correction of the world, live.
+	var cb_row := HBoxContainer.new()
+	cb_row.add_theme_constant_override("separation", 12)
+	var cb_lbl := Label.new()
+	cb_lbl.text = tr("Colourblind Mode")
+	cb_lbl.custom_minimum_size = Vector2(110, 0)
+	var cb_opt := OptionButton.new()
+	cb_opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for label in GraphicsSettings.COLORBLIND_LABELS:
+		cb_opt.add_item(tr(label))
+	cb_opt.selected = int(GraphicsSettings.colorblind_mode)
+	cb_opt.item_selected.connect(func(idx: int): GraphicsSettings.set_colorblind_mode(idx))
+	cb_row.add_child(cb_lbl)
+	cb_row.add_child(cb_opt)
+	vbox.add_child(cb_row)
+
 	# Accessibility: gamepad rumble strength live (0 = off).
 	var rumble := _audio_slider_row(vbox, tr("Controller Rumble"), GraphicsSettings.rumble, 0.0, 1.0, 0.05)
 	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
