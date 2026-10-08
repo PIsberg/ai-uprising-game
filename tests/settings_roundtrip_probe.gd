@@ -14,6 +14,7 @@ extends Node
 
 const TRANSIENT := {
 	"needs_auto_quality": "derived on boot: true only when settings.cfg has no quality key",
+	"launch_quality": "per process: the tier this run started at, copied from quality on boot (#156)",
 }
 
 var _fail: Array[String] = []

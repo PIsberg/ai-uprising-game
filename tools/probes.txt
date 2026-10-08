@@ -14,6 +14,8 @@ res://tests/bevel_winding_probe.tscn
 res://tests/sample_override_probe.tscn
 # Weapon mods: loadout twin, buy/fit/save rules, each mod's effect through the rifle's hitscan.
 res://tests/weapon_mods_probe.tscn
+# Dropping below the launch quality tier offers a restart (#156).
+res://tests/quality_restart_probe.tscn
 res://tests/elite_probe.tscn
 res://tests/elite_marker_probe.tscn
 res://tests/weapon_stats_probe.tscn

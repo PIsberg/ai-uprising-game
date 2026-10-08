@@ -78,6 +78,7 @@ func _build_extra_settings() -> void:
 		gpu_lbl.modulate = Color(1.0, 0.85, 0.4)
 	_settings.add_child(gpu_lbl)
 	_settings.move_child(gpu_lbl, 1) # just below the "Settings" prompt, above the grid
+	_build_restart_button()
 
 	var fov_slider := _add_slider_row("Field of View", 60.0, 110.0, 1.0, GraphicsSettings.fov)
 	fov_slider.value_changed.connect(func(v: float): GraphicsSettings.set_fov(v))
@@ -576,6 +577,23 @@ func _refresh_graphics_label() -> void:
 	_graphics_label.text = tr("Graphics: %s") % GraphicsSettings.quality_label()
 	_gfx_down.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.LOW
 	_gfx_up.disabled = GraphicsSettings.quality == GraphicsSettings.Quality.ULTRA
+	if _restart_btn:
+		_restart_btn.visible = GraphicsSettings.restart_recommended()
+
+## Lowering the tier below the one the game started at only pays off fully after a
+## restart (GraphicsSettings.launch_quality, #156), so offer one right there.
+var _restart_btn: Button
+
+func _build_restart_button() -> void:
+	_restart_btn = Button.new()
+	_restart_btn.name = "RestartToApplyBtn"
+	_restart_btn.text = tr("Restart to apply the lower quality (full speed-up)")
+	_restart_btn.custom_minimum_size = Vector2(360, 44)
+	_restart_btn.modulate = Color(1.0, 0.85, 0.45)
+	_restart_btn.pressed.connect(GraphicsSettings.restart_game)
+	_settings.add_child(_restart_btn)
+	_settings.move_child(_restart_btn, 2) # under the GPU readout, above the grid
+	_restart_btn.visible = GraphicsSettings.restart_recommended()
 
 ## First launch ever (no persisted quality key): runs QualityBenchmark as an
 ## async child so it never blocks menu interactivity — its SubViewport isn't

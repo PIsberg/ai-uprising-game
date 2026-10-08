@@ -2120,6 +2120,8 @@ func _on_quit_pressed() -> void:
 func _on_pause_graphics_down_pressed() -> void:
 	GraphicsSettings.step_quality(-1)
 	_refresh_pause_graphics()
+	if GraphicsSettings.restart_recommended(): # #156: the drop only fully pays off after a restart
+		_show_toast(tr("Restart the game for the full speed-up (progress is saved at each level start)"))
 
 func _on_pause_graphics_up_pressed() -> void:
 	GraphicsSettings.step_quality(1)
