@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cbevelwinding1"]
+
+[ext_resource type="Script" path="res://tests/bevel_winding_probe.gd" id="1_p"]
+
+[node name="BevelWindingProbe" type="Node"]
+script = ExtResource("1_p")

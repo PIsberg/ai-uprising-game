@@ -20,7 +20,7 @@ Items marked ✅ are DONE and **verified in-engine** (Godot 4.6.3 installed; eac
 - ✅ **New level** — "Mistral Cryo-Core" (cyan indoor) added to the campaign (now 8 levels), verified.
 
 ## ✅ Graphics overhaul pass (2026-06-09, `graphics-overhaul` branch)
-- ✅ **BeveledBoxMesh** — scripted PrimitiveMesh with chamfered edges; all robot plates and builder geometry get edge highlights (kills the "extruded blockout" look). Headless regression: `tests/bevel_smoke.tscn`.
+- ✅ **BeveledBoxMesh** — scripted PrimitiveMesh with chamfered edges; all robot plates and builder geometry get edge highlights (kills the "extruded blockout" look). Headless regression: `tests/bevel_smoke.tscn`. **Correction (2026-10-08):** until then the mesh was wound inside-out (the outside culled, the far inner faces drawn), so the screenshots this pass was judged on showed inner faces; `tests/bevel_winding_probe.tscn` now pins the winding to the engine's `BoxMesh`.
 - ✅ **Robot silhouettes** — android/mech/colossus slimmed + beveled, panel-line glow strips, antenna, mech side vents + visible gun barrel; brute/sniper code-built chassis beveled.
 - ✅ **Environment detailing** — skirting/cornice trim, vertical wall ribs, panel seams, ceiling pipe runs, light-fixture housings under every point light (density follows graphics tier).
 - ✅ **HDRI sky** — CC0 Poly Haven "Industrial Sunset" wired via `env.hdri` (suburb level); PanoramaSkyMaterial + sky IBL.

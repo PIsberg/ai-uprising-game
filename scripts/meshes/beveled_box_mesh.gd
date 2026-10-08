@@ -42,9 +42,13 @@ func _create_mesh_array() -> Array:
 
 	var add_poly := func(pts: Array, n: Vector3) -> void:
 		n = n.normalized()
-		# Self-correcting winding: flip the fan if it faces away from `n`.
+		# Self-correcting winding. Godot's front faces are CLOCKWISE seen from outside,
+		# so cross(p1 - p0, p2 - p0) must point INTO the box (against `n`), the way the
+		# engine's own BoxMesh winds. Aligning it with `n` (as this did until
+		# 2026-10-08) culled every box's outside and drew its far inner faces instead.
+		# tests/bevel_winding_probe pins this against BoxMesh.
 		var face_n: Vector3 = (pts[1] - pts[0]).cross(pts[2] - pts[0])
-		if face_n.dot(n) < 0.0:
+		if face_n.dot(n) > 0.0:
 			pts.reverse()
 		# Planar UVs projected along the dominant normal axis.
 		var u_axis := Vector3.RIGHT if absf(n.x) < 0.9 else Vector3.FORWARD
