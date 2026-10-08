@@ -24,7 +24,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 312 * MB
+TOTAL_BUDGET = 309 * MB  # 2026-10-08: MANUS decimated, 308.9 -> 305.2 MB
 FILE_BUDGET = 40 * MB
 EXCLUDED = ("tests/", "tools/", "docs/")  # export_presets.cfg exclude_filter
 DEST = re.compile(r'^dest_files=\[(.*)\]', re.MULTILINE)

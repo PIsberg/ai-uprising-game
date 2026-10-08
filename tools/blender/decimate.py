@@ -16,6 +16,10 @@ scale (issue #56). 2026-10-04: robot-killer_model.glb (RONIN) at 0.35, 492 280
 -> 175 300 triangles, 31.3 -> 21.2 MB; walking_robot_gun.glb (HOWITZER) at
 0.45, 299 646 -> 134 885, 28.0 -> 18.6 MB. Node and material name sets
 unchanged, model_view_probe shots indistinguishable side by side.
+2026-10-08: robot_arm_wip_2.glb (MANUS) at 0.45, 263 760 -> about 119 000
+triangles, 15.6 -> 7.5 MB. The original had duplicate node names; Blender
+suffixed them (.001), and nothing references the GLB's internals (the weak spot
+is manus.tscn's own WeakSpot/Core). manus_phase_probe and boss_preview_probe pass.
 """
 import bpy
 import sys
