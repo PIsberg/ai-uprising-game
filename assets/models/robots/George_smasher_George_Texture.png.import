@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ct726ps65cc4r"
-path="res://.godot/imported/George_smasher_George_Texture.png-913b135d20c869af7027a74a155162ae.ctex"
+path.s3tc="res://.godot/imported/George_smasher_George_Texture.png-913b135d20c869af7027a74a155162ae.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6a05aea76c3a5c9dd5db347fd83fdf3f"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/robots/George_smasher_George_Texture.png"
-dest_files=["res://.godot/imported/George_smasher_George_Texture.png-913b135d20c869af7027a74a155162ae.ctex"]
+dest_files=["res://.godot/imported/George_smasher_George_Texture.png-913b135d20c869af7027a74a155162ae.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

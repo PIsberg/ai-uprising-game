@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/level_gpt.png-5d24fb2cc0a4c2b63be0e7af24c806f
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.9
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
