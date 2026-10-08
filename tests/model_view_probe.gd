@@ -25,6 +25,8 @@ func _ready() -> void:
 	add_child(env)
 
 	var model: Node3D = (load(path) as PackedScene).instantiate()
+	# Frozen, so an enemy scene (a CharacterBody with no floor here) holds still for the shots.
+	model.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(model)
 	var aabb := _merged_aabb(model)
 	model.position = Vector3(-aabb.get_center().x, -aabb.position.y, -aabb.get_center().z)
