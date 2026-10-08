@@ -9,8 +9,12 @@ extends Node
 ##   * for a colour pair that deficiency confuses, the pair seen through the
 ##     simulated eye is at least MIN_GAIN times further apart after correction;
 ##   * Off is the identity (no change for everyone else);
-##   * a live player's post-process material receives the matrix, and Off
-##     restores the identity;
+##   * greys are fixed points of every mode, so white and grey menu text keeps
+##     its colour while the overlay tints only what a deficiency confuses;
+##   * ONE correction covers every screen: a GraphicsSettings overlay sits above
+##     every CanvasLayer the game draws (the level HUD, cutscenes, the campaign
+##     map, the Armory at layer 60), carries the matrix, and is hidden when Off;
+##   * the player's own post-process no longer applies it (no double correction);
 ##   * the choice persists through settings.cfg (the probe restores the original).
 ##   godot --headless --path . --audio-driver Dummy res://tests/colorblind_probe.tscn
 
@@ -71,21 +75,54 @@ func _run() -> void:
 			"%s: confusable pair %.3f apart as seen, %.3f after correction (x%.2f, need x%.2f)"
 			% [NAMES[mode], before, after, after / maxf(before, 0.0001), MIN_GAIN])
 
-	# Live: the player's post-process overlay gets the matrix.
+	for mode in [1, 2, 3]:
+		var m: Basis = gs.call("colorblind_matrix", mode)
+		var worst := 0.0
+		for g in [0.0, 0.2, 0.5, 0.85, 1.0]:
+			worst = maxf(worst, (_apply_basis(m, Vector3(g, g, g)) - Vector3(g, g, g)).length())
+		_check(worst < 0.01, "%s leaves greys and white unchanged (max shift %.4f)" % [NAMES[mode], worst])
+
+	# Every screen the game draws, alive at once: a level player (post layer +
+	# HUD), the campaign map, the Armory.
 	var player: Node = load("res://scenes/player/player.tscn").instantiate()
 	add_child(player)
+	add_child(load("res://scenes/ui/campaign_map.tscn").instantiate())
+	add_child(Armory.new())
 	await get_tree().process_frame
-	var overlay = player.get("_post_overlay")
-	var sm: ShaderMaterial = overlay.material if overlay else null
-	_check(sm != null, "player has a post-process ShaderMaterial")
+	await get_tree().process_frame
+
+	gs.call("set_colorblind_mode", 2)
+	await get_tree().process_frame
+	var cb: CanvasLayer = gs.get_node_or_null("ColorblindOverlay") as CanvasLayer
+	_check(cb != null, "GraphicsSettings owns a ColorblindOverlay CanvasLayer")
+	if cb:
+		var top := -1000000
+		var top_name := ""
+		for n in get_tree().root.find_children("*", "CanvasLayer", true, false):
+			if n != cb and (n as CanvasLayer).layer > top:
+				top = (n as CanvasLayer).layer
+				top_name = str(n.get_path())
+		_check(cb.layer > top, "overlay layer %d is above every other CanvasLayer (highest %d, %s)" % [cb.layer, top, top_name])
+		_check(cb.visible, "overlay is shown for Deuteranopia")
+		var rect := cb.get_node_or_null("Correct") as CanvasItem
+		var csm: ShaderMaterial = rect.material as ShaderMaterial if rect else null
+		var live = csm.get_shader_parameter("cb_matrix") if csm else null
+		_check(live is Basis and (live as Basis).is_equal_approx(gs.call("colorblind_matrix", 2)),
+			"Deuteranopia reaches the overlay's cb_matrix")
+		_check(rect is Control and (rect as Control).mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"overlay never eats menu clicks")
+		gs.call("set_colorblind_mode", 0)
+		await get_tree().process_frame
+		_check(not cb.visible, "Off hides the overlay (no extra full-screen pass)")
+
+	var post = player.get("_post_overlay")
+	var sm: ShaderMaterial = post.material if post else null
 	if sm:
 		gs.call("set_colorblind_mode", 2)
-		var live = sm.get_shader_parameter("cb_matrix")
-		_check(live is Basis and (live as Basis).is_equal_approx(gs.call("colorblind_matrix", 2)),
-			"Deuteranopia reaches the live post-process (cb_matrix)")
+		var p = sm.get_shader_parameter("cb_matrix")
+		_check(p == null or (p is Basis and (p as Basis).is_equal_approx(Basis.IDENTITY)),
+			"the player's post-process does not correct a second time")
 		gs.call("set_colorblind_mode", 0)
-		live = sm.get_shader_parameter("cb_matrix")
-		_check(live is Basis and (live as Basis).is_equal_approx(Basis.IDENTITY), "Off restores the identity live")
 
 	# Persistence through settings.cfg.
 	gs.call("set_colorblind_mode", 3)
