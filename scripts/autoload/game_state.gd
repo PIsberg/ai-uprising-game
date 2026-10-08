@@ -1615,6 +1615,12 @@ var _warm_held: Array[Script] = []
 ## 60 with this warm-up first. Costs about 1 s on the main thread for those
 ## first loads from source, near nothing once compiled. Call it before every
 ## load_threaded_request.
+## The wedge is an engine deadlock (#139, native stacks from a 4.7.2 symbol build):
+## the loader thread compiles a script inside GDScriptCache::get_full_script, holding
+## the cache mutex; a `preload()` in it (convoy_ride.gd -> brute.tscn) is spawned as a
+## new pool task, which needs the same mutex for its own script, while the loader
+## sleep-waits for it without yielding. Compiling on the main thread first means no
+## worker ever compiles, so no worker holds that mutex while it waits.
 func warm_scripts(path: String) -> void:
 	_warm_scripts(path, {})
 

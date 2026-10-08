@@ -11,6 +11,8 @@ extends Node
 ## also reports the wall time per scene so a load that has crept past a few
 ## seconds is visible.
 ##   godot --headless --path . --audio-driver Dummy res://tests/threaded_load_probe.tscn
+## `-- nowarm` skips GameState.warm_scripts: the #139 repro of the engine wedge
+## itself (about 1 run in 9 hangs), for attaching a native debugger.
 
 const TIMEOUT_S := 90.0
 const SLOW_S := 8.0 ## report (not fail) loads slower than this, headless
@@ -40,6 +42,9 @@ func _scenes() -> Array[String]:
 
 func _run() -> void:
 	var scenes := _scenes()
+	var warm := not OS.get_cmdline_user_args().has("nowarm")
+	if not warm:
+		print("nowarm: threaded loads compile their scripts on the loader thread (#139 repro)")
 	var loaded := 0
 	var slow := 0
 	for path in scenes:
@@ -47,7 +52,8 @@ func _run() -> void:
 			_check(false, "%s exists" % path)
 			continue
 		# The game's own path: compile on the main thread, then the threaded load.
-		GameState.warm_scripts(path)
+		if warm:
+			GameState.warm_scripts(path)
 		var t0 := Time.get_ticks_msec()
 		var req := ResourceLoader.load_threaded_request(path, "", false)
 		if req != OK:
