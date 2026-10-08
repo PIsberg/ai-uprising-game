@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-292 probes total: **68** wired into the headless suite (`suite`), **82**
+293 probes total: **69** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -111,6 +111,7 @@ or GPU-timing probes; `--headless` renders these black).
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
+| settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
 | subtitle_size_probe | Accessibility Subtitle Size (GraphicsSettings.subtitle_scale 0.8..2.0): the real cutscene subtitle (26 px), overlord taunt (22 px) and victory transmission body (22 px) double at 2.0; at 2.0 the longest overlord taunt fits the HUD and a subtitle twice the longest written today wraps inside the screen above the letterbox bar; setter clamps, value persists | suite |
 | damage_number_size_probe | Accessibility Damage Number Size (GraphicsSettings.damage_number_scale 0.6..2.0): a real player-dealt hit spawns a Label3D whose fixed-size pixel_size is 0.0028 x the slider (1.0 / 2.0 / 0.6 measured), setter clamps, value persists; restores the user's values | suite |

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `settings_roundtrip_probe` (suite): every player setting must survive save + load. It finds the settings by reflection, so a new setting that is saved but never loaded (or the reverse) fails CI instead of silently resetting on every launch. All 30 round-trip today.
 - `boss_preview_probe` (suite): every boss the Enemy Codex shows in preview mode (8) must stay inert for 4 s, with no minions, no world FX and no boss bar. With preview off, ARCHON alone spawns 8 enemies.
 - **Subtitle Size** (Settings, 0.8x to 2.0x): scales the timed spoken text that disappears before a slow reader catches it, which is cutscene subtitles, the overlord's taunts over the HUD and the victory transmission. Cutscene subtitles now wrap inside side margins and grow upward, so a long line at a large size becomes two lines above the letterbox bar instead of running off screen. "Subtitle Size" and "Damage Number Size" are translated in all five languages. `subtitle_size_probe` (suite).
 - **Radar blips have a shape per kind**: enemies are dots, elites a dot inside a ring, objectives a hollow diamond. They were all dots told apart by red, gold and green, and red against green is what protanopia and deuteranopia confuse. `radar_shape_probe` (windowed).
