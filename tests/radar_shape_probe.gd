@@ -11,7 +11,8 @@ extends Node
 ## brightness threshold, i.e. what a protanope can tell is "lit". Every pair of
 ## blip masks must overlap by at most MAX_IOU (intersection over union), so the
 ## three read as different marks with the colour taken away.
-##   godot --path . res://tests/radar_shape_probe.tscn
+##   godot --path . res://tests/radar_shape_probe.tscn [-- <out.png>]
+## (pass a path after `--` to save the rendered frame for a look)
 
 const MAX_IOU := 0.5
 const ZOOM := 4.0
