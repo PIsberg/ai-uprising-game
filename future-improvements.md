@@ -90,7 +90,7 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 - ✅ **Screen Shake** scale and **Flash Intensity** scale shipped (Settings + pause menu).
 - ✅ **Flash Intensity now also scales world light bursts** (muzzle flash, hit/impact pops,
   explosion and grenade detonation lights; steady lights untouched) — `tests/flash_intensity_probe`.
-- ✅ **Colourblind Mode shipped** (Settings + pause menu: Off / Protanopia / Deuteranopia / Tritanopia) — a daltonize matrix in the post-process corrects the world and the level HUD (`GraphicsSettings.colorblind_matrix`, `tests/colorblind_probe`). Still open: non-colour redundancy (shape/icon) for the remaining colour-only cues, and correction for menus drawn above the post layer.
+- ✅ **Colourblind Mode shipped** (Settings + pause menu: Off / Protanopia / Deuteranopia / Tritanopia) — a daltonize overlay above every layer corrects the world, HUD, cutscenes and menus (`GraphicsSettings.colorblind_matrix`, `tests/colorblind_probe`, `tests/colorblind_render_probe`). Still open (#150): non-colour redundancy (shape/icon) for the remaining colour-only cues.
 - Subtitle/damage-number size scaling.
 - ✅ **Damage Taken slider shipped** (Settings + pause menu, 50–150%, `GraphicsSettings.damage_taken`, `tests/damage_taken_probe`). ✅ **It counts toward the grade like a tier** (x0.85 at 50%, x1.10 at 150%, named on the debrief next to the tier; `GameState.assist_score_mult`, `tests/grade_assist_probe`, issue #88). Still open: aim-assist for KBM, other modifiers.
 

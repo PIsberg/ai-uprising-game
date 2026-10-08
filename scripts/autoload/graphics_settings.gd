@@ -110,12 +110,13 @@ const COLOR_GRADE_PARAMS := {
 }
 var color_grade: ColorGrade = ColorGrade.NEUTRAL
 
-## Colourblind correction. The post-process overlay (canvas layer 0) covers the
-## 3D world and the level HUD under it, and multiplies every pixel by
-## colorblind_matrix(mode): a daltonize
+## Colourblind correction. One overlay owned by this autoload (CanvasLayer
+## COLORBLIND_LAYER, above every other layer: level HUD, cutscenes, campaign map,
+## Armory) multiplies every pixel by colorblind_matrix(mode): a daltonize
 ## pass that simulates the deficiency, takes what it cannot see, and shifts that
-## difference into channels it can. tests/colorblind_probe checks the result
-## against its own simulation of each deficiency.
+## difference into channels it can. Greys are fixed points, so neutral text is
+## untouched. tests/colorblind_probe checks the result against its own
+## simulation of each deficiency, and that the overlay tops every screen.
 enum ColorblindMode { OFF, PROTANOPIA, DEUTERANOPIA, TRITANOPIA }
 const COLORBLIND_LABELS := ["Off", "Protanopia", "Deuteranopia", "Tritanopia"]
 ## Machado, Oliveira & Fernandes (2009) simulation matrices, severity 1.0,
@@ -133,6 +134,9 @@ const CVD_SHIFT := {
 	ColorblindMode.TRITANOPIA: [Vector3(1, 0, 0.7), Vector3(0, 1, 0.7), Vector3(0, 0, 0)],
 }
 var colorblind_mode: ColorblindMode = ColorblindMode.OFF
+const COLORBLIND_LAYER := 128
+const COLORBLIND_SHADER := preload("res://shaders/colorblind.gdshader")
+var _cb_overlay: CanvasLayer
 
 ## The 3x3 the post-process applies for `mode` (`cb_matrix * col`):
 ## I + SHIFT * (I - SIM). Identity when OFF.
@@ -400,6 +404,32 @@ func _ready() -> void:
 	_apply_hdr_output.call_deferred()
 	_apply_window_mode.call_deferred()
 	Engine.max_fps = max_fps
+	_build_colorblind_overlay()
+
+## The full-screen correction pass. Its screen read sees the finished frame
+## even though the level post-process (layer 0) already sampled the screen:
+## tests/colorblind_render_probe checks that pixel for pixel.
+func _build_colorblind_overlay() -> void:
+	_cb_overlay = CanvasLayer.new()
+	_cb_overlay.name = "ColorblindOverlay"
+	_cb_overlay.layer = COLORBLIND_LAYER
+	var rect := ColorRect.new()
+	rect.name = "Correct"
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = COLORBLIND_SHADER
+	rect.material = mat
+	_cb_overlay.add_child(rect)
+	add_child(_cb_overlay)
+	_apply_colorblind()
+
+func _apply_colorblind() -> void:
+	if not _cb_overlay:
+		return
+	_cb_overlay.visible = colorblind_mode != ColorblindMode.OFF
+	var rect := _cb_overlay.get_node("Correct") as ColorRect
+	(rect.material as ShaderMaterial).set_shader_parameter("cb_matrix", colorblind_matrix(int(colorblind_mode)))
 
 ## Switch UI language live and persist it. Controls re-translate automatically;
 ## menus that build text in code should refresh/reload after calling this.
@@ -698,7 +728,7 @@ func set_color_grade(v: int) -> void:
 ## Switches the colourblind correction live and persists it.
 func set_colorblind_mode(v: int) -> void:
 	colorblind_mode = clampi(v, 0, ColorblindMode.size() - 1) as ColorblindMode
-	_apply_to_live_post_process()
+	_apply_colorblind()
 	_save_settings()
 
 ## Applies immediately (the swap-chain re-requests HDR live).
