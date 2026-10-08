@@ -8,6 +8,14 @@ https://poly.pizza/m/QCm7qe9uNJ — rigged/animated, used for the TERMINATOR
 boss (APEX ENDOFRAME). Released under **CC0 1.0** (public domain) — no
 attribution required, credited here as courtesy.
 
+### Sound effects (`assets/audio/samples/`)
+**"Sci-Fi Sounds"** (explosionCrunch, laserLarge, laserSmall) and **"Impact Sounds"**
+(impactMetal_medium, impactGeneric_light, impactMining, impactWood_medium,
+footstep_concrete) by **Kenney** (https://kenney.nl/assets/sci-fi-sounds,
+https://kenney.nl/assets/impact-sounds), released under **CC0 1.0** (public
+domain): no attribution required, credited here as courtesy. Re-encoded mono and
+level-matched to the synth sounds they replace by `tools/import_samples.py`.
+
 ### PBR surface textures (`assets/textures/pbr/`)
 Concrete031, Concrete034, Concrete036, MetalPlates006, and MetalPlates007 from
 **ambientCG** (https://ambientcg.com),
@@ -73,4 +81,4 @@ Animated robot by **dook**, via Poly Pizza (https://poly.pizza/u/dook), released
 under **CC0 1.0** (public domain) — no attribution required, credited here as
 courtesy. Used for the Void Sentinel (the off-world war drone) enemy.
 
-All other models, materials, audio, and code in this project are original.
+All other models, materials, audio (every sound not listed above is synthesized by `SoundSynth`), and code in this project are original.

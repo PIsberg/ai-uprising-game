@@ -15,6 +15,7 @@ The Armory (`scripts/ui/armory.gd`) provides a meta-progression shop between com
 * **Score Economy:** Converts player mission score and bounty rewards into credits for persistent equipment investments.
 * **Permanent Upgrades:** Six run-long tracks (`Armory.KEYS`): `damage`, `mag` (clip size), `reload`, `blast` (grenade radius), `leech` (heal from damage dealt) and `stamina`.
 * **Consumable Supplies:** Three supply keys (`Armory.SKEYS`): `ammo`, `grenades` and `health` (max HP on deploy). These persist for the whole run and are re-applied on every deploy.
+* **Weapon Mods:** Four cards (`Armory.MKEYS`) with a gun picker: BUY + FIT buys a mod and fits it to the picked gun; owned mods FIT or SWAP for free. See [[weapons#Weapon Mods]].
 
 ## 3D Enemy Codex
 <!-- lat: { "require-code-mention": true } -->

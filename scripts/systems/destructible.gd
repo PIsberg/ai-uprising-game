@@ -40,7 +40,7 @@ func _explode() -> void:
 	get_parent().add_child(fx)
 	(fx as Node3D).global_position = global_position + Vector3.UP * 0.8
 	AudioBus.play_synth_at("explosion", global_position, 4.0, randf_range(0.6, 0.75))
-	_burst_debris(debris_count + 6, 5.0)
+	burst_debris(get_parent(), global_position, debris_color, debris_count + 6, 5.0)
 	# Area-of-effect: hurt every Damageable in radius (enemies, player, other props).
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsShapeQueryParameters3D.new()
@@ -74,13 +74,12 @@ func _shatter() -> void:
 		var fx := IMPACT.instantiate()
 		get_parent().add_child(fx)
 		(fx as Node3D).global_position = global_position + Vector3(randf_range(-1.0, 1.0), randf_range(0.2, 1.6), randf_range(-1.0, 1.0))
-	_burst_debris(debris_count, 3.5)
+	burst_debris(get_parent(), global_position, debris_color, debris_count, 3.5)
 
 ## A one-shot burst of tumbling chunks in the prop's colour — the satisfying
 ## "it broke apart" payoff. Lives on the scene (the prop frees itself) and is
-## cleaned up by a short timer.
-func _burst_debris(count: int, speed: float) -> void:
-	var parent := get_parent()
+## cleaned up by a short timer. Static so BreakableCover shares it.
+static func burst_debris(parent: Node, at: Vector3, debris_color: Color, count: int, speed: float) -> void:
 	if parent == null:
 		return
 	var p := CPUParticles3D.new()
@@ -108,7 +107,7 @@ func _burst_debris(count: int, speed: float) -> void:
 	mesh.material = mat
 	p.mesh = mesh
 	parent.add_child(p)
-	p.global_position = global_position + Vector3.UP * 0.6
+	p.global_position = at + Vector3.UP * 0.6
 	var tree := p.get_tree()
 	if tree:
 		var t := tree.create_timer(1.6)

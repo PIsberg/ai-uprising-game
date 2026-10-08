@@ -23,8 +23,9 @@ func announce_boss(boss: Node) -> void:
 
 ## Called by Damageable when the player damages something. Drives combat feedback.
 func report_player_hit(amount: float, world_pos: Vector3, killed: bool, crit: bool = false) -> void:
-	register_hit()
-	AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
+	if not _secondary_hit: # mod/shrapnel damage is not a fresh hit (apply_secondary_damage)
+		register_hit()
+		AIDirector.note_hit(crit, world_pos) # feed the adaptive director (range + headshots)
 	player_dealt_damage.emit(amount, world_pos, killed, crit)
 	add_ultimate_charge(amount * ULT_PER_DAMAGE) # damage dealt smooths the OVERLOAD fill
 	if crit:
@@ -276,6 +277,95 @@ const UPGRADE_DEFS := {
 	"stamina": {"label": "STAMINA",       "per": 0.10, "cost": 900},
 }
 const UPGRADE_MAX := 5
+
+# ---------- weapon mods (behaviour, not stats; bought in the Armory) ----------
+## Each mod changes what a hit DOES rather than how hard it lands. Bought once per
+## run, fitted to one hitscan/beam gun at a time (a gun holds one mod), refitted
+## for free. Effects live in WeaponMods; values here are what the Armory shows.
+# @lat: [[weapons#Weapon Mods]]
+const MOD_DEFS := {
+	"arc":      {"label": "CHAIN ARC", "cost": 1800, "desc": "Hits arc 35% to a robot within 7 m"},
+	"thermite": {"label": "THERMITE",  "cost": 1600, "desc": "Hits burn for 30% more over 3 s"},
+	"ricochet": {"label": "RICOCHET",  "cost": 1500, "desc": "Wall hits bounce 60% into a robot"},
+	"override": {"label": "OVERRIDE",  "cost": 2400, "desc": "Drop a robot under 25%: it turns"},
+}
+## The starting rack (player.tscn WeaponManager.weapon_scenes); tests/weapon_mods_probe
+## fails if the two drift apart.
+const BASE_LOADOUT: Array[String] = [
+	"res://scenes/weapons/pistol.tscn",
+	"res://scenes/weapons/sniper.tscn",
+	"res://scenes/weapons/magnum.tscn",
+]
+var owned_mods: Array[String] = []
+var weapon_mods: Dictionary = {} ## weapon scene path -> mod id
+
+func buy_mod(id: String) -> bool:
+	if not MOD_DEFS.has(id) or owned_mods.has(id):
+		return false
+	var cost := int(MOD_DEFS[id]["cost"])
+	if score < cost:
+		return false
+	score -= cost
+	owned_mods.append(id)
+	save_progress()
+	return true
+
+## Fit an owned mod to a weapon: it leaves whatever gun held it, and the gun's
+## previous mod (if any) goes back on the shelf, still owned.
+func fit_mod(id: String, weapon_path: String) -> bool:
+	if not owned_mods.has(id) or not mod_compatible(weapon_path):
+		return false
+	for p in weapon_mods.keys():
+		if weapon_mods[p] == id:
+			weapon_mods.erase(p)
+	weapon_mods[weapon_path] = id
+	save_progress()
+	return true
+
+func mod_for(weapon_path: String) -> String:
+	return String(weapon_mods.get(weapon_path, ""))
+
+## Which gun an owned mod is fitted to ("" = on the shelf).
+func mod_fitted_to(id: String) -> String:
+	for p in weapon_mods:
+		if weapon_mods[p] == id:
+			return String(p)
+	return ""
+
+## Mods hook the hitscan and beam hit paths; projectile launchers can't take one.
+func mod_compatible(weapon_path: String) -> bool:
+	var ps := load(weapon_path) as PackedScene
+	if ps == null:
+		return false
+	# Duck-typed on purpose: naming the Weapon / WeaponData classes here pulls
+	# weapon.gd into the autoload's own load and breaks it in a cycle (pickup.gd
+	# failed to load, "Busy"). 1 == WeaponData.DamageType.PROJECTILE.
+	var w := ps.instantiate()
+	var d = w.get("data")
+	var ok: bool = d != null and int(d.get("damage_type")) != 1
+	w.free()
+	return ok
+
+## The guns this run can fit a mod to, weakest -> strongest.
+func moddable_weapons() -> Array[String]:
+	var out: Array[String] = []
+	for p in WEAPON_ORDER:
+		if (BASE_LOADOUT.has(p) or unlocked_weapons.has(p)) and mod_compatible(p):
+			out.append(p)
+	return out
+
+## Mod damage (an arc, a burn tick, a ricochet) is a consequence of a hit, not a
+## new one: it pays score, leech and OVERLOAD charge but must not count as a hit
+## for the grade's accuracy or the AI Director's read (a burn would otherwise push
+## accuracy past 100%).
+var _secondary_hit: bool = false
+
+func apply_secondary_damage(d: Node, amount: float, source: Node, origin = null) -> void:
+	if d == null or not d.has_method("apply_damage"):
+		return
+	_secondary_hit = true
+	d.apply_damage(amount, source, false, origin)
+	_secondary_hit = false
 var upgrades: Dictionary = {"damage": 0, "mag": 0, "reload": 0, "blast": 0, "leech": 0, "stamina": 0}
 
 ## "Field supplies" bought in the Armory — banked here and PERMANENT for the run:
@@ -1245,6 +1335,8 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	upgrades = {}
 	for k in UPGRADE_DEFS:
 		upgrades[k] = 0
+	owned_mods.clear() # mods are run gear, like the Armory tracks
+	weapon_mods = {}
 	intro_played = false
 	controls_taught = false # re-teach controls at the start of a fresh campaign
 	level_index = 0
@@ -1255,6 +1347,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	# explicitly here, the one true "wipe everything" entry point.
 	level_deaths = 0
 	_deaths_level_id = ""
+	AIDirector.note_run_start() # the overlord's dossier counts every run you start
 	go_to_level(campaign()[0], false)
 
 ## The opener is now a comic-panel flash instead of the old 3D story cutscene.
@@ -1441,6 +1534,8 @@ func save_progress() -> void:
 	cf.set_value("run", "unlocked_weapons", unlocked_weapons)
 	cf.set_value("run", "equipped_weapon", equipped_weapon)
 	cf.set_value("run", "upgrades", upgrades)
+	cf.set_value("run", "owned_mods", owned_mods)
+	cf.set_value("run", "weapon_mods", weapon_mods)
 	# Persist which robots the briefings have introduced — otherwise a resumed
 	# run re-plays every "NEW HOSTILE" close-up the player has already seen.
 	cf.set_value("run", "seen_enemies", seen_enemy_types.keys())
@@ -1483,6 +1578,15 @@ func load_progress() -> bool:
 	_taught.clear()
 	for k in cf.get_value("run", "taught", []):
 		_taught[str(k)] = true
+	owned_mods.clear()
+	for m in cf.get_value("run", "owned_mods", []):
+		if MOD_DEFS.has(str(m)):
+			owned_mods.append(str(m))
+	weapon_mods = {}
+	var wm: Dictionary = cf.get_value("run", "weapon_mods", {})
+	for p in wm:
+		if owned_mods.has(str(wm[p])):
+			weapon_mods[str(p)] = str(wm[p])
 	return true
 
 ## Warm the level scenes the player is most likely to enter next while a menu
@@ -1609,6 +1713,7 @@ var last_killer: String = "" ## Kill-feed label of whatever downed the player (d
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
+	AIDirector.note_death(killer) # counts the death; only cleared levels teach the dossier
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
@@ -1675,6 +1780,9 @@ func on_level_complete() -> void:
 	_reset_combo()
 	# Snapshot the director's read NOW (its profile resets at the next level's
 	# start) — the next briefing shows it as intercepted ROBOT OS patch notes.
+	# Fold it into the long-term dossier first, so a countermeasure earned on this
+	# level is announced in the very patch that ships it.
+	AIDirector.fold_level()
 	pending_patch_notes = _build_patch_notes()
 	grade_level() # emits level_graded for the end screen
 	set_state(State.LEVEL_COMPLETE)

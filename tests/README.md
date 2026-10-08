@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-293 probes total: **69** wired into the headless suite (`suite`), **82**
+299 probes total: **74** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **142** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -67,6 +67,7 @@ or GPU-timing probes; `--headless` renders these black).
 | beam_render_probe | ElectricBeam renders to a PNG (lightning actually draws) | windowed |
 | benchmark_probe | QualityBenchmark run twice; measured avg ms (needs real GPU timings) | windowed |
 | bevel_smoke | BeveledBoxMesh instances from both a `.tscn` sub_resource and code, non-empty geometry | headless |
+| bevel_winding_probe | Every `BeveledBoxMesh` triangle winds the way the engine's own `BoxMesh` does (front faces clockwise from outside); 44 of 44 were inside-out until 2026-10-08, so every builder box drew its inner faces | suite |
 | blast_direction_probe | A BRUTE's frontal shield judges an explosion by the BLAST's position, not the thrower's — a grenade behind it lands, one in front is blocked | suite |
 | blur_shot | Clean high-res indoor capture (forced HIGH + full render scale) to diagnose "indoor looks blurry" | windowed |
 | bolt_bare_probe | Bare-scene isolation of the bolt material on distant columns; transparent-surface culling | windowed |
@@ -80,6 +81,8 @@ or GPU-timing probes; `--headless` renders these black).
 | boss_phase_probe | Every boss other than MANUS (which has `manus_phase_probe`) escalates in what it does as it is wounded: OVERSEER volley 3 -> 5 bolts plus a phase-3 Seeker and a bigger barrage; COLOSSUS volley 3 -> 5 and, at the same range, artillery / beam / slam by phase; TITAN blinks only once wounded; ARCHON's 30% wave is bigger; TERMINATOR's beam sweeps faster; SMASHER's attacks come back faster | suite |
 | boss_signature_probe | SMASHER claw-rake lunge and OVERSEER rocket-barrage signature attacks land | windowed |
 | bounty_probe | BOUNTY director: tagged-enemy kill awards bonus + clears director + always drops the rare prize | windowed |
+| breakable_cover_probe | Breakable cover: a census of qualifying `walls` per level (at least 30 blocks on 8 levels) and the opt-outs; in a live `neon` build every qualifying block is a `BreakableCover`, enemy rounds x0.3 and splash x1.6, two crack stages, chipping is not a player hit; the shatter frees the block, leaves rubble, hurts a body beside it, and one threaded rebake turns a 1.5x detour into a straight path; a shockwave ring damages a block | suite |
+| breakable_cover_shot | Frames one breakable block of a level (default `neon`) at eye height: intact, from a raised three-quarter view, next to a solid wall, cracked, failing, mid-shatter and as rubble. `-- --out=<dir> [--level=<id>]` | windowed |
 | briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective all show | windowed |
 | brute_shield_probe | BRUTE still visibly carries its frontal shield slab (front + 3/4 shots) | windowed |
 | campaign_dump | SceneTree script dumping `max_level_reached` + full campaign roster for inspection | headless |
@@ -239,6 +242,7 @@ or GPU-timing probes; `--headless` renders these black).
 | open_house_check | OPEN building on level 1: hollow interior, solid walls, open doorway, baked walkable upper-floor navmesh | headless |
 | open_house_probe | OPEN building photographed from street + inside; grapple pad exists | windowed |
 | opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start (no `trigger`, or a trigger radius that already contains the spawn) — the campaign's own opening-room convention, and which levels break it | headless |
+| overlord_memory_probe | The overlord's long-term dossier (`user://overlord.cfg`): a probe boot keeps it in memory only; a calibrating level counters the dossier after 2 folded levels; 3 levels leaning on one gun cut its real `eff_damage` to x0.85 and the patch notes say so; rotating lifts it within 2 levels; deaths and killers are tallied through `GameState.on_player_died` but teach the dossier nothing (five deaths on one gun earn no countermeasure); save + load round trip | suite |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |
 | pacing_sweep | Auto-player difficulty sweep across campaign levels: kills/HP%/deaths/progress per level | headless |
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |
@@ -275,6 +279,7 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
+| sample_override_probe | Sampled-audio overrides: every file in `assets/audio/samples/` is named after a real `SoundSynth` id, numbered takes have no gaps, an id with several takes resolves to a no-repeat `AudioStreamRandomizer` of all of them, and an id without a file keeps the synth | suite |
 | save_probe | save_progress/load_progress round-trip of every run-scoped field Continue depends on, including the Armory supplies (caught them being lost on Continue) | suite |
 | scanner_probe | Vision scanners: a player held in the cone raises the alarm after detect_time and hands the reinforcement hook the authored squad, a wall in the sightline blocks it, max_alarms caps it, a shot-out head stays blind; then on every campaign level that authors scanners, all of them build and each alarm squad spawns on walkable ground with a route to the spawn | suite |
 | scanner_shot | Each campaign scanner framed from the floor in front of it, idle and mid-alarm, to judge the head, mast and beam in-level | windowed |
@@ -333,6 +338,7 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_codex_probe | Weapon Codex layout/stats screenshotted | windowed |
 | weapon_fx_probe | Laser-beam-into-wall and rocket-in-flight FX, mid-flight and post-detonation | windowed |
 | weapon_lineup | Every player weapon scene with real models, rendered in a grid | windowed |
+| weapon_mods_probe | Weapon mods: `GameState.BASE_LOADOUT` matches `player.tscn`'s rack; buy / fit / refit rules, projectile guns refused, save + load round trip; through the rifle's real hitscan, CHAIN ARC hits a robot 4 m away (not one at 22 m), THERMITE burns exactly 30% over 3 s, RICOCHET bounces off a wall into a robot, OVERRIDE turns a robot under 25%, mod damage is not a hit for accuracy, procs are rate-limited | suite |
 | weapon_order_probe | Weapon rack auto-sorts weakest→strongest; HUD carousel builds a cell per weapon | headless |
 | weapon_pacing_probe | Weapons are first offered in campaign in power-rank order (no weaker gun handed out after a stronger one) | headless |
 | weapon_recover_probe | Every way the equipped weapon can "vanish" is injected; WeaponManager watchdog notices + re-arms the player | headless |

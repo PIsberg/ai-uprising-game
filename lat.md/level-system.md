@@ -35,6 +35,15 @@ The built-in level editor (`scripts/editor/level_editor.gd`, launched via `--edi
 * **3D Viewport & Gizmos:** Full interactive 3D translation/rotation gizmos for placing obstacles, lights, jump pads, and spawners.
 * **One-Click Playtest:** Instant in-editor simulation testing with live player spawn and telemetry verification.
 
+## Breakable Cover
+<!-- lat: { "require-code-mention": true } -->
+Compact cover blocks from the `walls` def key can be shot apart, so a firefight changes the room it is fought in.
+
+* `BreakableCover.qualifies` picks blocks 0.8-4.3 m tall, at most 6 m long, standing on the floor, with no authored point on them and no ramp or platform leaning on them; `why_not` names the reason for the rest. 35 blocks on 13 campaign levels qualify (2026-10-08 census in `tests/breakable_cover_probe`).
+* HP is 60 per cubic metre (220-1400). Explosions deal x1.6, boss-weight chassis x2, ordinary enemy rounds x0.3; `EnemyBase.spawn_shockwave_ring` hits every block inside the ring, so slams wreck the arena.
+* Two crack stages (66%, 33%), then a shatter: shrapnel (45 at the face, credited to whoever broke it), rubble with no collider, and `LevelBuilder.request_nav_rebake`, a debounced threaded rebake (about 1.3 ms on the main thread) so robots path through the gap.
+* Chipping cover never reports a player hit, so accuracy and the AI Director's read stay clean.
+
 ## Security Firewalls
 <!-- lat: { "require-code-mention": true } -->
 The `firewalls` def key places energy sheets across a route that stop the player and nothing else.

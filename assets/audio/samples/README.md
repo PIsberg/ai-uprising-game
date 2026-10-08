@@ -6,7 +6,37 @@ synth (`scripts/autoload/sound_synth.gd`) remains the fallback when no file is
 present, so the game always has sound.
 
 - Naming: `<id>.ogg`, `<id>.wav`, or `<id>.mp3` (probed in that order).
+- Variants: `<id>_0.ogg` ... `<id>_7.ogg` (numbered from 0, no gaps) play as one
+  set in random order, never the same take twice in a row (`AudioStreamRandomizer`,
+  `PLAYBACK_RANDOM_NO_REPEATS`). A plain `<id>.ogg` wins over numbered takes.
 - Resolved by `AudioBus.synth()` → `_resolve_sample()` (cached after first probe).
+- `tests/sample_override_probe` (suite) fails on a file named after no synth id
+  (it would never play) and on a gap in the take numbers.
+
+## What ships here
+
+Kenney CC0 takes (see `CREDITS.md`), imported by `tools/import_samples.py`, which
+re-encodes them mono and bakes in the gain that matches each take to the loudness
+of the synth sound it replaces (loudest 50 ms RMS window, within 1.5 dB; a take
+that cannot get there without heavy limiting is dropped):
+
+| id | takes | source |
+|---|---|---|
+| `impact_metal` | 5 | Impact Sounds `impactMetal_medium` |
+| `impact_concrete` | 5 | Impact Sounds `impactGeneric_light` |
+| `impact_stone` | 5 | Impact Sounds `impactMining` |
+| `impact_wood` | 5 | Impact Sounds `impactWood_medium` |
+| `footstep` | 5 | Impact Sounds `footstep_concrete` |
+| `explosion` | 4 | Sci-Fi Sounds `explosionCrunch` (take 2 dropped: 2.6 dB short after +14.9 dB) |
+| `plasma_fire` | 5 | Sci-Fi Sounds `laserLarge` |
+| `drone_shot` | 5 | Sci-Fi Sounds `laserSmall` |
+
+Neither pack has a kinetic gunshot or a music loop, so `pistol_fire`,
+`rifle_fire`, `shotgun_fire` and every `music_*` track are still synthesized.
+
+To add or change one: edit `MAPPING` in `tools/import_samples.py`, dump the synth
+references with `godot --headless --path . --audio-driver Dummy res://tools/dump_synth.tscn -- --out=<dir>`,
+then run `python tools/import_samples.py --packs <unzipped packs> --synth <dir>`.
 
 ## Sound ids currently in use
 

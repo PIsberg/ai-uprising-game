@@ -15,7 +15,8 @@ signal ammo_changed(mag: int, reserve: int)
 # every read goes through these. GameState owns the multipliers.
 
 func eff_damage() -> float:
-	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * GameState.rampage_damage_mult() * GameState.adrenaline_damage_mult() * GameState.directive_damage_mult() * _alt_boost
+	return data.damage * GameState.upgrade_mult("damage") * GameState.damage_mult() * GameState.rampage_damage_mult() * GameState.adrenaline_damage_mult() * GameState.directive_damage_mult() * _alt_boost \
+		* AIDirector.countermeasure_mult(data.display_name) # the overlord patched against your crutch gun
 
 ## Effective fire rate — OVERDRIVE and a high kill-streak RAMPAGE both crank it up
 ## so cooldowns shorten across all fire modes (semi/auto/burst/beam).
@@ -89,7 +90,17 @@ var _heat_light: OmniLight3D = null
 # Shared worn-metal roughness map for every real gun model — built once, reused.
 static var _metal_rough_tex: NoiseTexture2D = null
 
+## Fitted weapon mod (GameState.weapon_mods, keyed by this gun's scene path), read
+## once when the gun is built for a level; WeaponMods runs it on every hit.
+var mod_id: String = ""
+var mod_last_proc_ms: int = -100000
+var mod_override_ms: int = -100000
+
+func get_active_shooter() -> Node:
+	return _active_shooter
+
 func _ready() -> void:
+	mod_id = GameState.mod_for(scene_file_path)
 	if viewmodel == null:
 		viewmodel = get_node_or_null("Viewmodel")
 	if muzzle == null and viewmodel:
@@ -612,6 +623,8 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 				AudioBus.play_synth_at("headshot", hpos, -1.0, 1.0)
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
 			_enemy_hit_pop(hpos, is_crit, final_damage)
+			if mod_id != "":
+				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage)
 			# Punch through to the next enemy if this weapon pierces.
 			if pierces_left > 0 and col is CollisionObject3D:
 				pierces_left -= 1
@@ -624,6 +637,8 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			break
 		else:
 			end_point = hpos # world geometry stops the beam
+			if mod_id != "":
+				WeaponMods.on_world_hit(self, hpos, hit.normal, dir, eff_damage() * _range_mult(origin.distance_to(hpos)))
 			break
 	# Draw the visible round from the muzzle (not the eye) to where it landed, so
 	# it reads as leaving the rifle and striking the target.
@@ -812,11 +827,16 @@ func _update_beam(delta: float) -> void:
 				weak_mult = col.weakpoint_multiplier(hit.position)
 			beam_dmg *= weak_mult
 			dmg_node.apply_damage(beam_dmg, _active_shooter, weak_mult > 1.0)
+			if mod_id != "":
+				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hit.position, beam_dmg)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.
 			if _beam_pop % 4 == 0:
 				_enemy_hit_pop(hit.position, weak_mult > 1.0, beam_dmg * 2.0)
-		elif _beam_pop % 6 == 0:
-			_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
+		else:
+			if mod_id != "":
+				WeaponMods.on_world_hit(self, hit.position, hit.normal, dir, eff_damage() * _range_mult(origin.distance_to(hit.position)))
+			if _beam_pop % 6 == 0:
+				_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
 	fired.emit(self)
 
 func _ensure_beam() -> void:

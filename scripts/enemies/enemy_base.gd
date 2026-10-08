@@ -1411,9 +1411,12 @@ func spawn_ground_warning(center: Vector3, radius: float, dur: float, col: Color
 	tw.tween_property(dm, "albedo_color:a", 0.0, 0.12)
 	tw.tween_callback(root.queue_free)
 
+const SLAM_COVER_DAMAGE := 120.0 ## base hit a shockwave ring deals to breakable cover
+
 ## A single expanding shock ring blasting out from a ground impact — a bright
 ## torus that scales out to `radius` while fading, then frees itself. Reusable
 ## impact FX (boss slams, wake-quakes). Parents to the scene so it stays put.
+## Also damages BreakableCover inside the ring, so slams wreck the arena.
 func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), origin: Vector3 = Vector3.INF) -> void:
 	var parent := get_tree().current_scene
 	if parent == null:
@@ -1444,6 +1447,13 @@ func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), or
 	# landed — every caller of this primitive (mech stomp, manus finger-drum,
 	# smasher wake-slam, titan/colossus entrances) gets it for free. Falls off
 	# with distance, and no-ops when Advanced Post-Process is off.
+	# Slams wreck the arena: breakable cover inside the ring takes a heavy hit
+	# (BreakableCover doubles it again for boss-weight chassis).
+	for c in get_tree().get_nodes_in_group("breakable_cover"):
+		var cd := Vector2((c as Node3D).global_position.x - at.x, (c as Node3D).global_position.z - at.z).length()
+		var reach_c := radius * 1.6 + 1.0
+		if cd < reach_c and c.get("hp"):
+			c.hp.apply_damage(SLAM_COVER_DAMAGE * clampf(1.0 - cd / reach_c, 0.25, 1.0), self, false, at)
 	var pl := get_tree().get_first_node_in_group("player")
 	if pl is Node3D and pl.has_method("add_screen_shock"):
 		var reach := maxf(radius * 2.4, 6.0)

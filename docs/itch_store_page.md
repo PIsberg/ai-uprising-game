@@ -37,6 +37,7 @@ and **counters it**:
 - Snipe from afar → it sends **SWIFT** rushers to close the gap.
 - Out-aim it → it fields **WARDEN** units you can't stagger (so you *dodge*, not suppress).
 - Spam one weapon → it rolls out **SHIELDED** armour that shrugs it off.
+- And it **remembers you between runs**: the gun you always reach for gets a firmware countermeasure, and the overlord greets you with how many times it has killed you.
 
 The overlord even taunts you with what you're actually doing: *"You like your
 distance. I'm closing it."* — *"The Shotgun again. I've patched for it."* The read
