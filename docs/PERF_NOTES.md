@@ -57,6 +57,24 @@ not a steady cost.
 So an 8-robot fight costs well under 1 ms of a 16.7 ms frame on the dev CPU.
 There is no per-robot physics problem to fix; #89 is closed on this evidence.
 
+## Horde stress (Last Stand), 2026-10-08
+
+`tests/horde_cost_probe` starts waves 8 to 23 back to back against an
+invulnerable player, so the crowd only grows. Two runs:
+
+| enemies alive | physics p50 / p90 ms | process p50 / p90 ms |
+|---|---|---|
+| 8 | 0.67-0.73 / 1.04-1.06 | 0.24-0.26 / 0.38-0.39 |
+| 19-23 | 1.06-1.67 / 1.46-2.16 | 0.40-0.56 / 0.56-0.76 |
+| 38-40 | 2.00-2.62 / 2.81-3.24 | 0.86-0.92 / 1.06-1.20 |
+| 54-63 | 3.56-3.71 / 4.72-4.99 | 1.41-1.71 / 1.71-1.97 |
+
+Linear at roughly 55 us of physics and 25 us of process per robot. Sixty robots
+cost about 5.5 ms of CPU per frame, a third of the 60 fps budget, so horde mode
+is not CPU-bound on the dev machine. Single ticks peak at 5-8 ms (spawn
+telegraphs instantiating). The GPU side (draw calls and lights per tier with 60
+robots) still needs a windowed run.
+
 ## Findings 2026-09-12 (SUPERSEDED: read from the once-a-second worst-tick monitor)
 
 Campaign sweep (`cpu_cost_sweep`, every enemy woken onto the player):

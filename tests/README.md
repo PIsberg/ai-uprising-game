@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-287 probes total: **65** wired into the headless suite (`suite`), **81**
+288 probes total: **65** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -183,6 +183,7 @@ or GPU-timing probes; `--headless` renders these black).
 | raptor_stoop_shot | Look-check of the RAPTOR strike fork: chase view of one unit mid-stoop over a target dummy with a second holding its hover beyond | windowed |
 | hive_uplink_probe | HIVE uplink-mast model fork is wired + keeps its clips; link beacon rides the Head bone at the mast tip, is beacon-sized, lit while networked and dead while jammed | suite |
 | hive_uplink_shot | Look-check of the HIVE uplink fork: networked unit (beacon lit, shield up) beside a jammed one (beacon dead, shield down) | windowed |
+| horde_cost_probe | Report-only CPU instrument for Last Stand: starts waves 8 to 23 back to back so the crowd grows to ~55-60, prints enemy count with physics-tick and process-frame p50/p90/max (`tests/tick_clock.gd`); never writes the horde record (findings in docs/PERF_NOTES.md) | headless |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
 | hud_upgrade_probe | HUD upgrade-chip row shows only bought tracks at the right rank | windowed |
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |
