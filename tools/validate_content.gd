@@ -15,7 +15,6 @@ func _initialize() -> void:
 		"res://scripts/enemies/enemy_sentinel.gd",
 		"res://scripts/enemies/enemy_mauler.gd",
 		"res://scripts/levels/level_builder.gd",
-		"res://scripts/cutscene/level_briefing.gd",
 		"res://scripts/cutscene/level_comic_briefing.gd",
 		"res://scripts/cutscene/uprising_reveal.gd",
 		"res://scripts/cutscene/victory_cutscene.gd",

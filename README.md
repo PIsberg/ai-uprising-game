@@ -190,7 +190,7 @@ scenes/
   weapons/             # 17 weapons + projectiles + grenades
   enemies/             # 39 enemy/boss scenes
   levels/              # level_<id>.tscn (LevelBuilder + Player + HUD)
-  cutscene/            # comic_intro, level_briefing (+ Armory shop)
+  cutscene/            # comic_intro, level_comic_briefing (+ Armory shop)
   props/ pickups/ fx/  # breakable props, pickups, impact/explosion/tracer FX
 scripts/
   autoload/            # GameState, AudioBus, SoundSynth, GraphicsSettings, AIDirector

@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://db7rysce06vol"]
-
-[ext_resource type="Script" path="res://tests/briefing_probe.gd" id="1_brief"]
-
-[node name="BriefingProbe" type="Node"]
-script = ExtResource("1_brief")
