@@ -219,6 +219,7 @@ var _env: Environment
 var _tower_count: int = 0   ## cycles rooftop-pickup kind across a level's towers
 
 func _ready() -> void:
+	add_to_group("level_builder") # BreakableCover asks for a nav rebake through the group
 	var def := _resolve_def()
 	if def.is_empty():
 		push_error("LevelBuilder: unknown level_id '%s'" % level_id)
@@ -861,9 +862,21 @@ func _build_geometry(def: Dictionary) -> void:
 		_add_box(Vector3(0, room_h + 0.2, 0), Vector3(fs.x, 0.4, fs.y), ceil_mat, "surf_metal", "level_ceiling")
 	# Interior cover / pillars — alternate two plate materials so adjacent
 	# crates/machinery don't read as copies of one box.
+	# Compact floor-standing cover with nothing authored on or against it can be
+	# shot apart (BreakableCover); the rest stays solid. The flag on the def entry
+	# tells _build_cover_trim to leave it alone, since the block dresses itself.
 	var cover_i := 0
 	for w in def.get("walls", []):
-		_add_box(w["pos"], w["size"], MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B, "surf_metal", "", "DefWall")
+		var wmat: Material = MAT_PROP if cover_i % 2 == 0 else MAT_PROP_B
+		if BreakableCover.qualifies(w, def):
+			w["_breakable"] = true
+			var bc := BreakableCover.new()
+			bc.name = "BreakableCover"
+			bc.position = w["pos"]
+			bc.setup(w["size"], _beveled_box(w["size"]), wmat, _theme_color(def))
+			_nav_region.add_child(bc)
+		else:
+			_add_box(w["pos"], w["size"], wmat, "surf_metal", "", "DefWall")
 		cover_i += 1
 
 # ---------- wall detailing ----------
@@ -2664,6 +2677,8 @@ func _build_cover_trim(def: Dictionary) -> void:
 		var size: Vector3 = w["size"]
 		if size.y > 5.0:
 			continue # interior dividers reach the ceiling; trim only the cover
+		if w.get("_breakable", false):
+			continue # BreakableCover dresses itself so its trim leaves with it
 		var top := pos.y + size.y * 0.5 + 0.015
 		for edge in [
 				[Vector3(pos.x, top, pos.z - size.z * 0.5), Vector3(size.x, 0.03, 0.05)],
@@ -4916,3 +4931,25 @@ func _apply_objective_text(def: Dictionary) -> void:
 func _bake_navmesh() -> void:
 	if _nav_region and _nav_region.navigation_mesh and is_inside_tree():
 		_nav_region.bake_navigation_mesh(false)
+
+var _rebake_queued: bool = false
+var nav_rebakes: int = 0 ## Runtime rebakes started (BreakableCover gaps); probes read it.
+
+## A cover block was destroyed: rebake so robots path through the gap. Debounced
+## (one bake per burst of breakage) and threaded, so a grenade that levels three
+## blocks costs one bake and no frame stall beyond the geometry parse.
+func request_nav_rebake() -> void:
+	if _rebake_queued:
+		return
+	_rebake_queued = true
+	get_tree().create_timer(0.4).timeout.connect(_rebake_nav)
+
+func _rebake_nav() -> void:
+	_rebake_queued = false
+	if not is_inside_tree() or _nav_region == null or _nav_region.navigation_mesh == null:
+		return
+	if _nav_region.is_baking():
+		request_nav_rebake() # try again once the running bake lands
+		return
+	nav_rebakes += 1
+	_nav_region.bake_navigation_mesh(true)

@@ -63,8 +63,10 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 	health_changed.emit(current_health, max_health)
 	# Combat feedback: report player-dealt hits (hit markers + damage numbers).
 	var owner_node := get_parent()
+	# Breakable cover is scenery: chipping it is not a hit on a robot, so it must not
+	# pop hit markers or count toward accuracy (the AI Director reads that number).
 	if source and source.is_in_group("player") and owner_node is Node3D \
-			and not owner_node.is_in_group("player"):
+			and not owner_node.is_in_group("player") and not owner_node.is_in_group("breakable_cover"):
 		var pos: Vector3 = (owner_node as Node3D).global_position + Vector3.UP * 1.5
 		GameState.report_player_hit(mitigated, pos, killed, crit)
 		_spawn_damage_number(mitigated, pos, killed, crit)
