@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-293 probes total: **69** wired into the headless suite (`suite`), **82**
+294 probes total: **70** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -239,6 +239,7 @@ or GPU-timing probes; `--headless` renders these black).
 | open_house_check | OPEN building on level 1: hollow interior, solid walls, open doorway, baked walkable upper-floor navmesh | headless |
 | open_house_probe | OPEN building photographed from street + inside; grapple pad exists | windowed |
 | opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start (no `trigger`, or a trigger radius that already contains the spawn) — the campaign's own opening-room convention, and which levels break it | headless |
+| overlord_memory_probe | The overlord's long-term dossier (`user://overlord.cfg`): a probe boot keeps it in memory only; a calibrating level counters the dossier after 2 folded levels; 3 levels leaning on one gun cut its real `eff_damage` to x0.85 and the patch notes say so; rotating lifts it within 2 levels; deaths and killers are tallied through `GameState.on_player_died`; save + load round trip | suite |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |
 | pacing_sweep | Auto-player difficulty sweep across campaign levels: kills/HP%/deaths/progress per level | headless |
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |

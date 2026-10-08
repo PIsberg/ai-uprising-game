@@ -23,6 +23,7 @@ Profiles player performance and adjusts gameplay dynamics:
 * Drives Elite enemy affixes based on player profiles
 * Triggers overlord/boss taunts
 * Generates procedural patch notes presented between levels
+* Keeps a long-term dossier (`dossier`, persisted to `user://overlord.cfg`) folded from every level read on level complete and on death (`fold_level`, `note_death`). It pre-adapts `counter_affix` while a level calibrates, picks a `countermeasure_weapon` that `Weapon.eff_damage` scales by `COUNTERMEASURE_MULT`, and feeds the HUD's level-opening `greeting`. `persist` is false when the boot scene lives under `res://tests/` or `res://tools/`, so probes never touch a player's file
 
 ### AudioBus and SoundSynth
 <!-- lat: { "require-code-mention": true } -->

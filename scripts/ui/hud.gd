@@ -262,6 +262,12 @@ func _ready() -> void:
 		var dn := String(GameState.directive.get("name", ""))
 		var dd := String(GameState.directive.get("desc", ""))
 		get_tree().create_timer(0.8).timeout.connect(func(): _on_directive_set(dn, dd))
+	# The overlord opens a level with what its dossier remembers (first attempt only:
+	# a TRY-AGAIN retry doesn't get the same speech twice).
+	if GameState.level_deaths == 0:
+		var greet := AIDirector.greeting()
+		if greet != "":
+			get_tree().create_timer(3.0).timeout.connect(func(): _overlord_say(greet))
 	_build_streak_label()
 	_build_headshot_label()
 	_build_multikill_label()
@@ -1807,10 +1813,16 @@ func _on_ammo_changed(mag: int, reserve: int) -> void:
 	_mag = mag
 	_refresh_ammo_visual(reserve)
 
+var _countermeasure_warned: bool = false
+
 func _on_weapon_changed(w: Weapon) -> void:
 	_current_weapon = w
 	if w and w.data:
 		weapon_label.text = w.data.display_name
+		# Once per level: tell the player the gun they just drew is patched against.
+		if not _countermeasure_warned and AIDirector.countermeasure_weapon() == w.data.display_name:
+			_countermeasure_warned = true
+			_show_toast(tr("⟁ COUNTERMEASURE · %s deals %d%% damage. Rotate your arsenal.") % [w.data.display_name, int(round(AIDirector.COUNTERMEASURE_MULT * 100.0))])
 		_mag_size = maxi(1, w.eff_mag_size()) # upgrades grow the bar's full scale
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)

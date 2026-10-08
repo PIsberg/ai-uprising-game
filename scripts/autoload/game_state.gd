@@ -1255,6 +1255,7 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	# explicitly here, the one true "wipe everything" entry point.
 	level_deaths = 0
 	_deaths_level_id = ""
+	AIDirector.note_run_start() # the overlord's dossier counts every run you start
 	go_to_level(campaign()[0], false)
 
 ## The opener is now a comic-panel flash instead of the old 3D story cutscene.
@@ -1609,6 +1610,7 @@ var last_killer: String = "" ## Kill-feed label of whatever downed the player (d
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
+	AIDirector.note_death(killer) # folds the read into the long-term dossier
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
@@ -1675,6 +1677,9 @@ func on_level_complete() -> void:
 	_reset_combo()
 	# Snapshot the director's read NOW (its profile resets at the next level's
 	# start) — the next briefing shows it as intercepted ROBOT OS patch notes.
+	# Fold it into the long-term dossier first, so a countermeasure earned on this
+	# level is announced in the very patch that ships it.
+	AIDirector.fold_level()
 	pending_patch_notes = _build_patch_notes()
 	grade_level() # emits level_graded for the end screen
 	set_state(State.LEVEL_COMPLETE)
