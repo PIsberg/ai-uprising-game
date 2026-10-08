@@ -77,3 +77,7 @@ res://tests/i18n_label_probe.tscn
 res://tests/sky_hdri_probe.tscn
 # The per-tick CPU clock reads a typical tick, not the worst tick of each second.
 res://tests/tick_clock_probe.tscn
+# SoundSynth synthesizes off the main thread; every stream still resolves at once.
+res://tests/synth_boot_probe.tscn
+# Every boss escalates by behaviour as it is wounded (MANUS has its own probe).
+res://tests/boss_phase_probe.tscn

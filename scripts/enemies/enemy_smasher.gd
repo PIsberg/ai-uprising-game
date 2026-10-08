@@ -52,6 +52,11 @@ var _glow_mat: StandardMaterial3D
 var _walk_phase: float = 0.0
 var _last_phase: int = 1
 
+## Cooldown scale per phase (index = phase - 1), as on MANUS: a wounded BEHEMOTH
+## swings, slams and rakes sooner. Until 2026-10-08 its phases only brightened
+## the glow (tests/boss_phase_probe).
+const PHASE_CD_MULT := [1.0, 0.8, 0.62]
+
 var _smash_cd: float = 1.0
 var _slam_cd: float = 3.0
 var _smash_windup_t: float = 0.0
@@ -147,6 +152,9 @@ func _phase() -> int:
 	elif frac <= 0.66:
 		return 2
 	return 1
+
+func _cd_mult() -> float:
+	return float(PHASE_CD_MULT[_phase() - 1])
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
@@ -274,7 +282,7 @@ func _charge(delta: float) -> void:
 
 func _begin_rake() -> void:
 	_rake_windup_t = rake_windup
-	_rake_cd = rake_cooldown
+	_rake_cd = rake_cooldown * _cd_mult()
 	_rake_hit = false
 	recoil = 1.0
 	AudioBus.play_synth_at("charge", global_position, -2.0, 1.3) # a rising shriek
@@ -350,7 +358,7 @@ func _claw_slash_fx() -> void:
 
 func _begin_smash() -> void:
 	_smash_windup_t = smash_windup
-	_smash_cd = smash_cooldown
+	_smash_cd = smash_cooldown * _cd_mult()
 	recoil = 1.0  # fires the Punch clip via RobotModel
 	AudioBus.play_synth_at("charge", global_position, -4.0, 0.7)
 
@@ -380,7 +388,7 @@ func _do_smash() -> void:
 
 func _begin_slam() -> void:
 	_slam_windup_t = slam_windup
-	_slam_cd = slam_cooldown
+	_slam_cd = slam_cooldown * _cd_mult()
 	recoil = 1.0
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.4)
 	spawn_ground_warning(global_position, slam_radius, _slam_windup_t)
