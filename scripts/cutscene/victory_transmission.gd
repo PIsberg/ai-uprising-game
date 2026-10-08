@@ -88,7 +88,7 @@ func _build_ui() -> void:
 	_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_body.add_theme_font_size_override("font_size", 22)
+	_body.add_theme_font_size_override("font_size", GraphicsSettings.subtitle_px(22))
 	_body.add_theme_color_override("font_color", Color(0.85, 0.9, 0.92))
 	_body.add_theme_constant_override("outline_size", 6)
 	_body.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))

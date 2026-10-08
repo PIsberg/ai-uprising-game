@@ -947,7 +947,7 @@ func _build_overlord_label() -> void:
 	_overlord_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_overlord_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_overlord_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_overlord_label.add_theme_font_size_override("font_size", 22)
+	_overlord_label.add_theme_font_size_override("font_size", GraphicsSettings.subtitle_px(22))
 	_overlord_label.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
 	_overlord_label.add_theme_constant_override("outline_size", 7)
 	_overlord_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))

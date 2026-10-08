@@ -34,6 +34,7 @@ res://tests/convoy_probe.tscn
 res://tests/layout_check.tscn
 res://tests/screen_shock_probe.tscn
 res://tests/damage_number_size_probe.tscn
+res://tests/subtitle_size_probe.tscn
 res://tests/flash_intensity_probe.tscn
 # Marked `suite` in tests/README.md but never wired into the runners (issue #100).
 res://tests/continue_label_probe.tscn

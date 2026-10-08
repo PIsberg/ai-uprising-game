@@ -88,15 +88,18 @@ var render_scale: float = 1.0
 ## never clobbers a level's own cinematic grading — it only scales it.
 var brightness: float = 1.0
 ## Accessibility: HUD reads this before showing overlord taunt subtitles and
-## arcade kill callouts (HEADSHOT / streak words). On by default. NOTE: hud.gd
-## is owned by another agent — see report for the exact one-line reads to add.
+## arcade kill callouts (HEADSHOT / streak words). On by default.
 var combat_callouts_enabled: bool = true
-## Accessibility: whether floating damage numbers pop on hit. On by default.
-## NOTE: scripts/systems/damageable.gd is the read site — see report handoff.
+## Accessibility: whether floating damage numbers pop on hit (Damageable reads
+## it). On by default.
 var damage_numbers_enabled: bool = true
 ## Accessibility: on-screen size of the floating damage numbers (0.6..2.0;
 ## Damageable multiplies the Label3D pixel_size by it).
 var damage_number_scale: float = 1.0
+## Accessibility: size of timed spoken text, which is gone before a slow reader
+## catches it (0.8..2.0): cutscene subtitles, overlord taunts, the victory
+## transmission. Read when each label is built, via subtitle_px().
+var subtitle_scale: float = 1.0
 
 ## Named color-grade presets applied by the post-process shader: [tint (R,G,B),
 ## contrast, saturation]. NEUTRAL is a no-op; the rest each push a distinct mood.
@@ -645,13 +648,13 @@ func set_brightness(v: float) -> void:
 	_save_settings()
 
 ## Accessibility: HUD polls this before popping overlord taunt subtitles /
-## arcade kill callouts. See the report for the hud.gd handoff read sites.
+## arcade kill callouts.
 func set_combat_callouts_enabled(v: bool) -> void:
 	combat_callouts_enabled = v
 	_save_settings()
 
 ## Accessibility: Damageable polls this before spawning a floating damage
-## number. See the report for the damageable.gd handoff read site.
+## number.
 func set_damage_numbers_enabled(v: bool) -> void:
 	damage_numbers_enabled = v
 	_save_settings()
@@ -660,6 +663,16 @@ func set_damage_numbers_enabled(v: bool) -> void:
 func set_damage_number_scale(v: float) -> void:
 	damage_number_scale = clampf(v, 0.6, 2.0)
 	_save_settings()
+
+## Accessibility: 0.8..2.0 scale on timed spoken text (see subtitle_scale).
+## Takes effect on the next cutscene / level / transmission.
+func set_subtitle_scale(v: float) -> void:
+	subtitle_scale = clampf(v, 0.8, 2.0)
+	_save_settings()
+
+## Font size for a spoken-text label authored at `base` px.
+func subtitle_px(base: int) -> int:
+	return roundi(base * subtitle_scale)
 
 # ---------- graphics presets ----------
 
@@ -1128,6 +1141,7 @@ func _load_settings() -> void:
 		combat_callouts_enabled = bool(cf.get_value("accessibility", "combat_callouts", true))
 		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
 		damage_number_scale = clampf(float(cf.get_value("accessibility", "damage_number_scale", 1.0)), 0.6, 2.0)
+		subtitle_scale = clampf(float(cf.get_value("accessibility", "subtitle_scale", 1.0)), 0.8, 2.0)
 		window_mode = clampi(int(cf.get_value("display", "window_mode", WindowMode.BORDERLESS)), 0, WindowMode.size() - 1) as WindowMode
 		var raw_overrides = cf.get_value("keybinds", "overrides", {})
 		keybind_overrides = raw_overrides if raw_overrides is Dictionary else {}
@@ -1185,6 +1199,7 @@ func _save_settings() -> void:
 	cf.set_value("accessibility", "combat_callouts", combat_callouts_enabled)
 	cf.set_value("accessibility", "damage_numbers", damage_numbers_enabled)
 	cf.set_value("accessibility", "damage_number_scale", damage_number_scale)
+	cf.set_value("accessibility", "subtitle_scale", subtitle_scale)
 	cf.set_value("display", "window_mode", int(window_mode))
 	cf.set_value("keybinds", "overrides", keybind_overrides)
 

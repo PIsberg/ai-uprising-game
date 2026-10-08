@@ -7,7 +7,9 @@ extends Node
 ##   * the victory transmission body (base 22 px).
 ## For 1.0 and 2.0 the probe builds each real label and reads its font size,
 ## and at 2.0 the longest overlord taunt must still fit inside the 1920 px
-## HUD (it used to be one unwrapped line). The setter clamps and persists.
+## HUD, and a subtitle twice as long as the longest one written today (63
+## characters) must stay on screen and above the lower letterbox bar. The
+## setter clamps and persists.
 ## Restores the player's value.
 ##   godot --headless --path . --audio-driver Dummy res://tests/subtitle_size_probe.tscn
 
@@ -24,11 +26,25 @@ func _ready() -> void:
 static func _px(l: Label) -> int:
 	return l.get_theme_font_size("font_size") if l else -1
 
+const LONG_LINE := "The signal that turned every machine against us — extinguished. The signal that turned every machine against us — extinguished."
+const BAR_TOP_FRAC := 0.87 # CutscenePlayer's lower letterbox bar (headless viewport is 1920 x 1920)
+
 func _sizes() -> Dictionary:
 	var out := {}
 	var cp := CutscenePlayer.new()
 	cp.call("_build_overlay")
-	out["cutscene"] = _px(cp.get("_subtitle"))
+	var sub: Label = cp.get("_subtitle")
+	out["cutscene"] = _px(sub)
+	# Lay the overlay out for real: move its CanvasLayer into the tree (adding
+	# the CutscenePlayer itself would start a cutscene).
+	var layer := sub.get_parent()
+	layer.get_parent().remove_child(layer)
+	add_child(layer)
+	sub.text = LONG_LINE
+	await get_tree().process_frame
+	await get_tree().process_frame
+	out["cutscene_rect"] = sub.get_global_rect()
+	layer.queue_free()
 	cp.free()
 	var vt := VictoryTransmission.new()
 	vt.call("_build_ui")
@@ -66,6 +82,12 @@ func _run() -> void:
 	for key in ["cutscene", "overlord", "victory"]:
 		print("       %s: %d px at 1.0, %d px at 2.0" % [key, base[key], big[key]])
 		_check(base[key] > 0 and big[key] == base[key] * 2, "%s text doubles at 2.0 (%d -> %d)" % [key, base[key], big[key]])
+	var s: Rect2 = big["cutscene_rect"]
+	var vp := get_viewport().get_visible_rect().size
+	var bar := vp.y * BAR_TOP_FRAC
+	_check(s.position.x >= 0.0 and s.end.x <= vp.x and s.end.y <= bar + 0.5,
+		"a 2x-longest subtitle at 2.0 stays on screen above the bar (x %.0f..%.0f of %.0f, bottom %.0f, bar %.0f)"
+		% [s.position.x, s.end.x, vp.x, s.end.y, bar])
 	var r: Rect2 = big["overlord_rect"]
 	_check(r.position.x >= 0.0 and r.end.x <= 1920.0,
 		"longest overlord taunt fits on screen at 2.0 (x %.0f..%.0f of 1920)" % [r.position.x, r.end.x])

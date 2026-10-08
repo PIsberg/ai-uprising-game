@@ -145,15 +145,21 @@ func _build_overlay() -> void:
 	bot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(bot)
 
-	# Subtitle, sitting just above the lower bar.
+	# Subtitle, sitting just above the lower bar. It wraps inside side margins
+	# and grows UP, so a long line at a large Subtitle Size becomes two lines
+	# above the bar instead of running off screen (tests/subtitle_size_probe).
 	_subtitle = Label.new()
 	_subtitle.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_subtitle.anchor_top = 0.80
 	_subtitle.anchor_bottom = 0.87
 	_subtitle.anchor_right = 1.0
+	_subtitle.offset_left = 120.0
+	_subtitle.offset_right = -120.0
+	_subtitle.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_subtitle.add_theme_font_size_override("font_size", 26)
+	_subtitle.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_subtitle.add_theme_font_size_override("font_size", GraphicsSettings.subtitle_px(26))
 	_subtitle.add_theme_color_override("font_color", Color(0.92, 0.94, 1.0))
 	_subtitle.add_theme_constant_override("outline_size", 8)
 	_subtitle.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))

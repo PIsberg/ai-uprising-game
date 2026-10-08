@@ -212,7 +212,7 @@ func _build_extra_settings() -> void:
 
 	# Accessibility: overlord taunt subtitles + arcade kill callouts (HEADSHOT,
 	# streak words) — the HUD reads GraphicsSettings.combat_callouts_enabled
-	# before popping them (see report for the exact hud.gd read sites).
+	# before popping them.
 	var callouts := CheckButton.new()
 	callouts.text = tr("Combat Callouts")
 	callouts.custom_minimum_size = Vector2(360, 44)
@@ -221,7 +221,7 @@ func _build_extra_settings() -> void:
 	_grid.add_child(callouts)
 
 	# Accessibility: floating damage numbers — Damageable reads
-	# GraphicsSettings.damage_numbers_enabled (see report for the read site).
+	# GraphicsSettings.damage_numbers_enabled.
 	var dmg_numbers := CheckButton.new()
 	dmg_numbers.text = tr("Damage Numbers")
 	dmg_numbers.custom_minimum_size = Vector2(360, 44)
@@ -232,6 +232,11 @@ func _build_extra_settings() -> void:
 	# Accessibility: how big those numbers are on screen.
 	var dmg_size := _add_slider_row("Damage Number Size", 0.6, 2.0, 0.1, GraphicsSettings.damage_number_scale)
 	dmg_size.value_changed.connect(func(v: float): GraphicsSettings.set_damage_number_scale(v))
+
+	# Accessibility: timed spoken text (cutscene subtitles, overlord taunts, the
+	# victory transmission) — applied as each label is built.
+	var sub_size := _add_slider_row("Subtitle Size", 0.8, 2.0, 0.1, GraphicsSettings.subtitle_scale)
+	sub_size.value_changed.connect(func(v: float): GraphicsSettings.set_subtitle_scale(v))
 
 	var rebind_btn := Button.new()
 	rebind_btn.custom_minimum_size = Vector2(360, 48)
