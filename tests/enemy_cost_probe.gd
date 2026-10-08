@@ -2,8 +2,11 @@ extends Node3D
 ## Per-chassis CPU cost (report-only instrument). For every entry in
 ## LevelBuilder.ENEMY_SCENES: spawn COUNT copies on a flat navmesh floor around
 ## a real player, wake them all (target + CHASE), and sample the main-thread
-## physics time for a moment. Reports microseconds per robot per physics frame,
-## sorted, so the chassis whose _physics_process is out of line stands out.
+## physics time per tick for a moment (tests/tick_clock.gd). Reports the median
+## tick and microseconds per robot per tick above the empty-rig baseline, sorted,
+## so the chassis whose _physics_process is out of line stands out. Until
+## 2026-10-08 it took the median of Performance.TIME_PHYSICS_PROCESS, the worst
+## tick of the last second, and so put ~1 ms per robot on a ~0.08 ms cost (#89).
 ## Bosses are included but spawn fewer copies. RESULT PASS always.
 ## Restrict with -- types=android,drone. Findings so far live in docs/PERF_NOTES.md.
 ##   godot --headless --path . --audio-driver Dummy res://tests/enemy_cost_probe.tscn
@@ -12,8 +15,10 @@ const COUNT := 8
 const BOSS_COUNT := 2
 const SAMPLE := 1.5
 const BOSSES := ["archon", "colossus", "manus", "overseer", "smasher", "titan", "terminator"]
+const TickClock := preload("res://tests/tick_clock.gd")
 
 var _player: Node3D
+var _clock
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -42,25 +47,23 @@ func _build_floor() -> void:
 	region.navigation_mesh = nm
 	region.bake_navigation_mesh()
 
-## Median of the per-frame physics-tick time over `seconds`: TIME_PHYSICS_PROCESS
-## reports the last physics tick (calibrated: a 2 ms busy-wait reads 2.07 ms),
-## and the median is what a typical tick pays; the mean is dragged by spikes.
+## Median physics tick over `seconds`: what a typical tick pays; the mean is
+## dragged by spikes (a stream synthesized on first use, an instantiation).
 var _base_pairs := 0
 var _base_active := 0
 var _base_islands := 0
 
 func _sample_physics_ms(seconds: float) -> float:
-	var s: Array[float] = []
+	_clock.reset()
 	var t := 0.0
 	while t < seconds:
 		await get_tree().process_frame
 		t += get_process_delta_time()
-		s.append(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
-	s.sort()
-	return s[s.size() / 2] if s.size() > 0 else 0.0
+	return _clock.percentile(0.5)
 
 func _run() -> void:
 	GameState.set_state(GameState.State.PLAYING)
+	_clock = TickClock.attach(self)
 	_build_floor()
 	_player = (load("res://scenes/player/player.tscn") as PackedScene).instantiate()
 	add_child(_player)

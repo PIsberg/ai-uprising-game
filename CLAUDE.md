@@ -38,6 +38,9 @@ pwsh tools/load_race_check.ps1
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
+# Headless editor profiler: runs a scene under --remote-debug and prints per-tick physics
+# percentiles, the physics server's step breakdown and the top script functions (native calls included)
+godot --headless --path . --script res://tools/remote_profile.gd -- scene=res://tests/enemy_cost_probe.tscn warmup=1 capture=30 "args=types=android"
 ```
 
 ## Verification philosophy
@@ -72,6 +75,7 @@ Probe-writing rules learned the hard way:
 - A **freed instance compares EQUAL to null** but `is`/property access still raise — guard with `is_instance_valid(x)` alone, never `x != null`.
 - `Engine.time_scale` near zero breaks tween/timer stepping even with `set_ignore_time_scale(true)` — the kill-cam ramps on wall-clock ms from `_process` instead (see `_tick_killcam`).
 - `PackedStringArray` has no `pick_random()`; a parse error anywhere in an autoload silently nils the entire autoload.
+- `Performance.TIME_PHYSICS_PROCESS` / `TIME_PROCESS` / `TIME_NAVIGATION_PROCESS` hold the **worst** tick/frame of the last second, not the last one. A median of them measures spikes: it put ~1 ms per robot on a ~0.07 ms cost (#89). Time ticks with `tests/tick_clock.gd`.
 - Skinned GLB enemies have no detachable limb nodes — dismemberment collapses bone pose scale (`_dismember_limb`).
 
 ## Reference docs (keep updated when touching these systems)

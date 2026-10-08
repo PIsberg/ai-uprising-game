@@ -68,6 +68,12 @@ jobs:
       - name: Check no unused GLB texture extractions are tracked (they ship in the export)
         run: python3 tools/check_glb_leftovers.py
 
+      - name: Check no tracked file is over its size budget (every checkout downloads it)
+        run: python3 tools/check_large_files.py
+
+      - name: Check the imported assets a release ships stay inside the size budget
+        run: python3 tools/check_import_budget.py
+
       - name: Run probe suite
         # Logic/integration probes (objectives, hazards, loot, teaching, the
         # adaptive AI director). The runner asserts each printed "RESULT PASS".

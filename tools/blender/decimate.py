@@ -12,7 +12,10 @@ tests/model_view_probe next to the original.
 
 First use (2026-09-12): rusty_claws_robot.glb at ratio 0.35 went from 950 755
 to 332 752 triangles and 58.5 MB to 24.5 MB on disk, indistinguishable at game
-scale (issue #56).
+scale (issue #56). 2026-10-04: robot-killer_model.glb (RONIN) at 0.35, 492 280
+-> 175 300 triangles, 31.3 -> 21.2 MB; walking_robot_gun.glb (HOWITZER) at
+0.45, 299 646 -> 134 885, 28.0 -> 18.6 MB. Node and material name sets
+unchanged, model_view_probe shots indistinguishable side by side.
 """
 import bpy
 import sys

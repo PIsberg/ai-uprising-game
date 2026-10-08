@@ -44,6 +44,14 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_glb_leftovers.py
   ```
+* Verify no tracked file is over its size budget: 50 MB for any file (GitHub's warning threshold) and 3 MB for a still under `docs/`. The capture tools save at window size (3840x2400, 5 to 13 MB a PNG); `python tools/shrink_screenshots.py` takes a README still down to 1600 px wide. Frame dumps and verification shots from the capture tools (`docs/screenshots/<tool>/`) are gitignored:
+  ```sh
+  python tools/check_large_files.py
+  ```
+* Verify the imported assets a release ships stay inside their size budget (the pack is almost all `.godot/imported`, so this tracks build size without exporting). Needs a populated `.godot`; the budgets in the script are a ratchet, lowered when an asset pass lands:
+  ```sh
+  python tools/check_import_budget.py
+  ```
 * Validate Agent Lattice documentation links and code references:
   ```sh
   lat check

@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-282 probes total: **57** wired into the headless suite (`suite`), **84**
+284 probes total: **59** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -96,7 +96,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_frame_probe | Blender-edited/re-exported models (smasher, reaper, gunner, hive) still frame correctly in the codex viewer's bone-AABB framing; the HIVE's 2.18 m uplink mast sits whole inside the frame | windowed |
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
-| cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints avg/max process and physics ms per frame and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
+| cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | headless |
@@ -172,7 +172,7 @@ or GPU-timing probes; `--headless` renders these black).
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name | windowed |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping | headless |
 | i18n_label_probe | Every task, wave, firewall and terrain label in the campaign defs translates under es/fr/de/pt (`tr()` hands back the English key when a row is missing; 64 of 78 labels were, #116); a long-standing row is the control that translations load at all | suite |
-| enemy_cost_probe | Report-only: 8 woken copies of each chassis (2 per boss) on a flat navmesh; prints physics ms per robot per tick plus the physics server's collision pairs, active objects and islands (`-- types=android,drone` to restrict) | headless |
+| enemy_cost_probe | Report-only: 8 woken copies of each chassis (2 per boss) on a flat navmesh; prints the median physics tick (`tests/tick_clock.gd`) and us per robot above the empty rig, plus the physics server's collision pairs, active objects and islands (`-- types=android,drone` to restrict) | headless |
 | hints_probe | First-time coaching hints fire exactly once per mechanic, never repeat within a run | headless |
 | hitscan_check | Player's hitscan ray flies downrange instead of hitting something right in front of the camera | headless |
 | gunner_siege_probe | GUNNER siege model fork is wired + keeps its clips; visible body sits on the hitbox; barrel rotor rides the Gun bone at barrel size along the aim line; spins up in the windup before any round, heats through the burst, cools and spins down in the 1.3 s gap | suite |
@@ -282,6 +282,7 @@ or GPU-timing probes; `--headless` renders these black).
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
 | seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
+| sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
@@ -302,6 +303,7 @@ or GPU-timing probes; `--headless` renders these black).
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
 | threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60 | suite |
+| tick_clock_probe | The per-tick CPU instrument (`tests/tick_clock.gd`, used by `enemy_cost_probe` and `cpu_cost_sweep`) reads a rig's known 2 ms physics tick as ~2 ms despite a 50 ms spike once a second. `Performance.TIME_PHYSICS_PROCESS` is the worst tick of the last second, so its median read 50 ms (#89) | suite |
 | threat_probe | Ground-truth per-enemy DPS on the player (report-only, real per-enemy attack vars, not scripted defaults) | headless |
 | titan_blink_probe | PROMETHEUS-0's phase-blink beam charges (`BLINK_BEAM_TELL`) before sweeping instead of firing instantly undodgeable | suite |
 | titan_ingame_probe | Real `titan.tscn` instantiated, sky-drop cancelled, planted boss screenshotted | windowed |
