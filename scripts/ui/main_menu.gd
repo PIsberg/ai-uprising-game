@@ -181,6 +181,9 @@ func _build_extra_settings() -> void:
 	var dmg_taken := _add_slider_row("Damage Taken", 0.5, 1.5, 0.05, GraphicsSettings.damage_taken)
 	dmg_taken.value_changed.connect(func(v: float): GraphicsSettings.set_damage_taken(v))
 
+	# Accessibility: colourblind correction of the 3D world.
+	_add_colorblind_row()
+
 	# Accessibility: gamepad rumble strength (0 = off).
 	var rumble := _add_slider_row("Controller Rumble", 0.0, 1.0, 0.05, GraphicsSettings.rumble)
 	rumble.value_changed.connect(func(v: float): GraphicsSettings.set_rumble(v))
@@ -300,6 +303,24 @@ func _add_color_grade_row() -> void:
 		opt.add_item(tr(label))
 	opt.selected = int(GraphicsSettings.color_grade)
 	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_color_grade(idx))
+	row.add_child(lbl)
+	row.add_child(opt)
+	_grid.add_child(row)
+
+## Colourblind picker: corrects the world post-process live (GraphicsSettings).
+func _add_colorblind_row() -> void:
+	var row := HBoxContainer.new()
+	row.custom_minimum_size = Vector2(360, 0)
+	row.add_theme_constant_override("separation", 12)
+	var lbl := Label.new()
+	lbl.text = tr("Colourblind Mode")
+	lbl.custom_minimum_size = Vector2(150, 0)
+	var opt := OptionButton.new()
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for label in GraphicsSettings.COLORBLIND_LABELS:
+		opt.add_item(tr(label))
+	opt.selected = int(GraphicsSettings.colorblind_mode)
+	opt.item_selected.connect(func(idx: int): GraphicsSettings.set_colorblind_mode(idx))
 	row.add_child(lbl)
 	row.add_child(opt)
 	_grid.add_child(row)

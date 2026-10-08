@@ -36,6 +36,8 @@ Manages graphics quality presets (LOW, MEDIUM, HIGH, ULTRA). These presets drive
 * Environment settings (shadows, light counts)
 * Light budgets consumed by the level builder
 
+It also owns the accessibility display options. Colourblind Mode (`colorblind_mode`) is applied as a 3x3 daltonize matrix (`colorblind_matrix`) that the shared post-process multiplies every pixel by, so it covers gameplay, the level HUD under that layer, and cutscenes.
+
 ## CLI Boot Logic
 <!-- lat: { "require-code-mention": true } -->
 Command-line invocation arguments handled during engine startup (`_handle_cli_boot` in `scripts/autoload/game_state.gd`):

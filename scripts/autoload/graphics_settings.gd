@@ -110,6 +110,50 @@ const COLOR_GRADE_PARAMS := {
 }
 var color_grade: ColorGrade = ColorGrade.NEUTRAL
 
+## Colourblind correction. The post-process overlay (canvas layer 0) covers the
+## 3D world and the level HUD under it, and multiplies every pixel by
+## colorblind_matrix(mode): a daltonize
+## pass that simulates the deficiency, takes what it cannot see, and shifts that
+## difference into channels it can. tests/colorblind_probe checks the result
+## against its own simulation of each deficiency.
+enum ColorblindMode { OFF, PROTANOPIA, DEUTERANOPIA, TRITANOPIA }
+const COLORBLIND_LABELS := ["Off", "Protanopia", "Deuteranopia", "Tritanopia"]
+## Machado, Oliveira & Fernandes (2009) simulation matrices, severity 1.0,
+## rows = output R, G, B.
+const CVD_SIM := {
+	ColorblindMode.PROTANOPIA: [Vector3(0.152286, 1.052583, -0.204868), Vector3(0.114503, 0.786281, 0.099216), Vector3(-0.003882, -0.048116, 1.051998)],
+	ColorblindMode.DEUTERANOPIA: [Vector3(0.367322, 0.860646, -0.227968), Vector3(0.280085, 0.672501, 0.047413), Vector3(-0.011820, 0.042940, 0.968881)],
+	ColorblindMode.TRITANOPIA: [Vector3(1.255528, -0.076749, -0.178779), Vector3(-0.078411, 0.930809, 0.147602), Vector3(0.004733, 0.691367, 0.303900)],
+}
+## Where the invisible difference goes (rows = output R, G, B). Red/green loss
+## moves into green and blue; blue/yellow loss moves into red and green.
+const CVD_SHIFT := {
+	ColorblindMode.PROTANOPIA: [Vector3(0, 0, 0), Vector3(0.7, 1, 0), Vector3(0.7, 0, 1)],
+	ColorblindMode.DEUTERANOPIA: [Vector3(0, 0, 0), Vector3(0.7, 1, 0), Vector3(0.7, 0, 1)],
+	ColorblindMode.TRITANOPIA: [Vector3(1, 0, 0.7), Vector3(0, 1, 0.7), Vector3(0, 0, 0)],
+}
+var colorblind_mode: ColorblindMode = ColorblindMode.OFF
+
+## The 3x3 the post-process applies for `mode` (`cb_matrix * col`):
+## I + SHIFT * (I - SIM). Identity when OFF.
+static func colorblind_matrix(mode: int) -> Basis:
+	if not CVD_SIM.has(mode):
+		return Basis.IDENTITY
+	var sim: Array = CVD_SIM[mode]
+	var shift: Array = CVD_SHIFT[mode]
+	var rows: Array[Vector3] = []
+	for r in 3:
+		var row := Vector3.ZERO
+		for c in 3:
+			var v := 1.0 if r == c else 0.0 # identity
+			for k in 3:
+				var err := (1.0 if k == c else 0.0) - (sim[k] as Vector3)[c] # (I - SIM)[k][c]
+				v += (shift[r] as Vector3)[k] * err
+			row[c] = v
+		rows.append(row)
+	# Basis takes columns; transpose the rows.
+	return Basis(rows[0], rows[1], rows[2]).transposed()
+
 const FPS_OPTIONS := [0, 30, 60, 120, 144]
 
 const SETTINGS_PATH := "user://settings.cfg"
@@ -651,6 +695,12 @@ func set_color_grade(v: int) -> void:
 	_apply_to_live_post_process()
 	_save_settings()
 
+## Switches the colourblind correction live and persists it.
+func set_colorblind_mode(v: int) -> void:
+	colorblind_mode = clampi(v, 0, ColorblindMode.size() - 1) as ColorblindMode
+	_apply_to_live_post_process()
+	_save_settings()
+
 ## Applies immediately (the swap-chain re-requests HDR live).
 func set_hdr_output_enabled(v: bool) -> void:
 	hdr_output_enabled = v
@@ -1043,6 +1093,7 @@ func _load_settings() -> void:
 		rumble = clampf(float(cf.get_value("input", "rumble", 1.0)), 0.0, 1.0)
 		render_scale = clampf(float(cf.get_value("video", "render_scale", 1.0)), 0.5, 1.0)
 		color_grade = clampi(int(cf.get_value("graphics_adv", "color_grade", ColorGrade.NEUTRAL)), 0, ColorGrade.size() - 1) as ColorGrade
+		colorblind_mode = clampi(int(cf.get_value("accessibility", "colorblind_mode", ColorblindMode.OFF)), 0, ColorblindMode.size() - 1) as ColorblindMode
 		brightness = clampf(float(cf.get_value("display", "brightness", 1.0)), 0.5, 1.5)
 		combat_callouts_enabled = bool(cf.get_value("accessibility", "combat_callouts", true))
 		damage_numbers_enabled = bool(cf.get_value("accessibility", "damage_numbers", true))
@@ -1099,6 +1150,7 @@ func _save_settings() -> void:
 	cf.set_value("input", "rumble", rumble)
 	cf.set_value("video", "render_scale", render_scale)
 	cf.set_value("graphics_adv", "color_grade", int(color_grade))
+	cf.set_value("accessibility", "colorblind_mode", int(colorblind_mode))
 	cf.set_value("display", "brightness", brightness)
 	cf.set_value("accessibility", "combat_callouts", combat_callouts_enabled)
 	cf.set_value("accessibility", "damage_numbers", damage_numbers_enabled)
