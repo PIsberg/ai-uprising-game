@@ -8,7 +8,9 @@ extends Node
 ##     Weapon.eff_damage to COUNTERMEASURE_MULT, the patch notes announce it, and
 ##     rotating to another gun lifts it again;
 ## (4) a death (through GameState.on_player_died) counts the death and the killer and
-##     wipes the level read; the greeting then cites them;
+##     wipes the level read, but teaches the dossier nothing: five deaths on one gun
+##     earn no countermeasure (a struggling player is never escalated against);
+##     the greeting still cites the deaths;
 ## (5) the dossier survives a save + load round trip through a probe-only file.
 ##   godot --headless --path . --audio-driver Dummy res://tests/overlord_memory_probe.tscn
 
@@ -100,7 +102,21 @@ func _run() -> void:
 	GameState.on_player_died("K-9 HOUND")
 	_check("death counted", int(AIDirector.dossier["deaths"]) == deaths + 2)
 	_check("killer tallied", int((AIDirector.dossier["killers"] as Dictionary).get("K-9 HOUND", 0)) == 2)
-	_check("death folds the read once, then wipes it", int(AIDirector.dossier["reads"]) == reads + 1 and AIDirector.calibrating())
+	_check("a death teaches the dossier nothing and wipes the level read", int(AIDirector.dossier["reads"]) == reads and AIDirector.calibrating())
+
+	# A struggling player must never be escalated against: five deaths on one gun
+	# (the survival bot's retry loop, or a new player stuck on level 1) earn no
+	# countermeasure and no pre-adapted swarm. Only cleared levels teach the dossier.
+	var saved: Dictionary = AIDirector.dossier.duplicate(true)
+	AIDirector.forget_dossier(false)
+	for i in 5:
+		_play_level(SHOTGUN)
+		GameState.on_player_died("ANDROID")
+	_check("dying on one gun earns it no countermeasure", AIDirector.countermeasure_weapon() == "" and int(AIDirector.dossier["reads"]) == 0,
+		"reads=%d cm=%s" % [int(AIDirector.dossier["reads"]), AIDirector.countermeasure_weapon()])
+	_check("...and no pre-adapted swarm", AIDirector.counter_affix() == "")
+	_check("...but the overlord still remembers the deaths", AIDirector.greeting().contains("killed you 5 times") or AIDirector.memory_lines().size() > 0, str(AIDirector.memory_lines()))
+	AIDirector.dossier = saved
 	var cites := false
 	for line in AIDirector.memory_lines():
 		if String(line).contains("K-9 HOUND units have put you down 2 times"):

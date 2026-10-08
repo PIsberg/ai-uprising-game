@@ -21,8 +21,10 @@ extends Node
 ## neutral so a fresh level doesn't pre-judge you from nothing.
 ##
 ## On top of the per-level read sits the long-term DOSSIER (user://overlord.cfg):
-## every level's read is folded into it, and it survives quitting, dying and new
-## campaigns. It is what lets the overlord REMEMBER you:
+## every CLEARED level's read is folded into it, and it survives quitting, dying and
+## new campaigns. Deaths are counted (and their killers) but teach it nothing, so a
+## player stuck retrying a level is never escalated against. It is what lets the
+## overlord REMEMBER you:
 ##   - while a level is still calibrating, the swarm counters your dossier instead of
 ##     rolling random affixes (it comes pre-adapted from the first second);
 ##   - a weapon that has carried your play across several levels gets a firmware
@@ -114,8 +116,9 @@ func save_dossier() -> void:
 	cf.save(dossier_path)
 
 ## Fold this level's read into the dossier. A still-calibrating level teaches nothing.
-## Called on level complete and on every death (a death also wipes the level read so a
-## respawn in place doesn't fold the same shots twice).
+## Called on level complete only: folding deaths too let a new player's retries on
+## level 1 countermeasure their starter pistol (the survival probe's retry loop hit
+## it in CI: x0.85 damage from the 4th death on).
 func fold_level() -> void:
 	if calibrating():
 		return
@@ -135,12 +138,13 @@ func fold_level() -> void:
 		dossier["last_weapon"] = dominant_weapon()
 	save_dossier()
 
+## Count the death and its killer for the overlord's lines; the level read is wiped
+## (a respawn starts a fresh read) and NOT folded: dying never escalates the AI.
 func note_death(killer: String) -> void:
 	dossier["deaths"] = int(dossier["deaths"]) + 1
 	if killer != "":
 		var ks: Dictionary = dossier["killers"]
 		ks[killer] = int(ks.get(killer, 0)) + 1
-	fold_level()
 	reset_profile()
 	save_dossier()
 
@@ -189,7 +193,7 @@ func _top_killer() -> Array:
 func memory_lines() -> Array:
 	var lines: Array = []
 	var reads := int(dossier.get("reads", 0))
-	if reads <= 0:
+	if reads <= 0 and int(dossier.get("deaths", 0)) <= 0:
 		return lines
 	var runs := int(dossier.get("runs", 0))
 	var deaths := int(dossier.get("deaths", 0))

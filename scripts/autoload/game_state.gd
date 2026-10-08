@@ -1713,7 +1713,7 @@ var last_killer: String = "" ## Kill-feed label of whatever downed the player (d
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
-	AIDirector.note_death(killer) # folds the read into the long-term dossier
+	AIDirector.note_death(killer) # counts the death; only cleared levels teach the dossier
 	set_state(State.GAME_OVER)
 	player_died.emit()
 
