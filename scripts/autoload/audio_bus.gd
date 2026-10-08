@@ -27,6 +27,9 @@ var _ambience2: AudioStreamPlayer # optional hazard bed layered over the room to
 # changes — this is the hook for the sampled-audio pass.
 const SAMPLE_DIR := "res://assets/audio/samples/"
 const SAMPLE_EXTS := [".ogg", ".wav", ".mp3"]
+## Numbered takes <id>_0 .. <id>_7 play as one no-repeat random set, so the tenth
+## bullet hit in a row is not the same recording as the ninth.
+const SAMPLE_VARIANTS := 8
 var _sample_cache: Dictionary = {}
 
 func _ready() -> void:
@@ -545,21 +548,41 @@ func synth(id: String) -> AudioStream:
 		return s.get_stream(id)
 	return null
 
-## Look up assets/audio/samples/<id>.<ext>; caches the result (null included) so
-## the filesystem is only probed once per id.
+## Look up assets/audio/samples/<id>.<ext>, else the numbered takes <id>_<n>.<ext>
+## (wrapped in an AudioStreamRandomizer that never plays the same take twice in a
+## row). Caches the result (null included) so the filesystem is probed once per id.
+## tools/import_samples.py writes level-matched takes from CC0 packs.
 func _resolve_sample(id: String) -> AudioStream:
 	if _sample_cache.has(id):
 		return _sample_cache[id]
-	var found: AudioStream = null
+	var found: AudioStream = _load_sample(id)
+	if found == null:
+		var takes: Array[AudioStream] = []
+		for n in SAMPLE_VARIANTS:
+			var t := _load_sample("%s_%d" % [id, n])
+			if t == null:
+				break
+			takes.append(t)
+		if takes.size() == 1:
+			found = takes[0]
+		elif takes.size() > 1:
+			var r := AudioStreamRandomizer.new()
+			r.playback_mode = AudioStreamRandomizer.PLAYBACK_RANDOM_NO_REPEATS
+			r.random_pitch = 1.0 # callers already vary pitch per play
+			for t in takes:
+				r.add_stream(-1, t)
+			found = r
+	_sample_cache[id] = found
+	return found
+
+func _load_sample(base: String) -> AudioStream:
 	for ext in SAMPLE_EXTS:
-		var path: String = SAMPLE_DIR + id + ext
+		var path: String = SAMPLE_DIR + base + ext
 		if ResourceLoader.exists(path):
 			var res = load(path)
 			if res is AudioStream:
-				found = res
-				break
-	_sample_cache[id] = found
-	return found
+				return res
+	return null
 
 ## Looping atmospheric bed for a level (room tone / wind), fading in softly so
 ## a level swap never hard-cuts the loop edge. Starting a new room tone also

@@ -28,6 +28,8 @@ Profiles player performance and adjusts gameplay dynamics:
 ### AudioBus and SoundSynth
 <!-- lat: { "require-code-mention": true } -->
 All sound effects in the game are procedurally synthesized using `SoundSynth`. Real audio files can be placed at `assets/audio/samples/<sound_id>.{ogg,wav,mp3}` to transparently override these procedurally generated sounds.
+
+Numbered takes `<sound_id>_0` .. `_7` become one no-repeat `AudioStreamRandomizer` (`AudioBus._resolve_sample`). Eight ids ship Kenney CC0 takes level-matched to the synth by `tools/import_samples.py` (impacts, footsteps, explosions, the plasma and drone shots); gunshots and music stay synthesized.
 * Synthesis runs on a `WorkerThreadPool` task started in `SoundSynth._ready`, menu theme first. `get_stream()` builds any stream that is not ready yet on the calling thread, so early callers never get silence; `AudioBus._start_music` instead waits for `is_ready("music_techno")`, so the first frame is not held up (boot 5.1 s -> 0.8 s to the first frame). The generators must stay pure: no shared state, no scene tree.
 
 ### GraphicsSettings

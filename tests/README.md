@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-297 probes total: **72** wired into the headless suite (`suite`), **82**
+298 probes total: **73** wired into the headless suite (`suite`), **82**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -279,6 +279,7 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
+| sample_override_probe | Sampled-audio overrides: every file in `assets/audio/samples/` is named after a real `SoundSynth` id, numbered takes have no gaps, an id with several takes resolves to a no-repeat `AudioStreamRandomizer` of all of them, and an id without a file keeps the synth | suite |
 | save_probe | save_progress/load_progress round-trip of every run-scoped field Continue depends on, including the Armory supplies (caught them being lost on Continue) | suite |
 | scanner_probe | Vision scanners: a player held in the cone raises the alarm after detect_time and hands the reinforcement hook the authored squad, a wall in the sightline blocks it, max_alarms caps it, a shot-out head stays blind; then on every campaign level that authors scanners, all of them build and each alarm squad spawns on walkable ground with a route to the spawn | suite |
 | scanner_shot | Each campaign scanner framed from the floor in front of it, idle and mid-alarm, to judge the head, mast and beam in-level | windowed |

@@ -23,7 +23,12 @@ never tuned *by feel*. Play the 20-level campaign and report:
 ### Real audio 🎨
 Biggest *perceived* polish jump. The synth is good, but real SFX/music samples drop in
 transparently via the override hook — `assets/audio/samples/<sound_id>.{ogg,wav,mp3}`
-shadows any `SoundSynth` id. Priority ids: weapon fire, impacts, explosions, the music tracks.
+shadows any `SoundSynth` id. ✅ **First pass shipped (2026-10-08)**: 8 ids (impacts,
+footsteps, explosions, plasma and drone shots) play level-matched Kenney CC0 takes in
+no-repeat rotation (`tools/import_samples.py`, `assets/audio/samples/README.md`).
+🎮 Needs a listen: the levels are matched by measurement, not by ear. Still open: the
+kinetic gunshots (`pistol_fire`, `rifle_fire`, `shotgun_fire`) and the music tracks, which
+the CC0 packs used do not cover; music also needs import-budget room (#56).
 
 ### Weapon-feel distinctness 🎮🎨
 Make each gun *feel* different (sound, recoil curve, screen impact), not just stat-different.
