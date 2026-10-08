@@ -162,6 +162,15 @@ func _wait_game(seconds: float) -> void:
 func _fire_once_raw(w: Weapon) -> void:
 	_last_crit = false
 	w.mag = maxi(w.mag, 4)
+	# The weapon's fire cooldown counts down in _process (render frames), not on the
+	# physics clock _wait_game measures. Back-to-back shots must wait on the clock the
+	# gun uses: a 0.1 s physics wait against the rifle's 0.091 s cooldown left 9 ms of
+	# slack, and a lagging render frame on a loaded runner refused the head shot
+	# (0.0 dealt, #165). With the wait cut to 0.02 s this failed every run.
+	var guard := 0
+	while w._cooldown > 0.0 and guard < 600:
+		await get_tree().process_frame
+		guard += 1
 	w.try_fire(true, false, _cam, _shooter)
 	w.try_fire(false, false, _cam, _shooter)
 	await get_tree().physics_frame
