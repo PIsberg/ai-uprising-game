@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Bonus objectives**: 11 levels now carry an optional challenge on the objective line, worth +500 score. It never blocks the exit.
   - **Trip no security camera** on the five scanner levels (neon, overseer, assembly, grok, suburb).
   - **Never touch a hazard** on the six levels where hazards are the fight (lava_world, water_world, alien, mistral, crucible, gpt).
-  - It shows ★ while live, ✔ when won and ✖ when lost, and both outcomes toast. Dying does not restore a lost bonus.
+  - It shows ★ while live, ✔ when won and ✖ when lost, and both outcomes toast. The level-complete debrief lists the result on its HIGHLIGHTS line (#189). Dying does not restore a lost bonus.
   - New level-def key `bonus`. `bonus_objective_probe` (suite).
 - **Anthropic Constitutional Vault**: the decrypt trips the vault's anti-tamper. The whole carry out is a blackout (lights, panels and shafts off, ambient and exposure down), so the slow walk with the constitution goes through a dark archive with the sentinels on you. The HUD waypoint still leads to the uplink, and the power comes back on delivery. `weather_shift_probe`.
 - **Mistral Cryo-Core**: venting both coolant pumps now has a cost. The vented coolant overflows both coolant channels for as long as the cryo-core stands (a 3 s warning, then four beds rise either side of the channels), squeezing the fight into the bands between them. It drains when the core dies. `flood` can now sit on any task, like `weather`. `flood_surge_probe`.
