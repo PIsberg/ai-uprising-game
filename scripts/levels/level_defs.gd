@@ -2197,10 +2197,26 @@ static func _alien() -> Dictionary:
 					# The health vents just off the WEST tip of the south channel
 					# (bed starts at x=-11): reachable without crossing acid, but it
 					# pulls you out of the beacon's cover into the spitters' lane.
+					# The Hollow OVERFLOWS: both acid channels widen for the rest of
+					# the hold (beds either side of each channel, x span as the
+					# channel), squeezing the fight into the band between them and
+					# swallowing the beacon's footprint. The vents at x=-15 sit west
+					# of the south channel's tip, outside the overflow; the champion's
+					# ravager at z=-3 is 1 m clear of the north overflow's edge.
+					# tests/flood_surge_probe.
 					{"at": 11.0, "label": "SECOND CHORUS — SPITTERS", "enemies": [
 						{"type": "alien", "count": 3, "pos": Vector3(25, 0, 8)},
 						{"type": "mender", "pos": Vector3(0, 3, -2)},
-					], "supplies": [
+					], "flood": {"warn": 3.0, "rise": 1.5,
+						"warn_title": "THE HOLLOW OVERFLOWS", "warn_text": "The acid channels are rising. Get out of the beacon yard.",
+						"drain_title": "THE ACID RECEDES", "drain_text": "The Hollow has gone quiet. For now.",
+						"beds": [
+							{"pos": Vector3(-12, 0, -14.5), "size": Vector2(46, 5), "color": Color(0.4, 1.0, 0.4), "dmg": 14.0},
+							{"pos": Vector3(-12, 0, -6), "size": Vector2(46, 4), "color": Color(0.4, 1.0, 0.4), "dmg": 14.0},
+							{"pos": Vector3(12, 0, 14), "size": Vector2(46, 4), "color": Color(0.4, 1.0, 0.4), "dmg": 14.0},
+							{"pos": Vector3(12, 0, 22.5), "size": Vector2(46, 5), "color": Color(0.4, 1.0, 0.4), "dmg": 14.0},
+						]},
+					"supplies": [
 						{"type": "health", "pos": Vector3(-15, 0, 18)},
 						{"type": "ammo", "pos": Vector3(-15, 0, 14)},
 					]},
