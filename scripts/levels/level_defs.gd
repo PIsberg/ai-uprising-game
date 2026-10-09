@@ -4631,7 +4631,9 @@ static func _grok() -> Dictionary:
 			{"type": "drone", "pos": Vector3(4, 2.5, 12), "trigger": 18, "pack": "grok_p2"},
 			{"type": "mech", "pos": Vector3(-14, 0.5, -10), "trigger": 22},
 			{"type": "brute", "pos": Vector3(14, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
-			{"type": "android", "pos": Vector3(14, 0.5, 4), "trigger": 20, "pack": "grok_p4"},
+			# DEEPFAKE debut (the black-site's misinformation wing): two of the
+			# site's riflemen are now deepfakes on the same spots.
+			{"type": "deepfake", "pos": Vector3(14, 0.5, 4), "trigger": 20, "pack": "grok_p4"},
 			{"type": "drone", "pos": Vector3(-4, 2.5, 16), "trigger": 22, "pack": "grok_p1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 			{"type": "android", "pos": Vector3(10, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
@@ -4656,7 +4658,7 @@ static func _grok() -> Dictionary:
 			{"type": "spider", "pos": Vector3(-38, 0.5, -6), "trigger": 16, "pack": "grok_a2"},
 			{"type": "dog", "pos": Vector3(-38, 0.5, 16), "trigger": 16, "pack": "grok_a2"},
 			{"type": "sniper", "pos": Vector3(0, 3.8, -36), "trigger": 20},
-			{"type": "android", "pos": Vector3(33, 0.5, -16), "trigger": 18, "pack": "grok_a3"},
+			{"type": "deepfake", "pos": Vector3(33, 0.5, -16), "trigger": 18, "pack": "grok_a3"},
 			{"type": "drone", "pos": Vector3(34, 2.5, 0), "trigger": 18, "pack": "grok_a3"},
 			{"type": "brute", "pos": Vector3(34, 0.5, 20), "trigger": 20, "pack": "grok_a4"},
 			{"type": "android", "pos": Vector3(22, 0.5, 34), "trigger": 17, "pack": "grok_a4"},

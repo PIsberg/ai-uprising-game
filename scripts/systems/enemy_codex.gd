@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -105,6 +105,13 @@ const ENTRIES := {
 		"strengths": ["Sudden angled dashes ruin your tracking", "Two-cut katana combo hits fast up close", "Accurate revolver slugs at range"],
 		"weaknesses": ["Lighter armour than it looks — sustained fire drops it", "The pause between dashes is your window", "Backpedal during its slash combo"],
 		"weapons": ["SG-12 Breacher", "AR-7 Pulse Rifle", "NV-X Nova Scatter"],
+	},
+	"deepfake": {
+		"scene": "res://scenes/enemies/deepfake.tscn", "name": "DEEPFAKE", "scale": 1.0, "y": 0.0,
+		"desc": "A generative-adversarial infiltrator in violet plating. Once it has you, it projects two perfect copies of itself to either side; they mirror its every move and open fire with it, so three rifles light up and only one hurts. Half the time it swaps places with a copy as they appear.",
+		"strengths": ["Three targets, one real threat", "Swaps places with its own projections", "Copies are rebuilt nine seconds after the last one pops"],
+		"weaknesses": ["Copies glitch (a sideways tear, a magenta flash) and cast no shadow", "Radar and homing rounds see straight through the copies", "One hit pops a copy; kill the real one and they all collapse"],
+		"weapons": ["SW-7 Swarm Launcher", "AR-7 Pulse Rifle", "SG-12 Breacher"],
 	},
 	"howitzer": {
 		"scene": "res://scenes/enemies/howitzer.tscn", "name": "HOWITZER", "scale": 0.6, "y": 0.0,

@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-309 probes total: **81** wired into the headless suite (`suite`), **84**
+311 probes total: **82** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **144** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **145** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -126,6 +126,8 @@ or GPU-timing probes; `--headless` renders these black).
 | dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | suite |
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
+| deepfake_probe | DEEPFAKE: wired into the level builder, codex and GROK roster; projects two copies on its own in a fight, ~SPREAD to either side; copies are out of the `enemy` group and shadowless; copies fire the same burst and hurt nobody while its own rounds do; a real rifle hit pops a copy without score or an accuracy hit; a wall blocks that side's copy; its death collapses the copies | suite |
+| deepfake_shot | DEEPFAKE and its two copies facing the camera over 2 s, so a copy's glitch lands in a frame; `-- --out=<dir>` | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |
 | difficulty_scaling_check | How many spawners survive `apply_level_scaling` per difficulty on a representative level | headless |
 | directive_probe | Per-level COMBAT DIRECTIVE mutators: mult getters, damage-hook effects, roll chance, HUD announcement | windowed |

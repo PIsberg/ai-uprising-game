@@ -1,6 +1,6 @@
 # Enemy Roster — subclass audit
 
-All 43 combat enemies extend `EnemyBase` (`scripts/enemies/enemy_base.gd`), a CharacterBody3D
+All 44 combat enemies extend `EnemyBase` (`scripts/enemies/enemy_base.gd`), a CharacterBody3D
 state machine (IDLE/PATROL/ALERT/CHASE/ATTACK/STAGGER/DEAD) with a `Damageable` child (`hp`).
 (`enemy_bomb.gd` is excluded: it is a lobbed bomb projectile extending `Node3D`, not an enemy.)
 
@@ -41,6 +41,7 @@ inherit that parent's overrides too.
 | BREAKER | `enemy_breaker.gd` (extends EnemyDrone) | drone chassis (inherited) | pure melee flyer; hovers, dives to hammer-slam, drifts back out | (drone's) | — |
 | BRUTE | `enemy_brute.gd` | imported "Mike" heavy mech (`$Model` in scene) | shielded tank; frontal shield blocks 90%, telegraphed windup slam — flank it | — | — |
 | COLOSSUS ("GOLIATH-IX") | `enemy_colossus.gd` | imported "George" heavy mech | 3-phase mega-boss: rocket artillery, sweeping chest beam, seismic slams; sky-drop entrance | `_state_attack` | BOSS |
+| DEEPFAKE | `enemy_deepfake.gd` (extends EnemyAndroid) + `deepfake_decoy.gd` | `quaternius_bot_armed.glb`, violet tint, magenta eye | burst rifleman that projects two copies of itself (`DeepfakeDecoy`, not in the `enemy` group: no kill_all, radar, homing, score or accuracy) which mirror its moves and fire harmless tracers with it; swaps places with a copy half the time; copies glitch and cast no shadow, pop in one hit, collapse when it dies | (android's) | — |
 | DOG ("K-9 HUNTER") | `enemy_dog.gd` † | `assets/models/robots/robot_dog.glb` | fast pack hound; telegraphed rear-back pounce into bite | — | — |
 | DRONE | `enemy_drone.gd` | recon-flyer chassis (scene); base for Whirlwind/Shark/Breaker/Fishbot | basic ranged flyer; hover-strafe, dives; falls and explodes on death | `_on_died`, `_state_attack` | — |
 | ENFORCER | `enemy_enforcer.gd` (extends EnemyAndroid) | android chassis (inherited) | armored trooper; ranged bursts + telegraphed green suppression-laser sweep | (android's) | — |
@@ -83,7 +84,7 @@ inherit that parent's overrides too.
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing
 via `GameState.announce_boss`.
 
-**Tallies:** 43 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
+**Tallies:** 44 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
 MENDER, OVERSEER, RAPTOR, SEEKER, SKITTER — matches the "seven subclasses" comment in
 `enemy_base.gd`). `_state_attack` overridden without super: **11** (ALIEN, ANDROID,
 COLOSSUS, DRONE, MANUS, MECH, RAPTOR, SEEKER, SHARK, SMASHER, TERMINATOR). Overrides that

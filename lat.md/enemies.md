@@ -48,4 +48,5 @@ Categorizes the rogue AI combat units into distinct tactical roles.
 * **Swarms & Minions:** `Skitter`, `Spider`, `Drone` — rapid, low-health harassment units that flank or overwhelm.
 * **Frontline & Heavies:** `Brute`, `Ravager`, `Warmech`, `Smasher` — heavily armored pressure units with shields, cleaves, and ground slams.
 * **Ranged & Support:** `Sniper`, `Howitzer`, `Mender`, `Optic` — long-range artillery, beam chargers, and unit repair specialists.
+* **Deception:** `Deepfake` — projects two `DeepfakeDecoy` copies that mirror its moves and fire harmless tracers with it. Copies stay out of the `enemy` group, so kill_all, radar, homing, score and accuracy all ignore them; they pop in one hit and collapse when it dies.
 * **Overlords & Bosses:** `Colossus`, `Manus`, `Titan`, `Archon` — multi-phase autonomous war machines with unique attack patterns and stagger resistance.
