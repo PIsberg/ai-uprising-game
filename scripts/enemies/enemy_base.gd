@@ -233,6 +233,7 @@ func emp_disable(duration: float) -> void:
 	_emp_t = maxf(_emp_t, duration)
 	if was_off:
 		_spawn_emp_fx()
+		_think("emp")
 
 ## A short-lived crackle of blue electric motes over the chassis while it's EMP'd.
 func _spawn_emp_fx() -> void:
@@ -285,6 +286,7 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 		_hijack_t = maxf(_hijack_t, duration)
 		return true
 	hijacked = true
+	_think("hijack")
 	_hijack_t = duration
 	_hijack_shooter = liberator
 	_hijack_zap_cd = 0.0
@@ -642,6 +644,7 @@ func set_state(new_state: State) -> void:
 		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
 		_attack_timer = maxf(_attack_timer, reaction_time)
 		_alert()
+		_think("alert")
 		# First contact rallies the squad — wider net = more enemies pile in at
 		# once. The radius ramps with campaign depth like the other onboarding
 		# mercies: on the small tutorial map a flat 22m was a whole-level alarm
@@ -835,8 +838,10 @@ func _consider_cover_seek(_amount: float, source: Node) -> void:
 	# Flyers hover (no floor cover to duck behind); HP bags of 500+ are bosses
 	# (no boss group exists — hand-tuned health is the reliable tell).
 	if "hover_height" in self or hp.max_health >= 500.0:
+		_think("wounded")
 		return
 	if not (source is Node3D) or randf() > COVER_SEEK_CHANCE:
+		_think("wounded")
 		return
 	var threat := (source as Node3D).global_position
 	var space := get_world_3d().direct_space_state
@@ -857,10 +862,12 @@ func _consider_cover_seek(_amount: float, source: Node) -> void:
 	var dir := best - global_position
 	dir.y = 0.0
 	if dir.length() < 0.05:
+		_think("wounded")
 		return
 	_evade_dir = dir.normalized()
 	_evade_t = 1.6
 	_flinch = 1.0 # the visible "that's enough!" jolt as it breaks off
+	_think("retreat")
 
 ## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
 ## channel). Broadcast when the player hits a power peak (GODLIKE rampage /
@@ -876,6 +883,20 @@ func startle(from_pos: Vector3, duration: float = 0.9) -> void:
 	_evade_dir = away.normalized()
 	_evade_t = maxf(_evade_t, duration)
 	_flinch = 1.0 # a visible jolt as it breaks off
+	_think("panic")
+
+var _think_h: float = -1.0 ## head clearance for reasoning traces, measured once
+
+## Leaked reasoning over this robot's head (ReasoningTrace throttles it).
+func _think(kind: String) -> void:
+	if _think_h < 0.0:
+		var top := 0.0
+		for mi in _mesh_instances:
+			if is_instance_valid(mi) and mi.mesh:
+				var box: AABB = mi.global_transform * mi.mesh.get_aabb()
+				top = maxf(top, box.end.y - global_position.y)
+		_think_h = clampf(top + 0.45, 1.2, 7.0)
+	ReasoningTrace.think(self, kind, _think_h)
 
 func _state_idle(delta: float) -> void:
 	_decelerate()

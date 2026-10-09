@@ -117,3 +117,5 @@ res://tests/daily_op_probe.tscn
 res://tests/kill_fx_probe.tscn
 # DEEPFAKE: projected copies fire harmless, pop in one hit, stay out of the enemy group.
 res://tests/deepfake_probe.tscn
+# Leaked robot reasoning: <think> traces on contact/EMP, throttled, on screen only.
+res://tests/reasoning_trace_probe.tscn
