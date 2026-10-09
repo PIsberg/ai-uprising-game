@@ -4509,6 +4509,9 @@ func _activate_task(t: Dictionary) -> void:
 	# eases back when this task completes.
 	if t.has("weather"):
 		_start_weather.call_deferred(t["weather"], id)
+	# ...and so can a flood (FloodSurge): it drains when this task completes.
+	if t.has("flood"):
+		_start_flood.call_deferred(t["flood"], id)
 	match t.get("type", ""):
 		"kill_quota":
 			# Count any kill from activation on; auto-completes at the goal, so

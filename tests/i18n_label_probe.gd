@@ -23,11 +23,12 @@ func _labels() -> Dictionary:
 		for t: Dictionary in def.get("tasks", []):
 			if t.get("label", "") != "":
 				out[t["label"]] = id
-			# A task's own weather shift (sublevel's power cut) toasts through tr() too.
-			for k in ["warn_title", "warn_text", "clear_title", "clear_text"]:
-				var ts: String = (t.get("weather", {}) as Dictionary).get(k, "")
-				if ts != "":
-					out[ts] = id
+			# A task's own weather shift or flood toasts through tr() too.
+			for key in ["weather", "flood"]:
+				for k in ["warn_title", "warn_text", "clear_title", "clear_text", "drain_title", "drain_text"]:
+					var ts: String = (t.get(key, {}) as Dictionary).get(k, "")
+					if ts != "":
+						out[ts] = id
 			for w in t.get("waves", []):
 				if w is Dictionary and w.get("label", "") != "":
 					out[w["label"]] = id

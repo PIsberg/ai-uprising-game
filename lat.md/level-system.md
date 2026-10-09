@@ -104,6 +104,7 @@ A survive wave's `flood` raises hazard beds mid-hold, so the hold changes the gr
 * A warning comes first: pulsing sheets mark the footprint at flood height for `warn` seconds (default 3) with a HUD alert (`warn_title`, `warn_text`). Then each bed rises 0.6 m into place over `rise` seconds as a real `LavaHazard` with no shoreline plane (`shore = false`).
 * Completing the hold drains the beds (they stop burning at once, then sink and free), so the walk to the exit and the completion checkpoint are dry. `drain_title`/`drain_text` announce it.
 * Death clears the beds at once and re-runs the warning when play resumes: checkpoint respawn is in place and may be on the flooded ground.
+* A task can carry the same `flood` spec: it rises when that stage goes live and drains when it completes. Mistral's coolant channels overflow for as long as the cryo-core stands.
 * Vulcan Forge (lava_world) floods its two ground cross-lanes and the fight moves onto the catwalks; Tidecore Basin (water_world) raises the tide over the whole low tier and the reactor cap is the last dry deck.
 * `tests/flood_surge_probe` covers the warning, the rise, a dry deck over a burning floor, the death reset and the drain, then every authored flood (scaling, timing, no overlapping beds, a dry exit and decks) and the built levels.
 

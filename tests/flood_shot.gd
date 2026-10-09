@@ -27,6 +27,8 @@ func _ready() -> void:
 		for t in def.get("tasks", []):
 			if t.has("weather"):
 				weather = (t["weather"] as Dictionary).duplicate(true)
+			if t.has("flood"):
+				flood = (t["flood"] as Dictionary).duplicate(true)
 			for w in t.get("waves", []):
 				if w.has("flood"):
 					flood = (w["flood"] as Dictionary).duplicate(true)

@@ -124,9 +124,13 @@ func _in_bed(b: Dictionary, p: Vector3) -> bool:
 	# A 2 m body overlaps the slab when its feet are below the top and its head above the bottom.
 	return absf(p.x - c.x) < s.x * 0.5 and absf(p.z - c.z) < s.y * 0.5 and p.y < top and p.y + 2.0 > bottom
 
+## Every flood a level authors: on a survive wave (lands mid-hold) or on a task
+## itself (runs while that stage is live; "wave" is empty).
 func _floods(def: Dictionary) -> Array:
 	var out: Array = []
 	for t in def.get("tasks", []):
+		if t.has("flood"):
+			out.append({"task": t, "wave": {}, "flood": t["flood"]})
 		if t.get("type", "") != "survive":
 			continue
 		for w in t.get("waves", []):
@@ -152,7 +156,12 @@ func _campaign() -> void:
 			var at: float = float(f["wave"].get("at", 0.0))
 			var lands := at + float(flood.get("warn", 3.0)) + float(flood.get("rise", 1.2))
 			_check(not beds.is_empty(), "%s: flood has beds" % id)
-			_check(hold - lands >= 5.0, "%s: flood lands with >= 5 s of hold left (lands %.0f s of %.0f)" % [id, lands, hold])
+			if not (f["wave"] as Dictionary).is_empty():
+				_check(hold - lands >= 5.0, "%s: flood lands with >= 5 s of hold left (lands %.0f s of %.0f)" % [id, lands, hold])
+			elif (f["task"] as Dictionary).has("pos"):
+				# A task's own flood must not drown the objective it guards.
+				var tp: Vector3 = f["task"]["pos"]
+				_check(not beds.any(func(b): return _in_bed(b, tp)), "%s: the flooded task's objective %v stays dry" % [id, tp])
 			_check(String(flood.get("warn_title", "")) != "", "%s: flood warning is announced" % id)
 			var raw_beds: Array = raw_floods[i]["flood"].get("beds", [])
 			for j in beds.size():
