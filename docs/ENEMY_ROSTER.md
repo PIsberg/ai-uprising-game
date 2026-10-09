@@ -19,6 +19,9 @@ Two base-class conventions make the flags in this table matter:
    override `_state_attack` without calling super — so any **new** base-class death or
    attack feature must hook the `hp.died` / `hp.damaged` signals instead of extending
    those methods (see the `mark_bounty` / `_on_died_voice` pattern in `enemy_base.gd`).
+   The one deliberate exception is the weapon kill style (`KillFx`): it lives in the base
+   `_on_died` because it *replaces* the base death visuals, which these 7 already replace
+   with their own, so they keep their custom deaths whatever weapon killed them.
 
 Column notes: "Overrides w/o super" lists only overrides that do **not** call
 `super._on_died(...)` / `super._state_attack(...)` / `super(...)` — an override that calls

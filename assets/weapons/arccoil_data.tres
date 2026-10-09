@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "CL-3 Arc Coil"
+kill_fx = 2
 alt_mode = 2
 fire_mode = 2
 damage_type = 0

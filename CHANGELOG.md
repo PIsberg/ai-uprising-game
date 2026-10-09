@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Weapon-specific deaths**: the gun that lands the killing blow now decides how a robot dies. The gauss lance, the Longshot, the plasma launcher and OMEGA **disintegrate** it: the chassis locks up and burns away top-down in 1 s behind a glowing cyan edge, shedding rising embers and leaving an ash scorch, with no wreck. The tesla projector, the arc coil and the tempest **electrocute** it: it convulses for 0.75 s under crawling arcs and a flickering blue skin, then blows like a normal kill. Every other gun, grenades and hazards keep the classic blast and topple, even on a robot an energy gun softened. Bosses keep their own deaths. New `WeaponData.kill_fx`. `kill_fx_probe` (suite), `kill_fx_shot` (windowed).
 - **Deathless bonus on the boss levels**: suburb_boss, titan and archon now carry the optional "Finish without dying" bonus (+750), lost on the first death. `bonus_objective_probe`.
 - **Bonus objectives**: 11 levels now carry an optional challenge on the objective line, worth +500 score. It never blocks the exit.
   - **Trip no security camera** on the five scanner levels (neon, overseer, assembly, grok, suburb).

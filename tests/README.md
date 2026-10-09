@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-307 probes total: **80** wired into the headless suite (`suite`), **84**
+309 probes total: **81** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **144** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -208,6 +208,8 @@ or GPU-timing probes; `--headless` renders these black).
 | jamming_probe | Geofenced Signal Jamming: shield absorbs damage, jam zone strips it + disorients, JamZone detection, beacon placement | windowed |
 | keybind_probe | Key-rebind persistence: factory defaults, live InputMap application, swap/steal conflict policy, saved overrides | headless |
 | kick_stability_probe | Viewmodel-kick spring doesn't diverge to NaN across a frame hitch (shader-compile stall on first shot) | headless |
+| kill_fx_probe | Weapon-specific deaths through the real hit paths: the energy guns' WeaponData kill styles; a gauss hitscan and a plasma projectile kill DISINTEGRATE (dissolve materials, no death blast, robot gone after the dissolve, ash scorch); an arc-coil kill ELECTROCUTES (shock skin, no blast during the spasms, then the classic blast); an untagged kill after an energy hit and a boss-sized kill stay classic | suite |
+| kill_fx_shot | Three androids killed at once by a DISINTEGRATE, an ELECTROCUTE and an untagged hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
 | lava_probe | Lava carves the navmesh and leaves a longer connected spawn→exit path; top-down shot | windowed |
 | layout_check | Static def check: no prop, pickup, weapon or lore placement sits inside a wall/building AABB. Enemy-spawn and task overlaps are reported as advisory, since the builder relocates those at load | suite |

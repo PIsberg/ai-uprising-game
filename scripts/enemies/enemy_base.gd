@@ -1630,6 +1630,31 @@ func _on_died(_source: Node) -> void:
 		_weak_core.queue_free() # wreck shouldn't keep pulsing a crit target
 		_weak_core = null
 
+	_drop_loot()
+
+	# The weapon that landed the killing blow picks the death (KillFx). Bosses
+	# keep the classic blast: their kill-cam is framed around it.
+	var style: int = hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+	if style != KillFx.NONE:
+		# The killing hit's flash would clear material_overlay 0.14 s from now,
+		# wiping the shock skin (and handing it back as the "saved" overlay).
+		if _flash_tween and _flash_tween.is_valid():
+			_flash_tween.kill()
+		_clear_hit_flash()
+		if _visual_root is RobotModel:
+			(_visual_root as RobotModel).quench_glow()
+	if style == KillFx.DISINTEGRATE:
+		KillFx.disintegrate(self)
+	elif style == KillFx.ELECTROCUTE:
+		KillFx.electrocute(self, _classic_death_fx)
+	else:
+		_classic_death_fx()
+
+## The default death: blast, flung plates, a torn limb, a burning wreck and a
+## scorch, then the topple and sink. Electrocution runs it after the spasms.
+func _classic_death_fx() -> void:
+	if get_parent() == null:
+		return
 	# Spawn visual and audio explosion
 	var exp_fx := EXPLOSION.instantiate()
 	get_parent().add_child(exp_fx)
@@ -1639,8 +1664,6 @@ func _on_died(_source: Node) -> void:
 	# the break-apart isn't just generic boxes — the chassis visibly comes apart.
 	_dismember_limb(Vector3(randf() - 0.5, 0.3, randf() - 0.5).normalized())
 	_spawn_wreck_fire()
-
-	_drop_loot()
 
 	# Lasting scorch mark on the ground where it fell.
 	var scorch := ScorchMark.new()
