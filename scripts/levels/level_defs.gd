@@ -5500,7 +5500,15 @@ static func _desert() -> Dictionary:
 					# The mast falls at (24,24); the counterstrike converges on it from
 					# open sand. All spawns sit clear of the three fire trenches
 					# (z 0..4 west, x 8..12 north, z 31..35 south) by the 2.5 m scatter.
-					{"at": 1.0, "label": "COUNTERSTRIKE — HUNTER PACK", "enemies": [
+					# The mast's fall kicks up the dunes: a SANDSTORM (fog x2.5,
+					# dust raised for the storm and gusting) for the whole hold,
+					# so the counterstrike closes in instead of being sniped from
+					# the dunes. Clears when the hold is won. weather_shift_probe.
+					{"at": 1.0, "label": "COUNTERSTRIKE — HUNTER PACK", "weather": {"fog_mult": 2.5,
+						"fog_color": Color(0.86, 0.64, 0.42), "fade": 4.0, "gust": 2.5, "particles": "dust",
+						"warn_title": "SANDSTORM", "warn_text": "The mast came down and the dunes came up. Visibility is dropping.",
+						"clear_title": "STORM PASSING", "clear_text": "The dust is settling."},
+						"enemies": [
 						{"type": "dog", "count": 4, "pos": Vector3(30, 0, 8)},
 						{"type": "drone", "count": 2, "pos": Vector3(24, 3, 36)},
 					]},

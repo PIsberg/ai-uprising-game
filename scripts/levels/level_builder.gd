@@ -3663,6 +3663,7 @@ func _build_weather(def: Dictionary) -> void:
 		streak.material = rm
 		p.mesh = streak
 		p.position = Vector3(0, 15.0, 0)
+		p.name = "Weather" # a survive wave's "weather" gusts it (WeatherShift)
 		add_child(p)
 	elif w == "snow":
 		# Slow, drifting, faintly-glowing flakes that sway as they settle — a soft
@@ -3733,6 +3734,7 @@ func _build_weather(def: Dictionary) -> void:
 		puff.material = dm
 		p.mesh = puff
 		p.position = Vector3(0, 3.0, 0)
+		p.name = "Weather" # a survive wave's "weather" gusts it (WeatherShift)
 		add_child(p)
 
 ## Ambient ash (opt-in via env "ash": true): slow-drifting warm ember motes
@@ -4751,6 +4753,16 @@ func _start_weather(w: Dictionary, task_id: String) -> void:
 	ws.task_id = task_id
 	ws.env = _env
 	ws.weather = get_node_or_null("Weather")
+	# A level with no weather of its own can raise some for the storm
+	# ("particles": "dust" / "snow" / "rain"): built like the env key, owned
+	# by the shift and stopped and freed when the hold is won.
+	if ws.weather == null and w.has("particles"):
+		var d: Dictionary = LevelDefs.get_def(level_id)
+		var tint: Color = w.get("fog_color", (d.get("env", {}) as Dictionary).get("fog", Color(0.5, 0.45, 0.38)))
+		_build_weather({"env": {"weather": String(w["particles"]), "fog": tint},
+			"floor_size": d.get("floor_size", Vector2(40, 40))})
+		ws.weather = get_node_or_null("Weather")
+		ws.owns_weather = ws.weather != null
 	ws.fog_mult = float(w.get("fog_mult", 4.0))
 	ws.fade = float(w.get("fade", 3.0))
 	ws.gust = float(w.get("gust", 1.0))

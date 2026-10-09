@@ -90,8 +90,9 @@ A survive wave's `weather` turns the level's own Environment against the player 
 * The distance fog thickens by `fog_mult` and can shift to `fog_color` over `fade` seconds; `gust` speeds up the level's weather particles (the builder names the snow emitter "Weather").
 * Robots do not lose sight in fog, so keep the multiplier where near cover still reads: frostbreak's whiteout is x2.5 (x4.5 hid the yard inside 20 m).
 * Completing the hold eases every value back to what it was captured at, then the node frees itself. Death does not reset it: fog cannot kill a respawned player.
-* Frostbreak's thaw hack now breaks its blizzard into a 30 s whiteout hold.
-* `tests/weather_shift_probe` covers the shift and the restore, that every authored shift thickens the fog inside its hold, that a `gust` only appears on a level with weather particles, and the built level's real Environment.
+* A level with no weather of its own can raise some for the storm (`particles`: dust, snow or rain). The shift owns those particles, then stops and frees them when the hold is won.
+* Frostbreak's thaw hack now breaks its blizzard into a 30 s whiteout hold, and desert's counterstrike hold is a sandstorm with raised dust.
+* `tests/weather_shift_probe` covers the shift and the restore, that every authored shift thickens the fog inside its hold, that a `gust` only appears where there are weather particles (the level's own or raised), the built level's real Environment, and that raised particles are freed after the storm.
 
 ## Hazard Surges
 <!-- lat: { "require-code-mention": true } -->
