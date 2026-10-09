@@ -1152,6 +1152,20 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(26, 0.05, 22), "size": Vector3(4, 0.1, 3), "color": Color(1.0, 0.4, 0.9)},
 		],
 		"sign": "NEON ARCADE — LEVEL 3",
+		# ARCADE CCTV: two cams on masts at the booth's back corners sweep the
+		# broadcast booth. Get held in a beam while you hold the booth and the
+		# arcade calls the floor staff (a gunslinger and a reaper per cam, at
+		# their roster spots). The heads are 80 HP: shooting them out BEFORE
+		# stepping into the booth is the prep the hold now asks for. Yaw aims
+		# each cam at the booth (-Z rotated by yaw). tests/scanner_probe.
+		"scanners": [
+			{"pos": Vector3(-11, 5.0, 14), "yaw": -61, "sweep": 100, "period": 7.0, "tilt": 16,
+				"alarm": [{"type": "gunslinger", "pos": Vector3(-12, 0.5, -10)},
+					{"type": "reaper", "pos": Vector3(-10, 0.5, 10)}]},
+			{"pos": Vector3(11, 5.0, 14), "yaw": 61, "sweep": 100, "period": 6.0, "tilt": 16,
+				"alarm": [{"type": "gunslinger", "pos": Vector3(12, 0.5, 4)},
+					{"type": "reaper", "pos": Vector3(8, 0.5, -8)}]},
+		],
 		# Live energy conduits split the arcade floor — mind the gap.
 		"lava": [
 			{"pos": Vector3(-7,0,-7), "size": Vector2(24,3), "color": Color(1.0,0.25,0.85), "dmg": 18.0},
