@@ -29,7 +29,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 287 * MB  # 2026-10-08: comics lossy, 3D textures VRAM-compressed, 305.2 -> 283.5 MB
+TOTAL_BUDGET = 272 * MB  # 2026-10-09: 9 unread textures + the unused George_smasher.glb removed, 283.5 -> 270.8 MB
 FILE_BUDGET = 40 * MB
 # A texture imported lossless (compress/mode=0) ships as a lossless WebP and, on a
 # mesh, uploads uncompressed with no mipmaps: the 23 comics were 1.2-1.5 MB each

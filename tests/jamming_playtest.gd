@@ -13,9 +13,10 @@ extends Node3D
 ##
 ## On the relay arc (#174) the bot walks to each jam-shielded relay on the
 ## navmesh, beacons it and shoots it while exposed; an exposed relay in reach
-## outranks any hive. It is still a weak player: in 3 runs on 2026-10-09 it
-## completed once (71.6 s, 4576 HP soaked) and timed out twice with a relay
-## or the last hive standing. Read a single run as a sample, not a verdict.
+## outranks any hive. It only shoots a hive it has a clear ray to, and walks in
+## on the navmesh when none is in sight. Before #184 it completed 1 run in 3:
+## it cut path corners into cover and fired at hives through walls. After,
+## 10 of 10 runs completed in 38-76 s (2026-10-09, five at a time).
 ##
 ## It reports `fired` (rounds spent) beside the kills: a 0-kill run with 0 fired
 ## means the bot never shot, not that the hive is unkillable. It scored 0 kills
@@ -45,6 +46,16 @@ var _wm
 var _ammo0 := 0
 var _stall_t := 0.0     ## seconds the locked target has taken no damage
 var _ignore: Array = [] ## targets dropped for soaking fire (blocked by cover)
+# Navmesh travel (#184): the current path, what it leads to and how old it is,
+# plus the stuck check (no 0.6 m of progress in 1.5 s means pinned on cover).
+var _path := PackedVector3Array()
+var _path_goal := Vector3.INF
+var _path_age := 0.0
+var _stuck_from := Vector3.ZERO
+var _stuck_t := 0.0
+var _unstick_t := 0.0
+var _unstick_dir := Vector3.ZERO
+var _unsticks := 0
 const POOL := 100000.0
 var _mortal := false
 
@@ -111,6 +122,84 @@ func _aim_at(p: Vector3) -> void:
 	var pitch := atan2(p.y - eye.y, flat.length())
 	_head.rotation.x = clampf(pitch, -1.3, 1.3)
 
+## Whether a shot from the camera at `n` would reach it, not a wall or cover.
+func _has_los(n: Node3D) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(_cam.global_position, n.global_position + Vector3(0, 1.1, 0), 1)
+	q.exclude = [_player.get_rid()]
+	return _player.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+func _halt() -> void:
+	_player.velocity.x = 0.0
+	_player.velocity.z = 0.0
+	_stuck_t = 0.0
+	_stuck_from = _player.global_position
+
+## Walk toward `goal` on the navmesh; returns the flat distance left. The bot
+## steers at a point 0.8 m further along the path polyline. The old follower
+## steered at the first corner more than 1.2 m away, which cut the corner, and in
+## a run on 2026-10-09 it stayed pinned on the spine wall's end for 140 s (#184).
+## If it still makes no progress, it sidesteps and plans a fresh path.
+func _move_to(goal: Vector3, speed := 6.0) -> float:
+	var pos := _player.global_position
+	var flat := Vector2(goal.x - pos.x, goal.z - pos.z).length()
+	_path_age += get_physics_process_delta_time()
+	if _path.is_empty() or _path_age > 1.0 or Vector2(goal.x - _path_goal.x, goal.z - _path_goal.z).length() > 1.5:
+		_path = NavigationServer3D.map_get_path(_player.get_world_3d().navigation_map, pos, goal, true)
+		_path_goal = goal
+		_path_age = 0.0
+	var v: Vector3
+	if _unstick_t > 0.0:
+		_unstick_t -= get_physics_process_delta_time()
+		v = _unstick_dir * speed
+	else:
+		var to := (_carrot(pos, 0.8) if _path.size() >= 2 else goal) - pos
+		to.y = 0.0
+		v = to.normalized() * speed
+	_player.velocity.x = v.x
+	_player.velocity.z = v.z
+	_stuck_t += get_physics_process_delta_time()
+	if _stuck_t >= 1.5:
+		if Vector2(pos.x - _stuck_from.x, pos.z - _stuck_from.z).length() < 0.6 and _unstick_t <= 0.0:
+			# Sidestep at right angles to the blocked heading, alternating sides.
+			_unsticks += 1
+			var side := 1.0 if _unsticks % 2 == 0 else -1.0
+			_unstick_dir = Vector3(-v.z, 0.0, v.x).normalized() * side
+			if _unstick_dir == Vector3.ZERO:
+				_unstick_dir = Vector3(side, 0.0, 0.0)
+			_unstick_t = 0.6
+			_path = PackedVector3Array()
+		_stuck_t = 0.0
+		_stuck_from = pos
+	return flat
+
+## The point `ahead` metres along the current path past the path point nearest
+## `pos` (flat distances: path points sit on the floor, the body above it).
+func _carrot(pos: Vector3, ahead: float) -> Vector3:
+	var p2 := Vector2(pos.x, pos.z)
+	var best_i := 0
+	var best_q := Vector2(_path[0].x, _path[0].z)
+	var best_d := INF
+	for i in _path.size() - 1:
+		var a := Vector2(_path[i].x, _path[i].z)
+		var b := Vector2(_path[i + 1].x, _path[i + 1].z)
+		var q := Geometry2D.get_closest_point_to_segment(p2, a, b)
+		var d := q.distance_to(p2)
+		if d < best_d:
+			best_d = d
+			best_i = i
+			best_q = q
+	var left := ahead
+	var at := best_q
+	for i in range(best_i + 1, _path.size()):
+		var nxt := Vector2(_path[i].x, _path[i].z)
+		var seg := at.distance_to(nxt)
+		if seg >= left:
+			at = at + (nxt - at).normalized() * left
+			return Vector3(at.x, pos.y, at.y)
+		left -= seg
+		at = nxt
+	return Vector3(at.x, pos.y, at.y)
+
 func _physics_process(delta: float) -> void:
 	if _phase != "fight":
 		return
@@ -166,8 +255,7 @@ func _physics_process(delta: float) -> void:
 		# Between waves: advance to the arena centre to trip the next trigger ring.
 		Input.action_release("fire")
 		_aim_at(Vector3(0, 1.2, 8))
-		_player.velocity.x = 0.0
-		_player.velocity.z = 6.0
+		_move_to(Vector3(0, 0, 8))
 		return
 
 	# Nearest enemy + the closing cluster centroid (enemies within 14 m of us).
@@ -194,23 +282,37 @@ func _physics_process(delta: float) -> void:
 	# SHOOT: LOCK onto one target until it dies (don't let the aim flip between
 	# enemies every frame). Prefer a jammed, shield-down unit; upgrade to a jammed
 	# one if we're currently chipping a shielded target.
+	# Only targets a shot can reach count as shootable: in a run on 2026-10-09
+	# the bot fired at the PRIME's three escorts through cover for 120 s.
 	hives = hives.filter(func(h): return not _ignore.has(h))
 	if hives.is_empty():
 		_ignore.clear()
 		return
-	nearest = hives[0]
-	jammed_targets = hives.filter(func(h): return h.jammed)
+	var seen := hives.filter(func(h): return _has_los(h))
+	var seen_jammed := seen.filter(func(h): return h.jammed)
 	var need_new: bool = _target == null or not is_instance_valid(_target) or (_target as EnemyHive).is_dead()
-	# A locked target that takes no damage for 3 s is behind cover: drop it.
+	# A locked target in sight that takes no damage for 3 s is soaking the fire
+	# somehow (shielded, or clipped by a ledge the ray misses): drop it.
 	if not need_new and _stall_t > 3.0:
 		_ignore.append(_target)
 		need_new = true
-	if not need_new and not _target.jammed and not jammed_targets.is_empty():
-		need_new = true # stop wasting fire on a shielded unit when a jammed one exists
+	if not need_new and not _target.jammed and not seen_jammed.is_empty():
+		need_new = true # stop wasting fire on a shielded unit when a jammed one is in sight
+	if not need_new and not seen.is_empty() and not seen.has(_target):
+		need_new = true # the locked one went behind cover; another is in sight
 	if need_new:
-		_target = jammed_targets[0] if not jammed_targets.is_empty() else nearest
+		if not seen_jammed.is_empty(): _target = seen_jammed[0]
+		elif not seen.is_empty(): _target = seen[0]
+		else: _target = hives[0]
 		_stall_t = 0.0
 	_aim_at((_target as Node3D).global_position + Vector3(0, 1.1, 0))
+	if not _has_los(_target):
+		# Nothing in sight: hold fire and close in on the navmesh until the
+		# target comes round the cover.
+		Input.action_release("fire")
+		_stall_t = 0.0
+		_move_to((_target as Node3D).global_position)
+		return
 	Input.action_press("fire")
 	var thp = _target.get_node("Damageable").current_health
 	if thp != _last_thp:
@@ -258,22 +360,10 @@ func _work_relay(relay: Node3D) -> void:
 		Input.action_release("fire")
 		# Follow the navmesh, not a straight line: a cover wall or a relay tower
 		# between the bot and the relay pinned it in place for minutes.
-		var map := _player.get_world_3d().navigation_map
-		var path := NavigationServer3D.map_get_path(map, _player.global_position, relay.global_position, true)
-		var goal := relay.global_position
-		for p in path:
-			if Vector2(p.x - _player.global_position.x, p.z - _player.global_position.z).length() > 1.2:
-				goal = p
-				break
-		var step := goal - _player.global_position
-		step.y = 0.0
-		_aim_at(goal + Vector3(0, 1.3, 0))
-		var v := step.normalized() * 6.0
-		_player.velocity.x = v.x
-		_player.velocity.z = v.z
+		_aim_at(relay.global_position + Vector3(0, 1.3, 0))
+		_move_to(relay.global_position)
 		return
-	_player.velocity.x = 0.0
-	_player.velocity.z = 0.0
+	_halt()
 	if relay.get("exposed") != true:
 		Input.action_release("fire")
 		if _jc and _jc._cd <= 0.0 and _beacon_t <= 0.0:
@@ -292,14 +382,24 @@ func _finish(how: String) -> void:
 	print("PLAYTEST RESULT: %s  time=%.1fs  kills=%d  fired=%d  weapon=%s  hive_left=%d  peak_jammed=%d  hp_lost=%.0f%s" % [
 		how, _t, GameState.kills, maxi(0, _ammo0 - _ammo_left()), _weapon_name(), hives.size(), _peak_jammed, lost,
 		"" if _mortal else " (pool)"])
-	print("  tasks: kill_all=%s hvt=%s" % [GameState.is_task_done("kill_all"), GameState.is_task_done("hvt")])
+	print("  tasks: kill_all=%s hvt=%s  unsticks=%d  bot=%v" % [GameState.is_task_done("kill_all"),
+		GameState.is_task_done("hvt"), _unsticks, _player.global_position])
+	# Where a timeout left things: the leftovers and whether the bot could see them.
+	for h in hives:
+		print("  left: hive at %v hp=%.0f jammed=%s los=%s" % [h.global_position,
+			h.get_node("Damageable").current_health, h.jammed, _has_los(h)])
+	var relay = _next_relay()
+	if relay != null:
+		print("  left: relay at %v hp=%.0f" % [(relay as Node3D).global_position, relay.hp.current_health])
 	_cam.global_position = Vector3(0, 12, -26)
 	_cam.look_at(Vector3(0, 1, 4), Vector3.UP)
 	for c in get_tree().get_nodes_in_group("level_ceiling"): c.visible = false
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var img := get_viewport().get_texture().get_image()
-	if img: # headless has no framebuffer to read back
-		img.save_png(OS.get_user_data_dir() + "/jamming_playtest.png")
+	# Headless has no framebuffer: reading it back logs an engine error.
+	if DisplayServer.get_name() != "headless":
+		var img := get_viewport().get_texture().get_image()
+		if img:
+			img.save_png(OS.get_user_data_dir() + "/jamming_playtest.png")
 	print("JAMMING_PLAYTEST_DONE")
 	get_tree().quit()
