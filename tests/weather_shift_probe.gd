@@ -21,6 +21,7 @@ func _ready() -> void:
 	var prev_state = GameState.current_state
 	GameState.current_state = GameState.State.PLAYING
 	await _unit()
+	await _unit_blackout()
 	_campaign()
 	await _live()
 	GameState.current_state = prev_state
@@ -74,9 +75,53 @@ func _unit() -> void:
 	GameState.reset_tasks()
 	await _frames(3)
 
+## A blackout hides every "level_light" (lights and lit fixture panels) and
+## scales the ambient; completing the task brings back exactly what it hid.
+func _unit_blackout() -> void:
+	print("unit blackout:")
+	GameState.reset_tasks()
+	GameState.register_task("dark", "Dark", 0.0)
+	var env := Environment.new()
+	env.ambient_light_energy = 1.0
+	env.tonemap_exposure = 1.0
+	var lamp := OmniLight3D.new()
+	var panel := MeshInstance3D.new()
+	var off := OmniLight3D.new() # already off before the cut: must stay off after
+	off.visible = false
+	for n in [lamp, panel, off]:
+		n.add_to_group("level_light")
+		add_child(n)
+	var ws := WeatherShift.new()
+	ws.task_id = "dark"
+	ws.env = env
+	ws.fog_mult = 1.0
+	ws.fade = 0.3
+	ws.blackout = true
+	ws.ambient_mult = 0.4
+	ws.exposure_mult = 0.5
+	add_child(ws)
+	await _wait(0.6)
+	_check(not lamp.visible and not panel.visible, "the blackout cuts lights and lit panels")
+	_check(is_equal_approx(env.ambient_light_energy, 0.4), "and dims the ambient (%.2f)" % env.ambient_light_energy)
+	_check(is_equal_approx(env.tonemap_exposure, 0.5), "and the exposure (%.2f)" % env.tonemap_exposure)
+	GameState.complete_task("dark")
+	await _wait(0.8)
+	_check(lamp.visible and panel.visible, "power comes back when the task completes")
+	_check(not off.visible, "a light that was already off stays off")
+	_check(is_equal_approx(env.ambient_light_energy, 1.0), "and the ambient is restored (%.2f)" % env.ambient_light_energy)
+	_check(is_equal_approx(env.tonemap_exposure, 1.0), "and the exposure (%.2f)" % env.tonemap_exposure)
+	for n in [lamp, panel, off]:
+		n.queue_free()
+	GameState.reset_tasks()
+	await _frames(3)
+
+## Every weather shift a level authors: on a survive wave (lands mid-hold) or on
+## a task itself (runs while that stage is live; "wave" is empty).
 func _shifts(def: Dictionary) -> Array:
 	var out: Array = []
 	for t in def.get("tasks", []):
+		if t.has("weather"):
+			out.append({"task": t, "wave": {}, "weather": t["weather"]})
 		if t.get("type", "") != "survive":
 			continue
 		for w in t.get("waves", []):
@@ -94,8 +139,10 @@ func _campaign() -> void:
 			var w: Dictionary = s["weather"]
 			var hold: float = float(s["task"].get("seconds", 0.0))
 			var at: float = float(s["wave"].get("at", 0.0))
-			_check(float(w.get("fog_mult", 4.0)) > 1.0, "%s: weather thickens the fog" % id)
-			_check(at + float(w.get("fade", 3.0)) + 5.0 <= hold, "%s: weather lands with 5 s of hold left" % id)
+			_check(float(w.get("fog_mult", 4.0)) > 1.0 or bool(w.get("blackout", false)) or float(w.get("ambient_mult", 1.0)) < 1.0,
+				"%s: the weather shift changes something (fog, blackout or ambient)" % id)
+			if not (s["wave"] as Dictionary).is_empty():
+				_check(at + float(w.get("fade", 3.0)) + 5.0 <= hold, "%s: weather lands with 5 s of hold left" % id)
 			_check(String(w.get("warn_title", "")) != "", "%s: weather shift is announced" % id)
 			if float(w.get("gust", 1.0)) != 1.0:
 				var lvl_w := String(def.get("env", {}).get("weather", ""))
@@ -123,7 +170,12 @@ func _live() -> void:
 		await _wait(0.6)
 		var ws := lvl.get_node_or_null("WeatherShift") as WeatherShift
 		_check(ws != null, "%s live: the shift is built" % id)
-		_check(env.fog_density > fog0 * 1.5, "%s live: the level's own fog thickens (%.4f -> %.4f)" % [id, fog0, env.fog_density])
+		if float(w.get("fog_mult", 4.0)) > 1.0:
+			_check(env.fog_density > fog0 * 1.5, "%s live: the level's own fog thickens (%.4f -> %.4f)" % [id, fog0, env.fog_density])
+		if bool(w.get("blackout", false)):
+			var lit := get_tree().get_nodes_in_group("level_light").filter(func(n): return (n as Node3D).visible)
+			_check(ws != null and ws._dark.size() > 0 and lit.is_empty(),
+				"%s live: the blackout cut the level's %d lights and panels" % [id, ws._dark.size() if ws else 0])
 		if float(w.get("gust", 1.0)) != 1.0:
 			_check(ws != null and is_instance_valid(ws.weather), "%s live: the shift found the level's weather particles" % id)
 		if w.has("particles") and String(def.get("env", {}).get("weather", "")) == "":

@@ -1315,8 +1315,15 @@ static func _sublevel() -> Dictionary:
 					{"type": "vacuum", "count": 4, "pos": Vector3(-14, 0, 14)},
 					{"type": "roller", "count": 2, "pos": Vector3(14, 0, 2)},
 				]},
+			# The controller's dying act cuts the power: the night shift is fought
+			# in a BLACKOUT (level lights and fixture panels off, ambient x0.45),
+			# lit by the robots' own eyes, emissives and muzzle flashes. Power
+			# comes back when the quota is met. tests/weather_shift_probe.
 			{"type": "kill_quota", "id": "shift", "after": "hack_terminal", "count": 6,
-				"label": "Scrap the emergency night shift"},
+				"label": "Scrap the emergency night shift",
+				"weather": {"blackout": true, "ambient_mult": 0.45, "exposure_mult": 0.55, "fog_mult": 1.0, "fade": 1.0,
+					"warn_title": "POWER CUT", "warn_text": "The controller killed the lights. The night shift sees in the dark.",
+					"clear_title": "POWER RESTORED", "clear_text": "Backup power is up. The shift is scrapped."}},
 		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 40² slalom core is untouched at the centre;

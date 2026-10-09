@@ -90,6 +90,8 @@ A survive wave's `weather` turns the level's own Environment against the player 
 * The distance fog thickens by `fog_mult` and can shift to `fog_color` over `fade` seconds; `gust` speeds up the level's weather particles (the builder names the snow emitter "Weather").
 * Robots do not lose sight in fog, so keep the multiplier where near cover still reads: frostbreak's whiteout is x2.5 (x4.5 hid the yard inside 20 m).
 * Completing the hold eases every value back to what it was captured at, then the node frees itself. Death does not reset it: fog cannot kill a respawned player.
+* A blackout (`blackout`) cuts the level's lights, their lit fixture panels, the ULTRA VoxelGI and the god-ray shafts (group `level_light`), with `ambient_mult` and `exposure_mult` dimming the rest. The cut lights alone darkened sublevel by 7%, because emissives carry its frame; with `exposure_mult` 0.55 it is 24%. Alarm beacons and pickup glows stay lit.
+* A task can carry the same `weather` spec as a wave: it starts when that stage goes live and clears when it completes. Sublevel's night-shift quota is fought in a blackout.
 * A level with no weather of its own can raise some for the storm (`particles`: dust, snow or rain). The shift owns those particles, then stops and frees them when the hold is won.
 * Frostbreak's thaw hack now breaks its blizzard into a 30 s whiteout hold, and desert's counterstrike hold is a sandstorm with raised dust.
 * `tests/weather_shift_probe` covers the shift and the restore, that every authored shift thickens the fog inside its hold, that a `gust` only appears where there are weather particles (the level's own or raised), the built level's real Environment, and that raised particles are freed after the storm.
