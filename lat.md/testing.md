@@ -40,7 +40,7 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_strings_csv.py
   ```
-* Verify no texture extracted from a GLB is left beside a model that embeds its own images (the export ships every such file unused; 207 of them were 179 MB of the pack):
+* Verify no texture extracted from a GLB is left beside a model that embeds its own images (the export ships every such file unused; 207 of them were 179 MB of the pack). Any image named `<model>_*` beside `<model>.glb` counts, unless a text resource names it or a glTF model loads it by URI:
   ```sh
   python tools/check_glb_leftovers.py
   ```
