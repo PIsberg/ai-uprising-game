@@ -4187,8 +4187,16 @@ static func _claude() -> Dictionary:
 			# CARRIED out, at a walk, through the archive firewall the decrypt just
 			# dropped, to the uplink by the exit, with the decrypt's sentinels on
 			# you. 30 HP of hits knocks it loose.
+			# The decrypt trips the vault's anti-tamper: a BLACKOUT for the whole
+			# carry (lights, panels and shafts off, ambient x0.5, exposure x0.6),
+			# so the slow walk out is through a dark archive with the sentinels'
+			# eyes the brightest thing in it. The HUD waypoint still leads to the
+			# uplink. Power returns on delivery. tests/weather_shift_probe.
 			{"type": "haul", "id": "weights", "after": "decrypt", "pos": Vector3(-12, 0, 14), "to": Vector3(24, 0, 20),
-				"label": "Carry the decrypted constitution to the uplink"},
+				"label": "Carry the decrypted constitution to the uplink",
+				"weather": {"blackout": true, "ambient_mult": 0.5, "exposure_mult": 0.6, "fog_mult": 1.0, "fade": 1.0,
+					"warn_title": "ANTI-TAMPER LOCKDOWN", "warn_text": "The vault cut its own power. Carry it out in the dark.",
+					"clear_title": "POWER RESTORED", "clear_text": "The constitution is uploading. The vault lights are back."}},
 		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 42² vault core is untouched at the centre;
