@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-306 probes total: **79** wired into the headless suite (`suite`), **83**
+306 probes total: **79** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **144** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -203,7 +203,7 @@ or GPU-timing probes; `--headless` renders these black).
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |
 | indiv_probe | BRUTE shield-in-left-hand idle+punch; VACUUM codex preview rise | windowed |
 | intro_screenshot | Intro cutscene's calm phase and post-turn frame | windowed |
-| jamming_playtest | Combat playtest bot for Geofenced Signal Jamming: fires + plants beacons to strip hive shields — is it winnable | windowed |
+| jamming_playtest | Combat playtest bot for Geofenced Signal Jamming: fires + plants beacons to strip hive shields, beacons and burns the mesh relays, then hunts the HIVE PRIME on a 100000 HP pool (completability; `-- mortal` for a real 100 HP run). Reports kills, rounds fired and HP soaked. Report-only: it completes about 1 run in 3 (#179) | headless |
 | jamming_probe | Geofenced Signal Jamming: shield absorbs damage, jam zone strips it + disorients, JamZone detection, beacon placement | windowed |
 | keybind_probe | Key-rebind persistence: factory defaults, live InputMap application, swap/steal conflict policy, saved overrides | headless |
 | kick_stability_probe | Viewmodel-kick spring doesn't diverge to NaN across a frame hitch (shader-compile stall on first shot) | headless |
