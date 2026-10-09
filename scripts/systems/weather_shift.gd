@@ -11,6 +11,11 @@ extends Node
 ## When the hold completes, everything eases back to the values captured at the
 ## start, so the walk to the exit has the level's normal sightlines. Death does
 ## not reset it: unlike a flood, fog cannot kill a respawned player.
+##
+## A level with no weather of its own can raise some for the storm
+## ("particles" in the wave, built by LevelBuilder._start_weather): the shift
+## owns those particles, and on completion stops them and frees them once the
+## last ones have drifted out. Desert's counterstrike is a sandstorm this way.
 
 @export var task_id: String = "survive"
 @export var fog_mult: float = 4.0
@@ -18,6 +23,7 @@ extends Node
 @export var gust: float = 1.0
 var env: Environment
 var weather: Node                   ## the level's weather particles, if any
+var owns_weather: bool = false      ## raised for this storm: stop + free them on completion
 var fog_color: Variant = null       ## Color to shift the fog to, or null to keep it
 var warn_title: String = "WEATHER TURNING"
 var warn_text: String = "Visibility is dropping."
@@ -57,5 +63,10 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(weather) and "speed_scale" in weather:
 		tw.tween_property(weather, "speed_scale", _speed0, fade)
 	tw.chain().tween_callback(queue_free)
+	if owns_weather and is_instance_valid(weather):
+		weather.set("emitting", false)
+		var w := weather
+		get_tree().create_timer(float(weather.get("lifetime")) + fade).timeout.connect(
+			func(): if is_instance_valid(w): w.queue_free())
 	if clear_title != "":
 		GameState.skirmish_event.emit(clear_title, clear_text)

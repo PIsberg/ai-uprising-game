@@ -98,8 +98,10 @@ func _campaign() -> void:
 			_check(at + float(w.get("fade", 3.0)) + 5.0 <= hold, "%s: weather lands with 5 s of hold left" % id)
 			_check(String(w.get("warn_title", "")) != "", "%s: weather shift is announced" % id)
 			if float(w.get("gust", 1.0)) != 1.0:
-				_check(["snow"].has(String(def.get("env", {}).get("weather", ""))),
-					"%s: a gust needs weather particles to gust (env weather '%s')" % [id, def.get("env", {}).get("weather", "")])
+				var lvl_w := String(def.get("env", {}).get("weather", ""))
+				var raised := String(w.get("particles", ""))
+				_check(["snow", "dust", "rain"].has(lvl_w) or ["snow", "dust", "rain"].has(raised),
+					"%s: a gust needs weather particles to gust (env weather '%s', raised '%s')" % [id, lvl_w, raised])
 	_check(n >= 1, "campaign authors weather shifts (%d)" % n)
 
 func _live() -> void:
@@ -124,5 +126,14 @@ func _live() -> void:
 		_check(env.fog_density > fog0 * 1.5, "%s live: the level's own fog thickens (%.4f -> %.4f)" % [id, fog0, env.fog_density])
 		if float(w.get("gust", 1.0)) != 1.0:
 			_check(ws != null and is_instance_valid(ws.weather), "%s live: the shift found the level's weather particles" % id)
+		if w.has("particles") and String(def.get("env", {}).get("weather", "")) == "":
+			# Raised for the storm: owned, and gone once the hold is won.
+			var raised: Node = ws.weather if ws != null else null
+			_check(ws != null and ws.owns_weather, "%s live: the storm raised its own particles" % id)
+			ws.task_id = "weather_probe_done"
+			GameState.register_task("weather_probe_done", "x", 0.0)
+			GameState.complete_task("weather_probe_done")
+			await _wait(float(raised.get("lifetime")) + 0.3 + 1.0 if is_instance_valid(raised) else 0.5)
+			_check(not is_instance_valid(raised), "%s live: the raised particles are freed after the storm" % id)
 		lvl.queue_free()
 		await _frames(3)
