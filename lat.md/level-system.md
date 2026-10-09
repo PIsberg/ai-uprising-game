@@ -74,6 +74,15 @@ An `escape` task turns a level's last stage into a timed run: the purge clock st
 * Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
 * `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
 
+## Jam-Shielded Relays
+<!-- lat: { "require-code-mention": true } -->
+A `destroy_core` task with `jam_shielded` is immune until one of the player's jam zones covers it, the same rule as a hive unit's shield (`ObjectiveCore.jam_shielded`).
+
+* A JamZone only detects the enemy layer and a core sits on the world layer, so the core measures its own distance to live `jam_zone` nodes each frame and toggles `Damageable.invulnerable`.
+* A hit on the closed shield flares the bubble and teaches the move once ("plant a jam beacon on it").
+* Only author it on a level with a `jammer` def, or the core can never die. Relay Node 9 (hivemind) stages the HIVE PRIME behind two of them.
+* `tests/jam_relay_probe` covers the shield rules against an unshielded control, the jammer invariant, and the staged PRIME on the built level.
+
 ## Hazard Surges
 <!-- lat: { "require-code-mention": true } -->
 A survive wave's `flood` raises hazard beds mid-hold, so the hold changes the ground under the player instead of only adding enemies (`FloodSurge`).

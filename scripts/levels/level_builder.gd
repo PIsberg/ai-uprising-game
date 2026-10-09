@@ -4516,6 +4516,7 @@ func _activate_task(t: Dictionary) -> void:
 				core.core_color = t["color"]
 			if t.has("health"):
 				core.max_health = t["health"]
+			core.jam_shielded = t.get("jam_shielded", false)
 			core.position = t.get("pos", Vector3.ZERO)
 			add_child(core)
 			_relocate_when_clear(core)

@@ -452,9 +452,23 @@ static func _hivemind() -> Dictionary:
 		# Zones sized so a beacon planted at your feet / a chokepoint reliably catches
 		# the close-range flankers as they swarm through it.
 		"jammer": {"radius": 6.5, "lifetime": 8.0, "max": 3, "cooldown": 1.0, "color": Color(0.35, 0.85, 1.0)},
+		# The arc asks for the jammer on an OBJECTIVE, not just on the swarm: the
+		# PRIME draws its power through two mesh relays out on the ring, and a
+		# relay's shield only drops inside a jam zone (ObjectiveCore.jam_shielded).
+		# Plant a beacon on it, then burn it down inside the 8 s window while the
+		# hive flank in. Each relay's fall calls a squad from the core; the PRIME
+		# only walks out once both are down. tests/jam_relay_probe.
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "assassinate", "enemy": "hive", "elite": "swift", "bulk": 2.6,
+			{"type": "destroy_core", "id": "relay_w", "pos": Vector3(-26, 0, -8), "health": 150.0,
+				"jam_shielded": true, "color": Color(0.35, 0.85, 1.0),
+				"label": "Jam and destroy the WEST mesh relay",
+				"reinforce": [{"type": "hive", "count": 2, "pos": Vector3(-14, 1.0, -12)}]},
+			{"type": "destroy_core", "id": "relay_e", "pos": Vector3(24, 0, -2), "health": 150.0,
+				"jam_shielded": true, "color": Color(0.35, 0.85, 1.0),
+				"label": "Jam and destroy the EAST mesh relay",
+				"reinforce": [{"type": "hive", "count": 2, "pos": Vector3(16, 1.0, -4)}]},
+			{"type": "assassinate", "after": ["relay_w", "relay_e"], "enemy": "hive", "elite": "swift", "bulk": 2.6,
 				"pos": Vector3(0, 1.0, 16), "label": "Isolate and destroy the HIVE PRIME",
 				"reinforce": [{"type": "hive", "count": 3, "pos": Vector3(0, 1.0, 16)}]},
 		],
