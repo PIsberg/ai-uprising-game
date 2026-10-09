@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **First Contact (The Hollow)**: during the survive hold the Hollow overflows. Eleven seconds in, both acid channels widen for the rest of the hold (a 3 s warning, then four beds rise along the channels), squeezing the fight into the band between them and swallowing the beacon yard you were standing in. The acid drains when the hold is won. `flood_surge_probe`.
 - **Skybridge Uplink**: the booster used to be a second stand-in-the-ring hold, the same verb as the uplink itself. It is now a 5 s hack that starts the climax. The jamming answers the broadcast: a signal storm rolls in (the fog closes toward magenta and rain is raised for it), and three waves come for the booster during a 25 s "keep the broadcast alive" hold. `survive_waves_probe`, `weather_shift_probe`.
 - **Relay Node 9 (hivemind)**: each mesh relay now has two hive posted beside it, so the beacon you plant on a relay has to strip its guards too. The level's roster measured 280 on `difficulty_curve` at slot 20, against 409-499 for its late-act neighbours; it is now 336.
 - **Desert relay**: "Weather the counterstrike" now means it. The mast's fall kicks up a sandstorm for the whole hold: the fog closes in (x2.5) and blowing dust is raised for the storm, so the counterstrike reaches you instead of being sniped from the dunes. The dust settles when the hold is won. A survive-wave `weather` can now raise its own `particles` on a level that has none. `weather_shift_probe` (suite).
