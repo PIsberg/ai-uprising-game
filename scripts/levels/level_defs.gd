@@ -2435,7 +2435,25 @@ static func _titan() -> Dictionary:
 		"objective": "Destroy PROMETHEUS-0 before it reaches recursive self-improvement",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "survive", "label": "Survive the intelligence explosion", "seconds": 45.0},
+			# The longest hold in the campaign used to have no mid-hold events
+			# (#113): TITAN was the only pressure for 45 s. Two LIGHT add waves
+			# (6 bodies, all at roster spots of the same type) keep the floor
+			# moving, and a health vent on the east gunner post, away from the
+			# boss, makes resupply a decision. Adds are deliberately light so
+			# the boss stays the fight. tests/survive_waves_probe.
+			{"type": "survive", "label": "Survive the intelligence explosion", "seconds": 45.0,
+				"waves": [
+					{"at": 12.0, "label": "ANCHOR DRONES — SEEKER SWARM", "enemies": [
+						{"type": "seeker", "count": 3, "pos": Vector3(12, 2.5, 12)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(24, 0, 6)},
+					]},
+					{"at": 28.0, "label": "THE SINGULARITY SPITS", "enemies": [
+						{"type": "android", "pos": Vector3(-6, 0.5, -6)},
+						{"type": "android", "pos": Vector3(6, 0.5, -6)},
+						{"type": "gunner", "pos": Vector3(-14, 0.5, 10)},
+					]},
+				]},
 			# Weathering the burst exposes the anchor holding the singularity open.
 			{"type": "destroy_core", "id": "anchor", "after": "survive", "pos": Vector3(0, 0, 18), "health": 340.0,
 				"color": Color(1.0, 0.5, 0.9), "label": "Collapse the singularity anchor"},
@@ -4882,7 +4900,24 @@ static func _suburb_boss() -> Dictionary:
 		"objective": "Destroy the colossus GOLIATH-IX and extract",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "survive", "label": "Survive the GOLIATH onslaught", "seconds": 40.0},
+			# Same as TITAN's hold (#113): 40 s with GOLIATH as the only
+			# pressure. Two light waves (5 bodies, roster spots of the same
+			# type) and a health vent on the south lane, a run across the
+			# street from wherever GOLIATH has you pinned. tests/survive_waves_probe.
+			{"type": "survive", "label": "Survive the GOLIATH onslaught", "seconds": 40.0,
+				"waves": [
+					{"at": 10.0, "label": "ESCORT DRONES", "enemies": [
+						{"type": "drone", "pos": Vector3(8, 3, -6)},
+						{"type": "drone", "pos": Vector3(-10, 3, 8)},
+					], "supplies": [
+						{"type": "health", "pos": Vector3(0, 0, -16)},
+					]},
+					{"at": 24.0, "label": "K-9 RELEASE", "enemies": [
+						{"type": "dog", "pos": Vector3(-14, 0.5, -26)},
+						{"type": "android", "pos": Vector3(16, 0.5, -12)},
+						{"type": "spider", "pos": Vector3(6, 0.5, 14)},
+					]},
+				]},
 		],
 		"streets": true,
 		# EXPANSION PASS (2× area): the GOLIATH's plaza, the boss set-piece and

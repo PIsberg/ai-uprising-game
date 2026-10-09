@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Boss holds (TITAN, GOLIATH)**: the two longest holds in the campaign (45 s and 40 s) had no mid-hold events, with the boss as the only pressure. Each now has two light add waves (6 and 5 bodies) and a health vent away from the fight, so resupply is a run across the arena. The adds are kept light so the boss stays the fight (#113). `survive_waves_probe` no longer exempts them.
 - **First Contact (The Hollow)**: during the survive hold the Hollow overflows. Eleven seconds in, both acid channels widen for the rest of the hold (a 3 s warning, then four beds rise along the channels), squeezing the fight into the band between them and swallowing the beacon yard you were standing in. The acid drains when the hold is won. `flood_surge_probe`.
 - **Skybridge Uplink**: the booster used to be a second stand-in-the-ring hold, the same verb as the uplink itself. It is now a 5 s hack that starts the climax. The jamming answers the broadcast: a signal storm rolls in (the fog closes toward magenta and rain is raised for it), and three waves come for the booster during a 25 s "keep the broadcast alive" hold. `survive_waves_probe`, `weather_shift_probe`.
 - **Relay Node 9 (hivemind)**: each mesh relay now has two hive posted beside it, so the beacon you plant on a relay has to strip its guards too. The level's roster measured 280 on `difficulty_curve` at slot 20, against 409-499 for its late-act neighbours; it is now 336.

@@ -21,8 +21,6 @@ extends Node3D
 ## must author waves.
 const EXEMPT := {
 	"convoy": "the ride's own boarder/flyer director is the escalation (convoy_ride.gd)",
-	"titan": "boss fight: TITAN is the pressure during the hold",
-	"suburb_boss": "boss fight: GOLIATH is the pressure during the hold",
 }
 
 const AIR_Y := 2.5
