@@ -85,6 +85,8 @@ res://tests/scanner_probe.tscn
 res://tests/escape_probe.tscn
 # Hazard surges warn, rise, spare high decks, reset on death, drain on completion.
 res://tests/flood_surge_probe.tscn
+# Jam-shielded relays only take damage inside a jam zone; hivemind stages its PRIME behind them.
+res://tests/jam_relay_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).

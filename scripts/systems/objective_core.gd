@@ -1,5 +1,6 @@
 class_name ObjectiveCore
 extends StaticBody3D
+# @lat: [[level-system#Jam-Shielded Relays]]
 ## A shootable objective device (reactor / mainframe core). Has its own
 ## Damageable; when destroyed it completes its level task and erupts in a big
 ## explosion. Built entirely in code, glowing so it's easy to spot. Sits on
@@ -8,6 +9,13 @@ extends StaticBody3D
 @export var task_id: String = "core"
 @export var max_health: float = 220.0
 @export var core_color: Color = Color(1.0, 0.35, 0.2)
+## Mesh-shielded (hivemind's relays): a shield bubble makes the core immune
+## until a jam zone (jam_zone.gd) covers it, the same rule as a hive unit's
+## shield. A JamZone only detects the enemy layer and the core sits on the
+## world layer, so the core measures its own distance to live zones instead.
+## Only author it on a level that hands the player the jammer ("jammer" def),
+## or the core cannot be destroyed: tests/jam_relay_probe enforces that.
+@export var jam_shielded: bool = false
 
 const EXPLOSION := preload("res://scenes/fx/grenade_explosion.tscn")
 
@@ -18,6 +26,11 @@ var _core_mat: StandardMaterial3D
 var _light: OmniLight3D
 var _ring_a: MeshInstance3D
 var _ring_b: MeshInstance3D
+var _shield: MeshInstance3D
+var _shield_mat: StandardMaterial3D
+var _shield_flare: float = 0.0
+## True while a jam zone covers the core (always true when not jam_shielded).
+var exposed: bool = true
 
 func _ready() -> void:
 	collision_layer = 1
@@ -30,6 +43,50 @@ func _ready() -> void:
 	hp.max_health = max_health
 	add_child(hp)
 	hp.died.connect(_on_destroyed)
+	if jam_shielded:
+		_build_shield()
+		_update_shield(0.0)
+
+## The mesh shield: an additive bubble over the orb, cyan like a hive unit's.
+func _build_shield() -> void:
+	_shield = MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 1.5
+	sm.height = 3.0
+	_shield_mat = StandardMaterial3D.new()
+	_shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_shield_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_shield_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_shield_mat.albedo_color = Color(0.3, 0.7, 1.0, 0.16)
+	_shield_mat.emission_enabled = true
+	_shield_mat.emission = Color(0.35, 0.75, 1.0)
+	_shield_mat.emission_energy_multiplier = 0.5
+	sm.material = _shield_mat
+	_shield.mesh = sm
+	_shield.position = Vector3(0, 1.3, 0)
+	_shield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_shield)
+
+func _in_jam() -> bool:
+	var c := global_position + Vector3(0, 1.3, 0)
+	for z in get_tree().get_nodes_in_group("jam_zone"):
+		if is_instance_valid(z) and (z as Node3D).global_position.distance_to(c) <= float(z.get("radius")) + 0.5:
+			return true
+	return false
+
+func _update_shield(delta: float) -> void:
+	exposed = _in_jam()
+	hp.invulnerable = not exposed
+	_shield_flare = maxf(0.0, _shield_flare - delta * 3.0)
+	if _shield:
+		_shield.visible = not exposed
+		_shield_mat.albedo_color.a = 0.16 + 0.3 * _shield_flare
+		_shield_mat.emission_energy_multiplier = 0.5 + 2.5 * _shield_flare
+
+## Damageable calls this when a hit lands on the closed shield.
+func notify_shield_hit(_source = null) -> void:
+	_shield_flare = 1.0
+	GameState.teach_once("jam_relay", "The relay is mesh-shielded. Plant a jam beacon on it, then shoot.")
 
 func _build_visual() -> void:
 	# Housing — a dark armoured plinth (short, so the core orb sits exposed on top).
@@ -117,6 +174,8 @@ func _build_visual() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if jam_shielded and not _dead:
+		_update_shield(delta)
 	if _core_mat:
 		_core_mat.emission_energy_multiplier = 4.0 + sin(_t * 4.0) * 1.5
 	if _light:
