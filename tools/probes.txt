@@ -83,6 +83,8 @@ res://tests/firewall_probe.tscn
 res://tests/scanner_probe.tscn
 # Escape countdowns burn a stray player, and every authored escape route fits its clock.
 res://tests/escape_probe.tscn
+# Optional bonus objectives win, pay once, lose for good, and never seal the exit.
+res://tests/bonus_objective_probe.tscn
 # Hazard surges warn, rise, spare high decks, reset on death, drain on completion.
 res://tests/flood_surge_probe.tscn
 # Jam-shielded relays only take damage inside a jam zone; hivemind stages its PRIME behind them.

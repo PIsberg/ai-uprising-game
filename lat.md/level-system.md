@@ -74,6 +74,16 @@ An `escape` task turns a level's last stage into a timed run: the purge clock st
 * Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
 * `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
 
+## Bonus Objectives
+<!-- lat: { "require-code-mention": true } -->
+A level's `bonus` is an optional challenge that pays extra score (`BonusObjective`). It never touches the exit lock.
+
+* It lives in `GameState.level_bonus`, not `level_tasks`, so a lost bonus cannot seal a level and the mission-arc and task probes never see it.
+* It stays live until the level's tasks are all done (won, `score` paid once) or the player breaks its rule (lost for the rest of the level; a death does not give it back).
+* Kinds: `ghost` (trip no vision-scanner alarm, on the five scanner levels) and `dry` (take no damage from a hazard bed, floods included, on the six levels where hazards are central).
+* The HUD appends it to the checklist: ★ live, ✔ won, ✖ lost. Winning or losing it toasts.
+* `tests/bonus_objective_probe` covers winning, paying once, losing for good, the exit staying open, a non-hazard hit as the control for `dry`, the authoring rules (ghost needs scanners, dry needs beds) and the hooks on built levels.
+
 ## Jam-Shielded Relays
 <!-- lat: { "require-code-mention": true } -->
 A `destroy_core` task with `jam_shielded` is immune until one of the player's jam zones covers it, the same rule as a hive unit's shield (`ObjectiveCore.jam_shielded`).

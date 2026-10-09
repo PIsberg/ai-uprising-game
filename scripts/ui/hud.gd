@@ -1495,6 +1495,12 @@ func _render_objective() -> void:
 		if not t["done"] and not t.get("staged", false) and t.get("goal", 0.0) > 0.0:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
+	# The optional bonus rides at the end of the checklist: ★ live, ✔ won, ✖ lost.
+	var b: Dictionary = GameState.level_bonus
+	if not b.is_empty():
+		var st: String = b.get("state", "live")
+		var bg: String = {"won": "✔", "failed": "✖"}.get(st, "★")
+		parts.append("%s %s: %s" % [bg, tr("BONUS"), tr(String(b.get("label", "")))])
 	objective_label.text = "   ".join(PackedStringArray(parts))
 
 ## Per-killer coaching for the death screen: the lesson that would have saved

@@ -39,6 +39,10 @@ func _labels() -> Dictionary:
 							var s: String = (w.get(key, {}) as Dictionary).get(k, "")
 							if s != "":
 								out[s] = id
+		# The optional bonus objective's label (HUD checklist + its toasts).
+		var bl: String = (def.get("bonus", {}) as Dictionary).get("label", "")
+		if bl != "":
+			out[bl] = id
 		for fw in def.get("firewalls", []):
 			if fw is Dictionary and fw.get("label", "") != "":
 				out[fw["label"]] = id
