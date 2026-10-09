@@ -1989,6 +1989,32 @@ const CARRY_SPEED_MULT := 0.72
 func reset_tasks() -> void:
 	level_tasks.clear()
 	carrying = false
+	level_bonus = {}
+	tasks_changed.emit()
+
+# ---------- optional bonus objective (BonusObjective) ----------
+## A level's optional challenge. Deliberately NOT in level_tasks: it never counts
+## toward the exit lock. {label, score, state: "live" | "won" | "failed"}; empty
+## when the level authors none.
+var level_bonus: Dictionary = {}
+
+func set_bonus(label: String, score_value: int) -> void:
+	level_bonus = {"label": label, "score": score_value, "state": "live"}
+	tasks_changed.emit()
+
+func bonus_win() -> void:
+	if level_bonus.get("state", "") != "live":
+		return
+	level_bonus["state"] = "won"
+	add_score(int(level_bonus.get("score", 0)))
+	skirmish_event.emit("BONUS COMPLETE", String(level_bonus.get("label", "")))
+	tasks_changed.emit()
+
+func bonus_fail() -> void:
+	if level_bonus.get("state", "") != "live":
+		return
+	level_bonus["state"] = "failed"
+	skirmish_event.emit("BONUS LOST", String(level_bonus.get("label", "")))
 	tasks_changed.emit()
 
 ## `goal` > 0 gives the task a progress meter (e.g. shards collected, seconds

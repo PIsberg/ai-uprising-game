@@ -267,6 +267,7 @@ func _ready() -> void:
 	_build_stars(def)
 	_optimize_small_decor()
 	_build_tasks(def)
+	_build_bonus(def)
 	_build_exit(def)
 	_build_weapon_pickup(def)
 	_build_pickups(def)
@@ -4499,6 +4500,19 @@ func _register_task_entry(t: Dictionary) -> void:
 		"escape":
 			# No goal meter: the countdown lives in the label (EscapeZone).
 			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
+
+## The level's optional challenge (def "bonus": {kind, label, score?}). Never in
+## the exit lock: see BonusObjective.
+func _build_bonus(def: Dictionary) -> void:
+	var b: Dictionary = def.get("bonus", {})
+	if b.is_empty():
+		return
+	var bo := BonusObjective.new()
+	bo.name = "BonusObjective"
+	bo.kind = String(b.get("kind", "ghost"))
+	bo.label = String(b.get("label", ""))
+	bo.score = int(b.get("score", 500))
+	add_child(bo)
 
 ## Spawn the task's world objects / hooks — the stage going "live".
 func _activate_task(t: Dictionary) -> void:

@@ -1093,6 +1093,8 @@ static func _frostbreak() -> Dictionary:
 static func _neon() -> Dictionary:
 	return {
 		"name": "Neon Arcade",
+		# Optional challenge (BonusObjective): never trip a scanner alarm.
+		"bonus": {"kind": "ghost", "label": "Trip no security camera", "score": 500},
 		"objective": "Clear the arcade, hold the broadcast booth and reach the exit ramp",
 		# Clear the district AND hold a capture zone for 14s under fire — you have to
 		# stand your ground in the open, not just sprint to the far corner.
@@ -1519,6 +1521,8 @@ static func _sublevel() -> Dictionary:
 static func _crucible() -> Dictionary:
 	return {
 		"name": "The Crucible — Foundry Floor",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Survive the foundry floor and reach the pour-gate",
 		# The gauntlet: claim two forge rings, each waking the next batch off
 		# the line, then OVERLOAD the crucible heart and run. The third act used
@@ -1956,6 +1960,8 @@ static func _range() -> Dictionary:
 static func _overseer() -> Dictionary:
 	return {
 		"name": "Skyhold Command — OVERSEER",
+		# Optional challenge (BonusObjective): never trip a scanner alarm.
+		"bonus": {"kind": "ghost", "label": "Trip no security camera", "score": 500},
 		"objective": "Destroy the OVERSEER gunship and seize the command deck",
 		"tasks": [
 			{"type": "kill_all"},
@@ -2192,6 +2198,8 @@ static func _overseer() -> Dictionary:
 static func _alien() -> Dictionary:
 	return {
 		"name": "First Contact — The Hollow",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Sever the off-world beacon and survive the welcoming party",
 		"tasks": [
 			{"type": "kill_all"},
@@ -3107,6 +3115,8 @@ static func _uplink() -> Dictionary:
 static func _assembly() -> Dictionary:
 	return {
 		"name": "The Assembly — Robotics Plant",
+		# Optional challenge (BonusObjective): never trip a scanner alarm.
+		"bonus": {"kind": "ghost", "label": "Trip no security camera", "score": 500},
 		"objective": "Overload the assembly reactor and get out before it melts down",
 		# No kill_all: the arc ends on the meltdown run, and an unwoken straggler
 		# would keep the exit sealed while the clock burns (see the grok note).
@@ -3343,6 +3353,8 @@ static func _assembly() -> Dictionary:
 static func _mistral() -> Dictionary:
 	return {
 		"name": "Mistral Cryo-Core",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Vent BOTH coolant pumps to expose the core, then destroy it and reach the cyan beacon",
 		"tasks": [
 			# The reactor sits behind cryo shielding — vent both coolant pumps to
@@ -3559,6 +3571,8 @@ static func _mistral() -> Dictionary:
 static func _gpt() -> Dictionary:
 	return {
 		"name": "OpenAI Foundry — GPT Core",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Hack the Foundry, exfiltrate the weights, then survive the core overload to the beacon",
 		"music": "music_techno",
 		# A pure mission arc: hack -> exfiltrate -> hold. Deliberately NO "kill_all".
@@ -4419,6 +4433,8 @@ static func _claude() -> Dictionary:
 static func _grok() -> Dictionary:
 	return {
 		"name": "xAI Black-Site — GROK",
+		# Optional challenge (BonusObjective): never trip a scanner alarm.
+		"bonus": {"kind": "ghost", "label": "Trip no security camera", "score": 500},
 		"objective": "Destroy the GROK mainframe and get out before the purge",
 		# No kill_all: the arc ends on a timed escape, and a trigger-gated
 		# straggler nobody woke would keep the exit sealed while the purge burns
@@ -4671,6 +4687,8 @@ static func _grok() -> Dictionary:
 static func _suburb() -> Dictionary:
 	return {
 		"name": "Maple Grove Estates — Overrun",
+		# Optional challenge (BonusObjective): never trip a scanner alarm.
+		"bonus": {"kind": "ghost", "label": "Trip no security camera", "score": 500},
 		"objective": "Clear Maple Grove, cross the canal and hold the evac pickup",
 		"tasks": [
 			{"type": "kill_all"},
@@ -5175,6 +5193,8 @@ static func _hazard_platforms(col: Color) -> Array:
 static func _lava_world() -> Dictionary:
 	return {
 		"name": "Vulcan Forge — The Molten Sea",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
 		"music": "music_lava",
 		"sign": "VULCAN FORGE — DO NOT FALL",
@@ -5386,6 +5406,8 @@ static func _lava_world() -> Dictionary:
 static func _water_world() -> Dictionary:
 	return {
 		"name": "Tidecore Basin — The Flooded Reactor",
+		# Optional challenge (BonusObjective): take no hazard damage, floods included.
+		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
 		"objective": "Cross the gantries over the flooded reactor and reach the lift",
 		"music": "music_water",
 		"sign": "TIDECORE BASIN — DEEP WATER",
