@@ -74,6 +74,17 @@ An `escape` task turns a level's last stage into a timed run: the purge clock st
 * Never pair it with `kill_all`: an unwoken trigger-gated enemy would keep the exit sealed while the purge burns.
 * `tests/escape_probe` checks the clock, the purge and extraction, and that every authored route runs inside 60% of its clock at sprint speed.
 
+## Hazard Surges
+<!-- lat: { "require-code-mention": true } -->
+A survive wave's `flood` raises hazard beds mid-hold, so the hold changes the ground under the player instead of only adding enemies (`FloodSurge`).
+
+* Each bed uses the def's `lava` spec (`pos`, `size`, `dmg`, `water`, `color`); `pos.y` is the height the fluid rises to, so a bed can drown decks as well as floor.
+* A warning comes first: pulsing sheets mark the footprint at flood height for `warn` seconds (default 3) with a HUD alert (`warn_title`, `warn_text`). Then each bed rises 0.6 m into place over `rise` seconds as a real `LavaHazard` with no shoreline plane (`shore = false`).
+* Completing the hold drains the beds (they stop burning at once, then sink and free), so the walk to the exit and the completion checkpoint are dry. `drain_title`/`drain_text` announce it.
+* Death clears the beds at once and re-runs the warning when play resumes: checkpoint respawn is in place and may be on the flooded ground.
+* Vulcan Forge (lava_world) floods its two ground cross-lanes and the fight moves onto the catwalks; Tidecore Basin (water_world) raises the tide over the whole low tier and the reactor cap is the last dry deck.
+* `tests/flood_surge_probe` covers the warning, the rise, a dry deck over a burning floor, the death reset and the drain, then every authored flood (scaling, timing, no overlapping beds, a dry exit and decks) and the built levels.
+
 ## Haul Payload
 <!-- lat: { "require-code-mention": true } -->
 A `haul` task is a heavy core that has to be carried, on foot, from `pos` into an uplink ring at `to`.

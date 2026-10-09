@@ -23,6 +23,10 @@ extends Area3D
 ## gentler "you're drowning, get out" tick. Same carve-navmesh + push-out-of-it
 ## machinery; just a different element. Set by the builder for water levels.
 @export var water: bool = false
+## The flush shoreline band (scorched rock / damp bed) laid around the bed on the
+## floor. Off for a FloodSurge bed: it rises over ground and decks that already
+## have their own surface, and its band would z-fight the pools' own margins.
+@export var shore: bool = true
 
 const PLAYER_LAYER := 2
 const ENEMY_LAYER := 4
@@ -105,7 +109,8 @@ func _build_surface() -> void:
 	# the ground rather than molten rock sunk into it.
 	var glow_col := Color(hazard_color.r, hazard_color.g, hazard_color.b) if recolor \
 		else Color(0.5, 0.12, 0.02)
-	_build_margin(1.5, Color(0.055, 0.04, 0.038, 1.0), glow_col, 0.55, 1.0)
+	if shore:
+		_build_margin(1.5, Color(0.055, 0.04, 0.038, 1.0), glow_col, 0.55, 1.0)
 
 ## The flush shoreline band around a bed: scorched rock for lava, a damp
 ## darkened margin for water. Lies flat against the floor and fades out over
@@ -199,7 +204,8 @@ func _build_water_surface() -> void:
 	# plane that is solid under the pool and fades out past it has no edge to
 	# expose. Replaces the old raised basin BOX, whose 0.5 m sides poked out
 	# around the pool and framed it as a tray set down on the floor.
-	_build_margin(1.4, Color(0.025, 0.05, 0.08, 1.0), tint, 0.0, 0.35)
+	if shore:
+		_build_margin(1.4, Color(0.025, 0.05, 0.08, 1.0), tint, 0.0, 0.35)
 
 ## A pulsing amber danger frame around the bed perimeter — the universal "hazard,
 ## do not enter" cue. Makes a benign-looking coolant / acid / water pool read as
