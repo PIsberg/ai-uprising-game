@@ -2831,8 +2831,35 @@ static func _uplink() -> Dictionary:
 				"reinforce": [{"type": "seeker", "count": 3, "pos": Vector3(0, 0, 8)}]},
 			# The counter-signal is too weak to clear the jamming — run the relay chain.
 			{"type": "key", "after": "uplink", "pos": Vector3(-18, 0, 14), "label": "Recover the signal booster"},
-			{"type": "hold_zone", "id": "boost", "after": "key", "pos": Vector3(16, 0, -16), "seconds": 8.0, "radius": 4.5,
+			# The booster used to be a second stand-in-the-ring hold, the same
+			# verb as the uplink. It is now a 5 s hack that STARTS the climax:
+			# the jamming answers the broadcast, a signal storm rolls in (fog
+			# x2 toward magenta, rain raised for it) and three waves come for
+			# the booster while the counter-signal pushes through. Wave spawns
+			# reuse roster spots of the same type. tests/survive_waves_probe,
+			# tests/weather_shift_probe.
+			{"type": "hack_terminal", "id": "boost", "after": "key", "pos": Vector3(16, 0, -16), "seconds": 5.0,
 				"color": Color(0.6, 1.0, 0.9), "label": "Boost the counter-signal"},
+			{"type": "survive", "id": "broadcast", "after": "boost", "seconds": 25.0, "label": "Keep the broadcast alive",
+				"waves": [
+					{"at": 1.0, "label": "SIGNAL STORM — RAPTOR SWEEP", "enemies": [
+						{"type": "raptor", "count": 2, "pos": Vector3(8, 3.5, -16)},
+						{"type": "seeker", "count": 3, "pos": Vector3(16, 2.5, -4)},
+					], "weather": {"fog_mult": 2.0, "fog_color": Color(0.45, 0.3, 0.6), "fade": 3.0, "gust": 1.6,
+						"particles": "rain",
+						"warn_title": "SIGNAL STORM", "warn_text": "The jamming is answering the broadcast. The storm is closing in.",
+						"clear_title": "STORM PASSING", "clear_text": "The counter-signal is through."}},
+					{"at": 10.0, "label": "SECOND WAVE — JAMMER CREW", "enemies": [
+						{"type": "android", "pos": Vector3(12, 0.5, -12)},
+						{"type": "gunner", "pos": Vector3(-14, 0.5, -12)},
+						{"type": "enforcer", "pos": Vector3(-7, 0.5, -6)},
+					]},
+					{"at": 18.0, "label": "THE STORM'S EYE", "enemies": [
+						{"type": "roller", "pos": Vector3(7, 0.5, 6)},
+						{"type": "android", "pos": Vector3(-12, 0.5, 6)},
+						{"type": "drone", "count": 2, "pos": Vector3(10, 2.5, 10)},
+					]},
+				]},
 			{"type": "kill_all"},
 		],
 		"music": "music_grok",
