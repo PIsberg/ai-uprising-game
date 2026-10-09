@@ -609,6 +609,7 @@ func _build_environment(def: Dictionary) -> void:
 			omni.distance_fade_length = 14.0
 			light = omni
 		add_child(light)
+		light.add_to_group("level_light") # a "weather" blackout cuts these (WeatherShift)
 		# Every light gets a visible SOURCE instead of hanging disembodied:
 		# ceiling luminaires indoors, slim floodlight pylons outdoors. An
 		# outdoor god-ray authored straight over an objective opts out with
@@ -722,6 +723,7 @@ func _add_light_fixture(light_pos: Vector3, color: Color) -> void:
 	pm.emission = color
 	pm.emission_energy_multiplier = 2.4
 	pb.material = pm
+	panel.add_to_group("level_light") # the lit panel goes dark with its light in a blackout
 	panel.mesh = pb
 	panel.position = Vector3(light_pos.x, WALL_HEIGHT - 0.13, light_pos.z)
 	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -1005,6 +1007,8 @@ func _build_gi(def: Dictionary) -> void:
 		vgi.size = Vector3(fs.x + 4.0, 8.0, fs.y + 4.0)
 		vgi.position = Vector3(0, 4, 0)
 		add_child(vgi)
+		# The bake carries the luminaires' bounce: a blackout must cut it with them.
+		vgi.add_to_group("level_light")
 		# The headless/dummy renderer cannot bake; only bake in the real game.
 		if DisplayServer.get_name() != "headless":
 			vgi.bake.call_deferred()
@@ -4500,6 +4504,11 @@ func _register_task_entry(t: Dictionary) -> void:
 func _activate_task(t: Dictionary) -> void:
 	var id := _task_id(t)
 	GameState.unstage_task(id)
+	# A stage can turn the level's own lighting and weather against the player
+	# for as long as it runs (same spec as a survive wave's "weather"): it
+	# eases back when this task completes.
+	if t.has("weather"):
+		_start_weather.call_deferred(t["weather"], id)
 	match t.get("type", ""):
 		"kill_quota":
 			# Count any kill from activation on; auto-completes at the goal, so
@@ -4764,6 +4773,9 @@ func _start_weather(w: Dictionary, task_id: String) -> void:
 		ws.weather = get_node_or_null("Weather")
 		ws.owns_weather = ws.weather != null
 	ws.fog_mult = float(w.get("fog_mult", 4.0))
+	ws.blackout = bool(w.get("blackout", false))
+	ws.ambient_mult = float(w.get("ambient_mult", 1.0))
+	ws.exposure_mult = float(w.get("exposure_mult", 1.0))
 	ws.fade = float(w.get("fade", 3.0))
 	ws.gust = float(w.get("gust", 1.0))
 	if w.has("fog_color"):

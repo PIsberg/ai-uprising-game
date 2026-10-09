@@ -25,6 +25,8 @@ func _ready() -> void:
 		var flood: Dictionary = {}
 		var weather: Dictionary = {}
 		for t in def.get("tasks", []):
+			if t.has("weather"):
+				weather = (t["weather"] as Dictionary).duplicate(true)
 			for w in t.get("waves", []):
 				if w.has("flood"):
 					flood = (w["flood"] as Dictionary).duplicate(true)
@@ -51,8 +53,14 @@ func _ready() -> void:
 		cam.current = true
 		var ex: Vector3 = def.get("exit", Vector3.ZERO)
 		var sp: Vector3 = def.get("spawn", Vector3.ZERO)
-		cam.global_position = Vector3(ex.x * 0.8 - sp.x * 0.3, 14.0, ex.z * 0.8 - sp.z * 0.3)
-		cam.look_at(Vector3(sp.x * 0.25, 0.0, sp.z * 0.25), Vector3.UP)
+		if def.get("open_sky", false):
+			cam.global_position = Vector3(ex.x * 0.8 - sp.x * 0.3, 14.0, ex.z * 0.8 - sp.z * 0.3)
+			cam.look_at(Vector3(sp.x * 0.25, 0.0, sp.z * 0.25), Vector3.UP)
+		else:
+			# Interiors: from in front of the spawn at head height, toward the
+			# centre. 14 m up frames the ceiling; the exit side frames the portal.
+			cam.global_position = Vector3(sp.x * 0.7, 2.2, sp.z * 0.7)
+			cam.look_at(Vector3(0, 1.2, 0), Vector3.UP)
 		GameState.current_state = GameState.State.PLAYING
 		await _snap(out_dir, "%s_0_before" % id)
 		if not flood.is_empty():
