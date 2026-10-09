@@ -13,6 +13,7 @@ extends Node
 ## Kinds:
 ##   ghost: trip no vision-scanner alarm (levels with "scanners").
 ##   dry:   take no damage from a hazard bed, flood included (levels with "lava").
+##   deathless: finish without dying once (the boss levels).
 
 @export var kind: String = "ghost"
 @export var label: String = ""
@@ -31,6 +32,8 @@ func _hook() -> void:
 			for sc in get_tree().get_nodes_in_group("scanner"):
 				if sc.has_signal("alarmed"):
 					sc.alarmed.connect(_on_broken)
+		"deathless":
+			GameState.player_died.connect(_on_broken)
 		"dry":
 			var p := get_tree().get_first_node_in_group("player")
 			if p:

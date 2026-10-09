@@ -25,6 +25,7 @@ func _ready() -> void:
 	GameState.current_state = GameState.State.PLAYING
 	await _unit_ghost()
 	await _unit_dry()
+	await _unit_deathless()
 	_campaign()
 	await _live()
 	GameState.current_state = prev_state
@@ -117,6 +118,26 @@ func _unit_dry() -> void:
 	GameState.reset_tasks()
 	await _frames(2)
 
+func _unit_deathless() -> void:
+	print("unit deathless:")
+	GameState.reset_tasks()
+	GameState.register_task("t", "Task", 0.0)
+	var bo := BonusObjective.new()
+	bo.kind = "deathless"
+	bo.label = "Deathless"
+	add_child(bo)
+	await _frames(3)
+	_check(_bonus_state() == "live", "a deathless bonus starts live")
+	var deaths: int = GameState.level_deaths
+	GameState.on_player_died("probe")
+	GameState.current_state = GameState.State.PLAYING
+	GameState.level_deaths = deaths
+	await _frames(2)
+	_check(_bonus_state() == "failed", "one death loses it")
+	bo.queue_free()
+	GameState.reset_tasks()
+	await _frames(2)
+
 func _campaign() -> void:
 	print("campaign:")
 	var kinds := {}
@@ -127,12 +148,14 @@ func _campaign() -> void:
 			continue
 		var k := String(b.get("kind", ""))
 		kinds[k] = kinds.get(k, 0) + 1
-		_check(["ghost", "dry"].has(k), "%s: bonus kind '%s' is known" % [id, k])
+		_check(["ghost", "dry", "deathless"].has(k), "%s: bonus kind '%s' is known" % [id, k])
 		_check(String(b.get("label", "")) != "", "%s: bonus has a label" % id)
 		if k == "ghost":
 			_check(not (def.get("scanners", []) as Array).is_empty(), "%s: a ghost bonus needs scanners to avoid" % id)
 		if k == "dry":
 			_check(not (def.get("lava", []) as Array).is_empty(), "%s: a dry bonus needs hazard beds to avoid" % id)
+		if k == "deathless":
+			_check(LevelDefs.level_is_boss(id), "%s: deathless is the boss levels' bonus" % id)
 	_check(kinds.get("ghost", 0) >= 1 and kinds.get("dry", 0) >= 1, "campaign authors both kinds (%s)" % kinds)
 
 func _live() -> void:
