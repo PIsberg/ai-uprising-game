@@ -507,10 +507,10 @@ func set_quality(q: int) -> void:
 
 ## The tier this process started at. Dropping below it mid-session keeps most of
 ## the higher tier's GPU cost until a restart (#156: neon at HIGH ~125 ms when the
-## game started at HIGH, ~220 ms when it started at ULTRA, Intel Arc A370M); no
-## node, setting or feature toggle explains it, so it looks like engine/driver
-## state fixed by the first rendering configuration. Until that is found, the
-## menus offer a restart.
+## game started at HIGH, ~220 ms when it started at ULTRA, Intel Arc A370M). The
+## higher tier's freed video memory stays in the Vulkan allocator's blocks, which
+## keeps the process over its VRAM budget, so Windows pages part of it to system
+## memory (docs/PERF_NOTES.md). Only a restart compacts it, so the menus offer one.
 var launch_quality: int = Quality.HIGH
 
 func restart_recommended() -> bool:

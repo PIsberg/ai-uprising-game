@@ -19,7 +19,9 @@ func _ready() -> void:
 ## SHOOTER as source so kills pay score, which meant a directional defence had no
 ## way to tell a grenade at its back from the thrower standing in front of it.
 ## Null for hitscan and contact damage, where source's own position is the answer.
-func apply_damage(amount: float, source = null, crit: bool = false, origin = null) -> void:
+## `ignore_armor`: damage that burns through plating (THERMITE ticks). Flat armour
+## would otherwise swallow every small tick whole.
+func apply_damage(amount: float, source = null, crit: bool = false, origin = null, ignore_armor: bool = false) -> void:
 	# A stored shooter (a projectile/explosion's source) can be freed before its
 	# hit lands. Passing a freed OR non-Node object to a typed `Node` param crashes
 	# Godot at the call itself ("Cannot convert argument from Object to Object" when
@@ -56,7 +58,7 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 		amount = parent.modify_incoming_damage(amount, source, origin)
 		if amount <= 0.0:
 			return
-	var mitigated := maxf(0.0, amount - armor)
+	var mitigated := maxf(0.0, amount if ignore_armor else amount - armor)
 	current_health = maxf(0.0, current_health - mitigated)
 	var killed := current_health <= 0.0
 	damaged.emit(mitigated, source)

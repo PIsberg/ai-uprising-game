@@ -5,6 +5,7 @@ extends Control
 @onready var _settings: VBoxContainer = $Center/VBox/SettingsPanel
 @onready var _controls: VBoxContainer = $Center/VBox/ControlsPanel
 @onready var _continue: Button = $Center/VBox/MainButtons/Continue
+@onready var _daily: Button = $Center/VBox/MainButtons/Daily
 @onready var _grid: GridContainer = $Center/VBox/SettingsPanel/Grid
 @onready var _graphics_label: Label = $Center/VBox/SettingsPanel/Grid/GraphicsRow/Graphics
 @onready var _gfx_down: Button = $Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxDown
@@ -13,7 +14,9 @@ extends Control
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	GameState.end_daily_op() # back in the menu means no op is running, however it was left
 	GameState.set_state(GameState.State.MENU)
+	_refresh_daily_button()
 	# Continue is only offered when a checkpoint exists, and says WHERE the run
 	# resumes (level title, campaign position, difficulty) so a returning player
 	# knows what they are stepping back into before they commit.
@@ -649,6 +652,25 @@ func _on_range_pressed() -> void:
 ## Endless wave-siege mode; like the range, runs outside the campaign flow.
 func _on_horde_pressed() -> void:
 	GameState.load_level("res://scenes/levels/level_horde.tscn")
+
+## Today's Daily Op (#172): one seeded level + directive on HARD, outside the campaign.
+func _on_daily_pressed() -> void:
+	GameState.start_daily_op()
+
+## The button names today's op, and once it is cleared the day's best and the streak.
+func _refresh_daily_button() -> void:
+	var op: Dictionary = GameState.daily_op_for(GameState.today_string())
+	if op.is_empty():
+		_daily.visible = false
+		return
+	var rec: Dictionary = GameState.daily_record()
+	var text := "%s  ·  %s  ·  %s" % [tr("Daily Op"), tr(String(op["title"])), tr(String(op["directive_name"]))]
+	if bool(rec["cleared_today"]):
+		text = "✔ " + text + "  ·  " + (tr("Best %s") % str(rec["best"]))
+	if int(rec["streak"]) > 1:
+		text += "  ·  " + (tr("%d-day streak") % int(rec["streak"]))
+	_daily.text = text
+	_daily.tooltip_text = tr(String(op["directive_desc"]))
 
 func _on_settings_pressed() -> void:
 	_show_panel(_settings)

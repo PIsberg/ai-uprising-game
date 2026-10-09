@@ -1,8 +1,9 @@
 extends Node
 ## Lowering the quality tier mid-session keeps most of the higher tier's GPU cost
 ## until the game restarts (#156: neon at HIGH costs ~125 ms after starting at
-## HIGH, ~220 ms after starting at ULTRA, Intel Arc A370M). The root cause is still
-## open; this probes the mitigation:
+## HIGH, ~220 ms after starting at ULTRA, Intel Arc A370M): the higher tier's
+## allocator blocks keep the process over its VRAM budget (docs/PERF_NOTES.md), and
+## only a restart compacts them. This probes the restart offer:
 ## (1) GraphicsSettings.restart_recommended() is true only below the launch tier;
 ## (2) the main menu's Settings shows a "Restart to apply" button exactly then,
 ##     following the real quality stepper up and down.

@@ -4,7 +4,7 @@ extends Node3D
 ## (2) buy / fit / refit rules, projectile guns refused, save + load round trip;
 ## (3) each mod's effect, driven through the rifle's real hitscan path:
 ##     CHAIN ARC hurts a second robot for 35% (not one 20 m away), THERMITE burns
-##     30% over 3 s, RICOCHET bounces 60% off a wall into a robot, OVERRIDE turns a
+##     30% of every hit over 3 s through armour, RICOCHET bounces 60% off a wall into a robot, OVERRIDE turns a
 ##     robot dropped under 25%; mod damage never counts as a hit for accuracy, and
 ##     two procs inside PROC_INTERVAL_MS make one.
 ##   godot --headless --path . --audio-driver Dummy res://tests/weapon_mods_probe.tscn
@@ -12,6 +12,8 @@ extends Node3D
 const RIFLE := "res://scenes/weapons/rifle.tscn"
 const SHOTGUN := "res://scenes/weapons/shotgun.tscn"
 const PLASMA := "res://scenes/weapons/plasma.tscn"
+const ANDROID := "res://scenes/enemies/android.tscn"
+const GUNNER := "res://scenes/enemies/gunner.tscn" ## armour 4
 
 var ok := true
 
@@ -103,24 +105,62 @@ func _run() -> void:
 	_check("...not the one 22 m away", far.hp.current_health == far0)
 	_check("mod damage is not a hit for accuracy", GameState.stat_hits == hits0 + 1, "%d -> %d" % [hits0, GameState.stat_hits])
 	b0 = b.hp.current_health
+	var a0: float = a.hp.current_health
 	gun._do_hitscan(origin, dir)
+	var banked_hit: float = a0 - a.hp.current_health
 	_check("a second proc inside %d ms does nothing" % WeaponMods.PROC_INTERVAL_MS, b.hp.current_health == b0)
+	# ...but that hit is banked, not lost: the next proc arcs 35% of both. Before the
+	# bank, a gun firing faster than the interval arced about half its share.
+	# The proc limit is wall-clock ms (Time.get_ticks_msec), so wait in wall-clock ms:
+	# a 0.17 s create_timer made late in a long frame expired 31 ms later.
+	var until := Time.get_ticks_msec() + WeaponMods.PROC_INTERVAL_MS + 40
+	while Time.get_ticks_msec() < until:
+		await get_tree().process_frame
+	a0 = a.hp.current_health
+	gun._do_hitscan(origin, dir)
+	var next_hit: float = a0 - a.hp.current_health
+	var carried: float = b0 - b.hp.current_health
+	var want_arc := (banked_hit + next_hit) * WeaponMods.ARC_FRACTION - b.hp.armor
+	_check("...its damage arcs with the next proc", absf(carried - want_arc) < 0.05,
+		"arc %.2f want %.2f (hits %.1f + %.1f)" % [carried, want_arc, banked_hit, next_hit])
 
+	# THERMITE, on an armoured gunner standing in front of `a`: the burn is 30% of
+	# the hit and burns through plating. It used to pay armour on every 0.5 s tick,
+	# so a rifle hit's 1-point ticks did nothing to any robot with armour >= 1.
 	_heal([a, b, far])
 	gun.mod_id = "thermite"
-	gun.mod_last_proc_ms = -100000
-	var a_before: float = a.hp.current_health
+	var tank := _robot(Vector3(0, 0, 6), GUNNER)
+	await _frames(3)
+	var armor: float = tank.hp.armor
+	var t0: float = tank.hp.current_health
+	gun.mod_last_proc_ms = -100000 # the ARC checks above just procced
 	gun._do_hitscan(origin, dir)
-	var hit_dmg: float = a_before - a.hp.current_health
-	var after_hit: float = a.hp.current_health
+	var raw: float = t0 - tank.hp.current_health + armor # what the round dealt before armour
+	var after_hit: float = tank.hp.current_health
 	for i in 18:
 		await get_tree().create_timer(0.2).timeout
-	var burned: float = after_hit - a.hp.current_health
-	# Each tick loses the chassis armour, so allow that much under the nominal total.
-	var want := hit_dmg * WeaponMods.BURN_FRACTION
-	var ticks := int(WeaponMods.BURN_TIME / WeaponMods.BURN_TICK)
-	_check("THERMITE burns %.0f%% of the hit over %.0f s" % [WeaponMods.BURN_FRACTION * 100.0, WeaponMods.BURN_TIME],
-		burned <= want + 0.01 and burned >= want - ticks * a.hp.armor - 0.01, "hit %.1f burn %.1f want %.1f" % [hit_dmg, burned, want])
+	var burned: float = after_hit - tank.hp.current_health
+	var want := raw * WeaponMods.BURN_FRACTION
+	_check("THERMITE burns %.0f%% of the hit over %.0f s, through armour %.0f" % [WeaponMods.BURN_FRACTION * 100.0, WeaponMods.BURN_TIME, armor],
+		armor > 0.0 and absf(burned - want) < 0.05, "hit %.1f burn %.2f want %.2f" % [raw, burned, want])
+	# Sustained fire: every hit adds its 30%. A refresh used to keep only the larger
+	# of the old and new totals, and a second hit inside PROC_INTERVAL_MS added nothing,
+	# so a fast gun burned 2-4% of its damage instead of 30%.
+	tank.hp.current_health = tank.hp.max_health
+	t0 = tank.hp.current_health
+	gun.mod_last_proc_ms = -100000
+	gun._do_hitscan(origin, dir)
+	gun._do_hitscan(origin, dir)
+	raw = t0 - tank.hp.current_health + 2.0 * armor
+	after_hit = tank.hp.current_health
+	for i in 18:
+		await get_tree().create_timer(0.2).timeout
+	burned = after_hit - tank.hp.current_health
+	want = raw * WeaponMods.BURN_FRACTION
+	_check("THERMITE: two hits inside %d ms burn 30%% of both" % WeaponMods.PROC_INTERVAL_MS,
+		absf(burned - want) < 0.05, "hits %.1f burn %.2f want %.2f" % [raw, burned, want])
+	tank.queue_free()
+	await _frames(2)
 
 	_heal([a, b, far])
 	gun.mod_id = "ricochet"
@@ -149,8 +189,8 @@ func _run() -> void:
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
 
-func _robot(pos: Vector3) -> EnemyBase:
-	var e: EnemyBase = (load("res://scenes/enemies/android.tscn") as PackedScene).instantiate()
+func _robot(pos: Vector3, scene: String = ANDROID) -> EnemyBase:
+	var e: EnemyBase = (load(scene) as PackedScene).instantiate()
 	# AI off, collision on: a disabled body is otherwise REMOVED from physics, and
 	# the rifle's ray would pass straight through it.
 	e.disable_mode = CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE

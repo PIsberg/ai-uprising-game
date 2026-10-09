@@ -9,7 +9,9 @@ extends RefCounted
 ## leech and OVERLOAD charge like any hit, but is not counted as a fresh hit, so
 ## accuracy and the AI Director's read stay honest. Procs are rate-limited per gun
 ## (PROC_INTERVAL_MS) so a shotgun's eight pellets, or a beam's ticks, fire one
-## proc instead of eight.
+## proc instead of eight. The limit thins the effects, not the damage: hits in
+## between are banked and the next proc carries them (_bank). THERMITE needs no
+## limit: a hit only adds to the burn already on the robot.
 
 const PROC_INTERVAL_MS := 120
 const ARC_FRACTION := 0.35
@@ -49,6 +51,19 @@ static func _ready_to_proc(w: Weapon, now: int) -> bool:
 	w.mod_last_proc_ms = now
 	return true
 
+## Add `dmg` to the gun's bank; when a proc is due, return everything banked
+## (and empty it), else 0. Without it a gun firing faster than one round per
+## PROC_INTERVAL_MS (rifle, tesla, arc coil, every shotgun pellet after the first)
+## arced or bounced about half its share: ARC on the rifle measured +18% against
+## +35% on the pistol (tests/mod_value_probe).
+static func _bank(w: Weapon, dmg: float, now: int) -> float:
+	w.mod_bank += dmg
+	if not _ready_to_proc(w, now):
+		return 0.0
+	var out := w.mod_bank
+	w.mod_bank = 0.0
+	return out
+
 ## `target` is the robot the round hit, `dmg` what that hit dealt.
 static func on_enemy_hit(w: Weapon, target: Node, hit_pos: Vector3, dmg: float) -> void:
 	if w.mod_id == "" or not _is_robot(target):
@@ -56,17 +71,20 @@ static func on_enemy_hit(w: Weapon, target: Node, hit_pos: Vector3, dmg: float) 
 	var now := Time.get_ticks_msec()
 	match w.mod_id:
 		"arc":
-			if _ready_to_proc(w, now):
-				_arc(w, target, hit_pos, dmg)
+			var banked := _bank(w, dmg, now)
+			if banked > 0.0:
+				_arc(w, target, hit_pos, banked)
 		"thermite":
-			if _ready_to_proc(w, now):
-				ignite(target, dmg * BURN_FRACTION, w.get_active_shooter())
+			ignite(target, dmg * BURN_FRACTION, w.get_active_shooter())
 		"override":
 			_override(w, target, now)
 
 ## Only RICOCHET reacts to a round that hit the world.
 static func on_world_hit(w: Weapon, hit_pos: Vector3, normal: Vector3, dir: Vector3, dmg: float) -> void:
-	if w.mod_id != "ricochet" or not _ready_to_proc(w, Time.get_ticks_msec()):
+	if w.mod_id != "ricochet":
+		return
+	var banked := _bank(w, dmg, Time.get_ticks_msec())
+	if banked <= 0.0:
 		return
 	var bounce := dir.bounce(normal).normalized()
 	var best: Node3D = null
@@ -92,7 +110,7 @@ static func on_world_hit(w: Weapon, hit_pos: Vector3, normal: Vector3, dir: Vect
 	var to_pos := best.global_position + Vector3.UP * 1.0
 	w._spawn_tracer(hit_pos, to_pos)
 	AudioBus.play_synth_at("impact_metal", hit_pos, -6.0, randf_range(1.3, 1.6))
-	GameState.apply_secondary_damage(_hp(best), dmg * RICOCHET_FRACTION, w.get_active_shooter())
+	GameState.apply_secondary_damage(_hp(best), banked * RICOCHET_FRACTION, w.get_active_shooter())
 
 static func _arc(w: Weapon, target: Node, hit_pos: Vector3, dmg: float) -> void:
 	var best: Node3D = null
@@ -128,8 +146,11 @@ static func _override(w: Weapon, e: Node, now: int) -> void:
 		w.mod_override_ms = now
 		GameState.note_hijack()
 
-## Set `target` burning for `total` damage over BURN_TIME. A fresh hit refreshes the
-## burn (and keeps the larger total) instead of stacking a second fire.
+## Add `total` damage to `target`'s burn. One fire per robot: a fresh hit pours its
+## share into the burn already there and restarts the BURN_TIME clock, so the burn
+## delivers 30% of every hit (it used to keep only the larger of the old and new
+## totals, which left a fast gun burning 2-4% of its damage). Ticks burn through
+## armour: flat plating swallowed a rifle hit's 1-point ticks whole.
 static func ignite(target: Node, total: float, source: Node) -> void:
 	if not is_instance_valid(target) or total <= 0.0:
 		return
@@ -146,14 +167,14 @@ static func ignite(target: Node, total: float, source: Node) -> void:
 class Burn extends Node3D:
 	## Counted in ticks, not seconds: a float countdown landed a 7th tick on the
 	## 3.0 s boundary about half the time, a 17% overburn.
-	var total := 0.0
+	var pool := 0.0 ## burn damage still to deliver
 	var ticks_left := 0
 	var tick := 0.0
 	var source: Node = null
 	var fx: CPUParticles3D
 
 	func light(amount: float, src: Node) -> void:
-		total = maxf(total if ticks_left > 0 else 0.0, amount)
+		pool = (pool if ticks_left > 0 else 0.0) + amount
 		ticks_left = int(round(WeaponMods.BURN_TIME / WeaponMods.BURN_TICK))
 		source = src
 		if fx == null:
@@ -187,10 +208,12 @@ class Burn extends Node3D:
 		if tick > 0.0:
 			return
 		tick += WeaponMods.BURN_TICK
+		var dmg := pool / ticks_left
+		pool -= dmg
 		ticks_left -= 1
 		var d: Node = get_parent().get_node_or_null("Damageable")
 		if d and d.has_method("is_alive") and d.is_alive():
 			var src = source if is_instance_valid(source) else null
-			GameState.apply_secondary_damage(d, total * WeaponMods.BURN_TICK / WeaponMods.BURN_TIME, src)
+			GameState.apply_secondary_damage(d, dmg, src, null, true)
 		if ticks_left <= 0 and fx:
 			fx.emitting = false

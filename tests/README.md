@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-300 probes total: **75** wired into the headless suite (`suite`), **82**
+302 probes total: **76** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -114,6 +114,7 @@ or GPU-timing probes; `--headless` renders these black).
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
+| daily_op_probe | Daily Op (#172): `daily_op_for` is deterministic per date and varies over 14 days (never a boss or the first level); the arsenal follows campaign pacing; best score and streak rules incl. month/leap boundaries; the real flow from a watcher under root: start today's op (HARD, its directive and arsenal, savegame.cfg byte-identical), clear it (DAILY OP COMPLETE + score on the win screen, records.cfg updated), Continue returns to the menu with the campaign state handed back and the button showing the clear. Never writes savegame.cfg; backs records.cfg up to disk first | suite |
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
 | settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
@@ -229,6 +230,7 @@ or GPU-timing probes; `--headless` renders these black).
 | menu_probe | Main menu scene exercises its `_ready` path | windowed |
 | menu_screenshot | Main menu captured | windowed |
 | mission_arc_probe | Every level def's task graph: unique ids, "after" refs resolve (no self-refs/cycles), positions inside floor, reinforcement types exist; no level is kill_all-only (archon exempt, with the reason); runtime drives the assembly, uplink, overseer (hack -> mast -> seize) and sublevel (gallery key -> hack -> night-shift quota) arcs, and requires each overseer/sublevel objective to be walkable from spawn on the built navmesh (3D, so a deck key cannot pass from the floor under it) | suite |
+| mod_value_probe | What each weapon mod is worth per moddable gun: fires each through its real trigger at a frozen pack of three (androids, armour 0; gunners, armour 4) in front of a wall and reports ARC / THERMITE uplift on hits and RICOCHET per missed shot (report, ~10 min) | headless |
 | model_gallery_probe | Available CC0 enemy models side by side, for picking distinct bases for hazard-world flyers | windowed |
 | model_mat_probe | Import-cache corruption sweep: each imported texture vs source PNG catches a garbage `.ctex` whose md5 still matches | headless |
 | model_view_probe | Arbitrary model scene front/side/3-quarter, to judge its pose or textures; the subject is frozen, so an enemy scene works too | windowed |
@@ -317,7 +319,7 @@ or GPU-timing probes; `--headless` renders these black).
 | terminator_entrance_probe | TERMINATOR's eruption entrance (buried rumble→breach→rise→settle) | windowed |
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
-| threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60 | suite |
+| threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60. `-- nowarm` skips the warm-up to reproduce the engine deadlock (#139) for a native debugger | suite |
 | tick_clock_probe | The per-tick CPU instrument (`tests/tick_clock.gd`, used by `enemy_cost_probe` and `cpu_cost_sweep`) reads a rig's known 2 ms physics tick as ~2 ms despite a 50 ms spike once a second. `Performance.TIME_PHYSICS_PROCESS` is the worst tick of the last second, so its median read 50 ms (#89) | suite |
 | threat_probe | Ground-truth per-enemy DPS on the player (report-only, real per-enemy attack vars, not scripted defaults) | headless |
 | titan_blink_probe | PROMETHEUS-0's phase-blink beam charges (`BLINK_BEAM_TELL`) before sweeping instead of firing instantly undodgeable | suite |
@@ -339,7 +341,7 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_codex_probe | Weapon Codex layout/stats screenshotted | windowed |
 | weapon_fx_probe | Laser-beam-into-wall and rocket-in-flight FX, mid-flight and post-detonation | windowed |
 | weapon_lineup | Every player weapon scene with real models, rendered in a grid | windowed |
-| weapon_mods_probe | Weapon mods: `GameState.BASE_LOADOUT` matches `player.tscn`'s rack; buy / fit / refit rules, projectile guns refused, save + load round trip; through the rifle's real hitscan, CHAIN ARC hits a robot 4 m away (not one at 22 m), THERMITE burns exactly 30% over 3 s, RICOCHET bounces off a wall into a robot, OVERRIDE turns a robot under 25%, mod damage is not a hit for accuracy, procs are rate-limited | suite |
+| weapon_mods_probe | Weapon mods: `GameState.BASE_LOADOUT` matches `player.tscn`'s rack; buy / fit / refit rules, projectile guns refused, save + load round trip; through the rifle's real hitscan, CHAIN ARC hits a robot 4 m away (not one at 22 m), THERMITE burns exactly 30% over 3 s through an armour-4 gunner and 30% of both of two hits inside one proc interval, RICOCHET bounces off a wall into a robot, OVERRIDE turns a robot under 25%, mod damage is not a hit for accuracy, procs are rate-limited but a hit inside the interval arcs with the next proc | suite |
 | weapon_order_probe | Weapon rack auto-sorts weakest→strongest; HUD carousel builds a cell per weapon | headless |
 | weapon_pacing_probe | Weapons are first offered in campaign in power-rank order (no weaker gun handed out after a stronger one) | headless |
 | weapon_recover_probe | Every way the equipped weapon can "vanish" is injected; WeaponManager watchdog notices + re-arms the player | headless |

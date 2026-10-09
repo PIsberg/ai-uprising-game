@@ -95,6 +95,7 @@ static var _metal_rough_tex: NoiseTexture2D = null
 var mod_id: String = ""
 var mod_last_proc_ms: int = -100000
 var mod_override_ms: int = -100000
+var mod_bank: float = 0.0 ## hit damage since the last ARC/RICOCHET proc (WeaponMods._bank)
 
 func get_active_shooter() -> Node:
 	return _active_shooter
