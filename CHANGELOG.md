@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Deathless bonus on the boss levels**: suburb_boss, titan and archon now carry the optional "Finish without dying" bonus (+750), lost on the first death. `bonus_objective_probe`.
 - **Bonus objectives**: 11 levels now carry an optional challenge on the objective line, worth +500 score. It never blocks the exit.
   - **Trip no security camera** on the five scanner levels (neon, overseer, assembly, grok, suburb).
   - **Never touch a hazard** on the six levels where hazards are the fight (lava_world, water_world, alien, mistral, crucible, gpt).

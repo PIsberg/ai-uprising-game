@@ -2453,6 +2453,8 @@ static func _alien() -> Dictionary:
 static func _titan() -> Dictionary:
 	return {
 		"name": "The Singularity Core — PROMETHEUS-0",
+		# Optional challenge (BonusObjective): beat the boss level without dying once.
+		"bonus": {"kind": "deathless", "label": "Finish without dying", "score": 750},
 		"objective": "Destroy PROMETHEUS-0 before it reaches recursive self-improvement",
 		"tasks": [
 			{"type": "kill_all"},
@@ -2685,6 +2687,8 @@ static func _titan() -> Dictionary:
 static func _archon() -> Dictionary:
 	return {
 		"name": "The Mind Cathedral — ARCHON",
+		# Optional challenge (BonusObjective): beat the boss level without dying once.
+		"bonus": {"kind": "deathless", "label": "Finish without dying", "score": 750},
 		"objective": "Shatter ARCHON's shield and destroy the AGI brain that controls them all",
 		"tasks": [{"type": "kill_all"}],
 		"music": "music_archon",
@@ -4951,6 +4955,8 @@ static func _suburb() -> Dictionary:
 static func _suburb_boss() -> Dictionary:
 	return {
 		"name": "Maple Grove Plaza — GOLIATH-IX",
+		# Optional challenge (BonusObjective): beat the boss level without dying once.
+		"bonus": {"kind": "deathless", "label": "Finish without dying", "score": 750},
 		"objective": "Destroy the colossus GOLIATH-IX and extract",
 		"tasks": [
 			{"type": "kill_all"},
