@@ -1,5 +1,5 @@
 extends Node
-## Every task, wave, firewall and terrain label a campaign level def shows is
+## Every task, wave, flood alert, firewall and terrain label a campaign level def shows is
 ## translated in each shipped language: tr() under es/fr/de/pt must return
 ## something other than the English key. tr() hands the key back unchanged when
 ## a row is missing (or when an unquoted comma split the row), so a gap reads as
@@ -26,6 +26,12 @@ func _labels() -> Dictionary:
 			for w in t.get("waves", []):
 				if w is Dictionary and w.get("label", "") != "":
 					out[w["label"]] = id
+				# A flood's HUD alerts (FloodSurge -> skirmish toast, tr()'d).
+				if w is Dictionary:
+					for k in ["warn_title", "warn_text", "drain_title", "drain_text"]:
+						var s: String = (w.get("flood", {}) as Dictionary).get(k, "")
+						if s != "":
+							out[s] = id
 		for fw in def.get("firewalls", []):
 			if fw is Dictionary and fw.get("label", "") != "":
 				out[fw["label"]] = id

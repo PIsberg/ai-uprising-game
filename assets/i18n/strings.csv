@@ -262,3 +262,13 @@ Restart the game for the full speed-up (progress is saved at each level start),R
 Daily Op,Daily Op,Operación diaria,Opération du jour,Tagesmission,Operação diária
 DAILY OP COMPLETE,DAILY OP COMPLETE,OPERACIÓN DIARIA COMPLETADA,OPÉRATION DU JOUR TERMINÉE,TAGESMISSION ABGESCHLOSSEN,OPERAÇÃO DIÁRIA CONCLUÍDA
 %d-day streak,%d-day streak,racha de %d días,série de %d jours,%d Tage in Folge,sequência de %d dias
+SURGE,SURGE,OLEADA,DÉFERLANTE,FLUTWELLE,ONDA
+The floor is flooding. Get to high ground.,The floor is flooding. Get to high ground.,El suelo se inunda. Busca terreno alto.,Le sol est inondé. Gagnez les hauteurs.,Der Boden läuft voll. Ab nach oben.,O chão está inundando. Suba para um lugar alto.
+MAGMA SURGE,MAGMA SURGE,OLEADA DE MAGMA,DÉFERLANTE DE MAGMA,MAGMAFLUT,ONDA DE MAGMA
+The cross-lanes are flooding. Get up on the catwalks.,The cross-lanes are flooding. Get up on the catwalks.,Los carriles se inundan. Sube a las pasarelas.,Les allées sont inondées. Montez sur les passerelles.,Die Quergänge laufen voll. Rauf auf die Laufstege.,As vias estão inundando. Suba nas passarelas.
+FORGE COOLING,FORGE COOLING,LA FORJA SE ENFRÍA,LA FORGE REFROIDIT,SCHMIEDE KÜHLT AB,A FORJA ESFRIA
+The lanes are crusting over.,The lanes are crusting over.,Los carriles se solidifican.,Les allées se figent.,Die Gänge verkrusten.,As vias estão solidificando.
+TIDE SURGE,TIDE SURGE,CRECIDA,MARÉE MONTANTE,FLUTWELLE,MARÉ ALTA
+The basin is overflowing. Climb to the reactor cap.,The basin is overflowing. Climb to the reactor cap.,La cuenca se desborda. Sube a la cúpula del reactor.,Le bassin déborde. Montez sur le dôme du réacteur.,Das Becken läuft über. Klettere auf die Reaktorkuppel.,A bacia está transbordando. Suba para a cúpula do reator.
+TIDE RECEDING,TIDE RECEDING,LA MAREA BAJA,LA MARÉE SE RETIRE,DIE FLUT WEICHT,A MARÉ RECUA
+The pumps are winning. The gantries are clear.,The pumps are winning. The gantries are clear.,Las bombas ganan. Las pasarelas están despejadas.,Les pompes reprennent le dessus. Les passerelles sont dégagées.,Die Pumpen gewinnen. Die Stege sind frei.,As bombas estão vencendo. As passarelas estão livres.

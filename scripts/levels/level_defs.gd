@@ -210,6 +210,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			for sup in w.get("supplies", []):
 				if sup.has("pos"):
 					sup["pos"] = _sv(sup["pos"], s)
+			# A wave's flood beds are layout, like "lava": footprint AND size stretch.
+			for b in (w.get("flood", {}) as Dictionary).get("beds", []):
+				if b.has("pos"):
+					b["pos"] = _sv(b["pos"], s)
+				if b.has("size"):
+					b["size"] = (b["size"] as Vector2) * s
 	return def
 
 ## Scale a position/span on the ground plane; heights are sacred.
@@ -4998,9 +5004,22 @@ static func _lava_world() -> Dictionary:
 					# The whole floor is lava, so waves are flyers (y=3): scatter is
 					# harmless in the air. The ONE ground unit is a single spawn on a
 					# 6x6 island: a clustered "count" scatters 2.5 m, wider than a catwalk.
+					# The vents flood the two ground cross-lanes (the only dry floor
+					# between the four pools) for the rest of the hold: the fight
+					# moves up onto the catwalks, under the raptors. Drains when the
+					# hold is won. Beds tile the lanes without overlapping (an overlap
+					# z-fights): the x-lane runs the full span, the z-lane is two
+					# halves either side of it. tests/flood_surge_probe.
 					{"at": 1.0, "label": "FORGE VENTS OPEN — SEEKER FLIGHT", "enemies": [
 						{"type": "seeker", "count": 4, "pos": Vector3(0, 3, -8)},
-					]},
+					], "flood": {"warn": 3.0, "rise": 1.2,
+						"warn_title": "MAGMA SURGE", "warn_text": "The cross-lanes are flooding. Get up on the catwalks.",
+						"drain_title": "FORGE COOLING", "drain_text": "The lanes are crusting over.",
+						"beds": [
+							{"pos": Vector3(0, 0, 0), "size": Vector2(46, 6), "dmg": 16.0},
+							{"pos": Vector3(0, 0, -13), "size": Vector2(6, 20), "dmg": 16.0},
+							{"pos": Vector3(0, 0, 13), "size": Vector2(6, 20), "dmg": 16.0},
+						]}},
 					# Ammo ejects at the END of the hub-to-east spur: a 2.6 m catwalk
 					# with lava both sides and raptors overhead.
 					{"at": 9.0, "label": "SECOND WAVE — SLAG RAPTORS", "enemies": [
@@ -5192,7 +5211,7 @@ static func _water_world() -> Dictionary:
 				"pos": Vector3(-8, 3, -6), "label": "Harpoon the ANGLER LEVIATHAN",
 				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(8, 3, -6)}]},
 			# The leviathan's death roils the basin — its school comes up angry.
-			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Outlast the tide surge",
+			{"type": "survive", "after": "hvt", "seconds": 32.0, "label": "Outlast the tide surge",
 				"waves": [
 					# Sharks spawn IN the flood (y=0) on purpose: they are the one
 					# unit that belongs in the hazard. Everything else flies (y=3).
@@ -5208,11 +5227,22 @@ static func _water_world() -> Dictionary:
 					], "supplies": [
 						{"type": "health", "pos": Vector3(-20, 1.7, 20)},
 					]},
+					# The surge the label promised: the tide climbs over the whole
+					# LOW tier (deck tops 1.6, surface ~1.75) and the last 8 s are a
+					# stand on the reactor cap, the high gantry and the lookout (deck
+					# tops 3.4). The health vented on PUMP C at 9 s is a race: grab
+					# it and get back up the stairs before the water arrives.
 					{"at": 17.0, "label": "THE BASIN EMPTIES ITS CAGES", "enemies": [
 						{"type": "breaker", "pos": Vector3(14, 3, -8)},
 						{"type": "whirlwind", "pos": Vector3(-10, 3, 6)},
 						{"type": "fishbot", "count": 3, "pos": Vector3(0, 3, 14)},
-					]},
+					], "flood": {"warn": 4.0, "rise": 3.0,
+						"warn_title": "TIDE SURGE", "warn_text": "The basin is overflowing. Climb to the reactor cap.",
+						"drain_title": "TIDE RECEDING", "drain_text": "The pumps are winning. The gantries are clear.",
+						"beds": [
+							{"pos": Vector3(0, 1.65, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
+								"color": Color(0.2, 0.78, 0.74)},
+						]}},
 				]},
 		],
 		"open_sky": true,

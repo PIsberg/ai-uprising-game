@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-302 probes total: **76** wired into the headless suite (`suite`), **83**
+304 probes total: **77** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **143** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **144** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -157,6 +157,8 @@ or GPU-timing probes; `--headless` renders these black).
 | fierce_probe | Fierce enemy models with real RobotModel tint/material treatment | windowed |
 | firewall_probe | Firewall barriers: the real player.tscn body masks the firewall layer (and not enemy projectiles), a player-masked body stops at the sheet while a robot-masked one walks through, the relay and the linked objective each drop it, a checkpoint-resumed level starts it open; then on every campaign level that authors firewalls, each relay, objective and the exit is reachable on the built navmesh without crossing a firewall that cannot be open yet (red-checked: relay moved behind its own wall fails) | suite |
 | firewall_shot | Each campaign firewall framed from the spawn side, its relay node, and the first one mid-collapse, to judge the firewall shader in-level | windowed |
+| flood_surge_probe | Hazard surges: a flood warns before it burns, rises and burns a body on the floor while a deck 1.6 m up over the same bed stays dry, death clears the beds and play resuming re-runs the warning, completing the hold drains and frees them; then every campaign flood scales with the world, lands with 5 s of hold left, has no overlapping beds, leaves the exit and 3+ decks dry and every later supply on dry ground; live, each flood level is built and its beds burn bodies in them but not one on the exit (red-checked: dropping the death reset and the drain fails 6 checks) | suite |
+| flood_shot | Each campaign flood framed from over the exit side: before, mid-warning and risen | windowed |
 | fix_models_probe | Models whose auto-framing broke, re-rendered with normalized scale/recenter + fixed camera | windowed |
 | flyer_pose_probe | Whirlwind/breaker/fishbot flyer trio whose codex entries looked broken | windowed |
 | flyer_screenshot | Drone and seeker side by side to compare silhouettes | windowed |

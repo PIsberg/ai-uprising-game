@@ -4546,7 +4546,7 @@ func _activate_task(t: Dictionary) -> void:
 			# can sit out behind cover. Reuses the reinforcement spawner, so a
 			# wave pours in with the same FX/scaling as any objective alarm.
 			timer.waves = t.get("waves", [])
-			timer.wave_due.connect(_on_survive_wave)
+			timer.wave_due.connect(_on_survive_wave.bind(id))
 			add_child(timer)
 		"hold_zone":
 			var zone := HoldZone.new()
@@ -4705,16 +4705,36 @@ func _on_tasks_progress() -> void:
 ## A "survive" wave came due. Announce it (so the escalation reads as authored,
 ## not as enemies wandering in), pour the enemies in through the same alarm
 ## spawner, and vent any emergency supplies the wave carries.
-func _on_survive_wave(wave: Dictionary) -> void:
+func _on_survive_wave(wave: Dictionary, task_id: String = "survive") -> void:
 	var label := String(wave.get("label", ""))
 	if label != "":
 		GameState.wave_incoming.emit(label)
+	var flood: Dictionary = wave.get("flood", {})
+	if not flood.is_empty():
+		_start_flood.call_deferred(flood, task_id)
 	var enemies: Array = wave.get("enemies", [])
 	if not enemies.is_empty():
 		_spawn_reinforcements.call_deferred(enemies)
 	var supplies: Array = wave.get("supplies", [])
 	if not supplies.is_empty():
 		_vent_supplies.call_deferred(supplies)
+
+## A wave's "flood": hazard beds that telegraph, rise mid-hold and drain when the
+## hold completes (FloodSurge). Keys: beds (same spec as the def's "lava"
+## entries), warn/rise seconds, warn_title/warn_text and drain_title/drain_text
+## for the HUD alerts.
+func _start_flood(flood: Dictionary, task_id: String) -> void:
+	var fs := FloodSurge.new()
+	fs.name = "FloodSurge"
+	fs.task_id = task_id
+	fs.beds = flood.get("beds", [])
+	fs.warn_seconds = float(flood.get("warn", 3.0))
+	fs.rise_seconds = float(flood.get("rise", 1.2))
+	fs.warn_title = String(flood.get("warn_title", fs.warn_title))
+	fs.warn_text = String(flood.get("warn_text", fs.warn_text))
+	fs.drain_title = String(flood.get("drain_title", ""))
+	fs.drain_text = String(flood.get("drain_text", ""))
+	add_child(fs)
 
 ## Emergency stores ejected mid-hold: pickups that pop in ({type, pos}, the same
 ## spec as the def's "pickups"). Author them where reaching them costs something

@@ -83,6 +83,8 @@ res://tests/firewall_probe.tscn
 res://tests/scanner_probe.tscn
 # Escape countdowns burn a stray player, and every authored escape route fits its clock.
 res://tests/escape_probe.tscn
+# Hazard surges warn, rise, spare high decks, reset on death, drain on completion.
+res://tests/flood_surge_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).

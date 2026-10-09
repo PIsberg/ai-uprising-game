@@ -36,6 +36,9 @@ LABEL_SOURCES = [
     ("scripts/systems/haul_payload.gd", r'var base_label: String = "([^"]+)"'),
     ("scripts/systems/firewall_barrier.gd", r'skirmish_event\.emit\("([^"]+)"'),
     ("scripts/systems/firewall_barrier.gd", r'else "([^"]+)"\)'),
+    # a survive wave's flood alerts (HUD skirmish toast) and their defaults
+    ("scripts/levels/level_defs.gd", r'"(?:warn|drain)_(?:title|text)":\s*"((?:[^"\\]|\\.)+)"'),
+    ("scripts/systems/flood_surge.gd", r'var (?:warn|drain)_(?:title|text): String = "([^"]+)"'),
 ]
 
 
