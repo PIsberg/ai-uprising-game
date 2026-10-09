@@ -863,6 +863,31 @@ static func _frostbreak() -> Dictionary:
 			# The warden carried the relay's thaw codes — bring the uplink back online.
 			{"type": "hack_terminal", "id": "thaw", "after": "hvt", "pos": Vector3(-8, 0, -8), "seconds": 4.0,
 				"label": "Thaw the relay uplink", "color": Color(0.5, 0.9, 1.0)},
+			# The thaw breaks the storm loose: a WHITEOUT (fog x2.5, snow gusting
+			# x2.5) for a 30 s hold while the uplink re-syncs. Sightlines collapse
+			# to close range, so the yard stops being a sniping gallery and the
+			# hunters, brutes and K-9s come out of the snow at you. The weather
+			# eases back when the hold is won. tests/weather_shift_probe.
+			{"type": "survive", "after": "thaw", "seconds": 30.0, "label": "Hold the uplink through the whiteout",
+				"waves": [
+					{"at": 1.0, "label": "WHITEOUT — HUNTERS IN THE SNOW", "enemies": [
+						{"type": "hunter", "pos": Vector3(8, 0.5, -8)},
+						{"type": "hunter", "pos": Vector3(-14, 0.5, -4)},
+					], "weather": {"fog_mult": 2.5, "fog_color": Color(0.78, 0.84, 0.92), "fade": 3.0, "gust": 2.5,
+						"warn_title": "WHITEOUT", "warn_text": "The thaw broke the storm loose. Visibility is collapsing.",
+						"clear_title": "STORM PASSING", "clear_text": "The uplink is holding. The snow is settling."}},
+					{"at": 11.0, "label": "SECOND WAVE — ICEBREAKERS", "enemies": [
+						{"type": "brute", "pos": Vector3(-13, 0.5, -12)},
+						{"type": "ravager", "pos": Vector3(15, 0.5, 6)},
+						{"type": "seeker", "count": 3, "pos": Vector3(0, 3, -12)},
+					]},
+					{"at": 20.0, "label": "THE RELAY'S LAST GUARD", "enemies": [
+						{"type": "sentinel", "pos": Vector3(13, 0.5, -12)},
+						{"type": "gunner", "pos": Vector3(-13, 0.5, 12)},
+						{"type": "dog", "pos": Vector3(8, 0.5, 6)},
+						{"type": "dog", "pos": Vector3(-8, 0.5, 10)},
+					]},
+				]},
 		],
 		"open_sky": true,
 		# EXPANSION PASS (2× area): the 48² relay yard is untouched at the

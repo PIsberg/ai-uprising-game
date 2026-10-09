@@ -39,6 +39,9 @@ LABEL_SOURCES = [
     # a survive wave's flood alerts (HUD skirmish toast) and their defaults
     ("scripts/levels/level_defs.gd", r'"(?:warn|drain)_(?:title|text)":\s*"((?:[^"\\]|\\.)+)"'),
     ("scripts/systems/flood_surge.gd", r'var (?:warn|drain)_(?:title|text): String = "([^"]+)"'),
+    # a survive wave's weather alerts (level defs share the warn_* pattern above)
+    ("scripts/levels/level_defs.gd", r'"clear_(?:title|text)":\s*"((?:[^"\\]|\\.)+)"'),
+    ("scripts/systems/weather_shift.gd", r'var (?:warn|clear)_(?:title|text): String = "([^"]+)"'),
 ]
 
 

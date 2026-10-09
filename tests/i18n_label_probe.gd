@@ -26,12 +26,13 @@ func _labels() -> Dictionary:
 			for w in t.get("waves", []):
 				if w is Dictionary and w.get("label", "") != "":
 					out[w["label"]] = id
-				# A flood's HUD alerts (FloodSurge -> skirmish toast, tr()'d).
+				# A flood's or weather shift's HUD alerts (skirmish toast, tr()'d).
 				if w is Dictionary:
-					for k in ["warn_title", "warn_text", "drain_title", "drain_text"]:
-						var s: String = (w.get("flood", {}) as Dictionary).get(k, "")
-						if s != "":
-							out[s] = id
+					for key in ["flood", "weather"]:
+						for k in ["warn_title", "warn_text", "drain_title", "drain_text", "clear_title", "clear_text"]:
+							var s: String = (w.get(key, {}) as Dictionary).get(k, "")
+							if s != "":
+								out[s] = id
 		for fw in def.get("firewalls", []):
 			if fw is Dictionary and fw.get("label", "") != "":
 				out[fw["label"]] = id

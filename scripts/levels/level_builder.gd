@@ -3704,6 +3704,7 @@ func _build_weather(def: Dictionary) -> void:
 		p.mesh = flake
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		p.position = Vector3(0, 13.0, 0)
+		p.name = "Weather" # a survive wave's "weather" gusts it (WeatherShift)
 		add_child(p)
 	elif w == "dust":
 		var p := CPUParticles3D.new()
@@ -4713,6 +4714,9 @@ func _on_survive_wave(wave: Dictionary, task_id: String = "survive") -> void:
 	var flood: Dictionary = wave.get("flood", {})
 	if not flood.is_empty():
 		_start_flood.call_deferred(flood, task_id)
+	var weather: Dictionary = wave.get("weather", {})
+	if not weather.is_empty():
+		_start_weather.call_deferred(weather, task_id)
 	var enemies: Array = wave.get("enemies", [])
 	if not enemies.is_empty():
 		_spawn_reinforcements.call_deferred(enemies)
@@ -4736,6 +4740,27 @@ func _start_flood(flood: Dictionary, task_id: String) -> void:
 	fs.drain_title = String(flood.get("drain_title", ""))
 	fs.drain_text = String(flood.get("drain_text", ""))
 	add_child(fs)
+
+## A wave's "weather": the level Environment's fog thickens (and the weather
+## particles gust) for the rest of the hold, easing back when it completes
+## (WeatherShift). Keys: fog_mult, fog_color, fade, gust, warn_title/warn_text,
+## clear_title/clear_text.
+func _start_weather(w: Dictionary, task_id: String) -> void:
+	var ws := WeatherShift.new()
+	ws.name = "WeatherShift"
+	ws.task_id = task_id
+	ws.env = _env
+	ws.weather = get_node_or_null("Weather")
+	ws.fog_mult = float(w.get("fog_mult", 4.0))
+	ws.fade = float(w.get("fade", 3.0))
+	ws.gust = float(w.get("gust", 1.0))
+	if w.has("fog_color"):
+		ws.fog_color = w["fog_color"]
+	ws.warn_title = String(w.get("warn_title", ws.warn_title))
+	ws.warn_text = String(w.get("warn_text", ws.warn_text))
+	ws.clear_title = String(w.get("clear_title", ""))
+	ws.clear_text = String(w.get("clear_text", ""))
+	add_child(ws)
 
 ## Emergency stores ejected mid-hold: pickups that pop in ({type, pos}, the same
 ## spec as the def's "pickups"). Author them where reaching them costs something
