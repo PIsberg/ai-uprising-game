@@ -609,6 +609,17 @@ static func _hivemind() -> Dictionary:
 			{"type": "drone", "pos": Vector3(14, 2.5, -28), "trigger": 20, "pack": "hivemi_a4"},
 			{"type": "android", "pos": Vector3(-12, 0.5, -28), "trigger": 18, "pack": "hivemi_a4"},
 			{"type": "hive", "pos": Vector3(18, 3.6, 18), "trigger": 20},
+			# RELAY GUARDS: the mesh relays (tasks) were unguarded, and the
+			# roster measured 280 on tests/difficulty_curve at slot 20 against
+			# 409-499 for its late-act neighbours. Each relay gets two hive
+			# posted beside it, so the beacon you plant on the relay strips its
+			# guards in the same window. (Snipers on the tower tops were tried
+			# and dropped: a spawn over a tower lands inside its footprint at
+			# mid-height, not on the top deck.)
+			{"type": "hive", "pos": Vector3(-23, 1, -11), "trigger": 20, "pack": "hivemi_rw"},
+			{"type": "hive", "pos": Vector3(-23, 1, -4), "trigger": 20, "pack": "hivemi_rw"},
+			{"type": "hive", "pos": Vector3(21, 1, -5), "trigger": 20, "pack": "hivemi_re"},
+			{"type": "hive", "pos": Vector3(21, 1, 1), "trigger": 20, "pack": "hivemi_re"},
 		],
 		# Ring supplies + the deck-climb reward (first pickups this level has
 		# ever had — the doubled floor earns them).
