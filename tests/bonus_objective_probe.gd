@@ -148,6 +148,21 @@ func _live() -> void:
 			var hooked := get_tree().get_nodes_in_group("scanner").filter(func(s): return s.alarmed.is_connected(bo._on_broken))
 			_check(hooked.size() == get_tree().get_nodes_in_group("scanner").size() and hooked.size() > 0,
 				"%s live: hooked to all %d scanners" % [id, hooked.size()])
+		# The level-complete debrief reports the settled bonus on its highlights line.
+		if bo and id == "neon":
+			var hud: Node = lvl.get_node_or_null("HUD")
+			if hud:
+				GameState.bonus_win()
+				hud.call("_update_debrief_block")
+				var hl = hud.get("_highlights_label")
+				_check(hl != null and hl.visible and String(hl.text).contains("✔") and String(hl.text).contains(bo.label) and String(hl.text).contains("+500"),
+					"%s live: a won bonus is on the debrief highlights (%s)" % [id, hl.text if hl else "<none>"])
+				GameState.level_bonus["state"] = "failed"
+				hud.call("_update_debrief_block")
+				_check(String(hl.text).contains("✖") and not String(hl.text).contains("+500"),
+					"%s live: a lost bonus shows as lost, unpaid (%s)" % [id, hl.text])
+			else:
+				_check(false, "%s live: the level has a HUD to debrief on" % id)
 		if bo and bo.kind == "dry":
 			_check(bo._player_hp != null and bo._player_hp.damaged.is_connected(bo._on_player_damaged),
 				"%s live: hooked to the real player's damage" % id)

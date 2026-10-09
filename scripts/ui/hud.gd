@@ -1196,6 +1196,14 @@ func _update_highlights_block() -> void:
 		bits.append("%d %s" % [dodges, tr("PERFECT DODGE") if dodges == 1 else tr("PERFECT DODGES")])
 	if streak > 0 and streak <= GameState.RAMPAGE_NAMES.size():
 		bits.append(tr(GameState.RAMPAGE_NAMES[streak - 1]) + " " + tr("STREAK"))
+	# The level's optional bonus, settled by now (still live = never resolved:
+	# say nothing rather than claim a loss).
+	var b: Dictionary = GameState.level_bonus
+	match String(b.get("state", "")):
+		"won":
+			bits.append("✔ %s: %s +%d" % [tr("BONUS"), tr(String(b.get("label", ""))), int(b.get("score", 0))])
+		"failed":
+			bits.append("✖ %s: %s" % [tr("BONUS"), tr(String(b.get("label", "")))])
 	if bits.is_empty():
 		_highlights_label.visible = false
 	else:
