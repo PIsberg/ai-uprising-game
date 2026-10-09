@@ -191,6 +191,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				else:
 					pp.append(_sv(p, s))
 			t["points"] = pp
+		# A task-level flood's beds are layout, like a wave's.
+		for b in (t.get("flood", {}) as Dictionary).get("beds", []):
+			if b.has("pos"):
+				b["pos"] = _sv(b["pos"], s)
+			if b.has("size"):
+				b["size"] = (b["size"] as Vector2) * s
 		# A haul task's delivery ring sits on the ground plane like its pickup.
 		if t.has("to"):
 			t["to"] = _sv(t["to"], s)
@@ -3349,7 +3355,22 @@ static func _mistral() -> Dictionary:
 			{"type": "sabotage", "id": "pump_b", "pos": Vector3(14, 0, 4), "seconds": 3.0,
 				"label": "① Vent the EAST coolant pump (stand on it)", "color": Color(0.5, 0.9, 1.0),
 				"reinforce": [{"type": "skitter", "count": 4, "pos": Vector3(0, 0, 8)}]},
-			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "② Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0)},
+			# The vented coolant has to go somewhere: for as long as the core
+			# stands, the two coolant channels overflow (a bed either side of
+			# each, same x span), squeezing the fight into the bands between
+			# them. pump_b's spot floods (it is done by then); the core at z=12
+			# stays 1.4 m clear of the south overflow. Drains when the core
+			# dies. tests/flood_surge_probe.
+			{"type": "destroy_core", "after": ["pump_a", "pump_b"], "label": "② Destroy the exposed cryo-core", "pos": Vector3(0, 0, 12), "color": Color(0.4, 0.9, 1.0),
+				"flood": {"warn": 3.0, "rise": 1.5,
+					"warn_title": "COOLANT FLOOD", "warn_text": "The vented coolant is spilling over. Stay out of the channels.",
+					"drain_title": "COOLANT DRAINING", "drain_text": "The core is down. The coolant is draining.",
+					"beds": [
+						{"pos": Vector3(-8, 0, -9.1), "size": Vector2(26, 3), "color": Color(0.35, 0.85, 1.0), "dmg": 14.0},
+						{"pos": Vector3(-8, 0, -2.9), "size": Vector2(26, 3), "color": Color(0.35, 0.85, 1.0), "dmg": 14.0},
+						{"pos": Vector3(8, 0, 2.9), "size": Vector2(26, 3), "color": Color(0.35, 0.85, 1.0), "dmg": 14.0},
+						{"pos": Vector3(8, 0, 9.1), "size": Vector2(26, 3), "color": Color(0.35, 0.85, 1.0), "dmg": 14.0},
+					]}},
 			{"type": "kill_all"},
 		],
 		"open_sky": false,
