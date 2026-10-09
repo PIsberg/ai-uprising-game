@@ -1,3 +1,4 @@
+# @lat: [[weapons#Kill Styles]]
 class_name KillFx
 extends RefCounted
 ## Weapon-specific deaths. Every robot used to die the same way (blast, debris,

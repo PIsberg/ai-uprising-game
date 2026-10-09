@@ -26,6 +26,14 @@ Bought in the Armory, a mod changes what a gun's hit does, not how hard it lands
 * Proc damage goes through `GameState.apply_secondary_damage`, which pays score, leech and OVERLOAD charge but is not a new hit for accuracy or the AI Director. Breakable-cover shrapnel uses it too.
 * `WeaponMods` and `GameState.mod_compatible` duck-type robots and weapons: naming `EnemyBase` or `Weapon` there closes a load cycle through the pickup scenes and `pickup.gd` fails to load.
 
+## Kill Styles
+<!-- lat: { "require-code-mention": true } -->
+The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`).
+
+* DISINTEGRATE (gauss, Longshot, plasma, OMEGA): the robot's materials swap to `shaders/dissolve.gdshader`, which burns it away top-down in 1 s behind a glowing edge; no wreck. ELECTROCUTE (tesla, arc coil, tempest): 0.75 s of spasms under arcs and a blue skin, then the classic blast (`EnemyBase._classic_death_fx`).
+* The style rides on `Damageable.kill_fx` only for the duration of the weapon's `apply_damage` call (`KillFx.tag` / `untag`). `died` fires inside that call, so `_on_died` sees the killing hit's style and nothing else: grenades and hazards never tag.
+* Bosses and the 7 robots with their own `_on_died` keep their deaths (#194). `tests/kill_fx_probe`.
+
 ## Grenades
 Defines the physics layers and player-bound scripts for throwing grenades.
 
