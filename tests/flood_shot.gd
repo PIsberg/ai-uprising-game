@@ -1,8 +1,9 @@
 extends Node3D
-## Windowed visual check for hazard surges (flood_surge.gd): for every campaign
-## level whose survive hold authors a "flood", frames the arena from 14 m over
-## the exit side looking at the centre and saves three frames: before,
-## mid-warning, and after the beds have risen. Headless gives black frames.
+## Windowed visual check for hold shifts: for every campaign level whose
+## survive hold authors a "flood" (flood_surge.gd) or a "weather" shift
+## (weather_shift.gd), frames the arena from 14 m over the exit side looking at
+## the centre and saves three frames: before, mid-warning / mid-fade, and after
+## the beds have risen / the weather has closed in. Headless gives black frames.
 ##   godot --path . res://tests/flood_shot.tscn -- --out=<abs dir> [--levels=lava_world]
 
 func _ready() -> void:
@@ -22,11 +23,14 @@ func _ready() -> void:
 			continue
 		var def: Dictionary = LevelDefs.get_def(id)
 		var flood: Dictionary = {}
+		var weather: Dictionary = {}
 		for t in def.get("tasks", []):
 			for w in t.get("waves", []):
 				if w.has("flood"):
 					flood = (w["flood"] as Dictionary).duplicate(true)
-		if flood.is_empty():
+				if w.has("weather"):
+					weather = (w["weather"] as Dictionary).duplicate(true)
+		if flood.is_empty() and weather.is_empty():
 			continue
 		var lvl := (load("res://scenes/levels/level_%s.tscn" % id) as PackedScene).instantiate() as LevelBuilder
 		add_child(lvl)
@@ -51,8 +55,12 @@ func _ready() -> void:
 		cam.look_at(Vector3(sp.x * 0.25, 0.0, sp.z * 0.25), Vector3.UP)
 		GameState.current_state = GameState.State.PLAYING
 		await _snap(out_dir, "%s_0_before" % id)
-		flood["warn"] = 2.0
-		lvl._start_flood(flood, "flood_shot_never_done")
+		if not flood.is_empty():
+			flood["warn"] = 2.0
+			lvl._start_flood(flood, "flood_shot_never_done")
+		if not weather.is_empty():
+			weather["fade"] = 2.0
+			lvl._start_weather(weather, "flood_shot_never_done")
 		await get_tree().create_timer(1.2).timeout
 		await _snap(out_dir, "%s_1_warning" % id)
 		for i in 12:

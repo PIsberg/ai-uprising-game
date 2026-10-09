@@ -83,6 +83,16 @@ A `destroy_core` task with `jam_shielded` is immune until one of the player's ja
 * Only author it on a level with a `jammer` def, or the core can never die. Relay Node 9 (hivemind) stages the HIVE PRIME behind two of them.
 * `tests/jam_relay_probe` covers the shield rules against an unshielded control, the jammer invariant, and the staged PRIME on the built level.
 
+## Weather Shifts
+<!-- lat: { "require-code-mention": true } -->
+A survive wave's `weather` turns the level's own Environment against the player for the rest of the hold (`WeatherShift`).
+
+* The distance fog thickens by `fog_mult` and can shift to `fog_color` over `fade` seconds; `gust` speeds up the level's weather particles (the builder names the snow emitter "Weather").
+* Robots do not lose sight in fog, so keep the multiplier where near cover still reads: frostbreak's whiteout is x2.5 (x4.5 hid the yard inside 20 m).
+* Completing the hold eases every value back to what it was captured at, then the node frees itself. Death does not reset it: fog cannot kill a respawned player.
+* Frostbreak's thaw hack now breaks its blizzard into a 30 s whiteout hold.
+* `tests/weather_shift_probe` covers the shift and the restore, that every authored shift thickens the fog inside its hold, that a `gust` only appears on a level with weather particles, and the built level's real Environment.
+
 ## Hazard Surges
 <!-- lat: { "require-code-mention": true } -->
 A survive wave's `flood` raises hazard beds mid-hold, so the hold changes the ground under the player instead of only adding enemies (`FloodSurge`).

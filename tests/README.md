@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-305 probes total: **78** wired into the headless suite (`suite`), **83**
+306 probes total: **79** wired into the headless suite (`suite`), **83**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -159,7 +159,8 @@ or GPU-timing probes; `--headless` renders these black).
 | firewall_shot | Each campaign firewall framed from the spawn side, its relay node, and the first one mid-collapse, to judge the firewall shader in-level | windowed |
 | jam_relay_probe | Jam-shielded cores: a shielded core ignores damage until a jam zone covers it (an unshielded core takes the same hit as the control), a zone out of range does nothing, the shield closes when the zone expires, a jammed core dies and completes its task; every jam-shielded core is on a level with the jammer; live, hivemind's two relays shrug off 500 damage unjammed, the HIVE PRIME stays staged until both fall and goes live after (red-checked: a shield that never closes fails 5 checks) | suite |
 | flood_surge_probe | Hazard surges: a flood warns before it burns, rises and burns a body on the floor while a deck 1.6 m up over the same bed stays dry, death clears the beds and play resuming re-runs the warning, completing the hold drains and frees them; then every campaign flood scales with the world, lands with 5 s of hold left, has no overlapping beds, leaves the exit and 3+ decks dry and every later supply on dry ground; live, each flood level is built and its beds burn bodies in them but not one on the exit (red-checked: dropping the death reset and the drain fails 6 checks) | suite |
-| flood_shot | Each campaign flood framed from over the exit side: before, mid-warning and risen | windowed |
+| flood_shot | Each campaign flood and weather shift framed from over the exit side: before, mid-warning / mid-fade, and risen / closed in | windowed |
+| weather_shift_probe | Weather shifts: fog thickens by fog_mult and shifts colour, the weather particles gust, everything eases back and the node frees itself when the hold completes; every campaign shift thickens the fog with 5 s of hold left, is announced, and only gusts on a level with weather particles; live, frostbreak's real Environment thickens and the shift finds its snow (red-checked: skipping the fog restore fails) | suite |
 | fix_models_probe | Models whose auto-framing broke, re-rendered with normalized scale/recenter + fixed camera | windowed |
 | flyer_pose_probe | Whirlwind/breaker/fishbot flyer trio whose codex entries looked broken | windowed |
 | flyer_screenshot | Drone and seeker side by side to compare silhouettes | windowed |
