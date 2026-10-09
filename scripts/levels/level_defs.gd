@@ -1496,18 +1496,26 @@ static func _crucible() -> Dictionary:
 	return {
 		"name": "The Crucible — Foundry Floor",
 		"objective": "Survive the foundry floor and reach the pour-gate",
+		# The gauntlet: claim two forge rings, each waking the next batch off
+		# the line, then OVERLOAD the crucible heart and run. The third act used
+		# to be a third identical ring hold (the same verb three times); it is
+		# now a sabotage and a 25 s meltdown run out through the east bulkhead to
+		# the pour-gate, with the line's maulers dropped in behind you. No
+		# kill_all: an unwoken trigger-gated robot would keep the exit sealed
+		# while the purge burns (see grok / assembly). tests/escape_probe.
 		"tasks": [
-			{"type": "kill_all"},
-			# The gauntlet: claim three forge rings in sequence, each hotter than
-			# the last, each ring waking the next batch off the line.
 			{"type": "hold_zone", "id": "ring1", "pos": Vector3(-12, 0, -12), "seconds": 10.0, "radius": 4.0,
 				"color": Color(1.0, 0.55, 0.2), "label": "Claim the first forge ring",
 				"reinforce": [{"type": "gunner", "count": 2, "pos": Vector3(-12, 0, -6)}]},
 			{"type": "hold_zone", "id": "ring2", "after": "ring1", "pos": Vector3(12, 0, -12), "seconds": 10.0, "radius": 4.0,
 				"color": Color(1.0, 0.4, 0.15), "label": "Claim the second forge ring",
 				"reinforce": [{"type": "mauler", "count": 2, "pos": Vector3(12, 0, -6)}]},
-			{"type": "hold_zone", "id": "ring3", "after": "ring2", "pos": Vector3(0, 0, 12), "seconds": 12.0, "radius": 4.0,
-				"color": Color(1.0, 0.25, 0.1), "label": "Claim the crucible heart"},
+			{"type": "sabotage", "id": "heart", "after": "ring2", "pos": Vector3(0, 0, 12), "seconds": 5.0,
+				"color": Color(1.0, 0.25, 0.1), "label": "Overload the crucible heart",
+				"reinforce": [{"type": "mauler", "pos": Vector3(12, 0, 6)},
+					{"type": "gunner", "count": 2, "pos": Vector3(-12, 0, 6)}]},
+			{"type": "escape", "id": "meltdown", "after": "heart", "pos": Vector3(26, 0, 22), "seconds": 25.0,
+				"label": "Reach the pour-gate before the crucible blows", "color": Color(1.0, 0.6, 0.2)},
 		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 46² smelter cage is untouched at the
