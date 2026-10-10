@@ -4,14 +4,14 @@ extends Node
 ## Run windowed: godot --path . --quit-after 600 res://tests/briefing_view.tscn
 
 const SCENE := preload("res://scenes/cutscene/level_comic_briefing.tscn")
-const LEVELS := ["gpt", "mistral", "suburb_boss", "desert"]
+const LEVELS := ["gpt", "mistral", "suburb_boss", "desert", "archon"]
 
 func _ready() -> void:
 	for id in LEVELS:
 		GameState.current_level_path = "res://scenes/levels/level_%s.tscn" % id
 		var b := SCENE.instantiate()
 		add_child(b)
-		await get_tree().create_timer(2.6).timeout  # past fade-in (1.1s), before finish (5.2s)
+		await get_tree().create_timer(4.0).timeout  # past fade-in and the trace typing out, before finish (5.2s)
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(OS.get_user_data_dir() + "/brief_%s.png" % id)
 		print("SHOT ", id)

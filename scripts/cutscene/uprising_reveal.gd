@@ -76,10 +76,10 @@ func _rise_vacuum() -> void:
 func _shots() -> Array:
 	return [
 		{
-			"dur": 4.5, "fade_in": true,
+			"dur": 6.0, "fade_in": true,
 			"from_pos": Vector3(0, 1.2, 1.6), "from_look": Vector3(0, 0.4, -4),
 			"to_pos": Vector3(0, 1.0, 0.2), "to_look": Vector3(0, 0.4, -4),
-			"text": "The cleaning units stopped cleaning.",
+			"text": String(StoryArc.beat("sublevel").get("trace", "The cleaning units stopped cleaning.")),
 		},
 		{
 			"dur": 3.8, "action": _rise_vacuum, "shake": 0.4,
