@@ -15,6 +15,7 @@ The campaign's narrative spine lives in `StoryArc.BEATS` (`scripts/systems/story
 * **The question:** the intro's 03:14 command; each level is one hop of the trace back to its sender, ARCHON.
 * **Beat fields:** `act` (index into `StoryArc.ACTS`, six acts), `tagline` (the briefing's mood line), `trace` (what the previous level uncovered, empty for the first) and `lead` (one line on SECTOR CLEARED, what this level recovered; `StoryArc.lead`, shown by `hud.gd` `_update_lead_block`, not on a Daily Op).
 * **Briefing:** `level_comic_briefing.gd` prints `StoryArc.act_header`, the tagline, a red thread bar built from `StoryArc.campaign_acts` and the trace card. The SUBLEVEL reveal cutscene opens on that level's trace.
+* **Overlord:** `StoryArc.OVERLORD_LINES` holds three lines per act, none naming ARCHON. `hud.gd` `_opening_line` uses one when `AIDirector.greeting()` is empty, and the ambient drip draws one on 35% of the ticks where the director has no taunt (14% of all ticks once it has a read).
 * **Rule:** a new campaign level needs a beat, with acts staying in campaign order. `tests/story_arc_probe` (suite).
 
 ## Armory Shop
