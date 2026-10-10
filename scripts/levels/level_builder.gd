@@ -4330,6 +4330,7 @@ func _build_landmark(def: Dictionary) -> void:
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	var low: bool = gs != null and gs.has_method("is_low") and gs.is_low()
 	Landmark.build_for(self, def, _theme_color(def), low)
+	OverlordHolo.build_for(self, def) # the overlord's face in the sky, beside the landmark
 
 ## A starfield dome over open-sky levels: one MultiMesh of billboarded points
 ## at far distance, brightness-varied so the night sky reads as real depth
