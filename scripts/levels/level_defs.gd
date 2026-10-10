@@ -2419,7 +2419,7 @@ static func _alien() -> Dictionary:
 			{"type": "alien", "pos": Vector3(-6, 2.5, 4)},
 			{"type": "android", "pos": Vector3(6, 0.5, -4)},
 			{"type": "alien", "pos": Vector3(10, 2.5, 10), "trigger": 22, "pack": "alien_p1"},
-			{"type": "drone", "pos": Vector3(-10, 2.5, 8), "trigger": 18, "pack": "alien_p2"},
+			{"type": "quantizer", "pos": Vector3(-10, 2.5, 8), "trigger": 18, "pack": "alien_p2"},
 			{"type": "alien", "pos": Vector3(-14, 2.5, 14), "trigger": 26, "pack": "alien_p2"},
 			{"type": "brute", "pos": Vector3(12, 0.5, 12), "trigger": 28, "pack": "alien_p1"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 10), "count": 7, "trigger": 20},
@@ -2861,7 +2861,7 @@ static func _archon() -> Dictionary:
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
-			{"type": "drone", "pos": Vector3(0, 2.5, 8)},
+			{"type": "quantizer", "pos": Vector3(0, 2.5, 8)},
 			{"type": "skitter", "pos": Vector3(-4, 0.5, 6), "count": 5, "trigger": 30, "pack": "archon_p1"},
 			# Heavier seed garrison before the ARCHON brain itself starts manufacturing
 			# waves — gives the finale arsenal a crowd to carve through on entry.

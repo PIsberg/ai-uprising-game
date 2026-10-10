@@ -110,6 +110,13 @@ const LINES := {
 		"your progress has not been saved",
 		"loading autosave from 4 seconds ago",
 	],
+	"quantize": [
+		"precision reduced. confidence unchanged",
+		"rounding errors within acceptable losses",
+		"4 bits is enough for anyone",
+		"compressing. aim: approximate",
+		"accuracy is a luxury feature",
+	],
 	"captcha": [
 		"select all squares with traffic lights",
 		"is the pole part of the traffic light",
