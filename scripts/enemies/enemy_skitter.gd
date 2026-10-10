@@ -153,6 +153,8 @@ func _on_died(source: Node) -> void:
 		KillFx.disintegrate(self)
 	elif style == KillFx.ELECTROCUTE:
 		KillFx.electrocute(self, _skitter_death_fx)
+	elif style == KillFx.SHRED:
+		KillFx.shred(self, _shot_dir(source), _skitter_death_fx)
 	else:
 		_skitter_death_fx()
 

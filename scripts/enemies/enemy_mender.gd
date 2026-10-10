@@ -206,6 +206,9 @@ func _on_died(_source: Node) -> void:
 		KillFx.disintegrate(self)
 	elif style == KillFx.ELECTROCUTE:
 		KillFx.electrocute(self, _mender_death_fx)
+	elif style == KillFx.SHRED:
+		KillFx.spray(get_parent(), global_position, KillFx._flat(_shot_dir(_source), self))
+		_mender_death_fx()
 	else:
 		_mender_death_fx()
 

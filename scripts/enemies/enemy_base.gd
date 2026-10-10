@@ -1673,6 +1673,8 @@ func _on_died(_source: Node) -> void:
 		KillFx.disintegrate(self)
 	elif style == KillFx.ELECTROCUTE:
 		KillFx.electrocute(self, _classic_death_fx)
+	elif style == KillFx.SHRED:
+		KillFx.shred(self, _shot_dir(_source), _classic_death_fx)
 	else:
 		_classic_death_fx()
 
@@ -1681,6 +1683,25 @@ func _on_died(_source: Node) -> void:
 ## while `died` is still being emitted (the weapon untags right after).
 func _kill_style() -> int:
 	return hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+
+## Away from whoever landed the killing blow, flattened: the line a SHRED kill
+## throws the chassis along. ZERO when there is no shooter to go by (KillFx then
+## throws it backwards off its own facing).
+func _shot_dir(source: Node) -> Vector3:
+	if is_instance_valid(source) and source is Node3D:
+		var d := global_position - (source as Node3D).global_position
+		d.y = 0.0
+		if d.length() > 0.1:
+			return d.normalized()
+	return Vector3.ZERO
+
+## A flyer shot down by a SHRED weapon: the scrap spray and a kick along the
+## shot on top of its usual fall (it has no feet to be thrown off).
+func _shred_kick(source: Node) -> void:
+	var dir := KillFx._flat(_shot_dir(source), self)
+	if get_parent():
+		KillFx.spray(get_parent(), global_position, dir)
+	velocity += dir * KillFx.SHRED_KICK + Vector3.UP * 1.5
 
 ## Clears what would fight a kill style's visuals: the killing hit's flash
 ## (it clears material_overlay 0.14 s later, wiping the shock skin) and the
