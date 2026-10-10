@@ -6,7 +6,9 @@ extends Node
 ##     skip none, so the thread never jumps back or leaves an act empty;
 ## (3) the comic briefing prints the act header, the level's own tagline, the
 ##     trace card numbered by campaign position and the thread bar;
-## (4) a level outside the story (the range) gets none of it.
+## (4) a level outside the story (the range) gets none of it;
+## (5) SECTOR CLEARED shows the level's lead line in the HUD, and none outside
+##     the story.
 ##   godot --headless --path . --audio-driver Dummy res://tests/story_arc_probe.tscn
 
 const BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
@@ -23,7 +25,7 @@ func _run() -> void:
 	for i in campaign.size():
 		var id := GameState.level_id_from_path(campaign[i])
 		var b := StoryArc.beat(id)
-		if b.is_empty() or String(b.get("tagline", "")) == "" \
+		if b.is_empty() or String(b.get("tagline", "")) == "" or String(b.get("lead", "")) == "" \
 				or (i > 0 and String(b.get("trace", "")) == ""):
 			missing.append(id)
 	print("BEATS: levels=%d missing=%s" % [campaign.size(), missing])
@@ -62,6 +64,26 @@ func _run() -> void:
 	print("BRIEF range: quiet=%s" % quiet)
 	if not quiet:
 		ok = false
+
+	# 5. The victory screen's lead line.
+	var hud: Node = load("res://scenes/ui/hud.tscn").instantiate()
+	get_tree().root.add_child(hud)
+	await get_tree().process_frame
+	var lead_lbl: Label = null
+	if hud.has_method("_update_lead_block"): # a missing method would halt the probe, not fail it
+		GameState.current_level_path = "res://scenes/levels/level_gpt.tscn"
+		hud.call("_update_lead_block")
+		lead_lbl = hud.get("_lead_label")
+	var shows := lead_lbl != null and lead_lbl.visible \
+		and lead_lbl.text.contains(StoryArc.lead("gpt"))
+	if lead_lbl != null:
+		GameState.current_level_path = "res://scenes/levels/level_range.tscn"
+		hud.call("_update_lead_block")
+	var hides := lead_lbl != null and not lead_lbl.visible
+	print("LEAD: gpt_shows=%s range_hides=%s" % [shows, hides])
+	if not (shows and hides):
+		ok = false
+	hud.queue_free()
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()

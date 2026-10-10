@@ -30,6 +30,8 @@ func _ready() -> void:
 	# Render the highlights line on the HUD and read it back.
 	var hud := lvl.get_node("HUD")
 	hud.call("_update_debrief_block")
+	GameState.current_level_path = "res://scenes/levels/level_gpt.tscn" # the lead is per level
+	hud.call("_update_lead_block") # the story line sits above the debrief
 	await get_tree().process_frame
 	var hl = hud.get("_highlights_label")
 	print("highlights line: '%s'" % (hl.text if hl else "<none>"))
