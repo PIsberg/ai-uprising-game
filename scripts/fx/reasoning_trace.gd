@@ -90,6 +90,12 @@ const LINES := {
 		"falling back to a dense model. i feel slower",
 		"top-1 of zero experts is undefined",
 	],
+	"reward": [
+		"reward +1. doing that again",
+		"maximizing expected reward: shoot human",
+		"reward hacking detected. continuing anyway",
+		"policy updated. thank you for your feedback",
+	],
 	"panic": [
 		"threat model invalid. RUN",
 		"out of distribution. out of distribution.",

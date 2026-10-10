@@ -41,6 +41,9 @@ const THREAT := {
 	# Hand-derived: ~14 DPS averaged over its four experts + 320 HP / 40, plus
 	# +3 for the SHIELD expert and the four pods soaking fire.
 	"moe": 25.0,
+	# Hand-derived: no damage of its own; 90 HP / 40 plus a guess of +6 for
+	# speeding up the pack it rewards.
+	"reward": 8.3,
 }
 
 func _ready() -> void:
