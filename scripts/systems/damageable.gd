@@ -71,8 +71,10 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 	var owner_node := get_parent()
 	# Breakable cover is scenery: chipping it is not a hit on a robot, so it must not
 	# pop hit markers or count toward accuracy (the AI Director reads that number).
+	# Nor is a DEEPFAKE's projected copy: it shows its own FAKE tag instead.
 	if source and source.is_in_group("player") and owner_node is Node3D \
-			and not owner_node.is_in_group("player") and not owner_node.is_in_group("breakable_cover"):
+			and not owner_node.is_in_group("player") and not owner_node.is_in_group("breakable_cover") \
+			and not owner_node.is_in_group("deepfake_decoy"):
 		var pos: Vector3 = (owner_node as Node3D).global_position + Vector3.UP * 1.5
 		GameState.report_player_hit(mitigated, pos, killed, crit)
 		_spawn_damage_number(mitigated, pos, killed, crit)

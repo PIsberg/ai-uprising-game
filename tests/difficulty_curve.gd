@@ -26,6 +26,9 @@ const THREAT := {
 	# they zeroed whole rosters (hivemind indexed 34 with 17 live hostiles).
 	"hive": 14.0, "orb": 13.0, "bowler": 19.0, "ronin": 18.5,
 	"howitzer": 26.0, "manus": 90.0,
+	# The android's rifle at 8/9 damage on 150 HP (16.3 * 8/9 + 40/40), plus a
+	# hand guess of +2 for the decoys drawing fire away from it.
+	"deepfake": 18.5,
 }
 
 func _ready() -> void:
