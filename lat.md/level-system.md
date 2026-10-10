@@ -86,6 +86,14 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
+## Horizon Walkers
+<!-- lat: { "require-code-mention": true } -->
+Every open-sky level with a landmark gets a colossal war machine walking its horizon (`HorizonWalker.build_for`, from `_build_landmark`).
+
+* The WARMECH chassis (`quaternius_mech_armed.glb`) at `SCALE` (75, about 195 m) on a ring `RING_PAST_FLOOR` (330 m) past the floor, beyond Skyline's far ring, striding round the arena at `STRIDE_SPEED` with its walk clip slowed to `ANIM_SPEED`, facing along its path (`point_at`, `tick`). A far-off `mech_step` thud every `STEP_EVERY`.
+* Two fog-free red eyes placed every frame from the rig's `Head` bone, `EYE_FWD` ahead along the walker's facing (`head_position`, `_place_eyes`): the bone's own axes are the rig's. Night skies (env `stars`) add a searchlight cone from the head down toward the arena.
+* The body takes the level's fog (a silhouette in haze); no collision or shadows. LOW skips it. `tests/horizon_walker_probe`; `tests/horizon_walker_shot` (`--close` frames it from 300 m).
+
 ## CAPTCHA Gates
 <!-- lat: { "require-code-mention": true } -->
 A `gates` entry with `"captcha": true` gets a CAPTCHA checkpoint in its gap (`CaptchaGate.build` from `_build_gates`): an arch and a "[ ] I'm not a robot" panel.
