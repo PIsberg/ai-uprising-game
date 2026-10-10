@@ -266,6 +266,7 @@ func _ready() -> void:
 	_build_skyline(def)
 	_build_sky_traffic(def)
 	_build_stars(def)
+	_build_landmark(def)
 	_optimize_small_decor()
 	_build_tasks(def)
 	_build_bonus(def)
@@ -4329,6 +4330,12 @@ func _build_skyline(def: Dictionary) -> void:
 			windows.append({"pos": wp, "size": Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14), "yaw": yaw})
 	_box_multimesh(bodies, body_mat, false)
 	_box_multimesh(windows, win_mat, false)
+
+## The level's hero landmark past the skyline (Landmark, def key `landmark`).
+func _build_landmark(def: Dictionary) -> void:
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var low: bool = gs != null and gs.has_method("is_low") and gs.is_low()
+	Landmark.build_for(self, def, _theme_color(def), low)
 
 ## A starfield dome over open-sky levels: one MultiMesh of billboarded points
 ## at far distance, brightness-varied so the night sky reads as real depth

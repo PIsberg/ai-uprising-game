@@ -119,3 +119,5 @@ res://tests/kill_fx_probe.tscn
 res://tests/deepfake_probe.tscn
 # Leaked robot reasoning: <think> traces on contact/EMP, throttled, on screen only.
 res://tests/reasoning_trace_probe.tscn
+# Hero landmarks: one per open-sky level, past the floor, scenery only.
+res://tests/landmark_probe.tscn

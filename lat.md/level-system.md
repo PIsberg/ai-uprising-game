@@ -28,6 +28,14 @@ Specifies non-procedural levels and user-made content exceptions.
 * **Level 1 (`level_01.tscn`):** The only hand-authored `.tscn` level file in the repository.
 * **Custom Editor Levels (`level_custom.tscn`):** Loads user-made custom level layouts saved in `.lvl` formats.
 
+## Landmarks
+<!-- lat: { "require-code-mention": true } -->
+Every open-sky level gets one colossal AI megastructure past its skyline, on the spawn-to-exit heading.
+
+* `Landmark.build_for` (from `LevelBuilder._build_landmark`) reads the `landmark` def key: `kind` (`spire`, `twin`, `dish`, `stacks`, `monolith`), `label` (a holographic name), `color`, `bearing`. Without the key an open-sky level gets a plain spire; interiors get none.
+* Scenery only: no collision, every piece shadowless. Bodies take the fog, light bands set `disable_fog`. Built at 1x and scaled `SCALE` (1.5) whole. LOW skips steam, searchlights and halo spin.
+* `tests/landmark_probe`; `tests/landmark_shot` frames each one from its spawn.
+
 ## Level Editor
 <!-- lat: { "require-code-mention": true } -->
 The built-in level editor (`scripts/editor/level_editor.gd`, launched via `--editor`) enables rapid in-engine authoring:

@@ -272,6 +272,8 @@ static func _convoy() -> Dictionary:
 		"spawn": Vector3(0, 0.5, 178),
 		"floor_size": Vector2(44, 380),
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "stacks", "label": "MAINFRAME"},
 		# Night highway: moonlit sky over sodium-lit tarmac. This was the one
 		# level with no env block, so it rendered the builder's generic grey
 		# default (eye-level capture: saturation 0.19, the flattest frame in
@@ -667,6 +669,8 @@ static func _nexus() -> Dictionary:
 				"reinforce": [{"type": "spider", "count": 3, "pos": Vector3(0, 0, -10)}]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "spire", "label": "NEXUS"},
 		# EXPANSION PASS (2× area): the comic's reads are sacred — the nexus
 		# tower, the rooftop drop-in (spawn + rubble cascade UNMOVED on their
 		# vantage) and the fire-trench routing all stay put. A ring of ruined
@@ -907,6 +911,8 @@ static func _frostbreak() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "dish", "label": "HAL 9000", "color": Color(1.0, 0.2, 0.15)},
 		# EXPANSION PASS (2× area): the 48² relay yard is untouched at the
 		# centre — the WARDEN's hunt stays in the glacier comb. A new outer
 		# icefield ring wraps it: bulkhead-routed way in, an elevated weather
@@ -1740,6 +1746,8 @@ static func _horde() -> Dictionary:
 		"tasks": [{"type": "none"}],
 		"no_exit": true,
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "monolith", "label": ""},
 		# EXPANSION PASS (light touch — siege pacing is distance-tuned): +20%
 		# floor, two extra pour-in gates at the new edge, two ring cover walls.
 		"floor_size": Vector2(68, 68),
@@ -1987,6 +1995,8 @@ static func _overseer() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "spire", "label": "OVERSEER"},
 		# EXPANSION PASS (2× area): the 62² command deck is untouched at the
 		# centre — the gunship yard stays open. A new outer landing ring wraps
 		# it: bulkhead-routed way in, an elevated approach gallery along the
@@ -2249,6 +2259,8 @@ static func _alien() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "dish", "label": "SETI@HOME"},
 		# EXPANSION PASS (2× area): the 76² landing hollow is untouched at the
 		# centre — the beacon yard stays open. A new outer landing scar wraps
 		# it: bulkhead-routed way in, an elevated survey gallery along the north
@@ -2483,6 +2495,8 @@ static func _titan() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "monolith", "label": "PROMETHEUS-0"},
 		# EXPANSION PASS (2× area): the 84² citadel core is untouched at the
 		# centre — the PROMETHEUS yard stays open. A new outer data-moat ring
 		# wraps it: bulkhead-routed way in, an elevated observation gallery
@@ -2693,6 +2707,8 @@ static func _archon() -> Dictionary:
 		"tasks": [{"type": "kill_all"}],
 		"music": "music_archon",
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "monolith", "label": "ARCHON"},
 		# EXPANSION PASS (2× area): the 80² cathedral nave is untouched at the
 		# centre — ARCHON's yard stays open and it manufactures its waves there.
 		# A new outer cloister ring wraps it: bulkhead-routed way in, an
@@ -2923,6 +2939,8 @@ static func _uplink() -> Dictionary:
 		],
 		"music": "music_grok",
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "dish", "label": "SKYNET UPLINK"},
 		# EXPANSION PASS (2× area): the 60² relay yard is untouched at the centre;
 		# a new outer antenna field wraps it — bulkhead-routed way in, an elevated
 		# broadcast gallery along the north edge with a sky-bridge over the old
@@ -4000,6 +4018,8 @@ static func _gemini() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "twin", "label": "GEMINI"},
 		# EXPANSION PASS (2× area): the 50² nexus core is untouched at the centre;
 		# a new outer server-field ring wraps it — bulkhead-routed way in, an
 		# elevated data gallery along the north edge with a sky-bridge over the
@@ -4465,6 +4485,8 @@ static func _grok() -> Dictionary:
 				"radius": 4.0, "label": "Reach extraction before the purge"},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "spire", "label": "GROK", "color": Color(1.0, 0.25, 0.2)},
 		# EXPANSION PASS (2× area): the 58² monolith field is untouched at the
 		# centre; a new outer perimeter ring wraps it — bulkhead-routed way in,
 		# an elevated watch gallery along the north edge with a sky-bridge onto
@@ -4712,6 +4734,8 @@ static func _suburb() -> Dictionary:
 				"radius": 4.5, "color": Color(0.45, 1.0, 0.55), "label": "Hold the evac pickup"},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "spire", "label": "THE CLOUD"},
 		"streets": true,
 		# NEIGHBOURHOOD WATCH: the estate's smart-home security cams answer to
 		# the machines now: CCTV poles on the kerb in front of a house by the
@@ -4989,6 +5013,8 @@ static func _suburb_boss() -> Dictionary:
 		# and extend free. Spawn/exit pushed to the new perimeter.
 		"trees": 30,
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "spire", "label": "THE CLOUD"},
 		"floor_size": Vector2(126, 126),
 		"floor_color": Color(0.16, 0.15, 0.17),
 		"spawn": Vector3(-52, 0.6, -52),
@@ -5251,6 +5277,8 @@ static func _lava_world() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "stacks", "label": "VULCAN FOUNDRY"},
 		# EXPANSION PASS (2× area): the
 		# walkway network grew an outer loop (see _hazard_platforms) and the
 		# molten pools stretch to keep covering the floor quadrants. Spawn and
@@ -5462,6 +5490,8 @@ static func _water_world() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "stacks", "label": "TIDECORE COMPUTE"},
 		# OWN LAYOUT (was a reskinned twin of lava_world: same _hazard_platforms
 		# list, ramp, spawn, exit and pickups). Vulcan Forge is a corner-to-corner
 		# crossing on one tier; Tidecore is a journey INWARD and UP: spawn on the NW
@@ -5685,6 +5715,8 @@ static func _desert() -> Dictionary:
 				]},
 		],
 		"open_sky": true,
+		# Hero landmark past the skyline (Landmark).
+		"landmark": {"kind": "dish", "label": "WOPR"},
 		# EXPANSION PASS (2× area): the 66² canyon basin is untouched at the
 		# centre — oasis, fissures, mesas and the relay mast all stay put. A new
 		# outer dune ring wraps it: NO gates (open desert — bulkheads would kill
