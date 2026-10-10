@@ -34,7 +34,8 @@ Every open-sky level gets one colossal AI megastructure past its skyline, on the
 
 * `Landmark.build_for` (from `LevelBuilder._build_landmark`) reads the `landmark` def key: `kind` (`spire`, `twin`, `dish`, `stacks`, `monolith`), `sign` (a holographic proper name; not `label`, which check_strings_csv treats as translated HUD text), `color`, `bearing`. Without the key an open-sky level gets a plain spire; interiors get none.
 * Scenery only: no collision, every piece shadowless. Bodies take the fog, light bands set `disable_fog`. Built at 1x and scaled `SCALE` (1.5) whole. LOW skips steam, searchlights and halo spin.
-* `tests/landmark_probe`; `tests/landmark_shot` frames each one from its spawn.
+* Interiors get `_build_core`: a lattice sphere, two rings and an eye that turns to the camera, hung under the ceiling at the candidate spot near the centre with the most clear air (`_core_spot`), `CORE_HEADROOM` over the highest walkable top within `CORE_REACH`, never near a route gate. It carries its own accent light outside the `level_light` group, so blackouts leave it burning. `ROOM_BASE_H` / `ROOM_CLEARANCE_M` mirror LevelBuilder's (the probe checks).
+* `tests/landmark_probe`; `tests/landmark_shot` frames each one (interiors from 14 m off the core).
 
 ## Level Editor
 <!-- lat: { "require-code-mention": true } -->

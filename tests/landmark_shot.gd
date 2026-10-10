@@ -1,7 +1,8 @@
 extends Node3D
-## Windowed visual check for hero landmarks: for every open-sky level, stands at
-## the spawn at eye height facing the landmark (pitched up a little) and saves
-## one frame. Headless gives black frames.
+## Windowed visual check for hero landmarks: for every level with one, stands at
+## the spawn at eye height facing it (open sky: pitched up a little toward the
+## landmark; interiors: straight at the AI core) and saves one frame. Headless
+## gives black frames.
 ##   godot --path . res://tests/landmark_shot.tscn -- --out=<abs dir> [--levels=gemini,grok] [--cam_y=40]
 ## --cam_y lifts the camera off eye level (default 1.7 m), to see what a
 ## perimeter wall hides.
@@ -25,8 +26,6 @@ func _ready() -> void:
 		if not only.is_empty() and not only.has(id):
 			continue
 		var def: Dictionary = LevelDefs.get_def(id)
-		if not def.get("open_sky", false):
-			continue
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			continue
@@ -48,12 +47,23 @@ func _ready() -> void:
 			pcam.current = false
 		cam.current = true
 		var lm := lvl.get_node_or_null("Landmark") as Node3D
+		if lm == null:
+			lvl.queue_free()
+			await get_tree().process_frame
+			continue
 		var sp: Vector3 = def.get("spawn", Vector3.ZERO)
 		cam.global_position = sp + Vector3(0, cam_y, 0)
-		if lm:
+		if def.get("open_sky", false):
 			var look := lm.global_position + Vector3(0, 70.0, 0)
 			var flat := Vector3(look.x, cam.global_position.y, look.z)
 			cam.look_at(flat.lerp(look, 0.35), Vector3.UP)
+		else:
+			# Interiors: partition walls block the spawn's view, so stand 14 m
+			# from the core toward the spawn instead.
+			var back := Vector3(sp.x - lm.global_position.x, 0, sp.z - lm.global_position.z)
+			back = back.normalized() if back.length() > 1.0 else Vector3(0, 0, 1)
+			cam.global_position = Vector3(lm.global_position.x, cam_y + 1.3, lm.global_position.z) + back * 14.0
+			cam.look_at(lm.global_position, Vector3.UP)
 		GameState.current_state = GameState.State.PLAYING
 		await get_tree().create_timer(0.3).timeout
 		await RenderingServer.frame_post_draw
