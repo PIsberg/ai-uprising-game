@@ -42,6 +42,13 @@ Robots bleed binary when hit and pour it out when they die (`scripts/fx/data_ble
 * `DataBleed.burst` runs from `EnemyBase._data_burst`, on `hp.died` rather than in `_on_died`, so subclasses that override `_on_died` without super still burst: `BURST_AMOUNT` glyphs rising from mid-body. It ignores the frame budget.
 * One CPUParticles3D per spill, freeing itself on `finished`; a two-frame sheet ("0" | "1", `glyph_texture()` drawn from 5x7 bitmaps) picked per particle by `anim_offset`. Unshaded, `disable_fog`, no shadows; LOW halves the amounts. `tests/data_bleed_probe`.
 
+## Rail Trail
+<!-- lat: { "require-code-mention": true } -->
+Railgun rounds ionize the air they cross (`scripts/fx/rail_trail.gd`, `WeaponData.rail_trail`: the gauss and the Longshot).
+
+* `Weapon._do_hitscan` calls `RailTrail.spawn` from the muzzle to where the round stopped, in `shot_color()` (so a RAMPAGE tier tints it). The trail starts `START` past the muzzle and keeps at most `MAX_LEN`; at most `MAX_LIVE` live at once, the oldest freed first.
+* One ArrayMesh per shot (`build_mesh`): a helix band `PITCH` metres a turn at `RADIUS` (vertex `NORMAL` points out from the axis, `COLOR.a` 0) round two crossed core quads (`COLOR.a` 1). `shaders/rail_trail.gdshader` animates it from the `age` instance uniform over `LIFE`: the coil swells, wobbles and rises like smoke as it fades, the core burns out in the first half. Additive, fog-free, shadowless; LOW uses fewer segments a turn. `tests/rail_trail_probe`.
+
 ## Rampage Charge
 The gun charges up with the RAMPAGE kill streak (`Weapon._on_rampage_changed`, on `GameState.rampage_changed`).
 

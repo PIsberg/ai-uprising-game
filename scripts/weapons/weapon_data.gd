@@ -82,6 +82,7 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 @export var muzzle_scale: float = 1.0 ## Size of the muzzle flash — small SMGs ~0.7, heavy cannons ~1.8. Also tints the flash toward tracer_color.
 @export var energy_beam_fx: bool = false ## Hitscan only: draw a thick lingering laser beam (muzzle→hit) with end blooms, on top of the tracer. For lasers/railguns.
 @export var kill_fx: int = 0 ## How a robot this weapon kills dies (KillFx: 0 classic blast, 1 disintegrate, 2 electrocute, 3 shred, 5 blast apart; 4 decapitate is tagged by the weapon on a killing headshot when this is 0).
+@export var rail_trail: bool = false ## Hitscan only: the round leaves a lingering ionization coil round its path (RailTrail). Railguns.
 @export var arc_fx: bool = false ## Adds jagged electric arcs to the energy beam (Tesla/Arc weapons). Implies an energy beam.
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
