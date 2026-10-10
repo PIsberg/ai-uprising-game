@@ -8,7 +8,11 @@ extends Node
 ##     debris yet, then the classic blast and topple once the spasms end;
 ## (5) a non-tagged kill (a grenade or hazard) after an energy hit stays classic,
 ##     and the tag never outlives the hit that set it;
-## (6) bosses keep the classic death.
+## (6) bosses keep the classic death;
+## (7) the robots with their own _on_died (#194): a gauss kill dissolves a
+##     drone, raptor, mender and skitter in place with no death blast; an arc
+##     kill holds a drone in the air through the spasms, then it falls; a
+##     seeker keeps its shot-down blast (that blast is a mechanic).
 ##   godot --headless --path . --audio-driver Dummy res://tests/kill_fx_probe.tscn
 
 const ANDROID := "res://scenes/enemies/android.tscn"
@@ -130,8 +134,53 @@ func _run() -> void:
 	await _frames(6)
 	_check("boss kill: no disintegrate", is_instance_valid(b) and _dissolving(b) == 0 and _blasts == blasts0 + 1)
 
+	# 7. Robots with their own _on_died.
+	var x := 90.0
+	for scene in ["drone", "raptor", "mender", "skitter"]:
+		var r := _robot(Vector3(x, 0, 0), "res://scenes/enemies/%s.tscn" % scene)
+		if scene != "skitter":
+			r.global_position.y = 3.0
+		await _frames(3)
+		blasts0 = _blasts
+		_wake(r)
+		r.hp.current_health = 1.0
+		var at := _body_centre(r)
+		gauss._do_hitscan(at + Vector3(0, 0, 10), Vector3(0, 0, -1))
+		_check("%s: gauss killed it" % scene, not is_instance_valid(r) or not r.hp.is_alive())
+		_check("%s: disintegrates" % scene, is_instance_valid(r) and _dissolving(r) > 0)
+		await _frames(int(KillFx.DISSOLVE_TIME * 60.0) + 20)
+		_check("%s: no death blast, gone after the dissolve" % scene,
+				_blasts == blasts0 and not is_instance_valid(r), "%d -> %d" % [blasts0, _blasts])
+		x += 12.0
+	var dz := _robot(Vector3(x, 3.0, 0), "res://scenes/enemies/drone.tscn")
+	await _frames(3)
+	_wake(dz)
+	dz.hp.current_health = 1.0
+	var y0 := dz.global_position.y
+	arc._do_hitscan(_body_centre(dz) + Vector3(0, 0, 10), Vector3(0, 0, -1))
+	await _frames(20)
+	_check("drone: electrocuted in the air", is_instance_valid(dz) and _shocked(dz) > 0
+			and absf(dz.global_position.y - y0) < 0.3 and not dz._dying)
+	await _frames(int(KillFx.SHOCK_TIME * 60.0) + 10)
+	_check("drone: then loses lift", is_instance_valid(dz) and dz._dying)
+	x += 12.0
+	var sk := _robot(Vector3(x, 2.0, 0), "res://scenes/enemies/seeker.tscn")
+	await _frames(3)
+	_wake(sk)
+	sk.hp.current_health = 1.0
+	gauss._do_hitscan(_body_centre(sk) + Vector3(0, 0, 10), Vector3(0, 0, -1))
+	await _frames(3)
+	_check("seeker: keeps its blast", not is_instance_valid(sk) or _dissolving(sk) == 0)
+	_check("seeker: detonated", not is_instance_valid(sk) or sk._detonated)
+
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+## Where a shot lands on `e`: its first collision shape's centre.
+func _body_centre(e: Node3D) -> Vector3:
+	for c in e.find_children("*", "CollisionShape3D", true, false):
+		return (c as Node3D).global_position
+	return e.global_position + Vector3.UP * 0.5
 
 func _gun(id: String, shooter: Node) -> Weapon:
 	var w: Weapon = (load("res://scenes/weapons/%s.tscn" % id) as PackedScene).instantiate()
@@ -139,8 +188,8 @@ func _gun(id: String, shooter: Node) -> Weapon:
 	w._active_shooter = shooter
 	return w
 
-func _robot(pos: Vector3) -> EnemyBase:
-	var e: EnemyBase = (load(ANDROID) as PackedScene).instantiate()
+func _robot(pos: Vector3, scene: String = ANDROID) -> EnemyBase:
+	var e: EnemyBase = (load(scene) as PackedScene).instantiate()
 	# AI off, collision on: a disabled body is otherwise REMOVED from physics.
 	e.disable_mode = CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
 	e.process_mode = Node.PROCESS_MODE_DISABLED

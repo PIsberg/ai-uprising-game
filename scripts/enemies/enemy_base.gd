@@ -1653,23 +1653,32 @@ func _on_died(_source: Node) -> void:
 
 	_drop_loot()
 
-	# The weapon that landed the killing blow picks the death (KillFx). Bosses
-	# keep the classic blast: their kill-cam is framed around it.
-	var style: int = hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+	# The weapon that landed the killing blow picks the death (KillFx).
+	var style := _kill_style()
 	if style != KillFx.NONE:
-		# The killing hit's flash would clear material_overlay 0.14 s from now,
-		# wiping the shock skin (and handing it back as the "saved" overlay).
-		if _flash_tween and _flash_tween.is_valid():
-			_flash_tween.kill()
-		_clear_hit_flash()
-		if _visual_root is RobotModel:
-			(_visual_root as RobotModel).quench_glow()
+		_prep_kill_fx()
 	if style == KillFx.DISINTEGRATE:
 		KillFx.disintegrate(self)
 	elif style == KillFx.ELECTROCUTE:
 		KillFx.electrocute(self, _classic_death_fx)
 	else:
 		_classic_death_fx()
+
+## The KillFx style the killing hit asked for. Bosses (score >= 1000) keep the
+## classic blast: their kill-cam is framed around it. Read it inside _on_died,
+## while `died` is still being emitted (the weapon untags right after).
+func _kill_style() -> int:
+	return hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+
+## Clears what would fight a kill style's visuals: the killing hit's flash
+## (it clears material_overlay 0.14 s later, wiping the shock skin) and the
+## HDR red damage blink (red under the blue skin reads purple).
+func _prep_kill_fx() -> void:
+	if _flash_tween and _flash_tween.is_valid():
+		_flash_tween.kill()
+	_clear_hit_flash()
+	if _visual_root is RobotModel:
+		(_visual_root as RobotModel).quench_glow()
 
 ## The default death: blast, flung plates, a torn limb, a burning wreck and a
 ## scorch, then the topple and sink. Electrocution runs it after the spasms.

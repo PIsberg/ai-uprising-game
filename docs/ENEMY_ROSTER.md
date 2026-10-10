@@ -20,8 +20,10 @@ Two base-class conventions make the flags in this table matter:
    attack feature must hook the `hp.died` / `hp.damaged` signals instead of extending
    those methods (see the `mark_bounty` / `_on_died_voice` pattern in `enemy_base.gd`).
    The one deliberate exception is the weapon kill style (`KillFx`): it lives in the base
-   `_on_died` because it *replaces* the base death visuals, which these 7 already replace
-   with their own, so they keep their custom deaths whatever weapon killed them.
+   `_on_died` because it *replaces* the base death visuals. Of the 7 overrides, DRONE (and
+   its children), RAPTOR, MENDER and SKITTER read it themselves through
+   `_kill_style()` / `_prep_kill_fx()`; SEEKER keeps its shot-down blast (that blast is a
+   mechanic) and the bosses ARCHON and OVERSEER keep their deaths.
 
 Column notes: "Overrides w/o super" lists only overrides that do **not** call
 `super._on_died(...)` / `super._state_attack(...)` / `super(...)` — an override that calls

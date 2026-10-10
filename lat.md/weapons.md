@@ -32,7 +32,7 @@ The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_
 
 * DISINTEGRATE (gauss, Longshot, plasma, OMEGA): the robot's materials swap to `shaders/dissolve.gdshader`, which burns it away top-down in 1 s behind a glowing edge; no wreck. ELECTROCUTE (tesla, arc coil, tempest): 0.75 s of spasms under arcs and a blue skin, then the classic blast (`EnemyBase._classic_death_fx`).
 * The style rides on `Damageable.kill_fx` only for the duration of the weapon's `apply_damage` call (`KillFx.tag` / `untag`). `died` fires inside that call, so `_on_died` sees the killing hit's style and nothing else: grenades and hazards never tag.
-* Bosses and the 7 robots with their own `_on_died` keep their deaths (#194). `tests/kill_fx_probe`.
+* Bosses keep their deaths. Overrides of `_on_died` opt in through `EnemyBase._kill_style()` / `_prep_kill_fx()`: drones and raptors burn away mid-air or spasm before they fall, menders and skitters split like the base. The seeker keeps its shot-down blast, a mechanic. `tests/kill_fx_probe`.
 
 ## Grenades
 Defines the physics layers and player-bound scripts for throwing grenades.

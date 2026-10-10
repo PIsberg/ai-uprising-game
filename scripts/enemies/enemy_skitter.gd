@@ -146,6 +146,20 @@ func _on_died(source: Node) -> void:
 	set_physics_process(false)
 	if _damaged_emitter and is_instance_valid(_damaged_emitter):
 		_damaged_emitter.queue_free()
+	var style := _kill_style()
+	if style != KillFx.NONE:
+		_prep_kill_fx()
+	if style == KillFx.DISINTEGRATE:
+		KillFx.disintegrate(self)
+	elif style == KillFx.ELECTROCUTE:
+		KillFx.electrocute(self, _skitter_death_fx)
+	else:
+		_skitter_death_fx()
+
+## The classic skitter death: a small pop and a quick shrink.
+func _skitter_death_fx() -> void:
+	if get_parent() == null:
+		return
 	var fx := EXPLOSION.instantiate()
 	get_parent().add_child(fx)
 	(fx as Node3D).global_position = global_position + Vector3.UP * 0.2
