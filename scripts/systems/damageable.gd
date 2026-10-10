@@ -14,6 +14,10 @@ var current_health: float
 ## around its apply_damage call (KillFx.tag/untag), so the owner's death handler,
 ## which runs inside that call, knows which weapon finished it. 0 otherwise.
 var kill_fx: int = 0
+## The gun behind the hit being applied right now, set and cleared with kill_fx
+## (KillFx.tag/untag). Null for grenades, hazards, melee and enemy fire. The
+## OVERFITTER reads it to learn which weapon is hurting it.
+var hit_weapon: WeaponData = null
 
 func _ready() -> void:
 	current_health = max_health

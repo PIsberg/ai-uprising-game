@@ -32,6 +32,9 @@ const THREAT := {
 	# Hand-derived: the spider's bite DPS (~13.4) x1.3 for the seven bodies'
 	# overlapping pressure, plus the whole family's HP (90 + 2x40 + 4x18) / 40.
 	"forkbomb": 23.5,
+	# The android's rifle (16.3 at 9 damage) + 260 HP / 40, plus a hand guess of
+	# +3 for the overfit quarter-damage on a player who never switches guns.
+	"overfitter": 25.8,
 }
 
 func _ready() -> void:

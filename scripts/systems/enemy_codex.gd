@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -112,6 +112,13 @@ const ENTRIES := {
 		"strengths": ["Three targets, one real threat", "Swaps places with its own projections", "Copies are rebuilt nine seconds after the last one pops"],
 		"weaknesses": ["Copies glitch (a sideways tear, a magenta flash) and cast no shadow", "Radar and homing rounds see straight through the copies", "One hit pops a copy; kill the real one and they all collapse"],
 		"weapons": ["SW-7 Swarm Launcher", "AR-7 Pulse Rifle", "SG-12 Breacher"],
+	},
+	"overfitter": {
+		"scene": "res://scenes/enemies/overfitter.tscn", "name": "OVERFITTER", "scale": 1.0, "y": 0.0,
+		"desc": "A heavy-gun chassis in training-green that learns the gun you keep shooting it with. A hologram over its head reads TRAINING and a falling loss; once enough of one gun has landed it has OVERFIT to it, a shell in that gun's colour lights up and the same gun barely scratches it. It memorised your rifle. It knows nothing else.",
+		"strengths": ["Overfit: the gun it learned does a quarter damage", "Tough chassis with the android's burst rifle", "Punishes a player who never switches weapons"],
+		"weaknesses": ["Switch guns and it is out of distribution: +50% damage from everything for 3 s", "Grenades and hazards are never learned or resisted", "The hologram tells you which gun it fitted to"],
+		"weapons": ["Any gun it has NOT seen", "Frag grenades", "OMEGA"],
 	},
 	"forkbomb": {
 		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,

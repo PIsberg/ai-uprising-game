@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-319 probes total: **86** wired into the headless suite (`suite`), **84**
+321 probes total: **87** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **149** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **150** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -127,6 +127,8 @@ or GPU-timing probes; `--headless` renders these black).
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
 | deepfake_probe | DEEPFAKE: wired into the level builder, codex and GROK roster; projects two copies on its own in a fight, ~SPREAD to either side; copies are out of the `enemy` group and shadowless; copies fire the same burst and hurt nobody while its own rounds do; a real rifle hit pops a copy without score or an accuracy hit; a wall blocks that side's copy; its death collapses the copies | suite |
+| overfitter_probe | OVERFITTER: wired into the level builder, codex, GEMINI (1) and UPLINK (2); a weapon hit carries its WeaponData on the Damageable only during the hit; full damage while training, overfit after FIT_DAMAGE of one gun, then that gun deals FIT_MULT with the shell lit and the hologram naming it; another gun breaks it (OOD_MULT for OOD_TIME, shell down, learns nothing, hologram OUT OF DISTRIBUTION); untagged damage neither resisted nor learned; full damage once the window closes | suite |
+| overfitter_shot | Three OVERFITTERs: training on the rifle, overfit to the shotgun (orange shell), overfit to the rifle then hit by the pistol (out of distribution); `-- --out=<dir>` | windowed |
 | deepfake_shot | DEEPFAKE and its two copies facing the camera over 2 s, so a copy's glitch lands in a frame; `-- --out=<dir>` | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |
 | difficulty_scaling_check | How many spawners survive `apply_level_scaling` per difficulty on a representative level | headless |

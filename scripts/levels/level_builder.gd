@@ -60,6 +60,7 @@ const ENEMY_SCENES := { # type -> scene path; resolved lazily by enemy_scene()
 	"manus": "res://scenes/enemies/manus.tscn",
 	"hive": "res://scenes/enemies/hive.tscn",
 	"deepfake": "res://scenes/enemies/deepfake.tscn",
+	"overfitter": "res://scenes/enemies/overfitter.tscn",
 	"forkbomb": "res://scenes/enemies/forkbomb.tscn",
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
