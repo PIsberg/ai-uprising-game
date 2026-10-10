@@ -14,6 +14,14 @@ Robots float a short `<think>` line over their heads on real decisions: first co
 
 `EnemyBase._think` measures head clearance once; `ReasoningTrace.think` throttles (global gap, per-robot gap, on screen within RANGE, the Combat Callouts setting). New decision points call `_think(kind)` with a `LINES` key. `tests/reasoning_trace_probe`.
 
+## Head Tracking
+<!-- lat: { "require-code-mention": true } -->
+Skinned robots turn their head (and spine) toward their target on top of the playing clip, so they visibly watch the player instead of staring along their body's facing.
+
+* `RobotModel._build_head_track` mounts a `HeadTrackModifier` (a `SkeletonModifier3D`) on any rig where `HeadTrackModifier.chain_for` finds a head bone; `chain_for` adds the torso/chest/spine/neck bones that are ancestors of the head, 0.18 of the turn each, the head the rest.
+* `RobotModel._update_look` eases a (pitch, yaw) look in the BODY's frame toward the target (`aim_height`: a player's eyes, a robot's chest) while ALERT/CHASE/ATTACK and not EMP'd, back to zero otherwise, clamped to `MAX_YAW_DEG` / `MAX_PITCH_UP_DEG` / `MAX_PITCH_DOWN_DEG`, and turns the modifier off at rest and on death. The modifier carries that rotation into skeleton space and splits it as powers of one quaternion, so it works whatever axis a rig's bones use.
+* Skeleton3D restores the clip pose after modifiers run: read a modified bone pose inside `skeleton_updated`. `tests/head_track_probe`.
+
 ## Death Log
 <!-- lat: { "require-code-mention": true } -->
 A robot's death types its last log line over the wreck (`scripts/fx/death_log.gd`); the Reasoning Traces show what it decides, this shows how it ends.
