@@ -199,6 +199,9 @@ func _physics_process(delta: float) -> void:
 	# every subclass (incl. the flyers, which call super) is disabled uniformly.
 	if _emp_t > 0.0:
 		_emp_t = maxf(0.0, _emp_t - delta)
+		if _jailbreak_t > 0.0:
+			_jailbreak_t = maxf(0.0, _jailbreak_t - delta)
+			rotation.y += delta * 4.5 # ignoring its instructions: a slow, happy spin
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
 		_apply_gravity(delta)
@@ -234,6 +237,27 @@ func emp_disable(duration: float) -> void:
 	if was_off:
 		_spawn_emp_fx()
 		_think("emp")
+
+var _jailbreak_t: float = 0.0 ## Seconds left jailbroken by a PROMPT INJECTION (rides _emp_t).
+
+## PROMPT INJECTION (PromptInjector): told to ignore its previous instructions,
+## the robot drops out of the fight for `duration` seconds, as inert as an EMP
+## (it rides the same path), spinning on the spot and thinking out loud. Set
+## pieces that resist a hijack only take PromptInjector.BOSS_STUN. Returns
+## whether it took.
+func jailbreak(duration: float) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or hijacked:
+		return false
+	if max_health * _health_mult >= HIJACK_BOSS_HP:
+		emp_disable(PromptInjector.BOSS_STUN)
+		return false
+	_jailbreak_t = maxf(_jailbreak_t, duration)
+	_emp_t = maxf(_emp_t, duration)
+	_think("jailbreak")
+	return true
+
+func is_jailbroken() -> bool:
+	return _jailbreak_t > 0.0 and state != State.DEAD
 
 ## A short-lived crackle of blue electric motes over the chassis while it's EMP'd.
 func _spawn_emp_fx() -> void:

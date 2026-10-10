@@ -165,7 +165,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				a["pos"] = _sv(a["pos"], s)
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore", "holograms", "towers"]:
+			"buildings", "targets", "lore", "holograms", "towers", "injectors"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -2149,6 +2149,8 @@ static func _overseer() -> Dictionary:
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
 		],
+		# PROMPT INJECTION terminal (PromptInjector): stand at it to jailbreak the pack.
+		"injectors": [{"pos": Vector3(8, 0, 31)}],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, -6)},
@@ -3089,6 +3091,8 @@ static func _uplink() -> Dictionary:
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
 		],
+		# PROMPT INJECTION terminal (PromptInjector): stand at it to jailbreak the pack.
+		"injectors": [{"pos": Vector3(-8, 0, 3)}],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "android", "pos": Vector3(6, 0.5, 6)},
@@ -4164,6 +4168,8 @@ static func _gemini() -> Dictionary:
 			{"type": "canister", "pos": Vector3(28, 0, 26)},
 			{"type": "lamp", "pos": Vector3(20, 0, -30)},
 		],
+		# PROMPT INJECTION terminal (PromptInjector): stand at it to jailbreak the pack.
+		"injectors": [{"pos": Vector3(-14, 0, -22)}],
 		"enemies": [
 			{"type": "drone", "pos": Vector3(6, 2.5, -6)},
 			{"type": "drone", "pos": Vector3(-6, 2.5, 6)},
@@ -4646,6 +4652,8 @@ static func _grok() -> Dictionary:
 			{"type": "lamp", "pos": Vector3(34, 0, 14)},
 			{"type": "canister", "pos": Vector3(37, 0, 26)},
 		],
+		# PROMPT INJECTION terminal (PromptInjector): stand at it to jailbreak the pack.
+		"injectors": [{"pos": Vector3(10, 0, 1)}],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
 			{"type": "drone", "pos": Vector3(6, 2.5, -4)},

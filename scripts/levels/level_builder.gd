@@ -287,6 +287,7 @@ func _ready() -> void:
 	_build_lava(def)
 	_build_firewalls(def)
 	_build_scanners(def)
+	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_bake_navmesh.call_deferred()
@@ -2385,6 +2386,15 @@ func _build_firewalls(def: Dictionary) -> void:
 ## cone with a clear line of sight and the authored `alarm` squad pours in
 ## through the task reinforcement spawner. See vision_scanner.gd;
 ## tests/scanner_probe checks every alarm squad lands on walkable ground.
+## PROMPT INJECTION terminals (def "injectors": [{pos, yaw?}]): stand at one to
+## jailbreak every robot near it, once (PromptInjector).
+func _build_injectors(def: Dictionary) -> void:
+	for e in def.get("injectors", []):
+		var inj := PromptInjector.new()
+		add_child(inj)
+		inj.position = e.get("pos", Vector3.ZERO)
+		inj.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
+
 func _build_scanners(def: Dictionary) -> void:
 	for e in def.get("scanners", []):
 		var sc := VisionScanner.new()
