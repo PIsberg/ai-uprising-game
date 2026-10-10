@@ -62,6 +62,7 @@ const ENEMY_SCENES := { # type -> scene path; resolved lazily by enemy_scene()
 	"deepfake": "res://scenes/enemies/deepfake.tscn",
 	"overfitter": "res://scenes/enemies/overfitter.tscn",
 	"attention": "res://scenes/enemies/attention.tscn",
+	"moe": "res://scenes/enemies/moe.tscn",
 	"forkbomb": "res://scenes/enemies/forkbomb.tscn",
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")
