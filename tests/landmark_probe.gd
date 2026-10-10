@@ -8,7 +8,12 @@ extends Node3D
 ## (5) a real level scene built through LevelBuilder carries it;
 ## (6) every interior level gets the AI core, sized into the clear air between
 ##     the highest walkable top near the centre (+ headroom) and the ceiling,
-##     its constants match LevelBuilder's, and its eye turns to the camera.
+##     its constants match LevelBuilder's, and its eye turns to the camera;
+## (7) an interior with no room for the core gets the wall screen instead: on a
+##     perimeter wall ahead of the spawn, just off its inner face, above head
+##     height and under the ceiling, clear of every route gate and authored wall
+##     that meets that wall, pure scenery; its pupil follows the camera; and the
+##     facility billboard moves off the screen's wall (claude, guardrails, range).
 ##   godot --headless --path . --audio-driver Dummy res://tests/landmark_probe.tscn
 
 const KINDS := ["spire", "twin", "dish", "stacks", "monolith"]
@@ -65,6 +70,7 @@ func _run() -> void:
 	_check("room height mirrors LevelBuilder", Landmark.ROOM_BASE_H == LevelBuilder.WALL_HEIGHT
 			and Landmark.ROOM_CLEARANCE_M == LevelBuilder.PLAYER_CLEARANCE_M)
 	var n_core := 0
+	var n_screen := 0
 	for id in LevelDefs._defs().keys():
 		var d: Dictionary = LevelDefs.get_def(id)
 		if d.get("open_sky", false) or String(d.get("landmark", {}).get("kind", "")) == "none":
@@ -73,10 +79,16 @@ func _run() -> void:
 		var ceiling := Landmark._room_height(d) - 0.4
 		var spot := Landmark._core_spot(d)
 		var floor_top := spot.z
+		_check("%s gets an interior landmark" % id, core != null)
 		if core == null:
-			_check("%s: no core only when there is no room" % id, spot == Vector3.INF
+			continue
+		if core.kind == "screen":
+			_check("%s: a screen only when there is no room for the core" % id, spot == Vector3.INF
 					or ceiling - floor_top - Landmark.CORE_HEADROOM < Landmark.CORE_MIN_R * 2.7,
 					"ceiling %.1f, top %.1f" % [ceiling, floor_top])
+			_check_screen(id, d, core)
+			n_screen += 1
+			core.free()
 			continue
 		_check("%s core is clear of the route gates" % id,
 				not Landmark._near_gate(d, Vector2(core.position.x, core.position.z)))
@@ -90,6 +102,7 @@ func _run() -> void:
 		_check("%s core is scenery" % id, core.find_children("*", "CollisionObject3D", true, false).is_empty())
 		core.free()
 	_check("interior levels get a core", n_core >= 6, "%d" % n_core)
+	_check("the rest get a screen", n_screen >= 3, "%d" % n_screen)
 	var cam := Camera3D.new()
 	add_child(cam)
 	cam.current = true
@@ -103,6 +116,20 @@ func _run() -> void:
 		_check("the eye turns to the camera", eye_core.eye_forward().dot(want) > 0.97,
 				"dot %.3f" % eye_core.eye_forward().dot(want))
 		eye_core.free()
+	var scr := Landmark.build_for(self, LevelDefs.get_def("guardrails"), Color.WHITE, false)
+	_check("guardrails builds a screen for the pupil check", scr != null and scr.kind == "screen")
+	if scr:
+		var right := scr.global_basis.x
+		cam.global_position = scr.global_position + scr.global_basis.z * 12.0 + right * 10.0
+		for i in 60:
+			await get_tree().process_frame
+		var lr := scr.look.x
+		cam.global_position = scr.global_position + scr.global_basis.z * 12.0 - right * 10.0
+		for i in 60:
+			await get_tree().process_frame
+		_check("the pupil follows the camera", lr > 0.3 and scr.look.x < -0.3,
+				"%.2f right, %.2f left" % [lr, scr.look.x])
+		scr.free()
 	cam.free()
 
 	# 4. LOW: no particles, no searchlight sweep.
@@ -122,6 +149,64 @@ func _run() -> void:
 	_check("level_gemini builds its landmark", built != null and built.kind == "twin")
 	lvl.queue_free()
 	await get_tree().process_frame
+	var rng := (load("res://scenes/levels/level_range.tscn") as PackedScene).instantiate()
+	add_child(rng)
+	await get_tree().process_frame
+	var rs := rng.get_node_or_null("Landmark") as Landmark
+	var board := rng.find_child("Billboard", true, false) as Node3D
+	_check("level_range builds its screen", rs != null and rs.kind == "screen")
+	_check("the billboard is not on the screen's wall", rs != null and board != null
+			and board.global_basis.z.dot(rs.global_basis.z) < 0.5)
+	rng.queue_free()
+	await get_tree().process_frame
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+## The wall screen's placement rules, against the scaled def.
+func _check_screen(id: String, d: Dictionary, s: Landmark) -> void:
+	var fs: Vector2 = d.get("floor_size", Vector2(40, 40))
+	var n := s.global_basis.z # the screen faces into the room
+	var half := Vector2(fs.x, fs.y) * 0.5
+	# Distance from the wall's inner face (1 m walls centred on the floor edge).
+	var face := (half.y if absf(n.z) > 0.5 else half.x) - 0.5
+	var along_wall := s.global_position.z if absf(n.z) > 0.5 else s.global_position.x
+	var off := face - absf(along_wall)
+	_check("%s screen sits just off a perimeter wall" % id, absf(n.x) > 0.99 or absf(n.z) > 0.99, str(n))
+	_check("%s screen within 0.6 m of the wall face" % id, off > 0.02 and off < 0.6, "%.2f" % off)
+	var spawn: Vector3 = d.get("spawn", Vector3.ZERO)
+	var target: Vector3 = d.get("exit", Vector3.ZERO) if d.get("exit") != null else Vector3.ZERO
+	var heading := target - spawn
+	heading.y = 0.0
+	_check("%s screen is on a wall ahead of the spawn" % id, heading.normalized().dot(-n) > 0.3,
+			"%.2f" % heading.normalized().dot(-n))
+	var lo := s.global_position.y - s.screen_size.y * 0.5
+	var hi := s.global_position.y + s.screen_size.y * 0.5
+	_check("%s screen above head height, under the ceiling" % id,
+			lo >= Landmark.SCREEN_BOTTOM - 0.01 and hi <= Landmark._room_height(d) - 0.2,
+			"%.1f..%.1f m" % [lo, hi])
+	# Along-wall span, in the world axis that runs along this wall.
+	var x_wall := absf(n.z) > 0.5 # wall runs along x
+	var c := s.global_position.x if x_wall else s.global_position.z
+	var a0 := c - s.screen_size.x * 0.5
+	var a1 := c + s.screen_size.x * 0.5
+	var lim := (half.x if x_wall else half.y) - 0.5
+	_check("%s screen fits the wall" % id, a0 > -lim and a1 < lim and s.screen_size.x >= Landmark.SCREEN_MIN_W,
+			"%.1f..%.1f of +-%.1f" % [a0, a1, lim])
+	for g in d.get("gates", []):
+		# An "x" gate is a wall at x=at running along z: it meets the x-running walls.
+		if (String(g.get("axis", "z")) == "x") == x_wall:
+			var at := float(g.get("at", 0.0))
+			_check("%s screen clear of the gate at %.1f" % [id, at], at < a0 - 0.5 or at > a1 + 0.5)
+	for key in ["walls", "platforms"]:
+		for w in d.get(key, []):
+			var p: Vector3 = w.get("pos", Vector3.ZERO)
+			var sz: Vector3 = w.get("size", Vector3.ONE)
+			var reach := (absf(p.z) + sz.z * 0.5) if x_wall else (absf(p.x) + sz.x * 0.5)
+			var same_side := signf(p.z if x_wall else p.x) == signf(along_wall)
+			if not same_side or reach < face - 1.2 or p.y + sz.y * 0.5 <= lo:
+				continue
+			var b0 := (p.x if x_wall else p.z) - (sz.x if x_wall else sz.z) * 0.5
+			var b1 := (p.x if x_wall else p.z) + (sz.x if x_wall else sz.z) * 0.5
+			_check("%s screen clear of %s at %s" % [id, key, p], b1 < a0 or b0 > a1)
+	_check("%s screen is scenery" % id, s.find_children("*", "CollisionObject3D", true, false).is_empty())

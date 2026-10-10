@@ -1,7 +1,8 @@
 extends Node3D
 ## Windowed visual check for hero landmarks: for every level with one, stands at
 ## the spawn at eye height facing it (open sky: pitched up a little toward the
-## landmark; interiors: straight at the AI core) and saves one frame. Headless
+## landmark; interiors: 14 m off the AI core or the wall screen, facing it) and
+## saves one frame. Headless
 ## gives black frames.
 ##   godot --path . res://tests/landmark_shot.tscn -- --out=<abs dir> [--levels=gemini,grok] [--cam_y=40]
 ## --cam_y lifts the camera off eye level (default 1.7 m), to see what a

@@ -2535,8 +2535,12 @@ func _build_signage(def: Dictionary) -> void:
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var col := _theme_color(def)
 	# -- main billboard: facility name on a dark panel with a glowing frame --
-	var bb := _wall_point(fs, 0, 0.0, WALL_HEIGHT - 1.3, 0.45)
+	# The back wall, unless the interior's wall screen (Landmark) takes it: then
+	# the front wall, so the name and the AI's eye do not stack.
+	var bb_wall := 1 if Landmark.screen_wall(def) == 0 else 0
+	var bb := _wall_point(fs, bb_wall, 0.0, WALL_HEIGHT - 1.3, 0.45)
 	var board := Node3D.new()
+	board.name = "Billboard"
 	board.position = bb["pos"]
 	board.rotation.y = bb["yaw"]
 	add_child(board)
