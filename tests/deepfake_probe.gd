@@ -116,6 +116,14 @@ func _run() -> void:
 		_check("copies' bursts draw tracers", _tracers - t0 == e.burst_count * 2, "%d tracers" % (_tracers - t0))
 		_check("copies' rounds do no damage", php.current_health == h0, "%.0f -> %.0f" % [h0, php.current_health])
 		e.process_mode = Node.PROCESS_MODE_INHERIT
+		# Its own burst is aimed with real scatter (burst spread + difficulty), so
+		# a thin capsule 14 m out was missed by all 5 rounds on one CI run. Step
+		# the stand-in to 6 m and fatten it: every round of the burst lands.
+		pcap.radius = 1.5
+		pcap.height = 4.0
+		pcs.position.y = 2.0
+		player.global_position = e.global_position + Vector3(0, 0, 6)
+		await _frames(2)
 		t0 = _tracers
 		e._attack_timer = 999.0 # no AI burst on top of the forced one
 		e._start_burst()
