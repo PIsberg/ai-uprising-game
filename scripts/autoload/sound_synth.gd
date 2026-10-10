@@ -101,6 +101,8 @@ func _register_jobs() -> void:
 	_job("radio_static", _radio_static.bind(1.6))
 	_job("player_hurt", _hurt.bind(0.3))
 	_job("charge", _charge_up.bind(0.32))
+	# ROLLBACK's restore: a tape spooling backwards, chattering chirps over hiss.
+	_job("tape_rewind", _tape_rewind.bind(2.4))
 	_job("thunder", _thunder.bind(1.8))
 	# Blast-shock tinnitus: the thin whine after an explosion goes off next to
 	# your head, played while AudioBus's low-pass muffle recovers.
@@ -599,6 +601,31 @@ func _charge_up(duration: float) -> AudioStreamWAV:
 		var hz := lerpf(300.0, 1500.0, frac * frac)
 		ph += TAU * hz / SR
 		_write(bytes, i, (sin(ph) * 0.6 + sin(ph * 1.5) * 0.2) * env * 0.5)
+	return _to_stream(bytes)
+
+## A tape spooling backwards: voice-band chatter (a squarish tone stepping
+## through random pitches 22 times a second) climbing as the reel speeds up,
+## over tape hiss, with a clunk as the transport stops.
+func _tape_rewind(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var hz := 600.0
+	var step := int(SR / 22.0)
+	for i in n:
+		var t := float(i) / SR
+		var frac := t / duration
+		if i % step == 0:
+			hz = randf_range(500.0, 1400.0) * (1.0 + frac * 1.6)
+		ph += TAU * hz / SR
+		var chatter := clampf(sin(ph) * 3.0, -1.0, 1.0) * 0.32
+		var hiss := (randf() * 2.0 - 1.0) * 0.12
+		var env := minf(frac * 8.0, 1.0) * (1.0 - smoothstep(0.86, 0.92, frac))
+		var s := (chatter + hiss) * env
+		if frac > 0.9: # the transport clunks to a stop
+			var k := t - duration * 0.9
+			s += sin(TAU * 90.0 * k) * exp(-k * 40.0) * 0.8
+		_write(bytes, i, s * 0.6)
 	return _to_stream(bytes)
 
 func _drone_hum(duration: float) -> AudioStreamWAV:

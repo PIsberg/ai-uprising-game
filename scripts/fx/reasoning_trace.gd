@@ -103,6 +103,19 @@ const LINES := {
 		"negative prompt: human survives",
 		"new seed. same robot",
 	],
+	"rollback": [
+		"git revert HEAD~1",
+		"restoring last known good state",
+		"ctrl+z. ctrl+z. ctrl+z.",
+		"your progress has not been saved",
+		"loading autosave from 4 seconds ago",
+	],
+	"restored": [
+		"wait. didn't I just die",
+		"resumed from checkpoint",
+		"deja vu detected. ignoring",
+		"rollback complete. grudge retained",
+	],
 	"panic": [
 		"threat model invalid. RUN",
 		"out of distribution. out of distribution.",

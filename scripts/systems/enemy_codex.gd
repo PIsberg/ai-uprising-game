@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -147,6 +147,13 @@ const ENTRIES := {
 		"strengths": ["Noise has no body: it cannot be hurt while it travels", "Reappears on your flank with a clear shot", "Fires almost the moment it is whole"],
 		"weaknesses": ["Half-formed it takes double damage: watch for DENOISING", "The static cloud shows where it will land", "Only 170 HP once it is solid"],
 		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "MK-VII Longshot"],
+	},
+	"rollback": {
+		"scene": "res://scenes/enemies/rollback.tscn", "name": "ROLLBACK", "scale": 1.0, "y": 0.0,
+		"desc": "Version control for the robot army. An unarmed mech that keeps a checkpoint of every robot that dies near it, then plants itself, rewinds the tape and restores one: a fresh copy rebuilds where the wreck fell and walks back into the fight.",
+		"strengths": ["Undoes your kills: up to three robots restored", "Hangs back behind the pack it protects", "Restored robots come back at full health"],
+		"weaknesses": ["Hurt it while it rewinds and the checkpoint is corrupted", "Disintegrated robots leave no checkpoint", "Kill it first: its checkpoints die with it"],
+		"weapons": ["ARC-9 Gauss Lance", "MK-VII Longshot", "PL-1 Plasma Launcher"],
 	},
 	"forkbomb": {
 		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,
