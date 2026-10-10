@@ -22,7 +22,9 @@ extends Node3D
 ## with no room for the core (a low ceiling, gates across the centre) gets the
 ## "screen" instead (see _build_screen): a wall-sized display on the perimeter
 ## wall ahead of the spawn, the AI's eye watching you across the hall over a
-## typed <think> ticker. `"kind": "none"` opts a level out.
+## typed <think> ticker. Either way, glowing data conduits run under the ceiling
+## from the walls into the AI, packets of light streaming along them
+## (_build_cables). `"kind": "none"` opts a level out.
 ##
 ## Around every open-sky landmark, FLOCKS murmurations of small lit drones
 ## wheel high in the sky (one MultiMesh draw each), so the skyline moves.
@@ -282,6 +284,7 @@ static func _build_core(parent: Node3D, def: Dictionary, spec: Dictionary, theme
 	parent.add_child(lm)
 	lm.position = Vector3(spot.x, ceiling - r * 1.35, spot.y)
 	lm._build_core_parts(r)
+	lm._build_cables(def, lm.position, r, Vector3.ZERO, -1)
 	return lm
 
 func _build_core_parts(r: float) -> void:
@@ -586,6 +589,8 @@ static func _build_screen(parent: Node3D, def: Dictionary, spec: Dictionary, the
 	lm.position = Vector3(c, spot["y"], plane) if w["x_wall"] else Vector3(plane, spot["y"], c)
 	lm.rotation.y = atan2(n.x, n.z) # local +Z faces into the room
 	lm._build_screen_parts()
+	lm._build_cables(def, lm.position + Vector3.UP * (lm.screen_size.y * 0.5 + 0.2), # the frame's top bar
+			lm.screen_size.x * 0.5, lm.transform.basis.x, int(spot["wall"]))
 	return lm
 
 func _build_screen_parts() -> void:
@@ -683,6 +688,117 @@ func _screen_tick(delta: float) -> void:
 	if _line_t > line.length() / 28.0 + 3.5:
 		_line_t = 0.0
 		_line_i = (_line_i + 1) % SCREEN_LINES.size()
+
+# ---------- data conduits (interiors) ----------
+
+const CABLES_MIN := 4
+const CABLES_MAX := 8
+const CABLE_DROP := 0.35 ## metres under the ceiling where the conduits leave the walls
+const CABLE_FLOOR := 4.0 ## no conduit dips below this: it stays out of the fight
+const CONDUIT_SHADER := preload("res://shaders/data_conduit.gdshader")
+
+var _cable_ends: Array = [] ## [[from, to], ...] in the parent's (level's) space
+var _anchor := Vector3.ZERO
+var _anchor_reach := 0.0
+
+func cable_ends() -> Array:
+	return _cable_ends
+
+## Where the conduits converge (level space): the core's centre, or the middle
+## of the screen's top edge. Every conduit ends within cable_anchor_reach().
+func cable_anchor() -> Vector3:
+	return _anchor
+
+func cable_anchor_reach() -> float:
+	return _anchor_reach
+
+## Strings conduits from the perimeter walls (all but `skip_wall`) to the AI at
+## `anchor`. `along` (unit, level space) spreads the ends along a screen's top
+## edge; ZERO lands them on a sphere of radius `reach` (the core's lattice).
+## A conduit whose straight run would pass through an authored wall, platform
+## or tower, or dip under CABLE_FLOOR, is not strung. Up to CABLES_MAX, spread
+## evenly around the AI.
+func _build_cables(def: Dictionary, anchor: Vector3, reach: float, along: Vector3, skip_wall: int) -> void:
+	_anchor = anchor
+	_anchor_reach = reach
+	var y := _room_height(def) - CABLE_DROP
+	var walls := _perimeter(def)
+	var cands: Array = []
+	for i in walls.size():
+		if i == skip_wall:
+			continue
+		var w: Dictionary = walls[i]
+		var n: Vector3 = w["n"]
+		var lim: float = w["lim"]
+		var face: float = w["face"]
+		for k in range(1, 7):
+			var u := lerpf(-lim, lim, k / 7.0)
+			var a := Vector3(u, y, face + n.z * 0.6) if w["x_wall"] else Vector3(face + n.x * 0.6, y, u)
+			var b: Vector3
+			if along != Vector3.ZERO:
+				b = anchor + along * clampf((a - anchor).dot(along), -reach, reach)
+			else:
+				var flat := Vector3(a.x - anchor.x, 0.0, a.z - anchor.z).normalized()
+				b = anchor + (flat * 0.75 + Vector3.UP * 0.66).normalized() * reach
+			if minf(a.y, b.y) < CABLE_FLOOR or not _clear_run(def, a, b):
+				continue
+			cands.append([atan2(a.x - anchor.x, a.z - anchor.z), a, b])
+	cands.sort_custom(func(p, q) -> bool: return p[0] < q[0])
+	var take := mini(CABLES_MAX, cands.size())
+	for k in take:
+		var c: Array = cands[int(floor(k * cands.size() / float(take)))]
+		_cable_ends.append([c[1], c[2]])
+	if _cable_ends.is_empty():
+		return
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.045
+	cyl.bottom_radius = 0.045
+	cyl.height = 1.0
+	cyl.radial_segments = 5
+	cyl.rings = 1
+	cyl.cap_top = false
+	cyl.cap_bottom = false
+	var mat := ShaderMaterial.new()
+	mat.shader = CONDUIT_SHADER
+	mat.set_shader_parameter("color", accent)
+	cyl.material = mat
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = true
+	mm.mesh = cyl
+	mm.instance_count = _cable_ends.size()
+	var to_self := transform.affine_inverse() # level space -> this landmark's
+	for k in _cable_ends.size():
+		var a: Vector3 = _cable_ends[k][0]
+		var b: Vector3 = _cable_ends[k][1]
+		var xf := _strut_xform(a, b)
+		xf.basis.y *= a.distance_to(b)
+		mm.set_instance_transform(k, to_self * xf)
+		mm.set_instance_custom_data(k, Color(a.distance_to(b), 0, 0, 0))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "Conduits"
+	mmi.multimesh = mm
+	_quiet(mmi)
+	add_child(mmi)
+
+## True when the straight run a -> b clears every authored wall, platform and
+## tower (sampled every 0.4 m, with 0.3 m to spare).
+static func _clear_run(def: Dictionary, a: Vector3, b: Vector3) -> bool:
+	var steps := int(a.distance_to(b) / 0.4) + 1
+	for k in steps + 1:
+		var p := a.lerp(b, float(k) / float(steps))
+		for key in ["walls", "platforms"]:
+			for w in def.get(key, []):
+				var c: Vector3 = w.get("pos", Vector3.ZERO)
+				var s: Vector3 = w.get("size", Vector3.ONE) * 0.5 + Vector3.ONE * 0.3
+				if absf(p.x - c.x) < s.x and absf(p.z - c.z) < s.z and absf(p.y - c.y) < s.y:
+					return false
+		for t in def.get("towers", []):
+			var c: Vector3 = t.get("pos", Vector3.ZERO)
+			if Vector2(p.x - c.x, p.z - c.z).length() < float(t.get("radius", 3.0)) + 0.3 \
+					and p.y < float(t.get("height", 8.0)) + 0.3:
+				return false
+	return true
 
 ## Where the eye is looking (its -Z), for tests/landmark_probe.
 func eye_forward() -> Vector3:
