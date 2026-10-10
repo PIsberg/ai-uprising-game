@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback", "quantizer",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -147,6 +147,13 @@ const ENTRIES := {
 		"strengths": ["Noise has no body: it cannot be hurt while it travels", "Reappears on your flank with a clear shot", "Fires almost the moment it is whole"],
 		"weaknesses": ["Half-formed it takes double damage: watch for DENOISING", "The static cloud shows where it will land", "Only 170 HP once it is solid"],
 		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "MK-VII Longshot"],
+	},
+	"quantizer": {
+		"scene": "res://scenes/enemies/quantizer.tscn", "name": "QUANTIZER", "scale": 1.0, "y": 0.0,
+		"desc": "A model compressed to fight cheaper. A flying gunner that drops precision as you hurt it, FP32 to FP16 to INT8 to INT4: its chassis snaps to a coarser voxel grid and its colours band at every step, and the cheaper it runs, the faster it fires and the worse it aims.",
+		"strengths": ["Fires faster at every precision step", "At INT4 it is spraying shots nearly twice as often"],
+		"weaknesses": ["Each step costs it aim: hang back and dodge the spray", "The tag over it shows how far gone it is", "140 HP and no armour"],
+		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "SG-12 Breacher"],
 	},
 	"rollback": {
 		"scene": "res://scenes/enemies/rollback.tscn", "name": "ROLLBACK", "scale": 1.0, "y": 0.0,

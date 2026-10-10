@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-349 probes total: **102** wired into the headless suite (`suite`), **84**
+351 probes total: **103** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **163** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **164** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -139,6 +139,8 @@ or GPU-timing probes; `--headless` renders these black).
 | reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
 | overlord_holo_probe | The overlord's sky face: on every open-sky level (22-34 deg up from the arena, 25+ deg off the landmark), none indoors or with `"kind": "none"`; Skyline keeps far towers out of FACE_CLEAR and near towers within FACE_FRAME under FRAME_H; a HUD taunt sends GameState.overlord_spoke (not with callouts off); speaking runs the mouth for the line's length then stops; pupils lead toward a viewer who steps aside, centre once the head has turned, drop for a viewer below | suite |
 | overlord_holo_shot | Each open-sky level from its spawn at eye height, turned toward the overlord's face mid-sentence; `-- --out=<dir> [--levels=...] [--wide]` | windowed |
+| quantizer_probe | QUANTIZER: wired into the level builder, codex, ALIEN and ARCHON; whole it is FP32 in its own materials at its own cadence; at each STAGE_AT step it is the next precision with every chassis surface on the quantize shader at that STAGE_GRID, the tag reads it, attack_interval x STAGE_CD and aim_spread_deg + STAGE_SPREAD; healed to full it keeps INT4; killed it dies and the tag goes | suite |
+| quantizer_shot | Four QUANTIZERs side by side at FP32, FP16, INT8 and INT4; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
 | diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |

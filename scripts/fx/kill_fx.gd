@@ -115,12 +115,13 @@ static func _is_glow(mi: MeshInstance3D) -> bool:
 
 ## Swaps every surface for a dissolve material that copies the look it replaces
 ## (StandardMaterial3D or the triplanar damaged_robot shader, which use the same
-## albedo_tex / albedo_color names).
-static func _to_dissolve(mi: MeshInstance3D) -> void:
+## albedo_tex / albedo_color names). `shader` swaps in another shader with the
+## same albedo/metallic/roughness uniforms instead (QUANTIZER's).
+static func _to_dissolve(mi: MeshInstance3D, shader: Shader = DISSOLVE_SHADER) -> void:
 	for s in mi.mesh.get_surface_count():
 		var src := mi.get_active_material(s)
 		var sm := ShaderMaterial.new()
-		sm.shader = DISSOLVE_SHADER
+		sm.shader = shader
 		var col := Color.WHITE
 		var tex: Texture2D = null
 		var metal := 0.4
@@ -159,7 +160,7 @@ static func _to_dissolve(mi: MeshInstance3D) -> void:
 ## Additive glows just hide. `only_visible` false also takes meshes that are
 ## hidden right now (a fit_height model hides its mesh until it is fitted).
 static func swap_to_dissolve(root: Node, edge: Color, height_bias: float, noise_scale: float,
-		only_visible := true) -> Dictionary:
+		only_visible := true, shader: Shader = DISSOLVE_SHADER) -> Dictionary:
 	var saved: Array = []
 	var glows: Array[MeshInstance3D] = []
 	for n in root.find_children("*", "MeshInstance3D", true, false):
@@ -174,7 +175,7 @@ static func swap_to_dissolve(root: Node, edge: Color, height_bias: float, noise_
 		for s in mi.mesh.get_surface_count():
 			surf.append(mi.get_surface_override_material(s))
 		saved.append({"mi": mi, "override": mi.material_override, "overlay": mi.material_overlay, "surfaces": surf})
-		_to_dissolve(mi)
+		_to_dissolve(mi, shader)
 		for s in mi.mesh.get_surface_count():
 			var m := mi.get_surface_override_material(s) as ShaderMaterial
 			m.set_shader_parameter("edge_color", edge)

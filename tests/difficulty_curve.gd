@@ -50,6 +50,9 @@ const THREAT := {
 	# Hand-derived: no damage of its own; 160 HP / 40 plus a guess of +10 for the
 	# robots it brings back (up to three, each a second kill).
 	"rollback": 14.0,
+	# The drone's 17.7 at 10 damage, rescaled to 9 damage and 140 HP, plus a hand
+	# guess of +2 for the faster fire once wounded, less the worse aim.
+	"quantizer": 19.5,
 }
 
 func _ready() -> void:
