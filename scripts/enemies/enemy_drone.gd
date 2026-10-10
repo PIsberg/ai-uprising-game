@@ -207,7 +207,27 @@ func _on_died(_source: Node) -> void:
 	collision_mask = 1
 	if _hum_player and is_instance_valid(_hum_player):
 		_hum_player.stop()
-	# A dying lurch + a trailing smoke plume on the way down.
+	## Disintegrated: burns away in the air, no fall. Electrocuted: hangs and
+	## spasms, then loses lift as usual. Otherwise it tumbles down and bursts.
+	var style := _kill_style()
+	if style == KillFx.NONE:
+		_start_fall()
+		return
+	_prep_kill_fx()
+	_dying = false # hold position: no fall while the style plays
+	set_physics_process(false)
+	if style == KillFx.DISINTEGRATE:
+		collision_mask = 0
+		if _damaged_emitter and is_instance_valid(_damaged_emitter):
+			_damaged_emitter.queue_free()
+		KillFx.disintegrate(self)
+	else:
+		KillFx.electrocute(self, _start_fall)
+
+## Loses lift: a dying lurch and a trailing smoke plume on the way down.
+func _start_fall() -> void:
+	_dying = true
+	set_physics_process(true)
 	velocity += Vector3(randf_range(-2.0, 2.0), 1.5, randf_range(-2.0, 2.0))
 	if _damaged_emitter == null or not is_instance_valid(_damaged_emitter):
 		_damaged_emitter = DAMAGED_FX.instantiate()

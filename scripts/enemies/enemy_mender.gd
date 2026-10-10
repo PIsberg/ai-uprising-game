@@ -198,12 +198,25 @@ func _on_died(_source: Node) -> void:
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
+	_speak("die", 0.4)
+	var style := _kill_style()
+	if style != KillFx.NONE:
+		_prep_kill_fx()
+	if style == KillFx.DISINTEGRATE:
+		KillFx.disintegrate(self)
+	elif style == KillFx.ELECTROCUTE:
+		KillFx.electrocute(self, _mender_death_fx)
+	else:
+		_mender_death_fx()
+
+## The classic mender death: a pop, then it drops out of the sky and winks out.
+func _mender_death_fx() -> void:
+	if get_parent() == null:
+		return
 	var fx := EXPLOSION.instantiate()
 	get_parent().add_child(fx)
 	(fx as Node3D).global_position = global_position
 	AudioBus.play_synth_at("explosion", global_position, -2.0, 1.25)
-	_speak("die", 0.4)
-	# Drops out of the sky and winks out.
 	var tw := create_tween()
 	tw.tween_property(self, "position:y", position.y - 2.2, 0.7).set_ease(Tween.EASE_IN)
 	tw.parallel().tween_property(self, "scale", scale * 0.55, 0.7)
