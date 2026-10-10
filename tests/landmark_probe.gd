@@ -11,6 +11,10 @@ extends Node3D
 ## (6) every interior level gets the AI core, sized into the clear air between
 ##     the highest walkable top near the centre (+ headroom) and the ceiling,
 ##     its constants match LevelBuilder's, and its eye turns to the camera;
+## (8) every interior AI (core or screen) is fed by at least CABLES_MIN data
+##     conduits strung from the perimeter walls under the ceiling: each starts
+##     at a wall, ends on the AI, stays between 4 m and the ceiling, and passes
+##     through no authored wall, platform or tower;
 ## (7) an interior with no room for the core gets the wall screen instead: on a
 ##     perimeter wall ahead of the spawn, just off its inner face, above head
 ##     height and under the ceiling, clear of every route gate and authored wall
@@ -92,6 +96,7 @@ func _run() -> void:
 		_check("%s gets an interior landmark" % id, core != null)
 		if core == null:
 			continue
+		_check_cables(id, d, core)
 		if core.kind == "screen":
 			_check("%s: a screen only when there is no room for the core" % id, spot == Vector3.INF
 					or ceiling - floor_top - Landmark.CORE_HEADROOM < Landmark.CORE_MIN_R * 2.7,
@@ -226,3 +231,40 @@ func _check_screen(id: String, d: Dictionary, s: Landmark) -> void:
 			var b1 := (p.x if x_wall else p.z) + (sz.x if x_wall else sz.z) * 0.5
 			_check("%s screen clear of %s at %s" % [id, key, p], b1 < a0 or b0 > a1)
 	_check("%s screen is scenery" % id, s.find_children("*", "CollisionObject3D", true, false).is_empty())
+
+## The data conduits feeding an interior AI (rule 8), level-local.
+func _check_cables(id: String, d: Dictionary, lm: Landmark) -> void:
+	var ends := lm.cable_ends()
+	_check("%s has its data conduits" % id, ends.size() >= Landmark.CABLES_MIN, "%d" % ends.size())
+	var fs: Vector2 = d.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5 - 0.5
+	var hz := fs.y * 0.5 - 0.5
+	var room_h := Landmark._room_height(d)
+	var anchor := lm.cable_anchor()
+	var bad: Array = []
+	for pair in ends:
+		var a: Vector3 = pair[0]
+		var b: Vector3 = pair[1]
+		var at_wall := absf(absf(a.x) - hx) < 1.2 or absf(absf(a.z) - hz) < 1.2
+		if not at_wall:
+			bad.append("start %s off the walls" % a)
+		if b.distance_to(anchor) > lm.cable_anchor_reach() + 0.05:
+			bad.append("end %s off the AI" % b)
+		if minf(a.y, b.y) < 4.0 or maxf(a.y, b.y) > room_h - 0.1:
+			bad.append("height %.1f..%.1f" % [minf(a.y, b.y), maxf(a.y, b.y)])
+		var steps := int(a.distance_to(b) / 0.4) + 1
+		for k in steps + 1:
+			var p := a.lerp(b, float(k) / float(steps))
+			for key in ["walls", "platforms"]:
+				for w in d.get(key, []):
+					var c: Vector3 = w.get("pos", Vector3.ZERO)
+					var sz: Vector3 = w.get("size", Vector3.ONE)
+					if absf(p.x - c.x) < sz.x * 0.5 and absf(p.z - c.z) < sz.z * 0.5 							and absf(p.y - c.y) < sz.y * 0.5:
+						bad.append("through %s at %s" % [key, c])
+			for t in d.get("towers", []):
+				var c: Vector3 = t.get("pos", Vector3.ZERO)
+				if Vector2(p.x - c.x, p.z - c.z).length() < float(t.get("radius", 3.0)) 						and p.y < float(t.get("height", 8.0)):
+					bad.append("through a tower at %s" % c)
+	_check("%s conduits run wall to AI above the fight, through nothing" % id, bad.is_empty(),
+			str(bad.slice(0, 3)))
+
