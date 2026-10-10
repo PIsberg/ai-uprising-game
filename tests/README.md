@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-347 probes total: **101** wired into the headless suite (`suite`), **84**
+349 probes total: **102** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **162** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **163** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -128,6 +128,8 @@ or GPU-timing probes; `--headless` renders these black).
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
 | body_top_probe | Every non-boss enemy scene: the weak-point core and the damage flare sit inside the body (its collision top or an AABB-free bone/rigid-mesh measure, 0.8 m floor) and the `<think>` trace floats within 0.8 m over it; catches skinned GLBs whose bind-pose AABB is 50-300x the body, and flares placed before a `fit_height` fit | suite |
 | deepfake_probe | DEEPFAKE: wired into the level builder, codex and GROK roster; projects two copies on its own in a fight, ~SPREAD to either side; copies are out of the `enemy` group and shadowless; copies fire the same burst and hurt nobody while its own rounds do; a real rifle hit pops a copy without score or an accuracy hit; a wall blocks that side's copy; its death collapses the copies | suite |
+| horizon_walker_probe | Horizon walker: one on every open-sky level with a landmark, past Skyline's far ring, none indoors, opted out or on LOW; its walk clip plays and it covers STRIDE_SPEED along its ring facing its path; two eyes high, ahead of the Head bone, either side; a night level's searchlight reaches from its head toward the arena, a day level has none | suite |
+| horizon_walker_shot | Each open-sky level from its spawn toward the walker; `-- --out=<dir> [--levels=...] [--wide] [--close [--back]]` (`--close`: from 300 m, the sky face hidden) | windowed |
 | captcha_probe | CAPTCHA gates: GEMINI, GROK and MISTRAL each flag one gate and the real level builds the CaptchaGate in a clear gap between gate walls; a ground robot stepping in is held HOLD_TIME under a challenge, counted, then moves again verified; a verified robot passes untouched; a hijack-proof one waves through; a flyer above FLY_H is not challenged; the player ticks the box, which clears after BOX_TIME | suite |
 | captcha_shot | An android caught mid-challenge in a CAPTCHA gate under the panel, then the panel ticked for the player; `-- --out=<dir>` | windowed |
 | rail_trail_probe | Rail trail: gauss and Longshot carry WeaponData.rail_trail, the rifle not; a gauss hitscan leaves one RailTrail from the muzzle to the wall it hit, its mesh as long as the shot; a rifle shot leaves none; a 400 m shot keeps MAX_LEN by the muzzle; MAX_LIVE at once, each freed after LIFE | suite |
