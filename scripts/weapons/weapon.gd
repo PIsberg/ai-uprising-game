@@ -622,7 +622,9 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			final_damage *= maxf(data.headshot_mult if is_head else 1.0, weak_mult)
 			if is_head:
 				AudioBus.play_synth_at("headshot", hpos, -1.0, 1.0)
-			KillFx.tag(dmg_node, data.kill_fx, data)
+			# A killing headshot from a gun with no kill style of its own takes the head.
+			var style := KillFx.DECAPITATE if is_head and data.kill_fx == KillFx.NONE else data.kill_fx
+			KillFx.tag(dmg_node, style, data)
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
 			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)

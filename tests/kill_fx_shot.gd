@@ -1,7 +1,8 @@
 extends Node3D
-## Windowed visual check for KillFx: four androids side by side, killed at the
+## Windowed visual check for KillFx: five androids side by side, killed at the
 ## same instant by a DISINTEGRATE hit, an ELECTROCUTE hit, an untagged hit (the
-## classic blast) and a SHRED hit (far right, thrown back away from the camera).
+## classic blast), a SHRED hit (thrown back away from the camera) and a
+## DECAPITATE headshot (far right: the head flies, the neck fountains).
 ## Saves frames through the deaths.
 ## Headless gives black frames.
 ##   godot --path . res://tests/kill_fx_shot.tscn -- --out=<abs dir>
@@ -52,12 +53,12 @@ func _ready() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 60.0
 	add_child(cam)
-	cam.global_position = Vector3(0, 1.9, 9.0)
+	cam.global_position = Vector3(0, 2.0, 10.5)
 	cam.look_at(Vector3(0, 1.0, 0), Vector3.UP)
 	cam.current = true
 
 	var bots: Array[EnemyBase] = []
-	for x in [-3.6, -1.2, 1.2, 3.6]:
+	for x in [-4.8, -2.4, 0.0, 2.4, 4.8]:
 		var e: EnemyBase = (load(ANDROID) as PackedScene).instantiate()
 		e.process_mode = Node.PROCESS_MODE_DISABLED
 		add_child(e)
@@ -67,7 +68,7 @@ func _ready() -> void:
 	for i in 10:
 		await get_tree().create_timer(0.2).timeout
 	await _snap(out_dir, "kill_fx_0_alive")
-	var styles := [KillFx.DISINTEGRATE, KillFx.ELECTROCUTE, KillFx.NONE, KillFx.SHRED]
+	var styles := [KillFx.DISINTEGRATE, KillFx.ELECTROCUTE, KillFx.NONE, KillFx.SHRED, KillFx.DECAPITATE]
 	for i in styles.size():
 		bots[i].process_mode = Node.PROCESS_MODE_INHERIT
 		KillFx.tag(bots[i].hp, styles[i])
