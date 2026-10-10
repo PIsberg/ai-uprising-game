@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-313 probes total: **83** wired into the headless suite (`suite`), **84**
+315 probes total: **84** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **146** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **147** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -213,6 +213,8 @@ or GPU-timing probes; `--headless` renders these black).
 | kill_fx_probe | Weapon-specific deaths through the real hit paths: the energy guns' WeaponData kill styles; a gauss hitscan and a plasma projectile kill DISINTEGRATE (dissolve materials, no death blast, robot gone after the dissolve, ash scorch); an arc-coil kill ELECTROCUTES (shock skin, no blast during the spasms, then the classic blast); an untagged kill after an energy hit and a boss-sized kill stay classic | suite |
 | kill_fx_shot | Three androids killed at once by a DISINTEGRATE, an ELECTROCUTE and an untagged hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
+| landmark_probe | Hero landmarks: every open-sky level authors one of a known kind; built from the real scaled def it stands past the floor edge on the spawn-to-exit heading, with no collision and no shadows (caught the stacks' steam casting shadows); its name tag reads the authored label; an interior level gets none; LOW drops the steam; level_gemini built through LevelBuilder carries its twin spires | suite |
+| landmark_shot | Each open-sky level from its spawn at eye height, facing its landmark; `-- --out=<dir> --levels=a,b --cam_y=<m>` | windowed |
 | lava_probe | Lava carves the navmesh and leaves a longer connected spawn→exit path; top-down shot | windowed |
 | layout_check | Static def check: no prop, pickup, weapon or lore placement sits inside a wall/building AABB. Enemy-spawn and task overlaps are reported as advisory, since the builder relocates those at load | suite |
 | level01_probe | Rebuilt level 1: overhead layout shot + player-eye shot toward the nexus tower | windowed |
