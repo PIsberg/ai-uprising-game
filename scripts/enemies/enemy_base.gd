@@ -1697,6 +1697,8 @@ func _on_died(_source: Node) -> void:
 		KillFx.shred(self, _shot_dir(_source), _classic_death_fx)
 	elif style == KillFx.DECAPITATE:
 		_decapitate(_shot_dir(_source))
+	elif style == KillFx.BLAST:
+		_blast_apart(_shot_dir(_source))
 	else:
 		_classic_death_fx()
 
@@ -1744,6 +1746,48 @@ func _decapitate(dir: Vector3) -> void:
 	tw.tween_property(self, "rotation", base_rot + tip * 0.3, KillFx.DECAP_TIME * 0.35) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "rotation", base_rot + tip * 0.14, KillFx.DECAP_TIME * 0.65)
+	tw.tween_callback(_classic_death_fx)
+
+## Blown apart by a rocket (KillFx.BLAST): up to BLAST_LIMBS limbs and the head
+## torn off at once and flung outward, scrap spraying, the torso lofted and
+## tumbling through two chain-reaction pops, then the classic blast where it
+## comes down. Robots with no severable bones still get the loft and the pops.
+func _blast_apart(dir: Vector3) -> void:
+	dir = KillFx._flat(dir, self)
+	for i in KillFx.BLAST_LIMBS:
+		var out := (dir + Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))).normalized()
+		_dismember_limb(out + Vector3.UP * 0.5, true)
+	var b := _head_bone()
+	if not b.is_empty() and not _severed_bones.has(b["idx"]):
+		var skel: Skeleton3D = b["skel"]
+		var neck: Vector3 = (skel.global_transform * skel.get_bone_global_pose(b["idx"])).origin
+		skel.set_bone_pose_scale(b["idx"], Vector3.ONE * 0.001)
+		_severed_bones[b["idx"]] = true
+		_fling_head(neck, (dir + Vector3(randf_range(-0.6, 0.6), 0.0, randf_range(-0.6, 0.6))).normalized())
+	var parent := get_parent()
+	var chest := global_position + Vector3.UP * 1.0
+	if parent:
+		KillFx.spray(parent, chest, dir)
+		KillFx.spray(parent, chest, -dir)
+	var local_dir := dir
+	if parent is Node3D:
+		local_dir = ((parent as Node3D).global_basis.inverse() * dir).normalized()
+	var start := position
+	var base_rot := rotation
+	var spin := Vector3(randf_range(-1.0, 1.0), randf_range(-1.5, 1.5), randf_range(-1.0, 1.0)).normalized() * 4.5
+	var fly := func(t: float) -> void:
+		position = start + local_dir * 1.4 * t + Vector3.UP * (4.0 * KillFx.BLAST_LIFT * t * (1.0 - t))
+		rotation = base_rot + spin * t
+	var pop := func() -> void:
+		if is_instance_valid(get_parent()):
+			var at := global_position + Vector3.UP * randf_range(0.6, 1.3)
+			KillFx._flash(get_parent(), at, Color(1.0, 0.55, 0.2), 5.0, 0.25)
+			KillFx.spray(get_parent(), at, Vector3(randf_range(-1, 1), 0.6, randf_range(-1, 1)).normalized())
+			AudioBus.play_synth_at("explosion", at, -6.0, randf_range(1.35, 1.6))
+	var tw := create_tween()
+	tw.tween_method(fly, 0.0, 1.0, KillFx.BLAST_TIME)
+	tw.parallel().tween_callback(pop).set_delay(KillFx.BLAST_TIME * 0.3)
+	tw.parallel().tween_callback(pop).set_delay(KillFx.BLAST_TIME * 0.65)
 	tw.tween_callback(_classic_death_fx)
 
 ## The head as wreckage: a dark metal block about head-size with the robot's
@@ -2039,8 +2083,9 @@ const SEVERABLE_BONES := ["lowerarm", "forearm", "lowerleg", "midleg", "leg2", "
 var _limb_losses: int = 0
 var _severed_bones: Dictionary = {} ## bone idx -> true (incl. descendants of severed bones)
 
-func _dismember_limb(toward: Vector3) -> bool:
-	if _limb_losses >= LIMB_LOSS_MAX or _visual_root == null:
+## `force` ignores LIMB_LOSS_MAX: a rocket kill (KillFx.BLAST) may take several.
+func _dismember_limb(toward: Vector3, force: bool = false) -> bool:
+	if (_limb_losses >= LIMB_LOSS_MAX and not force) or _visual_root == null:
 		return false
 	var skels := _visual_root.find_children("*", "Skeleton3D", true, false)
 	if skels.is_empty():

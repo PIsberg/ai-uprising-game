@@ -20,6 +20,11 @@ extends RefCounted
 ##     back for DECAP_TIME before the classic blast (EnemyBase._decapitate).
 ##     The weapon tags it, not WeaponData; robots with no head bone (rigid
 ##     models, flyers) fall back to their ordinary death.
+##   BLAST (Devastator, Swarm Launcher) - the rocket blows the robot apart:
+##     BLAST_LIMBS limbs and the head torn off at once and flung outward, the
+##     torso lofted BLAST_LIFT metres and tumbling through two chain-reaction
+##     pops, then the classic blast where it comes down (EnemyBase._blast_apart).
+##     Flyers detonate in the air instead of falling.
 ##
 ## How the style travels: the weapon tags the victim's Damageable (`kill_fx`)
 ## for the duration of its apply_damage call (tag/untag below). `died` fires
@@ -28,7 +33,7 @@ extends RefCounted
 ## tag, so they keep the classic death even on a robot an energy gun softened.
 ## Bosses (score >= 1000) keep their own deaths. Covered by tests/kill_fx_probe.
 
-enum { NONE, DISINTEGRATE, ELECTROCUTE, SHRED, DECAPITATE }
+enum { NONE, DISINTEGRATE, ELECTROCUTE, SHRED, DECAPITATE, BLAST }
 
 const DISSOLVE_SHADER := preload("res://shaders/dissolve.gdshader")
 const DISSOLVE_TIME := 1.0
@@ -40,6 +45,9 @@ const SHRED_FLING := 3.2
 const SHRED_LIFT := 0.8 ## apex of the flight arc above the start, metres
 const SHRED_KICK := 9.0 ## m/s a shredded flyer is knocked along the shot
 const DECAP_TIME := 0.55
+const BLAST_TIME := 0.7
+const BLAST_LIFT := 1.6
+const BLAST_LIMBS := 4
 
 ## Tags `d` with the style and the gun (`weapon`, a WeaponData) of the hit about
 ## to be applied; untag right after apply_damage returns.

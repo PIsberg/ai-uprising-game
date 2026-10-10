@@ -310,6 +310,10 @@ func _on_died(_source: Node) -> void:
 		_start_fall()
 		return
 	_prep_kill_fx()
+	if style == KillFx.BLAST: # a rocket: it blows up where it is, no fall
+		_start_fall()
+		_fall_time = INF
+		return
 	if style == KillFx.SHRED: # knocked out of the air along the shot
 		_start_fall()
 		_shred_kick(_source)
