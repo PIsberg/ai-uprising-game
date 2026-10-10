@@ -67,6 +67,7 @@ var _last_grade: String = ""
 var _last_stats: Dictionary = {}
 var _auto_advance_armed: bool = false
 var _debrief_label: Label = null ## Compact mission-stats line on the victory screen, built lazily on first level clear.
+var _lead_label: Label = null ## Red story line on the victory screen: what this level recovered (StoryArc lead).
 var _highlights_label: Label = null ## Gold "flashy moments" line on the victory screen (executions/bounties/dodges/streak).
 var _combat_poll: float = 0.0
 var _kill_flash: float = 0.0 ## Brief surge on a confirmed kill — drives the ✕ marker + edge flash.
@@ -1127,6 +1128,7 @@ func _on_level_completed() -> void:
 	if assess != "":
 		win_title.text += "\n\n" + assess
 	_update_debrief_block()
+	_update_lead_block()
 	# A Daily Op waits on the button: it goes back to the menu, not on to a next level.
 	if GameState.has_next_level() and not GameState.is_daily_op() and not _auto_advance_armed:
 		_auto_advance_armed = true
@@ -1209,6 +1211,23 @@ func _update_highlights_block() -> void:
 	else:
 		_highlights_label.visible = true
 		_highlights_label.text = "⚡ " + "   ·   ".join(bits)
+
+## The story's next hop, in the briefing trace card's red: what this level
+## recovered. The next briefing's trace log tells the rest (StoryArc). A Daily
+## Op is outside the campaign, so it says nothing.
+func _update_lead_block() -> void:
+	if _lead_label == null:
+		_lead_label = Label.new()
+		_lead_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_lead_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_lead_label.add_theme_font_size_override("font_size", 16)
+		_lead_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.38))
+		var vbox := win_title.get_parent()
+		vbox.add_child(_lead_label)
+		vbox.move_child(_lead_label, win_title.get_index() + 1)
+	var lead := "" if GameState.is_daily_op() 		else StoryArc.lead(GameState.level_id_from_path(GameState.current_level_path))
+	_lead_label.visible = lead != ""
+	_lead_label.text = "◆ LEAD: " + lead
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)
