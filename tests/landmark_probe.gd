@@ -4,8 +4,11 @@ extends Node3D
 ## (2) built from the real (scaled) def it stands past the floor edge, on the
 ##     spawn-to-exit heading, and is pure scenery: no collision, no shadows;
 ## (3) a labelled landmark carries its name tag;
-## (4) an interior level gets none, and LOW drops the animated extras;
-## (5) a real level scene built through LevelBuilder carries it.
+## (4) LOW drops the animated extras;
+## (5) a real level scene built through LevelBuilder carries it;
+## (6) every interior level gets the AI core, sized into the clear air between
+##     the highest walkable top near the centre (+ headroom) and the ceiling,
+##     its constants match LevelBuilder's, and its eye turns to the camera.
 ##   godot --headless --path . --audio-driver Dummy res://tests/landmark_probe.tscn
 
 const KINDS := ["spire", "twin", "dish", "stacks", "monolith"]
@@ -58,10 +61,51 @@ func _run() -> void:
 		lm.free()
 	_check("open-sky levels covered", n_open >= 10, "%d" % n_open)
 
-	# 4. Interior: none. LOW: no particles, no searchlight sweep.
-	var inner: Dictionary = LevelDefs.get_def("claude")
-	_check("interior level gets none", not inner.get("open_sky", false)
-			and Landmark.build_for(self, inner, Color.WHITE, false) == null)
+	# 6. Interior cores.
+	_check("room height mirrors LevelBuilder", Landmark.ROOM_BASE_H == LevelBuilder.WALL_HEIGHT
+			and Landmark.ROOM_CLEARANCE_M == LevelBuilder.PLAYER_CLEARANCE_M)
+	var n_core := 0
+	for id in LevelDefs._defs().keys():
+		var d: Dictionary = LevelDefs.get_def(id)
+		if d.get("open_sky", false) or String(d.get("landmark", {}).get("kind", "")) == "none":
+			continue
+		var core := Landmark.build_for(self, d, Color(0.6, 0.8, 1.0), false)
+		var ceiling := Landmark._room_height(d) - 0.4
+		var spot := Landmark._core_spot(d)
+		var floor_top := spot.z
+		if core == null:
+			_check("%s: no core only when there is no room" % id, spot == Vector3.INF
+					or ceiling - floor_top - Landmark.CORE_HEADROOM < Landmark.CORE_MIN_R * 2.7,
+					"ceiling %.1f, top %.1f" % [ceiling, floor_top])
+			continue
+		_check("%s core is clear of the route gates" % id,
+				not Landmark._near_gate(d, Vector2(core.position.x, core.position.z)))
+		n_core += 1
+		var r := core.core_radius
+		var lo := core.position.y - r * 1.35
+		var hi := core.position.y + r * 1.35
+		_check("%s core clears the walkable tops and the ceiling" % id,
+				lo >= floor_top + Landmark.CORE_HEADROOM - 0.01 and hi <= ceiling + 0.01,
+				"r %.1f, %.1f..%.1f m (top %.1f, ceiling %.1f)" % [r, lo, hi, floor_top, ceiling])
+		_check("%s core is scenery" % id, core.find_children("*", "CollisionObject3D", true, false).is_empty())
+		core.free()
+	_check("interior levels get a core", n_core >= 6, "%d" % n_core)
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.current = true
+	var eye_core := Landmark.build_for(self, LevelDefs.get_def("mistral"), Color.WHITE, false)
+	_check("mistral builds a core for the eye check", eye_core != null)
+	if eye_core:
+		cam.global_position = eye_core.global_position + Vector3(9, -4, 3)
+		for i in 90:
+			await get_tree().process_frame
+		var want: Vector3 = (cam.global_position - (eye_core.get_node("Eye") as Node3D).global_position).normalized()
+		_check("the eye turns to the camera", eye_core.eye_forward().dot(want) > 0.97,
+				"dot %.3f" % eye_core.eye_forward().dot(want))
+		eye_core.free()
+	cam.free()
+
+	# 4. LOW: no particles, no searchlight sweep.
 	var hi := Landmark.build_for(self, LevelDefs.get_def("lava_world"), Color.WHITE, false)
 	var lo := Landmark.build_for(self, LevelDefs.get_def("lava_world"), Color.WHITE, true)
 	var hi_fx := hi.find_children("*", "CPUParticles3D", true, false).size()
