@@ -30,10 +30,10 @@ var _ood_t := 0.0
 var _shell: MeshInstance3D
 var _shell_mat: ShaderMaterial
 var _status: Label3D
-## Fixed heights: the gunner GLB's skinned AABB runs to ~18 m, so measuring the
-## mesh top (EnemyBase._think) would float both off screen.
-const STATUS_H := 2.6
-const THINK_H := 3.2
+## The trace floats over the fit hologram rather than at the default
+## body-top + 0.45, which would put the two on the same line.
+const STATUS_H := 2.5
+const THINK_H := 2.9
 
 func _ready() -> void:
 	super._ready()

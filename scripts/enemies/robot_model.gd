@@ -59,7 +59,8 @@ func _ready() -> void:
 	_parent = get_parent() as EnemyBase
 	_anim = find_child("AnimationPlayer", true, false) as AnimationPlayer
 	_apply_materials()
-	_build_menace_glow()
+	if fit_height <= 0.0:
+		_build_menace_glow() # fitted models build it once fitted (_apply_fit)
 	_build_eye_optics()
 	# The imported model node we lean/bank (the direct child holding the rig).
 	for c in get_children():
@@ -128,6 +129,7 @@ func _apply_fit() -> void:
 				ab = ab.merge(part)
 	if first:
 		_mesh.visible = true
+		_build_menace_glow()
 		return
 	var h := ab.size.y
 	if h > 0.0001:
@@ -148,6 +150,9 @@ func _apply_fit() -> void:
 	if parent:
 		_clamp_cull_aabbs(parent.global_transform * (_mesh.transform * ab))
 	_mesh.visible = true
+	# Sized off the fitted model: measured before the fit, the flare sat at the
+	# unscaled import's height (3.2 m clamp on the ronin's 2.35 m frame).
+	_build_menace_glow()
 
 ## Pin every sub-mesh's culling AABB to the model's real bounds. Imported skinned
 ## meshes carry a huge counter-scale in their instance transform (the rig scales
@@ -291,11 +296,10 @@ func _add_menace_emission(mat: BaseMaterial3D, mask: Texture2D) -> void:
 func _build_menace_glow() -> void:
 	if menace_glow <= 0.0:
 		return
-	var top := 0.0
-	for mi in _collect_meshes(self):
-		if mi.mesh:
-			var aabb: AABB = (mi.global_transform * mi.mesh.get_aabb())
-			top = maxf(top, aabb.end.y - global_position.y)
+	# Measured against the enemy body's collision (the parent) when there is
+	# one: the bloat check needs it, and the light sits over the body's feet.
+	var body := get_parent() as Node3D if get_parent() is CollisionObject3D else self
+	var top := RobotModel.body_top(body, _collect_meshes(self)) + (body.global_position.y - global_position.y)
 	_menace_light = OmniLight3D.new()
 	_menace_light.light_color = menace_color
 	_menace_light.light_energy = 0.0
@@ -462,6 +466,30 @@ func _apply_lean(delta: float) -> void:
 	_mesh.transform = Transform3D(
 		_mesh_base.basis * Basis.from_euler(Vector3(_lean_pitch, 0.0, _lean_roll)),
 		_mesh_base.origin)
+
+## Height of a robot's top above `body`'s feet, from the AABBs of `meshes`.
+## Several skinned Quaternius GLBs (gunner, hunter, raptor, ravager, hive,
+## deepfake, warmech, overfitter) report a bind-pose AABB 50-230x the body, which
+## floated weak cores, damage flares and <think> traces in mid-air. A top more
+## than BLOAT_LIMIT x the top of `body`'s collision shapes is one of those, and
+## the collision top stands in for it. Legit models reach 2.65x (the shark
+## swims above its hitbox). tests/body_top_probe.
+const BLOAT_LIMIT := 3.0
+static func body_top(body: Node3D, meshes: Array) -> float:
+	var top := 0.0
+	for m in meshes:
+		var mi := m as MeshInstance3D
+		if is_instance_valid(mi) and mi.mesh:
+			var box: AABB = mi.global_transform * mi.mesh.get_aabb()
+			top = maxf(top, box.end.y - body.global_position.y)
+	var col := 0.0
+	for c in body.get_children():
+		if c is CollisionShape3D and (c as CollisionShape3D).shape:
+			var cb: AABB = (c as CollisionShape3D).global_transform * (c as CollisionShape3D).shape.get_debug_mesh().get_aabb()
+			col = maxf(col, cb.end.y - body.global_position.y)
+	if col > 0.0 and top > col * BLOAT_LIMIT:
+		return col
+	return top
 
 func _collect_meshes(n: Node) -> Array[MeshInstance3D]:
 	var out: Array[MeshInstance3D] = []
