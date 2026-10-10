@@ -115,6 +115,8 @@ res://tests/colorblind_probe.tscn
 res://tests/daily_op_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.
 res://tests/kill_fx_probe.tscn
+# Robots bleed binary when hit, pour it out on death.
+res://tests/data_bleed_probe.tscn
 # DEEPFAKE: projected copies fire harmless, pop in one hit, stay out of the enemy group.
 res://tests/deepfake_probe.tscn
 res://tests/overfitter_probe.tscn

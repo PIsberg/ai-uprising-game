@@ -692,6 +692,11 @@ func _enemy_hit_pop(pos: Vector3, is_head: bool, dmg: float = 10.0) -> void:
 	if scene == null:
 		return
 	_spawn_debris(scene, pos, dmg, is_head)
+	# The robot bleeds data: binary sprays back out of the wound (DataBleed).
+	var back := Vector3.UP
+	if is_instance_valid(_active_shooter) and _active_shooter is Node3D:
+		back = (_active_shooter as Node3D).global_position - pos
+	DataBleed.spill(scene, pos, back, DataBleed.hit_amount(dmg, is_head))
 	var col := Color(1.0, 0.95, 0.7) if is_head else Color(1.0, 0.85, 0.5)
 	var orb := MeshInstance3D.new()
 	var sm := SphereMesh.new()
