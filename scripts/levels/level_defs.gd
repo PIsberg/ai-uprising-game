@@ -2175,7 +2175,7 @@ static func _overseer() -> Dictionary:
 			# 18 m trigger — the whole pack aggroed at 0 s. Pushed ~9 units along
 			# the rim toward the NW bulkhead gap it guards, trigger 18 -> 14.)
 			{"type": "android", "pos": Vector3(-22, 0.5, -36), "trigger": 14, "pack": "overse_a1"},
-			{"type": "drone", "pos": Vector3(-16, 2.5, -35), "trigger": 14, "pack": "overse_a1"},
+			{"type": "attention", "pos": Vector3(-16, 2.5, -35), "trigger": 14, "pack": "overse_a1"},
 			{"type": "seeker", "pos": Vector3(-37, 2.5, -20), "trigger": 18, "pack": "overse_a2"},
 			{"type": "android", "pos": Vector3(-36, 0.5, -4), "trigger": 16, "pack": "overse_a2"},
 			{"type": "sniper", "pos": Vector3(0, 3.8, -39), "trigger": 20},
@@ -4660,7 +4660,7 @@ static func _grok() -> Dictionary:
 			{"type": "drone", "pos": Vector3(-4, 2.5, 16), "trigger": 22, "pack": "grok_p1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 			{"type": "android", "pos": Vector3(10, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
-			{"type": "drone", "pos": Vector3(18, 2.5, -6), "trigger": 24, "pack": "grok_p3"},
+			{"type": "attention", "pos": Vector3(18, 2.5, -6), "trigger": 24, "pack": "grok_p3"},
 			{"type": "spider", "pos": Vector3(-6, 0.5, 6), "trigger": 16, "pack": "grok_p1"},
 			{"type": "spider", "pos": Vector3(8, 0.5, -6), "trigger": 20, "pack": "grok_p5"},
 			{"type": "dog", "pos": Vector3(-10, 0.5, 2), "trigger": 18, "pack": "grok_p1"},
@@ -4933,7 +4933,7 @@ static func _suburb() -> Dictionary:
 			{"type": "drone", "pos": Vector3(-6, 3, 4)},
 			{"type": "android", "pos": Vector3(13, 0.5, 8), "trigger": 16, "pack": "suburb_p1"},
 			{"type": "spider", "pos": Vector3(-10, 0.5, -6), "trigger": 14, "pack": "suburb_p2"},
-			{"type": "drone", "pos": Vector3(12, 3, -10), "trigger": 18, "pack": "suburb_p3"},
+			{"type": "attention", "pos": Vector3(12, 3, -10), "trigger": 18, "pack": "suburb_p3"},
 			{"type": "android", "pos": Vector3(-12, 0.5, 12), "trigger": 18, "pack": "suburb_p4"},
 			{"type": "spider", "pos": Vector3(6, 0.5, -10), "trigger": 18, "pack": "suburb_p3"},
 			{"type": "drone", "pos": Vector3(2, 3, 18), "trigger": 20},

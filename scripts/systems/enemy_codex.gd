@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -119,6 +119,13 @@ const ENTRIES := {
 		"strengths": ["Overfit: the gun it learned does a quarter damage", "Tough chassis with the android's burst rifle", "Punishes a player who never switches weapons"],
 		"weaknesses": ["Switch guns and it is out of distribution: +50% damage from everything for 3 s", "Grenades and hazards are never learned or resisted", "The hologram tells you which gun it fitted to"],
 		"weapons": ["Any gun it has NOT seen", "Frag grenades", "OMEGA"],
+	},
+	"attention": {
+		"scene": "res://scenes/enemies/attention.tscn", "name": "ATTENTION HEAD", "scale": 1.0, "y": 0.0,
+		"desc": "A gold eye that never fires a shot. Attention is all it needs: its gaze is a visible cone that swings after you, and while it rests on you every robot near it knows exactly where you are and aims truer. Unalerted, it sweeps the floor like a searchlight.",
+		"strengths": ["Wakes the whole room onto you", "Feeds your position to robots that cannot see you", "Tightens every robot's aim while it watches"],
+		"weaknesses": ["Never shoots: kill it first", "Its gaze lags, so a sidestep or a dash breaks it", "Cover, EMP and hijack all put the gaze out"],
+		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "EMP grenade"],
 	},
 	"forkbomb": {
 		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,
