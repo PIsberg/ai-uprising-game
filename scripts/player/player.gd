@@ -292,6 +292,7 @@ func _ready() -> void:
 	_camera_base_y = camera.position.y
 	_apply_user_settings()
 	_build_dof_overlay()
+	_build_lens_flare()
 	_build_fill_light()
 	_fov_base = camera.fov
 	_register_dash_action()
@@ -367,6 +368,18 @@ func _build_dof_overlay() -> void:
 	mi.visible = false
 	camera.add_child(mi)
 	_dof_overlay = mi
+
+## Sun/moon lens flare (scripts/fx/lens_flare.gd), under PostFX and before the
+## post overlay so the grade, grain and vignette apply to it too.
+func _build_lens_flare() -> void:
+	if _post_overlay == null:
+		return
+	var flare := LensFlare.new()
+	flare.name = "LensFlare"
+	flare.camera = camera
+	var layer := _post_overlay.get_parent()
+	layer.add_child(flare)
+	layer.move_child(flare, _post_overlay.get_index())
 
 ## Feed the DoF shader the focus point: raycast straight ahead and focus on
 ## whatever the camera looks at (so the player's target stays sharp). Polls the

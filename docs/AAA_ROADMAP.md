@@ -112,6 +112,9 @@ is now parked and frozen for the capture).
   black is the arcade look), sublevel (dark corridor + light strip, tuned earlier), gpt's blown
   floor grid (owner-approved crisp look), guardrails' red floor + cyan HUD panel (intentional).
 
+## Camera lens flare (2026-10-10)
+- Looking at the sun or moon flares the lens: core, iris spikes, anamorphic streak, ghosts, halo and baked lens dirt (`scripts/fx/lens_flare.gd`, `shaders/lens_flare.gdshader`). Occluded by geometry, robots and the collision-less skyline towers through a ray fan, so it fades rather than pops. 13 of 24 campaign levels; 1.2-1.4 ms GPU at 3840x2400 on an Arc A370M while visible (the first version computed the dirt per pixel and cost 3.4 ms). Open: HDRI-sky levels have no flare (their sun is in the photo).
+
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
 - **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split ; ~~look-at so robots track you while walking~~ **shipped 2026-10-10**: `HeadTrackModifier` turns the head and spine of every skinned rig toward its target over the clip (`tests/head_track_probe`); still open: aiming IK on the gun arms.

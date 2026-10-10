@@ -45,6 +45,7 @@ const BEACON_PERIOD := 1.6
 const BEACON_ON := 0.22
 
 var _beacon_mat: StandardMaterial3D
+var _towers: Array = [] ## The plan's tower boxes, kept for flare_boxes().
 var _t := 0.0
 
 ## The city for `def` (already WORLD_SCALE'd), as data: {"towers": [{pos,
@@ -159,6 +160,8 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 
 func _build(p: Dictionary, theme: Color, night: bool, _is_low: bool) -> void:
 	var towers: Array = p["towers"]
+	_towers = towers
+	add_to_group("flare_occluder")
 	var mat := ShaderMaterial.new()
 	mat.shader = TOWER_SHADER
 	mat.set_shader_parameter("window_color", theme.lerp(Color(0.75, 0.88, 1.0), 0.35))
@@ -219,6 +222,20 @@ func _build(p: Dictionary, theme: Color, night: bool, _is_low: bool) -> void:
 		lb.position = sg["pos"] + Vector3(sin(sg["yaw"]), 0.0, cos(sg["yaw"])) * 0.6 # clear of the panel face: 5 cm z-fought at range
 		lb.rotation.y = sg["yaw"]
 	_add_mm(pm, panel_mat, "SignPanels")
+
+## The towers as world-space boxes for LensFlare: the city is MultiMesh only,
+## with no collision, so the flare's physics rays would see the sun through it.
+## Each entry: {"to_local": Transform3D world->box, "half": Vector3,
+## "centre": Vector3, "radius": float}.
+func flare_boxes() -> Array:
+	var out: Array = []
+	var g := global_transform
+	for t in _towers:
+		var xf := g * Transform3D(Basis(Vector3.UP, t["yaw"]), t["pos"])
+		var half: Vector3 = (t["size"] as Vector3) * 0.5
+		out.append({"to_local": xf.affine_inverse(), "half": half,
+			"centre": xf.origin, "radius": half.length()})
+	return out
 
 func _add_mm(mm: MultiMesh, mat: Material, n: String) -> void:
 	var mmi := MultiMeshInstance3D.new()
