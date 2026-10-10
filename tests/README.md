@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-311 probes total: **82** wired into the headless suite (`suite`), **84**
+313 probes total: **83** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **145** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **146** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -285,6 +285,8 @@ or GPU-timing probes; `--headless` renders these black).
 | range_screenshot | Gun range captured after the builder settles | windowed |
 | ravager_shot | RAVAGER beside a REAPER (same chassis, smaller): scale/tint reads as a heavier bruiser | windowed |
 | reaper_hover_probe | Reaper hovers (no walk shamble) with the flyer bank | windowed |
+| reasoning_trace_probe | Leaked robot reasoning: first contact floats a typed-out `<think>` alert line over a robot in view and it clears itself; a second contact inside the global gap, a robot behind the camera and one past RANGE stay quiet; an EMP over a pack inside the gap shows exactly one line; Combat Callouts off shows none | suite |
+| reasoning_trace_shot | An android spotting the camera at 9 m with its `<think>` line typed out; `-- --out=<dir>` | windowed |
 | river_view | Themed rivers: the serpentine shape + the gap | windowed |
 | robot_models_check | Every RobotModel-carrying enemy scene resolves its AnimationPlayer + configured clips and has visible meshes | headless |
 | rollout_probe | Several rolled-out levels, one framed hero shot of each | windowed |

@@ -8,6 +8,12 @@ The class `EnemyBase` (`scripts/enemies/enemy_base.gd`) implements a finite stat
 * **States:** `IDLE`, `PATROL`, `ALERT`, `CHASE`, `ATTACK`, `STAGGER`, `DEAD`
 * A `Damageable` node child manages enemy health, armor, and death callbacks.
 
+## Reasoning Traces
+<!-- lat: { "require-code-mention": true } -->
+Robots float a short `<think>` line over their heads on real decisions: first contact, wounded, cover retreat, EMP, hijack, panic.
+
+`EnemyBase._think` measures head clearance once; `ReasoningTrace.think` throttles (global gap, per-robot gap, on screen within RANGE, the Combat Callouts setting). New decision points call `_think(kind)` with a `LINES` key. `tests/reasoning_trace_probe`.
+
 ## Health and Subclass Scaling
 <!-- lat: { "require-code-mention": true } -->
 To prevent scaling values from being overwritten, subclasses must:
