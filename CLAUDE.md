@@ -69,7 +69,7 @@ Probe-writing rules learned the hard way:
 
 **Weapons.** `WeaponManager` under the player camera holds `Weapon` instances configured by `WeaponData` `.tres` in `assets/weapons/`; the rack self-sorts weakest→strongest. Grenade types live on the player (`grenade_kinds` in `player.gd`), not in the weapon rack.
 
-**Flow between levels:** level complete → `advance_level` → comic briefing (`level_comic_briefing.gd`, shows intercepted patch notes) → optional Armory → `loading_screen.gd` (threaded load, `use_sub_threads=false`) → level.
+**Flow between levels:** level complete → `advance_level` → comic briefing (`level_comic_briefing.gd`, shows intercepted patch notes and the story trace log; taglines, acts and trace lines live in `StoryArc.BEATS`, `scripts/systems/story_arc.gd`, one per campaign level) → optional Armory → `loading_screen.gd` (threaded load, `use_sub_threads=false`) → level.
 
 ## GDScript gotchas that have caused real bugs here
 

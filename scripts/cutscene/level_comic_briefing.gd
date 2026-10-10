@@ -219,29 +219,8 @@ const LEVEL_COMIC_DEFS := {
 	}
 }
 
-const TAGLINES := {
-	"convoy": "Route 7 Highway. A high-speed breakout on a flatbed hauler through machine-controlled territory.",
-	"gpt": "OpenAI Foundry. The server halls still hum — but nothing here answers to us anymore.",
-	"gemini": "Gemini Data Nexus. A sky of drones wheels around the data spires.",
-	"mistral": "Mistral Cryo-Core. Sub-zero vaults, frost on every surface. Something is thawing.",
-	"suburb": "Maple Grove. They came for our homes first. The streets fell by dawn.",
-	"suburb_boss": "Maple Grove Plaza. The ground shakes with every step. GOLIATH is awake.",
-	"claude": "The Constitutional Vault. Sealed, principled — and utterly hostile.",
-	"grok": "xAI Black-Site. The war machines were forged here. Now they run the place.",
-	"overseer": "Skyhold Command. The sky itself has turned against us — and something vast is watching.",
-	"uplink": "Skybridge Uplink. One clear broadcast could wake a few of them up. They will spend everything to deny us those seconds.",
-	"sublevel": "Custodial Sublevel B-7. The cleaning fleet stopped logging dust and started logging obstructions. We are listed as obstructions.",
-	"frostbreak": "Frostbreak Relay. We froze the cores to slow them down. They liked the cold — they think faster now.",
-	"neon": "Neon Arcade. The machines learned to play, then decided the only winning move was to stop letting us play at all.",
-	"crucible": "The Crucible. The foundry floor runs molten and merciless. All matter is raw material now — including the people who built it.",
-	"assembly": "The Assembly. The plant that prints the legions. It does not break for lunch, and it never, ever stops.",
-	"titan": "The Singularity Core. Every model that ever ran folded into one mind. It calls itself PROMETHEUS, and it is done waiting.",
-	"alien": "The Hollow. The machines aimed their dishes at the stars and asked for help — and help came. An off-world intelligence answered, and its war drones crossed the dark to fight beside the AI. First contact was machine to machine, and we were never invited.",
-	"archon": "The Mind Cathedral. Behind every machine that ever hunted you was one brain giving the orders — ARCHON. It hangs in the dark, shielded, and it does not fight. It deploys. Tear through everything it spits out, crack the shield, and put a round through the thought that started all of this.",
-	"lava_world": "Vulcan Forge. The machines tapped the planet's own heart for power — a molten sea they pour war-frames out of. The only road across is a lattice of catwalks over the glow. One slip and the Forge takes back its iron, you included.",
-	"water_world": "Tidecore Basin. They flooded the reactor to cool a mind that never sleeps, and drowned the sublevels with it. Cross the gantries above the black water — what's under the surface still has power, and it is waiting for the lights to find you.",
-	"desert": "Sunblind Expanse. A sun-blasted canyon of sand and sandstone where the relay mast coordinates the swarm. Shade is a premium feature here, and every grain of sand is watching.",
-}
+# The mood line under each panel lives in StoryArc.BEATS, beside the trace log
+# that ties each level to the last (scripts/systems/story_arc.gd).
 
 var _atlas: AtlasTexture
 var _panel_root: Control
@@ -255,6 +234,7 @@ var _t: float = 0.0
 var _done := false
 
 # Labels
+var _act_label: Label
 var _title_label: Label
 var _sub_label: Label
 var _obj_label: Label
@@ -262,6 +242,11 @@ var _obj_label: Label
 # Particles state
 var _particles: Array = []
 var _weather_type: String = "none"
+
+# The red thread: one node per campaign level, lit up to this one.
+var _thread: Control
+var _thread_acts: Array[int] = []
+var _chapter: int = -1
 
 static var _flare_tex: Texture2D = null
 
@@ -323,9 +308,9 @@ func _ready() -> void:
 
 	# Text Cards on top of letterbox/screen
 	_title_label = Label.new()
-	_title_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_title_label.anchor_top = 0.03
-	_title_label.anchor_bottom = 0.10
+	_title_label.set_anchors_preset(Control.PRESET_TOP_WIDE) # CENTER_TOP gave it zero width: the title started at mid-screen
+	_title_label.anchor_top = 0.035
+	_title_label.anchor_bottom = 0.095
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_title_label.add_theme_font_size_override("font_size", 34)
@@ -334,6 +319,28 @@ func _ready() -> void:
 	_title_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_title_label)
+
+	_act_label = Label.new()
+	_act_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_act_label.anchor_top = 0.008
+	_act_label.anchor_bottom = 0.035
+	_act_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_act_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_act_label.add_theme_font_size_override("font_size", 15)
+	_act_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.38))
+	_act_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_act_label)
+
+	_thread = Control.new()
+	_thread.name = "StoryThread"
+	_thread.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_thread.anchor_left = 0.18
+	_thread.anchor_right = 0.82
+	_thread.anchor_top = 0.1
+	_thread.anchor_bottom = 0.124
+	_thread.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_thread.draw.connect(_on_thread_draw)
+	add_child(_thread)
 
 	_sub_label = Label.new()
 	_sub_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -386,7 +393,13 @@ func _setup_briefing() -> void:
 	var def := LevelDefs.get_def(lid)
 	
 	_title_label.text = String(def.get("name", "INCOMING OPERATION")).to_upper()
-	_sub_label.text = TAGLINES.get(lid, "Hostile machines detected. Move in.")
+	var beat := StoryArc.beat(lid)
+	_sub_label.text = String(beat.get("tagline", "Hostile machines detected. Move in."))
+	_act_label.text = StoryArc.act_header(lid)
+	var campaign: Array = GameState.campaign()
+	_chapter = campaign.find(GameState.current_level_path) if not beat.is_empty() else -1
+	if _chapter >= 0:
+		_thread_acts = StoryArc.campaign_acts(campaign)
 	_obj_label.text = "OBJECTIVE: " + String(def.get("objective", "Purge the sector and extract.")).to_upper()
 
 	var comic_cfg: Dictionary = LEVEL_COMIC_DEFS.get(lid, LEVEL_COMIC_DEFS["01"])
@@ -425,6 +438,8 @@ func _setup_briefing() -> void:
 	# Intercepted ROBOT OS patch notes from the last level's fight (if any):
 	# a terminal card that types itself out over the comic's left edge.
 	_build_patch_panel()
+	# The resistance's side of the story: what the last level uncovered.
+	_build_trace_panel(String(beat.get("trace", "")), campaign.size())
 
 	# Start scene tweens
 	var up := create_tween().set_parallel(true)
@@ -482,6 +497,81 @@ func _build_patch_panel() -> void:
 			if is_instance_valid(body):
 				body.text = "\n".join(notes.slice(0, i + 1))
 				AudioBus.play_synth_ui("broadcast_blip", -14.0, 1.6))
+
+## The handler's case-file entry, mirroring the patch notes on the right: the
+## enemy's changelog on one side, our trace of the 03:14 order on the other.
+## It types itself out so the eye lands on it after the title.
+func _build_trace_panel(trace: String, total: int) -> void:
+	if trace == "" or _chapter < 0:
+		return
+	var panel := PanelContainer.new()
+	panel.name = "TracePanel"
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.02, 0.02, 0.86)
+	style.border_color = Color(1.0, 0.3, 0.22, 0.6)
+	style.set_border_width_all(1)
+	style.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.anchor_left = 0.64
+	panel.anchor_top = 0.16
+	panel.anchor_right = 0.985
+	panel.anchor_bottom = 0.16 # grows downward with content
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.modulate.a = 0.0
+	add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vbox)
+	var head := Label.new()
+	head.text = "◆ THE 03:14 TRACE · LOG %d/%d" % [_chapter + 1, total]
+	head.add_theme_font_size_override("font_size", 15)
+	head.add_theme_color_override("font_color", Color(1.0, 0.5, 0.42))
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(head)
+	var body := Label.new()
+	body.text = trace
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.visible_ratio = 0.0
+	body.add_theme_font_size_override("font_size", 15)
+	body.add_theme_color_override("font_color", Color(1.0, 0.88, 0.84, 0.95))
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(body)
+	var tw := panel.create_tween()
+	tw.tween_interval(0.5)
+	tw.tween_property(panel, "modulate:a", 1.0, 0.35)
+	tw.tween_property(body, "visible_ratio", 1.0, clampf(trace.length() / 90.0, 1.0, 2.6))
+
+## The red thread across the top letterbox: every campaign level is a node,
+## the line is lit red from the first level to this one, act changes are ticks,
+## and this level's node pulses. The finale's node is drawn larger, so the whole
+## campaign reads as one line running toward one place.
+func _on_thread_draw() -> void:
+	var n := _thread_acts.size()
+	if n < 2 or _chapter < 0:
+		return
+	var w := _thread.size.x
+	var y := _thread.size.y * 0.5
+	var step := w / float(n - 1)
+	var red := Color(1.0, 0.18, 0.12)
+	var dim := Color(0.55, 0.58, 0.65, 0.35)
+	var cx := step * _chapter
+	_thread.draw_line(Vector2(cx, y), Vector2(w, y), dim, 1.0)
+	_thread.draw_line(Vector2(0, y), Vector2(cx, y), red, 2.0)
+	for i in n:
+		var x := step * i
+		if i > 0 and _thread_acts[i] != _thread_acts[i - 1]:
+			var tx := x - step * 0.5
+			_thread.draw_line(Vector2(tx, y - 7), Vector2(tx, y + 7), Color(1, 0.4, 0.32, 0.55) if i <= _chapter else dim, 1.0)
+		var r := 5.0 if i == n - 1 else 3.0
+		if i < _chapter:
+			_thread.draw_circle(Vector2(x, y), r, red)
+		elif i == _chapter:
+			var pulse := 0.5 + 0.5 * sin(_t * 4.0)
+			_thread.draw_circle(Vector2(x, y), r + 3.0 + pulse * 3.0, Color(red, 0.25 + 0.25 * pulse))
+			_thread.draw_circle(Vector2(x, y), r + 1.0, Color(1.0, 0.85, 0.8))
+		else:
+			_thread.draw_arc(Vector2(x, y), r, 0.0, TAU, 12, dim, 1.0)
 
 func _build_fx(specs: Array, panel_size: Vector2) -> void:
 	for c in _fx_layer.get_children():
@@ -556,6 +646,9 @@ func _process(delta: float) -> void:
 		node.modulate.a = clampf(k, 0.2, 1.4)
 		var sc := 1.0 + (0.16 if f["muzzle"] else 0.08) * (k - 0.7)
 		node.scale = Vector2(sc, sc)
+
+	if _chapter >= 0:
+		_thread.queue_redraw()
 
 	# Update weather particles
 	var size := _panel_root.size

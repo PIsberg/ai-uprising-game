@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-355 probes total: **105** wired into the headless suite (`suite`), **84**
+356 probes total: **106** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -83,7 +83,7 @@ or GPU-timing probes; `--headless` renders these black).
 | bounty_probe | BOUNTY director: tagged-enemy kill awards bonus + clears director + always drops the rare prize | windowed |
 | breakable_cover_probe | Breakable cover: a census of qualifying `walls` per level (at least 30 blocks on 8 levels) and the opt-outs; in a live `neon` build every qualifying block is a `BreakableCover`, enemy rounds x0.3 and splash x1.6, two crack stages, chipping is not a player hit; the shatter frees the block, leaves rubble, hurts a body beside it, and one threaded rebake turns a 1.5x detour into a straight path; a shockwave ring damages a block | suite |
 | breakable_cover_shot | Frames one breakable block of a level (default `neon`) at eye height: intact, from a raised three-quarter view, next to a solid wall, cracked, failing, mid-shatter and as rubble. `-- --out=<dir> [--level=<id>]` | windowed |
-| briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective all show | windowed |
+| briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective, act header, story thread and trace card all show (gpt, mistral, suburb_boss, desert, archon) | windowed |
 | brute_shield_probe | BRUTE still visibly carries its frontal shield slab (front + 3/4 shots) | windowed |
 | campaign_dump | SceneTree script dumping `max_level_reached` + full campaign roster for inspection | headless |
 | campaign_map_probe | Campaign map at a mid-run progress state, screenshotted | windowed |
@@ -118,6 +118,7 @@ or GPU-timing probes; `--headless` renders these black).
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
 | settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
+| story_arc_probe | The red thread: every campaign level has a StoryArc beat (tagline, and a trace entry after the first), acts run in campaign order with none skipped, the briefing shows act header + tagline + numbered trace card + thread bar (guardrails), and a level outside the story (range) shows none of it | suite |
 | subtitle_size_probe | Accessibility Subtitle Size (GraphicsSettings.subtitle_scale 0.8..2.0): the real cutscene subtitle (26 px), overlord taunt (22 px) and victory transmission body (22 px) double at 2.0; at 2.0 the longest overlord taunt fits the HUD and a subtitle twice the longest written today wraps inside the screen above the letterbox bar; setter clamps, value persists | suite |
 | damage_number_size_probe | Accessibility Damage Number Size (GraphicsSettings.damage_number_scale 0.6..2.0): a real player-dealt hit spawns a Label3D whose fixed-size pixel_size is 0.0028 x the slider (1.0 / 2.0 / 0.6 measured), setter clamps, value persists; restores the user's values | suite |
 | damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |

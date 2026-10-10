@@ -147,3 +147,5 @@ res://tests/skyline_probe.tscn
 res://tests/hallucination_probe.tscn
 # FORK BOMB: forks 1 -> 2 -> 4 on death unless disintegrated.
 res://tests/forkbomb_probe.tscn
+# STORY THREAD: every campaign level has a beat, acts in order, the briefing tells it.
+res://tests/story_arc_probe.tscn

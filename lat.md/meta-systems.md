@@ -9,6 +9,14 @@ The campaign map interface (`scripts/ui/campaign_map.gd`) renders an interactive
 * **Sector Intel:** Displays hostile unit compositions, primary/secondary objectives, environmental hazard ratings, and boss encounters before deployment.
 * **Navigation & State:** Supports mouse, keyboard, and controller navigation; synchronizes completed sectors and unlocked routes with `GameState.CAMPAIGN`.
 
+## Story Thread
+<!-- lat: { "require-code-mention": true } -->
+The campaign's narrative spine lives in `StoryArc.BEATS` (`scripts/systems/story_arc.gd`), one beat per campaign level id:
+* **The question:** the intro's 03:14 command; each level is one hop of the trace back to its sender, ARCHON.
+* **Beat fields:** `act` (index into `StoryArc.ACTS`, six acts), `tagline` (the briefing's mood line) and `trace` (what the previous level uncovered, empty for the first).
+* **Briefing:** `level_comic_briefing.gd` prints `StoryArc.act_header`, the tagline, a red thread bar built from `StoryArc.campaign_acts` and the trace card. The SUBLEVEL reveal cutscene opens on that level's trace.
+* **Rule:** a new campaign level needs a beat, with acts staying in campaign order. `tests/story_arc_probe` (suite).
+
 ## Armory Shop
 <!-- lat: { "require-code-mention": true } -->
 The Armory (`scripts/ui/armory.gd`) provides a meta-progression shop between combat missions:

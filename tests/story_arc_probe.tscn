@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cstoryarcprobe1"]
+
+[ext_resource type="Script" path="res://tests/story_arc_probe.gd" id="1_s"]
+
+[node name="StoryArcProbe" type="Node"]
+script = ExtResource("1_s")
