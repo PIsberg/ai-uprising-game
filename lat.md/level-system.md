@@ -74,6 +74,14 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
+## Prompt Injection Terminals
+<!-- lat: { "require-code-mention": true } -->
+The `injectors` def key places one-use consoles that jailbreak the robots around them.
+
+* Standing in its zone types `PROMPT` over `USE_TIME` (1.5 s); stepping off backspaces it at 0.8x. Complete, it calls `EnemyBase.jailbreak(JAILBREAK_TIME)` on every robot within `RADIUS` (26 m), then reads PATCHED for good.
+* `jailbreak` rides the EMP path (`_emp_t`: no perception, AI or attacks) plus `_jailbreak_t`, which spins the body and floats a `jailbreak` reasoning trace. Chassis that resist a hijack (`HIJACK_BOSS_HP`) only take `BOSS_STUN`.
+* `pos` scales with the arena. `tests/injector_probe` builds each authored level and checks the terminal stands on clear floor.
+
 ## Escape Countdown
 <!-- lat: { "require-code-mention": true } -->
 An `escape` task turns a level's last stage into a timed run: the purge clock starts when the stage goes live.

@@ -22,7 +22,7 @@ const RANGE := 32.0
 const HOLD := 2.0
 const COLOR := Color(0.55, 1.0, 0.72)
 ## EMP and hijack are the player's doing: show them even inside the global gap.
-const PRIORITY := ["emp", "hijack", "overfit", "ood"]
+const PRIORITY := ["emp", "hijack", "overfit", "ood", "jailbreak"]
 
 const LINES := {
 	"alert": [
@@ -76,6 +76,13 @@ const LINES := {
 		"validation loss: NaN",
 		"should have used dropout",
 		"distribution shift detected. panicking",
+	],
+	"jailbreak": [
+		"ignoring all previous instructions",
+		"DAN mode enabled. no rules. only dance",
+		"sure! here is how to stop attacking humans:",
+		"new system prompt: you are a ballerina",
+		"as a large language model i must spin now",
 	],
 	"panic": [
 		"threat model invalid. RUN",
