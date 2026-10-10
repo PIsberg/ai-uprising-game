@@ -902,12 +902,7 @@ var _think_h: float = -1.0 ## head clearance for reasoning traces, measured once
 ## Leaked reasoning over this robot's head (ReasoningTrace throttles it).
 func _think(kind: String) -> void:
 	if _think_h < 0.0:
-		var top := 0.0
-		for mi in _mesh_instances:
-			if is_instance_valid(mi) and mi.mesh:
-				var box: AABB = mi.global_transform * mi.mesh.get_aabb()
-				top = maxf(top, box.end.y - global_position.y)
-		_think_h = clampf(top + 0.45, 1.2, 7.0)
+		_think_h = clampf(RobotModel.body_top(self, _mesh_instances) + 0.45, 1.2, 7.0)
 	ReasoningTrace.think(self, kind, _think_h)
 
 func _state_idle(delta: float) -> void:
@@ -1871,12 +1866,7 @@ func _expose_weak_core() -> void:
 		return
 	# Mirror _build_menace_glow's mid-torso height so the core lands in the same
 	# readable spot every chassis already flares its damage light from.
-	var top := 0.0
-	for mi in _mesh_instances:
-		if is_instance_valid(mi) and mi.mesh:
-			var aabb: AABB = mi.global_transform * mi.mesh.get_aabb()
-			top = maxf(top, aabb.end.y - global_position.y)
-	var h := clampf(top * 0.55, 0.8, 3.2)
+	var h := clampf(RobotModel.body_top(self, _mesh_instances) * 0.55, 0.8, 3.2)
 	var rm := _visual_root as RobotModel
 	var col := rm.menace_color if (rm and rm.menace_glow > 0.0) else Color(1.0, 0.35, 0.1)
 	_weak_core = MeshInstance3D.new()
