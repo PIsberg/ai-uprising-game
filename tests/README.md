@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-328 probes total: **91** wired into the headless suite (`suite`), **84**
+330 probes total: **92** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **153** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **154** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -128,6 +128,8 @@ or GPU-timing probes; `--headless` renders these black).
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
 | body_top_probe | Every non-boss enemy scene: the weak-point core and the damage flare sit inside the body (its collision top or an AABB-free bone/rigid-mesh measure, 0.8 m floor) and the `<think>` trace floats within 0.8 m over it; catches skinned GLBs whose bind-pose AABB is 50-300x the body, and flares placed before a `fit_height` fit | suite |
 | deepfake_probe | DEEPFAKE: wired into the level builder, codex and GROK roster; projects two copies on its own in a fight, ~SPREAD to either side; copies are out of the `enemy` group and shadowless; copies fire the same burst and hurt nobody while its own rounds do; a real rifle hit pops a copy without score or an accuracy hit; a wall blocks that side's copy; its death collapses the copies | suite |
+| reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
+| reward_shot | The REWARD MODEL over two androids it rewarded (+1, +2), caught on a reward beam; `-- --out=<dir>` | windowed |
 | moe_probe | MIXTURE OF EXPERTS: wired into the level builder, codex, NEON and CRUCIBLE; four orbiting pods, each its own enemy-layer target with a Damageable; routing to SNIPER/SCATTER/SPRINT/SHIELD rewrites its burst, speed and damage taken, and the hologram names the expert; a rifle hit on a pod hurts the pod, not the body; a dead pod's expert is never routed again; all pods down collapses the router (COLLAPSE_MULT, hologram); its death takes the pods | suite |
 | moe_shot | Two MIXTURE OF EXPERTS: one routed to SNIPER, one to SHIELD (blue shell); a pod shot off one, every pod off the other (router collapsed); `-- --out=<dir>` | windowed |
 | injector_probe | PROMPT INJECTION terminals: GEMINI, GROK, UPLINK and OVERSEER author one, and built through the real level it stands on the floor with nothing solid in its footprint; standing at it for USE_TIME jailbreaks every robot within RADIUS (inert) but not one beyond, a boss-sized chassis is only stunned; stepping off early injects nothing; a spent terminal never fires again; a jailbreak wears off | suite |

@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -132,6 +132,13 @@ const ENTRIES := {
 		"desc": "An unarmed router chassis with four expert pods orbiting its head. Every few seconds its gate routes the fight to one of them, and that expert decides everything: a SNIPER's single heavy shot, a SCATTER burst, a SHIELD that shrugs off most of your fire, a SPRINT that flanks. The hologram over it shows the routing decision.",
 		"strengths": ["Four fighting styles in one chassis", "SHIELD routing cuts your damage to 30%", "Shots come from whichever pod is live"],
 		"weaknesses": ["Each pod is its own target: shoot an expert off and it is gone", "Lose all four and the router collapses: +50% damage taken", "Watch the hologram and punish the expert it picked"],
+		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "SW-7 Swarm Launcher"],
+	},
+	"reward": {
+		"scene": "res://scenes/enemies/reward.tscn", "name": "REWARD MODEL", "scale": 1.0, "y": 0.0,
+		"desc": "Reinforcement learning from human feedback, the overlord's way: the feedback is your pain. A white-and-gold flyer that never fires and hangs back behind its pack. Every time a robot near it hurts you, it beams that robot a reward, and a rewarded robot attacks faster, up to three times over.",
+		"strengths": ["Every hit you take makes the pack around it faster", "Rewards stack three deep", "Hangs back behind the robots it feeds"],
+		"weaknesses": ["Never shoots: it is a priority target", "Shoot it down and every reward is revoked", "Gold REWARD tags show which robots it has trained"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "SW-7 Swarm Launcher"],
 	},
 	"forkbomb": {
