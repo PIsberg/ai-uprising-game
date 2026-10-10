@@ -21,7 +21,11 @@ extends Node
 ## (9) a rifle HEADSHOT kill DECAPITATES: the head bone folds away, a head
 ##     chunk is flung, no blast for the stagger, then the classic blast; a body
 ##     kill with the same rifle stays classic; a headshot kill on a drone (no
-##     neck to lose) is an ordinary fall.
+##     neck to lose) is an ordinary fall;
+## (10) a Devastator rocket kill BLOWS the robot APART: several limbs torn off at
+##     once (more than the classic death's one), the torso lofted, no blast
+##     until it comes down, then the classic blast; a drone killed by a rocket
+##     blows up in the air instead of falling.
 ##   godot --headless --path . --audio-driver Dummy res://tests/kill_fx_probe.tscn
 
 const ANDROID := "res://scenes/enemies/android.tscn"
@@ -47,7 +51,7 @@ func _run() -> void:
 	# 1. Data.
 	var want := {"gauss": 1, "sniper": 1, "plasma": 1, "omega": 1,
 			"tesla": 2, "arccoil": 2, "tempest": 2, "pistol": 0, "rifle": 0,
-			"shotgun": 3, "magnum": 3, "devastator": 0, "swarm": 0}
+			"shotgun": 3, "magnum": 3, "devastator": 5, "swarm": 5}
 	for k in want:
 		var d: WeaponData = load("res://assets/weapons/%s_data.tres" % k)
 		_check("%s kill_fx" % k, d.kill_fx == want[k], "got %d want %d" % [d.kill_fx, want[k]])
@@ -283,6 +287,50 @@ func _run() -> void:
 	dh.hp.kill_fx = KillFx.NONE
 	await _frames(4)
 	_check("drone headshot: ordinary fall, never shocked", is_instance_valid(dh) and dh._dying and _shocked(dh) == 0)
+
+	# 10. Rockets.
+	var rocket_shooter := Node3D.new()
+	rocket_shooter.add_to_group("player")
+	add_child(rocket_shooter)
+	rocket_shooter.global_position = Vector3(-270, 1.5, 30)
+	var dev := _gun("devastator", rocket_shooter)
+	var ba := _robot(Vector3(-270, 0, 0))
+	await _frames(3)
+	_wake(ba)
+	ba.hp.current_health = 1.0
+	var y_base := ba.global_position.y
+	var bodies0 := _rigid_count()
+	dev._spawn_projectile(Vector3(-270, 1.2, 8), Vector3(0, 0, -1))
+	for i in 90:
+		await get_tree().physics_frame
+		if not ba.hp.is_alive():
+			break
+	var b_kill := _blasts # the rocket's own impact blast is not the robot's death
+	# A kill can open a wall-clock hit-stop (Engine.time_scale 0.06 for 0.4 s
+	# real): the loft runs in game time, so time it from when the clock is back.
+	for i in 120:
+		if Engine.time_scale >= 1.0:
+			break
+		await get_tree().process_frame
+	_check("rocket killed it", not ba.hp.is_alive())
+	_check("blast apart: limbs torn off at once", ba._limb_losses >= 3, "%d limbs" % ba._limb_losses)
+	_check("blast apart: limb chunks flying", _rigid_count() - bodies0 >= 3, "+%d" % (_rigid_count() - bodies0))
+	var blast_frames := int(KillFx.BLAST_TIME * 60.0)
+	await _frames(int(blast_frames * 0.4))
+	_check("blast apart: torso lofted", is_instance_valid(ba) and ba.global_position.y > y_base + 0.5,
+			"y %.2f" % (ba.global_position.y if is_instance_valid(ba) else -1.0))
+	_check("blast apart: no classic blast in the air", _blasts == b_kill, "%d -> %d" % [b_kill, _blasts])
+	await _frames(int(blast_frames * 0.6) + 10)
+	_check("blast apart: classic blast when it lands", _blasts == b_kill + 1, "%d -> %d" % [b_kill, _blasts])
+	var dr := _robot(Vector3(-290, 3.0, 0), "res://scenes/enemies/drone.tscn")
+	await _frames(3)
+	_wake(dr)
+	dr.hp.current_health = 1.0
+	dr.hp.kill_fx = KillFx.BLAST # as a rocket would tag it
+	dr.hp.apply_damage(5.0, rocket_shooter)
+	dr.hp.kill_fx = KillFx.NONE
+	await _frames(3)
+	_check("drone: a rocket blows it up in the air", not is_instance_valid(dr) or dr.is_queued_for_deletion())
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
