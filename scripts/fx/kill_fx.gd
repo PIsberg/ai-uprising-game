@@ -34,13 +34,17 @@ const SHRED_FLING := 3.2
 const SHRED_LIFT := 0.8 ## apex of the flight arc above the start, metres
 const SHRED_KICK := 9.0 ## m/s a shredded flyer is knocked along the shot
 
-static func tag(d: Object, style: int) -> void:
-	if style != NONE and is_instance_valid(d) and d is Damageable:
+## Tags `d` with the style and the gun (`weapon`, a WeaponData) of the hit about
+## to be applied; untag right after apply_damage returns.
+static func tag(d: Object, style: int, weapon: WeaponData = null) -> void:
+	if is_instance_valid(d) and d is Damageable:
 		(d as Damageable).kill_fx = style
+		(d as Damageable).hit_weapon = weapon
 
 static func untag(d: Object) -> void:
 	if is_instance_valid(d) and d is Damageable:
 		(d as Damageable).kill_fx = NONE
+		(d as Damageable).hit_weapon = null
 
 
 # ---------- DISINTEGRATE ----------

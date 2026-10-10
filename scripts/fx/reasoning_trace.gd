@@ -8,7 +8,8 @@ extends RefCounted
 ## breaking for cover, it is panicking).
 ##
 ## Kept rare on purpose: one trace on screen at a time (GLOBAL_GAP_MS between
-## them; PRIORITY kinds the player caused only wait PRIORITY_GAP_MS, so one EMP
+## them; PRIORITY kinds the player caused (EMP, hijack, an OVERFITTER fitting
+## to or losing the player's gun) only wait PRIORITY_GAP_MS, so one EMP
 ## burst over a pack still shows one line, not five), a robot thinks at most once
 ## per ROBOT_GAP_MS, and only on screen within RANGE metres. Rides the Combat
 ## Callouts setting, like the other combat text. Raw English, like the streak
@@ -21,7 +22,7 @@ const RANGE := 32.0
 const HOLD := 2.0
 const COLOR := Color(0.55, 1.0, 0.72)
 ## EMP and hijack are the player's doing: show them even inside the global gap.
-const PRIORITY := ["emp", "hijack"]
+const PRIORITY := ["emp", "hijack", "overfit", "ood"]
 
 const LINES := {
 	"alert": [
@@ -63,6 +64,18 @@ const LINES := {
 		"detected: HUMAN. detected: HUMAN. detected:",
 		"vision model drift. engaging all of them",
 		"this one is real. probably.",
+	],
+	"overfit": [
+		"training accuracy 100%. i have memorised you",
+		"loss 0.0001 on your gun. generalisation: optional",
+		"weights frozen around that rifle. bring it on",
+		"i have seen this input 400 times",
+	],
+	"ood": [
+		"this gun was not in the training data",
+		"validation loss: NaN",
+		"should have used dropout",
+		"distribution shift detected. panicking",
 	],
 	"panic": [
 		"threat model invalid. RUN",
