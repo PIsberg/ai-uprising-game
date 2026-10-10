@@ -845,6 +845,8 @@ func claim_bounty() -> void:
 ##   ASSASSIN     — a hunter warps in near the player with a bounty on its head
 ##   SUPPLY FLARE — a marked cache (overclock + ammo) drops nearby, gone in 40s
 ##   GRID SURGE   — 20s where ultimate charge builds at double rate
+##   MODEL HALLUCINATION — the robots' vision glitches: three phantoms of the
+##                  player draw the fire of every robot closer to one (12 s)
 ## Hard-gated: PLAYING only, never on boss/convoy/horde levels, never in the
 ## opening minute, never while a bounty is live, max 2 per level. Everything
 ## it spawns cleans itself up.
@@ -858,6 +860,7 @@ const EVENT_SURGE_TIME := 20.0
 const EVENT_ASSASSIN := preload("res://scenes/enemies/hunter.tscn")
 const EVENT_PICKUP_OVERCLOCK := preload("res://scenes/pickups/overclock.tscn")
 const EVENT_PICKUP_AMMO := preload("res://scenes/pickups/ammo_box.tscn")
+const EVENT_PHANTOMS := 3
 
 var _event_cd: float = EVENT_FIRST_DELAY
 var _level_events: int = 0
@@ -877,10 +880,11 @@ func _tick_events(delta: float) -> void:
 	if _bounty != null and _bounty.get_ref() != null:
 		return
 	_level_events += 1
-	match randi() % 3:
+	match randi() % 4:
 		0: _event_assassin()
 		1: _event_supply_flare()
 		2: _event_grid_surge()
+		3: _event_hallucination()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -970,6 +974,23 @@ func _event_grid_surge() -> void:
 	_surge_t = EVENT_SURGE_TIME
 	skirmish_event.emit("GRID SURGE", "Local power spike: OVERLOAD charges at double rate for %d seconds." % int(EVENT_SURGE_TIME))
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.3)
+
+## MODEL HALLUCINATION: the overlord's vision model drifts and its robots see
+## three of you. Phantoms (PlayerPhantom) stand on a ring around the player;
+## any robot closer to a phantom than to you turns on it until it is shot apart
+## or the hallucination ends. A window to flank, not a kill: the robots keep
+## moving and shooting, just at the wrong human.
+func _event_hallucination() -> void:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
+	for i in EVENT_PHANTOMS:
+		var at := _event_point_near_player(randf_range(11.0, 17.0))
+		var ph := PlayerPhantom.new()
+		scene.add_child(ph)
+		ph.global_position = at
+	skirmish_event.emit("MODEL HALLUCINATION", "Their vision model is glitching: they see three of you for %d seconds. Flank them." % int(PlayerPhantom.LIFE))
+	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.8)
 
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.

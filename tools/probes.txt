@@ -121,3 +121,5 @@ res://tests/deepfake_probe.tscn
 res://tests/reasoning_trace_probe.tscn
 # Hero landmarks: one per open-sky level, past the floor, scenery only.
 res://tests/landmark_probe.tscn
+# MODEL HALLUCINATION: phantoms of the player draw the fire of nearby robots.
+res://tests/hallucination_probe.tscn

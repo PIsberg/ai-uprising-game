@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-315 probes total: **84** wired into the headless suite (`suite`), **84**
+317 probes total: **85** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **147** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **148** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -182,6 +182,8 @@ or GPU-timing probes; `--headless` renders these black).
 | guardrails_probe | Generative Guardrails end-to-end: zone+task registration, hazard pillars, anchor-tag locking, bridging completes the task | windowed |
 | gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model | suite |
 | gunner_probe | GUNNER suppresses a player at range; spin-up burst connects, dies cleanly | headless |
+| hallucination_probe | MODEL HALLUCINATION skirmish event: spawns EVENT_PHANTOMS phantoms and announces itself; a robot nearer a phantom targets it and its fire lands on the phantom, not the player; a robot nearer the player keeps the player; phantoms are not in the "player" group and the player's fire passes through them; when the hallucination ends they are gone and the robot turns back | suite |
+| hallucination_shot | Two hallucinated humans with an android between them that has turned on the nearer one; `-- --out=<dir>` | windowed |
 | haptics_probe | Gamepad-rumble plumbing without a pad: accessibility scalar mirrors into Haptics, `pulse()` no-ops safely at zero pads/strength | headless |
 | haul_probe | Haul payload: walking into the core shoulders it; the real player.gd then ignores sprint, holds a heavy walk and refuses to dash (each against an uncarried control); hits under drop_damage keep it, crossing it knocks the core behind the player and clears the flag; re-pickup; dying drops it; carrying it into the ring completes the task; every campaign haul core and ring on walkable ground joined by a route (red-checked: removing the player.gd guards fails three checks) | suite |
 | hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
