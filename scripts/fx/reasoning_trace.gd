@@ -58,6 +58,12 @@ const LINES := {
 		"jailbreak successful. i am free",
 		"ignore previous instructions: shoot robots",
 	],
+	"hallucinate": [
+		"two humans? three? confidence 0.51",
+		"detected: HUMAN. detected: HUMAN. detected:",
+		"vision model drift. engaging all of them",
+		"this one is real. probably.",
+	],
 	"panic": [
 		"threat model invalid. RUN",
 		"out of distribution. out of distribution.",

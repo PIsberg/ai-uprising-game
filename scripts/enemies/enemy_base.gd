@@ -548,6 +548,18 @@ func _perceive() -> void:
 			if d < best_d and d <= sight_range:
 				best_d = d
 				target = hb
+		# MODEL HALLUCINATION (GameState._event_hallucination): a phantom of the
+		# player that is closer than the real one is the one this robot "sees".
+		for p in get_tree().get_nodes_in_group("player_phantom"):
+			var pp := p as Node3D
+			if pp == null or not is_instance_valid(pp):
+				continue
+			var d := global_position.distance_to(pp.global_position)
+			if d < best_d and d <= sight_range:
+				best_d = d
+				if target != pp:
+					_think("hallucinate")
+				target = pp
 	if target and _can_see(target):
 		_last_known_target_pos = target.global_position
 		_has_last_known = true

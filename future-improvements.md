@@ -77,7 +77,9 @@ idea #4 "glitch warfare".
 ✅ **Shipped** — rare announced events break up a level's authored rhythm
 (`GameState._tick_events`, `tests/events_probe`): ASSASSIN CONTRACT (a hunter
 warps in pre-marked as the bounty), SUPPLY FLARE (timed cache beacon, 40s),
-GRID SURGE (20s double ultimate charge). Gated off boss/convoy/horde levels,
+GRID SURGE (20s double ultimate charge), MODEL HALLUCINATION (12 s: three
+phantoms of the player draw the fire of every robot nearer one, `tests/hallucination_probe`).
+Gated off boss/convoy/horde levels,
 max 2/level. 🎮 Needs playtest: frequency (75s first / ~90s interval) and
 whether more event types are wanted (rogue patrol, jammer, double-bounty hour).
 
