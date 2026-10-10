@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_data")
 display_name = "MK-VII Longshot"
+kill_fx = 1
 fire_mode = 0
 damage_type = 0
 damage = 145.0

@@ -622,7 +622,9 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			final_damage *= maxf(data.headshot_mult if is_head else 1.0, weak_mult)
 			if is_head:
 				AudioBus.play_synth_at("headshot", hpos, -1.0, 1.0)
+			KillFx.tag(dmg_node, data.kill_fx)
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
+			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)
 			if mod_id != "":
 				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage)
@@ -737,6 +739,8 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 	# detonating splash rounds at their max range instead of flying forever).
 	if data.projectile_speed > 0.0 and "lifetime" in proj:
 		proj.lifetime = data.range_m / data.projectile_speed
+	if "kill_fx" in proj:
+		proj.kill_fx = data.kill_fx
 	if proj.has_method("launch"):
 		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
 
@@ -827,7 +831,9 @@ func _update_beam(delta: float) -> void:
 			if col.has_method("weakpoint_multiplier"):
 				weak_mult = col.weakpoint_multiplier(hit.position)
 			beam_dmg *= weak_mult
+			KillFx.tag(dmg_node, data.kill_fx)
 			dmg_node.apply_damage(beam_dmg, _active_shooter, weak_mult > 1.0)
+			KillFx.untag(dmg_node)
 			if mod_id != "":
 				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hit.position, beam_dmg)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.

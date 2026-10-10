@@ -10,6 +10,10 @@ signal died(source: Node)
 @export var invulnerable: bool = false
 
 var current_health: float
+## Kill style (KillFx enum) of the hit being applied right now. A weapon sets it
+## around its apply_damage call (KillFx.tag/untag), so the owner's death handler,
+## which runs inside that call, knows which weapon finished it. 0 otherwise.
+var kill_fx: int = 0
 
 func _ready() -> void:
 	current_health = max_health

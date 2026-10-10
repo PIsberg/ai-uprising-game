@@ -21,6 +21,7 @@ extends Area3D
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 
+var kill_fx: int = 0 ## KillFx style of robots this round kills; the firing weapon sets it (WeaponData.kill_fx).
 var _velocity: Vector3
 var _shooter: Node
 var _damage: float = 0.0
@@ -321,7 +322,9 @@ func _on_body_entered(body: Node) -> void:
 			if enemy_node and enemy_node.has_method("weakpoint_multiplier"):
 				weak_mult = enemy_node.weakpoint_multiplier(global_position)
 			hit_dmg *= weak_mult
+			KillFx.tag(d, kill_fx)
 			d.apply_damage(hit_dmg, _shooter, weak_mult > 1.0)
+			KillFx.untag(d)
 		world_hit_damageable = d
 	elif body != null:
 		world_hit_damageable = _damageable_of(body)
@@ -368,7 +371,9 @@ func _explode(pos: Vector3) -> void:
 				continue
 			var dist := (col as Node3D).global_position.distance_to(pos) if col is Node3D else 0.0
 			var falloff := clampf(1.0 - dist / _splash_radius, 0.0, 1.0)
+			KillFx.tag(d, kill_fx)
 			d.apply_damage(_splash_damage * falloff + _damage, _shooter, false, pos)
+			KillFx.untag(d)
 	# Impact blast: a big boom for splash rounds (rocket), a sharp burst otherwise
 	# (plasma), plus a brief colored flash light in the round's energy colour.
 	var scene := get_tree().current_scene
@@ -432,7 +437,9 @@ func _chain_lightning(origin: Vector3) -> void:
 		if best == null:
 			break
 		hit[best] = true
+		KillFx.tag(best, kill_fx)
 		best.apply_damage(dmg, _shooter)
+		KillFx.untag(best)
 		_spawn_lightning_arc(scene, from, best_pos)
 		_spawn_zap_flash(scene, best_pos)   # a bright burst on each robot the bolt hits
 		from = best_pos

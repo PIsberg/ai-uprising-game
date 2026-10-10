@@ -406,6 +406,21 @@ func damage_blink() -> void:
 		_blink_tween.tween_property(_menace_light, "light_energy", 0.0, 0.28)
 		_blink_tween.chain().tween_callback(func(): _menace_light.visible = false)
 
+## Cuts the red damage flare at once instead of letting it fade over 0.28 s.
+## KillFx's electrocution calls it: an HDR red flare under the blue shock skin
+## reads purple.
+func quench_glow() -> void:
+	if _blink_tween and _blink_tween.is_valid():
+		_blink_tween.kill()
+	for m in _glow_mats:
+		if m is ShaderMaterial:
+			m.set_shader_parameter("menace_blink", 0.0)
+		else:
+			m.emission_energy_multiplier = 0.0
+	if _menace_light:
+		_menace_light.light_energy = 0.0
+		_menace_light.visible = false
+
 ## Power-down on death: the core light dies and the ember sheen drains so the
 ## topple reads as a dark wreck, not a still-live machine.
 func _extinguish() -> void:
