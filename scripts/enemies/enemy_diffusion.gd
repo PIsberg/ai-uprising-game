@@ -37,8 +37,7 @@ var _from := Vector3.ZERO
 var _dest := Vector3.ZERO
 var _diffuse_cd := DIFFUSE_EVERY * 0.7
 var _saved_layer := 4
-var _saved: Array = [] ## [{mi, override, overlay, surfaces}] of the swapped meshes
-var _glows: Array[MeshInstance3D] = []
+var _swap := {} ## KillFx.swap_to_dissolve record of the swapped meshes
 var _status: Label3D
 
 func _ready() -> void:
@@ -215,49 +214,13 @@ func _formed() -> void:
 ## Every visible chassis surface onto the dissolve shader in pure-noise mode;
 ## the originals are kept for _restore. Additive glows just hide.
 func _to_noise() -> void:
-	_saved.clear()
-	_glows.clear()
-	var root: Node = _visual_root if _visual_root else self
-	for n in root.find_children("*", "MeshInstance3D", true, false):
-		var mi := n as MeshInstance3D
-		if mi.mesh == null or not mi.is_visible_in_tree():
-			continue
-		if KillFx._is_glow(mi):
-			_glows.append(mi)
-			mi.hide()
-			continue
-		var surf: Array = []
-		for s in mi.mesh.get_surface_count():
-			surf.append(mi.get_surface_override_material(s))
-		_saved.append({"mi": mi, "override": mi.material_override, "overlay": mi.material_overlay, "surfaces": surf})
-		KillFx._to_dissolve(mi)
-		for s in mi.mesh.get_surface_count():
-			var m := mi.get_surface_override_material(s) as ShaderMaterial
-			m.set_shader_parameter("edge_color", NOISE_EDGE)
-			m.set_shader_parameter("height_bias", 0.0)
-			m.set_shader_parameter("noise_scale", 9.0)
+	_swap = KillFx.swap_to_dissolve(_visual_root if _visual_root else self, NOISE_EDGE, 0.0, 9.0)
 
 func _set_noise(v: float) -> void:
-	for rec in _saved:
-		var mi: MeshInstance3D = rec["mi"]
-		if is_instance_valid(mi):
-			mi.set_instance_shader_parameter("dissolve", v)
+	KillFx.set_dissolve(_swap, v)
 
 func _restore() -> void:
-	for rec in _saved:
-		var mi: MeshInstance3D = rec["mi"]
-		if not is_instance_valid(mi):
-			continue
-		var surf: Array = rec["surfaces"]
-		for s in surf.size():
-			mi.set_surface_override_material(s, surf[s])
-		mi.material_override = rec["override"]
-		mi.material_overlay = rec["overlay"]
-	_saved.clear()
-	for g in _glows:
-		if is_instance_valid(g):
-			g.show()
-	_glows.clear()
+	KillFx.restore_dissolve(_swap)
 
 ## The hit flash is a full-silhouette overlay: it would paint over the holes.
 func _play_hit_flash() -> void:

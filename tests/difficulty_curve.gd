@@ -47,6 +47,9 @@ const THREAT := {
 	# The android's rifle (16.3 at 9 damage) + 170 HP / 40, plus a hand guess of
 	# +3 for the untouchable flank jumps, less the half-formed windows.
 	"diffusion": 23.5,
+	# Hand-derived: no damage of its own; 160 HP / 40 plus a guess of +10 for the
+	# robots it brings back (up to three, each a second kill).
+	"rollback": 14.0,
 }
 
 func _ready() -> void:

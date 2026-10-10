@@ -615,7 +615,7 @@ static func _hivemind() -> Dictionary:
 			{"type": "bowler", "pos": Vector3(28, 0.5, 20), "trigger": 22, "pack": "hivemi_a3"},
 			{"type": "hive", "pos": Vector3(30, 1, -2), "trigger": 22, "pack": "hivemi_a3"},
 			{"type": "drone", "pos": Vector3(14, 2.5, -28), "trigger": 20, "pack": "hivemi_a4"},
-			{"type": "android", "pos": Vector3(-12, 0.5, -28), "trigger": 18, "pack": "hivemi_a4"},
+			{"type": "rollback", "pos": Vector3(-12, 0.5, -28), "trigger": 18, "pack": "hivemi_a4"},
 			{"type": "hive", "pos": Vector3(18, 3.6, 18), "trigger": 20},
 			# RELAY GUARDS: the mesh relays (tasks) were unguarded, and the
 			# roster measured 280 on tests/difficulty_curve at slot 20 against
@@ -1502,7 +1502,7 @@ static func _sublevel() -> Dictionary:
 			# gunner POSTED ON the pipe gallery, and exit-yard guardians.
 			{"type": "vacuum", "pos": Vector3(-18, 0.3, -26), "trigger": 16, "pack": "sublev_a1"},
 			{"type": "optic", "pos": Vector3(-24, 0.5, -17), "trigger": 16, "pack": "sublev_a1"},
-			{"type": "android", "pos": Vector3(-25, 0.5, 0), "trigger": 16, "pack": "sublev_a2"},
+			{"type": "rollback", "pos": Vector3(-25, 0.5, 0), "trigger": 16, "pack": "sublev_a2"},
 			{"type": "roller", "pos": Vector3(-22, 0.5, 10), "trigger": 18, "pack": "sublev_a2"},
 			{"type": "gunner", "pos": Vector3(0, 3.8, -24), "trigger": 20},
 			{"type": "reaper", "pos": Vector3(18, 0.5, -24), "trigger": 18, "pack": "sublev_a3"},

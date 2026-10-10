@@ -153,6 +153,63 @@ static func _to_dissolve(mi: MeshInstance3D) -> void:
 	mi.material_override = null
 	mi.material_overlay = null # battle-damage overlay would otherwise float over the holes
 
+## A reversible _to_dissolve for a robot that comes back whole (DIFFUSION's
+## noise-out, a ROLLBACK restore): swaps every chassis surface under `root` onto
+## the dissolve shader and returns what it replaced, for restore_dissolve.
+## Additive glows just hide. `only_visible` false also takes meshes that are
+## hidden right now (a fit_height model hides its mesh until it is fitted).
+static func swap_to_dissolve(root: Node, edge: Color, height_bias: float, noise_scale: float,
+		only_visible := true) -> Dictionary:
+	var saved: Array = []
+	var glows: Array[MeshInstance3D] = []
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null or (only_visible and not mi.is_visible_in_tree()):
+			continue
+		if _is_glow(mi):
+			glows.append(mi)
+			mi.hide()
+			continue
+		var surf: Array = []
+		for s in mi.mesh.get_surface_count():
+			surf.append(mi.get_surface_override_material(s))
+		saved.append({"mi": mi, "override": mi.material_override, "overlay": mi.material_overlay, "surfaces": surf})
+		_to_dissolve(mi)
+		for s in mi.mesh.get_surface_count():
+			var m := mi.get_surface_override_material(s) as ShaderMaterial
+			m.set_shader_parameter("edge_color", edge)
+			m.set_shader_parameter("height_bias", height_bias)
+			m.set_shader_parameter("noise_scale", noise_scale)
+	return {"saved": saved, "glows": glows}
+
+## Sets the dissolve amount (0 whole, 1 gone) on a swap_to_dissolve record, and
+## the world-height band a height_bias wipe runs over when `y_band` is given.
+static func set_dissolve(rec: Dictionary, v: float, y_band := Vector2.INF) -> void:
+	for r in rec.get("saved", []):
+		var mi: MeshInstance3D = r["mi"]
+		if not is_instance_valid(mi):
+			continue
+		mi.set_instance_shader_parameter("dissolve", v)
+		if y_band != Vector2.INF:
+			mi.set_instance_shader_parameter("y_lo", y_band.x)
+			mi.set_instance_shader_parameter("y_hi", y_band.y)
+
+## Puts back every material and glow a swap_to_dissolve record replaced.
+static func restore_dissolve(rec: Dictionary) -> void:
+	for r in rec.get("saved", []):
+		var mi: MeshInstance3D = r["mi"]
+		if not is_instance_valid(mi):
+			continue
+		var surf: Array = r["surfaces"]
+		for s in surf.size():
+			mi.set_surface_override_material(s, surf[s])
+		mi.material_override = r["override"]
+		mi.material_overlay = r["overlay"]
+	for g in rec.get("glows", []):
+		if is_instance_valid(g):
+			g.show()
+	rec.clear()
+
 static func _world_box(meshes: Array[MeshInstance3D], fallback: Vector3) -> AABB:
 	var box := AABB()
 	var first := true
