@@ -64,6 +64,7 @@ const ENEMY_SCENES := { # type -> scene path; resolved lazily by enemy_scene()
 	"attention": "res://scenes/enemies/attention.tscn",
 	"moe": "res://scenes/enemies/moe.tscn",
 	"reward": "res://scenes/enemies/reward.tscn",
+	"diffusion": "res://scenes/enemies/diffusion.tscn",
 	"forkbomb": "res://scenes/enemies/forkbomb.tscn",
 }
 const NIGHT_SKY_SHADER := preload("res://shaders/night_sky.gdshader")

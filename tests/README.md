@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-332 probes total: **93** wired into the headless suite (`suite`), **84**
+334 probes total: **94** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **155** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **156** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -131,6 +131,8 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_rampage_probe | RAMPAGE charge: at tier 0 the rifle shoots its own colour with no rim; at tier 2 shots and the muzzle flash take GameState.RAMPAGE_COLORS[1], the flash grows by RAMPAGE_FLASH_GROW per tier and every viewmodel mesh wears the rim; a broken streak puts it all back | suite |
 | weapon_rampage_shot | The same rifle twice: tier 0 and tier 2 (red rim), before firing and with a flash each; `-- --out=<dir>` | windowed |
 | reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
+| diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |
+| diffusion_shot | A formed DIFFUSION beside one caught half noised out, as the static cloud and half denoised at the far spot; `-- --out=<dir>` | windowed |
 | reward_shot | The REWARD MODEL over two androids it rewarded (+1, +2), caught on a reward beam; `-- --out=<dir>` | windowed |
 | moe_probe | MIXTURE OF EXPERTS: wired into the level builder, codex, NEON and CRUCIBLE; four orbiting pods, each its own enemy-layer target with a Damageable; routing to SNIPER/SCATTER/SPRINT/SHIELD rewrites its burst, speed and damage taken, and the hologram names the expert; a rifle hit on a pod hurts the pod, not the body; a dead pod's expert is never routed again; all pods down collapses the router (COLLAPSE_MULT, hologram); its death takes the pods | suite |
 | moe_shot | Two MIXTURE OF EXPERTS: one routed to SNIPER, one to SHIELD (blue shell); a pod shot off one, every pod off the other (router collapsed); `-- --out=<dir>` | windowed |

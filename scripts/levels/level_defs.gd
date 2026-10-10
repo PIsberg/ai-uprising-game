@@ -1057,7 +1057,7 @@ static func _frostbreak() -> Dictionary:
 			# Act III ramp: this relay was near the bottom of the curve (14th of 18);
 			# reinforced to a dense frozen-yard defence that rises toward the finale.
 			{"type": "skitter", "pos": Vector3(0, 0.5, 12), "count": 8, "trigger": 15},
-			{"type": "gunner", "pos": Vector3(14, 0.5, 2), "trigger": 18, "pack": "frostb_p3"},
+			{"type": "diffusion", "pos": Vector3(14, 0.5, 2), "trigger": 18, "pack": "frostb_p3"},
 			{"type": "gunner", "pos": Vector3(-14, 0.5, -4), "trigger": 20, "pack": "frostb_p2"},
 			{"type": "sentinel", "pos": Vector3(13, 0.5, -12), "trigger": 19, "pack": "frostb_p4"},
 			{"type": "gunner", "pos": Vector3(-13, 0.5, 12), "trigger": 17, "pack": "frostb_p5"},
@@ -5882,7 +5882,7 @@ static func _desert() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(20, 4.5, -16), "trigger": 24},
 			{"type": "gunslinger", "pos": Vector3(14, 0.5, 6), "trigger": 22, "pack": "desert_p2"},
 			{"type": "dog", "pos": Vector3(12, 0.5, 12), "trigger": 22, "pack": "desert_p2"},
-			{"type": "android", "pos": Vector3(18, 0.5, 18), "trigger": 24, "pack": "desert_p3"},
+			{"type": "diffusion", "pos": Vector3(18, 0.5, 18), "trigger": 24, "pack": "desert_p3"},
 			{"type": "drone", "pos": Vector3(8, 3.0, 14), "trigger": 22},
 			{"type": "raptor", "pos": Vector3(24, 4.0, 22), "trigger": 26, "pack": "desert_p3"},
 			{"type": "gunner", "pos": Vector3(-16, 3.8, 12), "trigger": 26},

@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -140,6 +140,13 @@ const ENTRIES := {
 		"strengths": ["Every hit you take makes the pack around it faster", "Rewards stack three deep", "Hangs back behind the robots it feeds"],
 		"weaknesses": ["Never shoots: it is a priority target", "Shoot it down and every reward is revoked", "Gold REWARD tags show which robots it has trained"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "SW-7 Swarm Launcher"],
+	},
+	"diffusion": {
+		"scene": "res://scenes/enemies/diffusion.tscn", "name": "DIFFUSION", "scale": 1.0, "y": 0.0,
+		"desc": "A robot sampled out of noise. Every few seconds in a fight it runs its own forward process: the chassis breaks up into static, drifts across the floor as a cloud of pure noise, and denoises back into a rifleman somewhere off your flank, counting the steps as it forms.",
+		"strengths": ["Noise has no body: it cannot be hurt while it travels", "Reappears on your flank with a clear shot", "Fires almost the moment it is whole"],
+		"weaknesses": ["Half-formed it takes double damage: watch for DENOISING", "The static cloud shows where it will land", "Only 170 HP once it is solid"],
+		"weapons": ["AR-7 Pulse Rifle", "SG-12 Breacher", "MK-VII Longshot"],
 	},
 	"forkbomb": {
 		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,
