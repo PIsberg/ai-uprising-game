@@ -3558,7 +3558,8 @@ static func _mistral() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(-13, 0.5, -10), "trigger": 16},
 			{"type": "android", "pos": Vector3(13, 0.5, -13), "trigger": 18, "pack": "mistra_p2"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 13), "count": 4, "trigger": 15, "pack": "mistra_p4"},
-			{"type": "spider", "pos": Vector3(-13, 0.5, 13), "trigger": 19, "pack": "mistra_p1"},
+			# FORK BOMB debut: the vault's thinnest process forks when you kill it.
+			{"type": "forkbomb", "pos": Vector3(-13, 0.5, 13), "trigger": 19, "pack": "mistra_p1"},
 			{"type": "brute", "pos": Vector3(13, 0.5, 13), "trigger": 18, "pack": "mistra_p3"},
 			# Annex garrison (Act-I roster): a patrol band on the way in, a west-
 			# ring maintenance pack, a gunner POSTED ON the coolant gallery, and
@@ -4419,7 +4420,7 @@ static func _claude() -> Dictionary:
 			{"type": "brute", "pos": Vector3(-8, 0.5, 12), "trigger": 16, "pack": "cl_north"},
 			{"type": "android", "pos": Vector3(2, 0.5, 14), "trigger": 16, "pack": "cl_north"},
 			{"type": "drone", "pos": Vector3(13, 2.5, -10), "trigger": 16, "pack": "cl_se"},
-			{"type": "spider", "pos": Vector3(-4, 0.5, 8), "trigger": 14, "pack": "cl_west"},
+			{"type": "forkbomb", "pos": Vector3(-4, 0.5, 8), "trigger": 14, "pack": "cl_west"},
 			{"type": "mech", "pos": Vector3(-12, 0.5, -12), "trigger": 15},
 			{"type": "gunner", "pos": Vector3(12, 0.5, -12), "trigger": 18, "pack": "cl_se"},
 			{"type": "android", "pos": Vector3(10, 0.5, 14), "trigger": 20, "pack": "cl_ne"},
@@ -4430,7 +4431,7 @@ static func _claude() -> Dictionary:
 			{"type": "android", "pos": Vector3(-11, 0.5, -25), "trigger": 11, "pack": "cl_a1"},
 			{"type": "drone", "pos": Vector3(-14, 2.5, -25), "trigger": 8, "pack": "cl_a1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, -26), "trigger": 20, "pack": "cl_a1"},
-			{"type": "spider", "pos": Vector3(-25, 0.5, -2), "trigger": 16, "pack": "cl_a2"},
+			{"type": "forkbomb", "pos": Vector3(-25, 0.5, -2), "trigger": 16, "pack": "cl_a2"},
 			{"type": "android", "pos": Vector3(-25, 0.5, -16), "trigger": 6, "pack": "cl_a2"},
 			{"type": "skitter", "pos": Vector3(-24, 0.5, 14), "count": 4, "trigger": 16, "pack": "cl_a2"},
 			{"type": "gunner", "pos": Vector3(0, 3.8, -26.5), "trigger": 20},

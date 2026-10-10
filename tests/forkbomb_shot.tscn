@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/forkbomb_shot.gd" id="1_s"]
+
+[node name="ForkbombShot" type="Node3D"]
+script = ExtResource("1_s")

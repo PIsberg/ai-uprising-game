@@ -29,6 +29,9 @@ const THREAT := {
 	# The android's rifle at 8/9 damage on 150 HP (16.3 * 8/9 + 40/40), plus a
 	# hand guess of +2 for the decoys drawing fire away from it.
 	"deepfake": 18.5,
+	# Hand-derived: the spider's bite DPS (~13.4) x1.3 for the seven bodies'
+	# overlapping pressure, plus the whole family's HP (90 + 2x40 + 4x18) / 40.
+	"forkbomb": 23.5,
 }
 
 func _ready() -> void:

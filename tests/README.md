@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-317 probes total: **85** wired into the headless suite (`suite`), **84**
+319 probes total: **86** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **148** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **149** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -163,6 +163,8 @@ or GPU-timing probes; `--headless` renders these black).
 | bonus_objective_probe | Optional bonus objectives: a ghost bonus is won and paid once when the tasks complete with no scanner alarm, one alarm loses it for good, a lost bonus never seals the exit; a dry bonus survives a robot hit (control) and is lost to hazard damage; a deathless bonus is lost to one death; every campaign bonus has a known kind and a label, ghost only with scanners, dry only with hazard beds; live, neon's bonus hooks all its scanners and lava_world's hooks the real player, and the debrief highlights show a won bonus with its score and a lost one unpaid (red-checked: failing on any damage breaks the control) | suite |
 | flood_surge_probe | Hazard surges: a flood warns before it burns, rises and burns a body on the floor while a deck 1.6 m up over the same bed stays dry, death clears the beds and play resuming re-runs the warning, completing the hold drains and frees them; then every campaign flood scales with the world, lands with 5 s of hold left, has no overlapping beds, leaves the exit and 3+ decks dry and every later supply on dry ground; live, each flood level is built and its beds burn bodies in them but not one on the exit (red-checked: dropping the death reset and the drain fails 6 checks) | suite |
 | flood_shot | Each campaign flood and weather shift framed from over the exit side: before, mid-warning / mid-fade, and risen / closed in | windowed |
+| forkbomb_probe | FORK BOMB: wired into the builder, codex, mistral (1) and claude (2); killed, generation 0 forks into two smaller, weaker generation-1 copies in the enemy group, those into four, and the last generation does not fork (seven kills); a disintegrating kill forks nothing; a fork never lands a copy across a wall | suite |
+| forkbomb_shot | One FORK BOMB of each generation side by side, then generation 0 forking; `-- --out=<dir>` | windowed |
 | weather_shift_probe | Weather shifts: fog thickens by fog_mult and shifts colour, the weather particles gust, everything eases back and the node frees itself when the hold completes; every campaign shift thickens the fog with 5 s of hold left, is announced, and only gusts where there are weather particles (the level's own or raised); live, each shift level's real Environment thickens, the shift finds its particles, and desert's raised dust is freed after the storm; a blackout cuts lights and panels, dims ambient and exposure and restores exactly what it hid (a light already off stays off), and sublevel's task-level power cut cuts its 20 lights and panels on the built level (red-checked: skipping the fog restore fails; keeping the raised dust fails) | suite |
 | fix_models_probe | Models whose auto-framing broke, re-rendered with normalized scale/recenter + fixed camera | windowed |
 | flyer_pose_probe | Whirlwind/breaker/fishbot flyer trio whose codex entries looked broken | windowed |
