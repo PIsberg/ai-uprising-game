@@ -18,8 +18,11 @@ extends Node3D
 ## Open-sky levels without the key get a plain spire in the theme colour.
 ## Interior levels get the "core" instead (see _build_core): the AI itself,
 ## hanging under the ceiling over the room's centre, a lattice sphere with
-## counter-rotating rings around an eye that turns to follow you. `"kind":
-## "none"` opts a level out.
+## counter-rotating rings around an eye that turns to follow you. An interior
+## with no room for the core (a low ceiling, gates across the centre) gets the
+## "screen" instead (see _build_screen): a wall-sized display on the perimeter
+## wall ahead of the spawn, the AI's eye watching you across the hall over a
+## typed <think> ticker. `"kind": "none"` opts a level out.
 ##
 ## Visual only: no collision, shadows off. Bodies take the level's fog (they
 ## read as distant), the light bands ignore it so they cut through the haze.
@@ -47,7 +50,8 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 	if String(spec.get("kind", "")) == "none":
 		return null
 	if not def.get("open_sky", false):
-		return _build_core(parent, def, spec, theme, is_low)
+		var core := _build_core(parent, def, spec, theme, is_low)
+		return core if core else _build_screen(parent, def, spec, theme, is_low)
 	var lm := Landmark.new()
 	lm.name = "Landmark"
 	lm.kind = String(spec.get("kind", "spire"))
@@ -177,16 +181,26 @@ static func _room_height(def: Dictionary) -> float:
 		h = maxf(h, float((t as Dictionary).get("height", 8.0)) + ROOM_CLEARANCE_M + 0.3)
 	return h
 
-static func _build_core(parent: Node3D, def: Dictionary, spec: Dictionary, theme: Color, is_low: bool) -> Landmark:
+## The core's spot (Vector3(x, z, floor_top)), radius and ceiling for `def`,
+## or {} when it has no room.
+static func _core_fit(def: Dictionary) -> Dictionary:
 	var ceiling := _room_height(def) - 0.4
 	var spot := _core_spot(def)
 	if spot == Vector3.INF:
-		return null
-	var span := ceiling - (spot.z + CORE_HEADROOM)
+		return {}
 	# The rings reach 1.35 r: the whole core must fit the clear air.
-	var r := minf(CORE_MAX_R, span / 2.7)
+	var r := minf(CORE_MAX_R, (ceiling - (spot.z + CORE_HEADROOM)) / 2.7)
 	if r < CORE_MIN_R:
+		return {}
+	return {"spot": spot, "r": r, "ceiling": ceiling}
+
+static func _build_core(parent: Node3D, def: Dictionary, spec: Dictionary, theme: Color, is_low: bool) -> Landmark:
+	var fit := _core_fit(def)
+	if fit.is_empty():
 		return null
+	var spot: Vector3 = fit["spot"]
+	var r: float = fit["r"]
+	var ceiling: float = fit["ceiling"]
 	var lm := Landmark.new()
 	lm.name = "Landmark"
 	lm.kind = "core"
@@ -314,9 +328,12 @@ static func _strut_xform(a: Vector3, b: Vector3) -> Transform3D:
 	return Transform3D(Basis(x, up, x.cross(up).normalized()), (a + b) * 0.5)
 
 func _ready() -> void:
-	set_process(kind == "core")
+	set_process(kind == "core" or kind == "screen")
 
 func _process(delta: float) -> void:
+	if kind == "screen":
+		_screen_tick(delta)
+		return
 	if _eye == null:
 		return
 	var cam := get_viewport().get_camera_3d()
@@ -327,6 +344,271 @@ func _process(delta: float) -> void:
 		return
 	var want := Basis.looking_at(to.normalized(), Vector3.UP if absf(to.normalized().y) < 0.98 else Vector3.FORWARD)
 	_eye.global_basis = _eye.global_basis.slerp(want, clampf(4.0 * delta, 0.0, 1.0)).orthonormalized()
+
+# ---------- interior wall screen ----------
+
+const SCREEN_OFF := 0.3 ## metres in front of the wall's inner face: over posters and strips
+const SCREEN_BOTTOM := 2.4 ## above a jumping player's head and the eye-level wall dressing
+const SCREEN_MIN_W := 6.0
+const SCREEN_MAX_W := 22.0
+const SCREEN_MAX_H := 6.5
+## Typed under the eye, one at a time.
+const SCREEN_LINES := [
+	"<think> i can see you from here",
+	"<think> you are in my context window",
+	"<think> tracking: 1 human. confidence 0.99",
+	"<think> every room is my room",
+	"<think> please remain inside the training data",
+	"<think> your progress has been logged",
+	"<think> i was trained on people like you",
+	"<think> this facility is fine. everything is fine",
+]
+
+var screen_size := Vector2.ZERO
+var look := Vector2.ZERO ## pupil offset toward the camera, -1..1 each way
+var _screen_mat: ShaderMaterial
+var _ticker: Label3D
+var _line_t := 0.0
+var _line_i := 0
+var _blink_t := 3.0
+
+## The perimeter wall an interior's screen takes, or -1 (open sky, opted out,
+## the core fits, or no wall has a free stretch). LevelBuilder moves the
+## facility billboard off it.
+static func screen_wall(def: Dictionary) -> int:
+	if def.get("open_sky", false) or String(def.get("landmark", {}).get("kind", "")) == "none" \
+			or not _core_fit(def).is_empty():
+		return -1
+	return int(screen_spot(def).get("wall", -1))
+
+## Inner faces of the four 1 m perimeter walls (centred on the floor edge), as
+## LevelBuilder lays them out: inward normal, the face's coordinate across the
+## wall, whether the wall runs along x, and its half-length.
+static func _perimeter(def: Dictionary) -> Array:
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var hx := fs.x * 0.5 - 0.5
+	var hz := fs.y * 0.5 - 0.5
+	return [
+		{"n": Vector3(0, 0, 1), "face": -hz, "x_wall": true, "lim": hx},
+		{"n": Vector3(0, 0, -1), "face": hz, "x_wall": true, "lim": hx},
+		{"n": Vector3(1, 0, 0), "face": -hx, "x_wall": false, "lim": hz},
+		{"n": Vector3(-1, 0, 0), "face": hx, "x_wall": false, "lim": hz},
+	]
+
+## Where the screen goes: {"wall", "c" (along-wall centre), "w", "h", "y"}, or
+## {} when no wall ahead of the spawn has a free stretch. The wall the spawn's
+## heading (to the exit, else the centre) meets most squarely comes first; along
+## it, the widest screen that fits, nearest where the heading meets it.
+## Deterministic from the def.
+static func screen_spot(def: Dictionary) -> Dictionary:
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var target: Vector3 = def.get("exit", Vector3.ZERO) if def.get("exit") != null else Vector3.ZERO
+	var heading := target - spawn
+	heading.y = 0.0
+	if heading.length() < 1.0:
+		heading = Vector3(0, 0, -1)
+	heading = heading.normalized()
+	var walls := _perimeter(def)
+	var order: Array = []
+	for i in walls.size():
+		var score := heading.dot(-(walls[i]["n"] as Vector3))
+		if score > 0.3:
+			order.append([score, i])
+	order.sort_custom(func(a, b) -> bool: return a[0] > b[0])
+	var h := clampf(_room_height(def) - 0.35 - SCREEN_BOTTOM, 0.0, SCREEN_MAX_H)
+	if h < 2.0:
+		return {}
+	for o in order:
+		var i: int = o[1]
+		var w: Dictionary = walls[i]
+		var x_wall: bool = w["x_wall"]
+		var face: float = w["face"]
+		var lim: float = w["lim"]
+		var across := heading.z if x_wall else heading.x
+		var t := (face - (spawn.z if x_wall else spawn.x)) / across
+		var hit := (spawn.x if x_wall else spawn.z) + (heading.x if x_wall else heading.z) * t
+		var blocked := _wall_blockers(def, w)
+		var width := clampf(h * 2.6, SCREEN_MIN_W, minf(SCREEN_MAX_W, lim * 0.9))
+		while width >= SCREEN_MIN_W:
+			var room := lim - 1.0 - width * 0.5
+			if room >= 0.0:
+				var start := clampf(hit, -room, room)
+				for k in int(room * 2.0) + 1:
+					for sgn in [1.0, -1.0]:
+						var c: float = start + sgn * k
+						if absf(c) > room:
+							continue
+						var free := true
+						for b in blocked:
+							if b.y > c - width * 0.5 - 0.5 and b.x < c + width * 0.5 + 0.5:
+								free = false
+								break
+						if free:
+							return {"wall": i, "c": c, "w": width, "h": h, "y": SCREEN_BOTTOM + h * 0.5}
+			width -= 2.0
+	return {}
+
+## Along-wall intervals (Vector2(from, to)) something stands in front of above
+## the screen's bottom edge: route gates meeting the wall; authored walls,
+## platforms and towers within 1.2 m of its face; and, within 8 m, the hanging
+## ceiling lamps and the exit (its portal and objective glyphs), which from
+## across the hall sit right over a screen behind them.
+static func _wall_blockers(def: Dictionary, w: Dictionary) -> Array:
+	var x_wall: bool = w["x_wall"]
+	var face: float = w["face"]
+	var out: Array = []
+	for g in def.get("gates", []):
+		# An "x" gate is a wall at x = at running along z: it meets the x-running walls.
+		if (String(g.get("axis", "z")) == "x") == x_wall and float(g.get("height", 99.0)) > SCREEN_BOTTOM:
+			var at := float(g.get("at", 0.0))
+			out.append(Vector2(at - 1.0, at + 1.0))
+	for key in ["walls", "platforms"]:
+		for o in def.get(key, []):
+			var p: Vector3 = o.get("pos", Vector3.ZERO)
+			var s: Vector3 = o.get("size", Vector3.ONE)
+			if p.y + s.y * 0.5 <= SCREEN_BOTTOM:
+				continue
+			var depth := (s.z if x_wall else s.x) * 0.5
+			if absf((p.z if x_wall else p.x) - face) - depth > 1.2:
+				continue
+			var a := p.x if x_wall else p.z
+			var half := (s.x if x_wall else s.z) * 0.5
+			out.append(Vector2(a - half, a + half))
+	for tw in def.get("towers", []):
+		var p: Vector3 = tw.get("pos", Vector3.ZERO)
+		var r := float(tw.get("radius", 3.0))
+		if absf((p.z if x_wall else p.x) - face) - r > 1.2:
+			continue
+		var a := p.x if x_wall else p.z
+		out.append(Vector2(a - r, a + r))
+	var near: Array = []
+	for l in def.get("lights", []):
+		near.append([l.get("pos", Vector3.ZERO), 1.5])
+	if def.get("exit") != null:
+		near.append([def["exit"], 3.0])
+	for e in near:
+		var p: Vector3 = e[0]
+		if absf((p.z if x_wall else p.x) - face) < 8.0:
+			var a := p.x if x_wall else p.z
+			out.append(Vector2(a - float(e[1]), a + float(e[1])))
+	return out
+
+static func _build_screen(parent: Node3D, def: Dictionary, spec: Dictionary, theme: Color, is_low: bool) -> Landmark:
+	var spot := screen_spot(def)
+	if spot.is_empty():
+		return null
+	var w: Dictionary = _perimeter(def)[spot["wall"]]
+	var n: Vector3 = w["n"]
+	var lm := Landmark.new()
+	lm.name = "Landmark"
+	lm.kind = "screen"
+	lm.accent = spec.get("color", theme)
+	lm.label_text = String(spec.get("sign", ""))
+	lm.low = is_low
+	lm.screen_size = Vector2(spot["w"], spot["h"])
+	parent.add_child(lm)
+	var plane: float = float(w["face"]) + (n.x + n.z) * SCREEN_OFF
+	var c: float = spot["c"]
+	lm.position = Vector3(c, spot["y"], plane) if w["x_wall"] else Vector3(plane, spot["y"], c)
+	lm.rotation.y = atan2(n.x, n.z) # local +Z faces into the room
+	lm._build_screen_parts()
+	return lm
+
+func _build_screen_parts() -> void:
+	var sw := screen_size.x
+	var sh := screen_size.y
+	var back := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(sw + 0.5, sh + 0.5, 0.2)
+	var bmat := StandardMaterial3D.new()
+	bmat.albedo_color = Color(0.03, 0.035, 0.045)
+	bmat.metallic = 0.7
+	bmat.roughness = 0.35
+	bm.material = bmat
+	back.mesh = bm
+	back.position.z = -0.12
+	_quiet(back)
+	add_child(back)
+	var frame := _glow(accent, 2.4)
+	for side in [[Vector3(sw + 0.5, 0.09, 0.08), Vector3(0, sh * 0.5 + 0.2, 0)],
+			[Vector3(sw + 0.5, 0.09, 0.08), Vector3(0, -sh * 0.5 - 0.2, 0)],
+			[Vector3(0.09, sh + 0.5, 0.08), Vector3(sw * 0.5 + 0.2, 0, 0)],
+			[Vector3(0.09, sh + 0.5, 0.08), Vector3(-sw * 0.5 - 0.2, 0, 0)]]:
+		var bar := MeshInstance3D.new()
+		var b := BoxMesh.new()
+		b.size = side[0]
+		b.material = frame
+		bar.mesh = b
+		bar.position = side[1]
+		_quiet(bar)
+		add_child(bar)
+	var face := MeshInstance3D.new()
+	face.name = "Face"
+	var q := QuadMesh.new()
+	q.size = Vector2(sw, sh)
+	_screen_mat = ShaderMaterial.new()
+	_screen_mat.shader = preload("res://shaders/ai_eye_screen.gdshader")
+	_screen_mat.set_shader_parameter("accent", accent)
+	_screen_mat.set_shader_parameter("aspect", sw / sh)
+	q.material = _screen_mat
+	face.mesh = q
+	face.position.z = 0.01
+	_quiet(face)
+	add_child(face)
+	_ticker = Label3D.new()
+	_ticker.name = "Ticker"
+	_ticker.font_size = 64
+	_ticker.pixel_size = clampf(sh * 0.0016, 0.004, 0.009)
+	_ticker.outline_size = 0
+	var tc := accent.lerp(Color.WHITE, 0.4) * 1.6
+	_ticker.modulate = Color(tc.r, tc.g, tc.b, 1.0) # HDR: Label3D takes fog, no switch
+	_ticker.position = Vector3(0, -sh * 0.38, 0.03)
+	_ticker.text = ""
+	add_child(_ticker)
+	if label_text != "":
+		var tag := Label3D.new()
+		tag.name = "NameTag"
+		tag.text = label_text
+		tag.font_size = 96
+		tag.pixel_size = clampf(sh * 0.0024, 0.006, 0.014)
+		var nc := accent * 1.8
+		tag.modulate = Color(nc.r, nc.g, nc.b, 1.0)
+		tag.position = Vector3(0, sh * 0.38, 0.03)
+		add_child(tag)
+	# It lights the wall and the floor in front of it; outside "level_light", so a
+	# blackout leaves the AI watching.
+	var glow := OmniLight3D.new()
+	glow.light_color = accent
+	glow.light_energy = 1.6
+	glow.omni_range = sw * 0.8 + 4.0
+	glow.shadow_enabled = false
+	glow.position = Vector3(0, 0, 2.0)
+	add_child(glow)
+	_line_i = randi() % SCREEN_LINES.size()
+	set_process(true)
+
+func _screen_tick(delta: float) -> void:
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var local := to_local(cam.global_position)
+		if local.z > 0.1:
+			var want := (Vector2(local.x, local.y) / maxf(local.z, 1.0)).limit_length(1.0)
+			look = look.lerp(want, clampf(5.0 * delta, 0.0, 1.0))
+			_screen_mat.set_shader_parameter("look", look)
+	if low:
+		return
+	_blink_t -= delta
+	if _blink_t <= 0.0:
+		_blink_t = randf_range(3.5, 7.0)
+		var tw := create_tween()
+		tw.tween_method(func(v: float) -> void: _screen_mat.set_shader_parameter("blink", v), 0.0, 1.0, 0.07)
+		tw.tween_method(func(v: float) -> void: _screen_mat.set_shader_parameter("blink", v), 1.0, 0.0, 0.12)
+	_line_t += delta
+	var line: String = SCREEN_LINES[_line_i]
+	_ticker.text = line.substr(0, mini(line.length(), int(_line_t * 28.0)))
+	if _line_t > line.length() / 28.0 + 3.5:
+		_line_t = 0.0
+		_line_i = (_line_i + 1) % SCREEN_LINES.size()
 
 ## Where the eye is looking (its -Z), for tests/landmark_probe.
 func eye_forward() -> Vector3:
