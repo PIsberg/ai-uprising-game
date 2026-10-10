@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-337 probes total: **96** wired into the headless suite (`suite`), **84**
+339 probes total: **97** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **157** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **158** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -309,6 +309,8 @@ or GPU-timing probes; `--headless` renders these black).
 | range_screenshot | Gun range captured after the builder settles | windowed |
 | ravager_shot | RAVAGER beside a REAPER (same chassis, smaller): scale/tint reads as a heavier bruiser | windowed |
 | reaper_hover_probe | Reaper hovers (no walk shamble) with the flyer bank | windowed |
+| death_log_probe | A robot's last log line: a kill in view types one "> " + LINES line in the level (not on the robot) above the body, rising, and it outlives the robot's node; a second kill inside GAP_MS, one behind the camera, one past RANGE and any with Combat Callouts off log nothing; a boss-sized robot logs BOSS_LINE inside the gap; every line frees itself | suite |
+| death_log_shot | An android and a boss-sized one killed side by side, caught with both log lines typed out; `-- --out=<dir>` | windowed |
 | reasoning_trace_probe | Leaked robot reasoning: first contact floats a typed-out `<think>` alert line over a robot in view and it clears itself; a second contact inside the global gap, a robot behind the camera and one past RANGE stay quiet; an EMP over a pack inside the gap shows exactly one line; Combat Callouts off shows none | suite |
 | reasoning_trace_shot | An android spotting the camera at 9 m with its `<think>` line typed out; `-- --out=<dir>` | windowed |
 | river_view | Themed rivers: the serpentine shape + the gap | windowed |

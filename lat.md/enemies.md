@@ -14,6 +14,13 @@ Robots float a short `<think>` line over their heads on real decisions: first co
 
 `EnemyBase._think` measures head clearance once; `ReasoningTrace.think` throttles (global gap, per-robot gap, on screen within RANGE, the Combat Callouts setting). New decision points call `_think(kind)` with a `LINES` key. `tests/reasoning_trace_probe`.
 
+## Death Log
+<!-- lat: { "require-code-mention": true } -->
+A robot's death types its last log line over the wreck (`scripts/fx/death_log.gd`); the Reasoning Traces show what it decides, this shows how it ends.
+
+* `DeathLog.log_death` runs from `EnemyBase._death_log` on `hp.died` (not `_on_died`, which subclasses override without super), at the body top + 0.25 m. It rolls `chance` (`CHANCE`, 0.45), waits out `GAP_MS` since the last line, and needs the spot on screen within `RANGE`; Combat Callouts off silences it. Bosses (score >= 1000) skip the roll and the gap, reach twice as far, and always print `BOSS_LINE`.
+* The Label3D goes under the robot's parent, not the robot, because the wreck is freed under it: types out, rises `RISE`, fades, frees itself (group `death_log`). `tests/death_log_probe`.
+
 ## Health and Subclass Scaling
 <!-- lat: { "require-code-mention": true } -->
 To prevent scaling values from being overwritten, subclasses must:

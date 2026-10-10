@@ -136,6 +136,8 @@ func _ready() -> void:
 	hp.died.connect(_on_died_voice)
 	# Its weights pour out on death (DataBleed) - off the signal for the same reason.
 	hp.died.connect(_data_burst)
+	# ...and its last log line (DeathLog), off the signal too.
+	hp.died.connect(_death_log)
 	hp.damaged.connect(_on_damaged)
 	# Wounded fallback hangs off the signal, NOT _on_damaged — same
 	# subclass-override trap as the death bark above.
@@ -747,6 +749,10 @@ func _data_burst(_source: Node) -> void:
 		return
 	var h := clampf(RobotModel.body_top(self, _mesh_instances) * 0.5, 0.4, 3.0)
 	DataBleed.burst(parent, global_position + Vector3.UP * h)
+
+func _death_log(_source: Node) -> void:
+	var top := clampf(RobotModel.body_top(self, _mesh_instances), 1.0, 7.0)
+	DeathLog.log_death(self, top + 0.25, score_value >= 1000)
 
 func _on_died_voice(_source: Node) -> void:
 	if speaks_own_death_line:
