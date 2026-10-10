@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-351 probes total: **103** wired into the headless suite (`suite`), **84**
+353 probes total: **104** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **164** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **165** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -141,6 +141,8 @@ or GPU-timing probes; `--headless` renders these black).
 | overlord_holo_shot | Each open-sky level from its spawn at eye height, turned toward the overlord's face mid-sentence; `-- --out=<dir> [--levels=...] [--wide]` | windowed |
 | quantizer_probe | QUANTIZER: wired into the level builder, codex, ALIEN and ARCHON; whole it is FP32 in its own materials at its own cadence; at each STAGE_AT step it is the next precision with every chassis surface on the quantize shader at that STAGE_GRID, the tag reads it, attack_interval x STAGE_CD and aim_spread_deg + STAGE_SPREAD; healed to full it keeps INT4; killed it dies and the tag goes | suite |
 | quantizer_shot | Four QUANTIZERs side by side at FP32, FP16, INT8 and INT4; `-- --out=<dir>` | windowed |
+| head_track_probe | Head tracking (`HeadTrackModifier` from `RobotModel`) on eight rig families (the android, brute and mech FBX mechs, gunner Body/Head, sentinel Torso/Neck/Head, rollback Torso/Chest/Neck/Head, quantizer and alien flyers): one modifier each; the head ends up facing a target 35 deg right / 20 deg up within 7 deg; a target behind stops it at MAX_YAW_DEG; dropped, it eases back within 3 deg of rest; dead, the modifier is off. Reads the bone pose inside `skeleton_updated` (outside it the pose is the clip's) | suite |
+| head_track_shot | Five rig families facing the viewer, at rest and then tracking a "player" on a ledge up and to the right; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
 | diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |

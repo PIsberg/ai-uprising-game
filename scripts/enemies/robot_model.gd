@@ -53,6 +53,12 @@ var _mesh: Node3D
 var _mesh_base: Transform3D
 var _lean_pitch: float = 0.0
 var _lean_roll: float = 0.0
+# Head tracking (skinned rigs with a head bone): the eased (pitch, yaw) look the
+# HeadTrackModifier turns into bone poses. Null on rigid models.
+var _look_mod: HeadTrackModifier
+var _look := Vector2.ZERO
+const LOOK_RATE := 6.0 ## Ease toward a target (1/s).
+const LOOK_RELAX := 2.5 ## Ease back to rest once there is nothing to watch.
 
 func _ready() -> void:
 	add_to_group("robot_models")
@@ -77,6 +83,7 @@ func _ready() -> void:
 		# Already sized in the .tscn: no refit, but still clamp the (skinned) cull
 		# AABBs so the model frustum-culls instead of always drawing.
 		_clamp_after_pose.call_deferred()
+	_build_head_track()
 	# Flyers (no walk gait) bank like aircraft; walkers just lean a little.
 	if anim_walk == "":
 		bank_max *= 2.6
@@ -444,6 +451,58 @@ func _extinguish() -> void:
 		else:
 			create_tween().tween_property(m, "emission_energy_multiplier", 0.0, 0.9)
 
+## Mount a HeadTrackModifier on the rig's skeleton when it has a head bone.
+func _build_head_track() -> void:
+	if _mesh == null or _parent == null:
+		return
+	var sk := _mesh.find_child("Skeleton3D", true, false) as Skeleton3D
+	if sk == null or HeadTrackModifier.chain_for(sk).is_empty():
+		return
+	_look_mod = HeadTrackModifier.new()
+	_look_mod.name = "HeadTrack"
+	_look_mod.body = _parent
+	_look_mod.active = false
+	_look_mod._chain = HeadTrackModifier.chain_for(sk)
+	sk.add_child(_look_mod)
+
+## Where a robot looks at its target: a player's eyes, a robot's chest.
+static func aim_height(t: Node3D) -> float:
+	if t.is_in_group("player"):
+		return 1.5
+	return 1.0 if t is CharacterBody3D else 0.0
+
+## Ease the look toward the target while the robot is fighting (alert, chasing,
+## attacking, not EMP'd or jailbroken), back to rest otherwise. The head turns
+## ahead of the body, which only yaws at turn_speed and never pitches.
+func _update_look(delta: float) -> void:
+	if _look_mod == null:
+		return
+	var want := Vector2.ZERO
+	var rate := LOOK_RELAX
+	var t := _parent.target
+	if is_instance_valid(t) and _parent._emp_t <= 0.0 and _parent.state in [
+			EnemyBase.State.ALERT, EnemyBase.State.CHASE, EnemyBase.State.ATTACK]:
+		var sk := _look_mod.get_skeleton()
+		var idx: int = _look_mod._chain[-1]["idx"] if not _look_mod._chain.is_empty() else -1
+		var eye := _parent.global_position + Vector3.UP * 1.2
+		if sk and idx >= 0:
+			eye = (sk.global_transform * sk.get_bone_global_pose(idx)).origin
+		var to := _parent.global_transform.basis.orthonormalized().inverse() \
+			* (t.global_position + Vector3.UP * aim_height(t) - eye)
+		if to.length_squared() > 0.01:
+			var yaw := clampf(atan2(-to.x, -to.z), -deg_to_rad(HeadTrackModifier.MAX_YAW_DEG),
+				deg_to_rad(HeadTrackModifier.MAX_YAW_DEG))
+			var pitch := clampf(atan2(to.y, Vector2(to.x, to.z).length()),
+				-deg_to_rad(HeadTrackModifier.MAX_PITCH_DOWN_DEG), deg_to_rad(HeadTrackModifier.MAX_PITCH_UP_DEG))
+			want = Vector2(pitch, yaw)
+			rate = LOOK_RATE
+	_look = _look.lerp(want, 1.0 - exp(-rate * delta))
+	var resting := want == Vector2.ZERO and _look.length() < 0.003
+	if resting:
+		_look = Vector2.ZERO
+	_look_mod.look = _look
+	_look_mod.active = not resting
+
 ## Bank/lean the chassis into its movement: tilt forward when advancing, roll
 ## into lateral motion. Flyers bank hard (aircraft), walkers lean subtly — sells
 ## momentum and makes the whole roster read as alive instead of sliding.
@@ -512,9 +571,12 @@ func _physics_process(delta: float) -> void:
 		if _anim:
 			_anim.pause()
 		_extinguish()
+		if _look_mod:
+			_look_mod.active = false
 		set_physics_process(false)
 		return
 	_apply_lean(delta)
+	_update_look(delta)
 	if _anim == null:
 		return
 	# Weapon discharge -> attack one-shot (recoil spikes to 1 on every shot).

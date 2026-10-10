@@ -114,7 +114,7 @@ is now parked and frozen for the capture).
 
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.
-- **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split + look-at/IK so robots aim while walking.
+- **Progressive robot damage states** (scorch, sparks, exposed core, limb loss); **AnimationTree** upper/lower-body split ; ~~look-at so robots track you while walking~~ **shipped 2026-10-10**: `HeadTrackModifier` turns the head and spine of every skinned rig toward its target over the clip (`tests/head_track_probe`); still open: aiming IK on the gun arms.
 - **Curated sampled SFX** (drop CC0 foley into `assets/audio/samples/`); adaptive music layers; reverb buses.
 - ~~Per-surface impact FX, shell casings, time-dilation on boss kills, controller rumble.~~ **All four shipped** (audited 2026-07-26): `Impact.set_surface`/`_spawn_debris` (metal/dirt/wood/stone sparks, smoke and fragments), `Weapon._eject_brass` + the `brass_tink` synth, `GameState.boss_killcam`, `Haptics.pulse`.
 - **Production polish** — main-menu cinematic, settings menu exposing quality tiers, key rebinding, save/checkpoints, perf-budget pass, full balance tuning.
