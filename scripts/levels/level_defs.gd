@@ -1274,7 +1274,7 @@ static func _neon() -> Dictionary:
 			{"type": "ravager", "pos": Vector3(13, 0.5, 13), "trigger": 20, "pack": "neon_p4"},
 			{"type": "ravager", "pos": Vector3(-13, 0.5, -13), "trigger": 22, "pack": "neon_p1"},
 			{"type": "gunner", "pos": Vector3(14, 0.5, 0), "trigger": 18},
-			{"type": "gunner", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
+			{"type": "moe", "pos": Vector3(-14, 0.5, 0), "trigger": 19},
 			{"type": "reaper", "pos": Vector3(7, 0.5, 2), "trigger": 14, "pack": "neon_p4"},
 			{"type": "gunner", "pos": Vector3(-13, 0.5, 13), "trigger": 17, "pack": "neon_p3"},
 			{"type": "brute", "pos": Vector3(13, 0.5, -13), "trigger": 21, "pack": "neon_p5"},
@@ -1698,7 +1698,7 @@ static func _crucible() -> Dictionary:
 			{"type": "reaper", "pos": Vector3(12, 0.5, -10), "trigger": 14, "pack": "cru_south"},
 			{"type": "sentinel", "pos": Vector3(-12, 0.5, -12), "trigger": 18, "pack": "cru_sw"},
 			# Pre-finale foundry: heavier garrison so it's the hardest level before titan.
-			{"type": "gunner", "pos": Vector3(-16, 0.5, 4), "trigger": 17, "pack": "cru_west"},
+			{"type": "moe", "pos": Vector3(-16, 0.5, 4), "trigger": 17, "pack": "cru_west"},
 			{"type": "gunner", "pos": Vector3(16, 0.5, -6), "trigger": 16, "pack": "cru_south"},
 			{"type": "ravager", "pos": Vector3(-14, 0.5, 14), "trigger": 19, "pack": "cru_west"},
 			{"type": "skitter", "pos": Vector3(0, 0.5, 16), "count": 8, "trigger": 15, "pack": "cru_north"},

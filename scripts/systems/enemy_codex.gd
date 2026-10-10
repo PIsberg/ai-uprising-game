@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -126,6 +126,13 @@ const ENTRIES := {
 		"strengths": ["Wakes the whole room onto you", "Feeds your position to robots that cannot see you", "Tightens every robot's aim while it watches"],
 		"weaknesses": ["Never shoots: kill it first", "Its gaze lags, so a sidestep or a dash breaks it", "Cover, EMP and hijack all put the gaze out"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "EMP grenade"],
+	},
+	"moe": {
+		"scene": "res://scenes/enemies/moe.tscn", "name": "MIXTURE OF EXPERTS", "scale": 1.0, "y": 0.0,
+		"desc": "An unarmed router chassis with four expert pods orbiting its head. Every few seconds its gate routes the fight to one of them, and that expert decides everything: a SNIPER's single heavy shot, a SCATTER burst, a SHIELD that shrugs off most of your fire, a SPRINT that flanks. The hologram over it shows the routing decision.",
+		"strengths": ["Four fighting styles in one chassis", "SHIELD routing cuts your damage to 30%", "Shots come from whichever pod is live"],
+		"weaknesses": ["Each pod is its own target: shoot an expert off and it is gone", "Lose all four and the router collapses: +50% damage taken", "Watch the hologram and punish the expert it picked"],
+		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "SW-7 Swarm Launcher"],
 	},
 	"forkbomb": {
 		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,

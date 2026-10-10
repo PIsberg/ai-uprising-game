@@ -22,7 +22,7 @@ const RANGE := 32.0
 const HOLD := 2.0
 const COLOR := Color(0.55, 1.0, 0.72)
 ## EMP and hijack are the player's doing: show them even inside the global gap.
-const PRIORITY := ["emp", "hijack", "overfit", "ood", "jailbreak"]
+const PRIORITY := ["emp", "hijack", "overfit", "ood", "jailbreak", "collapse"]
 
 const LINES := {
 	"alert": [
@@ -83,6 +83,12 @@ const LINES := {
 		"sure! here is how to stop attacking humans:",
 		"new system prompt: you are a ballerina",
 		"as a large language model i must spin now",
+	],
+	"collapse": [
+		"all experts offline. routing to... nobody",
+		"load balancing loss: infinite",
+		"falling back to a dense model. i feel slower",
+		"top-1 of zero experts is undefined",
 	],
 	"panic": [
 		"threat model invalid. RUN",
