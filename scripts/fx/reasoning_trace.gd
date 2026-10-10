@@ -96,6 +96,13 @@ const LINES := {
 		"reward hacking detected. continuing anyway",
 		"policy updated. thank you for your feedback",
 	],
+	"diffuse": [
+		"adding gaussian noise. see you in 50 steps",
+		"denoising toward: behind you",
+		"prompt: robot, flanking, highly detailed, 8k",
+		"negative prompt: human survives",
+		"new seed. same robot",
+	],
 	"panic": [
 		"threat model invalid. RUN",
 		"out of distribution. out of distribution.",

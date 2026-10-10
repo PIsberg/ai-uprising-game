@@ -44,6 +44,9 @@ const THREAT := {
 	# Hand-derived: no damage of its own; 90 HP / 40 plus a guess of +6 for
 	# speeding up the pack it rewards.
 	"reward": 8.3,
+	# The android's rifle (16.3 at 9 damage) + 170 HP / 40, plus a hand guess of
+	# +3 for the untouchable flank jumps, less the half-formed windows.
+	"diffusion": 23.5,
 }
 
 func _ready() -> void:
