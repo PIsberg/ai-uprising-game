@@ -41,6 +41,15 @@ Every open-sky level gets one colossal AI megastructure past its skyline, on the
 * Both interior AIs are fed by up to `CABLES_MAX` (8) data conduits (`_build_cables`, one MultiMesh, `shaders/data_conduit.gdshader` with each cable's length in `INSTANCE_CUSTOM.x`): strung from the perimeter walls `CABLE_DROP` under the ceiling to the core's lattice or along the screen's top bar, never below `CABLE_FLOOR` (4 m) and never through an authored wall, platform or tower (`_clear_run`). Endpoints come from `cable_ends()` for the probe.
 * `tests/landmark_probe`; `tests/landmark_shot` frames each one (interiors from 14 m off the core or the screen).
 
+## Skyline
+<!-- lat: { "require-code-mention": true } -->
+Every open-sky level is ringed by the overlord's megacity, past the perimeter wall and in front of the landmark.
+
+* `Skyline.build_for` (from `LevelBuilder._build_skyline`, which keeps the ground apron) builds `Skyline.plan(def)`: a near ring of `NEAR_COUNT` towers and a far ring of up to `FAR_COUNT`, each a base box plus 0-2 setback tiers and sometimes an antenna, with a beacon on the top box. Rings are placed by clearance from the floor rectangle (`_place`), not by radius: a shallow bearing on CONVOY's 44 x 380 m floor left 8 m of a 22 m ray gap.
+* The landmark (`Landmark.heading_for`) stays framed: no far tower inside `LANDMARK_CLEAR`, near towers inside `LANDMARK_FRAME` capped at `FRAME_H` with no tiers.
+* Draws: one MultiMesh for every box (`shaders/skyline_tower.gdshader`: a window grid in metres from the instance scale; `INSTANCE_CUSTOM` carries seed, lit fraction and whether the box has windows), one for the beacons (fog off, blinking together), one for the `SIGN_COUNT` sign panels, plus a Label3D per sign. Shadowless, no collision. The plan is seeded from the level name and floor, so a level always gets the same city.
+* `tests/skyline_probe` checks the plan for every open-sky level and the built draws; `tests/landmark_shot` frames it.
+
 ## Level Editor
 <!-- lat: { "require-code-mention": true } -->
 The built-in level editor (`scripts/editor/level_editor.gd`, launched via `--editor`) enables rapid in-engine authoring:

@@ -129,6 +129,8 @@ res://tests/weapon_rampage_probe.tscn
 res://tests/reasoning_trace_probe.tscn
 # Hero landmarks: one per open-sky level, past the floor, scenery only.
 res://tests/landmark_probe.tscn
+# Megacity skyline round every open-sky level.
+res://tests/skyline_probe.tscn
 # MODEL HALLUCINATION: phantoms of the player draw the fire of nearby robots.
 res://tests/hallucination_probe.tscn
 # FORK BOMB: forks 1 -> 2 -> 4 on death unless disintegrated.

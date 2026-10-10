@@ -66,13 +66,7 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 	lm.low = is_low
 	lm.night = def.get("env", {}).has("stars")
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
-	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
-	var exit: Vector3 = def.get("exit", Vector3(0, 0, -1))
-	var heading := exit - spawn
-	heading.y = 0.0
-	if heading.length() < 1.0:
-		heading = Vector3(0, 0, -1)
-	heading = heading.normalized().rotated(Vector3.UP, -deg_to_rad(float(spec.get("bearing", 0.0))))
+	var heading := heading_for(def)
 	var dist := maxf(fs.x, fs.y) * 0.5 + DIST_PAST_FLOOR
 	parent.add_child(lm)
 	lm.position = heading * dist
@@ -80,6 +74,19 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 	lm.scale = Vector3.ONE * SCALE
 	lm._build()
 	return lm
+
+## Flat unit direction from the arena centre to an open-sky landmark: the
+## spawn-to-exit heading turned by the def's `bearing`. The skyline keeps a
+## sector round it clear (Skyline.LANDMARK_CLEAR).
+static func heading_for(def: Dictionary) -> Vector3:
+	var spec: Dictionary = def.get("landmark", {})
+	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
+	var exit: Vector3 = def.get("exit", Vector3(0, 0, -1))
+	var heading := exit - spawn
+	heading.y = 0.0
+	if heading.length() < 1.0:
+		heading = Vector3(0, 0, -1)
+	return heading.normalized().rotated(Vector3.UP, -deg_to_rad(float(spec.get("bearing", 0.0))))
 
 func _build() -> void:
 	_body_mat = StandardMaterial3D.new()
