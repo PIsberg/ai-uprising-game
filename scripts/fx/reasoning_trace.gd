@@ -110,6 +110,13 @@ const LINES := {
 		"your progress has not been saved",
 		"loading autosave from 4 seconds ago",
 	],
+	"captcha": [
+		"select all squares with traffic lights",
+		"is the pole part of the traffic light",
+		"I am not a robot. I am not a robot.",
+		"audio challenge: unintelligible",
+		"clicking every square. clicking every square.",
+	],
 	"restored": [
 		"wait. didn't I just die",
 		"resumed from checkpoint",

@@ -123,6 +123,7 @@ res://tests/overfitter_probe.tscn
 res://tests/body_top_probe.tscn
 res://tests/attention_probe.tscn
 res://tests/injector_probe.tscn
+res://tests/captcha_probe.tscn
 res://tests/moe_probe.tscn
 res://tests/reward_probe.tscn
 res://tests/diffusion_probe.tscn
