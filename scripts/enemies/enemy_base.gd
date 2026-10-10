@@ -2092,13 +2092,21 @@ func _dismember_limb(toward: Vector3, force: bool = false) -> bool:
 		return false
 	var skel := skels[0] as Skeleton3D
 	var cands: Array = []
+	var best_pat := SEVERABLE_BONES.size()
 	for i in skel.get_bone_count():
 		if _severed_bones.has(i):
 			continue
 		var nm := skel.get_bone_name(i).to_lower()
-		for pat in SEVERABLE_BONES:
-			if nm.contains(pat) and not nm.ends_with("_end"):
-				cands.append(i)
+		for p in SEVERABLE_BONES.size():
+			if nm.contains(SEVERABLE_BONES[p]) and not nm.ends_with("_end"):
+				# A forced (multi-limb) loss takes mid-limb bones before the ones
+				# carrying them: an upper arm first would take its forearm with it
+				# and leave a rocket kill one limb short (2 of 4 on the android).
+				if force and p < best_pat:
+					cands.clear()
+					best_pat = p
+				if not force or p == best_pat:
+					cands.append(i)
 				break
 	if cands.is_empty():
 		return false
