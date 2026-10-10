@@ -17,7 +17,7 @@ const ORDER: Array = [
 	"hunter", "reaper", "sniper", "seeker", "brute",
 	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
-	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake",
+	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
@@ -112,6 +112,13 @@ const ENTRIES := {
 		"strengths": ["Three targets, one real threat", "Swaps places with its own projections", "Copies are rebuilt nine seconds after the last one pops"],
 		"weaknesses": ["Copies glitch (a sideways tear, a magenta flash) and cast no shadow", "Radar and homing rounds see straight through the copies", "One hit pops a copy; kill the real one and they all collapse"],
 		"weapons": ["SW-7 Swarm Launcher", "AR-7 Pulse Rifle", "SG-12 Breacher"],
+	},
+	"forkbomb": {
+		"scene": "res://scenes/enemies/forkbomb.tscn", "name": "FORK BOMB", "scale": 1.0, "y": 0.0,
+		"desc": "A process that replicates when you kill it. An acid-green crawler with the spider's dart-and-pounce bite; destroy it and it forks into two smaller, faster copies, and each of those forks once more. One becomes seven, all around you at once.",
+		"strengths": ["Every kill spawns two more (twice)", "The copies are faster than the original", "Spills a swarm right where you were aiming"],
+		"weaknesses": ["Disintegrate it and the process is deleted before it forks", "The last generation dies to a single solid hit", "Splash and chain weapons clear the swarm"],
+		"weapons": ["ARC-9 Gauss Lance", "PL-1 Plasma Launcher", "TPX-9 Tempest Coil"],
 	},
 	"howitzer": {
 		"scene": "res://scenes/enemies/howitzer.tscn", "name": "HOWITZER", "scale": 0.6, "y": 0.0,

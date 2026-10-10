@@ -52,7 +52,7 @@ A persistent nemesis mechanic creates high-stakes grudge matches across campaign
 ## Archetype Roster
 Categorizes the rogue AI combat units into distinct tactical roles.
 
-* **Swarms & Minions:** `Skitter`, `Spider`, `Drone` — rapid, low-health harassment units that flank or overwhelm.
+* **Swarms & Minions:** `Skitter`, `Spider`, `Drone` — rapid, low-health harassment units that flank or overwhelm. `Forkbomb` replicates on death (two copies per generation, `MAX_GEN` 2) unless a disintegrating kill deletes it first.
 * **Frontline & Heavies:** `Brute`, `Ravager`, `Warmech`, `Smasher` — heavily armored pressure units with shields, cleaves, and ground slams.
 * **Ranged & Support:** `Sniper`, `Howitzer`, `Mender`, `Optic` — long-range artillery, beam chargers, and unit repair specialists.
 * **Deception:** `Deepfake` — projects two `DeepfakeDecoy` copies that mirror its moves and fire harmless tracers with it. Copies stay out of the `enemy` group, so kill_all, radar, homing, score and accuracy all ignore them; they pop in one hit and collapse when it dies.

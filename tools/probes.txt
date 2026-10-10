@@ -123,3 +123,5 @@ res://tests/reasoning_trace_probe.tscn
 res://tests/landmark_probe.tscn
 # MODEL HALLUCINATION: phantoms of the player draw the fire of nearby robots.
 res://tests/hallucination_probe.tscn
+# FORK BOMB: forks 1 -> 2 -> 4 on death unless disintegrated.
+res://tests/forkbomb_probe.tscn

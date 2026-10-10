@@ -1,6 +1,6 @@
 # Enemy Roster — subclass audit
 
-All 44 combat enemies extend `EnemyBase` (`scripts/enemies/enemy_base.gd`), a CharacterBody3D
+All 45 combat enemies extend `EnemyBase` (`scripts/enemies/enemy_base.gd`), a CharacterBody3D
 state machine (IDLE/PATROL/ALERT/CHASE/ATTACK/STAGGER/DEAD) with a `Damageable` child (`hp`).
 (`enemy_bomb.gd` is excluded: it is a lobbed bomb projectile extending `Node3D`, not an enemy.)
 
@@ -48,6 +48,7 @@ inherit that parent's overrides too.
 | DRONE | `enemy_drone.gd` | recon-flyer chassis (scene); base for Whirlwind/Shark/Breaker/Fishbot | basic ranged flyer; hover-strafe, dives; falls and explodes on death | `_on_died`, `_state_attack` | — |
 | ENFORCER | `enemy_enforcer.gd` (extends EnemyAndroid) | android chassis (inherited) | armored trooper; ranged bursts + telegraphed green suppression-laser sweep | (android's) | — |
 | FISHBOT ("ANGLER UNIT") | `enemy_fishbot.gd` (extends EnemyDrone) | drone chassis + code-built fins/bubble trail | fast fragile hit-and-run swimmer; spits water bolts | (drone's) | — |
+| FORK BOMB | `enemy_forkbomb.gd` (extends EnemySpider) | Trilobite crawler, acid-green tint, scaled 1.25 / 0.9 / 0.62 by generation | spider's dart-and-pounce melee; killed, forks into two smaller faster copies (via `hp.died`), which fork once more: 1 -> 2 -> 4; a disintegrating kill deletes it before it forks | (spider's) | — |
 | GUNNER | `enemy_gunner.gd` | `quaternius_gunner_siege.glb` (Blender fork of Quaternius "Robot Enemy Large Gun": recoil spades, gun shield, ammo drum, rotary mount) + code-built barrel cluster on the Gun bone | tanky suppressor; telegraphed spin-up into 12-round burst (the barrels really spin up through the windup and glow hotter per round), plants while firing | — | — |
 | GUNSLINGER | `enemy_gunslinger.gd` (extends EnemyAndroid) | android chassis (inherited) | duelist; single heavy slugs on slow cadence, sidestep weave | (android's) | — |
 | HIVE | `enemy_hive.gd` † | `quaternius_bot_hive.glb` (Blender fork: uplink mast, dish, relay pack, shield-emitter prongs) + procedural shield mesh + mast-tip link beacon | networked flanker; energy shield until inside a jammer zone (beacon goes dark with it), spreads flank angles across siblings | — | — |
@@ -86,7 +87,7 @@ inherit that parent's overrides too.
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing
 via `GameState.announce_boss`.
 
-**Tallies:** 44 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
+**Tallies:** 45 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
 MENDER, OVERSEER, RAPTOR, SEEKER, SKITTER — matches the "seven subclasses" comment in
 `enemy_base.gd`). `_state_attack` overridden without super: **11** (ALIEN, ANDROID,
 COLOSSUS, DRONE, MANUS, MECH, RAPTOR, SEEKER, SHARK, SMASHER, TERMINATOR). Overrides that
