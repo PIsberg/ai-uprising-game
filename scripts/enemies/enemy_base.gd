@@ -134,6 +134,8 @@ func _ready() -> void:
 	# Death bark hangs off the signal, NOT _on_died: seven subclasses override
 	# _on_died without calling super, so a bark inside it never reaches them.
 	hp.died.connect(_on_died_voice)
+	# Its weights pour out on death (DataBleed) - off the signal for the same reason.
+	hp.died.connect(_data_burst)
 	hp.damaged.connect(_on_damaged)
 	# Wounded fallback hangs off the signal, NOT _on_damaged — same
 	# subclass-override trap as the death bark above.
@@ -738,6 +740,13 @@ const VOICE_DIE_CHANCE := {"skitter": 0.12, "orb": 0.15, "drone": 0.3}
 ## Set by chassis that stage their own death line on a dramatic beat (ARCHON's
 ## core rupture, MENDER's fall) so the generic gasp doesn't double up on it.
 var speaks_own_death_line := false
+
+func _data_burst(_source: Node) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var h := clampf(RobotModel.body_top(self, _mesh_instances) * 0.5, 0.4, 3.0)
+	DataBleed.burst(parent, global_position + Vector3.UP * h)
 
 func _on_died_voice(_source: Node) -> void:
 	if speaks_own_death_line:

@@ -34,6 +34,14 @@ The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_
 * The style rides on `Damageable.kill_fx` only for the duration of the weapon's `apply_damage` call (`KillFx.tag` / `untag`). `died` fires inside that call, so `_on_died` sees the killing hit's style and nothing else: grenades and hazards never tag.
 * Bosses keep their deaths. Overrides of `_on_died` opt in through `EnemyBase._kill_style()` / `_prep_kill_fx()`: drones and raptors burn away mid-air or spasm before they fall, menders and skitters split like the base. A SHRED kill knocks drones and raptors along the shot as they fall (`EnemyBase._shred_kick`). The seeker keeps its shot-down blast, a mechanic. `tests/kill_fx_probe`.
 
+## Data Bleed
+<!-- lat: { "require-code-mention": true } -->
+Robots bleed binary when hit and pour it out when they die (`scripts/fx/data_bleed.gd`).
+
+* `DataBleed.spill` runs from `Weapon._enemy_hit_pop` on every hitscan hit on a robot (`hit_amount`: `HIT_MIN`..`HIT_MAX` by damage, +`CRIT_BONUS` on a crit), thrown back toward the shooter; walls never spill. At most `FRAME_BUDGET` spills start per physics frame (shotgun pellets).
+* `DataBleed.burst` runs from `EnemyBase._data_burst`, on `hp.died` rather than in `_on_died`, so subclasses that override `_on_died` without super still burst: `BURST_AMOUNT` glyphs rising from mid-body. It ignores the frame budget.
+* One CPUParticles3D per spill, freeing itself on `finished`; a two-frame sheet ("0" | "1", `glyph_texture()` drawn from 5x7 bitmaps) picked per particle by `anim_offset`. Unshaded, `disable_fog`, no shadows; LOW halves the amounts. `tests/data_bleed_probe`.
+
 ## Rampage Charge
 The gun charges up with the RAMPAGE kill streak (`Weapon._on_rampage_changed`, on `GameState.rampage_changed`).
 

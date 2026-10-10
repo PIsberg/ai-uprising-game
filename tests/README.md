@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-335 probes total: **95** wired into the headless suite (`suite`), **84**
+337 probes total: **96** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **156** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **157** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -230,6 +230,8 @@ or GPU-timing probes; `--headless` renders these black).
 | keybind_probe | Key-rebind persistence: factory defaults, live InputMap application, swap/steal conflict policy, saved overrides | headless |
 | kick_stability_probe | Viewmodel-kick spring doesn't diverge to NaN across a frame hitch (shader-compile stall on first shot) | headless |
 | kill_fx_probe | Weapon-specific deaths through the real hit paths: the energy guns' WeaponData kill styles; a gauss hitscan and a plasma projectile kill DISINTEGRATE (dissolve materials, no death blast, robot gone after the dissolve, ash scorch); an arc-coil kill ELECTROCUTES (shock skin, no blast during the spasms, then the classic blast); an untagged kill after an energy hit and a boss-sized kill stay classic; drone, raptor, mender and skitter dissolve in place with no blast, an arc-killed drone hangs through the spasms then falls, a seeker keeps its blast; a shotgun kill SHREDS (airborne and thrown away from the shooter with no blast in the air, scrap spray, classic blast where it lands 3.2 m back), a wall behind cuts the flight short, a magnum-killed drone is kicked away and falls, never shocked; a rifle headshot kill DECAPITATES (head bone folded, head chunk flung, no blast during the stagger, then the classic blast), a rifle body kill stays classic, a headshot-tagged drone just falls; a Devastator rocket kill BLOWS the robot APART (3+ limbs off at once, chunks flying, torso lofted, no classic blast in the air, then one when it lands) and a rocket-tagged drone detonates mid-air | suite |
+| data_bleed_probe | Robots bleed data: the glyph sheet holds a distinct 0 and 1; a rifle hit on a robot spills one emitter at the hit, inside HIT_MIN..HIT_MAX, more for a crit or a harder hit; a wall hit spills nothing; one frame's spills cap at FRAME_BUDGET; a non-weapon kill bursts BURST_AMOUNT glyphs from mid-body; every emitter frees itself | suite |
+| data_bleed_shot | Binary spraying out of rifle hits on one android, then the death fountain off a second; `-- --out=<dir>` | windowed |
 | kill_fx_shot | Six androids killed at once by a DISINTEGRATE, an ELECTROCUTE, an untagged, a SHRED, a DECAPITATE and a BLAST hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
 | landmark_probe | Hero landmarks: every open-sky level authors one of a known kind; built from the real scaled def it stands past the floor edge on the spawn-to-exit heading, with no collision and no shadows (caught the stacks' steam casting shadows); its name tag reads the authored label; it carries at least two drone flocks, every drone over 60 m up, which LOW drops and which move frame to frame; every night level (env `stars`) has a data aurora over 70 m up past the floor edge, no day level has one, and LOW drops it; an interior level gets none; LOW drops the steam; level_gemini built through LevelBuilder carries its twin spires; every interior gets the AI core (only when the room is too low or gated does it get the wall screen instead), clear of walkable tops + headroom, the ceiling and route gates, constants mirroring LevelBuilder's, and its eye turns to the camera; the wall screen (claude, guardrails, range) sits just off a perimeter wall ahead of the spawn, above head height and under the ceiling, clear of every gate and authored wall meeting that wall, no collision, its pupil follows the camera, and level_range's billboard moves off its wall; every interior AI is fed by at least four data conduits, each from a perimeter wall to the AI, between 4 m and the ceiling, through no authored wall, platform or tower | suite |
