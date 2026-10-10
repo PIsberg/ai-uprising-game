@@ -127,6 +127,7 @@ res://tests/moe_probe.tscn
 res://tests/reward_probe.tscn
 res://tests/diffusion_probe.tscn
 res://tests/rollback_probe.tscn
+res://tests/overlord_holo_probe.tscn
 res://tests/weapon_rampage_probe.tscn
 # Leaked robot reasoning: <think> traces on contact/EMP, throttled, on screen only.
 res://tests/reasoning_trace_probe.tscn

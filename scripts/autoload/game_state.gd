@@ -16,6 +16,7 @@ signal task_completed(label: String) ## A single task was just finished — HUD 
 signal wave_incoming(label: String) ## A "survive" wave came due — HUD calls the escalation out.
 signal combo_changed(combo: int, mult: float) ## Kill-streak combo updated — HUD shows the multiplier.
 signal level_graded(grade: String, stats: Dictionary) ## Level cleared — end-screen grade + breakdown.
+signal overlord_spoke(line: String) ## The overlord said a line (HUD taunt) — its face in the sky (OverlordHolo) mouths it.
 
 func announce_boss(boss: Node) -> void:
 	boss_spawned.emit(boss)

@@ -11,7 +11,9 @@ extends Node3D
 ##
 ## The hero landmark (Landmark) stays framed: no far tower within
 ## LANDMARK_CLEAR of its bearing, and near towers within LANDMARK_FRAME of it
-## stay under FRAME_H. Seeded per level, so a level always gets the same city.
+## stay under FRAME_H. The overlord's face in the sky (OverlordHolo) gets the
+## same treatment in a narrower sector (FACE_CLEAR / FACE_FRAME). Seeded per
+## level, so a level always gets the same city.
 ## Scenery only: no collision, shadows off; one draw for every tower box, one
 ## for the beacons, one for the sign panels, plus a Label3D per sign.
 ## Replaced the 22 plain boxes with two window slits each. Covered by
@@ -28,6 +30,8 @@ const FAR_W := Vector2(12.0, 26.0)
 const LANDMARK_CLEAR := 0.6 ## radians either side of the landmark with no far tower
 const LANDMARK_FRAME := 0.35 ## radians either side of it where near towers stay low
 const FRAME_H := 18.0
+const FACE_CLEAR := 0.22 ## radians either side of the overlord's sky face (OverlordHolo) with no far tower...
+const FACE_FRAME := 0.22 ## ...and near towers under FRAME_H, so the city never hides its chin
 const SIGN_COUNT := 3
 const SIGN_SIZE := Vector2(15.0, 6.0)
 const SIGN_TEXTS := [
@@ -54,11 +58,14 @@ static func plan(def: Dictionary) -> Dictionary:
 	var has_lm := String(def.get("landmark", {}).get("kind", "")) != "none"
 	var h := Landmark.heading_for(def)
 	var lm_ang := atan2(h.x, h.z)
+	var fp := OverlordHolo.spot_for(def)
+	var face_ang := atan2(fp.x, fp.z) # same opt-out as the landmark: no landmark, no face
 	var out := {"towers": [], "beacons": [], "signs": []}
 	var sign_spots: Array = []
 	for s in NEAR_COUNT:
 		var ang := TAU * s / NEAR_COUNT + rng.randf_range(-0.06, 0.06)
-		var framed := has_lm and absf(angle_difference(ang, lm_ang)) < LANDMARK_FRAME
+		var framed := has_lm and (absf(angle_difference(ang, lm_ang)) < LANDMARK_FRAME
+				or absf(angle_difference(ang, face_ang)) < FACE_FRAME)
 		var th := rng.randf_range(NEAR_H.x, NEAR_H.y)
 		if framed:
 			th = minf(th, FRAME_H)
@@ -69,7 +76,8 @@ static func plan(def: Dictionary) -> Dictionary:
 			sign_spots.append({"pos": pos, "w": w, "h": th})
 	for s in FAR_COUNT:
 		var ang := TAU * s / FAR_COUNT + rng.randf_range(-0.05, 0.05)
-		if has_lm and absf(angle_difference(ang, lm_ang)) < LANDMARK_CLEAR:
+		if has_lm and (absf(angle_difference(ang, lm_ang)) < LANDMARK_CLEAR
+				or absf(angle_difference(ang, face_ang)) < FACE_CLEAR):
 			continue
 		var w := rng.randf_range(FAR_W.x, FAR_W.y)
 		var pos := _place(ang, fs, w * 0.71, rng.randf_range(FAR_GAP.x, FAR_GAP.y))
