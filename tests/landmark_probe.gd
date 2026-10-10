@@ -71,6 +71,16 @@ func _run() -> void:
 			for i in mm.instance_count:
 				flock_ok = flock_ok and (lm.global_transform * lm.flock_point(flocks.find(f), i)).y > 60.0
 		_check("%s has its drone flocks, high in the sky" % id, flock_ok, "%d flocks" % flocks.size())
+		# Night levels: a data aurora high over the skyline, past the floor edge.
+		var aur := lm.get_node_or_null("Aurora") as MeshInstance3D
+		if def.get("env", {}).has("stars"):
+			var ab: AABB = aur.global_transform * aur.mesh.get_aabb() if aur else AABB()
+			var flat_c := Vector2(ab.get_center().x, ab.get_center().z)
+			_check("%s (night) has a data aurora high past the skyline" % id, aur != null
+					and ab.position.y > 70.0 and flat_c.length() > maxf(fs.x, fs.y) * 0.5,
+					"low %.0f m, %.0f m out" % [ab.position.y, flat_c.length()])
+		else:
+			_check("%s (day) has no aurora" % id, aur == null)
 		var want := String(spec.get("sign", ""))
 		var tag := lm.get_node_or_null("NameTag") as Label3D
 		if want != "":
@@ -153,6 +163,11 @@ func _run() -> void:
 	var hi_fx := hi.find_children("*", "CPUParticles3D", true, false).size()
 	var lo_fx := lo.find_children("*", "CPUParticles3D", true, false).size()
 	_check("LOW drops the steam", hi_fx > 0 and lo_fx == 0, "%d -> %d" % [hi_fx, lo_fx])
+	var night_hi := Landmark.build_for(self, LevelDefs.get_def("titan"), Color.WHITE, false)
+	var night_lo := Landmark.build_for(self, LevelDefs.get_def("titan"), Color.WHITE, true)
+	_check("LOW drops the aurora", night_hi.get_node_or_null("Aurora") != null and night_lo.get_node_or_null("Aurora") == null)
+	night_hi.free()
+	night_lo.free()
 	_check("LOW drops the flocks", hi.find_children("Flock*", "MultiMeshInstance3D", true, false).size() >= 2
 			and lo.find_children("Flock*", "MultiMeshInstance3D", true, false).is_empty())
 	var p0 := hi.flock_point(0, 3)
