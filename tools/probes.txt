@@ -129,6 +129,8 @@ res://tests/diffusion_probe.tscn
 res://tests/weapon_rampage_probe.tscn
 # Leaked robot reasoning: <think> traces on contact/EMP, throttled, on screen only.
 res://tests/reasoning_trace_probe.tscn
+# A robot's last log line over its wreck.
+res://tests/death_log_probe.tscn
 # Hero landmarks: one per open-sky level, past the floor, scenery only.
 res://tests/landmark_probe.tscn
 # Megacity skyline round every open-sky level.
