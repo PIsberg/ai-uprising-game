@@ -17,7 +17,11 @@ extends Node
 ##     in a tumbling arc with no blast in the air, scrap sprays out of its back,
 ##     and the classic blast goes off where it lands; a wall behind it stops the
 ##     flight short; a drone shot down by the magnum is kicked away and falls,
-##     never electrocuted.
+##     never electrocuted;
+## (9) a rifle HEADSHOT kill DECAPITATES: the head bone folds away, a head
+##     chunk is flung, no blast for the stagger, then the classic blast; a body
+##     kill with the same rifle stays classic; a headshot kill on a drone (no
+##     neck to lose) is an ordinary fall.
 ##   godot --headless --path . --audio-driver Dummy res://tests/kill_fx_probe.tscn
 
 const ANDROID := "res://scenes/enemies/android.tscn"
@@ -237,8 +241,74 @@ func _run() -> void:
 	_check("drone: kicked away and falling", is_instance_valid(dm) and dm._dying and dm.velocity.z < -3.0,
 			"vz %.2f" % (dm.velocity.z if is_instance_valid(dm) else 0.0))
 
+	# 9. Headshots.
+	var rifle_shooter := Node3D.new()
+	rifle_shooter.add_to_group("player")
+	add_child(rifle_shooter)
+	rifle_shooter.global_position = Vector3(-210, 1.5, 30)
+	var rifle := _gun("rifle", rifle_shooter)
+	var hd := _robot(Vector3(-210, 0, 0))
+	await _frames(3)
+	blasts0 = _blasts
+	_wake(hd)
+	hd.hp.current_health = 1.0
+	var head_y := _head_height(hd)
+	_check("android has a head band", head_y > 0.0, "%.2f" % head_y)
+	var chunks0 := _rigid_count()
+	rifle._do_hitscan(Vector3(-210, head_y, 10), Vector3(0, 0, -1))
+	_check("rifle headshot killed it", not hd.hp.is_alive())
+	_check("decapitate: head bone folded", _head_scale(hd) < 0.05, "%.3f" % _head_scale(hd))
+	_check("decapitate: head chunk flung", _rigid_count() > chunks0, "%d -> %d" % [chunks0, _rigid_count()])
+	await _frames(int(KillFx.DECAP_TIME * 60.0 * 0.5))
+	_check("decapitate: no blast while it staggers", _blasts == blasts0, "%d -> %d" % [blasts0, _blasts])
+	await _frames(int(KillFx.DECAP_TIME * 60.0 * 0.5) + 10)
+	_check("decapitate: classic blast after", _blasts == blasts0 + 1, "%d -> %d" % [blasts0, _blasts])
+	var bd := _robot(Vector3(-225, 0, 0))
+	rifle_shooter.global_position = Vector3(-225, 1.5, 30)
+	await _frames(3)
+	blasts0 = _blasts
+	_wake(bd)
+	bd.hp.current_health = 1.0
+	rifle._do_hitscan(Vector3(-225, 0.6, 10), Vector3(0, 0, -1))
+	await _frames(4)
+	_check("rifle body kill stays classic", _blasts == blasts0 + 1 and _head_scale(bd) > 0.5,
+			"%d -> %d, head %.2f" % [blasts0, _blasts, _head_scale(bd)])
+	var dh := _robot(Vector3(-240, 3.0, 0), "res://scenes/enemies/drone.tscn")
+	rifle_shooter.global_position = Vector3(-240, 3.0, 30)
+	await _frames(3)
+	_wake(dh)
+	dh.hp.current_health = 1.0
+	dh.hp.kill_fx = KillFx.DECAPITATE # as a headshot would tag it
+	dh.hp.apply_damage(5.0, rifle_shooter)
+	dh.hp.kill_fx = KillFx.NONE
+	await _frames(4)
+	_check("drone headshot: ordinary fall, never shocked", is_instance_valid(dh) and dh._dying and _shocked(dh) == 0)
+
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+## The lowest height (m, world) a hit on `e` counts as a headshot, a little
+## inside the band; -1 if none up to 3 m.
+func _head_height(e: EnemyBase) -> float:
+	var lo := -1.0
+	var y := 3.0
+	while y > 0.0:
+		if e.is_headshot(y):
+			lo = y
+		y -= 0.05
+	return lo + 0.08 if lo > 0.0 else -1.0
+
+## Scale of the robot's head bone (1 = intact), or 1 when it has none.
+func _head_scale(e: EnemyBase) -> float:
+	if not is_instance_valid(e):
+		return 1.0
+	var b := e._head_bone()
+	if b.is_empty():
+		return 1.0
+	return (b["skel"] as Skeleton3D).get_bone_pose_scale(b["idx"]).x
+
+func _rigid_count() -> int:
+	return get_children().filter(func(c: Node) -> bool: return c is RigidBody3D).size()
 
 ## Scrap-spray emitters a SHRED kill left in the scene.
 func _scrap() -> int:

@@ -14,6 +14,12 @@ extends RefCounted
 ##     hot scrap spraying out of its back; the classic blast goes off where it
 ##     lands. A wall behind it cuts the flight short. Flyers get the spray and a
 ##     kick along the shot instead (EnemyBase._shred_kick).
+##   DECAPITATE (a killing HEADSHOT from a gun with no style of its own: pistol,
+##     rifle) - the head bone folds into the neck, the head is flung with its
+##     eye still lit, the neck fountains sparks, and the headless chassis rocks
+##     back for DECAP_TIME before the classic blast (EnemyBase._decapitate).
+##     The weapon tags it, not WeaponData; robots with no head bone (rigid
+##     models, flyers) fall back to their ordinary death.
 ##
 ## How the style travels: the weapon tags the victim's Damageable (`kill_fx`)
 ## for the duration of its apply_damage call (tag/untag below). `died` fires
@@ -22,7 +28,7 @@ extends RefCounted
 ## tag, so they keep the classic death even on a robot an energy gun softened.
 ## Bosses (score >= 1000) keep their own deaths. Covered by tests/kill_fx_probe.
 
-enum { NONE, DISINTEGRATE, ELECTROCUTE, SHRED }
+enum { NONE, DISINTEGRATE, ELECTROCUTE, SHRED, DECAPITATE }
 
 const DISSOLVE_SHADER := preload("res://shaders/dissolve.gdshader")
 const DISSOLVE_TIME := 1.0
@@ -33,6 +39,7 @@ const SHRED_TIME := 0.42
 const SHRED_FLING := 3.2
 const SHRED_LIFT := 0.8 ## apex of the flight arc above the start, metres
 const SHRED_KICK := 9.0 ## m/s a shredded flyer is knocked along the shot
+const DECAP_TIME := 0.55
 
 ## Tags `d` with the style and the gun (`weapon`, a WeaponData) of the hit about
 ## to be applied; untag right after apply_damage returns.
@@ -412,6 +419,49 @@ static func _burst(parent: Node, at: Vector3, dir: Vector3, amount: int, spread:
 
 ## `dir` flattened and normalised; with no direction, backwards off the robot's
 ## facing (EnemyBase turns its -Z toward what it fights).
+# ---------- DECAPITATE ----------
+
+## Sparks spurting up out of a severed neck for `time` seconds, then dying off.
+static func neck_fountain(parent: Node, at: Vector3, time: float) -> void:
+	if parent == null:
+		return
+	var p := CPUParticles3D.new()
+	p.name = "NeckFountain"
+	p.amount = 18 if GraphicsSettings.is_low() else 44
+	p.lifetime = 0.55
+	p.direction = Vector3.UP
+	p.spread = 22.0
+	p.initial_velocity_min = 2.5
+	p.initial_velocity_max = 5.5
+	p.gravity = Vector3(0, -12.0, 0)
+	p.scale_amount_min = 1.0
+	p.scale_amount_max = 2.4
+	p.particle_flag_align_y = true
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var q := QuadMesh.new()
+	q.size = Vector2(0.025, 0.07)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.vertex_color_use_as_albedo = true
+	q.material = m
+	p.mesh = q
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.95, 0.7, 1.0))
+	g.add_point(0.4, Color(1.0, 0.55, 0.15, 0.9))
+	g.set_color(g.get_point_count() - 1, Color(1.0, 0.25, 0.05, 0.0))
+	p.color_ramp = g
+	parent.add_child(p)
+	p.global_position = at
+	p.emitting = true
+	var tw := p.create_tween()
+	tw.tween_interval(time)
+	tw.tween_callback(func() -> void: p.emitting = false)
+	tw.tween_interval(p.lifetime + 0.2)
+	tw.tween_callback(p.queue_free)
+
 static func _flat(dir: Vector3, enemy: Node3D) -> Vector3:
 	dir.y = 0.0
 	if dir.length() < 0.01:

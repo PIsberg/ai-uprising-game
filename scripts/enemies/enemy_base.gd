@@ -1671,6 +1671,8 @@ func _on_died(_source: Node) -> void:
 		KillFx.electrocute(self, _classic_death_fx)
 	elif style == KillFx.SHRED:
 		KillFx.shred(self, _shot_dir(_source), _classic_death_fx)
+	elif style == KillFx.DECAPITATE:
+		_decapitate(_shot_dir(_source))
 	else:
 		_classic_death_fx()
 
@@ -1678,7 +1680,107 @@ func _on_died(_source: Node) -> void:
 ## classic blast: their kill-cam is framed around it. Read it inside _on_died,
 ## while `died` is still being emitted (the weapon untags right after).
 func _kill_style() -> int:
-	return hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+	var style: int = hp.kill_fx if hp and score_value < 1000 else KillFx.NONE
+	if style == KillFx.DECAPITATE and _head_bone().is_empty():
+		return KillFx.NONE # no neck to lose: the ordinary death
+	return style
+
+## The head bone {"skel", "idx"} of a skinned chassis, or {} (rigid models,
+## and rigs with no bone named like a head). Skips "_end"/"top" tip bones.
+func _head_bone() -> Dictionary:
+	if _visual_root == null:
+		return {}
+	for s in _visual_root.find_children("*", "Skeleton3D", true, false):
+		var skel := s as Skeleton3D
+		for i in skel.get_bone_count():
+			var nm := skel.get_bone_name(i).to_lower()
+			if nm.contains("head") and not nm.contains("end") and not nm.contains("top"):
+				return {"skel": skel, "idx": i}
+	return {}
+
+## A killing HEADSHOT (KillFx.DECAPITATE): the head bone folds into the neck,
+## the head flies off along the shot with its eye still lit, the neck fountains
+## sparks, and the headless chassis rocks back for DECAP_TIME before the
+## classic blast. Purely visual, like _dismember_limb.
+func _decapitate(dir: Vector3) -> void:
+	var b := _head_bone()
+	var skel: Skeleton3D = b["skel"]
+	var idx: int = b["idx"]
+	var neck: Vector3 = (skel.global_transform * skel.get_bone_global_pose(idx)).origin
+	skel.set_bone_pose_scale(idx, Vector3.ONE * 0.001)
+	_severed_bones[idx] = true
+	dir = KillFx._flat(dir, self)
+	_fling_head(neck, dir)
+	KillFx.neck_fountain(get_parent(), neck, KillFx.DECAP_TIME + 0.4)
+	AudioBus.play_synth_at("headshot", neck, 0.0, 0.75)
+	AudioBus.play_synth_at("explosion", neck, -12.0, 1.9) # the dry crack of the neck going
+	var tip := Vector3(dir.z, 0.0, -dir.x)
+	var base_rot := rotation
+	var tw := create_tween()
+	tw.tween_property(self, "rotation", base_rot + tip * 0.3, KillFx.DECAP_TIME * 0.35) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "rotation", base_rot + tip * 0.14, KillFx.DECAP_TIME * 0.65)
+	tw.tween_callback(_classic_death_fx)
+
+## The head as wreckage: a dark metal block about head-size with the robot's
+## eye still burning on its face, flung off along the shot, tumbling.
+func _fling_head(neck: Vector3, dir: Vector3) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	var s := clampf(RobotModel.body_top(self, _mesh_instances) * 0.14, 0.18, 0.45)
+	var head := RigidBody3D.new()
+	head.name = "SeveredHead"
+	head.collision_layer = 0
+	head.collision_mask = 1
+	head.mass = 1.2
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(s, s * 0.85, s)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.17, 0.18, 0.21)
+	mat.metallic = 0.75
+	mat.roughness = 0.4
+	bm.material = mat
+	mi.mesh = bm
+	head.add_child(mi)
+	var eye_col := Color(1.0, 0.25, 0.15)
+	var rm := _visual_root as RobotModel
+	if rm and rm.menace_glow > 0.0:
+		eye_col = rm.menace_color
+	var lens := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = s * 0.16
+	sm.height = s * 0.32
+	sm.radial_segments = 8
+	sm.rings = 4
+	var em := StandardMaterial3D.new()
+	em.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	em.albedo_color = eye_col
+	em.emission_enabled = true
+	em.emission = eye_col
+	em.emission_energy_multiplier = 5.0
+	sm.material = em
+	lens.mesh = sm
+	lens.position = Vector3(0, s * 0.05, -s * 0.5)
+	head.add_child(lens)
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = bm.size
+	cs.shape = box
+	head.add_child(cs)
+	parent.add_child(head)
+	head.global_position = neck + Vector3.UP * s * 0.5
+	head.rotation.y = rotation.y
+	head.linear_velocity = dir * randf_range(3.5, 5.0) + Vector3.UP * randf_range(4.5, 6.0)
+	head.angular_velocity = Vector3(randf_range(-9, 9), randf_range(-6, 6), randf_range(-9, 9))
+	# The eye gutters out, then the head goes the way of the other debris.
+	var tw := head.create_tween()
+	tw.tween_interval(1.4)
+	tw.tween_method(func(v: float) -> void: em.emission_energy_multiplier = v, 5.0, 0.0, 1.2)
+	tw.tween_interval(1.2)
+	tw.tween_property(head, "scale", Vector3.ONE * 0.05, 0.5)
+	tw.tween_callback(head.queue_free)
 
 ## Away from whoever landed the killing blow, flattened: the line a SHRED kill
 ## throws the chassis along. ZERO when there is no shooter to go by (KillFx then

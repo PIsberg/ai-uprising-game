@@ -306,7 +306,7 @@ func _on_died(_source: Node) -> void:
 	## Disintegrated: burns away in the air, no fall. Electrocuted: hangs and
 	## spasms, then loses lift as usual. Otherwise it tumbles down and bursts.
 	var style := _kill_style()
-	if style == KillFx.NONE:
+	if style == KillFx.NONE or style == KillFx.DECAPITATE: # all head: nothing to sever
 		_start_fall()
 		return
 	_prep_kill_fx()

@@ -34,7 +34,7 @@ the CC0 packs used do not cover; music also needs import-budget room (#56).
 Make each gun *feel* different (sound, recoil curve, screen impact), not just stat-different.
 Tune `WeaponData` `.tres` + `weapon.gd` recoil/FX; needs playtest to judge.
 ✅ **Kill styles shipped (2026-10-10)**: energy guns disintegrate robots, arc guns electrocute
-them, the shotgun and magnum shred them (hurled back in a scrap spray) (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`, `tests/kill_fx_probe`). 🎮 Needs a look in
+them, the shotgun and magnum shred them (hurled back in a scrap spray), pistol/rifle headshot kills decapitate (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`, `tests/kill_fx_probe`). 🎮 Needs a look in
 play: whether 1 s of dissolve reads at combat range. Drones, raptor, mender and skitter
 honour it too (#194); the seeker (its blast is a mechanic) and the bosses keep their deaths.
 
