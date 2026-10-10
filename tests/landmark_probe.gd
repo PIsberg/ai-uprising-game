@@ -49,7 +49,7 @@ func _run() -> void:
 		_check("%s is scenery" % id, meshes.size() >= 6 and lit
 				and lm.find_children("*", "CollisionObject3D", true, false).is_empty(),
 				"%d pieces" % meshes.size())
-		var want := String(spec.get("label", ""))
+		var want := String(spec.get("sign", ""))
 		var tag := lm.get_node_or_null("NameTag") as Label3D
 		if want != "":
 			_check("%s name tag reads %s" % [id, want], tag != null and tag.text == want)

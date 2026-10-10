@@ -5,13 +5,15 @@ extends Node3D
 ## placed on the spawn-to-exit heading so it stands ahead of the player for the
 ## whole level and gives every open-sky map a silhouette of its own.
 ##
-## Def key `landmark`: {"kind": ..., "label": "GEMINI", "color": Color, "bearing": deg}
+## Def key `landmark`: {"kind": ..., "sign": "GEMINI", "color": Color, "bearing": deg}
 ##   kind  "spire"    stepped datacenter arcology, light bands, antenna crown
 ##         "twin"     two spires joined by a lit sky-bridge
 ##         "dish"     a relay array: three giant dishes on lattice masts, uplink beam
 ##         "stacks"   reactor cooling towers with glowing rims and steam
 ##         "monolith" a black slab with a burning seam, ringed by a slow halo
-##   label  holographic name over the crown ("" for none)
+##   sign   holographic name over the crown ("" for none). Not "label": every
+##          "label" in level_defs.gd is translated HUD text (check_strings_csv.py),
+##          and these are proper names.
 ##   bearing  degrees clockwise from the spawn-to-exit heading (default 0)
 ## Open-sky levels without the key get a plain spire in the theme colour.
 ##
@@ -44,7 +46,7 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 	lm.name = "Landmark"
 	lm.kind = String(spec.get("kind", "spire"))
 	lm.accent = spec.get("color", theme)
-	lm.label_text = String(spec.get("label", ""))
+	lm.label_text = String(spec.get("sign", ""))
 	lm.low = is_low
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)

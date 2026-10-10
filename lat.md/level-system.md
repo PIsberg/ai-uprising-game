@@ -32,7 +32,7 @@ Specifies non-procedural levels and user-made content exceptions.
 <!-- lat: { "require-code-mention": true } -->
 Every open-sky level gets one colossal AI megastructure past its skyline, on the spawn-to-exit heading.
 
-* `Landmark.build_for` (from `LevelBuilder._build_landmark`) reads the `landmark` def key: `kind` (`spire`, `twin`, `dish`, `stacks`, `monolith`), `label` (a holographic name), `color`, `bearing`. Without the key an open-sky level gets a plain spire; interiors get none.
+* `Landmark.build_for` (from `LevelBuilder._build_landmark`) reads the `landmark` def key: `kind` (`spire`, `twin`, `dish`, `stacks`, `monolith`), `sign` (a holographic proper name; not `label`, which check_strings_csv treats as translated HUD text), `color`, `bearing`. Without the key an open-sky level gets a plain spire; interiors get none.
 * Scenery only: no collision, every piece shadowless. Bodies take the fog, light bands set `disable_fog`. Built at 1x and scaled `SCALE` (1.5) whole. LOW skips steam, searchlights and halo spin.
 * `tests/landmark_probe`; `tests/landmark_shot` frames each one from its spawn.
 
