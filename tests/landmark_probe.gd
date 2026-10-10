@@ -4,7 +4,9 @@ extends Node3D
 ## (2) built from the real (scaled) def it stands past the floor edge, on the
 ##     spawn-to-exit heading, and is pure scenery: no collision, no shadows;
 ## (3) a labelled landmark carries its name tag;
-## (4) LOW drops the animated extras;
+## (4) LOW drops the animated extras (steam, and the drone flocks: every
+##     open-sky landmark has at least two flocks of lit drones wheeling high
+##     around it, shadowless, moving frame to frame);
 ## (5) a real level scene built through LevelBuilder carries it;
 ## (6) every interior level gets the AI core, sized into the clear air between
 ##     the highest walkable top near the centre (+ headroom) and the ceiling,
@@ -57,6 +59,14 @@ func _run() -> void:
 		_check("%s is scenery" % id, meshes.size() >= 6 and lit
 				and lm.find_children("*", "CollisionObject3D", true, false).is_empty(),
 				"%d pieces" % meshes.size())
+		var flocks := lm.find_children("Flock*", "MultiMeshInstance3D", true, false)
+		var flock_ok := flocks.size() >= 2
+		for f in flocks:
+			var mm := (f as MultiMeshInstance3D).multimesh
+			flock_ok = flock_ok and mm.instance_count >= Landmark.FLOCK_MIN
+			for i in mm.instance_count:
+				flock_ok = flock_ok and (lm.global_transform * lm.flock_point(flocks.find(f), i)).y > 60.0
+		_check("%s has its drone flocks, high in the sky" % id, flock_ok, "%d flocks" % flocks.size())
 		var want := String(spec.get("sign", ""))
 		var tag := lm.get_node_or_null("NameTag") as Label3D
 		if want != "":
@@ -138,6 +148,12 @@ func _run() -> void:
 	var hi_fx := hi.find_children("*", "CPUParticles3D", true, false).size()
 	var lo_fx := lo.find_children("*", "CPUParticles3D", true, false).size()
 	_check("LOW drops the steam", hi_fx > 0 and lo_fx == 0, "%d -> %d" % [hi_fx, lo_fx])
+	_check("LOW drops the flocks", hi.find_children("Flock*", "MultiMeshInstance3D", true, false).size() >= 2
+			and lo.find_children("Flock*", "MultiMeshInstance3D", true, false).is_empty())
+	var p0 := hi.flock_point(0, 3)
+	for i in 20:
+		await get_tree().process_frame
+	_check("the flocks wheel", hi.flock_point(0, 3).distance_to(p0) > 0.5, "%.2f m" % hi.flock_point(0, 3).distance_to(p0))
 	hi.free()
 	lo.free()
 

@@ -24,9 +24,12 @@ extends Node3D
 ## wall ahead of the spawn, the AI's eye watching you across the hall over a
 ## typed <think> ticker. `"kind": "none"` opts a level out.
 ##
+## Around every open-sky landmark, FLOCKS murmurations of small lit drones
+## wheel high in the sky (one MultiMesh draw each), so the skyline moves.
+##
 ## Visual only: no collision, shadows off. Bodies take the level's fog (they
 ## read as distant), the light bands ignore it so they cut through the haze.
-## LOW skips the animated extras (searchlight, steam, halo spin).
+## LOW skips the animated extras (searchlight, steam, halo spin, drone flocks).
 ## Covered by tests/landmark_probe; framed by tests/landmark_shot.
 
 const DIST_PAST_FLOOR := 115.0 ## metres beyond the floor's half-extent
@@ -112,6 +115,75 @@ func _build() -> void:
 		_:
 			_spire(Vector3.ZERO, 1.0)
 			_name_tag(Vector3(0, 175.0, 0))
+	if not low:
+		_build_flocks()
+
+# ---------- drone flocks ----------
+
+const FLOCKS := 3
+const FLOCK_MIN := 18 ## drones in the smallest flock
+## Per flock (landmark-local units, scaled by SCALE): orbit radius, height,
+## drone count, angular speed (rad/s; sign is the direction).
+const FLOCK_SPECS := [[70.0, 72.0, 24, 0.09], [95.0, 98.0, 30, -0.065], [122.0, 124.0, 36, 0.05]]
+
+var _flocks: Array = [] ## [{"mm": MultiMesh, "r", "h", "n", "w", "phase"}]
+var _flock_t := 0.0
+
+func _build_flocks() -> void:
+	var dm := BoxMesh.new()
+	dm.size = Vector3(1.1, 0.22, 0.7)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.disable_fog = true # lights against the sky, like the bands
+	dm.material = mat
+	for k in FLOCKS:
+		var spec: Array = FLOCK_SPECS[k]
+		var n: int = spec[2]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = dm
+		mm.instance_count = n
+		for i in n:
+			# HDR: bright enough to bloom; a few run warmer, like nav lights.
+			var c := accent.lerp(Color(1.0, 0.9, 0.7), 0.5 if i % 7 == 0 else 0.1) * 2.0
+			mm.set_instance_color(i, Color(c.r, c.g, c.b, 1.0))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Flock%d" % k
+		mmi.multimesh = mm
+		_quiet(mmi)
+		add_child(mmi)
+		_flocks.append({"mm": mm, "r": spec[0], "h": spec[1], "n": n, "w": spec[3],
+				"phase": TAU * k / float(FLOCKS)})
+	_tick_flocks(0.0)
+	set_process(true)
+
+## A flock's centre circles the landmark; its drones swirl around the centre
+## in a cloud that slowly swells and tightens, like a murmuration.
+func _tick_flocks(delta: float) -> void:
+	_flock_t += delta
+	for k in _flocks.size():
+		var f: Dictionary = _flocks[k]
+		var mm: MultiMesh = f["mm"]
+		var a: float = _flock_t * f["w"] + f["phase"]
+		var basis := Basis(Vector3.UP, -a + (PI if f["w"] > 0.0 else 0.0)) # nose along the orbit
+		for i in int(f["n"]):
+			mm.set_instance_transform(i, Transform3D(basis, flock_point(k, i)))
+
+## Where drone `i` of flock `k` is now, landmark-local. (A MultiMesh keeps its
+## transforms in the RenderingServer, which headless runs do not store, so
+## tests/landmark_probe reads the motion here.)
+func flock_point(k: int, i: int) -> Vector3:
+	var f: Dictionary = _flocks[k]
+	var t := _flock_t
+	var ph: float = f["phase"]
+	var a: float = t * f["w"] + ph
+	var centre := Vector3(cos(a) * f["r"], f["h"] + sin(t * 0.3 + ph) * 8.0, sin(a) * f["r"])
+	var spread := 11.0 + 6.0 * sin(t * 0.21 + ph)
+	var fi := float(i)
+	return centre + Vector3(sin(t * 0.9 + fi * 1.7) * spread, sin(t * 1.3 + fi * 2.3) * spread * 0.4,
+			cos(t * 0.7 + fi * 1.1) * spread)
 
 # ---------- interior core ----------
 
@@ -331,6 +403,8 @@ func _ready() -> void:
 	set_process(kind == "core" or kind == "screen")
 
 func _process(delta: float) -> void:
+	if not _flocks.is_empty():
+		_tick_flocks(delta)
 	if kind == "screen":
 		_screen_tick(delta)
 		return
