@@ -684,6 +684,9 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 	# on top of the tracer — and arc guns get a jagged lightning overlay.
 	if data.energy_beam_fx or data.arc_fx:
 		_energy_beam_flash(beam_from, end_point)
+	# Railguns ionize the air they cross: a coil of light hangs on the shot's path.
+	if data.rail_trail and get_tree().current_scene:
+		RailTrail.spawn(get_tree().current_scene, beam_from, end_point, shot_color())
 
 ## A bright expanding flash + light when a shot connects with an enemy, plus a
 ## burst of metal embers/debris that scales with how hard the hit landed.
