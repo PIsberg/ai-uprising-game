@@ -124,6 +124,37 @@ func _ready() -> void:
 	if not _apply_real_model():
 		_bevel_viewmodel()
 	_build_heat_glow()
+	GameState.rampage_changed.connect(_on_rampage_changed)
+	_on_rampage_changed(GameState.rampage_tier, "")
+
+# ---------- RAMPAGE charge ----------
+## The gun charges up with the kill streak: at each RAMPAGE tier its tracers and
+## muzzle flash take the tier's colour (GameState.RAMPAGE_COLORS, the banner's),
+## the flash grows RAMPAGE_FLASH_GROW per tier, and a pulsing rim in that colour
+## lights the viewmodel. A broken streak puts it all back.
+## Covered by tests/weapon_rampage_probe.
+const RAMPAGE_RIM: ShaderMaterial = preload("res://assets/materials/rampage_rim.tres")
+const RAMPAGE_FLASH_GROW := 0.25
+
+## The colour this gun's shots are drawn in right now.
+func shot_color() -> Color:
+	var t: int = GameState.rampage_tier
+	if t <= 0 or data == null:
+		return data.tracer_color if data else Color.WHITE
+	return GameState.RAMPAGE_COLORS[clampi(t - 1, 0, GameState.RAMPAGE_COLORS.size() - 1)]
+
+func _on_rampage_changed(tier: int, _name: String) -> void:
+	if tier > 0:
+		RAMPAGE_RIM.set_shader_parameter("color", shot_color())
+	for mi in rim_meshes():
+		(mi as MeshInstance3D).material_overlay = RAMPAGE_RIM if tier > 0 else null
+
+## The viewmodel's own meshes: everything but the muzzle's (flashes, heat glow).
+func rim_meshes() -> Array:
+	if viewmodel == null:
+		return []
+	return viewmodel.find_children("*", "MeshInstance3D", true, false).filter(
+			func(m: Node) -> bool: return muzzle == null or not (muzzle == m or muzzle.is_ancestor_of(m)))
 
 ## Imported gun models (Kenney "Blaster Kit", CC0) keyed by weapon scene name.
 ## `len` is the wanted barrel-to-stock length in metres (the GLB is uniformly
@@ -770,7 +801,7 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 		t.bolt_length = 2.2
 		t.bolt_width = 1.5
 	if t.has_method("setup"):
-		t.setup(from, to, data.tracer_color)
+		t.setup(from, to, shot_color())
 
 ## Persistent bullet scars on world geometry — delegates to the shared
 ## BulletMark utility (scripts/fx/bullet_mark.gd) so hitscan AND projectile
@@ -910,8 +941,8 @@ func _play_muzzle() -> void:
 	var m := data.muzzle_flash_scene.instantiate()
 	# Per-weapon flash colour + size so each gun blasts distinctly.
 	if "tint_color" in m:
-		m.tint_color = data.tracer_color
-		m.size_mult = data.muzzle_scale
+		m.tint_color = shot_color()
+		m.size_mult = data.muzzle_scale * (1.0 + RAMPAGE_FLASH_GROW * maxi(0, GameState.rampage_tier))
 	muzzle.add_child(m)
 
 ## A bright expanding energy bloom at the muzzle for plasma/energy weapons.

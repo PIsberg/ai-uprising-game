@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://shaders/rampage_rim.gdshader" id="1_rim"]
+
+[resource]
+render_priority = 1
+shader = ExtResource("1_rim")
+shader_parameter/color = Color(1, 0.55, 0.2, 1)
+shader_parameter/strength = 1.0

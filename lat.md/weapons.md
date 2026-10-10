@@ -34,6 +34,12 @@ The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_
 * The style rides on `Damageable.kill_fx` only for the duration of the weapon's `apply_damage` call (`KillFx.tag` / `untag`). `died` fires inside that call, so `_on_died` sees the killing hit's style and nothing else: grenades and hazards never tag.
 * Bosses keep their deaths. Overrides of `_on_died` opt in through `EnemyBase._kill_style()` / `_prep_kill_fx()`: drones and raptors burn away mid-air or spasm before they fall, menders and skitters split like the base. A SHRED kill knocks drones and raptors along the shot as they fall (`EnemyBase._shred_kick`). The seeker keeps its shot-down blast, a mechanic. `tests/kill_fx_probe`.
 
+## Rampage Charge
+The gun charges up with the RAMPAGE kill streak (`Weapon._on_rampage_changed`, on `GameState.rampage_changed`).
+
+* At tier n, `Weapon.shot_color()` returns `GameState.RAMPAGE_COLORS[n - 1]` (the HUD banner's palette, one source): tracers and the muzzle flash take it, and the flash grows `RAMPAGE_FLASH_GROW` per tier.
+* Every viewmodel mesh outside the muzzle subtree (`rim_meshes()`) wears `assets/materials/rampage_rim.tres` (`shaders/rampage_rim.gdshader`, a pulsing fresnel rim) as `material_overlay`; tier 0 takes it off. `tests/weapon_rampage_probe`.
+
 ## Grenades
 Defines the physics layers and player-bound scripts for throwing grenades.
 
