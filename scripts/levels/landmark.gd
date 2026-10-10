@@ -31,7 +31,8 @@ extends Node3D
 ##
 ## Visual only: no collision, shadows off. Bodies take the level's fog (they
 ## read as distant), the light bands ignore it so they cut through the haze.
-## LOW skips the animated extras (searchlight, steam, halo spin, drone flocks).
+## LOW skips the animated extras (searchlight, steam, halo spin, drone flocks,
+## and the data aurora that night skies, env "stars", get over the skyline).
 ## Covered by tests/landmark_probe; framed by tests/landmark_shot.
 
 const DIST_PAST_FLOOR := 115.0 ## metres beyond the floor's half-extent
@@ -63,6 +64,7 @@ static func build_for(parent: Node3D, def: Dictionary, theme: Color, is_low: boo
 	lm.accent = spec.get("color", theme)
 	lm.label_text = String(spec.get("sign", ""))
 	lm.low = is_low
+	lm.night = def.get("env", {}).has("stars")
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
 	var exit: Vector3 = def.get("exit", Vector3(0, 0, -1))
@@ -119,6 +121,54 @@ func _build() -> void:
 			_name_tag(Vector3(0, 175.0, 0))
 	if not low:
 		_build_flocks()
+		if night:
+			_build_aurora()
+
+# ---------- data aurora (night skies) ----------
+
+var night := false
+
+## A curtain of light behind the landmark, high over the skyline: a ribbon on
+## an arc AURORA_R out (local units, so x SCALE in the world), AURORA_FOOT to
+## AURORA_CROWN up, rippling and raining columns of data
+## (shaders/data_aurora.gdshader). One draw.
+const AURORA_R := 260.0
+const AURORA_FOOT := 120.0
+const AURORA_CROWN := 230.0
+const AURORA_SPAN := 1.1 ## radians either side of straight on
+
+func _build_aurora() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var segs := 64
+	for i in segs + 1:
+		var u := float(i) / float(segs)
+		var a := lerpf(-AURORA_SPAN, AURORA_SPAN, u)
+		var p := Vector3(sin(a) * AURORA_R, 0.0, cos(a) * AURORA_R)
+		# The crown leans out and wanders in height, so it reads as a curtain.
+		var crown := AURORA_CROWN + sin(u * 9.0) * 18.0
+		st.set_uv(Vector2(u, 0.0))
+		st.add_vertex(p + Vector3.UP * AURORA_FOOT)
+		st.set_uv(Vector2(u, 1.0))
+		st.add_vertex(p * 1.08 + Vector3.UP * crown)
+	for i in segs:
+		var k := i * 2
+		st.add_index(k)
+		st.add_index(k + 1)
+		st.add_index(k + 2)
+		st.add_index(k + 1)
+		st.add_index(k + 3)
+		st.add_index(k + 2)
+	var mi := MeshInstance3D.new()
+	mi.name = "Aurora"
+	mi.mesh = st.commit()
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/data_aurora.gdshader")
+	mat.set_shader_parameter("color", accent.lerp(Color(0.3, 1.0, 0.7), 0.5))
+	mi.material_override = mat
+	mi.custom_aabb = mi.mesh.get_aabb().grow(25.0) # the shader folds it this far
+	_quiet(mi)
+	add_child(mi)
 
 # ---------- drone flocks ----------
 
