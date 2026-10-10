@@ -86,6 +86,14 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
+## CAPTCHA Gates
+<!-- lat: { "require-code-mention": true } -->
+A `gates` entry with `"captcha": true` gets a CAPTCHA checkpoint in its gap (`CaptchaGate.build` from `_build_gates`): an arch and a "[ ] I'm not a robot" panel.
+
+* The sensor (an Area3D, mask player + enemies, `SENSE_H` tall) holds each ground robot the first time it enters: `CaptchaGate.challenge` sets `_emp_t` to `HOLD_TIME` (the EMP path, inert, no EMP sparks), floats a `captcha` reasoning trace and a "SELECT ALL SQUARES WITH ..." prompt whose grid re-rolls every `GRID_STEP`, and marks it `captcha_passed` so no gate holds it again.
+* Robots whose origin is more than `FLY_H` over the gate floor are flying and pass; robots big enough to resist a hijack (`HIJACK_BOSS_HP`) wave through as a VERIFIED ACCOUNT. The player ticks the box for `BOX_TIME`.
+* On GEMINI, GROK and MISTRAL (one gate each). `tests/captcha_probe` builds each level and checks the gate sits in a clear gap between gate walls.
+
 ## Prompt Injection Terminals
 <!-- lat: { "require-code-mention": true } -->
 The `injectors` def key places one-use consoles that jailbreak the robots around them.

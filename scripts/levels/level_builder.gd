@@ -1907,6 +1907,10 @@ func _build_gates(def: Dictionary) -> void:
 		# — bright unshaded strips, the same trick as the sky-bridge deck edges.
 		if g.get("beacon", true):
 			_gate_beacon(def, axis, at, gap_pos, gap, h)
+		# A CAPTCHA checkpoint in the gap: robots stop to prove they are not robots.
+		if g.get("captcha", false):
+			var c := Vector3(gap_pos, 0, at) if axis == "z" else Vector3(at, 0, gap_pos)
+			CaptchaGate.build(self, c, Vector3.RIGHT if axis == "z" else Vector3.BACK, gap, h)
 
 func _gate_beacon(def: Dictionary, axis: String, at: float, gap_pos: float, gap: float, h: float) -> void:
 	var col := _theme_color(def).lerp(Color(1.0, 0.82, 0.4), 0.45)

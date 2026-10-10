@@ -3477,7 +3477,7 @@ static func _mistral() -> Dictionary:
 		# sky-bridge clears both walls). Task level, so gating fits — this is
 		# not a swarm arena (see the hivemind note for the counter-example).
 		"gates": [
-			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2},
+			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2, "captcha": true},
 			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 14, "height": 4.2},
 		],
 		# Burst coolant lines flood the lab floor — serpentine to the cryo-core —
@@ -4108,7 +4108,7 @@ static func _gemini() -> Dictionary:
 		# arena reads as a facility you traverse rather than one flat floor.
 		"gates": [
 			{"axis": "z", "at": -13, "gap": 6.5, "gap_pos": 13, "height": 4.8, "roofed": true},
-			{"axis": "z", "at": 12, "gap": 6.5, "gap_pos": -13, "height": 4.8},
+			{"axis": "z", "at": 12, "gap": 6.5, "gap_pos": -13, "height": 4.8, "captcha": true},
 			# Perimeter-ring bulkheads: route the annex ring — in through the
 			# north gap (under the gallery sky-bridge, which sails over this
 			# wall through the same opening), out across the east gap. The east
@@ -4587,7 +4587,7 @@ static func _grok() -> Dictionary:
 		# deliberately left empty. Task level, so gating fits (see the hivemind
 		# note for the counter-example).
 		"gates": [
-			{"axis": "z", "at": -29, "gap": 8, "gap_pos": 10, "height": 4.4},
+			{"axis": "z", "at": -29, "gap": 8, "gap_pos": 10, "height": 4.4, "captcha": true},
 			{"axis": "x", "at": 29, "gap": 8, "gap_pos": -10, "height": 4.4},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to

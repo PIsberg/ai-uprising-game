@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-345 probes total: **100** wired into the headless suite (`suite`), **84**
+347 probes total: **101** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **161** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **162** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -128,6 +128,8 @@ or GPU-timing probes; `--headless` renders these black).
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |
 | body_top_probe | Every non-boss enemy scene: the weak-point core and the damage flare sit inside the body (its collision top or an AABB-free bone/rigid-mesh measure, 0.8 m floor) and the `<think>` trace floats within 0.8 m over it; catches skinned GLBs whose bind-pose AABB is 50-300x the body, and flares placed before a `fit_height` fit | suite |
 | deepfake_probe | DEEPFAKE: wired into the level builder, codex and GROK roster; projects two copies on its own in a fight, ~SPREAD to either side; copies are out of the `enemy` group and shadowless; copies fire the same burst and hurt nobody while its own rounds do; a real rifle hit pops a copy without score or an accuracy hit; a wall blocks that side's copy; its death collapses the copies | suite |
+| captcha_probe | CAPTCHA gates: GEMINI, GROK and MISTRAL each flag one gate and the real level builds the CaptchaGate in a clear gap between gate walls; a ground robot stepping in is held HOLD_TIME under a challenge, counted, then moves again verified; a verified robot passes untouched; a hijack-proof one waves through; a flyer above FLY_H is not challenged; the player ticks the box, which clears after BOX_TIME | suite |
+| captcha_shot | An android caught mid-challenge in a CAPTCHA gate under the panel, then the panel ticked for the player; `-- --out=<dir>` | windowed |
 | rail_trail_probe | Rail trail: gauss and Longshot carry WeaponData.rail_trail, the rifle not; a gauss hitscan leaves one RailTrail from the muzzle to the wall it hit, its mesh as long as the shot; a rifle shot leaves none; a 400 m shot keeps MAX_LEN by the muzzle; MAX_LIVE at once, each freed after LIFE | suite |
 | rail_trail_shot | Three gauss trails side-on 0.5 s apart (fresh, half-life, fading), then the view down the barrel of a fresh one; `-- --out=<dir>` | windowed |
 | weapon_rampage_probe | RAMPAGE charge: at tier 0 the rifle shoots its own colour with no rim; at tier 2 shots and the muzzle flash take GameState.RAMPAGE_COLORS[1], the flash grows by RAMPAGE_FLASH_GROW per tier and every viewmodel mesh wears the rim; a broken streak puts it all back | suite |
