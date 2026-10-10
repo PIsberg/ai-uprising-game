@@ -130,6 +130,7 @@ res://tests/diffusion_probe.tscn
 res://tests/rollback_probe.tscn
 res://tests/quantizer_probe.tscn
 res://tests/head_track_probe.tscn
+res://tests/lens_flare_probe.tscn
 res://tests/overlord_holo_probe.tscn
 res://tests/horizon_walker_probe.tscn
 res://tests/weapon_rampage_probe.tscn
