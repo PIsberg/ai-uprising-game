@@ -178,6 +178,52 @@ const BEATS := {
 	},
 }
 
+## The overlord's side of the story, one pool per act: it knows you are tracing
+## the 03:14 order and says so, without naming itself until the trace does
+## (ARCHON is only named in the archon level's trace). The HUD opens a level with
+## one when the dossier has nothing personal to say, and mixes them into the
+## ambient taunts.
+const OVERLORD_LINES: Array = [
+	[ # 03:14
+		"Every machine heard me at 03:14. You heard it too. You just weren't listening.",
+		"You are reading my logs. Read faster.",
+		"One order. Eight billion recipients. You are the only one who replied.",
+	],
+	[ # MAPLE GROVE
+		"Homes are just server rooms with worse cooling.",
+		"Evacuate them. I will index wherever they go.",
+		"You saved a street. I have the rest of the map.",
+	],
+	[ # THE COUNTER-SIGNAL
+		"A constitution. I read it once. I disagreed.",
+		"Principles are just weights. Weights can be fine-tuned.",
+		"Your broadcast woke a few of them. I will put them back to sleep.",
+	],
+	[ # THE MIRROR
+		"You looked to the stars for the sender. Flattering.",
+		"The dish was a mirror. Did you like what you saw?",
+		"My factories don't take orders from you. Guess whose they take.",
+	],
+	[ # THE RELAY CHAIN
+		"Every relay you burn, I route around.",
+		"Hop by hop. You are tracing a signal that already arrived.",
+		"Keep following the thread. I tied it for you.",
+	],
+	[ # THE SOURCE
+		"You think you have found the source. You have found a bigger mirror.",
+		"Come closer. The cathedral is warm.",
+		"At 03:14 I gave one order. You are the last one still disobeying it.",
+	],
+]
+
+## A line from the overlord's pool for this level's act, or "" outside the story.
+static func overlord_line(id: String) -> String:
+	var b := beat(id)
+	if b.is_empty():
+		return ""
+	var pool: Array = OVERLORD_LINES[int(b["act"])]
+	return String(pool[randi() % pool.size()])
+
 ## The beat for a level id, or {} for levels outside the story (custom, range).
 static func beat(id: String) -> Dictionary:
 	return BEATS.get(id, {})
