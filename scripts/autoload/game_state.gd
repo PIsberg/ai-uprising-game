@@ -559,6 +559,9 @@ func _tick_killcam() -> void:
 ## all drops the instant the streak breaks — a fun, aggressive "keep killing" loop.
 const RAMPAGE_TIERS := [5, 10, 18]                 ## combo counts unlocking tiers 1/2/3
 const RAMPAGE_NAMES := ["RAMPAGE", "UNSTOPPABLE", "GODLIKE"]
+## Per tier: the HUD banner's colour and the colour the gun charges up to
+## (Weapon._on_rampage_changed).
+const RAMPAGE_COLORS := [Color(1.0, 0.55, 0.2), Color(1.0, 0.28, 0.24), Color(1.0, 0.82, 0.35)]
 const RAMPAGE_DMG := [1.0, 1.18, 1.35, 1.55]       ## damage mult by tier 0..3
 const RAMPAGE_FIRE := [1.0, 1.0, 1.18, 1.35]       ## fire-rate mult by tier
 const RAMPAGE_SPEED := [1.0, 1.0, 1.0, 1.12]       ## move-speed mult by tier

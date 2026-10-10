@@ -690,7 +690,6 @@ func _build_fps_label() -> void:
 var _rampage_label: Label = null
 var _rampage_alpha: float = 0.0
 var _rampage_pop: float = 0.0
-const RAMPAGE_COLORS := [Color(1.0, 0.55, 0.2), Color(1.0, 0.28, 0.24), Color(1.0, 0.82, 0.35)]
 
 var _adren_label: Label = null   ## Clutch ADRENALINE SURGE banner (near-death comeback).
 var _adren_alpha: float = 0.0
@@ -735,7 +734,7 @@ func _on_rampage_changed(tier: int, name: String) -> void:
 		return
 	if tier <= 0 or name == "":
 		return # streak broke — banner just fades on its own
-	var col: Color = RAMPAGE_COLORS[clampi(tier - 1, 0, RAMPAGE_COLORS.size() - 1)]
+	var col: Color = GameState.RAMPAGE_COLORS[clampi(tier - 1, 0, GameState.RAMPAGE_COLORS.size() - 1)]
 	_rampage_label.text = "%s!" % name
 	_rampage_label.add_theme_color_override("font_color", col)
 	_rampage_alpha = 1.0
