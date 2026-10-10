@@ -35,6 +35,9 @@ const THREAT := {
 	# The android's rifle (16.3 at 9 damage) + 260 HP / 40, plus a hand guess of
 	# +3 for the overfit quarter-damage on a player who never switches guns.
 	"overfitter": 25.8,
+	# Hand-derived: no damage of its own; 110 HP / 40 plus a guess of +6 for
+	# waking the room and tightening every robot's aim while it watches.
+	"attention": 8.8,
 }
 
 func _ready() -> void:

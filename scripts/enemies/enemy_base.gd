@@ -1247,8 +1247,9 @@ func aim_spread_deg() -> float:
 
 ## Rotate an aim direction by a random angle within the difficulty spread cone,
 ## plus any per-enemy base scatter (degrees). Ranged enemies call this on fire.
+## An ATTENTION HEAD's gaze on the player tightens the whole cone (Attention).
 func scatter_aim(dir: Vector3, extra_deg: float = 0.0) -> Vector3:
-	var spread := aim_spread_deg() + extra_deg
+	var spread := (aim_spread_deg() + extra_deg) * Attention.spread_mult()
 	if spread <= 0.0:
 		return dir
 	var axis := Vector3(randf() - 0.5, randf() - 0.5, randf() - 0.5)
