@@ -4314,42 +4314,15 @@ func _build_skyline(def: Dictionary) -> void:
 	var base := maxf(fs.x, fs.y) * 0.5
 	var apron := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(base * 2.0 + 240.0, base * 2.0 + 240.0)
+	pm.size = Vector2(base * 2.9 + 340.0, base * 2.9 + 340.0) # under the far ring, corners too (Skyline.FAR_GAP)
 	apron.mesh = pm
 	apron.material_override = _color_material(Color(0.05, 0.05, 0.06), 0.95)
 	apron.position = Vector3(0, -0.08, 0)
 	add_child(apron)
-	var body_mat := _color_material(Color(0.07, 0.075, 0.09), 0.9)
-	var win_col := _theme_color(def)
-	var win_mat := StandardMaterial3D.new()
-	win_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	win_mat.albedo_color = win_col
-	win_mat.emission_enabled = true
-	win_mat.emission = win_col
-	win_mat.emission_energy_multiplier = 1.8
-	# The whole backdrop ring (22 towers + their 44 window slits) is pure scenery
-	# with shadows off, so batch each material into one MultiMesh draw instead of 66
-	# MeshInstances (visually identical — same boxes, positions, rotations).
-	var bodies: Array = []
-	var windows: Array = []
-	var steps := 22
-	for s in steps:
-		var ang := TAU * s / steps + randf_range(-0.06, 0.06)
-		var dist := base + randf_range(26.0, 60.0)
-		var w := randf_range(6.0, 14.0)
-		var h := randf_range(8.0, 30.0)
-		var yaw := randf_range(0.0, PI)
-		var pos := Vector3(cos(ang) * dist, h * 0.5 - 0.1, sin(ang) * dist)
-		bodies.append({"pos": pos, "size": Vector3(w, h, w), "yaw": yaw})
-		# Lit window slits: thin emissive columns punched through the tower so a
-		# glowing seam shows on both faces. Local offset is rotated into world space.
-		for _j in 2:
-			var lx := randf_range(-0.4, 0.4) * w
-			var ly := randf_range(-0.15, 0.1) * h
-			var wp := pos + Vector3(cos(yaw) * lx, ly, sin(yaw) * lx)
-			windows.append({"pos": wp, "size": Vector3(0.4, h * randf_range(0.35, 0.7), w + 0.14), "yaw": yaw})
-	_box_multimesh(bodies, body_mat, false)
-	_box_multimesh(windows, win_mat, false)
+	# The megacity ring itself: towers, beacons and billboards (Skyline).
+	var gs := get_node_or_null("/root/GraphicsSettings")
+	var low: bool = gs != null and gs.has_method("is_low") and gs.is_low()
+	Skyline.build_for(self, def, _theme_color(def), low)
 
 ## The level's hero landmark past the skyline (Landmark, def key `landmark`).
 func _build_landmark(def: Dictionary) -> void:

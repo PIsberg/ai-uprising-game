@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-334 probes total: **94** wired into the headless suite (`suite`), **84**
+335 probes total: **95** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -233,7 +233,8 @@ or GPU-timing probes; `--headless` renders these black).
 | kill_fx_shot | Six androids killed at once by a DISINTEGRATE, an ELECTROCUTE, an untagged, a SHRED, a DECAPITATE and a BLAST hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
 | landmark_probe | Hero landmarks: every open-sky level authors one of a known kind; built from the real scaled def it stands past the floor edge on the spawn-to-exit heading, with no collision and no shadows (caught the stacks' steam casting shadows); its name tag reads the authored label; it carries at least two drone flocks, every drone over 60 m up, which LOW drops and which move frame to frame; every night level (env `stars`) has a data aurora over 70 m up past the floor edge, no day level has one, and LOW drops it; an interior level gets none; LOW drops the steam; level_gemini built through LevelBuilder carries its twin spires; every interior gets the AI core (only when the room is too low or gated does it get the wall screen instead), clear of walkable tops + headroom, the ceiling and route gates, constants mirroring LevelBuilder's, and its eye turns to the camera; the wall screen (claude, guardrails, range) sits just off a perimeter wall ahead of the spawn, above head height and under the ceiling, clear of every gate and authored wall meeting that wall, no collision, its pupil follows the camera, and level_range's billboard moves off its wall; every interior AI is fed by at least four data conduits, each from a perimeter wall to the AI, between 4 m and the ceiling, through no authored wall, platform or tower | suite |
-| landmark_shot | Each open-sky level from its spawn at eye height, facing its landmark; each interior from 14 m off its AI core or wall screen; `-- --out=<dir> --levels=a,b --cam_y=<m>` | windowed |
+| skyline_probe | Megacity skyline, every open-sky level's plan: the same city every load; no tower, tier or spire within 10 m of the floor rectangle; at least 6 near towers top 2.5x the wall and 20 far towers top 40 m; no far tower within LANDMARK_CLEAR of the landmark bearing, nothing near it over FRAME_H; every beacon on a top; SIGN_COUNT signs past the floor facing the arena. Built: interiors get none; one tower draw with every planned box, one beacon draw, one panel draw, a Label3D per sign, no shadows | suite |
+| landmark_shot | Each open-sky level from its spawn at eye height, facing its landmark and the megacity skyline round it; each interior from 14 m off its AI core or wall screen; `-- --out=<dir> --levels=a,b --cam_y=<m>` | windowed |
 | lava_probe | Lava carves the navmesh and leaves a longer connected spawn→exit path; top-down shot | windowed |
 | layout_check | Static def check: no prop, pickup, weapon or lore placement sits inside a wall/building AABB. Enemy-spawn and task overlaps are reported as advisory, since the builder relocates those at load | suite |
 | level01_probe | Rebuilt level 1: overhead layout shot + player-eye shot toward the nexus tower | windowed |
