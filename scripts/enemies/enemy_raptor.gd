@@ -310,6 +310,10 @@ func _on_died(_source: Node) -> void:
 		_start_fall()
 		return
 	_prep_kill_fx()
+	if style == KillFx.SHRED: # knocked out of the air along the shot
+		_start_fall()
+		_shred_kick(_source)
+		return
 	_dying = false # hold position: no fall while the style plays
 	set_physics_process(false)
 	if style == KillFx.DISINTEGRATE:

@@ -9,6 +9,11 @@ extends RefCounted
 ##     rising embers, leaving an ash scorch. No wreck, no debris.
 ##   ELECTROCUTE (tesla, arc coil, tempest) - the robot convulses under crawling
 ##     arcs and a blue skin flicker for SHOCK_TIME, then blows like a normal kill.
+##   SHRED (breacher shotgun, .50 magnum) - the slug lifts the robot off its feet
+##     and hurls it SHRED_FLING metres away from the shooter in a tumbling arc,
+##     hot scrap spraying out of its back; the classic blast goes off where it
+##     lands. A wall behind it cuts the flight short. Flyers get the spray and a
+##     kick along the shot instead (EnemyBase._shred_kick).
 ##
 ## How the style travels: the weapon tags the victim's Damageable (`kill_fx`)
 ## for the duration of its apply_damage call (tag/untag below). `died` fires
@@ -17,13 +22,17 @@ extends RefCounted
 ## tag, so they keep the classic death even on a robot an energy gun softened.
 ## Bosses (score >= 1000) keep their own deaths. Covered by tests/kill_fx_probe.
 
-enum { NONE, DISINTEGRATE, ELECTROCUTE }
+enum { NONE, DISINTEGRATE, ELECTROCUTE, SHRED }
 
 const DISSOLVE_SHADER := preload("res://shaders/dissolve.gdshader")
 const DISSOLVE_TIME := 1.0
 const SHOCK_TIME := 0.75
 const DISSOLVE_EDGE := Color(0.45, 0.9, 1.0)
 const SHOCK_COLOR := Color(0.25, 0.55, 1.0)
+const SHRED_TIME := 0.42
+const SHRED_FLING := 3.2
+const SHRED_LIFT := 0.8 ## apex of the flight arc above the start, metres
+const SHRED_KICK := 9.0 ## m/s a shredded flyer is knocked along the shot
 
 static func tag(d: Object, style: int) -> void:
 	if style != NONE and is_instance_valid(d) and d is Damageable:
@@ -288,3 +297,120 @@ static func _arc(parent: Node, a: Vector3, b: Vector3, jitter: float) -> void:
 	var tw := root.create_tween()
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.09)
 	tw.tween_callback(root.queue_free)
+
+
+# ---------- SHRED ----------
+
+## Hurls `enemy` along `dir` (the shot's line; flattened) in a short tumbling
+## arc, then calls `then` (the classic blast + topple) where it lands. The
+## robot's collision is already off, so a ray against the world (layer 1) keeps
+## it from flying through a wall.
+static func shred(enemy: Node3D, dir: Vector3, then: Callable) -> void:
+	dir = _flat(dir, enemy)
+	var chest := enemy.global_position + Vector3.UP * 1.0
+	var dist := SHRED_FLING
+	if enemy.is_inside_tree():
+		var q := PhysicsRayQueryParameters3D.create(chest, chest + dir * (SHRED_FLING + 0.7), 1)
+		var hit := enemy.get_world_3d().direct_space_state.intersect_ray(q)
+		if hit:
+			dist = maxf(0.0, chest.distance_to(hit.position) - 0.7)
+	var parent := enemy.get_parent()
+	if parent:
+		spray(parent, chest, dir)
+	AudioBus.play_synth_at("impact_metal", chest, 0.0, 0.55)
+
+	var local_dir := dir
+	if parent is Node3D:
+		local_dir = ((parent as Node3D).global_basis.inverse() * dir).normalized()
+	var start := enemy.position
+	var end := start + local_dir * dist
+	var base_rot := enemy.rotation
+	# Tipped over backwards (same sense as the classic topple, which picks up
+	# from here), most at the apex, settling as it comes down.
+	var tip := Vector3(local_dir.z, 0.0, -local_dir.x) * deg_to_rad(38.0)
+	var spin := randf_range(-0.6, 0.6)
+	var fly := func(t: float) -> void:
+		var e := 1.0 - (1.0 - t) * (1.0 - t) # fast off the mark, slowing
+		enemy.position = start.lerp(end, e) + Vector3.UP * (4.0 * SHRED_LIFT * t * (1.0 - t))
+		enemy.rotation = base_rot + tip * sin(t * PI * 0.8) + Vector3(0.0, spin * t, 0.0)
+	var tw := enemy.create_tween()
+	tw.tween_method(fly, 0.0, 1.0, SHRED_TIME)
+	tw.tween_callback(then)
+
+## Hot scrap and sparks out of the exit side of a shredded chassis: chunky
+## tumbling shards that fall and cool from orange to soot, plus a fast spark
+## fan. Both one-shot and self-freeing.
+static func spray(parent: Node, at: Vector3, dir: Vector3) -> void:
+	var low: bool = GraphicsSettings.is_low()
+	var shards := _burst(parent, at, dir, 10 if low else 22, 26.0, Vector2(4.0, 9.0), 0.9)
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.09, 0.05, 0.13)
+	var sm := StandardMaterial3D.new()
+	sm.vertex_color_use_as_albedo = true
+	sm.metallic = 0.6
+	sm.roughness = 0.45
+	sm.emission_enabled = true
+	sm.emission = Color(1.0, 0.45, 0.12)
+	sm.emission_energy_multiplier = 1.6
+	bm.material = sm
+	shards.mesh = bm
+	shards.gravity = Vector3(0, -16.0, 0)
+	shards.angular_velocity_min = -720.0
+	shards.angular_velocity_max = 720.0
+	shards.scale_amount_min = 0.6
+	shards.scale_amount_max = 1.5
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.75, 0.4))
+	g.add_point(0.35, Color(0.55, 0.32, 0.2))
+	g.set_color(g.get_point_count() - 1, Color(0.12, 0.11, 0.1))
+	shards.color_ramp = g
+
+	var sparks := _burst(parent, at, dir, 14 if low else 36, 34.0, Vector2(9.0, 17.0), 0.35)
+	var q := QuadMesh.new()
+	q.size = Vector2(0.03, 0.03)
+	var pm := StandardMaterial3D.new()
+	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	pm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	pm.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	pm.vertex_color_use_as_albedo = true
+	q.material = pm
+	sparks.mesh = q
+	sparks.gravity = Vector3(0, -9.0, 0)
+	sparks.particle_flag_align_y = true
+	sparks.scale_amount_min = 1.0
+	sparks.scale_amount_max = 3.0
+	var sg := Gradient.new()
+	sg.set_color(0, Color(1.0, 0.95, 0.7, 1.0))
+	sg.set_color(sg.get_point_count() - 1, Color(1.0, 0.4, 0.1, 0.0))
+	sparks.color_ramp = sg
+
+static func _burst(parent: Node, at: Vector3, dir: Vector3, amount: int, spread: float,
+		speed: Vector2, life: float) -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	p.name = "ShredScrap"
+	p.one_shot = true
+	p.explosiveness = 0.92
+	p.amount = amount
+	p.lifetime = life
+	p.direction = (dir + Vector3.UP * 0.35).normalized()
+	p.spread = spread
+	p.initial_velocity_min = speed.x
+	p.initial_velocity_max = speed.y
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(p)
+	p.global_position = at
+	p.emitting = true
+	var tw := p.create_tween()
+	tw.tween_interval(life + 0.3)
+	tw.tween_callback(p.queue_free)
+	return p
+
+## `dir` flattened and normalised; with no direction, backwards off the robot's
+## facing (EnemyBase turns its -Z toward what it fights).
+static func _flat(dir: Vector3, enemy: Node3D) -> Vector3:
+	dir.y = 0.0
+	if dir.length() < 0.01:
+		dir = enemy.global_basis.z
+		dir.y = 0.0
+	return dir.normalized()

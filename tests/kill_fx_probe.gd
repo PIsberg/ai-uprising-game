@@ -12,7 +12,12 @@ extends Node
 ## (7) the robots with their own _on_died (#194): a gauss kill dissolves a
 ##     drone, raptor, mender and skitter in place with no death blast; an arc
 ##     kill holds a drone in the air through the spasms, then it falls; a
-##     seeker keeps its shot-down blast (that blast is a mechanic).
+##     seeker keeps its shot-down blast (that blast is a mechanic);
+## (8) a shotgun or magnum kill SHREDS: the robot is hurled away from the shooter
+##     in a tumbling arc with no blast in the air, scrap sprays out of its back,
+##     and the classic blast goes off where it lands; a wall behind it stops the
+##     flight short; a drone shot down by the magnum is kicked away and falls,
+##     never electrocuted.
 ##   godot --headless --path . --audio-driver Dummy res://tests/kill_fx_probe.tscn
 
 const ANDROID := "res://scenes/enemies/android.tscn"
@@ -38,7 +43,7 @@ func _run() -> void:
 	# 1. Data.
 	var want := {"gauss": 1, "sniper": 1, "plasma": 1, "omega": 1,
 			"tesla": 2, "arccoil": 2, "tempest": 2, "pistol": 0, "rifle": 0,
-			"shotgun": 0, "magnum": 0, "devastator": 0, "swarm": 0}
+			"shotgun": 3, "magnum": 3, "devastator": 0, "swarm": 0}
 	for k in want:
 		var d: WeaponData = load("res://assets/weapons/%s_data.tres" % k)
 		_check("%s kill_fx" % k, d.kill_fx == want[k], "got %d want %d" % [d.kill_fx, want[k]])
@@ -173,8 +178,75 @@ func _run() -> void:
 	_check("seeker: keeps its blast", not is_instance_valid(sk) or _dissolving(sk) == 0)
 	_check("seeker: detonated", not is_instance_valid(sk) or sk._detonated)
 
+	# 8. SHRED: ballistic kills hurl the robot off its feet.
+	var ballistic := Node3D.new()
+	ballistic.add_to_group("player")
+	add_child(ballistic)
+	ballistic.global_position = Vector3(-120, 1.5, 30)
+	var shotgun := _gun("shotgun", ballistic)
+	var s := _robot(Vector3(-120, 0, 0))
+	await _frames(3)
+	blasts0 = _blasts
+	_wake(s)
+	s.hp.current_health = 1.0
+	var s0 := s.global_position
+	shotgun._do_hitscan(Vector3(-120, 1.2, 10), Vector3(0, 0, -1))
+	_check("shotgun killed it", not s.hp.is_alive())
+	_check("shred: tag cleared", s.hp.kill_fx == KillFx.NONE)
+	_check("shred: scrap sprays out", _scrap() > 0, "%d emitters" % _scrap())
+	await _frames(int(KillFx.SHRED_TIME * 60.0 * 0.5))
+	_check("shred: airborne mid-flight", s.global_position.y > s0.y + 0.2, "y %.2f" % s.global_position.y)
+	_check("shred: thrown away from the shooter", s.global_position.z < s0.z - 0.5, "z %.2f" % s.global_position.z)
+	_check("shred: no blast in the air", _blasts == blasts0, "%d -> %d" % [blasts0, _blasts])
+	await _frames(int(KillFx.SHRED_TIME * 60.0 * 0.5) + 6)
+	_check("shred: classic blast where it lands", _blasts == blasts0 + 1, "%d -> %d" % [blasts0, _blasts])
+	_check("shred: landed metres back", is_instance_valid(s) and s0.z - s.global_position.z > KillFx.SHRED_FLING * 0.8,
+			"%.2f m" % (s0.z - s.global_position.z if is_instance_valid(s) else -1.0))
+	_check("shred: no dissolve, no shock skin", is_instance_valid(s) and _dissolving(s) == 0 and _shocked(s) == 0)
+
+	# A wall a metre and a half behind the robot stops the flight short.
+	ballistic.global_position = Vector3(-150, 1.5, 30)
+	var wall := StaticBody3D.new()
+	var wcs := CollisionShape3D.new()
+	var wbs := BoxShape3D.new()
+	wbs.size = Vector3(6, 4, 0.5)
+	wcs.shape = wbs
+	wall.add_child(wcs)
+	add_child(wall)
+	wall.global_position = Vector3(-150, 2, -1.5)
+	var mag := _gun("magnum", ballistic)
+	var w := _robot(Vector3(-150, 0, 0))
+	await _frames(3)
+	_wake(w)
+	w.hp.current_health = 1.0
+	mag._do_hitscan(Vector3(-150, 1.2, 10), Vector3(0, 0, -1))
+	_check("magnum killed it", not w.hp.is_alive())
+	await _frames(int(KillFx.SHRED_TIME * 60.0) + 6)
+	_check("shred: stops short of a wall", is_instance_valid(w) and w.global_position.z > -1.3,
+			"z %.2f" % (w.global_position.z if is_instance_valid(w) else 99.0))
+
+	# A drone shot down by the magnum is kicked away and falls; never shocked.
+	ballistic.global_position = Vector3(-180, 3.0, 30)
+	var dm := _robot(Vector3(-180, 3.0, 0), "res://scenes/enemies/drone.tscn")
+	await _frames(3)
+	_wake(dm)
+	dm.hp.current_health = 1.0
+	mag._do_hitscan(_body_centre(dm) + Vector3(0, 0, 10), Vector3(0, 0, -1))
+	await _frames(4)
+	_check("drone: shred is not electrocute", is_instance_valid(dm) and _shocked(dm) == 0)
+	_check("drone: kicked away and falling", is_instance_valid(dm) and dm._dying and dm.velocity.z < -3.0,
+			"vz %.2f" % (dm.velocity.z if is_instance_valid(dm) else 0.0))
+
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
+
+## Scrap-spray emitters a SHRED kill left in the scene.
+func _scrap() -> int:
+	var n := 0
+	for c in get_children():
+		if c.name.begins_with("ShredScrap"):
+			n += 1
+	return n
 
 ## Where a shot lands on `e`: its first collision shape's centre.
 func _body_centre(e: Node3D) -> Vector3:
