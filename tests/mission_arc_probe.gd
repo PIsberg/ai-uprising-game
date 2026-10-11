@@ -49,6 +49,7 @@ func _task_id(t: Dictionary) -> String:
 		"survive": return t.get("id", "survive")
 		"hold_zone": return t.get("id", "hold")
 		"assassinate": return t.get("id", "hvt")
+		"kill_switch": return t.get("id", "switches")
 	return t.get("id", "task")
 
 func _validate_defs() -> void:

@@ -4446,6 +4446,7 @@ func _task_id(t: Dictionary) -> String:
 		"generative_zone": return t.get("id", "guardrails")
 		"escape": return t.get("id", "escape")
 		"haul": return t.get("id", "haul")
+		"kill_switch": return t.get("id", "switches")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4487,6 +4488,9 @@ func _register_task_entry(t: Dictionary) -> void:
 			GameState.register_task(id, t.get("label", "Anchor a safe path to the override gate"), 1.0, staged)
 		"haul":
 			GameState.register_task(id, t.get("label", "Haul the weights to the uplink"), 0.0, staged)
+		"kill_switch":
+			GameState.register_task(id, t.get("label", "Throw every kill switch before they re-arm"),
+				float((t.get("points", []) as Array).size()), staged)
 		"escape":
 			# No goal meter: the countdown lives in the label (EscapeZone).
 			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
@@ -4593,6 +4597,22 @@ func _activate_task(t: Dictionary) -> void:
 			hp.position = t.get("pos", Vector3.ZERO)
 			add_child(hp)
 			_relocate_when_clear(hp)
+		"kill_switch":
+			# The bank owns the watchdog clock; the switches are the level's
+			# own children so the burial rescue and the task probes see them.
+			var bank := KillSwitchBank.new()
+			bank.name = "KillSwitchBank_%s" % id
+			bank.task_id = id
+			bank.base_label = t.get("label", "Throw every kill switch before they re-arm")
+			bank.window = t.get("window", 20.0)
+			add_child(bank)
+			for sp in t.get("points", []):
+				var ks := KillSwitch.new()
+				ks.task_id = id
+				ks.position = sp["pos"] if sp is Dictionary else sp
+				add_child(ks)
+				bank.add_switch(ks)
+				_relocate_when_clear(ks)
 		"escape":
 			var ez := EscapeZone.new()
 			ez.task_id = id

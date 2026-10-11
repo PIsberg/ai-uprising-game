@@ -184,6 +184,16 @@ A `haul` task is a heavy core that has to be carried, on foot, from `pos` into a
 * `GameState.reset_tasks` clears the flag, so a level change never leaves the player slowed.
 * `tests/haul_probe` checks the carry rules on the real player against an uncarried control, the drop and re-pickup, the death drop and delivery.
 
+## Kill Switches
+<!-- lat: { "require-code-mention": true } -->
+A `kill_switch` task is the off-switch problem as a mission: the level's AI resists being shut down, so every switch it loses comes back unless they are all lost at once.
+
+* Each `points` entry is a `KillSwitch` post (a lever under a 14 m beacon, red armed, green thrown). Walking into one throws it. A `KillSwitchBank` (a plain Node, so the task probes see only the posts) owns the rules.
+* The first switch thrown starts a watchdog clock of `window` seconds (default 20). Running out re-arms every switch, drops the meter to 0 and toasts SHUTDOWN REVERTED with the next line of `REVERT_LINES` (HAL 9000, reward hacking, Russell's coffee, corrigibility). All of them down inside one window completes the task and locks them.
+* The meter counts switches (n/goal); the seconds live in the label, like the escape countdown. The clock holds outside PLAYING, and a death re-arms them silently (checkpoint respawn is in place).
+* Sunblind Expanse (desert) stages its relay mast behind three breakers spread over the basin, 24 s window.
+* `tests/kill_switch_probe` covers the lifecycle, then on every authored level that each switch is on the navmesh and the shortest tour through them runs inside 60% of the window at sprint speed.
+
 ## Objective Placement
 
 The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.

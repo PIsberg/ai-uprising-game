@@ -42,6 +42,14 @@ LABEL_SOURCES = [
     # a survive wave's weather alerts (level defs share the warn_* pattern above)
     ("scripts/levels/level_defs.gd", r'"clear_(?:title|text)":\s*"((?:[^"\\]|\\.)+)"'),
     ("scripts/systems/weather_shift.gd", r'var (?:warn|clear)_(?:title|text): String = "([^"]+)"'),
+    # kill switches: default label, the watchdog's toasts (title and text), the
+    # revert lines it cycles through, and the switch's own Label3D tags
+    ("scripts/systems/kill_switch_bank.gd", r'var base_label: String = "([^"]+)"'),
+    ("scripts/systems/kill_switch_bank.gd", r'skirmish_event\.emit\("([^"]+)"'),
+    ("scripts/systems/kill_switch_bank.gd", r'skirmish_event\.emit\("[^"]+", "([^"]+)"'),
+    ("scripts/systems/kill_switch_bank.gd", r'REVERT_TITLE := "([^"]+)"'),
+    ("scripts/systems/kill_switch_bank.gd", r'(?m)^\t"([^"]+)",\r?$'),
+    ("scripts/systems/kill_switch.gd", r'"(KILL SWITCH|OFF)"'),
     # the optional bonus objective: HUD tag and its toasts (labels are "label" in the defs)
     ("scripts/ui/hud.gd", r'tr\("(BONUS)"\)'),
     ("scripts/autoload/game_state.gd", r'skirmish_event\.emit\("(BONUS [A-Z]+)"'),
