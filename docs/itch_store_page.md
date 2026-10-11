@@ -104,6 +104,6 @@ Switch weapon 1–0 / wheel / LB-RB   ·   Interact E   ·   Pause Esc
 
 ## Assets to upload to the page
 - **Cover image** — 630×500 px (required to be listed). Crop a dramatic in-game shot.
-- **Screenshots** — 3–6 from `docs/screenshots/` (sky_boss, ingame_combat, enemies,
-  vortex_grenade, campaign_map, armory are strong picks).
+- **Screenshots** — 3–6 from `docs/screenshots/` (constitutional_vault, neon_arcade,
+  frostbreak_moonlit, sky_boss, execution, briefing_goliath are strong picks).
 - Optional **GIF/trailer** of a firefight or a boss drop.

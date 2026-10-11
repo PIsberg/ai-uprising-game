@@ -1,33 +1,51 @@
 # AI Uprising
 
-A 3D first-person shooter built in **Godot 4.7** (Forward+). The machines we trusted turned on us — fight back through a 20-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, leaping skitters, siege mechs, and towering bosses — including hazard arenas fought on catwalks over a molten sea — against an enemy AI that adapts to how you play, narrated by cinematic cutscenes and scored by adaptive synth music.
+![AI Uprising title screen](docs/screenshots/title_screen.png)
 
-Nearly everything in the game — geometry, enemies, weapons, FX, audio, and cutscenes — is **generated in code or from compact data**, so the whole project is tiny, fully version-controllable as text, and trivial to validate headlessly.
+**[Play it on itch.io](https://gotrex.itch.io/ai-uprising)** (Windows and Linux builds) · or run it from source with Godot 4.7, below.
+
+A 3D first-person shooter built in **Godot 4.7** (Forward+). The machines we trusted turned on us. Fight back through a 24-level campaign of rogue drones, androids, spiders, shielded brutes, kamikaze seekers, leaping skitters, siege mechs and towering bosses, including hazard arenas fought on catwalks over a molten sea and a flooded reactor, against an enemy AI that adapts to how you play, narrated by comic-book briefings and scored by adaptive synth music.
+
+Nearly everything in the game (geometry, enemies, weapons, FX, audio, cutscenes) is **generated in code or from compact data**, so the whole project is small, version-controllable as text, and validated headlessly.
 
 ---
 
 ## Gallery
 
+In-engine captures from the game, HUD included.
+
+### Sectors
+
 |  |  |
 |:--:|:--:|
-| ![GOLIATH-IX sky-drop](docs/screenshots/sky_boss.png) | ![Combat in the Titan arena](docs/screenshots/ingame_combat.png) |
-| **First boss** — GOLIATH‑IX makes planetfall on its retro‑rockets | **In action** — a firefight under the boss arena's night sky |
-| ![Combat in the suburbs](docs/screenshots/ingame_suburb.png) | ![Firing range — the full arsenal](docs/screenshots/firing_range.png) |
-| **In action** — repelling hostiles through Maple Grove | **Gun Range** — free‑fire the whole arsenal |
-| ![Fierce hostiles](docs/screenshots/enemies.png) | ![Vortex grenade](docs/screenshots/vortex_grenade.png) |
-| **Fierce hostiles** — Ravager, Warmech & skitter swarm | **Singularity grenade** — a gravity well imploding a pack |
-| ![Enemy codex — Warmech](docs/screenshots/codex_warmech.png) | ![Enemy codex — Ravager](docs/screenshots/codex_ravager.png) |
-| **Enemy Codex** — the WARMECH siege walker | **Enemy Codex** — the RAVAGER leaper |
-| ![Enemy codex — Titan boss](docs/screenshots/codex_titan.png) | ![Campaign map](docs/screenshots/campaign_map.png) |
-| **Enemy Codex** — PROMETHEUS‑0, the Titan boss | **Campaign map** — interactive sector intel & route |
-| ![Armory shop](docs/screenshots/armory.png) | ![Level editor](docs/screenshots/level_editor.png) |
-| **Armory** — between‑levels upgrades & field supplies | **Level editor** — build levels with live marker preview & playtest |
-| ![Moonlit reactor firefight](docs/screenshots/moonlit_reactor.png) | ![RAVAGER render](docs/screenshots/render_ravager.png) |
-| **Moonlit reactor** — a night firefight in the flooded Tidecore sector under a milky‑way sky | **RAVAGER** — the gold‑crowned, red‑eyed ground‑slammer |
-| ![ARCHON render](docs/screenshots/render_archon.png) | ![OVERSEER render](docs/screenshots/render_overseer.png) |
-| **ARCHON** — the AGI‑brain finale, its core glowing behind a shield | **OVERSEER** — the hovering optic‑orb boss, sensor blazing |
+| ![Anthropic Constitutional Vault](docs/screenshots/constitutional_vault.png) | ![Neon Arcade](docs/screenshots/neon_arcade.png) |
+| **Constitutional Vault**: ceiling strips and server racks mirrored in a wet floor | **Neon Arcade**: magenta light lanes, holding the broadcast booth |
+| ![Frostbreak Relay](docs/screenshots/frostbreak_moonlit.png) | ![Sunblind Expanse](docs/screenshots/sunblind_golden_hour.png) |
+| **Frostbreak Relay**: a moonlit blizzard, a robot rounding the cover | **Sunblind Expanse**: golden hour over the desert relay |
+| ![Mistral Cryo-Core](docs/screenshots/mistral_cryo_core.png) | ![First Contact: The Hollow](docs/screenshots/the_hollow.png) |
+| **Mistral Cryo-Core**: venting coolant pumps under the reactor lamps | **The Hollow**: an off-world contact beacon on a toxic green plain |
+| ![Maple Grove Plaza](docs/screenshots/maple_grove_colossus.png) | ![Tidecore Basin](docs/screenshots/moonlit_reactor.png) |
+| **Maple Grove Plaza**: a sunset street seconds before GOLIATH-IX arrives | **Tidecore Basin**: a night firefight in the flooded reactor under the milky way |
 
-> The built-in **level editor** (`--editor`) authors levels as plain data with a live marker preview, full gizmos, and one-click playtest. The **bestiary** turns slowly in 3D and lists every hostile's strengths, weaknesses, and counter-weapons — discovered as you meet them.
+### Combat
+
+|  |  |
+|:--:|:--:|
+| ![GOLIATH-IX sky-drop](docs/screenshots/sky_boss.png) | ![The Assembly: an elite spawn](docs/screenshots/assembly_elite.png) |
+| **First boss**: GOLIATH-IX makes planetfall on its retro-rockets | **Elites**: a SHIELDED elite, armour you flank or out-gun |
+| ![Melee execution](docs/screenshots/execution.png) | ![Adrenaline surge](docs/screenshots/adrenaline.png) |
+| **EXECUTED!**: melee a robot under 40 HP and it dies outright | **ADRENALINE!**: near death, bullet-time and a heal for a comeback |
+
+### Story and between levels
+
+|  |  |
+|:--:|:--:|
+| ![Comic intro](docs/screenshots/comic_intro.png) | ![Briefing: GOLIATH-IX](docs/screenshots/briefing_goliath.png) |
+| **Comic intro**: the night the helper robots turned | **Briefings**: every level opens on a comic panel, the act and the 03:14 trace log |
+| ![Briefing: ARCHON](docs/screenshots/briefing_archon.png) | ![Resistance Armory](docs/screenshots/armory.png) |
+| **The Mind Cathedral**: the trace ends at ARCHON | **Armory**: upgrade tracks, field supplies and weapon mods bought with run score |
+| ![Enemy codex: Ravager](docs/screenshots/codex_ravager.png) | ![Level editor](docs/screenshots/level_editor.png) |
+| **Enemy Codex**: every hostile you have met, turning in 3D with its counters | **Level editor**: build levels as data with a live marker preview and one-click playtest |
 
 ---
 
@@ -112,10 +130,10 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 
 ## What's in it
 
-- **20-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, Claude Vault, GROK Black-Site, Skyhold Command) — plus two **hazard arenas**, the **Vulcan Forge** molten sea and the **Tidecore Basin** flooded reactor, where you balance on narrow catwalks over a sea that cooks you if you fall in. Each opens with a **cinematic briefing** and is gated by a **task-based objective** (clear hostiles, find a keycard, destroy a core, collect data shards, hack a terminal, plant charges, survive an assault, **assassinate a high-value target**) behind an animated **portal**.
+- **24-level campaign** through themed sectors (GPT Foundry, Gemini Nexus, Mistral Cryo-Core, Maple Grove suburbs, a convoy rail-ride, Claude Vault, GROK Black-Site, Skyhold Command, the alien Hollow, Frostbreak, Sunblind Expanse, Neon Arcade, up to ARCHON's Mind Cathedral) — plus two **hazard arenas**, the **Vulcan Forge** molten sea and the **Tidecore Basin** flooded reactor, where you balance on narrow catwalks over a sea that cooks you if you fall in. Each opens with a **comic briefing** and is gated by **task-based objectives** behind an animated **portal**: clear hostiles or hit a kill quota, find a keycard (some of them hallucinated), destroy a core, collect data shards, hack a terminal, plant charges, survive an assault, hold a zone, **assassinate a high-value target**, haul the stolen weights to an uplink, throw kill switches against a watchdog clock, escort an ALIGNED robot out, anchor a path across generated terrain, or reach extraction before a purge.
 - **Weapon mods** — four Armory mods change what a hit does: CHAIN ARC jumps to the next robot, THERMITE sets robots burning, RICOCHET bounces wall hits into robots behind cover, and OVERRIDE turns a robot you drop under 25% to your side. One per hitscan or beam gun, refit for free.
-- **17 wieldable weapons** — the starter pistol, SMG, rifle and shotgun, then a heavy/energy tier: *Tesla* beam, *Arc-Coil* burst, *Plasma*, *Nova* scatter, piercing *Gauss Lance*, *Twin-Rail*, homing *Swarm Launcher*, rocket *Devastator*, chain-lightning *Tempest Coil*, *Singularity Cannon*, and the *OMEGA-X Annihilator*. Hitscan & projectile, ADS, recoil, charge/volley/slug alt-fires, per-weapon viewmodels, and piercing / splash / cluster / homing / chain-lightning mechanics — plus **two throwable grenades** (a frag and a *Singularity* gravity-well grenade that herds a pack into one knot; cycle with `H`).
-- **39 enemy types** including **5 bosses** — the recon **drone**, infantry **android**, leaping **spider**, hopping **skitter** swarms, heavy **mech**, suppressing **gunner**, **sniper** sentry (charged beam), kamikaze **seeker**, flying **raptor**, shielded **bulwark brute**, healer **mender**, the fierce **Ravager** (a leaping ground-slammer) and **Warmech** (a long-range siege walker), plus the hazard-world flyers — the molten **Magma Wraith** and the robotic-fish **Angler Unit** (Blender-weaponised) — up to the **Terminator**, sky-dropping **Colossus**, hovering **Overseer**, **Titan**, and **Archon** bosses. Every hostile has a discoverable **bestiary** entry, and the elite-affix system can up-tier any spawn (shielded / volatile / swift / warden / splitter).
+- **13 wieldable weapons** — the starter *M9 Sidearm*, pulse rifle, shotgun and *.50 Maelstrom* magnum, then a heavy/energy tier: *Tesla* beam, *Arc-Coil* burst, *MK-VII Longshot* sniper, *Plasma*, piercing *Gauss Lance*, homing *Swarm Launcher*, chain-lightning *Tempest Coil*, rocket *Devastator*, and the *OMEGA-X Annihilator*. Hitscan & projectile, ADS, recoil, charge/volley/slug alt-fires, per-weapon viewmodels, and piercing / splash / cluster / homing / chain-lightning mechanics — plus **four grenade types** (frag, a *Vortex* gravity well that herds a pack into one knot, EMP, and a *HIJACK* spike that turns the nearest robot to your side for 12 s; cycle with `H`).
+- **51 hostiles** including **7 bosses** — the recon **drone**, infantry **android**, leaping **spider**, hopping **skitter** swarms, heavy **mech**, suppressing **gunner**, **sniper** sentry (charged beam), kamikaze **seeker**, flying **raptor**, shielded **bulwark brute**, healer **mender**, the fierce **Ravager** (a leaping ground-slammer) and **Warmech** (a long-range siege walker), the robotic-fish **Angler Unit** of the flooded basins, and a late wave of AI-themed machines (**DEEPFAKE**, **FORK BOMB**, **OVERFITTER**, **ATTENTION HEAD**, **MIXTURE OF EXPERTS**, **REWARD MODEL**, **DIFFUSION**, **ROLLBACK**, **QUANTIZER**) — up to the **TERMINATOR**, sky-dropping **GOLIATH-IX**, hovering **OVERSEER**, the arm boss **MANUS**, **BEHEMOTH-X**, **PROMETHEUS-0** and **ARCHON**. Every hostile has a discoverable **bestiary** entry, and the elite-affix system can up-tier any spawn (shielded / volatile / swift / warden / splitter).
 - **Adaptive AI Director — the enemy *learns you*.** The rogue AI is an intelligence, so it fights like one: a director quietly profiles **how you play** — camp or keep moving, brawl up close or snipe from range, headshot rate, which gun you lean on — and **counters it** through the Elite affix system. Snipe from afar and it fields **SWIFT** rushers to close the gap; out-aim it and it fields **WARDEN** units you can't stagger (so you must *dodge*, not suppress); spam one weapon and it fields **SHIELDED** armour that shrugs it off. The overlord's taunts read your actual behaviour back to you (*"You like your distance. I'm closing it."*, *"The Shotgun again. I've patched for it."*). The per-level read resets each sector, but **the overlord remembers you across runs**: every cleared level is folded into a long-term dossier, so the swarm comes pre-adapted, a gun you lean on for three levels gets a firmware **countermeasure** (85% damage until you rotate off it), and the overlord opens levels by citing your deaths, your killers and your habits.
 - **Game feel** — trauma camera shake, dynamic FOV, dash/slide, recoil, tracers, muzzle flash & smoke, ejected casings, surface-aware impacts, **bullet-hole + scorch decals**, debris, oil/spark sprays on robots, hit-stop, enemy flinch/stagger/last-stand, death topples.
 - **Premium Graphics Upgrades (Forward+)** — GPU-accelerated sparks and debris with rigid body collision physics, volumetric noise-animated light shafts (god-rays), triplanar metal shell shading on robots displaying exposed glowing electrical damage grids, dynamic hexagonal-grid energy shields with real-time hit ripple distortion on the Brute and Archon boss, procedural wind waves & concentric rain drip puddles, and anamorphic blue/cyan lens flares combined with fisheye speed-warp barrel distortion during high-velocity dashes/sprints. **Godot 4.7** adds soft **AreaLight3D** ceiling luminaires, HDR-punch emissives, improved clearcoat metal, and velocity-stretched GPU particles.
@@ -155,7 +173,7 @@ A campaign level scene (`scenes/levels/level_<id>.tscn`) is just three nodes: a 
 Because levels are just data, a built-in **level editor** (`scripts/editor/level_editor.gd`, launched with `--editor`) is a visual front-end for it: place enemies / props / structures / lights with click-drag **gizmos** and Blender-style `G`/`R`/`F` keys against a live **marker preview** (with a translucent placement ghost and a live coordinate readout), tune the whole environment, manage the campaign order, and **one-click playtest** in the real game. It saves `.lvl` files and can export a level straight back to a `LevelDefs` entry. A headless self-test (`--editor-selftest`) covers it end to end.
 
 ### Objectives & the portal
-Each level registers a **task checklist** with `GameState` (`kill_all`, `key`, `destroy_core`, `collect_shards`, `hack_terminal`, `sabotage`, `survive`). The exit **`Portal`** (`scripts/systems/portal.gd`) stays sealed (and shoves the player back with a message) until every task is done, then unlocks; the HUD shows the checklist live and an "area cleared" slow-mo fires on the final kill.
+Each level registers a **task checklist** with `GameState` (`kill_all`, `kill_quota`, `key`, `destroy_core`, `collect_shards`, `hack_terminal`, `sabotage`, `survive`, `hold_zone`, `assassinate`, `generative_zone`, `haul`, `kill_switch`, `escort`, `escape`; each key is documented in `docs/LEVEL_DEF_KEYS.md`). The exit **`Portal`** (`scripts/systems/portal.gd`) stays sealed (and shoves the player back with a message) until every task is done, then unlocks; the HUD shows the checklist live and an "area cleared" slow-mo fires on the final kill.
 
 ### Enemies
 All enemies extend **`EnemyBase`** (`scripts/enemies/enemy_base.gd`), a `CharacterBody3D` with a state machine (`IDLE → PATROL → ALERT → CHASE → ATTACK → STAGGER → DEAD`), perception (sight cone + hearing + squad alerting), navmesh pathing with a straight-line fallback, and shared reactions: hit-flash, **flinch & poise/stagger**, **oil/spark sprays**, wounded "last stand," battle-damage smoke/sparks, and a death **topple + lasting scorch**. Each archetype subclasses it and overrides movement/attack — e.g. the drone & seeker fly (`_apply_gravity`/`_move_toward` overrides), the spider does a telegraphed **leap-pounce**, the sniper charges a beam you dodge by breaking line of sight, the brute's **frontal shield** absorbs damage via a `modify_incoming_damage` hook on `Damageable` (so you must flank), and bosses use the HUD boss bar with phase-scaled attacks.
@@ -181,7 +199,7 @@ A weapon is a **`WeaponData`** resource (`.tres`: damage, fire mode, recoil, amm
 `scripts/ui/hud.gd` drives the dynamic crosshair, ammo, hit markers, floating damage numbers, kill-confirm, kill feed, radar, objective waypoint, boss bar, low-health vignette, directional damage indicator, the combo readout, and the end-of-level grade — and polls combat state to cue the adaptive music.
 
 ### Development workflow
-Because content is code/data, it's validated **headlessly**: scenes are import-checked and loaded with `--quit-after`, and gameplay/FX are verified with throwaway harness scenes that drive logic and save rendered PNGs for visual confirmation — no manual clicking required.
+Because content is code/data, it's validated **headlessly**. Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that drives the real game logic and prints `RESULT PASS` or `RESULT FAIL`; `tools/run_tests.sh` (or `tools/run_tests.ps1` on Windows) runs the suite listed in `tools/probes.txt`, and CI runs it on every push. Probes that need a window save rendered PNGs for visual confirmation instead; `tests/README.md` indexes them all.
 
 ---
 
@@ -193,8 +211,8 @@ scenes/
   ui/                  # main_menu, hud, campaign_map, encyclopedia (bestiary)
   editor/              # built-in level editor
   player/              # player + viewmodel
-  weapons/             # 17 weapons + projectiles + grenades
-  enemies/             # 39 enemy/boss scenes
+  weapons/             # 13 weapons + projectiles + 4 grenades
+  enemies/             # 52 enemy/boss scenes
   levels/              # level_<id>.tscn (LevelBuilder + Player + HUD)
   cutscene/            # comic_intro, level_comic_briefing (+ Armory shop)
   props/ pickups/ fx/  # breakable props, pickups, impact/explosion/tracer FX
@@ -211,7 +229,7 @@ assets/                # materials, PBR textures, audio (sample-override dir), m
 docs/                  # design docs, level_editor_spec, screenshots/ (README gallery)
 ```
 
-**Physics layers:** 1 `world` · 2 `player` · 3 `enemy` · 4 `player_projectile` · 5 `enemy_projectile` · 6 `pickup` · 7 `trigger`.
+**Physics layers:** 1 `world` · 2 `player` · 3 `enemy` · 4 `player_projectile` · 5 `enemy_projectile` · 6 `pickup` · 7 `trigger` · 8 `firewall` (the `firewalls` def key: an energy sheet only the player collides with; robots, rounds and grenades pass).
 
 ---
 
