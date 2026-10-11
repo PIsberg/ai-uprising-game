@@ -240,6 +240,7 @@ const KEYBIND_ACTIONS := [
 	{"action": "interact", "label": "Interact"},
 	{"action": "grenade", "label": "Throw Grenade"},
 	{"action": "grenade_cycle", "label": "Cycle Grenade Type"},
+	{"action": "night_vision", "label": "Night Vision"},
 	{"action": "weapon_1", "label": "Weapon Slot 1"},
 	{"action": "weapon_2", "label": "Weapon Slot 2"},
 	{"action": "weapon_3", "label": "Weapon Slot 3"},
@@ -299,6 +300,7 @@ func _factory_default_events(action: String) -> Array:
 		"interact": return [_key(KEY_E), _joy_btn(JOY_BUTTON_X)]
 		"grenade": return [_key(KEY_G), _joy_btn(JOY_BUTTON_Y)]
 		"grenade_cycle": return [_key(KEY_H)]
+		"night_vision": return [_key(KEY_N), _joy_btn(JOY_BUTTON_DPAD_DOWN)]
 		"weapon_1": return [_key(KEY_1)]
 		"weapon_2": return [_key(KEY_2)]
 		"weapon_3": return [_key(KEY_3)]

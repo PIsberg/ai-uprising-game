@@ -24,6 +24,13 @@ Advanced movement mechanics give players defensive evasion and repositioning too
 * **Slide:** Crouching while sprinting converts forward momentum into a low friction slide (`12.5 m/s`, duration `0.7s`) that clears low obstacles.
 * **Grappling Hook:** Shoots a physics tether toward world geometry (`Layer 1`), pulling the player toward the anchor point with stamina-dependent winching.
 
+## Night Vision
+<!-- lat: { "require-code-mention": true } -->
+Night-vision goggles let the player see in the dark that shot-out lamps and blackouts make ([[level-system#Darkness and Shootable Lights]]).
+
+* The goggles are a pickup (`Pickup.Kind.NIGHT_VISION`, `scenes/pickups/night_vision.tscn`, def pickup type `nightvision`) near the spawn on GPT and again on SUBLEVEL; it removes itself once owned. `GameState.grant_night_vision` sets `has_night_vision` for the run (saved as `night_vision`, cleared by `reset_run`, kept across a Daily Op) and teaches the key.
+* `Player.toggle_night_vision` (action `night_vision`: N / D-pad down, rebindable via `GraphicsSettings.KEYBIND_ACTIONS`) shows a `NightVision` ColorRect, the last child of PostFX, running `shaders/night_vision.gdshader`: auto-gain 1 - exp(-l x gain), a blurred phosphor bloom, grain, scanlines and a round goggle mask, with a 0.35 s power-up flash. It emits no light, so unlike `flashlight_on` it never gives the player away. `tests/night_vision_probe`, `tests/night_vision_shot`.
+
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:

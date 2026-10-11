@@ -663,6 +663,8 @@ func _input(event: InputEvent) -> void:
 				_cheat_imba()
 	if event.is_action_pressed("flashlight"):
 		_toggle_flashlight()
+	if InputMap.has_action("night_vision") and event.is_action_pressed("night_vision"):
+		toggle_night_vision()
 	if _dead:
 		return  # no looking around once you're down
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -693,6 +695,43 @@ func _toggle_flashlight() -> void:
 ## A lit flashlight gives a player standing in the dark away (LightLevel).
 func flashlight_on() -> bool:
 	return _flashlight != null and _flashlight.visible
+
+# @lat: [[player#Night Vision]]
+## Night-vision goggles (found as a pickup, GameState.has_night_vision): an
+## image-intensifier pass (shaders/night_vision.gdshader) as the last child of
+## PostFX, over the graded frame and under the HUD. Built on first use. It
+## emits no light, so unlike the flashlight it does not give you away.
+const NV_SHADER := preload("res://shaders/night_vision.gdshader")
+var _nv: ColorRect
+var _nv_mat: ShaderMaterial
+
+func night_vision_on() -> bool:
+	return _nv != null and _nv.visible
+
+func toggle_night_vision() -> void:
+	if not GameState.has_night_vision:
+		return
+	if _nv == null:
+		if _post_overlay == null:
+			return
+		_nv = ColorRect.new()
+		_nv.name = "NightVision"
+		_nv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_nv_mat = ShaderMaterial.new()
+		_nv_mat.shader = NV_SHADER
+		_nv.material = _nv_mat
+		_nv.visible = false
+		_post_overlay.get_parent().add_child(_nv)
+		# A code-built Control under a CanvasLayer: set_anchors_preset alone
+		# keeps zero offsets and draws a 0x0 rect.
+		_nv.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_nv.visible = not _nv.visible
+	if _nv.visible:
+		_nv_mat.set_shader_parameter("boot", 0.0)
+		create_tween().tween_method(func(v: float): _nv_mat.set_shader_parameter("boot", v), 0.0, 1.0, 0.35)
+		AudioBus.play_synth_ui("charge", -12.0, 1.7)
+	else:
+		AudioBus.play_synth_ui("empty_click", -10.0, 0.9)
 
 func _physics_process(delta: float) -> void:
 	if _dead:

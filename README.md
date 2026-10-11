@@ -100,6 +100,8 @@ Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, 
 | Cycle grenade type | `H` | — |
 | Switch weapon | `1`–`4` / wheel | LB / RB |
 | Interact / pick up | `E` | X |
+| Flashlight | `L` | D-pad up |
+| Night vision (once you find the goggles on GPT or SUBLEVEL) | `N` | D-pad down |
 | Pause | `Esc` | Start |
 
 **Testing cheats** (type the word — no console needed): on the main menu, type **`warp`** for a direct level-select that also unlocks the full bestiary and arsenal; **in-game**, type **`god`** to toggle invincibility (tops you off to full health), and type it again to turn it off.

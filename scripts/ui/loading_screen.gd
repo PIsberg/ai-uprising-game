@@ -27,6 +27,8 @@ const TIPS := [
 	"Every gun has a role — check the Weapon Codex from the main menu.",
 	"Number keys 1-0 arm weapon slots 1-10. Double-tap a digit for the slots past ten — double-tap 1 for slot 11, 2 for 12, and so on.",
 	"On the dark levels, hit L (or D-pad up) for your weapon flashlight.",
+	"Shoot out the ceiling lamps indoors: past a few metres, robots can't see you in the dark. Firing or a flashlight gives you away.",
+	"Night-vision goggles turn up on GPT (and again on SUBLEVEL). Press N (or D-pad down) to see in the dark without giving yourself away.",
 	"Hunt the marked high-value target to clear an assassination sector.",
 	"Chain kills without pausing to spike into RAMPAGE — each tier boosts your damage, fire rate and speed. The streak and its buffs collapse the instant you stop killing, so press the attack hard — but stay alive to keep it rolling.",
 	"Aggression is rewarded, but survival matters: RAMPAGE only builds while you keep killing, and dropping to critical health triggers a one-time ADRENALINE surge to claw the fight back.",

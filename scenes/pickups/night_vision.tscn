@@ -1,0 +1,100 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/systems/pickup.gd" id="1_pickup"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_ring"]
+shading_mode = 0
+transparency = 1
+albedo_color = Color(0.3, 1, 0.45, 0.55)
+emission_enabled = true
+emission = Color(0.3, 1, 0.45, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="TorusMesh" id="Torus_ring"]
+inner_radius = 0.38
+outer_radius = 0.48
+rings = 24
+ring_segments = 12
+material = SubResource("Mat_ring")
+
+[sub_resource type="SphereShape3D" id="Shape_1"]
+radius = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_body"]
+albedo_color = Color(0.12, 0.13, 0.12, 1)
+metallic = 0.6
+roughness = 0.45
+
+[sub_resource type="BoxMesh" id="Box_bridge"]
+material = SubResource("Mat_body")
+size = Vector3(0.44, 0.11, 0.1)
+
+[sub_resource type="CylinderMesh" id="Tube"]
+material = SubResource("Mat_body")
+top_radius = 0.085
+bottom_radius = 0.095
+height = 0.18
+radial_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="Mat_lens"]
+shading_mode = 0
+albedo_color = Color(0.35, 1, 0.5, 1)
+emission_enabled = true
+emission = Color(0.35, 1, 0.5, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="CylinderMesh" id="Lens"]
+material = SubResource("Mat_lens")
+top_radius = 0.07
+bottom_radius = 0.07
+height = 0.012
+radial_segments = 16
+
+[sub_resource type="BoxMesh" id="Box_strap"]
+material = SubResource("Mat_body")
+size = Vector3(0.5, 0.05, 0.02)
+
+[node name="NightVision" type="Area3D"]
+script = ExtResource("1_pickup")
+kind = 5
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("Shape_1")
+
+[node name="Mesh" type="Node3D" parent="."]
+transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, 0, 0.7, 0)
+
+[node name="Bridge" type="MeshInstance3D" parent="Mesh"]
+mesh = SubResource("Box_bridge")
+
+[node name="TubeL" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.12, 0, 0.1)
+mesh = SubResource("Tube")
+
+[node name="TubeR" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.12, 0, 0.1)
+mesh = SubResource("Tube")
+
+[node name="LensL" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -0.12, 0, 0.195)
+mesh = SubResource("Lens")
+
+[node name="LensR" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.12, 0, 0.195)
+mesh = SubResource("Lens")
+
+[node name="Strap" type="MeshInstance3D" parent="Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.06)
+mesh = SubResource("Box_strap")
+
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+mesh = SubResource("Torus_ring")
+cast_shadow = 0
+
+[node name="Light" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_color = Color(0.3, 1, 0.45, 1)
+light_energy = 2.2
+omni_range = 5.5

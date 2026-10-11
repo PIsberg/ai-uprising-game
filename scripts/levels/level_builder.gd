@@ -199,6 +199,7 @@ const PICKUP_SCENES := { # type -> scene path; resolved lazily by pickup_scene()
 	"ammo": "res://scenes/pickups/ammo_box.tscn",
 	"overclock": "res://scenes/pickups/overclock.tscn",
 	"overdrive": "res://scenes/pickups/overdrive.tscn",
+	"nightvision": "res://scenes/pickups/night_vision.tscn",
 }
 const MAT_FLOOR := preload("res://assets/materials/concrete_floor.tres")
 const MAT_WALL := preload("res://assets/materials/wall_panel.tres")

@@ -1512,6 +1512,9 @@ static func _sublevel() -> Dictionary:
 			{"type": "brute", "pos": Vector3(20, 0.5, 25), "trigger": 20, "pack": "sublev_a4"},
 		],
 		"pickups": [
+			# Night-vision goggles, again: the night shift is fought in a
+			# blackout. Removes itself if GPT's pair was already found.
+			{"type": "nightvision", "pos": Vector3(-19, 0, -19)},
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
 			{"type": "ammo", "pos": Vector3(8, 0, 6)},
 			# Ring supplies + the gallery-climb reward.
@@ -3923,6 +3926,9 @@ static func _gpt() -> Dictionary:
 			{"type": "gunner", "pos": Vector3(-21, 0.5, 27), "trigger": 14, "pack": "gpt_ring_n"},
 		],
 		"pickups": [
+			# Night-vision goggles on the first interior, a few steps from the
+			# spawn: its lamps can be shot out, and the goggles see in the dark.
+			{"type": "nightvision", "pos": Vector3(-27, 0, -27)},
 			{"type": "health", "pos": Vector3(-16, 0, -8)},
 			{"type": "ammo", "pos": Vector3(-8, 0, 6)},
 			{"type": "ammo", "pos": Vector3(6, 0, -14)},
