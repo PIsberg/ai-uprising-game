@@ -1,3 +1,4 @@
+# @lat: [[enemies#Physics Wrecks]]
 class_name WreckBody
 extends RigidBody3D
 ## The physics half of a robot's death: a box the size of the chassis that
