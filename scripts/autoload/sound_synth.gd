@@ -759,7 +759,7 @@ func _radio_static(duration: float) -> AudioStreamWAV:
 		_write(bytes, i, (hiss + crackle) * fade)
 	return _to_stream(bytes, true)
 
-func _techno_loop() -> AudioStreamWAV:
+func _techno_loop() -> AudioStream:
 	# The original driving techno loop, now expressed via the parameterised
 	# generator below. Kept as the default / menu theme.
 	var roots := [55.0, 55.0, 65.41, 73.42, 55.0, 55.0, 49.0, 65.41,
@@ -772,12 +772,23 @@ func _techno_loop() -> AudioStreamWAV:
 ## `p` tweaks the mix (kick/bass/arp/hat/pad levels, drive, swing, arp division,
 ## saw-vs-square bass). All tracks share the four-on-the-floor backbone but read
 ## very differently via tempo, key and instrumentation.
-func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioStreamWAV:
+##
+## Rendered as four synced, equal-length stems in one pass (MUSIC_LAYERS):
+## bed (bass, sub, pad), drums (kick, backbeat, hats), lead (the arp) and hot
+## (an octave-up sixteenth saw line over sixteenth hats, only heard in a
+## rampage or a boss fight). AudioBus fades each one with the fight. All four
+## share MUSIC_GAIN: the stems' sum peaked at 0.83-1.08 across the themes, so
+## the full mix peaks at 0.70-0.92 (the single-stream mix it replaces: 0.9).
+## A fixed gain, not a normalise pass: that second pass over four stems put
+## the synth's whole boot build up from 8.3 s to 12.3 s.
+const MUSIC_LAYERS := ["bed", "drums", "lead", "hot"]
+const MUSIC_GAIN := 0.85
+
+func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioStream:
 	var spb := 60.0 / bpm
 	var total_beats := roots.size()
 	var dur := spb * total_beats
 	var n := int(dur * SR)
-	var bytes := _silence(n)
 	var kick_lvl: float = p.get("kick", 0.82)
 	var bass_lvl: float = p.get("bass", 0.22)
 	var arp_lvl: float = p.get("arp", 0.2)
@@ -793,16 +804,24 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 	var snare_lvl: float = p.get("snare", 0.5)
 	var sidechain: float = p.get("sidechain", 0.7) # 0 = flat, 1 = full duck under the kick
 	var sub_amt: float = p.get("sub", 0.5)         # sub-octave level as a fraction of the bass
+	var hot_lvl: float = p.get("hot", arp_lvl * 0.8)
 	var bass_phase := 0.0
 	var sub_phase := 0.0
 	var arp_phase := 0.0
+	var hot_phase := 0.0
 	var pad_a := 0.0
 	var pad_b := 0.0
+	var bed_b := _silence(n)
+	var drum_b := _silence(n)
+	var lead_b := _silence(n)
+	var hot_b := _silence(n)
+	var g := MUSIC_GAIN * 32700.0
 	for i in n:
 		var t := float(i) / SR
 		var beat_idx := int(t / spb) % total_beats
 		var beat_t: float = fmod(t, spb)
 		var half_t: float = fmod(t, spb * 0.5)
+		var six_t: float = fmod(t, spb * 0.25)
 		var root: float = roots[beat_idx]
 		# Kick — four on the floor.
 		var kick_env := exp(-beat_t * 24.0)
@@ -829,6 +848,13 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		arp_phase += TAU * arp_freq / SR
 		var arp_env := exp(-fmod(t, spb * arp_div) * 8.0)
 		var arp_s := (sign_wave(arp_phase) * 0.7 + sin(arp_phase * 2.0) * 0.4) * arp_lvl * arp_env
+		# Hot line: the arp an octave up on sixteenths as a bright saw, walking
+		# the sequence twice as fast, with its own sixteenth hats.
+		var hot_freq: float = arp[int(t / (spb * 0.25)) % arp.size()] * 2.0
+		hot_phase += TAU * hot_freq / SR
+		var hot_saw := fposmod(hot_phase, TAU) / TAU * 2.0 - 1.0
+		var hot_hat := (randf() * 2.0 - 1.0) * exp(-six_t * 120.0) * hat_lvl * 0.7
+		var hot := hot_saw * hot_lvl * exp(-six_t * 14.0) + hot_hat
 		# Soft sustained pad (root + fifth) for atmosphere.
 		var pad := 0.0
 		if pad_lvl > 0.0:
@@ -839,19 +865,31 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		var hat := (randf() * 2.0 - 1.0) * exp(-half_t * 80.0) * hat_lvl
 		# Sidechain: the melodic/bass elements duck on each kick and breathe back —
 		# the classic pumping techno motion that locks everything to the beat.
+		# Applied per stem, so the bed still pumps with the drums faded out.
 		var duck := 1.0 - sidechain * kick_env
-		var voiced := (bass + sub + arp_s + pad) * duck
 		var fade := 1.0
 		if t < 0.012:
 			fade = t / 0.012
 		elif t > dur - 0.012:
 			fade = (dur - t) / 0.012
-		_write(bytes, i, tanh((kick + snare + voiced + hat) * drive) * 0.9 * fade)
-	return _to_stream(bytes, true)
+		# tanh keeps each stem in -1..1, so g never overflows s16; written
+		# inline (not _write) because this loop runs 4 writes per sample.
+		var o := i * 2
+		bed_b.encode_s16(o, int(tanh((bass + sub + pad) * duck * drive) * fade * g))
+		drum_b.encode_s16(o, int(tanh((kick + snare + hat) * drive) * fade * g))
+		lead_b.encode_s16(o, int(tanh(arp_s * duck * drive) * fade * g))
+		hot_b.encode_s16(o, int(tanh(hot * duck * drive) * fade * g))
+	var sync := AudioStreamSynchronized.new()
+	sync.stream_count = MUSIC_LAYERS.size()
+	var bufs := [bed_b, drum_b, lead_b, hot_b]
+	for k in MUSIC_LAYERS.size():
+		sync.set_sync_stream(k, _to_stream(bufs[k], true))
+		sync.set_sync_stream_volume(k, 0.0)
+	return sync
 
 ## Aggressive boss/black-site theme: faster, darker key, pounding kick, gritty
 ## drive, sixteenth-note arp.
-func _music_grok() -> AudioStreamWAV:
+func _music_grok() -> AudioStream:
 	var roots := [55.0, 55.0, 58.27, 49.0, 55.0, 55.0, 65.41, 61.74,
 		49.0, 49.0, 55.0, 58.27, 65.41, 61.74, 55.0, 49.0]
 	var arp := [110.0, 164.81, 220.0, 164.81, 130.81, 196.0, 261.63, 196.0]
@@ -864,7 +902,7 @@ func _music_grok() -> AudioStreamWAV:
 ## ARCHON finale theme: slow, crushing and dread-laden — sub-bass roots, a
 ## pounding kick, a big dark pad and a sparse, cold minor arp. The sound of one
 ## mind running everything.
-func _music_archon() -> AudioStreamWAV:
+func _music_archon() -> AudioStream:
 	var roots := [36.71, 36.71, 43.65, 49.0, 36.71, 36.71, 41.2, 38.89,
 		32.7, 32.7, 38.89, 43.65, 49.0, 43.65, 41.2, 36.71]
 	var arp := [146.83, 220.0, 293.66, 220.0, 174.61, 233.08, 293.66, 233.08]
@@ -875,7 +913,7 @@ func _music_archon() -> AudioStreamWAV:
 	})
 
 ## Airy, brighter Gemini theme: relaxed tempo, square bass, lush pad, melodic arp.
-func _music_gemini() -> AudioStreamWAV:
+func _music_gemini() -> AudioStream:
 	var roots := [65.41, 65.41, 82.41, 98.0, 73.42, 73.42, 87.31, 98.0,
 		65.41, 65.41, 82.41, 110.0, 98.0, 87.31, 82.41, 73.42]
 	var arp := [261.63, 329.63, 392.0, 493.88, 392.0, 329.63, 440.0, 329.63]
@@ -887,7 +925,7 @@ func _music_gemini() -> AudioStreamWAV:
 
 ## Vulcan Forge theme: fast, hot and pounding — a hard-pumping foundry drive for
 ## the molten-sea catwalks. Dark minor key, sixteenth arp, heavy sub.
-func _music_lava() -> AudioStreamWAV:
+func _music_lava() -> AudioStream:
 	var roots := [55.0, 55.0, 58.27, 49.0, 55.0, 55.0, 65.41, 61.74,
 		49.0, 49.0, 55.0, 58.27, 65.41, 61.74, 55.0, 49.0]
 	var arp := [110.0, 164.81, 220.0, 164.81, 130.81, 196.0, 261.63, 196.0]
@@ -899,7 +937,7 @@ func _music_lava() -> AudioStreamWAV:
 
 ## Tidecore Basin theme: slow, deep and flowing — a lush, brooding pad over a soft
 ## square bass for the flooded-reactor gantries. Gentle pump, airy.
-func _music_water() -> AudioStreamWAV:
+func _music_water() -> AudioStream:
 	var roots := [49.0, 49.0, 55.0, 65.41, 49.0, 49.0, 58.27, 55.0,
 		43.65, 43.65, 49.0, 55.0, 58.27, 55.0, 49.0, 43.65]
 	var arp := [196.0, 233.08, 293.66, 233.08, 174.61, 220.0, 293.66, 220.0]
@@ -910,7 +948,7 @@ func _music_water() -> AudioStreamWAV:
 	})
 
 ## Brooding dusk-suburb theme: slow, sparse, heavy on the pad, light percussion.
-func _music_suburb() -> AudioStreamWAV:
+func _music_suburb() -> AudioStream:
 	var roots := [49.0, 49.0, 55.0, 65.41, 49.0, 49.0, 58.27, 55.0,
 		43.65, 43.65, 49.0, 55.0, 58.27, 55.0, 49.0, 43.65]
 	var arp := [196.0, 233.08, 293.66, 233.08, 174.61, 220.0, 293.66, 220.0]

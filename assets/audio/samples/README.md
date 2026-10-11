@@ -71,6 +71,10 @@ Music (loop ★ — the single biggest win):
 `music_techno ★, music_grok, music_gemini, music_suburb, music_archon,
 music_lava, music_water`
 
+The synthesized themes are layered (bed, drums, lead, hot) and follow the
+fight; a dropped-in music file replaces the whole theme and plays as one
+layer at the combat volume curve (`AudioBus._mix_layers` leaves it alone).
+
 Ambience beds (seamless loops):
 `ambience_drone, ambience_wind, ambience_rain, lava_loop, water_loop`
 

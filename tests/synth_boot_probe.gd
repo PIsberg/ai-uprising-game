@@ -43,7 +43,7 @@ func _run() -> void:
 	var empty := 0
 	for id in ids:
 		var s = SoundSynth.get_stream(id)
-		if not (s is AudioStreamWAV) or (s as AudioStreamWAV).data.size() < 200:
+		if not _has_pcm(s):
 			empty += 1
 			print("BAD  %s: no stream right after boot" % id)
 	print("all %d ids resolved in %.0f ms (on-demand where not ready yet)" % [ids.size(), (Time.get_ticks_usec() - t1) / 1000.0])
@@ -74,6 +74,18 @@ func _run() -> void:
 
 	print("RESULT %s" % ("PASS" if _ok else "FAIL"))
 	get_tree().quit(0 if _ok else 1)
+
+## Non-empty PCM: a WAV, or a music theme's synced WAV stems (AudioBus layers them).
+func _has_pcm(s) -> bool:
+	if s is AudioStreamSynchronized:
+		var sync := s as AudioStreamSynchronized
+		if sync.stream_count == 0:
+			return false
+		for k in sync.stream_count:
+			if not _has_pcm(sync.get_sync_stream(k)):
+				return false
+		return true
+	return s is AudioStreamWAV and (s as AudioStreamWAV).data.size() >= 200
 
 func _bad(msg: String) -> void:
 	_ok = false
