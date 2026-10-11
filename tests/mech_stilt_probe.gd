@@ -21,9 +21,16 @@ func _check(label: String, cond: bool, detail: String = "") -> void:
 func _ready() -> void:
 	_run.call_deferred()
 
+## A bone's pose as last drawn: the robot's HeadTrack aims the gun after the
+## clip, and outside the skeleton's update the bone reads as the clip alone.
+func _drawn(sk: Skeleton3D, idx: int) -> Transform3D:
+	var track := sk.get_node_or_null("HeadTrack") as HeadTrackModifier
+	var clip := sk.get_bone_global_pose(idx)
+	return track.rendered_pose(idx, clip) if track else clip
+
 func _palm(m: Node3D) -> Vector3:
 	var sk: Skeleton3D = m.find_children("*", "Skeleton3D", true, false)[0]
-	return sk.global_transform * sk.get_bone_global_pose(sk.find_bone("PalmI.R")).origin
+	return (sk.global_transform * _drawn(sk, sk.find_bone("PalmI.R"))).origin
 
 func _run() -> void:
 	var nav := NavigationRegion3D.new()

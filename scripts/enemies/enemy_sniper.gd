@@ -61,6 +61,8 @@ func _rig_barrels() -> void:
 	for bone in BARRELS:
 		var pose: Transform3D = sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bone))
 		_barrel_off.append(pose.basis.orthonormalized().inverse() * ahead)
+		# Both guns swing onto the target (pivoting on their own bone).
+		add_gun_bone(sk, sk.find_bone(bone), _barrel_off[-1])
 	_use_barrel(0)
 
 func _use_barrel(i: int) -> void:

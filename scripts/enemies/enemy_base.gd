@@ -1264,14 +1264,22 @@ var _muzzle_offset := Vector3.ZERO  ## metres in the bone's frame (scale strippe
 ## itself (the muzzle flash, the telegraph orb) would render huge. `offset`
 ## moves the muzzle off the bone's origin in metres along the bone's own axes
 ## (a lens on the front of a head, not the neck joint the head pivots on).
-func muzzle_on_bone(bone: String, offset: Vector3 = Vector3.ZERO) -> bool:
+## `aim` swings the gun (or the arm carrying the hand) onto the target while
+## fighting (RobotModel.add_gun); throwers pass false so their clip owns the arm.
+func muzzle_on_bone(bone: String, offset: Vector3 = Vector3.ZERO, aim: bool = true) -> bool:
 	var found := find_children("*", "Skeleton3D", true, false)
 	if found.is_empty() or (found[0] as Skeleton3D).find_bone(bone) < 0:
 		return false
+	var sk := found[0] as Skeleton3D
 	var att := BoneAttachment3D.new()
 	att.name = "MuzzleBone"
 	att.bone_name = bone
-	(found[0] as Skeleton3D).add_child(att)
+	sk.add_child(att)
+	# Twin barrels aim from between the two.
+	var aim_off := offset
+	if bone == muzzle_bone and muzzle_bone_offset_alt != Vector3.ZERO:
+		aim_off = (muzzle_bone_offset + muzzle_bone_offset_alt) * 0.5
+	add_gun_bone(sk, sk.find_bone(bone), aim_off, aim)
 	var m := Node3D.new()
 	m.name = "BoneMuzzle"
 	add_child(m)
@@ -1289,8 +1297,24 @@ func bone_point(att: BoneAttachment3D, offset: Vector3) -> Vector3:
 	var sk := att.get_parent() as Skeleton3D
 	if sk == null or att.bone_idx < 0:
 		return att.global_position + att.global_basis.orthonormalized() * offset
-	var pose: Transform3D = sk.global_transform * sk.get_bone_global_pose(att.bone_idx)
+	# Outside the skeleton's update the bone reads as the clip posed it; the
+	# head turn and the arm aim are only in the pose HeadTrack last rendered.
+	var local := sk.get_bone_global_pose(att.bone_idx)
+	var track := sk.get_node_or_null("HeadTrack") as HeadTrackModifier
+	if track:
+		local = track.rendered_pose(att.bone_idx, local)
+	var pose: Transform3D = sk.global_transform * local
 	return pose.origin + pose.basis.orthonormalized() * offset
+
+## Register bone `tip` as a gun with the robot's model: its rendered pose feeds
+## bone_point, and with `aim` the gun swings onto the target. A no-op on
+## models without a RobotModel driver.
+func add_gun_bone(sk: Skeleton3D, tip: int, offset: Vector3, aim: bool = true) -> void:
+	var n: Node = sk
+	while n != null and n != self and not (n is RobotModel):
+		n = n.get_parent()
+	if n is RobotModel:
+		(n as RobotModel).add_gun(sk, tip, offset, aim)
 
 func _follow_muzzle_bone() -> void:
 	muzzle.global_position = bone_point(_muzzle_bone, _muzzle_offset)
