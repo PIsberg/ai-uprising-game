@@ -151,3 +151,5 @@ res://tests/forkbomb_probe.tscn
 res://tests/story_arc_probe.tscn
 # CUSTODIAN: fires only from the top of a crouch-and-hop; airborne hits crit.
 res://tests/vacuum_hop_probe.tscn
+# COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
+res://tests/comic_panel_probe.tscn

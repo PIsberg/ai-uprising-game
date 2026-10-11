@@ -42,10 +42,11 @@ honour it too (#194); the seeker (its blast is a mechanic) and the bosses keep t
 
 ## 2. Content & depth
 
-### Bespoke briefings for the hazard levels 🤖
-`_lava_world` / `_water_world` use the generic data-driven briefing. Give them custom
-comic-panel briefings like the older levels (`scenes/cutscene/level_comic_briefing.tscn`,
-`assets/comics/`).
+### Comic panel for HIVEMIND 🤖
+Every campaign level has its own briefing panel except HIVEMIND, which shows uplink's
+until its art is drawn (#244, brief in the issue). `tests/comic_panel_probe` lists it in
+`PENDING_ART` and fails once `assets/comics/level_hivemind.png` lands, as a reminder to
+re-anchor its FX.
 
 ### Boss mechanics audit 🎮
 ✅ **Audited (2026-09-11)** — all 7 bosses escalate with health: COLOSSUS/OVERSEER/TITAN/
