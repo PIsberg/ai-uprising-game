@@ -2,9 +2,13 @@ extends Node3D
 ## Probe: a special-move clip plays through instead of being taken back by
 ## RobotModel's idle/walk blend on the next tick (#242).
 ## (1) SNIPER: _perform_attack starts its "Charge" clip; it is still the
-##     current clip for 80%+ of the frames over the next second of the charge;
+##     current clip for 80%+ of the frames over the next second of the charge,
+##     even after a 900 ms frame stall right as it starts (the hold counts
+##     game time, not wall time);
 ## (2) RAPTOR: _try_rake on a target in reach starts "CharacterArmature|Attack";
-##     it stays current for 80%+ of the frames over the clip's first 0.5 s.
+##     it stays current for 80%+ of the frames over the clip's first 0.5 s;
+## (3) the intro cast (AI off, model animating): IntroCutscene.strike_clip
+##     holds each robot's combat clip 80%+ of the next 20 frames (or its length).
 ##   godot --headless --path . --audio-driver Dummy res://tests/special_clip_probe.tscn
 
 var ok := true
@@ -62,6 +66,10 @@ func _run() -> void:
 	var sap: AnimationPlayer = sn.find_children("*", "AnimationPlayer", true, false)[0]
 	sn.target = player
 	sn.call("_perform_attack")
+	# A 900 ms frame stall right after the clip starts (an on-demand synth
+	# sound does this on a loaded machine): the hold must count game time, so
+	# no game time passing must not eat the clip.
+	OS.delay_msec(900)
 	var sheld: float = await _held(sap, "Charge", 60)
 	_check("sniper's Charge clip plays through the charge", sap.has_animation("Charge") and sheld >= 0.8,
 			"held %.0f%% of 60 frames" % (sheld * 100.0))
@@ -81,6 +89,31 @@ func _run() -> void:
 	var rheld: float = await _held(rap, "CharacterArmature|Attack", 30)
 	_check("raptor's rake clip plays through", pdmg.current_health < hp0 and rheld >= 0.8,
 			"raked=%s held %.0f%% of 30 frames" % [pdmg.current_health < hp0, rheld * 100.0])
+
+	rp.queue_free()
+
+	# 3. The intro's cast, AI off as the intro spawns them: each combat clip
+	#    (the mech's Punch is not its routine attack clip) is held on strike.
+	var intro: GDScript = load("res://scripts/cutscene/intro_cutscene.gd")
+	var cast: Dictionary = intro.get_script_constant_map()["CAST"]
+	for type in cast:
+		var clip := String(cast[type]["attack"])
+		if clip == "":
+			continue
+		var bot: Node3D = (load(String(cast[type]["scene"])) as PackedScene).instantiate()
+		add_child(bot)
+		bot.global_position = Vector3(4, 0, 0)
+		bot.set_physics_process(false) # as the intro does: no AI, the model keeps animating
+		for i in 10:
+			await get_tree().physics_frame
+		var bap: AnimationPlayer = bot.find_children("*", "AnimationPlayer", true, false)[0]
+		intro.strike_clip(bot.get_node("Model"), clip)
+		# Sample at most the clip's own length (the spider's Attack is ~16 frames).
+		var n := clampi(int(bap.get_animation(clip).length * 60.0) - 2, 4, 20) if bap.has_animation(clip) else 20
+		var bheld: float = await _held(bap, clip, n)
+		_check("intro %s holds its %s strike" % [type, clip], bap.has_animation(clip) and bheld >= 0.8,
+				"held %.0f%% of %d frames" % [bheld * 100.0, n])
+		bot.queue_free()
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
