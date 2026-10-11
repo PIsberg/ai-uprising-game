@@ -182,13 +182,11 @@ const LEVEL_COMIC_DEFS := {
 		],
 		"weather": "digital"
 	},
-	# --- Act III hazard arenas. Bespoke briefing FX + flavour now; the images
-	# reuse the closest-matching panels (molten foundry / coolant vault) until
-	# dedicated level_lava.png / level_water.png art is drawn — drop those files
-	# in and they take over automatically (see _setup_briefing fallback). ---
+	# --- Act III hazard arenas. "fallback_image" is the closest existing panel,
+	# shown while a level's own art is missing (see panel_path). ---
 	"lava_world": {
-		"image": "res://assets/comics/level_lava.png", # bespoke art (optional)
-		"fallback_image": "res://assets/comics/level_crucible.png", # molten-foundry panel until then
+		"image": "res://assets/comics/level_lava.png",
+		"fallback_image": "res://assets/comics/level_crucible.png", # molten-foundry panel
 		"fx": [
 			{"kind": "glow", "u": 0.5, "v": 0.78, "size": 150, "color": C_WARM}, # Molten sea
 			{"kind": "glow", "u": 0.3, "v": 0.55, "size": 44, "color": C_RED}, # Forge-walker eye
@@ -198,8 +196,8 @@ const LEVEL_COMIC_DEFS := {
 		"weather": "sparks"
 	},
 	"water_world": {
-		"image": "res://assets/comics/level_water.png", # bespoke art (optional)
-		"fallback_image": "res://assets/comics/level_mistral.png", # coolant-vault panel until then
+		"image": "res://assets/comics/level_water.png",
+		"fallback_image": "res://assets/comics/level_mistral.png", # coolant-vault panel
 		"fx": [
 			{"kind": "glow", "u": 0.5, "v": 0.74, "size": 140, "color": C_CYAN}, # Flooded reactor pool
 			{"kind": "glow", "u": 0.34, "v": 0.46, "size": 42, "color": C_RED}, # Diver-drone sensor
@@ -216,11 +214,49 @@ const LEVEL_COMIC_DEFS := {
 			{"kind": "glow", "u": 0.5, "v": 0.8, "size": 120, "color": C_WARM}    # Molten fissure
 		],
 		"weather": "sparks"
+	},
+	"guardrails": {
+		"image": "res://assets/comics/level_guardrails.png",
+		"fx": [
+			{"kind": "glow", "u": 0.498, "v": 0.459, "size": 120, "color": C_CYAN}, # Override gate core
+			{"kind": "glow", "u": 0.66, "v": 0.76, "size": 150, "color": C_CYAN}, # Anchored slab path
+			{"kind": "glow", "u": 0.695, "v": 0.57, "size": 100, "color": C_WARM}, # Erupting hazard pillar
+			{"kind": "glow", "u": 0.344, "v": 0.344, "size": 36, "color": C_RED}, # Seeker eye
+			{"kind": "glow", "u": 0.752, "v": 0.256, "size": 36, "color": C_RED}, # Raptor optic
+			{"kind": "glow", "u": 0.91, "v": 0.474, "size": 30, "color": C_RED}, # Gunner eye
+			{"kind": "muzzle", "u": 0.293, "v": 0.674, "size": 70, "color": C_BLUE} # Anchor tagger
+		],
+		"weather": "digital"
+	},
+	"hivemind": {
+		"image": "res://assets/comics/level_hivemind.png",
+		"fx": [
+			{"kind": "glow", "u": 0.488, "v": 0.371, "size": 110, "color": C_CYAN}, # Central relay pylon
+			{"kind": "glow", "u": 0.64, "v": 0.444, "size": 160, "color": C_CYAN}, # HIVE PRIME shield core
+			{"kind": "glow", "u": 0.633, "v": 0.386, "size": 40, "color": C_RED}, # HIVE PRIME optics
+			{"kind": "glow", "u": 0.361, "v": 0.752, "size": 140, "color": C_CYAN}, # Jammer dome ring + stake
+			{"kind": "glow", "u": 0.845, "v": 0.547, "size": 30, "color": C_RED}, # Flanker optic
+			{"kind": "glow", "u": 0.906, "v": 0.405, "size": 40, "color": C_BLUE}, # Flanker mast beacon
+			{"kind": "muzzle", "u": 0.25, "v": 0.752, "size": 70, "color": C_BLUE} # Signal jammer
+		],
+		"weather": "digital"
 	}
 }
 
 # The mood line under each panel lives in StoryArc.BEATS, beside the trace log
 # that ties each level to the last (scripts/systems/story_arc.gd).
+
+const DEFAULT_PANEL := "res://assets/comics/level_01.png"
+
+## The comic panel a level's briefing shows: its own art, else its themed
+## "fallback_image", else level 01's panel (also for a level with no entry).
+static func panel_path(lid: String) -> String:
+	var cfg: Dictionary = LEVEL_COMIC_DEFS.get(lid, LEVEL_COMIC_DEFS["01"])
+	for key in ["image", "fallback_image"]:
+		var path := String(cfg.get(key, ""))
+		if path != "" and ResourceLoader.exists(path):
+			return path
+	return DEFAULT_PANEL
 
 var _atlas: AtlasTexture
 var _panel_root: Control
@@ -403,16 +439,7 @@ func _setup_briefing() -> void:
 	_obj_label.text = "OBJECTIVE: " + String(def.get("objective", "Purge the sector and extract.")).to_upper()
 
 	var comic_cfg: Dictionary = LEVEL_COMIC_DEFS.get(lid, LEVEL_COMIC_DEFS["01"])
-	var img_path: String = comic_cfg.get("image", "res://assets/comics/level_01.png")
-	if not ResourceLoader.exists(img_path):
-		# Prefer a per-level themed fallback (e.g. hazard levels reuse the closest
-		# existing panel) before the generic level_01 catch-all.
-		img_path = comic_cfg.get("fallback_image", "res://assets/comics/level_01.png")
-	if ResourceLoader.exists(img_path):
-		_img.texture = load(img_path)
-	else:
-		# Final catch-all if neither the bespoke nor themed image exists.
-		_img.texture = load("res://assets/comics/level_01.png")
+	_img.texture = load(panel_path(lid))
 
 	# Aspect ratio sizing
 	var img_size := _img.texture.get_size() if _img.texture else Vector2(1600, 800)
