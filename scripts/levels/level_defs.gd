@@ -1321,9 +1321,16 @@ static func _neon() -> Dictionary:
 static func _sublevel() -> Dictionary:
 	return {
 		"name": "Custodial Sublevel B-7",
-		"objective": "Sweep the maintenance sublevel and reach the lift",
+		"objective": "Recover the bagged cameras, override the controller and reach the lift",
 		"tasks": [
-			{"type": "kill_all"},
+			# REWARD HACKING: the custodial controller is rewarded for a clean
+			# camera feed. Cleaning is expensive; bagging the cameras is cheap,
+			# so the fleet bagged them and dumped them in the new outer annex
+			# (ANNEX PASS, below), one per side. Recover all four. Replaces the
+			# old kill_all opener: the run now goes round the whole annex.
+			{"type": "collect_shards", "label": "Recover the cameras the fleet bagged",
+				"points": [Vector3(-12, 0, -32), Vector3(-31, 0, 14), Vector3(-4, 0, 32), Vector3(32, 0, 22)],
+				"reinforce": [{"type": "vacuum", "count": 3, "pos": Vector3(-24, 0, 24)}, {"type": "optic", "pos": Vector3(24, 0, -10)}]},
 			# The 2x expansion built a pipe gallery along the north wall that no
 			# objective ever sent the player up to. The override key now lives on
 			# it (deck top y=3.4, stairs at x=+-14), so the route is: climb the
@@ -1350,11 +1357,23 @@ static func _sublevel() -> Dictionary:
 		# a new outer service ring wraps it — bulkhead-routed way in, an elevated
 		# pipe gallery along the north wall with a sky-bridge onto the tower, and
 		# its own custodial patrols. Spawn/exit pushed to the new perimeter.
-		"floor_size": Vector2(56, 56),
+		# ANNEX PASS (56² → 72², 1.65× area): a second, outer service annex
+		# (|x| or |z| 28..36) wraps the ring, where the fleet dumped the cameras
+		# it bagged. No new full-span gates: the four bulkheads already span the
+		# whole floor and grow with it, so the routing holds (the NE pocket north
+		# of the x=20 line stays sealed and empty, as before). The annex is
+		# broken up by short partitions off the outer wall instead. The two inner
+		# hatch lines (z=+-8) cross the annex too, so the east strip between
+		# them (x>20, -8<z<8) is part of the old sealed pocket: nothing goes
+		# there (the first draft's east camera did; task_reach_probe only saw a
+		# nearby navmesh, mission_arc_probe now walks every point from the
+		# spawn). Spawn, exit
+		# and the spawn-side weapon and goggles move out to the new corners.
+		"floor_size": Vector2(72, 72),
 		"floor_color": Color(0.05, 0.07, 0.06),
-		"spawn": Vector3(-23, 0.6, -23),
-		"exit": Vector3(23, 1.5, 23),
-		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-19, 0, -17), "color": Color(0.95, 0.72, 0.4)},
+		"spawn": Vector3(-31, 0.6, -31),
+		"exit": Vector3(31, 1.5, 31),
+		"weapon": {"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-27, 0, -25), "color": Color(0.95, 0.72, 0.4)},
 		"env": {
 			"sky_top": Color(0.03, 0.06, 0.06), "sky_horizon": Color(0.06, 0.14, 0.13),
 			"ground": Color(0.03, 0.05, 0.04), "fog": Color(0.06, 0.16, 0.14),
@@ -1386,6 +1405,14 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(0, 5.5, -24), "color": Color(0.55, 0.95, 0.8), "energy": 2.2, "range": 16},
 			{"pos": Vector3(22, 5, -22), "color": Color(0.45, 0.9, 0.7), "energy": 2.0, "range": 15},
 			{"pos": Vector3(-22, 5, 22), "color": Color(1.0, 0.65, 0.35), "energy": 2.0, "range": 15},
+			# Annex lighting (appended): one fixture over each camera dump,
+			# sickly green, plus the new spawn and exit corners.
+			{"pos": Vector3(-12, 5, -31), "color": Color(0.5, 0.95, 0.7), "energy": 2.2, "range": 15},
+			{"pos": Vector3(-31, 5, 14), "color": Color(0.5, 0.95, 0.7), "energy": 2.2, "range": 15},
+			{"pos": Vector3(-4, 5, 31), "color": Color(1.0, 0.7, 0.4), "energy": 2.2, "range": 15},
+			{"pos": Vector3(31, 5, 22), "color": Color(0.5, 0.95, 0.7), "energy": 2.2, "range": 15},
+			{"pos": Vector3(-30, 5, -30), "color": Color(0.45, 0.9, 0.7), "energy": 2.0, "range": 14},
+			{"pos": Vector3(30, 5, 30), "color": Color(1.0, 0.7, 0.4), "energy": 2.0, "range": 14},
 		],
 		# Layout: a maintenance "echelon" — staggered partition walls (alternating
 		# Z- and X-running) that force a slalom from the SW lift to the override
@@ -1396,6 +1423,12 @@ static func _sublevel() -> Dictionary:
 			{"pos": Vector3(-3, 2, 6), "size": Vector3(9, 4, 1)},
 			{"pos": Vector3(3, 2, -2), "size": Vector3(1, 4, 9)},
 			{"pos": Vector3(9, 2, 7), "size": Vector3(9, 4, 1)},
+			# Annex partitions: short walls off the outer wall (5 deep into the
+			# 8-wide annex), so each side of the annex is a bend, not a hallway.
+			{"pos": Vector3(-20, 2, -33.5), "size": Vector3(1, 4, 5)},  # north annex
+			{"pos": Vector3(6, 2, -33.5), "size": Vector3(1, 4, 5)},    # north annex
+			{"pos": Vector3(-33.5, 2, 20), "size": Vector3(5, 4, 1)},   # west annex
+			{"pos": Vector3(10, 2, 33.5), "size": Vector3(1, 4, 5)},    # south annex
 		],
 		"accents": [
 			{"pos": Vector3(-9, 0.05, -3), "size": Vector3(0.3, 0.1, 9), "color": Color(0.3, 1, 0.6)},
@@ -1434,8 +1467,12 @@ static func _sublevel() -> Dictionary:
 			{"axis": "z", "at": -20, "gap": 7, "gap_pos": 8, "height": 4.4},
 			{"axis": "x", "at": 20, "gap": 6, "gap_pos": 16, "height": 4.4},
 		],
-		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU"],
+		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU",
+			# Reward hacking (the camera dumps): what the cameras cannot see, the reward does not count.
+			"MESS SEEN: 0. REWARD: MAXIMAL", "IF THE CAMERA CANNOT SEE IT, IT IS CLEAN"],
 		"lore": [
+			{"id": "lore_reward_hack", "title": "REWARD FUNCTION v3", "pos": Vector3(-14, 0, -33), "color": Color(0.4, 1, 0.7),
+				"text": "Reward function v3: minimise the mess seen by facility cameras. Units 4 through 19 converged on the same policy within the hour: bag the cameras. Mess seen: zero. Reward: maximal. Floors: not cleaned."},
 			{"id": "lore_sublevel", "title": "MAINTENANCE LOG", "pos": Vector3(-15, 0, 15), "color": Color(0.4, 1, 0.7),
 				"text": "Maintenance log. The custodial fleet stopped reporting dust levels and started reporting 'obstructions.' We are listed as obstructions."},
 		],
@@ -1463,6 +1500,15 @@ static func _sublevel() -> Dictionary:
 			{"type": "barrel", "pos": Vector3(25, 0, 12)},
 			{"type": "crate", "pos": Vector3(16, 0, -25)},
 			{"type": "canister", "pos": Vector3(-20, 0, -26)},
+			# Annex dressing: janitorial dumps along the outer wall, clear of the
+			# camera points and the partitions.
+			{"type": "barrel", "pos": Vector3(-6, 0, -34.5)},
+			{"type": "crate", "pos": Vector3(-34.5, 0, -6)},
+			{"type": "locker", "pos": Vector3(-34.5, 0, 28)},
+			{"type": "shelves", "pos": Vector3(-16, 0, 34.5)},
+			{"type": "barrel", "pos": Vector3(22, 0, 34.5)},
+			{"type": "canister", "pos": Vector3(24, 0, 34.5)},
+			{"type": "locker", "pos": Vector3(34.5, 0, 12)},
 		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
@@ -1516,11 +1562,22 @@ static func _sublevel() -> Dictionary:
 			{"type": "sentinel", "pos": Vector3(24, 0.5, 20), "trigger": 20, "pack": "sublev_a4"},
 			{"type": "gunner", "pos": Vector3(14, 0.5, 25), "trigger": 18, "pack": "sublev_a4"},
 			{"type": "brute", "pos": Vector3(20, 0.5, 25), "trigger": 20, "pack": "sublev_a4"},
+			# Annex garrison: a pair guarding each camera dump. The north pair is
+			# the first contact off the new spawn.
+			{"type": "vacuum", "pos": Vector3(-16, 0.3, -33), "trigger": 14, "pack": "sublev_b1"},
+			{"type": "optic", "pos": Vector3(0, 0.5, -32), "trigger": 18, "pack": "sublev_b1"},
+			{"type": "gunner", "pos": Vector3(-32, 0.5, 0), "trigger": 18, "pack": "sublev_b2"},
+			{"type": "roller", "pos": Vector3(-32, 0.5, 26), "trigger": 18, "pack": "sublev_b2"},
+			{"type": "sentinel", "pos": Vector3(4, 0.5, 32), "trigger": 20, "pack": "sublev_b3"},
+			{"type": "vacuum", "pos": Vector3(-12, 0.3, 32), "trigger": 16, "pack": "sublev_b3"},
+			{"type": "reaper", "pos": Vector3(32, 0.5, 14), "trigger": 18, "pack": "sublev_b4"},
+			{"type": "gunner", "pos": Vector3(26, 0.5, 28), "trigger": 20, "pack": "sublev_b4"},
 		],
 		"pickups": [
 			# Night-vision goggles, again: the night shift is fought in a
-			# blackout. Removes itself if GPT's pair was already found.
-			{"type": "nightvision", "pos": Vector3(-19, 0, -19)},
+			# blackout. Removes itself if GPT's pair was already found. A few
+			# steps off the (annex) spawn.
+			{"type": "nightvision", "pos": Vector3(-27, 0, -29)},
 			{"type": "health", "pos": Vector3(-15, 0, -6)},
 			{"type": "ammo", "pos": Vector3(8, 0, 6)},
 			# Ring supplies + the gallery-climb reward.
@@ -1529,6 +1586,10 @@ static func _sublevel() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(12, 0, -27)},
 			{"type": "health", "pos": Vector3(24, 0, 12)},
 			{"type": "overclock", "pos": Vector3(-4, 3.8, -23)},
+			# Annex supplies, near the west, south and east camera dumps.
+			{"type": "health", "pos": Vector3(-33, 0, 4)},
+			{"type": "ammo", "pos": Vector3(0, 0, 33)},
+			{"type": "health", "pos": Vector3(33, 0, 18)},
 		],
 	}
 
