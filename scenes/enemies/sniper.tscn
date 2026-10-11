@@ -21,6 +21,8 @@ shape = SubResource("Shape_sniper")
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("3_rm")
 anim_walk = "Walk"
+anim_run = "Run"
+run_speed = 3.0
 anim_attack = "Attack"
 anim_stagger = "Hit"
 walk_speed_scale = 1.2

@@ -29,6 +29,11 @@ extends Node3D
 @export var anim_attack: String = "" ## Played as a one-shot on each weapon discharge.
 @export var anim_stagger: String = "" ## Hit-reaction clip while the parent is staggered.
 @export var walk_speed_scale: float = 1.4 ## Walk clip speed at full ground speed.
+## Run clip for bursts past the walk (a sprint, a scoot): played instead of the
+## walk at `run_speed` m/s and up, its rate scaled to the ground speed, so the
+## legs keep up instead of the walk cycle skating. Empty = walk at any speed.
+@export var anim_run: String = ""
+@export var run_speed: float = 0.0
 @export var lean_max: float = 0.14 ## Max forward/back lean (radians) from movement.
 @export var bank_max: float = 0.22 ## Max roll into lateral movement (radians). Flyers auto-bank harder.
 ## Auto-fit: when > 0, the imported mesh is scaled at runtime so its height is
@@ -92,7 +97,7 @@ func _ready() -> void:
 		if _mesh == null:
 			set_physics_process(false) # nothing to drive
 		return
-	for n in [anim_idle, anim_walk]:
+	for n in [anim_idle, anim_walk, anim_run]:
 		if n != "" and _anim.has_animation(n):
 			_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 	if _anim.has_animation(anim_idle):
@@ -624,7 +629,11 @@ func _physics_process(delta: float) -> void:
 	# Locomotion: idle <-> walk by ground speed.
 	var speed := Vector2(_parent.velocity.x, _parent.velocity.z).length()
 	var norm := clampf(speed / maxf(_parent.move_speed, 0.01), 0.0, 1.0)
-	if norm > 0.15 and anim_walk != "" and _anim.has_animation(anim_walk):
+	if anim_run != "" and run_speed > 0.0 and speed >= run_speed and _anim.has_animation(anim_run):
+		if _anim.current_animation != anim_run:
+			_anim.play(anim_run, 0.2)
+		_anim.speed_scale = clampf(speed / run_speed, 0.8, 1.8)
+	elif norm > 0.15 and anim_walk != "" and _anim.has_animation(anim_walk):
 		if _anim.current_animation != anim_walk:
 			_anim.play(anim_walk, 0.25)
 		_anim.speed_scale = lerpf(0.8, walk_speed_scale, norm)

@@ -3,11 +3,11 @@ extends Node
 ## model. RobotModel skips a missing name silently (has_animation), so a typo
 ## or a clip from another rig leaves the robot frozen in its rest pose with no
 ## error. Covers every scene in LevelBuilder.ENEMY_SCENES: anim_idle,
-## anim_walk, anim_attack and anim_stagger, when set. A static model (no
+## anim_walk, anim_run, anim_attack and anim_stagger, when set. A static model (no
 ## AnimationPlayer at all) has nothing to play and is skipped.
 ##   godot --headless --path . --audio-driver Dummy res://tests/robot_anim_names_probe.tscn
 
-const FIELDS := ["anim_idle", "anim_walk", "anim_attack", "anim_stagger"]
+const FIELDS := ["anim_idle", "anim_walk", "anim_run", "anim_attack", "anim_stagger"]
 
 func _ready() -> void:
 	_run.call_deferred()

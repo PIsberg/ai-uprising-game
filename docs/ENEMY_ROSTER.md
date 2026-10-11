@@ -59,10 +59,10 @@ inherit that parent's overrides too.
 | GUNNER | `enemy_gunner.gd` | `quaternius_gunner_siege.glb` (Blender fork of Quaternius "Robot Enemy Large Gun": recoil spades, gun shield, ammo drum, rotary mount) + code-built barrel cluster on the Gun bone | tanky suppressor; telegraphed spin-up into 12-round burst (the barrels really spin up through the windup and glow hotter per round), plants while firing | — | — |
 | GUNSLINGER | `enemy_gunslinger.gd` (extends EnemyAndroid) | android chassis (inherited) | duelist; single heavy slugs on slow cadence, sidestep weave | (android's) | — |
 | HIVE | `enemy_hive.gd` † | `quaternius_bot_hive.glb` (Blender fork: uplink mast, dish, relay pack, shield-emitter prongs) + procedural shield mesh + mast-tip link beacon | networked flanker; energy shield until inside a jammer zone (beacon goes dark with it), spreads flank angles across siblings | — | — |
-| HOWITZER | `enemy_howitzer.gd` | `assets/models/robots/walking_robot_gun.glb` | slow four-legged artillery walker; charged ballistic splash shells | — | — |
+| HOWITZER | `enemy_howitzer.gd` | `assets/models/robots/walking_robot_gun.glb` (static; one long barrel on its back, `Gun` mesh) | slow four-legged artillery walker; charged ballistic splash shells from the barrel's muzzle (scene `Muzzle` at (0, 2.87, -1.97)) | — | — |
 | HUNTER | `enemy_hunter.gd` † | "quaternius_gunner_bladed" chassis (scene) | circle-strafe skirmisher; bolt bursts + blade-dash gap-closer | — | — |
 | MANUS | `enemy_manus.gd` | `assets/models/robots/robot_arm_wip_2.glb` | rooted giant-arm boss: sweep/slam/grab-hurl/finger spikes; single weak-spot core; finger-drum entrance; 3 HP-keyed phases (cooldowns ×1/0.8/0.62, phase 3 double finger eruption leading the player) — `tests/manus_phase_probe` | `_state_attack` | BOSS |
-| MAULER | `enemy_mauler.gd` † | real robot model in `mauler.tscn` (RobotModel Punch clip) | heavy melee brawler; OVERLOAD at 35% HP — sprint + timed self-detonation | — | — |
+| MAULER | `enemy_mauler.gd` † | Quaternius "RobotExpressive" (`RobotExpressive.glb`; Walking, Running and Punch clips) | heavy melee brawler; OVERLOAD at 35% HP — sprint (on its Running clip from 6.5 m/s, `anim_run`) + timed self-detonation | — | — |
 | MECH ("STILT MECH") | `enemy_mech.gd` | Quaternius "Stan" (`Stan.fbx` on `$Model`): lean frame on spike stilts, open right hand, no launcher | lopes (Run clip) and circle-strafes; 3-bolt bursts from its right palm (`muzzle_on_bone("PalmI.R")`); inside 10 m a telegraphed leap (ground warning, Jump clip) that lands spike-first for AoE damage + knockback | `_state_attack` | — |
 | MENDER | `enemy_mender.gd` | EyeDrone chassis, tinted teal (scene) | support flyer; beam-heals most-wounded ally, flees the player, never attacks | `_on_died` | — |
 | OPTIC ("OPTICON") | `enemy_optic.gd` (extends EnemyAndroid) | android chassis (inherited) | charged sweeping cutting beam + android burst rifle filler (both overrides call super) | (android's) | — |
@@ -80,19 +80,29 @@ inherit that parent's overrides too.
 | SHARK ("RAZORFIN") | `enemy_shark.gd` (extends EnemyDrone) | scene model | submerged stalker; cruises underwater, breaches in an arc to bite | `_state_attack` (+ drone's) | — |
 | SKITTER | `enemy_skitter.gd` | trilobite crawler, tinted red (scene) | swarm chaff; fast scuttle, brief windup, ballistic pounce-bite; lean custom death | `_on_died` | — |
 | SMASHER ("BEHEMOTH-X") | `enemy_smasher.gd` | "rusty_claws_robot" via RobotModel (auto-fit 10 m) | melee boss: overhead smash, ground-slam AoE, claw-rake lunge; molten wake-slam entrance; attack cooldowns ×1/0.8/0.62 by phase (`boss_phase_probe`) | `_state_attack` | BOSS |
-| SNIPER | `enemy_sniper.gd` † | RobotModel on `$Model` (scene) | stationary long-range hitscan; visible charged-beam telegraph, stagger interrupts the charge | — | — |
+| SNIPER | `enemy_sniper.gd` † | Quaternius "QuadShell" (`Enemy_QuadShell.gltf` on `$Model`): a shell on four long walking legs, a short gun barrel each side (`Gun.L`/`Gun.R` bones) | long-range charged hitscan beam (visible telegraph, stagger interrupts the charge) from the front of one barrel, alternating barrels shot to shot (the muzzle hops between two bone attachments via `_muzzle_bone`/`_muzzle_offset`); shoot and scoot: 0.35 s after each shot (its Attack recoil) it crab-walks 6-9 m sideways on the navmesh at 3x its speed on its Run clip (`anim_run`/`run_speed` on RobotModel), shell still on the target, then plants | — | — |
 | SPIDER | `enemy_spider.gd` | trilobite crawler (scene) | fast melee harasser; dart-freeze-dart cadence, telegraphed leap-pounce bite | — | — |
 | TERMINATOR ("APEX ENDOFRAME") | `enemy_terminator.gd` | Quaternius "Animated Robot" GLB (rigged, animated) | fast mobile ranged boss: dual-muzzle bursts + tracking sweeping "Optic Lance" beam; floor-eruption entrance | `_state_attack` | BOSS |
 | TITAN ("PROMETHEUS-0") | `enemy_titan.gd` (extends EnemyColossus) | "Giant Robot" (Dann Beeson, CC-BY) | boss: phase-gated spatial-fold teleport-blink flanks + charged sweeping beam; overrides `_begin_entrance` (violet rift) | (colossus's; own `_choose_attack` calls super) | BOSS |
 | VACUUM ("Custodian") | `enemy_vacuum.gd` † | fully procedural (code-built disc chassis + legs) | disguised idle floor-cleaner; rises into a walker on detection; fires its 2-bolt burst only from the apex of a crouch-and-hop (1.4 m), underside intake exposed and crit x1.5 while airborne | — | — |
 | WARBOT | `enemy_warbot.gd` (extends EnemyAndroid) | android chassis + code-built arm cannons/face | twin arm-cannon rifleman; mood face, rage-mode burst below 45% HP | (android's) | — |
-| WARMECH | `enemy_warmech.gd` | Quaternius Mech, twin shoulder cannons | heavy siege walker; long charged telegraph into 3-shell plasma salvo, plants while firing | — | — |
+| WARMECH | `enemy_warmech.gd` | Quaternius Mech, twin shoulder cannons (`quaternius_mech_armed.glb`, cannons skinned to `Torso`) | heavy siege walker; long charged telegraph (a charge orb in each cannon) into a 3-shell plasma salvo that alternates cannons (`CANNON_TIPS` as offsets on a `muzzle_on_bone("Torso")` muzzle), plants while firing | — | — |
 | WHIRLWIND | `enemy_whirlwind.gd` (extends EnemyDrone) | scene model (spins `Model/Mesh`) | hovering buzzsaw; dives to melee-slash at close range, no ranged attack | (drone's) | — |
 
 **Boss entrances:** `_begin_entrance` is defined on `EnemyColossus` and overridden by
 `EnemyTitan`; the other bosses stage their own bespoke entrances (SMASHER wake-slam,
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing
 via `GameState.announce_boss`.
+
+**Muzzles on the gun:** an enemy fires from its `muzzle` node, and a fixed `Muzzle` in the
+scene drifts off the model's gun as it animates (or never was on it). Two ways to pin it to
+the model: `muzzle_on_bone(bone, offset)` in code (MECH palm, SENTINEL fist, ANDROID face lens,
+SNIPER's two barrels, WARMECH's two shoulder cannons), or the scene exports `muzzle_bone` +
+`muzzle_bone_offset` on any `EnemyBase` (HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE and HIVE fire
+from their Quaternius `Gun` bone this way). Measure the offset from the model: the vertices
+skinned to the bone, front-most along the bone's own +Z (`tests/gun_muzzle_probe.gd`
+`_barrel_front`), not by eye. HUNTER's and OVERFITTER's guns have twin barrels; both fire from
+the centre of the gun's front face.
 
 **Tallies:** 45 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
 MENDER, OVERSEER, RAPTOR, SEEKER, SKITTER — matches the "seven subclasses" comment in

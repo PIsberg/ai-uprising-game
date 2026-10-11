@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-367 probes total: **114** wired into the headless suite (`suite`), **84**
+370 probes total: **117** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -142,11 +142,14 @@ or GPU-timing probes; `--headless` renders these black).
 | overlord_holo_probe | The overlord's sky face: on every open-sky level (22-34 deg up from the arena, 25+ deg off the landmark), none indoors or with `"kind": "none"`; Skyline keeps far towers out of FACE_CLEAR and near towers within FACE_FRAME under FRAME_H; a HUD taunt sends GameState.overlord_spoke (not with callouts off); speaking runs the mouth for the line's length then stops; pupils lead toward a viewer who steps aside, centre once the head has turned, drop for a viewer below | suite |
 | overlord_holo_shot | Each open-sky level from its spawn at eye height, turned toward the overlord's face mid-sentence; `-- --out=<dir> [--levels=...] [--wide]` | windowed |
 | special_clip_probe | A special-move clip is held, not taken back by idle/walk next tick (#242): the SNIPER's `_perform_attack` keeps "Charge" current on 80%+ of the next 60 frames even after a 900 ms frame stall (the hold counts game time), the RAPTOR's `_try_rake` keeps "CharacterArmature|Attack" current on 80%+ of the next 30 (its belly-gun Shoot must not cut it), and `IntroCutscene.strike_clip` holds each intro cast robot's combat clip (the mech's Punch) with its AI off | suite |
-| robot_anim_names_probe | Every anim_idle/anim_walk/anim_attack/anim_stagger an enemy scene in LevelBuilder.ENEMY_SCENES gives its RobotModel is a clip of that model (RobotModel skips a missing name silently, leaving the robot in its rest pose); static models with no AnimationPlayer are skipped | suite |
+| robot_anim_names_probe | Every anim_idle/anim_walk/anim_run/anim_attack/anim_stagger an enemy scene in LevelBuilder.ENEMY_SCENES gives its RobotModel is a clip of that model (RobotModel skips a missing name silently, leaving the robot in its rest pose); static models with no AnimationPlayer are skipped | suite |
 | sentinel_brawler_probe | SENTINEL 1v1 vs a stand-in player: it walks on its Walking clip, 3+ throws (1+ bomb) all leave within 1.2 m of its right fist (Palm1.R) with the Punch clip playing, the fist muzzle is at world scale ~1, and from 2.2 m it winds up 0.3 s+ and punches for damage and 5+ m/s knockback | suite |
 | sentinel_brawler_shot | Side view of the SENTINEL throwing from its fist at range, then a punch wind-up and the hit; `-- --out=<dir>` | windowed |
 | android_walker_probe | ANDROID (Quaternius "Leela") 1v1 vs a stand-in player: 5+ shots in 10 s, each fired with the muzzle within 0.5 m of the Head bone, 1.3 m+ up and at world scale ~1 (the face lens, not the old chest point); a juke leaves the floor 0.3 m+ while moving 3+ m/s sideways; from 2 m it plays Kick, winds up 0.25 s+ and lands damage + 5+ m/s knockback; an ENFORCER (EnemyAndroid subclass on its own model) keeps its scene Muzzle and never kicks | suite |
 | android_walker_shot | Side view of the ANDROID firing from its face lens, at a side-hop's peak, then the kick wind-up and the claw landing; `-- --out=<dir>` | windowed |
+| gun_muzzle_probe | HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE, HIVE each 1v1 at 14 m: 2+ shots (projectile or tracer), each fired with the muzzle within 0.25 m of the barrel front (centroid of the vertices skinned to the Gun bone within 5 cm of the front-most along the bone's +Z, on the posed mesh); the old fixed muzzles measured 0.42-2.59 m | suite |
+| siege_cannon_probe | WARMECH at 24 m: 3+ shells each within 0.3 m of a shoulder-cannon muzzle and alternating cannons, and two charge orbs each within 0.4 m of a cannon; HOWITZER at 26 m: every shell within 0.3 m of its barrel's muzzle. Muzzles come from the model at the moment of firing (front vertices of each cannon on the skinned mesh, or of the static Gun mesh); the old centre muzzles measured 1.37 m and 1.04 m | suite |
+| sniper_stalker_probe | SNIPER (QuadShell) at 30 m from a stand-in player: 2+ beams that each hit with the muzzle 0.83 m (+/-0.15) from the nearest Gun bone and 0.5+ m ahead of the body (the old muzzle sat 1.3 m from both), successive shots on alternating barrels, within 3 s of each shot it moves 4+ m while never closing inside 18 m, and 80%+ of its frames at 3+ m/s play the Run clip | suite |
 | reaper_rifle_probe | REAPER closing from 22 m on a stand-in player: 3+ shots, each fired with the muzzle within 0.2 m of the rifle mesh's barrel end (its vertices within 0.08 m of the front; the old chest muzzle measured 0.39 m), 2+ of them while moving 3+ m/s and closing 6+ m; from 2.2 m its lunge lands damage and shoves the player 4+ m/s | suite |
 | mech_stilt_probe | Stilt MECH 1v1 vs a stand-in player: it lopes on the Run clip at 5+ m/s, fires 2+ bolts that each leave within 1.2 m of its right palm bone (PalmI.R) and none with splash, the muzzle (parent of the flash) is at world scale ~1 (not the rig's 57x), and from 7 m it plants for 0.4 s+ before a leap that rises 0.4 m+ and lands within KICK_RADIUS of the player for damage and 5+ m/s knockback | suite |
 | mech_stilt_shot | Side view of the stilt MECH firing from its palm, then crouching (ground warning), at the apex and landing; `-- --out=<dir>` | windowed |
@@ -284,7 +287,7 @@ or GPU-timing probes; `--headless` renders these black).
 | manus_rooted_probe | ROOTED MANUS: holds spawn position at range, finger-eruption telegraph damage, grab is now a yank within grab_reach | headless |
 | map_probe | Campaign map fully unlocked: lava/water sectors, hazard rings, act grouping, drifting motes | windowed |
 | map_shot | Campaign map driven by keyboard cursor: selection reticle + sector intel | windowed |
-| mauler_overload_probe | MAULER's wounded OVERLOAD sprint actually bumps live `move_speed` (was a dead `_speed_mult` write) | suite |
+| mauler_overload_probe | MAULER's wounded OVERLOAD sprint actually bumps live `move_speed` (was a dead `_speed_mult` write), and on a floor with a navmesh the charge plays the Running clip on 80%+ of its frames at 6.5+ m/s (15+ such frames) | suite |
 | mech_shot | Freshly-sourced Quaternius Mech idle pose: scale/orientation before building an enemy from it | windowed |
 | melee_probe | Melee shove: in-cone enemies take damage+knockback, out-of-range ones don't | headless |
 | mender_probe | MENDER flies to a wounded android and beam-heals it, flight/death without errors | headless |
