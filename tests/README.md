@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-385 probes total: **128** wired into the headless suite (`suite`), **84**
+387 probes total: **129** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **173** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **174** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -357,6 +357,8 @@ or GPU-timing probes; `--headless` renders these black).
 | river_view | Themed rivers: the serpentine shape + the gap | windowed |
 | robot_models_check | Every RobotModel-carrying enemy scene resolves its AnimationPlayer + configured clips and has visible meshes | headless |
 | rollout_probe | Several rolled-out levels, one framed hero shot of each | windowed |
+| ronin_revolver_probe | RONIN faces forward (hands either side across x, the katana scabbard behind it: red with the import yaw of 0) and quick-draws: 4 slugs at 16 m, each leaving within 0.12 m of a drawn barrel tip (measured 0.003 m; 0.55 m before) with that barrel within 20 deg of the player (6), hands alternating left/right | suite |
+| ronin_revolver_shot | RONIN front view (face, katana on its back), then each revolver drawn onto a mark from its right side; `-- --out=<dir>` | windowed |
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
