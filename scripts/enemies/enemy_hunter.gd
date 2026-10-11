@@ -95,3 +95,4 @@ func _fire_one() -> void:
 		proj.launch(dir * proj_speed, self, proj_damage, 0.0, 0.0)
 	recoil = 1.0
 	_muzzle_flash()
+	next_barrel() # its gun has a barrel each side: alternate

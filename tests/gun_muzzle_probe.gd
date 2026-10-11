@@ -6,9 +6,12 @@ extends Node3D
 ## the barrel's front: the front-most vertices skinned to the Gun bone, on the
 ## mesh as posed that frame, so the check shares no numbers with the code.
 ## (The old fixed muzzles measured 0.42-2.59 m off; QUANTIZER's 1.24-1.34 m.)
+## The twin-barrel guns (HUNTER, OVERFITTER) must alternate barrels: each shot
+## within 0.25 m of one barrel's front, the next from the other (#253).
 ##   godot --headless --path . --audio-driver Dummy res://tests/gun_muzzle_probe.tscn
 
 const SCENES := ["hunter", "diffusion", "overfitter", "deepfake", "hive", "quantizer"]
+const TWIN := ["hunter", "overfitter"] ## guns with a barrel each side of the bone
 var ok := true
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
@@ -63,7 +66,7 @@ func _skinned(mi: MeshInstance3D) -> Array:
 ## a gun pitching through its Shoot clip changes which lip is front-most
 ## along the body's forward, and the twin-barrel guns (HUNTER, OVERFITTER)
 ## resolve to the centre of their front face either way.
-func _barrel_front(e: Node3D) -> Vector3:
+func _barrel_front(e: Node3D, side: float = 0.0) -> Vector3:
 	var sk: Skeleton3D = e.find_children("*", "Skeleton3D", true, false)[0]
 	var pose: Transform3D = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("Gun"))
 	var frame := Transform3D(pose.basis.orthonormalized(), pose.origin)
@@ -74,7 +77,9 @@ func _barrel_front(e: Node3D) -> Vector3:
 			continue
 		for p: Array in _skinned(mi):
 			if p[1] == "Gun":
-				pts.append(inv * (p[0] as Vector3))
+				var l: Vector3 = inv * (p[0] as Vector3)
+				if side == 0.0 or l.x * side > 0.05: # one barrel of a twin gun
+					pts.append(l)
 	var maxz := -99.0
 	for l: Vector3 in pts:
 		maxz = maxf(maxz, l.z)
@@ -145,6 +150,7 @@ func _run() -> void:
 				fired.append(n)
 		get_tree().node_added.connect(on_added)
 		var dists: Array = []
+		var sides := ""
 		for f in 60 * 7:
 			await get_tree().physics_frame
 			if not is_instance_valid(e):
@@ -154,13 +160,24 @@ func _run() -> void:
 			if not fired.is_empty():
 				fired.clear()
 				if dists.size() < 6:
-					dists.append(snappedf(e.muzzle.global_position.distance_to(_barrel_front(e)), 0.01))
+					if name in TWIN:
+						var dl := e.muzzle.global_position.distance_to(_barrel_front(e, -1.0))
+						var dr := e.muzzle.global_position.distance_to(_barrel_front(e, 1.0))
+						dists.append(snappedf(minf(dl, dr), 0.01))
+						sides += "L" if dl < dr else "R"
+					else:
+						dists.append(snappedf(e.muzzle.global_position.distance_to(_barrel_front(e)), 0.01))
 		get_tree().node_added.disconnect(on_added)
 		var far := 0.0
 		for d: float in dists:
 			far = maxf(far, d)
 		_check("%s fires from its gun's barrel" % name.to_upper(), dists.size() >= 2 and far < 0.25,
 				"shots sampled=%d muzzle-to-barrel %s m" % [dists.size(), dists])
+		if name in TWIN:
+			var alt := sides.length() >= 4
+			for i in range(1, sides.length()):
+				alt = alt and sides[i] != sides[i - 1]
+			_check("%s alternates its twin barrels" % name.to_upper(), alt, "barrels %s" % sides)
 		if is_instance_valid(e):
 			e.queue_free()
 		for i in 10:

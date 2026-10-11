@@ -201,6 +201,7 @@ func _fire_one_shot() -> void:
 		get_tree().current_scene.add_child(t)
 		if t.has_method("setup"):
 			t.setup(origin, end_point)
+	next_barrel() # a twin gun's next round comes from the other barrel
 
 func _perform_attack() -> void:
 	_start_burst()
