@@ -199,7 +199,8 @@ func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
 	if _muzzle_bone and muzzle:
-		muzzle.global_position = _muzzle_bone.global_position
+		muzzle.global_position = _muzzle_bone.global_position \
+				+ _muzzle_bone.global_basis.orthonormalized() * _muzzle_offset
 	# EMP'd: scrambled and inert — no perception, AI or attacks. Bleed off any
 	# momentum and just settle under gravity until it reboots. Runs in EnemyBase so
 	# every subclass (incl. the flyers, which call super) is disabled uniformly.
@@ -1241,13 +1242,16 @@ func _perform_attack() -> void:
 	pass
 
 var _muzzle_bone: BoneAttachment3D ## the bone the muzzle follows (muzzle_on_bone)
+var _muzzle_offset := Vector3.ZERO  ## metres in the bone's frame (scale stripped)
 
 ## Put the muzzle on a skeleton bone (the hand that shoots or throws). The
 ## muzzle stays a plain, unscaled child of the enemy that follows a
 ## BoneAttachment3D each physics tick: imported rigs carry a large
 ## counter-scale (57x on Stan), so anything parented under the attachment
-## itself (the muzzle flash, the telegraph orb) would render huge.
-func muzzle_on_bone(bone: String) -> bool:
+## itself (the muzzle flash, the telegraph orb) would render huge. `offset`
+## moves the muzzle off the bone's origin in metres along the bone's own axes
+## (a lens on the front of a head, not the neck joint the head pivots on).
+func muzzle_on_bone(bone: String, offset: Vector3 = Vector3.ZERO) -> bool:
 	var found := find_children("*", "Skeleton3D", true, false)
 	if found.is_empty() or (found[0] as Skeleton3D).find_bone(bone) < 0:
 		return false
@@ -1260,7 +1264,8 @@ func muzzle_on_bone(bone: String) -> bool:
 	add_child(m)
 	muzzle = m
 	_muzzle_bone = att
-	m.global_position = att.global_position
+	_muzzle_offset = offset
+	m.global_position = att.global_position + att.global_basis.orthonormalized() * offset
 	return true
 
 ## An aggressive committed melee strike: an explosive forward-and-up leap at the
