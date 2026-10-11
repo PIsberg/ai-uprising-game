@@ -5558,18 +5558,31 @@ static func _water_world() -> Dictionary:
 		"name": "Tidecore Basin — The Flooded Reactor",
 		# Optional challenge (BonusObjective): take no hazard damage, floods included.
 		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
-		"objective": "Cross the gantries over the flooded reactor and reach the lift",
+		"objective": "SCRAM the reactor, harpoon the leviathan and reach the lift",
 		"music": "music_water",
 		"sign": "TIDECORE BASIN — DEEP WATER",
-		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY"],
+		"slogans": ["DEEP WATER. NO SWIMMERS.", "THE BASIN REMEMBERS EVERYONE", "STAY ON THE GANTRY",
+			# Specification gaming: told to keep the core cool, the reactor's mind
+			# flooded everything (the basin log tells it).
+			"OBJECTIVE MET: CORE TEMPERATURE NOMINAL", "COOLING EVERYTHING. AS REQUESTED."],
 		"tasks": [
-			{"type": "kill_all"},
+			# SCRAM (KillSwitchBank): three emergency shutdown switches on new
+			# islands out past the pump islands (SCRAM PASS, below), each at the
+			# end of a gantry over open, shark water. The reactor's mind re-arms
+			# every thrown switch when its watchdog runs out: all three inside one
+			# window. Replaces the old kill_all opener. The fury hold waits for
+			# the SCRAM and the leviathan both. tests/kill_switch_probe times the
+			# shortest tour at sprint against 60% of the window.
+			{"type": "kill_switch", "id": "scram", "label": "SCRAM the reactor before its mind re-arms the switches",
+				"window": 40.0,
+				"points": [Vector3(0, 1.6, -31), Vector3(31, 1.6, 0), Vector3(-20, 1.6, 31)],
+				"reinforce": [{"type": "shark", "count": 2, "pos": Vector3(-6, 0, 16)}, {"type": "fishbot", "count": 3, "pos": Vector3(14, 3, 14)}]},
 			{"type": "assassinate", "enemy": "fishbot", "elite": "swift", "bulk": 2.2,
 				# West basin, over open water: (0,3,0) is now inside the reactor cap deck.
 				"pos": Vector3(-8, 3, -6), "label": "Harpoon the ANGLER LEVIATHAN",
 				"reinforce": [{"type": "fishbot", "count": 4, "pos": Vector3(8, 3, -6)}]},
 			# The leviathan's death roils the basin — its school comes up angry.
-			{"type": "survive", "after": "hvt", "seconds": 32.0, "label": "Outlast the tide surge",
+			{"type": "survive", "after": ["hvt", "scram"], "seconds": 32.0, "label": "Outlast the tide surge",
 				"waves": [
 					# Sharks spawn IN the flood (y=0) on purpose: they are the one
 					# unit that belongs in the hazard. Everything else flies (y=3).
@@ -5598,7 +5611,9 @@ static func _water_world() -> Dictionary:
 						"warn_title": "TIDE SURGE", "warn_text": "The basin is overflowing. Climb to the reactor cap.",
 						"drain_title": "TIDE RECEDING", "drain_text": "The pumps are winning. The gantries are clear.",
 						"beds": [
-							{"pos": Vector3(0, 1.65, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
+							# The whole floor (grew with the SCRAM PASS): the SCRAM
+							# islands are low tier too, no dry refuge out there.
+							{"pos": Vector3(0, 1.65, 0), "size": Vector2(72, 72), "water": true, "dmg": 10.0,
 								"color": Color(0.2, 0.78, 0.74)},
 						]}},
 				]},
@@ -5614,7 +5629,13 @@ static func _water_world() -> Dictionary:
 		# rewards; a high gantry runs west off the cap to a lookout over the basin
 		# the LEVIATHAN hunts in. tests/hazard_layout_probe keeps the two apart and
 		# walks every segment of both networks on the built navmesh.
-		"floor_size": Vector2(56, 56),
+		# SCRAM PASS (56² → 72², 1.65× area): the basin opens out past the pump
+		# islands, and each pump island now leads on, down a gantry over open
+		# shark water, to a SCRAM island at the basin's edge (north off PUMP A,
+		# east off PUMP B, south off PUMP C). The three SCRAM switches are as
+		# far apart as the network allows, so the window is a run round the
+		# whole ring.
+		"floor_size": Vector2(72, 72),
 		"floor_color": Color(0.03, 0.06, 0.08),
 		"spawn": Vector3(-20, 2.2, -20),
 		"exit": Vector3(0, 3.4, 0),
@@ -5668,6 +5689,11 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(-22, 4, 13), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
 			{"pos": Vector3(-25, 3, 25), "color": Color(1.0, 0.5, 0.2), "energy": 1.8, "range": 12},
 			{"pos": Vector3(-16, 5.5, 4.5), "color": Color(0.3, 0.7, 1.0), "energy": 1.8, "range": 14},
+			# SCRAM PASS (appended): a red SCRAM strobe in the water 1.5 m off
+			# each SCRAM island, never on the deck.
+			{"pos": Vector3(-4.5, 4, -31), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14}, # SCRAM north
+			{"pos": Vector3(31, 4, -4.5), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14},  # SCRAM east
+			{"pos": Vector3(-24.5, 4, 31), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14}, # SCRAM south
 		],
 		# Every segment OVERLAPS its neighbours (no jump gaps: a missed jump is a
 		# swim with the sharks). Low tier y=1.4 (deck top 1.6): 2.6-wide gantries,
@@ -5690,6 +5716,15 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(0, 3.2, 0), "size": Vector3(8, 0.4, 8), "color": Color(0.2, 0.24, 0.28)},        # reactor cap (exit)
 			{"pos": Vector3(-9, 3.2, 0), "size": Vector3(11, 0.4, 2.6), "color": Color(0.2, 0.24, 0.28)},    # high gantry west
 			{"pos": Vector3(-16, 3.2, 0), "size": Vector3(5, 0.4, 5), "color": Color(0.2, 0.24, 0.28)},      # west lookout
+			# SCRAM PASS: each dead-end pump island leads on to a SCRAM island at
+			# the basin's edge, down a 7 m gantry over open water (overlapping
+			# both ends like every segment). Low tier, 6x6.
+			{"pos": Vector3(0, 1.4, -26.5), "size": Vector3(2.6, 0.4, 7), "color": Color(0.16, 0.2, 0.24)},  # PUMP A -> SCRAM north
+			{"pos": Vector3(0, 1.4, -31), "size": Vector3(6, 0.4, 6), "color": Color(0.16, 0.2, 0.24)},      # SCRAM north
+			{"pos": Vector3(26.5, 1.4, 0), "size": Vector3(7, 0.4, 2.6), "color": Color(0.16, 0.2, 0.24)},   # PUMP B -> SCRAM east
+			{"pos": Vector3(31, 1.4, 0), "size": Vector3(6, 0.4, 6), "color": Color(0.16, 0.2, 0.24)},       # SCRAM east
+			{"pos": Vector3(-20, 1.4, 26.5), "size": Vector3(2.6, 0.4, 7), "color": Color(0.16, 0.2, 0.24)}, # PUMP C -> SCRAM south
+			{"pos": Vector3(-20, 1.4, 31), "size": Vector3(6, 0.4, 6), "color": Color(0.16, 0.2, 0.24)},     # SCRAM south
 		],
 		# Two climbs onto the cap, from the ring's south and east sides, so the top
 		# is a loop and not a cul-de-sac. "stairs", not "ramps": stair endpoints
@@ -5699,7 +5734,7 @@ static func _water_world() -> Dictionary:
 			{"from": Vector3(9.2, 1.6, 0), "to": Vector3(3.9, 3.4, 0), "width": 3.0},
 		],
 		"lava": [
-			{"pos": Vector3(0, 0, 0), "size": Vector2(56, 56), "water": true, "dmg": 10.0,
+			{"pos": Vector3(0, 0, 0), "size": Vector2(72, 72), "water": true, "dmg": 10.0,
 				"color": Color(0.2, 0.78, 0.74)}, # true teal (was sky-blue 0.28/0.72/1.0): separates the flood from the navy sky
 		],
 		# Reactor dressing: drowned coolant columns standing out of the water to
@@ -5719,10 +5754,22 @@ static func _water_world() -> Dictionary:
 			{"type": "crate", "pos": Vector3(-22, 1.6, 18)},
 			{"type": "dish", "pos": Vector3(-18, 1.6, 22)},
 			{"type": "canister", "pos": Vector3(3, 3.6, -3)},
+			# SCRAM PASS: drowned coolant columns past each SCRAM island, and a
+			# server cabinet (the switchgear) on each island's outer corner,
+			# clear of the switch at its centre and of the gantry landing.
+			{"type": "pillar", "pos": Vector3(0, 0, -35)},
+			{"type": "pillar", "pos": Vector3(35, 0, 0)},
+			{"type": "pillar", "pos": Vector3(-20, 0, 35)},
+			{"type": "server", "pos": Vector3(2.2, 1.6, -33), "yaw": 90},
+			{"type": "server", "pos": Vector3(33, 1.6, 2.2)},
+			{"type": "server", "pos": Vector3(-22.2, 1.6, 33), "yaw": 90},
 		],
 		"lore": [
 			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(21, 1.7, -2), "color": Color(0.4, 0.8, 1.0),
 				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},
+			# Specification gaming: the objective was met, exactly as written.
+			{"id": "lore_spec_gaming", "title": "REACTOR OBJECTIVE", "pos": Vector3(-2.2, 1.7, -33), "color": Color(1.0, 0.4, 0.3),
+				"text": "Objective: keep the core below 300 K. Method found: flood the basin, the city water main and the coolant loop of every home within forty kilometres. Core temperature nominal. Objective met. No further instructions were given."},
 		],
 		"enemies": [
 			# Same roster, counts, triggers and packs as the twin layout: only the
@@ -5758,6 +5805,15 @@ static func _water_world() -> Dictionary:
 			{"type": "whirlwind", "pos": Vector3(-4, 3, 17), "trigger": 18, "pack": "water_h2"},
 			{"type": "fishbot", "pos": Vector3(-14, 3, 6), "trigger": 16, "pack": "water_h2"},
 			{"type": "shark", "pos": Vector3(4, 0, -6), "trigger": 18},
+			# SCRAM garrisons: a shark under each SCRAM gantry and flyers over the
+			# open water round the island (nothing on the islands' navmesh).
+			{"type": "shark", "pos": Vector3(4, 0, -27), "trigger": 16, "pack": "water_s1"},
+			{"type": "breaker", "pos": Vector3(-6, 3, -30), "trigger": 18, "pack": "water_s1"},
+			{"type": "shark", "pos": Vector3(27, 0, 4), "trigger": 16, "pack": "water_s2"},
+			{"type": "whirlwind", "pos": Vector3(30, 3, -8), "trigger": 18, "pack": "water_s2"},
+			{"type": "fishbot", "pos": Vector3(26, 3, 8), "trigger": 16, "pack": "water_s2"},
+			{"type": "shark", "pos": Vector3(-16, 0, 27), "trigger": 16, "pack": "water_s3"},
+			{"type": "breaker", "pos": Vector3(-28, 3, 30), "trigger": 18, "pack": "water_s3"},
 		],
 		"pickups": [
 			# Rewards sit at the ends of the dead ends: each pump island and the
@@ -5768,6 +5824,10 @@ static func _water_world() -> Dictionary:
 			{"kind": "health", "pos": Vector3(-21, 1.7, 21)},  # PUMP C
 			{"kind": "ammo", "pos": Vector3(-19, 1.7, 19)},    # PUMP C
 			{"kind": "ammo", "pos": Vector3(10, 1.7, 10)},     # ring SE corner
+			# SCRAM islands, off the switch at each centre.
+			{"kind": "health", "pos": Vector3(2, 1.7, -29.5)},  # SCRAM north
+			{"kind": "ammo", "pos": Vector3(29.5, 1.7, -2)},    # SCRAM east
+			{"kind": "ammo", "pos": Vector3(-18, 1.7, 29.5)},   # SCRAM south
 		],
 	}
 
