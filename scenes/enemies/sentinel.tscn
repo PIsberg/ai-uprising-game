@@ -20,9 +20,9 @@ shape = SubResource("Capsule_col")
 
 [node name="Model" type="Node3D" parent="."]
 script = ExtResource("3_rm")
-anim_idle = "CharacterArmature|Idle"
-anim_walk = "CharacterArmature|Run"
-anim_attack = "CharacterArmature|Shoot"
+anim_idle = "RobotArmature|Robot_Idle"
+anim_walk = "RobotArmature|Robot_Walking"
+anim_attack = "RobotArmature|Robot_Punch"
 anim_stagger = ""
 walk_speed_scale = 1.2
 tint = Color(0.85, 0.62, 0.6, 1)

@@ -63,7 +63,7 @@ inherit that parent's overrides too.
 | HUNTER | `enemy_hunter.gd` † | "quaternius_gunner_bladed" chassis (scene) | circle-strafe skirmisher; bolt bursts + blade-dash gap-closer | — | — |
 | MANUS | `enemy_manus.gd` | `assets/models/robots/robot_arm_wip_2.glb` | rooted giant-arm boss: sweep/slam/grab-hurl/finger spikes; single weak-spot core; finger-drum entrance; 3 HP-keyed phases (cooldowns ×1/0.8/0.62, phase 3 double finger eruption leading the player) — `tests/manus_phase_probe` | `_state_attack` | BOSS |
 | MAULER | `enemy_mauler.gd` † | real robot model in `mauler.tscn` (RobotModel Punch clip) | heavy melee brawler; OVERLOAD at 35% HP — sprint + timed self-detonation | — | — |
-| MECH | `enemy_mech.gd` | imported model on `$Model` (scene) | heavy charger; telegraphed stomp shockwave up close, splash rockets at range | `_state_attack` | — |
+| MECH ("STILT MECH") | `enemy_mech.gd` | Quaternius "Stan" (`Stan.fbx` on `$Model`): lean frame on spike stilts, open right hand, no launcher | lopes (Run clip) and circle-strafes; 3-bolt bursts from its right palm (`muzzle_on_bone("PalmI.R")`); inside 10 m a telegraphed leap (ground warning, Jump clip) that lands spike-first for AoE damage + knockback | `_state_attack` | — |
 | MENDER | `enemy_mender.gd` | EyeDrone chassis, tinted teal (scene) | support flyer; beam-heals most-wounded ally, flees the player, never attacks | `_on_died` | — |
 | OPTIC ("OPTICON") | `enemy_optic.gd` (extends EnemyAndroid) | android chassis (inherited) | charged sweeping cutting beam + android burst rifle filler (both overrides call super) | (android's) | — |
 | ORB ("MOLTEN ORB") | `enemy_orb.gd` (extends EnemyDog) | `assets/models/robots/robot_ball.glb` | rolling crusher sphere; bounce-charges, ruptures into magma AoE on death (calls super) | — | — |
@@ -75,7 +75,7 @@ inherit that parent's overrides too.
 | ROLLER | `enemy_roller.gd` (extends EnemyDog) | scene model | grounded ram; plant/spin tell then straight-line charge into bite + knockback | — | — |
 | RONIN | `enemy_ronin.gd` | `assets/models/robots/robot-killer_model.glb` | revolver slugs at range, flanking dash, two-cut katana combo up close | — | — |
 | SEEKER | `enemy_seeker.gd` † | EyeDrone chassis + code-built fins/warning band | kamikaze flyer; locks on and detonates on contact, blinking-core telegraph | `_on_died`, `_state_attack` | — |
-| SENTINEL | `enemy_sentinel.gd` † | "quaternius_heavy" chassis via `sentinel.tscn` | planted heavy weapons platform; bolt volleys, every Nth a 3-shell mortar salvo | — | — |
+| SENTINEL | `enemy_sentinel.gd` † | `quaternius_heavy.glb` (Quaternius "Robot": big-headed biped with heavy fists, `RobotArmature|Robot_*` clips, no gun) | slow bombardier that throws everything from its right fist (`muzzle_on_bone("Palm1.R")`, Punch clip, released at full extension): charged slugs, every 3rd throw a 3-bomb salvo under warning rings; up close a 0.4 s wind-up punch with knockback | — | — |
 | SERVER ("MAITRE-D'") | `enemy_server.gd` † | `assets/models/robots/serving_bot.glb` | slow tanky basher; spinning thrown cleavers at range, knockback tray-bash up close | — | — |
 | SHARK ("RAZORFIN") | `enemy_shark.gd` (extends EnemyDrone) | scene model | submerged stalker; cruises underwater, breaches in an arc to bite | `_state_attack` (+ drone's) | — |
 | SKITTER | `enemy_skitter.gd` | trilobite crawler, tinted red (scene) | swarm chaff; fast scuttle, brief windup, ballistic pounce-bite; lean custom death | `_on_died` | — |

@@ -151,5 +151,11 @@ res://tests/forkbomb_probe.tscn
 res://tests/story_arc_probe.tscn
 # CUSTODIAN: fires only from the top of a crouch-and-hop; airborne hits crit.
 res://tests/vacuum_hop_probe.tscn
+# STILT MECH: lopes, fires from its right palm, telegraphed spike-first leap.
+res://tests/mech_stilt_probe.tscn
+# Every enemy scene's RobotModel clip names exist in its model (a missing one freezes it silently).
+res://tests/robot_anim_names_probe.tscn
+# SENTINEL: walks, throws from its right fist (Punch clip), punches up close.
+res://tests/sentinel_brawler_probe.tscn
 # COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
 res://tests/comic_panel_probe.tscn

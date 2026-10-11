@@ -212,10 +212,10 @@ const ENTRIES := {
 		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", "VK-7 Tesla Projector"],
 	},
 	"mech": {
-		"scene": "res://scenes/enemies/mech.tscn", "name": "HEAVY MECH", "scale": 1.0, "y": 0.0,
-		"desc": "An armoured bruiser that charges in and ground-slams at melee range.",
-		"strengths": ["Heavily armoured — soaks small-arms fire", "Hits like a truck up close"],
-		"weaknesses": ["Slow to turn — strafe around it", "Big target for heavy weapons"],
+		"scene": "res://scenes/enemies/mech.tscn", "name": "STILT MECH", "scale": 1.0, "y": 0.0,
+		"desc": "A lean frame on spike stilts. Lopes around you firing bolts from its open palm, then springs in and lands spike-first.",
+		"strengths": ["Fast on its stilts — hard to outrun", "The spike landing knocks you flat"],
+		"weaknesses": ["Marks where it will land — dash out of the ring", "Lightly armoured for its size"],
 		"weapons": ["GRK-X Devastator", "ARC-9 Gauss Lance", "GEM-2 Twin Rail"],
 	},
 	"skitter": {
@@ -290,9 +290,9 @@ const ENTRIES := {
 	},
 	"sentinel": {
 		"scene": "res://scenes/enemies/sentinel.tscn", "name": "SENTINEL", "scale": 1.0, "y": 0.0,
-		"desc": "A four-legged weapons platform — slow, heavily armoured, patient. Plants at range and lobs heavy bolts.",
-		"strengths": ["Very tough", "Heavy hitting bolts from afar"],
-		"weaknesses": ["Slow to relocate", "Use cover and chip it down"],
+		"desc": "A big-fisted bombardier — slow, tough, patient. Hurls charged slugs and bomb salvos from range, and punches you back out if you close in.",
+		"strengths": ["Very tough", "Bomb salvos bracket where you stand"],
+		"weaknesses": ["Slow to relocate", "Every throw winds up first — watch the fist"],
 		"weapons": ["ARC-9 Gauss Lance", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
 	},
 	"mauler": {
