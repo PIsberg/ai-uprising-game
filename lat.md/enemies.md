@@ -24,6 +24,13 @@ Skinned robots turn their head (and spine) toward their target on top of the pla
 * Gun arms (#232): `EnemyBase.muzzle_on_bone` registers its bone through `add_gun_bone` -> `RobotModel.add_gun` -> `HeadTrackModifier.add_gun` (mounting the modifier on head-less rigs too, the SNIPER). After the head turn, `_aim_arm` swings the arm's pivot (`arm_root_for`: the first bone below the look chain or the body, skipping a `Shoulder` clavicle) so pivot -> muzzle passes through `aim_point`, by `arm_weight` (eased by `_update_look`), at most `MAX_ARM_DEG`. Throwers pass `aim = false` (BOWLER, SENTINEL); twin guns aim from between their barrels.
 * Because the clip pose comes back after drawing, the modifier keeps every muzzle bone's drawn pose (`rendered_pose`) and `EnemyBase.bone_point` reads it, so shots leave the barrel where it is drawn. `tests/arm_aim_probe`.
 
+## Physics Wrecks
+<!-- lat: { "require-code-mention": true } -->
+A dead robot's wreck is thrown by physics, so it goes off a catwalk edge, slides down a ramp and drops out of the air instead of toppling in place.
+
+* `EnemyBase._classic_death_fx` launches a `WreckBody` (`scripts/fx/wreck_body.gd`), a RigidBody3D box the chassis' size on layer 0 / mask 1 (it never blocks the player), with velocities set directly (an impulse x mass on the first tick flung it 370 m): `PUSH` along the shot, `LIFT`, a `TIP` about up x dir. The robot stays in its place in the tree (levels watch it); the body writes the robot's transform each tick and carries the wreck fire upright. It settles after `SETTLE_TIME` (or asleep after `MIN_TIME`), then `_sink_wreck` sinks it.
+* Bosses (score >= 1000) keep the scripted topple their kill-cam frames. Not per-bone ragdolls: the skinned rigs are 41-270x scaled and `PhysicalBone3D` loses that scale (#259). `tests/wreck_physics_probe`.
+
 ## Death Log
 <!-- lat: { "require-code-mention": true } -->
 A robot's death types its last log line over the wreck (`scripts/fx/death_log.gd`); the Reasoning Traces show what it decides, this shows how it ends.

@@ -320,7 +320,8 @@ func is_hopping() -> bool:
 
 
 ## Shot down mid-hop: drop the body to the floor under the death blast, so the
-## topple, wreck fire and scorch mark play on the ground, not in the air.
+## blast and scorch mark land on the ground, not in the air (the wreck itself
+## would fall on its own, WreckBody).
 func _on_died(source: Node) -> void:
 	if is_hopping():
 		_hop = Hop.NONE
