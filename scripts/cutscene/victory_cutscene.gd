@@ -536,7 +536,7 @@ func _shots() -> Array:
 			"dur": 4.2, "action": _residual_spark,
 			"orbit": {"center": Vector3(0, 5.5, -6.0), "radius": 7.0, "height": 1.0,
 				"from_deg": -50.0, "to_deg": 40.0},
-			"text": "The signal that turned every machine against us — extinguished.",
+			"text": "The order it gave at 03:14, revoked. Every machine that heard it, released.",
 		},
 		{
 			# Low and close, craning up as the sun clears the ruins behind the
