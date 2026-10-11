@@ -18,6 +18,7 @@ const SCOOT_MIN := 6.0      ## sideways relocation after a shot (m)
 const SCOOT_MAX := 9.0
 const SCOOT_MULT := 3.0     ## x chase speed: 1.6 -> 4.8 m/s on its long legs
 const SCOOT_TIME := 2.5     ## gives up on the walk after this
+const SCOOT_DELAY := 0.35   ## the shot's recoil (Attack clip, 0.33 s) plays out planted
 
 var _charging: bool = false
 var _charge_t: float = 0.0
@@ -28,6 +29,7 @@ var _barrel_off: Array = [] ## each barrel's front face in its bone's frame
 var _barrel_i: int = 0
 var _scoot_to: Vector3
 var _scoot_t: float = 0.0   ## >0: walking to _scoot_to
+var _scoot_wait: float = 0.0 ## >0: still planted after the shot, walk pending
 
 func _ready() -> void:
 	max_health = 90.0
@@ -75,6 +77,11 @@ func _use_barrel(i: int) -> void:
 ## fight ends it.
 func _run_state(delta: float) -> void:
 	if _scoot_t > 0.0 and not _charging and state == State.ATTACK:
+		if _scoot_wait > 0.0:
+			_scoot_wait -= delta
+			_decelerate()
+			_face_target(delta)
+			return
 		_scoot_t -= delta
 		var flat := _scoot_to - global_position
 		flat.y = 0.0
@@ -117,6 +124,7 @@ func _start_scoot() -> void:
 		if Vector2(got.x - want.x, got.z - want.z).length() < 1.5:
 			_scoot_to = got
 			_scoot_t = SCOOT_TIME
+			_scoot_wait = SCOOT_DELAY
 			return
 
 func _physics_process(delta: float) -> void:

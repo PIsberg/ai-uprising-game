@@ -5,7 +5,8 @@ extends Node3D
 ## (1) every charged beam leaves the front of one of its two barrels (0.83 m
 ##     ahead of that Gun bone), and successive shots alternate barrels;
 ## (2) shoot and scoot: after a shot it walks 4+ m to a new spot on its legs,
-##     at walking pace (3+ m/s), without closing on the player.
+##     without closing on the player, on its Run clip (not Walk sped past its
+##     stride) whenever it moves 3+ m/s.
 ##   godot --headless --path . --audio-driver Dummy res://tests/sniper_stalker_probe.tscn
 
 const SCENE := "res://scenes/enemies/sniper.tscn"
@@ -87,8 +88,15 @@ func _run() -> void:
 		shots.append(["L" if dl < dr else "R", minf(dl, dr), fwd])
 		moves.append([sn.global_position, 0.0, 0.0, 999.0])
 	pdmg.damaged.connect(on_hit)
+	var anim: AnimationPlayer = sn.find_children("*", "AnimationPlayer", true, false)[0]
+	var fast := 0     # frames moving 3+ m/s
+	var fast_run := 0 # ... of them on the Run clip
 	for f in 60 * 16:
 		await get_tree().physics_frame
+		if Vector2(sn.velocity.x, sn.velocity.z).length() >= 3.0:
+			fast += 1
+			if anim.current_animation == "Run":
+				fast_run += 1
 		if sn.state != EnemyBase.State.ATTACK and sn.state != EnemyBase.State.STAGGER:
 			sn.set_state(EnemyBase.State.ATTACK)
 		for mv in moves:
@@ -122,6 +130,9 @@ func _run() -> void:
 		scoot = scoot and float(mv[2]) >= 4.0 and float(mv[3]) > 18.0
 	_check("after each shot it walks to a new spot, keeping its distance", scoot,
 			"moved %s m within 3 s of each shot (closest to player %.1f m)" % [far, moves[0][3] if moves.size() > 0 else -1.0])
+
+	_check("it runs on its Run clip while scooting", fast >= 30 and fast_run >= fast * 0.8,
+			"%d of %d frames at 3+ m/s on Run" % [fast_run, fast])
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
