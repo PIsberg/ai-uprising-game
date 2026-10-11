@@ -208,8 +208,7 @@ func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
 	if _muzzle_bone and muzzle:
-		muzzle.global_position = _muzzle_bone.global_position \
-				+ _muzzle_bone.global_basis.orthonormalized() * _muzzle_offset
+		_follow_muzzle_bone()
 	# EMP'd: scrambled and inert — no perception, AI or attacks. Bleed off any
 	# momentum and just settle under gravity until it reboots. Runs in EnemyBase so
 	# every subclass (incl. the flyers, which call super) is disabled uniformly.
@@ -1274,8 +1273,22 @@ func muzzle_on_bone(bone: String, offset: Vector3 = Vector3.ZERO) -> bool:
 	muzzle = m
 	_muzzle_bone = att
 	_muzzle_offset = offset
-	m.global_position = att.global_position + att.global_basis.orthonormalized() * offset
+	m.global_position = bone_point(att, offset)
 	return true
+
+## World position of `offset` (metres, in the bone's frame) on the bone that
+## `att` follows, read from the skeleton's current pose. The attachment's own
+## transform only refreshes when the skeleton next updates, so it can be a
+## pose behind the model: a banking flyer fired up to 1.2 m off its gun.
+func bone_point(att: BoneAttachment3D, offset: Vector3) -> Vector3:
+	var sk := att.get_parent() as Skeleton3D
+	if sk == null or att.bone_idx < 0:
+		return att.global_position + att.global_basis.orthonormalized() * offset
+	var pose: Transform3D = sk.global_transform * sk.get_bone_global_pose(att.bone_idx)
+	return pose.origin + pose.basis.orthonormalized() * offset
+
+func _follow_muzzle_bone() -> void:
+	muzzle.global_position = bone_point(_muzzle_bone, _muzzle_offset)
 
 ## An aggressive committed melee strike: an explosive forward-and-up leap at the
 ## target, synced to the attack animation, with the surge held alive briefly so

@@ -98,8 +98,10 @@ via `GameState.announce_boss`.
 scene drifts off the model's gun as it animates (or never was on it). Two ways to pin it to
 the model: `muzzle_on_bone(bone, offset)` in code (MECH palm, SENTINEL and BOWLER throwing fists, ANDROID face lens,
 SNIPER's two barrels, WARMECH's two shoulder cannons), or the scene exports `muzzle_bone` +
-`muzzle_bone_offset` on any `EnemyBase` (HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE and HIVE fire
-from their Quaternius `Gun` bone this way). Measure the offset from the model: the vertices
+`muzzle_bone_offset` on any `EnemyBase` (HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE, HIVE and the
+QUANTIZER flyer fire from their Quaternius `Gun` bone this way). Either way the muzzle is placed
+from the skeleton's current bone pose (`bone_point`), not the BoneAttachment3D's own transform,
+which refreshes a pose late and put a banking flyer's shots up to 1.2 m off its gun. Measure the offset from the model: the vertices
 skinned to the bone, front-most along the bone's own +Z (`tests/gun_muzzle_probe.gd`
 `_barrel_front`), not by eye. HUNTER's and OVERFITTER's guns have twin barrels; both fire from
 the centre of the gun's front face.

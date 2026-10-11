@@ -14,6 +14,8 @@ collision_layer = 4
 collision_mask = 1
 floor_max_angle = 1.57
 script = ExtResource("1_drone")
+muzzle_bone = "Gun"
+muzzle_bone_offset = Vector3(0, 0.151, 1.294)
 projectile_scene = ExtResource("3_proj")
 
 [node name="Model" type="Node3D" parent="."]
