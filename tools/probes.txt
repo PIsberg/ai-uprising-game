@@ -101,6 +101,8 @@ res://tests/night_vision_probe.tscn
 res://tests/kill_switch_probe.tscn
 # Hallucinated keycards: decoys tell, ambush where they stood, dissolve when the real card is taken.
 res://tests/decoy_keycard_probe.tscn
+# ALIGNED escort: waits for you, walks with you, goes down and reboots, never dies; authored routes exist.
+res://tests/escort_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).

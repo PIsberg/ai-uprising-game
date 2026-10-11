@@ -52,7 +52,7 @@ Defines collision filtering rules and hijack-behavior mechanics.
   * Layer 1: World geometry.
   * Layer 2: Player collision.
   * Layer 4: Enemy collision.
-* **Hijacking:** When an enemy is hijacked, they switch from Layer 4 to Layer 2 and target other enemies. Damage calculation blocks enemy-to-enemy damage unless their hijack alliances differ.
+* **Hijacking:** When an enemy is hijacked, they switch from Layer 4 to Layer 2 and target other enemies. Damage calculation blocks enemy-to-enemy damage unless their hijack alliances differ. A hijacked unit with `escort_goal` set (an escort task's ALIGNED unit) never burns out and walks its route instead of hunting.
 * **Phantoms:** during the MODEL HALLUCINATION event, `PlayerPhantom` decoys sit on Layer 2 in group `player_phantom` (never `player`). `EnemyBase._perceive` retargets a robot onto a phantom nearer than its current target, by the same distance rule as the hijacked-traitor priority.
 
 ## Elite Affixes

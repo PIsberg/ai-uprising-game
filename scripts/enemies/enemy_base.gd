@@ -314,6 +314,14 @@ const HIJACK_ZAP_DAMAGE := 14.0
 const HIJACK_ZAP_INTERVAL := 0.8
 const HIJACK_SEEK_RANGE := 45.0 ## How far a converted unit scans for robots to hunt.
 const HIJACK_TRACER: PackedScene = preload("res://scenes/fx/tracer.tscn")
+## An escorted ALIGNED unit only fights what comes within this range: it walks
+## its route instead of hunting the map.
+const ESCORT_ENGAGE := 12.0
+
+## AlignedEscort: while set, a hijacked unit never burns out and walks to this
+## point (when `escort_go`) instead of hunting robots across the map.
+var escort_goal: Variant = null
+var escort_go: bool = false
 
 ## Convert this unit to the player's side for `duration` seconds, then burnout
 ## (its loyalty firmware violently reasserts itself and the chassis dies).
@@ -354,38 +362,53 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 ## hostile robot, close in, zap it. Damage is applied directly (src = the
 ## player) so score, hit markers and kill quotas all credit the liberator.
 func _hijack_process(delta: float) -> void:
-	_hijack_t -= delta
-	if _hijack_t <= 0.0:
-		_burnout()
-		return
+	# An escort (AlignedEscort) is aligned for good: no burnout clock.
+	var escorting := escort_goal != null
+	if not escorting:
+		_hijack_t -= delta
+		if _hijack_t <= 0.0:
+			_burnout()
+			return
 	_hijack_zap_cd = maxf(0.0, _hijack_zap_cd - delta)
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	# A target freed under us (its wreck despawned) must be dropped BEFORE the
+	# cast: `as` on a freed instance raises, which aborted this whole function
+	# every frame and froze the converted unit in place until burnout
+	# (tests/escort_probe frees a foe the unit had targeted).
+	if not is_instance_valid(target):
+		target = null
 	var foe := target as EnemyBase
-	if foe == null or not is_instance_valid(foe) or foe.state == State.DEAD \
-			or foe.hijacked or foe.hp == null or not foe.hp.is_alive():
-		target = _hijack_find_foe()
+	if foe == null or foe.state == State.DEAD \
+			or foe.hijacked or foe.hp == null or not foe.hp.is_alive() \
+			or (escorting and global_position.distance_to(foe.global_position) > ESCORT_ENGAGE * 1.5):
+		target = _hijack_find_foe(ESCORT_ENGAGE if escorting else HIJACK_SEEK_RANGE)
 		foe = target as EnemyBase
-	if foe == null:
+	var dist := global_position.distance_to(foe.global_position) if foe else INF
+	if foe and dist <= maxf(attack_range, 10.0) and _hijack_can_see(foe):
 		_decelerate()
-	else:
-		var dist := global_position.distance_to(foe.global_position)
-		if dist <= maxf(attack_range, 10.0) and _hijack_can_see(foe):
-			_decelerate()
-			_face_target(delta)
-			if _hijack_zap_cd <= 0.0:
-				_hijack_zap_cd = HIJACK_ZAP_INTERVAL
-				_hijack_zap(foe)
+		_face_target(delta)
+		if _hijack_zap_cd <= 0.0:
+			_hijack_zap_cd = HIJACK_ZAP_INTERVAL
+			_hijack_zap(foe)
+	elif escorting:
+		# Walk the route (never chase): on with the player close, else wait.
+		if escort_go:
+			_move_toward(escort_goal, delta)
 		else:
-			_move_toward(foe.global_position, delta)
+			_decelerate()
+	elif foe:
+		_move_toward(foe.global_position, delta)
+	else:
+		_decelerate()
 	_apply_gravity(delta)
 	move_and_slide()
 	_update_hit_react(delta)
 	_update_locomotion_audio(delta)
 
 ## Nearest living, unconverted robot within seek range — the next mark.
-func _hijack_find_foe() -> Node3D:
+func _hijack_find_foe(reach: float = HIJACK_SEEK_RANGE) -> Node3D:
 	var best: Node3D = null
-	var best_d := HIJACK_SEEK_RANGE
+	var best_d := reach
 	for e in get_tree().get_nodes_in_group("enemy"):
 		var eb := e as EnemyBase
 		if eb == null or eb == self or not is_instance_valid(eb):

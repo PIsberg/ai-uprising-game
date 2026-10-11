@@ -204,6 +204,16 @@ A `key` task's `decoys` are keycards the level's AI made up: the same card and t
 * The builder adds the real card first and the decoys after it under the same task id, so `tests/task_reach_probe` lines them up with `[pos] + decoys`. The Constitutional Vault (claude) puts one in the open entry band and one past the south bulkhead.
 * `tests/decoy_keycard_probe` covers the tells, the ambush, the second line, the dissolve and the built level.
 
+## Aligned Escort
+<!-- lat: { "require-code-mention": true } -->
+An `escort` task walks one robot that has come over to the player's side from `pos` to a ring at `to` (`AlignedEscort`).
+
+* The unit is a hijacked robot with `EnemyBase.escort_goal` set: no burnout clock, it fights only robots within `ESCORT_ENGAGE` (12 m) and otherwise walks its route instead of hunting. Hostile robots already aim at hijacked units first (traitor priority), so the route is a fight.
+* It walks only while the player is within `follow` (default 12 m); the label reads "moving" or "waiting for you".
+* It cannot die: `Damageable.floor_health` is 1. At 1 HP it goes DOWN (invulnerable, stopped, "REBOOTING") until the player stands within `REBOOT_RANGE` for `REBOOT_SECONDS`, then comes back at `REBOOT_HEALTH` of its max.
+* It stays in the `enemy` group, so never pair it with `kill_all`; the bounty director skips hijacked robots so it is never marked.
+* Skybridge Uplink (uplink): the broadcast wakes one android by the core, which is walked south through the blast-door gap and east through the ring gate. `tests/escort_probe` covers it.
+
 ## Objective Placement
 
 The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.

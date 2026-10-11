@@ -2946,7 +2946,19 @@ static func _uplink() -> Dictionary:
 						{"type": "drone", "count": 2, "pos": Vector3(10, 2.5, 10)},
 					]},
 				]},
-			{"type": "kill_all"},
+			# The broadcast WORKS: it wakes one of them (AlignedEscort). An android
+			# by the uplink core turns, aligned for good, and has to be walked out
+			# the level's own serpentine: south through the z=16 blast-door gap,
+			# east through the ring gate, to a ring short of the exit portal. It
+			# only walks with the player within 12 m, every robot left turns its
+			# guns on it (traitor priority), and it cannot die: at 1 HP it goes
+			# down until the player stands by it for 3 s. Replaces the old final
+			# kill_all, which an ally still in the "enemy" group could never
+			# satisfy. tests/escort_probe.
+			{"type": "escort", "id": "aligned", "after": "broadcast", "enemy": "android",
+				"pos": Vector3(5, 0, -3), "to": Vector3(34, 0, 21), "radius": 3.5, "follow": 12.0,
+				"label": "Escort the ALIGNED unit to the extraction ring",
+				"reinforce": [{"type": "raptor", "count": 2, "pos": Vector3(30, 3.5, 34)}]},
 		],
 		"music": "music_grok",
 		"open_sky": true,
