@@ -71,7 +71,7 @@ func _use_cannon(i: int) -> void:
 func _cannon_tip(i: int) -> Vector3:
 	if _cannon_off.is_empty() or _muzzle_bone == null:
 		return muzzle.global_position if muzzle else global_position
-	return _muzzle_bone.global_position + _muzzle_bone.global_basis.orthonormalized() * (_cannon_off[i] as Vector3)
+	return bone_point(_muzzle_bone, _cannon_off[i])
 
 func _process(_delta: float) -> void:
 	if state == State.DEAD:

@@ -1,14 +1,14 @@
 extends Node3D
 ## Probe: robots whose model carries a gun on a "Gun" bone fire from that
 ## gun's barrel, not from a fixed point in the air. For HUNTER, DIFFUSION,
-## OVERFITTER, DEEPFAKE and HIVE, every shot (a projectile or tracer spawned
+## OVERFITTER, DEEPFAKE, HIVE and QUANTIZER (a flyer), every shot (a projectile or tracer spawned
 ## while it fights a stand-in player) is fired with the muzzle within 0.25 m of
 ## the barrel's front: the front-most vertices skinned to the Gun bone, on the
 ## mesh as posed that frame, so the check shares no numbers with the code.
-## (The old fixed muzzles measured 0.53-2.58 m off.)
+## (The old fixed muzzles measured 0.42-2.59 m off; QUANTIZER's 1.24-1.34 m.)
 ##   godot --headless --path . --audio-driver Dummy res://tests/gun_muzzle_probe.tscn
 
-const SCENES := ["hunter", "diffusion", "overfitter", "deepfake", "hive"]
+const SCENES := ["hunter", "diffusion", "overfitter", "deepfake", "hive", "quantizer"]
 var ok := true
 
 func _check(label: String, cond: bool, detail: String = "") -> void:

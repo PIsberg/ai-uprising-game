@@ -69,8 +69,7 @@ func _use_barrel(i: int) -> void:
 	_barrel_i = i
 	_muzzle_bone = _barrel_att[i]
 	_muzzle_offset = _barrel_off[i]
-	muzzle.global_position = _muzzle_bone.global_position \
-			+ _muzzle_bone.global_basis.orthonormalized() * _muzzle_offset
+	muzzle.global_position = bone_point(_muzzle_bone, _muzzle_offset)
 
 ## Shoot and scoot: a walk in progress owns the body (the charge never starts
 ## mid-walk, since the base attack logic is skipped); a stagger or losing the
