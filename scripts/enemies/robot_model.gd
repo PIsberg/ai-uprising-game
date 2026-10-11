@@ -215,6 +215,19 @@ func play_named(anim_name: String, blend: float = 0.2) -> void:
 	if _anim and _anim.has_animation(anim_name):
 		_anim.play(anim_name, blend)
 
+var _hold_clip: String = ""
+var _hold_until_ms: int = 0
+
+## Play a clip once and keep idle/walk off it for its length at `speed`
+## (play_named's clip is taken back by locomotion on the next physics tick).
+func play_oneshot(anim_name: String, blend: float = 0.12, speed: float = 1.0) -> void:
+	if _anim == null or not _anim.has_animation(anim_name):
+		return
+	_anim.speed_scale = 1.0
+	_anim.play(anim_name, blend, speed)
+	_hold_clip = anim_name
+	_hold_until_ms = Time.get_ticks_msec() + int(_anim.get_animation(anim_name).length / maxf(speed, 0.01) * 1000.0)
+
 func update_advanced_materials() -> void:
 	_glow_mats.clear()
 	for mi in _collect_meshes(self):
@@ -591,6 +604,9 @@ func _physics_process(delta: float) -> void:
 	# Let one-shots (attack/stagger) finish before locomotion takes back over.
 	if _anim.is_playing() and (_anim.current_animation == anim_attack
 			or _anim.current_animation == anim_stagger):
+		return
+	if _hold_clip != "" and _anim.current_animation == _hold_clip \
+			and Time.get_ticks_msec() < _hold_until_ms:
 		return
 	# Locomotion: idle <-> walk by ground speed.
 	var speed := Vector2(_parent.velocity.x, _parent.velocity.z).length()

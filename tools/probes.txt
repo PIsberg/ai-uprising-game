@@ -151,3 +151,5 @@ res://tests/forkbomb_probe.tscn
 res://tests/story_arc_probe.tscn
 # CUSTODIAN: fires only from the top of a crouch-and-hop; airborne hits crit.
 res://tests/vacuum_hop_probe.tscn
+# STILT MECH: lopes, fires from its right palm, telegraphed spike-first leap.
+res://tests/mech_stilt_probe.tscn

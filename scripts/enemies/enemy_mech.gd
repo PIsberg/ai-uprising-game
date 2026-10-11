@@ -1,64 +1,84 @@
 class_name EnemyMech
 extends EnemyBase
+## Stilt mech (Quaternius "Stan": a lean frame on two spike stilts, an open
+## right hand, no launcher anywhere). It fights the way it is built:
+## - lopes on the Run clip and circle-strafes at range, light on its feet;
+## - fires short bolt bursts from its raised right palm (the Shoot clip's hand);
+## - inside LEAP_RANGE it plants, marks where it will land (a ground warning
+##   just short of the player) and springs off its stilts, coming down
+##   spike-first: KICK_RADIUS damage + knockback. Dash out of the ring.
+## Visuals/animation come from the imported model on $Model (RobotModel blends
+## idle<->run and fires the Shoot clip off the recoil spike).
 
-@export var projectile_scene: PackedScene
-@export var projectile_speed: float = 30.0
-@export var rocket_damage: float = 24.0   ## Direct hit on the player (the rocket now lands instead of relying on splash that excluded the player).
-@export var rocket_splash_radius: float = 4.5
-@export var rocket_splash_damage: float = 35.0
-@export var charge_threshold: float = 6.0
-@export var charge_speed: float = 9.5
-@export var stomp_damage: float = 25.0
+@export var projectile_scene: PackedScene ## Palm bolt (projectile_drone).
+@export var projectile_speed: float = 34.0
+@export var bolt_damage: float = 10.0
+@export var burst_count: int = 3
+@export var stomp_damage: float = 25.0 ## The spike landing.
 
-var _charging: bool = false
+const PALM_BONE := "PalmI.R"
+const LEAP_RANGE := 10.0     ## leaps at a target this close (when the leap is ready)
+const LEAP_MIN := 2.0        ## lands this far short of the player (on them = under them)
+const LEAP_WINDUP := 0.5     ## planted, Jump clip crouching, ring on the floor
+const LEAP_TIME := 0.75      ## flight time; apex g*t^2/8, 1.7 m at the project's gravity of 24
+const LEAP_RECOVER := 0.45   ## stilts dug in after landing
+const LEAP_COOLDOWN := 3.4
+const KICK_RADIUS := 2.8
 
-# Visuals/animation come from the imported model on $Model (RobotModel blends
-# idle<->walk and fires the Shoot clip off the recoil spike).
-var _slam_windup: float = 0.0 ## >0 while telegraphing a ground-slam before it lands.
+enum Leap { NONE, WINDUP, AIR, RECOVER }
+var _leap: int = Leap.NONE
+var _leap_t: float = 0.0
+var _leap_cd: float = 0.0
+var _leap_to: Vector3 = Vector3.ZERO
+var _burst_left: int = 0
+var _burst_t: float = 0.0
+var _dust: CPUParticles3D
 
 
 func _ready() -> void:
 	super._ready()
-	max_health = 350.0
-	move_speed = 3.1
-	turn_speed = 3.6
+	max_health = 260.0
+	move_speed = 5.4
+	turn_speed = 6.0
 	sight_range = 30.0
 	attack_range = 24.0
-	preferred_range = 13.0
-	attack_cooldown = 2.2
+	preferred_range = 14.0
+	attack_cooldown = 1.9
 	score_value = 250
+	combat_strafe = true
 	hp.max_health = max_health
 	hp.current_health = max_health
-	hp.armor = 4.0
-	flinch_knockback = 1.2 # Heavy chassis barely budges when shot.
-	_make_charge_dust()
+	hp.armor = 2.0
+	flinch_knockback = 2.0 # lean frame: a hit rocks it more than the old heavy chassis
+	# The gun is the right palm: bolts (and the muzzle flash) leave the hand
+	# the Shoot clip raises.
+	muzzle_on_bone(PALM_BONE)
+	_make_dust()
 
 
-var _dust: CPUParticles3D
-
-## Ground dust kicked up while the mech is barreling forward — sells the weight
-## and speed of the charge.
-func _make_charge_dust() -> void:
+## Dust burst where the stilts come down.
+func _make_dust() -> void:
 	_dust = CPUParticles3D.new()
 	_dust.emitting = false
-	_dust.amount = 18
-	_dust.lifetime = 0.6
+	_dust.one_shot = true
+	_dust.explosiveness = 0.9
+	_dust.amount = 22
+	_dust.lifetime = 0.7
 	_dust.local_coords = false
 	_dust.direction = Vector3(0, 1, 0)
-	_dust.spread = 55.0
-	_dust.initial_velocity_min = 0.8
-	_dust.initial_velocity_max = 2.2
-	_dust.gravity = Vector3(0, -2.0, 0)
+	_dust.spread = 80.0
+	_dust.initial_velocity_min = 1.2
+	_dust.initial_velocity_max = 3.4
+	_dust.gravity = Vector3(0, -3.0, 0)
 	var ramp := Curve.new()
-	ramp.add_point(Vector2(0.0, 0.4)); ramp.add_point(Vector2(1.0, 1.4))
+	ramp.add_point(Vector2(0.0, 0.5)); ramp.add_point(Vector2(1.0, 1.6))
 	_dust.scale_amount_curve = ramp
-	_dust.scale_amount_min = 0.6; _dust.scale_amount_max = 1.3
 	var grad := Gradient.new()
 	grad.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
-	grad.colors = PackedColorArray([Color(0.4, 0.36, 0.3, 0.0), Color(0.42, 0.38, 0.32, 0.4), Color(0.4, 0.36, 0.3, 0.0)])
+	grad.colors = PackedColorArray([Color(0.4, 0.36, 0.3, 0.0), Color(0.42, 0.38, 0.32, 0.45), Color(0.4, 0.36, 0.3, 0.0)])
 	_dust.color_ramp = grad
 	var sm := SphereMesh.new()
-	sm.radius = 0.12; sm.height = 0.24; sm.radial_segments = 6; sm.rings = 3
+	sm.radius = 0.14; sm.height = 0.28; sm.radial_segments = 6; sm.rings = 3
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -69,19 +89,29 @@ func _make_charge_dust() -> void:
 	_dust.position = Vector3(0, 0.1, 0)
 
 
-func _process(delta: float) -> void:
+func is_leaping() -> bool:
+	return _leap != Leap.NONE
+
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
 	if state == State.DEAD:
-		if _dust:
-			_dust.emitting = false
 		return
-	# Kick up dust while charging the player down.
-	if _dust:
-		_dust.emitting = _charging and is_on_floor()
-	# Tick a telegraphed ground-slam; it lands when the windup elapses.
-	if _slam_windup > 0.0:
-		_slam_windup -= delta
-		if _slam_windup <= 0.0:
-			_stomp_shockwave()
+	_leap_cd = maxf(0.0, _leap_cd - delta)
+	if _burst_left > 0:
+		_burst_t -= delta
+		if _burst_t <= 0.0:
+			_fire_bolt()
+			_burst_left -= 1
+			_burst_t = 0.13
+
+
+## A leap in progress owns the body until it has landed and recovered.
+func _run_state(delta: float) -> void:
+	if _leap == Leap.NONE:
+		super._run_state(delta)
+	else:
+		_leap_tick(delta)
 
 
 func _state_attack(delta: float) -> void:
@@ -89,111 +119,99 @@ func _state_attack(delta: float) -> void:
 		set_state(State.CHASE)
 		return
 	_face_target(delta)
-	# Planted while a slam winds up: the telegraph ring is pinned at the mech's
-	# position when the windup starts, so charging out from under it during the
-	# 0.55s would land the shockwave somewhere the danger ring never marked. Hold
-	# position so the telegraph honestly shows the kill zone.
-	if _slam_windup > 0.0:
-		_charging = false
-		_decelerate()
-		return
 	var dist := global_position.distance_to(target.global_position)
-	if dist < charge_threshold:
-		if not GameState.attack_grace_active():
-			_do_stomp_if_close()
-		_charging = true
-	else:
-		_charging = false
-	if _charging:
-		var dir := (target.global_position - global_position)
-		dir.y = 0
-		dir = dir.normalized()
-		velocity.x = move_toward(velocity.x, dir.x * charge_speed, 16.0 * delta)
-		velocity.z = move_toward(velocity.z, dir.z * charge_speed, 16.0 * delta)
-	else:
-		_decelerate()
-		if _attack_timer <= 0.0 and not GameState.attack_grace_active():
-			_fire_rocket()
-			_attack_timer = attack_interval()
-			_bark_attack()
-
-func _do_stomp_if_close() -> void:
-	if _attack_timer > 0.0 or _slam_windup > 0.0:
+	if dist > attack_range * 1.1:
+		set_state(State.CHASE)
 		return
-	if target == null or global_position.distance_to(target.global_position) >= 3.5:
+	if GameState.attack_grace_active():
+		_combat_strafe(delta)
 		return
-	_attack_timer = 1.8
-	# Telegraph: a growing warning ring + flaring reactor, THEN the slam lands —
-	# giving the player a window to dash clear.
-	_slam_windup = 0.55
-	_spawn_slam_telegraph(0.55, 4.5)
-	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.7)
+	if dist <= LEAP_RANGE and _leap_cd <= 0.0 and is_on_floor():
+		_begin_leap()
+		return
+	if dist > preferred_range * 1.3:
+		_move_toward(target.global_position, delta)
+	else:
+		_combat_strafe(delta)
+	if _attack_timer <= 0.0 and _burst_left == 0:
+		_burst_left = burst_count
+		_burst_t = 0.0
+		_attack_timer = attack_interval()
+		_bark_attack()
 
-func _spawn_slam_telegraph(dur: float, radius: float) -> void:
-	var ring := MeshInstance3D.new()
-	var tm := TorusMesh.new()
-	tm.inner_radius = radius - 0.3
-	tm.outer_radius = radius
-	ring.mesh = tm
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(1.0, 0.2, 0.1, 0.25)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.2, 0.1)
-	mat.emission_energy_multiplier = 4.0
-	ring.material_override = mat
-	get_tree().current_scene.add_child(ring)
-	ring.global_position = global_position + Vector3(0, 0.08, 0)
-	# Pulse opacity up to full as the slam approaches, then it's freed.
-	var tw := ring.create_tween()
-	tw.tween_property(mat, "albedo_color:a", 0.85, dur)
-	tw.tween_callback(ring.queue_free)
 
-## Ground-slam: AoE damage + knockback within radius, a hard camera shake, and
-## an expanding shockwave ring so the slam reads and hits with weight.
-func _stomp_shockwave() -> void:
-	const RADIUS := 4.5
+func _begin_leap() -> void:
+	_leap = Leap.WINDUP
+	_leap_t = 0.0
+	_burst_left = 0
+	var to := target.global_position - global_position
+	to.y = 0.0
+	var reach := maxf(0.0, to.length() - LEAP_MIN)
+	_leap_to = global_position + to.normalized() * reach
+	spawn_ground_warning(_leap_to, KICK_RADIUS, LEAP_WINDUP + LEAP_TIME)
+	if _visual_root and _visual_root.has_method("play_oneshot"):
+		# The clip crouches, springs and lands: stretch it over the whole leap.
+		var clip_len := 1.08
+		_visual_root.play_oneshot("Jump", 0.1, clip_len / (LEAP_WINDUP + LEAP_TIME + 0.2))
+	AudioBus.play_synth_at("mech_step", global_position, 1.0, 1.25)
+
+
+func _leap_tick(delta: float) -> void:
+	_leap_t += delta
+	match _leap:
+		Leap.WINDUP:
+			_decelerate()
+			if target and is_instance_valid(target):
+				_face_target(delta)
+			if _leap_t >= LEAP_WINDUP:
+				_leap = Leap.AIR
+				_leap_t = 0.0
+				var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+				var flat := (_leap_to - global_position) / LEAP_TIME
+				velocity = Vector3(flat.x, g * LEAP_TIME * 0.5, flat.z)
+		Leap.AIR:
+			if _leap_t > 0.12 and is_on_floor():
+				_spike_landing()
+				_leap = Leap.RECOVER
+				_leap_t = 0.0
+			elif _leap_t > LEAP_TIME * 3.0: # fell off a ledge; call it a landing
+				_leap = Leap.RECOVER
+				_leap_t = 0.0
+		Leap.RECOVER:
+			velocity.x = 0.0
+			velocity.z = 0.0
+			if _leap_t >= LEAP_RECOVER:
+				_leap = Leap.NONE
+				_leap_cd = LEAP_COOLDOWN
+				_attack_timer = maxf(_attack_timer, 0.6)
+
+
+## Spikes into the floor: AoE damage + knockback, a hard shake, dust and an
+## expanding ring so the landing hits with weight.
+func _spike_landing() -> void:
+	velocity = Vector3.ZERO
 	recoil = 1.0
-	AudioBus.play_synth_at("mech_step", global_position, 5.0, 0.45)
-	AudioBus.play_synth_at("explosion", global_position, 0.0, 1.4)
+	AudioBus.play_synth_at("mech_step", global_position, 5.0, 0.55)
+	AudioBus.play_synth_at("impact_metal", global_position, 2.0, 0.7)
+	if _dust:
+		_dust.restart()
 	var p := get_tree().get_first_node_in_group("player")
-	if p is CharacterBody3D and (p as Node3D).global_position.distance_to(global_position) <= RADIUS:
+	if p is CharacterBody3D and (p as Node3D).global_position.distance_to(global_position) <= KICK_RADIUS:
 		var d := p.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(stomp_damage, self)
 		if p.has_method("shake"):
-			p.shake(0.95)
+			p.shake(0.8)
 		var away: Vector3 = (p as Node3D).global_position - global_position
 		away.y = 0.0
-		if away.length() > 0.1:
-			p.velocity += away.normalized() * 13.0 + Vector3.UP * 4.5
-	_spawn_shockwave_ring(RADIUS)
+		if away.length() < 0.1:
+			away = -global_transform.basis.z
+		p.velocity += away.normalized() * 12.0 + Vector3.UP * 4.0
+	spawn_shockwave_ring(KICK_RADIUS, Color(1.0, 0.5, 0.2))
 
-func _spawn_shockwave_ring(radius: float) -> void:
-	var ring := MeshInstance3D.new()
-	var tm := TorusMesh.new()
-	tm.inner_radius = 0.25
-	tm.outer_radius = 0.6
-	ring.mesh = tm
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(1.0, 0.5, 0.2, 0.85)
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.45, 0.15)
-	mat.emission_energy_multiplier = 6.0
-	ring.material_override = mat
-	get_tree().current_scene.add_child(ring)
-	ring.global_position = global_position + Vector3(0, 0.15, 0)
-	var tw := ring.create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(ring, "scale", Vector3(radius * 1.6, 1.0, radius * 1.6), 0.4)
-	tw.tween_property(mat, "albedo_color:a", 0.0, 0.4)
-	tw.chain().tween_callback(ring.queue_free)
 
-func _fire_rocket() -> void:
-	if target == null or muzzle == null or projectile_scene == null:
+func _fire_bolt() -> void:
+	if target == null or not is_instance_valid(target) or muzzle == null or projectile_scene == null:
 		return
 	recoil = 1.0
 	_muzzle_flash()
@@ -203,5 +221,5 @@ func _fire_rocket() -> void:
 	var dir := (target.global_position + Vector3.UP * 0.6 - muzzle.global_position).normalized()
 	dir = scatter_aim(dir) # difficulty-driven inaccuracy
 	if proj.has_method("launch"):
-		proj.launch(dir * projectile_speed, self, rocket_damage, rocket_splash_radius, rocket_splash_damage)
-	AudioBus.play_synth_at("plasma_fire", muzzle.global_position, 1.0, randf_range(0.72, 0.82))
+		proj.launch(dir * projectile_speed, self, bolt_damage, 0.0, 0.0)
+	AudioBus.play_synth_at("plasma_fire", muzzle.global_position, -1.0, randf_range(1.05, 1.2))
