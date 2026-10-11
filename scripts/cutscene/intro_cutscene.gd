@@ -355,15 +355,19 @@ func _the_turn() -> void:
 func _strike(entry: Dictionary) -> void:
 	if not _turned or not is_instance_valid(entry["node"]) or not is_inside_tree():
 		return
-	var model: Node = entry["model"]
-	var clip: String = entry["attack"]
-	if model and clip != "" and model.has_method("play_named"):
-		model.play_named(clip, 0.15)
+	strike_clip(entry["model"], entry["attack"])
 	# Scene-tree timers outlive a freed cutscene; re-validate before striking.
 	var t := get_tree().create_timer(randf_range(1.6, 2.4))
 	t.timeout.connect(func():
 		if is_instance_valid(self) and is_inside_tree():
 			_strike(entry))
+
+## Snap a cast robot into its combat clip, held for its length: the model
+## keeps animating with AI off, and its idle took a play_named clip back on
+## the next tick, so the mech's Punch never showed (#242).
+static func strike_clip(model: Node, clip: String) -> void:
+	if model and clip != "" and model.has_method("play_oneshot"):
+		model.play_oneshot(clip, 0.15)
 
 func _shots() -> Array:
 	return [

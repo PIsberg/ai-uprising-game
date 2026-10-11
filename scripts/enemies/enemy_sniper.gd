@@ -47,10 +47,11 @@ func _perform_attack() -> void:
 	_charging = true
 	_charge_t = 0.0
 	_ensure_beam()
-	# Crouch into the QuadShell's charge-up clip while the shot builds.
+	# Crouch into the QuadShell's charge-up clip, stretched over the whole
+	# charge (play_named's clip was taken back by idle on the next tick, #242).
 	var model := get_node_or_null("Model")
-	if model and model.has_method("play_named"):
-		model.play_named("Charge")
+	if model and model.has_method("play_oneshot_over"):
+		model.play_oneshot_over("Charge", charge_time)
 	if has_node("/root/AudioBus"):
 		var ab: Node = get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
