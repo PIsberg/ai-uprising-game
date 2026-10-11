@@ -67,6 +67,9 @@ func _check_level(path: String) -> void:
 			points.append(t["pos"])
 		for sp in t.get("points", []):
 			points.append(sp["pos"] if sp is Dictionary else sp)
+		# Hallucinated keycards spawn after the real one under the same id.
+		for dp in t.get("decoys", []):
+			points.append(dp)
 		if points.is_empty():
 			continue
 		var id := _tid(lvl, t)

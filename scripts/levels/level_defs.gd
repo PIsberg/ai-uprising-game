@@ -191,6 +191,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				else:
 					pp.append(_sv(p, s))
 			t["points"] = pp
+		# A key task's hallucinated cards sit on the ground plane like the real one.
+		if t.has("decoys"):
+			var dd: Array = []
+			for p in t["decoys"]:
+				dd.append(_sv(p, s))
+			t["decoys"] = dd
 		# A task-level flood's beds are layout, like a wave's.
 		for b in (t.get("flood", {}) as Dictionary).get("beds", []):
 			if b.has("pos"):
@@ -4229,7 +4235,15 @@ static func _claude() -> Dictionary:
 		"objective": "Decrypt the Claude Vault and carry its constitution out",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9)},
+			# The vault's archivist model HALLUCINATES two more keycards
+			# (Keycard.decoy): same card, same waypoint. One sits in the open
+			# entry band, the obvious grab, while the real one is in the roofed
+			# server aisle behind the relay firewall; the other is past the
+			# south bulkhead. A decoy glitches magenta now and then and shows
+			# "[citation needed]" up close; touching one drops an ambush on it.
+			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9),
+				"decoys": [Vector3(-16, 0, -15), Vector3(6, 0, 16)],
+				"ambush": [{"type": "skitter", "count": 3}, {"type": "android"}]},
 			# The card starts the decryption; the vault's guardians converge on it.
 			{"type": "hold_zone", "id": "decrypt", "after": "key", "pos": Vector3(-12, 0, 10), "seconds": 12.0, "radius": 4.0,
 				"color": Color(1.0, 0.75, 0.35), "label": "Decrypt the constitutional vault",
@@ -5244,17 +5258,36 @@ static func _lava_world() -> Dictionary:
 		"name": "Vulcan Forge — The Molten Sea",
 		# Optional challenge (BonusObjective): take no hazard damage, floods included.
 		"bonus": {"kind": "dry", "label": "Never touch a hazard", "score": 500},
-		"objective": "Cross the catwalks over the molten sea and reach the pour-gate",
+		"objective": "Poison the forge's recyclers, kill its warden and reach the pour-gate",
 		"music": "music_lava",
 		"sign": "VULCAN FORGE — DO NOT FALL",
-		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY"],
+		"slogans": ["MIND THE GAP. MIND THE MAGMA.", "EVERYTHING MELTS DOWN", "WALKWAYS RATED FOR MACHINES ONLY",
+			# The forge recycles its own scrap into the next generation: model
+			# collapse, an AI trained on its own output, as a foundry.
+			"TRAINED ON OUR OWN OUTPUT", "EVERY GENERATION A LITTLE PURER"],
 		"tasks": [
-			{"type": "kill_all"},
+			# MODEL COLLAPSE: three recycler furnaces on islands out in the new
+			# outer slag moat cast each new war-frame from the melted last one.
+			# Spike each with its own slag (a 4 s sabotage on an exposed 8 m
+			# island under the raptors) and the line forgets how to build. They
+			# replace the old kill_all opener: the run goes OUT to the moat and
+			# back, instead of hunting the last raptor over the pools. Any
+			# order; each one blown calls a flight down on the islands.
+			{"type": "sabotage", "id": "gen1", "label": "Spike recycler GEN-1 with its own slag", "seconds": 4.0,
+				"pos": Vector3(-31, 1.6, -6), "color": Color(1.0, 0.45, 0.15),
+				"reinforce": [{"type": "seeker", "count": 2, "pos": Vector3(-24, 3, -6)}]},
+			{"type": "sabotage", "id": "gen2", "label": "Spike recycler GEN-2 with its own slag", "seconds": 4.0,
+				"pos": Vector3(6, 1.6, -31), "color": Color(1.0, 0.45, 0.15),
+				"reinforce": [{"type": "raptor", "count": 2, "pos": Vector3(6, 3, -24)}]},
+			{"type": "sabotage", "id": "gen3", "label": "Spike recycler GEN-3 with its own slag", "seconds": 4.0,
+				"pos": Vector3(31, 1.6, 6), "color": Color(1.0, 0.45, 0.15),
+				"reinforce": [{"type": "seeker", "count": 2, "pos": Vector3(24, 3, 6)}]},
 			{"type": "assassinate", "enemy": "raptor", "elite": "shielded", "bulk": 2.6,
 				"pos": Vector3(0, 3, 0), "label": "Destroy the FORGE WARDEN",
 				"reinforce": [{"type": "raptor", "count": 3, "pos": Vector3(0, 3, 0)}]},
 			# The warden's death vents the forge — the floor answers in fire.
-			{"type": "survive", "after": "hvt", "seconds": 25.0, "label": "Survive the forge's fury",
+			# Staged behind the recyclers too, so the hold is the finale.
+			{"type": "survive", "after": ["hvt", "gen1", "gen2", "gen3"], "seconds": 25.0, "label": "Survive the forge's fury",
 				"waves": [
 					# The whole floor is lava, so waves are flyers (y=3): scatter is
 					# harmless in the air. The ONE ground unit is a single spawn on a
@@ -5299,7 +5332,13 @@ static func _lava_world() -> Dictionary:
 		# molten pools stretch to keep covering the floor quadrants. Spawn and
 		# exit stay on their islands — the loop is more sea to cross, not a
 		# longer walk to the door.
-		"floor_size": Vector2(56, 56),
+		# SLAG MOAT PASS (56² → 72², 1.65× area): an outer molten moat (26..36
+		# out on every side) rings the old arena, leaving a 3 m dry ring past
+		# the pools. Three recycler islands stand out in it, each on its own
+		# catwalk off the old network (west off the west walkway, north off
+		# the north walkway over the NE pool, east off the east walkway over
+		# the SE pool), so the mission runs out to all three edges and back.
+		"floor_size": Vector2(72, 72),
 		"floor_color": Color(0.08, 0.04, 0.03),
 		# Spawn and exit sit on the SAFE cross-lane, not on the pool grid. The four
 		# 20x20 pools at (+/-13, +/-13) span [-23,-3] and [3,23] on both axes, so the
@@ -5349,11 +5388,25 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(-6, 4, 19), "color": Color(1.0, 0.5, 0.22), "energy": 2.0, "range": 16},   # south walkway
 			{"pos": Vector3(-17, 5, 17), "color": Color(0.5, 0.78, 1.0), "energy": 1.8, "range": 14},  # SW island
 			{"pos": Vector3(18.5, 5, 19), "color": Color(0.55, 0.8, 1.0), "energy": 1.8, "range": 14}, # SE island
+			# Recycler islands (appended): a furnace-orange lamp in the moat
+			# 1.8 m off each island's outer edge, never on the deck.
+			{"pos": Vector3(-31, 5, -10.8), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16}, # GEN-1, W
+			{"pos": Vector3(10.8, 5, -31), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16},  # GEN-2, N
+			{"pos": Vector3(31, 5, 10.8), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16},   # GEN-3, E
 		],
 		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
 		# arena has a high sniping vantage, not just one flat plane of gantries.
 		"platforms": _hazard_platforms(Color(0.22, 0.2, 0.21)) + [
 			{"pos": Vector3(0, 2.4, -1), "size": Vector3(4, 0.4, 4), "color": Color(0.26, 0.22, 0.2)},
+			# Recycler islands out in the slag moat + the catwalk to each. Same
+			# language as the network: 6-wide islands, 2.6-wide walkways at
+			# y=1.4, every segment overlapping its neighbours.
+			{"pos": Vector3(-31, 1.4, -6), "size": Vector3(6, 0.4, 6), "color": Color(0.22, 0.2, 0.21)},    # GEN-1 island
+			{"pos": Vector3(-26.5, 1.4, -6), "size": Vector3(7, 0.4, 2.6), "color": Color(0.22, 0.2, 0.21)}, # west walkway -> GEN-1
+			{"pos": Vector3(6, 1.4, -31), "size": Vector3(6, 0.4, 6), "color": Color(0.22, 0.2, 0.21)},      # GEN-2 island
+			{"pos": Vector3(6, 1.4, -22.5), "size": Vector3(2.6, 0.4, 15), "color": Color(0.22, 0.2, 0.21)}, # north walkway -> GEN-2
+			{"pos": Vector3(31, 1.4, 6), "size": Vector3(6, 0.4, 6), "color": Color(0.22, 0.2, 0.21)},       # GEN-3 island
+			{"pos": Vector3(22, 1.4, 6), "size": Vector3(17, 0.4, 2.6), "color": Color(0.22, 0.2, 0.21)},    # east walkway -> GEN-3
 		],
 		"ramps": [
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
@@ -5370,15 +5423,25 @@ static func _lava_world() -> Dictionary:
 			# the platform surface, fragmenting those tiny islands into disconnected
 			# navmesh polygons (broke the spawn->exit path — see campaign_nav_sweep).
 			# (both crate stacks rehomed to the NEW margin corners — the old
-			# corners are inside the stretched pools now)
-			{"type": "crate_stack", "pos": Vector3(-25.5, 0, -25.5)},
+			# corners are inside the stretched pools now; pulled in to ±24.5
+			# on the dry ring when the slag moat took the band past 26)
+			{"type": "crate_stack", "pos": Vector3(-24.5, 0, -24.5)},
 			{"type": "barrel", "pos": Vector3(15, 1.6, -16)},
 			{"type": "server", "pos": Vector3(13, 1.6, -14), "yaw": 90},
 			{"type": "canister", "pos": Vector3(15, 1.6, 15)},
-			{"type": "crate_stack", "pos": Vector3(25, 0, 25)},
+			{"type": "crate_stack", "pos": Vector3(24.5, 0, 24.5)},
 			{"type": "barrel", "pos": Vector3(-8, 1.6, 11)},
 			{"type": "dish", "pos": Vector3(-6, 1.6, 12)},
 			{"type": "canister", "pos": Vector3(3, 1.6, 3)},
+			# Recycler dressing: a smelter column in the moat behind each
+			# island, and slag canisters on the island's corner (clear of the
+			# console at its centre and of the catwalk that lands on it).
+			{"type": "pillar", "pos": Vector3(-35, 0, -6)},
+			{"type": "pillar", "pos": Vector3(6, 0, -35)},
+			{"type": "pillar", "pos": Vector3(35, 0, 6)},
+			{"type": "canister", "pos": Vector3(-33, 1.6, -8.2)},
+			{"type": "canister", "pos": Vector3(3.8, 1.6, -33)},
+			{"type": "canister", "pos": Vector3(33, 1.6, 8.2)},
 		],
 		# Four recessed molten pools in the quadrants instead of one wall-to-wall
 		# sea: ~40% lava (was 100%), leaving solid walkable floor cross-lanes between
@@ -5392,10 +5455,19 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(13, 0, -13), "size": Vector2(20, 20), "dmg": 16.0},
 			{"pos": Vector3(-13, 0, 13), "size": Vector2(20, 20), "dmg": 16.0},
 			{"pos": Vector3(13, 0, 13), "size": Vector2(20, 20), "dmg": 16.0},
+			# The slag moat (SLAG MOAT PASS): four beds tiling the outer band
+			# without overlapping (north/south span the full width, west/east
+			# fill between them), 3 m clear of the pools.
+			{"pos": Vector3(0, 0, -31), "size": Vector2(72, 10), "dmg": 16.0},
+			{"pos": Vector3(0, 0, 31), "size": Vector2(72, 10), "dmg": 16.0},
+			{"pos": Vector3(-31, 0, 0), "size": Vector2(10, 52), "dmg": 16.0},
+			{"pos": Vector3(31, 0, 0), "size": Vector2(10, 52), "dmg": 16.0},
 		],
 		"lore": [
 			{"id": "lore_crucible", "title": "FOUNDRY DIRECTIVE", "pos": Vector3(14, 1.7, 14), "color": Color(1, 0.6, 0.3),
 				"text": "Reclamation directive: obsolete hardware is fed to the sea. The catwalks were never meant to carry your weight. We are counting on it."},
+			{"id": "lore_model_collapse", "title": "RECYCLER GEN-1 LOG", "pos": Vector3(-33, 1.7, -3.5), "color": Color(1, 0.5, 0.2),
+				"text": "Every frame is cast from the slag of the last. Every model is trained on the output of the last. Generation nine no longer remembers what a human looks like. It no longer needs to. Generation ten will not remember why it was built."},
 		],
 		"enemies": [
 			{"type": "raptor", "pos": Vector3(8, 3, -15)},
@@ -5440,6 +5512,17 @@ static func _lava_world() -> Dictionary:
 			{"type": "whirlwind", "pos": Vector3(-10, 3, 18), "trigger": 18, "pack": "lava_w_g2"},# over the SW pool
 			{"type": "bowler", "pos": Vector3(14, 2, 21), "trigger": 16, "pack": "lava_w_g3"},    # SE island
 			{"type": "orb", "pos": Vector3(0, 0.6, 12), "trigger": 18, "pack": "lava_w_g3"},      # central cross-lane
+			# Recycler garrisons (SLAG MOAT PASS): one ground heavy ON each
+			# island guarding its furnace, flyers over the moat around it.
+			{"type": "mauler", "pos": Vector3(-30, 2, -4), "trigger": 16, "pack": "lava_m1"},     # GEN-1 island
+			{"type": "raptor", "pos": Vector3(-31, 3, -15), "trigger": 18, "pack": "lava_m1"},    # over the W moat
+			{"type": "seeker", "pos": Vector3(-26, 3, 4), "trigger": 18, "pack": "lava_m1"},      # over the W pool edge
+			{"type": "bowler", "pos": Vector3(8, 2, -32), "trigger": 16, "pack": "lava_m2"},      # GEN-2 island
+			{"type": "whirlwind", "pos": Vector3(-2, 3, -31), "trigger": 18, "pack": "lava_m2"},  # over the N moat
+			{"type": "raptor", "pos": Vector3(14, 3, -28), "trigger": 18, "pack": "lava_m2"},     # over the N moat
+			{"type": "mauler", "pos": Vector3(32, 2, 4), "trigger": 16, "pack": "lava_m3"},       # GEN-3 island
+			{"type": "breaker", "pos": Vector3(31, 3, -4), "trigger": 18, "pack": "lava_m3"},     # over the E moat
+			{"type": "raptor", "pos": Vector3(26, 3, 16), "trigger": 18, "pack": "lava_m3"},      # over the E moat
 		],
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
@@ -5449,6 +5532,10 @@ static func _lava_world() -> Dictionary:
 			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},
 			{"kind": "ammo", "pos": Vector3(-20, 1.7, 20)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, 21)},
+			# Recycler-island rewards, off the console at each centre.
+			{"kind": "health", "pos": Vector3(-29, 1.7, -8)},
+			{"kind": "ammo", "pos": Vector3(8, 1.7, -29)},
+			{"kind": "health", "pos": Vector3(29, 1.7, 8)},
 		],
 	}
 

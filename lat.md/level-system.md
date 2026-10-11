@@ -194,6 +194,16 @@ A `kill_switch` task is the off-switch problem as a mission: the level's AI resi
 * Sunblind Expanse (desert) stages its relay mast behind three breakers spread over the basin, 24 s window.
 * `tests/kill_switch_probe` covers the lifecycle, then on every authored level that each switch is on the navmesh and the shortest tour through them runs inside 60% of the window at sprint speed.
 
+## Hallucinated Keycards
+<!-- lat: { "require-code-mention": true } -->
+A `key` task's `decoys` are keycards the level's AI made up: the same card and the same waypoint as the real one, so the map itself lies.
+
+* Two tells: a decoy glitches every 2-4 s (the card jumps, its light flicks magenta) and shows "[citation needed]" within `TAG_RANGE` (6 m).
+* Touching one completes nothing: it toasts HALLUCINATION with the next of `HALLUCINATION_LINES` and asks the level's `_spawn_reinforcements` for its `ambush` at its own position.
+* Taking the real card frees every decoy left without springing them, so the waypoint never points at a dead lie.
+* The builder adds the real card first and the decoys after it under the same task id, so `tests/task_reach_probe` lines them up with `[pos] + decoys`. The Constitutional Vault (claude) puts one in the open entry band and one past the south bulkhead.
+* `tests/decoy_keycard_probe` covers the tells, the ambush, the second line, the dissolve and the built level.
+
 ## Objective Placement
 
 The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.

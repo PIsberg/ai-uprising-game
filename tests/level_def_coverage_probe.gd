@@ -59,6 +59,9 @@ func _ready() -> void:
 			for r in t.get("reinforce", []):
 				if r is Dictionary and r.has("type"):
 					_enemy(id, "tasks.reinforce", r["type"])
+			for r in t.get("ambush", []):
+				if r is Dictionary and r.has("type"):
+					_enemy(id, "tasks.ambush", r["type"])
 			for w in t.get("waves", []):
 				if w is Dictionary:
 					for we in w.get("enemies", []):

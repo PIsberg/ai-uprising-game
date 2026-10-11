@@ -4532,6 +4532,17 @@ func _activate_task(t: Dictionary) -> void:
 			k.position = t.get("pos", Vector3.ZERO)
 			add_child(k)
 			_relocate_when_clear(k)
+			# Hallucinated cards (Keycard.decoy): added AFTER the real one with
+			# the same task id, so the task probes line the live cards up with
+			# [pos] + decoys in authored order.
+			for dp in t.get("decoys", []):
+				var d := Keycard.new()
+				d.task_id = id
+				d.decoy = true
+				d.ambush = t.get("ambush", [])
+				d.position = dp
+				add_child(d)
+				_relocate_when_clear(d)
 		"destroy_core":
 			var core := ObjectiveCore.new()
 			core.task_id = id
