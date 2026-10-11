@@ -2001,7 +2001,7 @@ func _classic_death_fx() -> void:
 	# The kill also rips a limb off the wreck (bone-collapse + flung chunk) so
 	# the break-apart isn't just generic boxes — the chassis visibly comes apart.
 	_dismember_limb(Vector3(randf() - 0.5, 0.3, randf() - 0.5).normalized())
-	_spawn_wreck_fire()
+	var fire := _spawn_wreck_fire()
 
 	# Lasting scorch mark on the ground where it fell.
 	var scorch := ScorchMark.new()
@@ -2009,8 +2009,7 @@ func _classic_death_fx() -> void:
 	get_parent().add_child(scorch)
 	scorch.global_position = Vector3(global_position.x, global_position.y - 0.4, global_position.z)
 
-	# Death topple: fall toward where the last shot came from, with a settle bounce,
-	# then sink into the ground and shrink away — reads as a felled wreck.
+	# The wreck falls away from where the last shot came from.
 	var dir := Vector3(randf() - 0.5, 0.0, randf() - 0.5)
 	if _has_last_known:
 		var away := global_position - _last_known_target_pos
@@ -2018,6 +2017,17 @@ func _classic_death_fx() -> void:
 		if away.length() > 0.2:
 			dir = away.normalized()
 	dir = dir.normalized()
+	# A physics wreck (WreckBody): it tumbles off ledges and down stairs and
+	# drops out of the air, then sinks. Bosses keep the scripted topple below,
+	# which their kill-cam is framed around.
+	if score_value < 1000:
+		var top := RobotModel.body_top(self, _mesh_instances)
+		var wb := WreckBody.launch(self, get_parent(), dir, top)
+		if fire:
+			wb.carry(fire, Vector3(0, top * 0.5, 0))
+		wb.settled.connect(_sink_wreck)
+		return
+	# Boss topple: fall away from the shot with a settle bounce, then sink.
 	var pitch: float = dir.z * deg_to_rad(96.0)
 	var roll: float = -dir.x * deg_to_rad(96.0)
 	var fallen := Vector3(rotation.x + pitch, rotation.y + randf_range(-0.35, 0.35), rotation.z + roll)
@@ -2033,20 +2043,28 @@ func _classic_death_fx() -> void:
 	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
 	tw.tween_callback(queue_free)
 
+## The settled wreck sinks through the floor and shrinks away, then despawns.
+func _sink_wreck() -> void:
+	var tw := create_tween()
+	tw.tween_property(self, "position:y", position.y - 2.2, 0.9).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(self, "scale", scale * 0.8, 0.9)
+	tw.tween_callback(queue_free)
+
 ## Brief guttering core fire on the felled wreck — the kill lingers as a burning
 ## carcass instead of a model quietly sinking. One eroding flame cone
 ## (FlameMaterial) plus a warm shadowless light, guttering out as the carcass
 ## sinks. Sits along the topple direction so it burns ON the fallen torso, not
 ## at the feet. Chaff-sized bots skip it so swarm wipes stay cheap; LOW skips.
-func _spawn_wreck_fire() -> void:
+## Returns the fire (null when skipped) so a WreckBody can carry it.
+func _spawn_wreck_fire() -> Node3D:
 	if score_value < 150:
-		return
+		return null
 	var gs := get_node_or_null("/root/GraphicsSettings")
 	if gs and gs.has_method("is_low") and gs.is_low():
-		return
+		return null
 	var parent := get_parent()
 	if parent == null:
-		return
+		return null
 	var fire := Node3D.new()
 	var flen := clampf(0.8 + score_value / 400.0, 0.9, 1.8)
 	var flame := MeshInstance3D.new()
@@ -2086,6 +2104,7 @@ func _spawn_wreck_fire() -> void:
 			func(v: float): fm.set_shader_parameter("emission_energy", v), 4.5, 0.0, 0.8)
 	ft.parallel().tween_property(flame, "scale", Vector3(0.4, 0.7, 0.4), 0.8)
 	ft.tween_callback(fire.queue_free)
+	return fire
 
 ## Physical wreckage: a handful of armor-plate chunks blasted off the chassis,
 ## tumbling with real physics and bouncing off the floor before burning out.
