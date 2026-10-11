@@ -824,8 +824,10 @@ func _tick_bounty(delta: float) -> void:
 func _try_mark_bounty() -> void:
 	var candidates: Array = []
 	for e in get_tree().get_nodes_in_group("enemy"):
+		# Never a robot on the player's side (hijacked, or an escorted ALIGNED
+		# unit, which is so for good): the player's fire passes through it.
 		if e is EnemyBase and e.score_value < 1000 and e.state != EnemyBase.State.DEAD \
-				and not e.is_bounty and e.hp != null and e.hp.is_alive():
+				and not e.is_bounty and not e.hijacked and e.hp != null and e.hp.is_alive():
 			candidates.append(e)
 	if candidates.size() < BOUNTY_MIN_ENEMIES:
 		_bounty_cd = 4.0 # not enough of a fight yet — check back soon

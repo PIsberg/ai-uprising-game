@@ -4447,6 +4447,7 @@ func _task_id(t: Dictionary) -> String:
 		"escape": return t.get("id", "escape")
 		"haul": return t.get("id", "haul")
 		"kill_switch": return t.get("id", "switches")
+		"escort": return t.get("id", "escort")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4491,6 +4492,8 @@ func _register_task_entry(t: Dictionary) -> void:
 		"kill_switch":
 			GameState.register_task(id, t.get("label", "Throw every kill switch before they re-arm"),
 				float((t.get("points", []) as Array).size()), staged)
+		"escort":
+			GameState.register_task(id, t.get("label", "Escort the ALIGNED unit to the uplink"), 0.0, staged)
 		"escape":
 			# No goal meter: the countdown lives in the label (EscapeZone).
 			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
@@ -4608,6 +4611,16 @@ func _activate_task(t: Dictionary) -> void:
 			hp.position = t.get("pos", Vector3.ZERO)
 			add_child(hp)
 			_relocate_when_clear(hp)
+		"escort":
+			var esc := AlignedEscort.new()
+			esc.task_id = id
+			esc.base_label = t.get("label", "Escort the ALIGNED unit to the uplink")
+			esc.unit_scene = enemy_scene(t.get("enemy", "android"))
+			esc.goal = t.get("to", Vector3.ZERO)
+			esc.goal_radius = t.get("radius", 3.5)
+			esc.follow = t.get("follow", 12.0)
+			esc.position = t.get("pos", Vector3.ZERO)
+			add_child(esc)
 		"kill_switch":
 			# The bank owns the watchdog clock; the switches are the level's
 			# own children so the burial rescue and the task probes see them.

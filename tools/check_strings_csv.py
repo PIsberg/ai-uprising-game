@@ -54,6 +54,12 @@ LABEL_SOURCES = [
     ("scripts/systems/keycard.gd", r'HALLUCINATION_TITLE := "([^"]+)"'),
     ("scripts/systems/keycard.gd", r'(?m)^\t"([^"]+)",\r?$'),
     ("scripts/systems/keycard.gd", r'_tag\.text = "([^"]+)"'),
+    # the ALIGNED escort: default label, its state words, toasts and unit tag
+    ("scripts/systems/aligned_escort.gd", r'var base_label: String = "([^"]+)"'),
+    ("scripts/systems/aligned_escort.gd", r'"(?:down|moving|waiting)": "([^"]+)"'),
+    ("scripts/systems/aligned_escort.gd", r'skirmish_event\.emit\("([^"]+)"'),
+    ("scripts/systems/aligned_escort.gd", r'skirmish_event\.emit\("[^"]+", "([^"]+)"'),
+    ("scripts/systems/aligned_escort.gd", r'_tag\.text = "([^"]+)"'),
     # the optional bonus objective: HUD tag and its toasts (labels are "label" in the defs)
     ("scripts/ui/hud.gd", r'tr\("(BONUS)"\)'),
     ("scripts/autoload/game_state.gd", r'skirmish_event\.emit\("(BONUS [A-Z]+)"'),

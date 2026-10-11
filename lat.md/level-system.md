@@ -191,7 +191,7 @@ A `kill_switch` task is the off-switch problem as a mission: the level's AI resi
 * Each `points` entry is a `KillSwitch` post (a lever under a 14 m beacon, red armed, green thrown). Walking into one throws it. A `KillSwitchBank` (a plain Node, so the task probes see only the posts) owns the rules.
 * The first switch thrown starts a watchdog clock of `window` seconds (default 20). Running out re-arms every switch, drops the meter to 0 and toasts SHUTDOWN REVERTED with the next line of `REVERT_LINES` (HAL 9000, reward hacking, Russell's coffee, corrigibility). All of them down inside one window completes the task and locks them.
 * The meter counts switches (n/goal); the seconds live in the label, like the escape countdown. The clock holds outside PLAYING, and a death re-arms them silently (checkpoint respawn is in place).
-* Sunblind Expanse (desert) stages its relay mast behind three breakers spread over the basin, 24 s window.
+* Sunblind Expanse (desert) stages its relay mast behind three breakers spread over the basin, 24 s window. Tidecore Basin (water_world) opens on a reactor SCRAM: three switches on islands at the basin's edge, one off each pump island, with a 40 s window for the run round the ring.
 * `tests/kill_switch_probe` covers the lifecycle, then on every authored level that each switch is on the navmesh and the shortest tour through them runs inside 60% of the window at sprint speed.
 
 ## Hallucinated Keycards
@@ -203,6 +203,16 @@ A `key` task's `decoys` are keycards the level's AI made up: the same card and t
 * Taking the real card frees every decoy left without springing them, so the waypoint never points at a dead lie.
 * The builder adds the real card first and the decoys after it under the same task id, so `tests/task_reach_probe` lines them up with `[pos] + decoys`. The Constitutional Vault (claude) puts one in the open entry band and one past the south bulkhead.
 * `tests/decoy_keycard_probe` covers the tells, the ambush, the second line, the dissolve and the built level.
+
+## Aligned Escort
+<!-- lat: { "require-code-mention": true } -->
+An `escort` task walks one robot that has come over to the player's side from `pos` to a ring at `to` (`AlignedEscort`).
+
+* The unit is a hijacked robot with `EnemyBase.escort_goal` set: no burnout clock, it fights only robots within `ESCORT_ENGAGE` (12 m) and otherwise walks its route instead of hunting. Hostile robots already aim at hijacked units first (traitor priority), so the route is a fight.
+* It walks only while the player is within `follow` (default 12 m); the label reads "moving" or "waiting for you".
+* It cannot die: `Damageable.floor_health` is 1. At 1 HP it goes DOWN (invulnerable, stopped, "REBOOTING") until the player stands within `REBOOT_RANGE` for `REBOOT_SECONDS`, then comes back at `REBOOT_HEALTH` of its max.
+* It stays in the `enemy` group, so never pair it with `kill_all`; the bounty director skips hijacked robots so it is never marked.
+* Skybridge Uplink (uplink): the broadcast wakes one android by the core, which is walked south through the blast-door gap and east through the ring gate. `tests/escort_probe` covers it.
 
 ## Objective Placement
 

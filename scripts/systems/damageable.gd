@@ -8,6 +8,10 @@ signal died(source: Node)
 @export var max_health: float = 100.0
 @export var armor: float = 0.0
 @export var invulnerable: bool = false
+## Health never drops below this, so above 0 the owner can never die: an
+## escorted ALIGNED unit (AlignedEscort) sets 1.0 and goes down for a reboot
+## instead. 0 (the default) changes nothing.
+var floor_health: float = 0.0
 
 var current_health: float
 ## Kill style (KillFx enum) of the hit being applied right now. A weapon sets it
@@ -67,7 +71,7 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 		if amount <= 0.0:
 			return
 	var mitigated := maxf(0.0, amount if ignore_armor else amount - armor)
-	current_health = maxf(0.0, current_health - mitigated)
+	current_health = maxf(floor_health, current_health - mitigated)
 	var killed := current_health <= 0.0
 	damaged.emit(mitigated, source)
 	health_changed.emit(current_health, max_health)
