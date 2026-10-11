@@ -31,6 +31,7 @@ All sound effects in the game are procedurally synthesized using `SoundSynth`. R
 
 Numbered takes `<sound_id>_0` .. `_7` become one no-repeat `AudioStreamRandomizer` (`AudioBus._resolve_sample`). Eight ids ship Kenney CC0 takes level-matched to the synth by `tools/import_samples.py` (impacts, footsteps, explosions, the plasma and drone shots); gunshots and music stay synthesized.
 * Synthesis runs on a `WorkerThreadPool` task started in `SoundSynth._ready`, menu theme first. `get_stream()` builds any stream that is not ready yet on the calling thread, so early callers never get silence; `AudioBus._start_music` instead waits for `is_ready("music_techno")`, so the first frame is not held up (boot 5.1 s -> 0.8 s to the first frame). The generators must stay pure: no shared state, no scene tree.
+* A music theme is four synced stems, not one WAV: `SoundSynth._music_track` renders bed / drums / lead / hot (`MUSIC_LAYERS`) in one pass at a fixed `MUSIC_GAIN` into an `AudioStreamSynchronized`. `AudioBus._mix_layers` sets each stem's volume every frame from the smoothed combat heat (drums `DRUMS_CALM_DB` -> 0, lead `LEAD_CALM_DB` -> 0) and `_hot_wanted` (a RAMPAGE tier or a live boss from `GameState.boss_spawned`); `music_layer_db` reports them. `AudioBus.MUSIC_LAYERS` must match the synth's order. A sample-file theme is a plain stream and is left alone. `tests/music_layers_probe`.
 
 ### GraphicsSettings
 <!-- lat: { "require-code-mention": true } -->

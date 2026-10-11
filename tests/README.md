@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-374 probes total: **120** wired into the headless suite (`suite`), **84**
+375 probes total: **121** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -302,7 +302,8 @@ or GPU-timing probes; `--headless` renders these black).
 | model_gallery_probe | Available CC0 enemy models side by side, for picking distinct bases for hazard-world flyers | windowed |
 | model_mat_probe | Import-cache corruption sweep: each imported texture vs source PNG catches a garbage `.ctex` whose md5 still matches | headless |
 | model_view_probe | Arbitrary model scene front/side/3-quarter, to judge its pose or textures; the subject is frozen, so an enemy scene works too | windowed |
-| music_check | Generated music tracks' peak/RMS/mid-high-band RMS as a proxy for audibility on small speakers | headless |
+| music_check | Generated music tracks' peak/RMS/mid-high-band RMS (a theme's stems summed) as a proxy for audibility on small speakers | headless |
+| music_layers_probe | Layered music: every synth theme is an `AudioStreamSynchronized` of four equal-length looping stems (bed, drums, lead, hot), none silent, full mix peaking 0.3-1.0; synth and mixer agree on stem order; calm: bed 0 dB, drums <= -24, lead under, hot silent; fight: drums and lead full; RAMPAGE and then a live boss bring the hot layer in, losing them takes it out; the theme wraps and keeps playing past its length. Volumes read through `AudioBus.music_layer_db` | suite |
 | muzzle_check_probe | New ranged enemy's Muzzle node marker vs the model's visible weapon | windowed |
 | nemesis_probe | NEMESIS grudge loop: elite kill recorded, spawner substitutes the nemesis next spawn, killing it settles the grudge | headless |
 | new_models_probe | Newly-added models individually rendered, to assign each an enemy role | windowed |
@@ -384,7 +385,7 @@ or GPU-timing probes; `--headless` renders these black).
 | spawn_safety_probe | Campaign-wide spawn safety: the idle player takes zero damage during the opening attack grace on every level. Also reports post-grace incoming DPS per level, blamed by source, on a deep health pool so the figure is not censored by the player dying (~155s, run deliberately) | headless |
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | synth_boot_probe | SoundSynth does not block boot: re-running its `_ready` returns within 1 s (it synthesized all 57 streams on the main thread, 4.3 s of the 5.1 s before the first frame), every stream id still resolves to non-empty PCM right away, the background pass finishes, and the menu theme plays | suite |
-| synth_probe | Every key procedural sound generates non-silent, non-degenerate audio | suite |
+| synth_probe | Every key procedural sound generates non-silent, non-degenerate audio (a music theme judged by its summed stems, each stem non-silent) | suite |
 | task_reach_probe | On every built campaign level, each authored objective (key, core, console, zone, shard, payload, escape ring, HVT spawn) and weapon pickup stays where the def put it, clear of geometry and near the navmesh; controls prove the burial rescue still moves a point inside a hero monolith, leaves a ring zone around it alone, and no longer moves an ObjectiveCore off its own collider (verified red by dropping the self-exclusion) | suite |
 | teach_probe | Each first-encounter teaching hint fires once, repeats suppressed, a new run re-arms them | suite |
 | terminator_beam_probe | TERMINATOR's Optic Lance charges/fires/tracks/renders/burns the player | windowed |

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/music_layers_probe.gd" id="1"]
+
+[node name="MusicLayersProbe" type="Node"]
+script = ExtResource("1")

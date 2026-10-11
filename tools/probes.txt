@@ -21,6 +21,8 @@ res://tests/elite_marker_probe.tscn
 res://tests/weapon_stats_probe.tscn
 res://tests/emp_probe.tscn
 res://tests/synth_probe.tscn
+# Layered music: four synced stems per theme, faded by combat heat, RAMPAGE and a live boss.
+res://tests/music_layers_probe.tscn
 res://tests/codex_count_probe.tscn
 res://tests/teach_probe.tscn
 res://tests/objective_probe.tscn

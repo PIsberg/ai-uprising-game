@@ -421,7 +421,7 @@ var _music_enabled := true   # editor disables the looping theme; re-enabled on 
 # and settling slowly when it clears.
 var _combat: float = 0.0       ## smoothed heat 0..1
 var _combat_target: float = 0.0
-const MUSIC_CALM_DB := -12.0
+const MUSIC_CALM_DB := -10.0 ## the drums sit 30 dB down when calm (layers below)
 const MUSIC_COMBAT_DB := -6.0
 const MUSIC_HOT_DB := -3.0     ## peak-battle bump
 
@@ -437,6 +437,60 @@ func set_combat_heat(heat: float) -> void:
 ## Fraction the score steps back while a broadcast/lore VO line is speaking.
 var _vo_duck: float = 0.0
 const VO_DUCK_DB := 7.0
+
+# Layered score: a synth theme is four synced stems (SoundSynth.MUSIC_LAYERS:
+# bed, drums, lead, hot). Exploring you hear the bed with the lead far under
+# it; a fight brings the drums and the lead up; a RAMPAGE streak or a live boss
+# brings in the hot line. A real music file (sample override) plays as it is.
+## Stem order SoundSynth.MUSIC_LAYERS renders (named here, not read from the
+## synth, like every other synth lookup in this file; music_layers_probe
+## catches the two drifting apart).
+const MUSIC_LAYERS := ["bed", "drums", "lead", "hot"]
+const LAYER_FLOOR_DB := -60.0
+const DRUMS_CALM_DB := -30.0
+const LEAD_CALM_DB := -14.0
+var _hot := 0.0 ## eased 0..1: the hot layer's amplitude
+var _boss: Node = null
+var _boss_hooked := false
+var _layer_db := {} ## layer name -> dB last given to the mixer
+
+## The volume (dB) the current theme's `layer` plays at, LAYER_FLOOR_DB when
+## the music is not layered (a sample file) or has no such layer.
+func music_layer_db(layer: String) -> float:
+	return _layer_db.get(layer, LAYER_FLOOR_DB)
+
+## A RAMPAGE tier or a boss still standing.
+func _hot_wanted() -> bool:
+	var gs := get_node_or_null("/root/GameState")
+	if gs == null:
+		return false
+	if not _boss_hooked and gs.has_signal("boss_spawned"):
+		_boss_hooked = true
+		gs.boss_spawned.connect(func(b: Node) -> void: _boss = b)
+	if int(gs.get("rampage_tier")) >= 1:
+		return true
+	if not is_instance_valid(_boss) or not _boss.is_inside_tree():
+		return false
+	var hp = _boss.get("hp")
+	return hp == null or not hp.has_method("is_alive") or hp.is_alive()
+
+func _mix_layers(delta: float) -> void:
+	var sync := _music.stream as AudioStreamSynchronized
+	if sync == null:
+		_layer_db.clear()
+		return
+	var want_hot := _hot_wanted()
+	_hot = move_toward(_hot, 1.0 if want_hot else 0.0, delta * (1.5 if want_hot else 0.5))
+	var dbs := {
+		"bed": 0.0,
+		"drums": lerpf(DRUMS_CALM_DB, 0.0, smoothstep(0.05, 0.4, _combat)),
+		"lead": lerpf(LEAD_CALM_DB, 0.0, smoothstep(0.1, 0.5, _combat)),
+		"hot": maxf(linear_to_db(_hot), LAYER_FLOOR_DB) if _hot > 0.0 else LAYER_FLOOR_DB,
+	}
+	for i in mini(sync.stream_count, MUSIC_LAYERS.size()):
+		var db: float = dbs.get(MUSIC_LAYERS[i], 0.0)
+		sync.set_sync_stream_volume(i, db)
+		_layer_db[MUSIC_LAYERS[i]] = db
 
 func _process(delta: float) -> void:
 	if _music == null:
@@ -464,6 +518,7 @@ func _process(delta: float) -> void:
 			lp.cutoff_hz = exp(lerpf(log(SHOCK_OPEN_HZ), log(SHOCK_LP_HZ), pow(_shock, 1.2)))
 	elif _shock_lp and _shock_lp.cutoff_hz < SHOCK_OPEN_HZ:
 		_shock_lp.cutoff_hz = SHOCK_OPEN_HZ
+	_mix_layers(delta)
 	_music.volume_db = vol
 	_music.pitch_scale = lerpf(1.0, 1.09, _combat)
 
