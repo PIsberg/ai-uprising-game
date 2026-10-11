@@ -392,6 +392,15 @@ func supply_health_maxed() -> bool:
 var supply_ammo: int = 0        # permanent bonus reserve added to every weapon each deploy
 var supply_grenades: int = 0    # permanent bonus frag grenades carried each deploy
 var supply_health: float = 0.0  # permanent bonus max+current HP each deploy
+## Night-vision goggles (a pickup on GPT and SUBLEVEL): kept for the run, toggled
+## with the night_vision action (Player.toggle_night_vision).
+var has_night_vision: bool = false
+
+func grant_night_vision() -> void:
+	if has_night_vision:
+		return
+	has_night_vision = true
+	teach_once("night_vision", MECHANIC_HINTS["night_vision"])
 
 ## Buy a field supply, banking its amount for the next deploy. False if too poor.
 func buy_supply(k: String) -> bool:
@@ -1283,6 +1292,7 @@ func reset_run() -> void:
 	supply_ammo = 0
 	supply_grenades = 0
 	supply_health = 0.0
+	has_night_vision = false
 	_taught.clear()
 	adrenaline_left = 0.0
 	_adrenaline_cd = 0.0
@@ -1316,6 +1326,7 @@ const MECHANIC_HINTS := {
 	"dodge": "✦ PERFECT DODGE — dashing (Q) through an attack dodges it. Time your dashes!",
 	"execution": "☠ EXECUTION — melee (F) finishes off weakened enemies instantly.",
 	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
+	"night_vision": "◉ NIGHT VISION — press [N] to see in the dark. It does not give you away like a flashlight.",
 	"lights_out": "◐ LIGHTS OUT — robots can't see you in the dark past a few metres. Firing or a flashlight gives you away.",
 }
 
@@ -1590,6 +1601,7 @@ func save_progress() -> void:
 	cf.set_value("run", "supply_ammo", supply_ammo)
 	cf.set_value("run", "supply_grenades", supply_grenades)
 	cf.set_value("run", "supply_health", supply_health)
+	cf.set_value("run", "night_vision", has_night_vision)
 	# First-encounter coaching toasts (teach_once) fire once per run — persist
 	# which keys already fired so a resumed run doesn't re-teach everything.
 	cf.set_value("run", "taught", _taught.keys())
@@ -1619,6 +1631,7 @@ func load_progress() -> bool:
 	supply_ammo = int(cf.get_value("run", "supply_ammo", 0))
 	supply_grenades = int(cf.get_value("run", "supply_grenades", 0))
 	supply_health = float(cf.get_value("run", "supply_health", 0.0))
+	has_night_vision = bool(cf.get_value("run", "night_vision", false))
 	# First-encounter coaching toasts already shown this run.
 	_taught.clear()
 	for k in cf.get_value("run", "taught", []):
@@ -1772,7 +1785,7 @@ func advance_level() -> void:
 const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
 const DAILY_DIFFICULTY := Difficulty.HARD
 const DAILY_RUN_KEYS := ["difficulty", "score", "kills", "unlocked_weapons", "equipped_weapon",
-	"upgrades", "owned_mods", "weapon_mods", "supply_ammo", "supply_grenades", "supply_health",
+	"upgrades", "owned_mods", "weapon_mods", "supply_ammo", "supply_grenades", "supply_health", "has_night_vision",
 	"nemesis", "level_index", "max_level_reached", "current_level_path", "intro_played",
 	"controls_taught", "seen_enemy_types", "directive", "directive_id"]
 var daily_op: Dictionary = {}     ## the op being played ({} outside one)

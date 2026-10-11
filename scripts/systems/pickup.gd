@@ -1,7 +1,7 @@
 class_name Pickup
 extends Area3D
 
-enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK, OVERDRIVE }
+enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK, OVERDRIVE, NIGHT_VISION }
 
 @export var kind: Kind = Kind.HEALTH
 @export var amount: int = 25
@@ -18,6 +18,10 @@ func _ready() -> void:
 	collision_layer = 32
 	collision_mask = 2
 	add_to_group("pickup")
+	# Goggles already owned this run: nothing to pick up.
+	if kind == Kind.NIGHT_VISION and GameState.has_night_vision:
+		queue_free()
+		return
 	body_entered.connect(_on_body_entered)
 	_bob_phase = randf() * TAU
 	if _mesh:
@@ -165,6 +169,11 @@ func _on_body_entered(body: Node) -> void:
 				body.notify_pickup("⚡ OVERCLOCK — ×%d DAMAGE" % int(GameState.OVERCLOCK_MULT))
 			# Triumphant sting: this is a run-the-table moment.
 			AudioBus.play_synth_ui("victory", -8.0, 1.4)
+		Kind.NIGHT_VISION:
+			GameState.grant_night_vision()
+			if body.has_method("notify_pickup"):
+				body.notify_pickup("◉ NIGHT VISION — [N]")
+			AudioBus.play_synth_ui("combo_up", -6.0, 0.8)
 		Kind.OVERDRIVE:
 			GameState.activate_overdrive()
 			if body.has_method("notify_pickup"):

@@ -95,6 +95,8 @@ res://tests/jam_relay_probe.tscn
 res://tests/weather_shift_probe.tscn
 # Shoot out the lights: interior lamps break, the dark hides the player from robot optics past 9 m.
 res://tests/shootable_light_probe.tscn
+# Night vision: goggles pickup, kept for the run (save/Continue), toggled on N, no give-away.
+res://tests/night_vision_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).
