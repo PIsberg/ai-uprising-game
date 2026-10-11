@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-364 probes total: **112** wired into the headless suite (`suite`), **84**
+366 probes total: **113** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **168** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **169** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -145,6 +145,8 @@ or GPU-timing probes; `--headless` renders these black).
 | robot_anim_names_probe | Every anim_idle/anim_walk/anim_attack/anim_stagger an enemy scene in LevelBuilder.ENEMY_SCENES gives its RobotModel is a clip of that model (RobotModel skips a missing name silently, leaving the robot in its rest pose); static models with no AnimationPlayer are skipped | suite |
 | sentinel_brawler_probe | SENTINEL 1v1 vs a stand-in player: it walks on its Walking clip, 3+ throws (1+ bomb) all leave within 1.2 m of its right fist (Palm1.R) with the Punch clip playing, the fist muzzle is at world scale ~1, and from 2.2 m it winds up 0.3 s+ and punches for damage and 5+ m/s knockback | suite |
 | sentinel_brawler_shot | Side view of the SENTINEL throwing from its fist at range, then a punch wind-up and the hit; `-- --out=<dir>` | windowed |
+| android_walker_probe | ANDROID (Quaternius "Leela") 1v1 vs a stand-in player: 5+ shots in 10 s, each fired with the muzzle within 0.5 m of the Head bone, 1.3 m+ up and at world scale ~1 (the face lens, not the old chest point); a juke leaves the floor 0.3 m+ while moving 3+ m/s sideways; from 2 m it plays Kick, winds up 0.25 s+ and lands damage + 5+ m/s knockback; an ENFORCER (EnemyAndroid subclass on its own model) keeps its scene Muzzle and never kicks | suite |
+| android_walker_shot | Side view of the ANDROID firing from its face lens, at a side-hop's peak, then the kick wind-up and the claw landing; `-- --out=<dir>` | windowed |
 | mech_stilt_probe | Stilt MECH 1v1 vs a stand-in player: it lopes on the Run clip at 5+ m/s, fires 2+ bolts that each leave within 1.2 m of its right palm bone (PalmI.R) and none with splash, the muzzle (parent of the flash) is at world scale ~1 (not the rig's 57x), and from 7 m it plants for 0.4 s+ before a leap that rises 0.4 m+ and lands within KICK_RADIUS of the player for damage and 5+ m/s knockback | suite |
 | mech_stilt_shot | Side view of the stilt MECH firing from its palm, then crouching (ground warning), at the apex and landing; `-- --out=<dir>` | windowed |
 | vacuum_hop_probe | CUSTODIAN (vacuum) 1v1 vs a stand-in player for 9 s: it fires 2+ bolts (damage reported, not asserted), every bolt leaves while its body is HOP_HEIGHT x 0.7+ off the floor, every launch comes straight out of a crouch (chassis below 75% of its risen height), weakpoint_multiplier is AIR_DAMAGE_MULT airborne and 1.0 on the floor, it lands back in combat, and killed at the top of a hop its wreck drops to the floor | suite |

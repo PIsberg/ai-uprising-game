@@ -18,6 +18,10 @@ collision_mask = 1
 script = ExtResource("1_and")
 tracer_scene = ExtResource("3_tracer")
 muzzle_flash_scene = ExtResource("4_mf")
+lens_bone = "Head"
+lens_offset = Vector3(0, -0.04, 0.36)
+kick_damage = 16.0
+hop_jukes = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

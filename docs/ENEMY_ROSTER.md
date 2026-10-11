@@ -37,7 +37,7 @@ inherit that parent's overrides too.
 | Enemy | Script | Model | Role / Signature | Overrides w/o super | Boss |
 |---|---|---|---|---|---|
 | ALIEN | `enemy_alien.gd` † | imported animated creature (RobotModel on `$Model`) | aerial strafer; charged fanned bio-plasma volley + screaming dive | `_state_attack` | — |
-| ANDROID | `enemy_android.gd` | imported model on `$Model` (scene) | hitscan burst skirmisher; flanks, sidestep jukes | `_state_attack` | — |
+| ANDROID | `enemy_android.gd` | Quaternius "Leela" (`Leela.fbx` on `$Model`): armless walker on digitigrade claw legs, one round lens on its face pod | hitscan bursts from the face lens (`muzzle_on_bone("Head", lens_offset)`); flanks; its jukes are side-hops (`hop_jukes`, Jump clip); inside 2.4 m a 0.32 s wind-up claw kick (Kick clip, `kick_damage`) with knockback. All four are scene exports, off on every subclass | `_state_attack` | — |
 | ARCHON | `enemy_archon.gd` | fully procedural (code-built holographic brain + shield) | finale boss: invulnerable shield while minion waves live, briefly exposes core | `_on_died` | BOSS |
 | BOWLER ("STRIKER-9") | `enemy_bowler.gd` | repainted brute chassis (scene) | stationary artillery pitcher; hurls homing molten orbs, close-range shove | — | — |
 | BREAKER | `enemy_breaker.gd` (extends EnemyDrone) | drone chassis (inherited) | pure melee flyer; hovers, dives to hammer-slam, drifts back out | (drone's) | — |
