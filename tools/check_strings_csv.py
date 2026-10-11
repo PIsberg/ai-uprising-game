@@ -50,6 +50,10 @@ LABEL_SOURCES = [
     ("scripts/systems/kill_switch_bank.gd", r'REVERT_TITLE := "([^"]+)"'),
     ("scripts/systems/kill_switch_bank.gd", r'(?m)^\t"([^"]+)",\r?$'),
     ("scripts/systems/kill_switch.gd", r'"(KILL SWITCH|OFF)"'),
+    # hallucinated keycards: the toast title, its cycled lines and the decoy tag
+    ("scripts/systems/keycard.gd", r'HALLUCINATION_TITLE := "([^"]+)"'),
+    ("scripts/systems/keycard.gd", r'(?m)^\t"([^"]+)",\r?$'),
+    ("scripts/systems/keycard.gd", r'_tag\.text = "([^"]+)"'),
     # the optional bonus objective: HUD tag and its toasts (labels are "label" in the defs)
     ("scripts/ui/hud.gd", r'tr\("(BONUS)"\)'),
     ("scripts/autoload/game_state.gd", r'skirmish_event\.emit\("(BONUS [A-Z]+)"'),

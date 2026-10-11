@@ -191,6 +191,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				else:
 					pp.append(_sv(p, s))
 			t["points"] = pp
+		# A key task's hallucinated cards sit on the ground plane like the real one.
+		if t.has("decoys"):
+			var dd: Array = []
+			for p in t["decoys"]:
+				dd.append(_sv(p, s))
+			t["decoys"] = dd
 		# A task-level flood's beds are layout, like a wave's.
 		for b in (t.get("flood", {}) as Dictionary).get("beds", []):
 			if b.has("pos"):
@@ -4229,7 +4235,15 @@ static func _claude() -> Dictionary:
 		"objective": "Decrypt the Claude Vault and carry its constitution out",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9)},
+			# The vault's archivist model HALLUCINATES two more keycards
+			# (Keycard.decoy): same card, same waypoint. One sits in the open
+			# entry band, the obvious grab, while the real one is in the roofed
+			# server aisle behind the relay firewall; the other is past the
+			# south bulkhead. A decoy glitches magenta now and then and shows
+			# "[citation needed]" up close; touching one drops an ambush on it.
+			{"type": "key", "label": "Recover the vault keycard", "pos": Vector3(13, 0, -9),
+				"decoys": [Vector3(-16, 0, -15), Vector3(6, 0, 16)],
+				"ambush": [{"type": "skitter", "count": 3}, {"type": "android"}]},
 			# The card starts the decryption; the vault's guardians converge on it.
 			{"type": "hold_zone", "id": "decrypt", "after": "key", "pos": Vector3(-12, 0, 10), "seconds": 12.0, "radius": 4.0,
 				"color": Color(1.0, 0.75, 0.35), "label": "Decrypt the constitutional vault",
