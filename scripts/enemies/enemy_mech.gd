@@ -50,24 +50,10 @@ func _ready() -> void:
 	hp.current_health = max_health
 	hp.armor = 2.0
 	flinch_knockback = 2.0 # lean frame: a hit rocks it more than the old heavy chassis
-	_attach_palm_muzzle()
+	# The gun is the right palm: bolts (and the muzzle flash) leave the hand
+	# the Shoot clip raises.
+	muzzle_on_bone(PALM_BONE)
 	_make_dust()
-
-
-## The gun is the right palm: the muzzle rides that bone, so bolts (and the
-## muzzle flash) leave the hand the Shoot clip raises.
-func _attach_palm_muzzle() -> void:
-	var found := find_children("*", "Skeleton3D", true, false)
-	if found.is_empty():
-		return
-	var sk := found[0] as Skeleton3D
-	if sk.find_bone(PALM_BONE) < 0:
-		return
-	var att := BoneAttachment3D.new()
-	att.name = "PalmMuzzle"
-	att.bone_name = PALM_BONE
-	sk.add_child(att)
-	muzzle = att
 
 
 ## Dust burst where the stilts come down.

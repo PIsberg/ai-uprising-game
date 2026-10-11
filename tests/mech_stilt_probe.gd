@@ -3,7 +3,8 @@ extends Node3D
 ## stilts, one open hand, no launcher) fights like it looks:
 ## (1) it lopes: Run clip while moving, 5+ m/s on the approach;
 ## (2) at range it fires bolts from its right palm (the Shoot clip's raised
-##     hand), 2+ of them, and no rockets;
+##     hand), 2+ of them, and no rockets; the muzzle (which parents the flash)
+##     is at world scale ~1, not the rig's counter-scale;
 ## (3) inside LEAP_RANGE it telegraphs (0.4 s+ planted, a ground warning at
 ##     the landing spot) and then leaps off its stilts (body 0.4 m+ up);
 ## (4) it lands spike-first next to the player: kick damage + knockback.
@@ -107,6 +108,11 @@ func _run() -> void:
 		far = maxf(far, d)
 	_check("bolts leave its right palm, no splash rockets", palm_d.size() >= 2 and far < 1.2 and splashers.is_empty(),
 			"shots=%d farthest=%.2f m splash=%d" % [palm_d.size(), far, splashers.size()])
+	# The muzzle flash and telegraph orb are parented to the muzzle: on a node
+	# under the rig's BoneAttachment they inherit its counter-scale and render huge.
+	var ms := mech.muzzle.global_transform.basis.get_scale()
+	_check("the palm muzzle is unscaled", ms.x > 0.5 and ms.x < 2.0 and ms.y > 0.5 and ms.y < 2.0,
+			"world scale %s" % ms)
 
 	# 3-4. Close in: telegraphed leap that lands spike-first.
 	mech.global_position = Vector3(0, floor_y, -7.0)
