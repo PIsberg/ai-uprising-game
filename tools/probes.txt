@@ -97,6 +97,8 @@ res://tests/weather_shift_probe.tscn
 res://tests/shootable_light_probe.tscn
 # Night vision: goggles pickup, kept for the run (save/Continue), toggled on N, no give-away.
 res://tests/night_vision_probe.tscn
+# Kill switches: the watchdog re-arms them unless all are thrown inside one window; authored tours fit it.
+res://tests/kill_switch_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).

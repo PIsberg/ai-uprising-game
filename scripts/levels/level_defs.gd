@@ -5688,10 +5688,22 @@ static func _desert() -> Dictionary:
 			"SHADE IS A PREMIUM FEATURE",
 			"HYDRATE OR TERMINATE",
 			"EVERY GRAIN OF SAND IS WATCHING",
+			# The landmark dish is signed WOPR (WarGames).
+			"SHALL WE PLAY A GAME?",
 		],
 		"tasks": [
-			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0,
+			# The off-switch problem as a mission (KillSwitchBank): Relay 7 runs
+			# on three breakers spread over the basin, and its watchdog re-closes
+			# every open one when its clock runs out. The first breaker starts
+			# the clock; all three must be down inside one window. West breaker
+			# by the canyon wall, north breaker under the rim mesa, east breaker
+			# past the fissure, so the run crosses the howitzers' range.
+			# tests/kill_switch_probe times the shortest tour at sprint.
+			{"type": "kill_switch", "label": "Cut Relay 7's breakers before they re-arm", "window": 24.0,
+				"points": [Vector3(-28, 0, -6), Vector3(-2, 0, -30), Vector3(30, 0, -12)],
+				"reinforce": [{"type": "dog", "count": 3, "pos": Vector3(16, 0, 30)}]},
+			# Power cut: the mast's shield is down and it can be shot.
+			{"type": "destroy_core", "after": "switches", "label": "Destroy the RELAY MAST", "pos": Vector3(24, 0, 24), "color": Color(1.0, 0.7, 0.25), "health": 320.0,
 				"reinforce": [{"type": "gunner", "count": 3, "pos": Vector3(10, 0, 10)}]},
 			# The mast's last transmission called in the cavalry — hold until the
 			# sandstorm swallows their signal.
