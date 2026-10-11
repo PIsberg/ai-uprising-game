@@ -58,6 +58,9 @@ var _mesh: Node3D
 var _mesh_base: Transform3D
 var _lean_pitch: float = 0.0
 var _lean_roll: float = 0.0
+var _no_gait := false ## no walk clip: banks like an aircraft while airborne
+const FLYER_BANK := 2.6 ## bank_max multiplier for an airborne model without a gait
+const FLYER_LEAN := 1.5 ## lean_max multiplier, likewise
 # Head tracking (skinned rigs with a head bone): the eased (pitch, yaw) look the
 # HeadTrackModifier turns into bone poses. Null on rigid models.
 var _look_mod: HeadTrackModifier
@@ -90,10 +93,10 @@ func _ready() -> void:
 		# AABBs so the model frustum-culls instead of always drawing.
 		_clamp_after_pose.call_deferred()
 	_build_head_track()
-	# Flyers (no walk gait) bank like aircraft; walkers just lean a little.
-	if anim_walk == "":
-		bank_max *= 2.6
-		lean_max *= 1.5
+	# A model with no walk gait may be a flyer, but many are static meshes on
+	# the ground (DOG, RONIN, HOWITZER, SERVER...): _apply_lean banks it like
+	# an aircraft only while its body is off the floor (#276).
+	_no_gait = anim_walk == ""
 	if _anim == null:
 		if _mesh == null:
 			set_physics_process(false) # nothing to drive
@@ -565,14 +568,15 @@ func _apply_lean(delta: float) -> void:
 	var fwd := clampf(-lv.z / spd, -1.0, 1.0) # +1 advancing (forward is -Z)
 	var lat := clampf(lv.x / spd, -1.0, 1.0)  # +1 strafing right
 	var t := clampf(8.0 * delta, 0.0, 1.0)
-	_lean_pitch = lerpf(_lean_pitch, fwd * lean_max, t)
+	var air := _no_gait and not _parent.is_on_floor()
+	_lean_pitch = lerpf(_lean_pitch, fwd * lean_max * (FLYER_LEAN if air else 1.0), t)
 	# Battle-damage list: a mauled machine sits off-true (grows with the
 	# parent's damage_heat), so "nearly wrecked" reads at a glance even between
 	# hits — and a listing chassis mid-frenzy-charge sells the desperation.
 	var list := 0.0
 	if "damage_heat" in _parent:
 		list = _parent.damage_heat * 0.09
-	_lean_roll = lerpf(_lean_roll, -lat * bank_max + list, t)
+	_lean_roll = lerpf(_lean_roll, -lat * bank_max * (FLYER_BANK if air else 1.0) + list, t)
 	_mesh.transform = Transform3D(
 		_mesh_base.basis * Basis.from_euler(Vector3(_lean_pitch, 0.0, _lean_roll)),
 		_mesh_base.origin)
