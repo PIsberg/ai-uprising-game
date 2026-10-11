@@ -165,3 +165,5 @@ res://tests/android_walker_probe.tscn
 res://tests/reaper_rifle_probe.tscn
 # SNIPER: beams leave alternate barrels; shoot and scoot sideways after each shot.
 res://tests/sniper_stalker_probe.tscn
+# COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
+res://tests/comic_panel_probe.tscn
