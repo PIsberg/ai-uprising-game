@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-383 probes total: **127** wired into the headless suite (`suite`), **84**
+385 probes total: **128** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **172** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **173** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -382,6 +382,8 @@ or GPU-timing probes; `--headless` renders these black).
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
 | sound_id_probe | Every sound id referenced by literal in scripts/ (play_synth_at/ui, synth, play_music, play_ambience_layer, play_lore, level `music` keys) and every weapon .tres sound_id (+_fire) resolves through AudioBus.synth; a never-registered id is a silent event (caught the Armory's silent purchase clink) | suite |
 | stamina_probe | Sprint/grapple stamina drains to exhaustion (walk-only lock), regen + lock clear; HUD bar screenshotted | windowed |
+| stamp_press_probe | StampPress: a player under a press is hit once per slam (45) and shoved out of the footprint (10 m/s), a robot under it is crushed and one 1 m outside untouched, every slam is telegraphed 0.5+ s ahead (red with the telegraph removed: 0.10 s), the head falls to within 0.3 m of the floor, presses at phase 0 and 0.5 slam half a period apart; Assembly has its presses and one covers the scaled east bulkhead gap | suite |
+| stamp_press_shot | The Assembly's press line across the dock lane at three moments of the wave, then the bulkhead press cocked and at the bottom of its slam; `-- --out=<dir>` | windowed |
 | startle_probe | Startle-scatter affects only in-radius non-boss non-EMP units; GODLIKE/OVERLOAD broadcasts it | headless |
 | suburb_nav_diag | Which leg of the suburb canal crossing fails, chaining spawn→bridgeheads→deck→exit plus the tower route | headless |
 | suburb_screenshot | Player camera walked up to a house on the suburb level, captured | windowed |

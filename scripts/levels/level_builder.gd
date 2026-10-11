@@ -293,6 +293,7 @@ func _ready() -> void:
 	_build_lava(def)
 	_build_firewalls(def)
 	_build_scanners(def)
+	_build_presses(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2400,6 +2401,19 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Hydraulic stamping presses (StampPress): a head that slams a striped
+## footprint every `period` s, crushing whatever is under it (player and robots).
+func _build_presses(def: Dictionary) -> void:
+	for e in def.get("presses", []):
+		var p := StampPress.new()
+		p.size = e.get("size", Vector2(4.0, 4.0))
+		p.clearance = float(e.get("clearance", 4.0))
+		p.period = float(e.get("period", 3.2))
+		p.phase = float(e.get("phase", 0.0))
+		p.damage = float(e.get("dmg", 45.0))
+		p.position = e.get("pos", Vector3.ZERO)
+		add_child(p)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
