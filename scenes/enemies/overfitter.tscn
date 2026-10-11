@@ -16,7 +16,8 @@ collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_of")
 muzzle_bone = "Gun"
-muzzle_bone_offset = Vector3(0, 0.215, 1.013)
+muzzle_bone_offset = Vector3(-0.476, 0.215, 1.013)
+muzzle_bone_offset_alt = Vector3(0.476, 0.215, 1.013)
 tracer_scene = ExtResource("5_tracer")
 muzzle_flash_scene = ExtResource("6_mf")
 

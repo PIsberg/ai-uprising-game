@@ -38,6 +38,11 @@ var _bounty_marker: Node3D = null
 ## (muzzle_on_bone's offset). Measure it from the model, not by eye: the
 ## front-most vertices skinned to the bone, as gun_muzzle_probe does.
 @export var muzzle_bone_offset: Vector3 = Vector3.ZERO
+## The other barrel of a twin gun (HUNTER, OVERFITTER): with it set, shots
+## alternate between the two offsets, the script calling next_barrel() after
+## each round. Zero = a single barrel.
+@export var muzzle_bone_offset_alt: Vector3 = Vector3.ZERO
+var _barrel_alt := false
 
 @export_group("Reactions")
 @export var flinch_knockback: float = 3.0 ## Backward shove applied on taking a hit.
@@ -1289,6 +1294,19 @@ func bone_point(att: BoneAttachment3D, offset: Vector3) -> Vector3:
 
 func _follow_muzzle_bone() -> void:
 	muzzle.global_position = bone_point(_muzzle_bone, _muzzle_offset)
+
+## After a round from a twin gun: the next one leaves the other barrel. A no-op
+## for single-barrel guns, so shared fire code can call it unconditionally.
+func next_barrel() -> void:
+	if muzzle_bone == "" or muzzle_bone_offset_alt == Vector3.ZERO or _muzzle_bone == null or muzzle == null:
+		return
+	# The flash just fired stays on the barrel it came out of, not ride across.
+	for c in muzzle.get_children():
+		if c is Node3D:
+			(c as Node3D).top_level = true
+	_barrel_alt = not _barrel_alt
+	_muzzle_offset = muzzle_bone_offset_alt if _barrel_alt else muzzle_bone_offset
+	_follow_muzzle_bone()
 
 ## An aggressive committed melee strike: an explosive forward-and-up leap at the
 ## target, synced to the attack animation, with the surge held alive briefly so

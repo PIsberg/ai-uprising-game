@@ -103,8 +103,9 @@ QUANTIZER flyer fire from their Quaternius `Gun` bone this way). Either way the 
 from the skeleton's current bone pose (`bone_point`), not the BoneAttachment3D's own transform,
 which refreshes a pose late and put a banking flyer's shots up to 1.2 m off its gun. Measure the offset from the model: the vertices
 skinned to the bone, front-most along the bone's own +Z (`tests/gun_muzzle_probe.gd`
-`_barrel_front`), not by eye. HUNTER's and OVERFITTER's guns have twin barrels; both fire from
-the centre of the gun's front face.
+`_barrel_front`), not by eye. HUNTER's and OVERFITTER's guns have twin barrels: `muzzle_bone_offset_alt` holds the
+second, and their fire code calls `next_barrel()` after each round to alternate (it leaves
+the live muzzle flash on the barrel it came from).
 
 **Tallies:** 45 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
 MENDER, OVERSEER, RAPTOR, SEEKER, SKITTER — matches the "seven subclasses" comment in

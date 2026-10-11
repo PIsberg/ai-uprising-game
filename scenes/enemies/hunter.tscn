@@ -14,7 +14,8 @@ collision_layer = 4
 collision_mask = 1
 script = ExtResource("1_hun")
 muzzle_bone = "Gun"
-muzzle_bone_offset = Vector3(0, 0.314, 1.627)
+muzzle_bone_offset = Vector3(-0.749, 0.314, 1.627)
+muzzle_bone_offset_alt = Vector3(0.749, 0.314, 1.627)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
