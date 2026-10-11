@@ -159,3 +159,5 @@ res://tests/robot_anim_names_probe.tscn
 res://tests/sentinel_brawler_probe.tscn
 # Special clips (sniper Charge, raptor rake) are held, not taken back next tick (#242).
 res://tests/special_clip_probe.tscn
+# COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
+res://tests/comic_panel_probe.tscn
