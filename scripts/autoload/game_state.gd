@@ -1134,8 +1134,13 @@ func reset_level_stats() -> void:
 	_surge_t = 0.0
 	AIDirector.reset_profile() # the AI re-reads you fresh each level
 
+## Last player shot (ms): the muzzle flash gives a player in the dark away for
+## LightLevel.EXPOSE_MS.
+var _last_shot_ms: int = -100000
+
 func register_shot() -> void:
 	stat_shots += 1
+	_last_shot_ms = Time.get_ticks_msec()
 	AIDirector.note_shot() # feed the adaptive director (shot count + weapon focus)
 
 func register_hit() -> void:
@@ -1311,6 +1316,7 @@ const MECHANIC_HINTS := {
 	"dodge": "✦ PERFECT DODGE — dashing (Q) through an attack dodges it. Time your dashes!",
 	"execution": "☠ EXECUTION — melee (F) finishes off weakened enemies instantly.",
 	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
+	"lights_out": "◐ LIGHTS OUT — robots can't see you in the dark past a few metres. Firing or a flashlight gives you away.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

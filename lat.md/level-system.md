@@ -149,9 +149,18 @@ A survive wave's `weather` turns the level's own Environment against the player 
 * Completing the hold eases every value back to what it was captured at, then the node frees itself. Death does not reset it: fog cannot kill a respawned player.
 * A blackout (`blackout`) cuts the level's lights, their lit fixture panels, the ULTRA VoxelGI and the god-ray shafts (group `level_light`), with `ambient_mult` and `exposure_mult` dimming the rest. The cut lights alone darkened sublevel by 7%, because emissives carry its frame; with `exposure_mult` 0.55 it is 24%. Alarm beacons and pickup glows stay lit.
 * A task can carry the same `weather` spec as a wave: it starts when that stage goes live and clears when it completes. Sublevel's night-shift quota is fought in a blackout.
+* A blackout also makes the whole floor dark for robot optics ([[level-system#Darkness and Shootable Lights]]): past 9 m they lose a player who is not firing.
 * A level with no weather of its own can raise some for the storm (`particles`: dust, snow or rain). The shift owns those particles, then stops and frees them when the hold is won.
 * Frostbreak's thaw hack now breaks its blizzard into a 30 s whiteout hold, and desert's counterstrike hold is a sandstorm with raised dust.
 * `tests/weather_shift_probe` covers the shift and the restore, that every authored shift thickens the fog inside its hold, that a `gust` only appears where there are weather particles (the level's own or raised), the built level's real Environment, and that raised particles are freed after the storm.
+
+## Darkness and Shootable Lights
+<!-- lat: { "require-code-mention": true } -->
+Interior luminaires can be shot out, and a robot cannot pick out a player standing in the dark past close range.
+
+* `LevelBuilder` builds every indoor authored light's ceiling fixture as a `ShootableLight` (housing, glowing panel, a layer-1 collider, a 20 HP `Damageable`) and tags each light with its authored `lux_energy` / `lux_range`, so darkness is the same on every graphics tier. Only player fire breaks one (`modify_incoming_damage`); it sputters to energy 0 (not hidden: a blackout re-shows `level_light`), kills a `flicker_tween`, frees its god-ray shaft and darkens its panel. Hits on it are not hit markers or accuracy.
+* `LightLevel.is_dark` is relative: current lux under `DARK_RATIO` (0.35) of the spot's lux with every luminaire working. An absolute threshold hid the player in 26-48% of every interior with all lights on. Measured from the defs, one lamp out darkens 340-1000 m2 on average. Only levels with shootable lamps can be dark, so open-sky levels never are.
+* `LightLevel.is_hidden` adds the give-aways: a shot in the last `EXPOSE_MS` (`GameState._last_shot_ms`, set in `register_shot`) or a lit flashlight (`Player.flashlight_on`). `EnemyBase._compute_can_see` refuses a hidden player past `DARK_SIGHT_RANGE` (9 m), except for bosses; hearing still keeps a close fix. The HUD shows HIDDEN under the crosshair. `tests/shootable_light_probe`.
 
 ## Hazard Surges
 <!-- lat: { "require-code-mention": true } -->

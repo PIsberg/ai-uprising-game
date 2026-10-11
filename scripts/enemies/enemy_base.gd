@@ -634,6 +634,7 @@ func is_headshot(world_y: float) -> bool:
 ## ~100 ms-stale sightline is imperceptible in play (telegraphs are longer than
 ## that) and reads as natural reaction lag.
 const SEE_TTL_MS := 85
+const DARK_SIGHT_RANGE := 9.0 ## how far a robot picks out a player standing in the dark
 var _see_phase_ms: int = 0
 var _see_cache: Dictionary = {} # target instance_id -> [stamp_ms, result]
 
@@ -655,6 +656,12 @@ func _compute_can_see(t: Node3D) -> bool:
 	var to := t.global_position - eye.global_position
 	var dist := to.length()
 	if dist > sight_range:
+		return false
+	# A player standing in the dark (lights shot out, a blackout) is invisible
+	# to optics past DARK_SIGHT_RANGE until a shot or a flashlight gives them
+	# away. Bosses see regardless. Hearing (_heard) still keeps a close fix.
+	if dist > DARK_SIGHT_RANGE and score_value < 1000 and t.is_in_group("player") \
+			and LightLevel.is_hidden(t):
 		return false
 	# Point-blank, the cone doesn't apply: a robot doesn't ignore a target at
 	# its shoulder just because its nav heading faces a wall. LOS still must

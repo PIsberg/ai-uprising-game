@@ -688,6 +688,38 @@ func _build_fps_label() -> void:
 	_fps_label.visible = false
 	add_child(_fps_label)
 
+## "HIDDEN" under the crosshair while the player stands in the dark and robots'
+## optics cannot pick them out past close range (LightLevel). Fades in and out;
+## checked 5x a second.
+var _hidden_label: Label = null
+var _hidden_alpha := 0.0
+var _hidden_t := 0.0
+var _hidden_now := false
+
+func _update_hidden(delta: float) -> void:
+	_hidden_t -= delta
+	if _hidden_t <= 0.0:
+		_hidden_t = 0.2
+		var p := get_tree().get_first_node_in_group("player") as Node3D
+		_hidden_now = p != null and LightLevel.is_hidden(p)
+	_hidden_alpha = move_toward(_hidden_alpha, 1.0 if _hidden_now else 0.0, delta * 3.0)
+	if _hidden_label == null:
+		if _hidden_alpha <= 0.0:
+			return
+		_hidden_label = Label.new()
+		_hidden_label.text = tr("HIDDEN")
+		_hidden_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_hidden_label.add_theme_font_size_override("font_size", 18)
+		_hidden_label.add_theme_color_override("font_color", Color(0.55, 0.7, 1.0))
+		_hidden_label.add_theme_constant_override("outline_size", 4)
+		_hidden_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+		_hidden_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_hidden_label)
+		_hidden_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		_hidden_label.position += Vector2(-60, 46)
+		_hidden_label.custom_minimum_size = Vector2(120, 0)
+	_hidden_label.modulate.a = _hidden_alpha * 0.85
+
 var _rampage_label: Label = null
 var _rampage_alpha: float = 0.0
 var _rampage_pop: float = 0.0
@@ -1240,6 +1272,7 @@ func _update_lead_block() -> void:
 func _process(delta: float) -> void:
 	_update_combat_music(delta)
 	_update_fps(delta)
+	_update_hidden(delta)
 	if _damage_alpha > 0.0:
 		_damage_alpha = maxf(0.0, _damage_alpha - delta * 1.5)
 		damage_overlay.color.a = _damage_alpha * GraphicsSettings.flash_intensity

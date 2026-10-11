@@ -93,6 +93,8 @@ res://tests/flood_surge_probe.tscn
 res://tests/jam_relay_probe.tscn
 # Weather shifts thicken a level's fog mid-hold and ease it back on completion.
 res://tests/weather_shift_probe.tscn
+# Shoot out the lights: interior lamps break, the dark hides the player from robot optics past 9 m.
+res://tests/shootable_light_probe.tscn
 # Haul payloads slow the real player, drop on heavy hits or death, and deliver.
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).
