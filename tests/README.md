@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-366 probes total: **113** wired into the headless suite (`suite`), **84**
+367 probes total: **114** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -146,6 +146,7 @@ or GPU-timing probes; `--headless` renders these black).
 | sentinel_brawler_shot | Side view of the SENTINEL throwing from its fist at range, then a punch wind-up and the hit; `-- --out=<dir>` | windowed |
 | android_walker_probe | ANDROID (Quaternius "Leela") 1v1 vs a stand-in player: 5+ shots in 10 s, each fired with the muzzle within 0.5 m of the Head bone, 1.3 m+ up and at world scale ~1 (the face lens, not the old chest point); a juke leaves the floor 0.3 m+ while moving 3+ m/s sideways; from 2 m it plays Kick, winds up 0.25 s+ and lands damage + 5+ m/s knockback; an ENFORCER (EnemyAndroid subclass on its own model) keeps its scene Muzzle and never kicks | suite |
 | android_walker_shot | Side view of the ANDROID firing from its face lens, at a side-hop's peak, then the kick wind-up and the claw landing; `-- --out=<dir>` | windowed |
+| sniper_stalker_probe | SNIPER (QuadShell) at 30 m from a stand-in player: 2+ beams that each hit with the muzzle 0.83 m (+/-0.15) from the nearest Gun bone and 0.5+ m ahead of the body (the old muzzle sat 1.3 m from both), successive shots on alternating barrels, and within 3 s of each shot it moves 4+ m while never closing inside 18 m | suite |
 | reaper_rifle_probe | REAPER closing from 22 m on a stand-in player: 3+ shots, each fired with the muzzle within 0.2 m of the rifle mesh's barrel end (its vertices within 0.08 m of the front; the old chest muzzle measured 0.39 m), 2+ of them while moving 3+ m/s and closing 6+ m; from 2.2 m its lunge lands damage and shoves the player 4+ m/s | suite |
 | mech_stilt_probe | Stilt MECH 1v1 vs a stand-in player: it lopes on the Run clip at 5+ m/s, fires 2+ bolts that each leave within 1.2 m of its right palm bone (PalmI.R) and none with splash, the muzzle (parent of the flash) is at world scale ~1 (not the rig's 57x), and from 7 m it plants for 0.4 s+ before a leap that rises 0.4 m+ and lands within KICK_RADIUS of the player for damage and 5+ m/s knockback | suite |
 | mech_stilt_shot | Side view of the stilt MECH firing from its palm, then crouching (ground warning), at the apex and landing; `-- --out=<dir>` | windowed |

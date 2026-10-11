@@ -163,3 +163,5 @@ res://tests/special_clip_probe.tscn
 res://tests/android_walker_probe.tscn
 # REAPER: marching fire from its rifle barrel while closing, rifle strike + shove up close.
 res://tests/reaper_rifle_probe.tscn
+# SNIPER: beams leave alternate barrels; shoot and scoot sideways after each shot.
+res://tests/sniper_stalker_probe.tscn
