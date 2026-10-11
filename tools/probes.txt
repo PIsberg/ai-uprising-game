@@ -167,3 +167,5 @@ res://tests/reaper_rifle_probe.tscn
 res://tests/sniper_stalker_probe.tscn
 # WARMECH shells alternate shoulder cannons (orb in each); HOWITZER fires from its barrel.
 res://tests/siege_cannon_probe.tscn
+# HUNTER/DIFFUSION/OVERFITTER/DEEPFAKE/HIVE fire from their Gun bone's barrel (muzzle_bone).
+res://tests/gun_muzzle_probe.tscn

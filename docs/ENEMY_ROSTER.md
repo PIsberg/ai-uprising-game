@@ -94,6 +94,16 @@ inherit that parent's overrides too.
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing
 via `GameState.announce_boss`.
 
+**Muzzles on the gun:** an enemy fires from its `muzzle` node, and a fixed `Muzzle` in the
+scene drifts off the model's gun as it animates (or never was on it). Two ways to pin it to
+the model: `muzzle_on_bone(bone, offset)` in code (MECH palm, SENTINEL fist, ANDROID face lens,
+SNIPER's two barrels, WARMECH's two shoulder cannons), or the scene exports `muzzle_bone` +
+`muzzle_bone_offset` on any `EnemyBase` (HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE and HIVE fire
+from their Quaternius `Gun` bone this way). Measure the offset from the model: the vertices
+skinned to the bone, front-most along the bone's own +Z (`tests/gun_muzzle_probe.gd`
+`_barrel_front`), not by eye. HUNTER's and OVERFITTER's guns have twin barrels; both fire from
+the centre of the gun's front face.
+
 **Tallies:** 45 subclasses. `_on_died` overridden without super: **7** (ARCHON, DRONE,
 MENDER, OVERSEER, RAPTOR, SEEKER, SKITTER — matches the "seven subclasses" comment in
 `enemy_base.gd`). `_state_attack` overridden without super: **11** (ALIEN, ANDROID,

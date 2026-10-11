@@ -31,6 +31,13 @@ var _bounty_marker: Node3D = null
 @export_group("References")
 @export var eye: Node3D
 @export var muzzle: Node3D
+## Fire from the gun the model carries: a skeleton bone (the Quaternius rigs'
+## "Gun") instead of the fixed Muzzle node. Empty = the scene's Muzzle.
+@export var muzzle_bone: String = ""
+## Where the barrel's front sits off that bone, in metres in the bone's frame
+## (muzzle_on_bone's offset). Measure it from the model, not by eye: the
+## front-most vertices skinned to the bone, as gun_muzzle_probe does.
+@export var muzzle_bone_offset: Vector3 = Vector3.ZERO
 
 @export_group("Reactions")
 @export var flinch_knockback: float = 3.0 ## Backward shove applied on taking a hit.
@@ -151,6 +158,8 @@ func _ready() -> void:
 		eye = get_node_or_null("Eye")
 	if muzzle == null:
 		muzzle = get_node_or_null("Muzzle")
+	if muzzle_bone != "":
+		muzzle_on_bone(muzzle_bone, muzzle_bone_offset)
 	nav_agent.path_desired_distance = 0.6
 	nav_agent.target_desired_distance = 0.6
 	_approach_angle = randf() * TAU
