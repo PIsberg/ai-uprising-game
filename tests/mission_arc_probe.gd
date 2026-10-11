@@ -252,17 +252,24 @@ func _check_tasks_reachable(lid: String, lvl: Node) -> void:
 	var map := (lvl as Node3D).get_world_3d().get_navigation_map()
 	var spawn: Vector3 = def.get("spawn", Vector3.ZERO)
 	for t in def.get("tasks", []):
-		if not t.has("pos"):
-			continue
-		var p: Vector3 = t["pos"]
-		var route := NavigationServer3D.map_get_path(map, spawn, p, true)
-		var gap := 999.0
-		if route.size() > 0:
-			var e: Vector3 = route[route.size() - 1]
-			# Full 3D distance: a key up on a deck must not pass because the
-			# route ends on the floor directly underneath it.
-			gap = e.distance_to(p)
-		_check("%s objective '%s' reachable from spawn" % [lid, _task_id(t)], gap < 3.0, "gap %.1f" % gap)
+		# Multi-point objectives (shards, kill switches) too: a point next to
+		# navmesh in a sealed pocket passes task_reach_probe but not this walk
+		# (sublevel's first annex draft put a camera in one).
+		var pts: Array = []
+		if t.has("pos"):
+			pts.append(t["pos"])
+		for sp in t.get("points", []):
+			pts.append(sp["pos"] if sp is Dictionary else sp)
+		for k in pts.size():
+			var p: Vector3 = pts[k]
+			var route := NavigationServer3D.map_get_path(map, spawn, p, true)
+			var gap := 999.0
+			if route.size() > 0:
+				var e: Vector3 = route[route.size() - 1]
+				# Full 3D distance: a key up on a deck must not pass because the
+				# route ends on the floor directly underneath it.
+				gap = e.distance_to(p)
+			_check("%s objective '%s'#%d reachable from spawn" % [lid, _task_id(t), k], gap < 3.0, "gap %.1f" % gap)
 
 func _wait(sec: float) -> void:
 	await get_tree().create_timer(sec).timeout
