@@ -42,12 +42,6 @@ honour it too (#194); the seeker (its blast is a mechanic) and the bosses keep t
 
 ## 2. Content & depth
 
-### Comic panel for HIVEMIND 🤖
-Every campaign level has its own briefing panel except HIVEMIND, which shows uplink's
-until its art is drawn (#244, brief in the issue). `tests/comic_panel_probe` lists it in
-`PENDING_ART` and fails once `assets/comics/level_hivemind.png` lands, as a reminder to
-re-anchor its FX.
-
 ### Boss mechanics audit 🎮
 ✅ **Audited (2026-09-11)** — all 7 bosses escalate with health: COLOSSUS/OVERSEER/TITAN/
 ARCHON/SMASHER had 3 HP-keyed phases; TERMINATOR ramps its beam sweep as it is wounded;

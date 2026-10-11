@@ -11,7 +11,7 @@ extends Node
 const Briefing := preload("res://scripts/cutscene/level_comic_briefing.gd")
 
 ## Levels whose own art is not drawn yet, each with the issue that tracks it.
-const PENDING_ART := {"hivemind": "#244"}
+const PENDING_ART := {}
 
 func _ready() -> void:
 	_run.call_deferred()

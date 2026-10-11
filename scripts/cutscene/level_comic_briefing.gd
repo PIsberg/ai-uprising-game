@@ -230,14 +230,14 @@ const LEVEL_COMIC_DEFS := {
 	},
 	"hivemind": {
 		"image": "res://assets/comics/level_hivemind.png",
-		# A relay dish and a squad advancing in step, the nearest panel to a hive
-		# network. The FX are uplink's, so they sit on that art; re-anchor them
-		# when level_hivemind.png lands (tests/comic_panel_probe flags it).
-		"fallback_image": "res://assets/comics/level_uplink.png",
 		"fx": [
-			{"kind": "glow", "u": 0.35, "v": 0.52, "size": 120, "color": C_BLUE}, # Uplink Dish
-			{"kind": "glow", "u": 0.72, "v": 0.65, "size": 44, "color": C_RED}, # sentry eye
-			{"kind": "glow", "u": 0.85, "v": 0.62, "size": 36, "color": C_RED} # Gunner Eye
+			{"kind": "glow", "u": 0.488, "v": 0.371, "size": 110, "color": C_CYAN}, # Central relay pylon
+			{"kind": "glow", "u": 0.64, "v": 0.444, "size": 160, "color": C_CYAN}, # HIVE PRIME shield core
+			{"kind": "glow", "u": 0.633, "v": 0.386, "size": 40, "color": C_RED}, # HIVE PRIME optics
+			{"kind": "glow", "u": 0.361, "v": 0.752, "size": 140, "color": C_CYAN}, # Jammer dome ring + stake
+			{"kind": "glow", "u": 0.845, "v": 0.547, "size": 30, "color": C_RED}, # Flanker optic
+			{"kind": "glow", "u": 0.906, "v": 0.405, "size": 40, "color": C_BLUE}, # Flanker mast beacon
+			{"kind": "muzzle", "u": 0.25, "v": 0.752, "size": 70, "color": C_BLUE} # Signal jammer
 		],
 		"weather": "digital"
 	}
