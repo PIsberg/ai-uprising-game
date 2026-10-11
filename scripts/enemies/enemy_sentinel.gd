@@ -46,7 +46,7 @@ func _ready() -> void:
 	super._ready()
 	# The weapon is the right fist: throws (and the muzzle flash) leave the
 	# hand the Punch clip swings.
-	muzzle_on_bone(FIST_BONE)
+	muzzle_on_bone(FIST_BONE, Vector3.ZERO, false) # the Punch clip owns the throwing arm
 
 
 func is_punching() -> bool:

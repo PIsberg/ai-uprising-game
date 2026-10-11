@@ -2,13 +2,18 @@ extends Node3D
 ## Windowed visual check for head tracking (HeadTrackModifier): five rig
 ## families facing the viewer, shot at rest and then tracking a "player" on a
 ## ledge up and to the right. Headless gives black frames.
-##   godot --path . res://tests/head_track_shot.tscn -- --out=<abs dir>
+## `--rigs=hunter,mech,sniper,deepfake,hive` lines up the gun robots instead,
+## to see their guns come up with the head (arm aim, #232).
+##   godot --path . res://tests/head_track_shot.tscn -- --out=<abs dir> [--rigs=a,b,c]
 
 func _ready() -> void:
 	var out_dir := ProjectSettings.globalize_path("user://head_track_shots")
+	var paths: Array = ["gunner", "sentinel", "rollback", "quantizer", "alien"]
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out_dir = a.substr(6)
+		elif a.begins_with("--rigs="):
+			paths = Array(a.substr(7).split(","))
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -56,7 +61,6 @@ func _ready() -> void:
 	cam.global_position = Vector3(4.0, 4.6, 11.5)
 	cam.look_at(Vector3(0, 1.4, 0), Vector3.UP)
 	var bots: Array = []
-	var paths := ["gunner", "sentinel", "rollback", "quantizer", "alien"]
 	for i in paths.size():
 		var e: EnemyBase = (load("res://scenes/enemies/%s.tscn" % paths[i]) as PackedScene).instantiate()
 		add_child(e)

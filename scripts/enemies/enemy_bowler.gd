@@ -40,7 +40,7 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 3.0
-	muzzle_on_bone(THROW_BONE)
+	muzzle_on_bone(THROW_BONE, Vector3.ZERO, false) # the Punch clip owns the throwing arm
 	_build_held_orb()
 
 ## A molten ball in its right fist, lit from the wind-up (telegraph) until the

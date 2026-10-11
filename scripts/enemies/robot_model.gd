@@ -62,6 +62,7 @@ var _lean_roll: float = 0.0
 # HeadTrackModifier turns into bone poses. Null on rigid models.
 var _look_mod: HeadTrackModifier
 var _look := Vector2.ZERO
+var _arm_w := 0.0 # eased gun-arm aim weight (HeadTrackModifier.arm_weight)
 const LOOK_RATE := 6.0 ## Ease toward a target (1/s).
 const LOOK_RELAX := 2.5 ## Ease back to rest once there is nothing to watch.
 
@@ -486,12 +487,25 @@ func _build_head_track() -> void:
 	var sk := _mesh.find_child("Skeleton3D", true, false) as Skeleton3D
 	if sk == null or HeadTrackModifier.chain_for(sk).is_empty():
 		return
+	_mount_track(sk)
+
+func _mount_track(sk: Skeleton3D) -> void:
 	_look_mod = HeadTrackModifier.new()
 	_look_mod.name = "HeadTrack"
 	_look_mod.body = _parent
 	_look_mod.active = false
 	_look_mod._chain = HeadTrackModifier.chain_for(sk)
 	sk.add_child(_look_mod)
+
+## The muzzle rides bone `tip` (EnemyBase.muzzle_on_bone): follow its rendered
+## pose and, when `aim`, swing that gun or arm onto the target while fighting.
+## Mounts the modifier on head-less rigs (the SNIPER's twin guns) too.
+func add_gun(sk: Skeleton3D, tip: int, offset: Vector3, aim: bool) -> void:
+	if sk == null or tip < 0:
+		return
+	if _look_mod == null:
+		_mount_track(sk)
+	_look_mod.add_gun(tip, offset, aim)
 
 ## Where a robot looks at its target: a player's eyes, a robot's chest.
 static func aim_height(t: Node3D) -> float:
@@ -507,9 +521,12 @@ func _update_look(delta: float) -> void:
 		return
 	var want := Vector2.ZERO
 	var rate := LOOK_RELAX
+	var arm_want := 0.0
 	var t := _parent.target
 	if is_instance_valid(t) and _parent._emp_t <= 0.0 and _parent.state in [
 			EnemyBase.State.ALERT, EnemyBase.State.CHASE, EnemyBase.State.ATTACK]:
+		_look_mod.aim_point = t.global_position + Vector3.UP * aim_height(t)
+		arm_want = 1.0
 		var sk := _look_mod.get_skeleton()
 		var idx: int = _look_mod._chain[-1]["idx"] if not _look_mod._chain.is_empty() else -1
 		var eye := _parent.global_position + Vector3.UP * 1.2
@@ -528,7 +545,13 @@ func _update_look(delta: float) -> void:
 	var resting := want == Vector2.ZERO and _look.length() < 0.003
 	if resting:
 		_look = Vector2.ZERO
+	if _look_mod.has_arms():
+		_arm_w = lerpf(_arm_w, arm_want, 1.0 - exp(-(LOOK_RATE if arm_want > 0.0 else LOOK_RELAX) * delta))
+		if arm_want == 0.0 and _arm_w < 0.003:
+			_arm_w = 0.0
+		resting = resting and _arm_w == 0.0
 	_look_mod.look = _look
+	_look_mod.arm_weight = _arm_w
 	_look_mod.active = not resting
 
 ## Bank/lean the chassis into its movement: tilt forward when advancing, roll

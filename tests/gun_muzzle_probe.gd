@@ -42,7 +42,7 @@ func _skinned(mi: MeshInstance3D) -> Array:
 			var bi: int = skin.get_bind_bone(b)
 			if bi < 0:
 				bi = sk.find_bone(skin.get_bind_name(b))
-			mats.append([sk.global_transform * sk.get_bone_global_pose(bi) * skin.get_bind_pose(b), sk.get_bone_name(bi)])
+			mats.append([sk.global_transform * _drawn(sk, bi) * skin.get_bind_pose(b), sk.get_bone_name(bi)])
 		for i in v.size():
 			var acc := Vector3.ZERO
 			var top := 0.0
@@ -60,6 +60,13 @@ func _skinned(mi: MeshInstance3D) -> Array:
 	return out
 
 
+## A bone's pose as last drawn: the robot's HeadTrack aims the gun after the
+## clip, and outside the skeleton's update the bone reads as the clip alone.
+func _drawn(sk: Skeleton3D, idx: int) -> Transform3D:
+	var track := sk.get_node_or_null("HeadTrack") as HeadTrackModifier
+	var clip := sk.get_bone_global_pose(idx)
+	return track.rendered_pose(idx, clip) if track else clip
+
 ## The front of the gun: centroid of the Gun-bone vertices within 5 cm of the
 ## front-most one along the gun's own axis (the bone's +Z, the way every
 ## barrel here points), in world space. Measured along the gun, not the body:
@@ -68,7 +75,7 @@ func _skinned(mi: MeshInstance3D) -> Array:
 ## resolve to the centre of their front face either way.
 func _barrel_front(e: Node3D, side: float = 0.0) -> Vector3:
 	var sk: Skeleton3D = e.find_children("*", "Skeleton3D", true, false)[0]
-	var pose: Transform3D = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("Gun"))
+	var pose: Transform3D = sk.global_transform * _drawn(sk, sk.find_bone("Gun"))
 	var frame := Transform3D(pose.basis.orthonormalized(), pose.origin)
 	var inv := frame.affine_inverse()
 	var pts: Array = []
