@@ -6,6 +6,10 @@ extends EnemyBase
 ## with a rising whine, and sends a heavy ballistic shell arcing at you —
 ## the impact throws splash you have to respect even behind thin cover. Slow,
 ## armoured, and blind up close: get under its barrel and stay there.
+## The barrel is its own node in the model (Gun), so it moves like artillery:
+## it lays to the ballistic solve while the walker aims (dipping at a close
+## target, lofting at a far one), slides back on the shot and runs out again,
+## and the shell leaves from its front end as drawn. tests/howitzer_barrel_probe.
 
 const SHELL := preload("res://scenes/weapons/projectile_howitzer.tscn")
 
@@ -17,6 +21,24 @@ const SHELL := preload("res://scenes/weapons/projectile_howitzer.tscn")
 
 var _winding: bool = false
 var _windup_t: float = 0.0
+
+# Barrel laying. Measured off walking_robot_gun.glb at fit_height 4.3: the
+# barrel runs z -1.92 (muzzle) to +1.65 (breech) at y 2.87, nose 1.1 deg down,
+# over a body spanning z -0.27..1.56; the trunnion sits over the body.
+const GUN_PIVOT := Vector3(0.0, 2.87, 0.4)  ## body frame
+const GUN_REST_PITCH := -0.019              ## rad, the barrel's own droop
+const ELEV_MIN := -0.21                     ## rad (-12 deg)
+const ELEV_MAX := 0.35                      ## rad (+20 deg): steeper buries the breech
+const ELEV_RATE := 0.4                      ## rad/s: a heavy gun lays slowly
+const KICK := 0.5                           ## m the barrel slides back on the shot
+const RUN_OUT := 0.9                        ## s to run back out
+static var _shell_gs: float = -1.0          ## the shell's gravity_scale, read once
+var _gun: Node3D
+var _gun_rest: Transform3D                  ## Gun's own transform as imported
+var _to_parent: Transform3D                 ## body frame -> Gun's parent frame
+var _muzzle_on_gun: Vector3                 ## Muzzle in Gun's frame
+var elevation: float = 0.0                  ## rad above the barrel's rest lay
+var _kick: float = 0.0                      ## m of recoil still to run out
 
 func _ready() -> void:
 	super._ready()
@@ -36,9 +58,17 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 6.0
+	# The GLB's Cell_Cell_0 / _001 are a dark full-size duplicate of the whole
+	# model (76k vertices, drawn coincident with it, barely visible). Hidden:
+	# they hold a copy of the barrel that stays put when the real one lays.
+	for n in ["Cell_Cell_0", "Cell_Cell_0_001"]:
+		var dup := find_child(n, true, false) as MeshInstance3D
+		if dup:
+			dup.visible = false
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	_lay_gun(delta)
 	if _winding:
 		_windup_t -= delta
 		if _windup_t <= 0.0:
@@ -77,18 +107,53 @@ func _fire_shell() -> void:
 	# gravity_scale (projectile.gd _physics_process), and a stale 9.8 here
 	# under-lofts the shot by 2.45x, so every shell undershot and hit the
 	# floor well short of the target instead of reaching it.
-	var aim: Vector3 = target.global_position + Vector3.UP * 0.4
-	if "velocity" in target:
-		aim += (target.velocity as Vector3) * 0.35
-	var dist := muzzle.global_position.distance_to(aim)
-	var t := dist / shell_speed
-	var gs: float = proj.get("gravity_scale") if proj.get("gravity_scale") != null else 0.3
-	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-	aim += Vector3.UP * (0.5 * g * gs * t * t)
-	var dir := (aim - muzzle.global_position).normalized()
+	var dir := _ballistic_dir()
 	if proj.has_method("launch"):
 		proj.launch(dir * shell_speed, self, shell_damage, splash_radius, splash_damage)
 	recoil = 1.0
+	_kick = KICK
 	_muzzle_flash()
 	AudioBus.play_synth_at("explosion", muzzle.global_position, -4.0, 1.6)  # sharp muzzle report
 	AudioBus.play_synth_at("mech_step", global_position, 0.0, 0.45)         # carriage rocks back
+
+## Launch direction that lands the shell on the target: lead the runner, then
+## loft the aim by the shell's gravity drop over its flight time.
+func _ballistic_dir() -> Vector3:
+	var aim: Vector3 = target.global_position + Vector3.UP * 0.4
+	if "velocity" in target:
+		aim += (target.velocity as Vector3) * 0.35
+	var t := muzzle.global_position.distance_to(aim) / shell_speed
+	if _shell_gs < 0.0:
+		var probe := SHELL.instantiate()
+		_shell_gs = float(probe.get("gravity_scale")) if probe.get("gravity_scale") != null else 0.3
+		probe.free()
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	aim += Vector3.UP * (0.5 * g * _shell_gs * t * t)
+	return (aim - muzzle.global_position).normalized()
+
+## Lay the barrel on the solve while there is a target to shoot, back to rest
+## otherwise, and run out the recoil; the muzzle rides the barrel's front.
+func _lay_gun(delta: float) -> void:
+	if state == State.DEAD or muzzle == null:
+		return
+	if _gun == null:
+		var gun := find_child("Gun", true, false) as Node3D
+		# RobotModel fits the mesh deferred and hides it until then: measure the
+		# frames below only once the fit has landed.
+		if gun == null or not gun.is_visible_in_tree():
+			return
+		_gun = gun
+		_gun_rest = _gun.transform
+		_to_parent = _gun.get_parent().global_transform.affine_inverse() * global_transform
+		_muzzle_on_gun = _gun.global_transform.affine_inverse() * muzzle.global_position
+	var want := 0.0
+	if target != null and is_instance_valid(target) and (state == State.ATTACK or _winding):
+		want = clampf(asin(clampf(_ballistic_dir().y, -1.0, 1.0)) - GUN_REST_PITCH, ELEV_MIN, ELEV_MAX)
+	elevation = move_toward(elevation, want, ELEV_RATE * delta)
+	_kick = move_toward(_kick, 0.0, KICK / RUN_OUT * delta)
+	# Pitch about the trunnion (+X raises the muzzle, forward is -Z), then slide
+	# back along the laid barrel; built in the body frame, applied in the Gun's.
+	var r := Basis(Vector3.RIGHT, elevation)
+	var lay := Transform3D(r, GUN_PIVOT - r * GUN_PIVOT + r * Vector3(0.0, 0.0, _kick))
+	_gun.transform = _to_parent * lay * _to_parent.affine_inverse() * _gun_rest
+	muzzle.global_position = _gun.global_transform * _muzzle_on_gun
