@@ -153,3 +153,7 @@ res://tests/story_arc_probe.tscn
 res://tests/vacuum_hop_probe.tscn
 # STILT MECH: lopes, fires from its right palm, telegraphed spike-first leap.
 res://tests/mech_stilt_probe.tscn
+# Every enemy scene's RobotModel clip names exist in its model (a missing one freezes it silently).
+res://tests/robot_anim_names_probe.tscn
+# SENTINEL: walks, throws from its right fist (Punch clip), punches up close.
+res://tests/sentinel_brawler_probe.tscn
