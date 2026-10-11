@@ -171,3 +171,5 @@ res://tests/siege_cannon_probe.tscn
 res://tests/gun_muzzle_probe.tscn
 # BOWLER: orb held in its right fist, released at the Punch swing's extension.
 res://tests/bowler_throw_probe.tscn
+# COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
+res://tests/comic_panel_probe.tscn

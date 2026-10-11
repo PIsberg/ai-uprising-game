@@ -42,11 +42,6 @@ honour it too (#194); the seeker (its blast is a mechanic) and the bosses keep t
 
 ## 2. Content & depth
 
-### Bespoke briefings for the hazard levels 🤖
-`_lava_world` / `_water_world` use the generic data-driven briefing. Give them custom
-comic-panel briefings like the older levels (`scenes/cutscene/level_comic_briefing.tscn`,
-`assets/comics/`).
-
 ### Boss mechanics audit 🎮
 ✅ **Audited (2026-09-11)** — all 7 bosses escalate with health: COLOSSUS/OVERSEER/TITAN/
 ARCHON/SMASHER had 3 HP-keyed phases; TERMINATOR ramps its beam sweep as it is wounded;
