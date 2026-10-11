@@ -149,3 +149,5 @@ res://tests/hallucination_probe.tscn
 res://tests/forkbomb_probe.tscn
 # STORY THREAD: every campaign level has a beat, acts in order, the briefing tells it.
 res://tests/story_arc_probe.tscn
+# CUSTODIAN: fires only from the top of a crouch-and-hop; airborne hits crit.
+res://tests/vacuum_hop_probe.tscn

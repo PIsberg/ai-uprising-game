@@ -18,6 +18,22 @@ enum Phase { GROUND, RISING, COMBAT }
 @export var burst_count: int = 2
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
+## The firing hop. A disc on legs has no business shooting from ankle height, so
+## once risen it only fires from the top of a spring: crouch (the tell), launch,
+## hang at the apex on its intake while the burst goes out, land, reposition.
+## Every shot is a moment it is up at eye height with its underside exposed.
+enum Hop { NONE, CROUCH, AIR, LAND }
+const HOP_HEIGHT := 1.4      ## apex of the hop, metres above the floor it left
+const CROUCH_TIME := 0.35    ## legs compress before it springs: the tell
+const HANG_TIME := 0.45      ## hover at the apex while the burst goes out
+const HANG_SINK := 0.25      ## m/s it sinks while hovering
+const LAND_TIME := 0.3       ## legs absorb the landing: no moving, no hop
+const AIR_DAMAGE_MULT := 1.5 ## airborne hits land on the exposed intake (a crit)
+
+var _hop: int = Hop.NONE
+var _hop_t: float = 0.0
+var _hang_t: float = 0.0
+var _hop_fired: bool = false
 
 var _phase: int = Phase.GROUND
 var _rise_t: float = 0.0
@@ -41,6 +57,7 @@ func _ready() -> void:
 	attack_cooldown = 1.4
 	score_value = 110
 	stagger_threshold = 60.0
+	telegraph_time = 0.0        # the crouch before each hop is its tell
 	super._ready()
 	_build_model()
 	_apply_rise(0.0)
@@ -118,6 +135,23 @@ func _build_model() -> void:
 	dome.mesh = sm
 	dome.position = Vector3(0, 0.26, -0.18)
 	_chassis.add_child(dome)
+
+	# Glowing intake on the underside: hidden against the floor, it shows (and
+	# is the crit spot) only while the unit is in the air.
+	var intake := MeshInstance3D.new()
+	var im := CylinderMesh.new()
+	im.top_radius = 0.34
+	im.bottom_radius = 0.34
+	im.height = 0.02
+	var intake_mat := StandardMaterial3D.new()
+	intake_mat.albedo_color = Color(1.0, 0.45, 0.15)
+	intake_mat.emission_enabled = true
+	intake_mat.emission = Color(1.0, 0.45, 0.15)
+	intake_mat.emission_energy_multiplier = 3.0
+	im.material = intake_mat
+	intake.mesh = im
+	intake.position.y = 0.015
+	_chassis.add_child(intake)
 
 	# Four folded legs that unfold and lock vertical when it rises.
 	for i in 4:
@@ -215,11 +249,94 @@ func _combat_fire(delta: float) -> void:
 			_burst_t = 0.12
 
 
+## An attack is a hop; the burst goes out at its apex (_hop_tick).
 func _perform_attack() -> void:
-	if target == null or _burst_left > 0:
+	if target == null or _hop != Hop.NONE or not is_on_floor():
 		return
-	_burst_left = burst_count
-	_burst_t = 0.0
+	_hop = Hop.CROUCH
+	_hop_t = 0.0
+	_hop_fired = false
+	_begin_telegraph(CROUCH_TIME)
+
+
+## Mid-hop the spring is committed: the hop replaces the state machine (chase,
+## spacing, grenade scramble) until it has landed.
+func _run_state(delta: float) -> void:
+	if _hop == Hop.NONE:
+		super._run_state(delta)
+	else:
+		_hop_tick(delta)
+
+
+func _hop_tick(delta: float) -> void:
+	_hop_t += delta
+	_face_target(delta)
+	velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+	velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
+	var g: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+	match _hop:
+		Hop.CROUCH:
+			_apply_rise(1.0 - 0.45 * sin(clampf(_hop_t / CROUCH_TIME, 0.0, 1.0) * PI * 0.5))
+			if _hop_t >= CROUCH_TIME:
+				_hop = Hop.AIR
+				_hop_t = 0.0
+				_apply_rise(1.0)
+				velocity.y = sqrt(2.0 * g * HOP_HEIGHT)
+				AudioBus.play_synth_at("servo_step_heavy", global_position, -2.0, 1.4)
+		Hop.AIR:
+			if not _hop_fired and velocity.y <= 0.0:
+				_hop_fired = true
+				_hang_t = HANG_TIME
+				if target and is_instance_valid(target) and _can_see(target):
+					_burst_left = burst_count
+					_burst_t = 0.0
+			if _hang_t > 0.0:
+				_hang_t -= delta
+				velocity.y = g * delta - HANG_SINK # EnemyBase takes g*delta off next
+			elif _hop_fired and is_on_floor():
+				_hop = Hop.LAND
+				_hop_t = 0.0
+				AudioBus.play_synth_at("servo_step_heavy", global_position, -1.0, 0.8)
+			elif _hop_t > 4.0: # fell off something; give up the hop
+				_end_hop()
+		Hop.LAND:
+			_apply_rise(lerpf(0.6, 1.0, clampf(_hop_t / LAND_TIME, 0.0, 1.0)))
+			if _hop_t >= LAND_TIME:
+				_end_hop()
+
+
+func _end_hop() -> void:
+	_hop = Hop.NONE
+	_apply_rise(1.0)
+	_attack_timer = attack_interval() # the cooldown runs from landing
+
+
+func is_airborne() -> bool:
+	return _hop == Hop.AIR
+
+
+func is_hopping() -> bool:
+	return _hop != Hop.NONE
+
+
+## Shot down mid-hop: drop the body to the floor under the death blast, so the
+## topple, wreck fire and scorch mark play on the ground, not in the air.
+func _on_died(source: Node) -> void:
+	if is_hopping():
+		_hop = Hop.NONE
+		_burst_left = 0
+		var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.2,
+				global_position + Vector3.DOWN * 8.0, 1)
+		var hit := get_world_3d().direct_space_state.intersect_ray(q)
+		if not hit.is_empty():
+			global_position.y = (hit["position"] as Vector3).y
+	super._on_died(source)
+
+
+## Hits while it is in the air land on the exposed intake.
+func weakpoint_multiplier(hit_pos: Vector3) -> float:
+	var m := super.weakpoint_multiplier(hit_pos)
+	return m * AIR_DAMAGE_MULT if is_airborne() else m
 
 
 func _fire_one() -> void:
