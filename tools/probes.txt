@@ -165,3 +165,5 @@ res://tests/android_walker_probe.tscn
 res://tests/reaper_rifle_probe.tscn
 # SNIPER: beams leave alternate barrels; shoot and scoot sideways after each shot.
 res://tests/sniper_stalker_probe.tscn
+# WARMECH shells alternate shoulder cannons (orb in each); HOWITZER fires from its barrel.
+res://tests/siege_cannon_probe.tscn
