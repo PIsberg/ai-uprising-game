@@ -248,7 +248,7 @@ func _try_rake() -> void:
 		_rake_hits += 1
 	var robot_model := _visual_root as RobotModel
 	if robot_model:
-		robot_model.play_named("CharacterArmature|Attack", 0.08)
+		robot_model.play_oneshot("CharacterArmature|Attack", 0.08) # held: play_named lost it to idle next tick (#242)
 	AudioBus.play_synth_at("impact_metal", global_position, -4.0, 1.35)
 
 func _fly_to(dest: Vector3, delta: float) -> void:

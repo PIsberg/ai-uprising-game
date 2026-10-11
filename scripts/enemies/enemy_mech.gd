@@ -149,10 +149,9 @@ func _begin_leap() -> void:
 	var reach := maxf(0.0, to.length() - LEAP_MIN)
 	_leap_to = global_position + to.normalized() * reach
 	spawn_ground_warning(_leap_to, KICK_RADIUS, LEAP_WINDUP + LEAP_TIME)
-	if _visual_root and _visual_root.has_method("play_oneshot"):
+	if _visual_root and _visual_root.has_method("play_oneshot_over"):
 		# The clip crouches, springs and lands: stretch it over the whole leap.
-		var clip_len := 1.08
-		_visual_root.play_oneshot("Jump", 0.1, clip_len / (LEAP_WINDUP + LEAP_TIME + 0.2))
+		_visual_root.play_oneshot_over("Jump", LEAP_WINDUP + LEAP_TIME + 0.2, 0.1)
 	AudioBus.play_synth_at("mech_step", global_position, 1.0, 1.25)
 
 

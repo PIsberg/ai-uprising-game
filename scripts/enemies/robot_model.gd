@@ -228,6 +228,13 @@ func play_oneshot(anim_name: String, blend: float = 0.12, speed: float = 1.0) ->
 	_hold_clip = anim_name
 	_hold_until_ms = Time.get_ticks_msec() + int(_anim.get_animation(anim_name).length / maxf(speed, 0.01) * 1000.0)
 
+## play_oneshot stretched (or squeezed) to last `seconds`: a 0.33 s crouch clip
+## played over a 1.3 s charge, a jump clip over the whole leap.
+func play_oneshot_over(anim_name: String, seconds: float, blend: float = 0.12) -> void:
+	if _anim == null or not _anim.has_animation(anim_name):
+		return
+	play_oneshot(anim_name, blend, _anim.get_animation(anim_name).length / maxf(seconds, 0.05))
+
 func update_advanced_materials() -> void:
 	_glow_mats.clear()
 	for mi in _collect_meshes(self):
@@ -593,7 +600,11 @@ func _physics_process(delta: float) -> void:
 	if _anim == null:
 		return
 	# Weapon discharge -> attack one-shot (recoil spikes to 1 on every shot).
-	if anim_attack != "" and _parent.recoil > 0.9 and _prev_recoil <= 0.9 \
+	# A special clip held by play_oneshot (a rake, a charge, a leap) outranks
+	# the routine per-shot attack clip; a stagger still interrupts it.
+	var holding := _hold_clip != "" and _anim.current_animation == _hold_clip \
+			and Time.get_ticks_msec() < _hold_until_ms
+	if anim_attack != "" and not holding and _parent.recoil > 0.9 and _prev_recoil <= 0.9 \
 			and _anim.has_animation(anim_attack):
 		_anim.play(anim_attack, 0.12)
 	_prev_recoil = _parent.recoil
@@ -605,8 +616,7 @@ func _physics_process(delta: float) -> void:
 	if _anim.is_playing() and (_anim.current_animation == anim_attack
 			or _anim.current_animation == anim_stagger):
 		return
-	if _hold_clip != "" and _anim.current_animation == _hold_clip \
-			and Time.get_ticks_msec() < _hold_until_ms:
+	if holding and _anim.current_animation == _hold_clip:
 		return
 	# Locomotion: idle <-> walk by ground speed.
 	var speed := Vector2(_parent.velocity.x, _parent.velocity.z).length()
