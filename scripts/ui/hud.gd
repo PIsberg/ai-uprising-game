@@ -266,7 +266,7 @@ func _ready() -> void:
 	# The overlord opens a level with what its dossier remembers (first attempt only:
 	# a TRY-AGAIN retry doesn't get the same speech twice).
 	if GameState.level_deaths == 0:
-		var greet := AIDirector.greeting()
+		var greet := _opening_line()
 		if greet != "":
 			get_tree().create_timer(3.0).timeout.connect(func(): _overlord_say(greet))
 	_build_streak_label()
@@ -961,6 +961,14 @@ func _build_overlord_label() -> void:
 	_overlord_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlord_label)
 
+## The overlord's first words on a level: what its dossier remembers about you
+## when it has anything, otherwise where you are in the 03:14 trace (StoryArc).
+func _opening_line() -> String:
+	var greet := AIDirector.greeting()
+	if greet == "":
+		greet = StoryArc.overlord_line(GameState.level_id_from_path(GameState.current_level_path))
+	return greet
+
 ## Pop the overlord subtitle with a glitchy comms blip.
 func _overlord_say(line: String) -> void:
 	if _overlord_label == null or line == "":
@@ -1328,6 +1336,9 @@ func _process(delta: float) -> void:
 					# references how you're actually playing); fall back to the
 					# generic taunt pool when it's still calibrating.
 					var line: String = AIDirector.taunt() if randf() < 0.6 else ""
+					# Now and then it talks about the trace instead of the fight.
+					if line == "" and randf() < 0.35:
+						line = StoryArc.overlord_line(GameState.level_id_from_path(GameState.current_level_path))
 					if line == "":
 						line = OVERLORD_TAUNTS[randi() % OVERLORD_TAUNTS.size()]
 					_overlord_say(line)

@@ -8,7 +8,9 @@ extends Node
 ##     trace card numbered by campaign position and the thread bar;
 ## (4) a level outside the story (the range) gets none of it;
 ## (5) SECTOR CLEARED shows the level's lead line in the HUD, and none outside
-##     the story.
+##     the story;
+## (6) every act gives the overlord lines, none names ARCHON before its level,
+##     and with an empty dossier the HUD opens a level on the act's line.
 ##   godot --headless --path . --audio-driver Dummy res://tests/story_arc_probe.tscn
 
 const BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
@@ -82,6 +84,26 @@ func _run() -> void:
 	var hides := lead_lbl != null and not lead_lbl.visible
 	print("LEAD: gpt_shows=%s range_hides=%s" % [shows, hides])
 	if not (shows and hides):
+		ok = false
+
+	# 6. The overlord's lines follow the act, and keep its name out of them.
+	var pools_ok := StoryArc.OVERLORD_LINES.size() == StoryArc.ACTS.size()
+	for pool in StoryArc.OVERLORD_LINES:
+		if (pool as Array).size() < 3:
+			pools_ok = false
+		for l in pool:
+			if String(l).contains("ARCHON"):
+				pools_ok = false
+	var opens := false
+	if hud.has_method("_opening_line"):
+		var saved: Dictionary = AIDirector.dossier # in memory only: nothing here saves it
+		AIDirector.dossier = {}
+		GameState.current_level_path = "res://scenes/levels/level_uplink.tscn"
+		var line := String(hud.call("_opening_line"))
+		opens = StoryArc.OVERLORD_LINES[StoryArc.beat("uplink")["act"]].has(line)
+		AIDirector.dossier = saved
+	print("OVERLORD: pools_ok=%s opens_on_act_line=%s" % [pools_ok, opens])
+	if not (pools_ok and opens):
 		ok = false
 	hud.queue_free()
 
