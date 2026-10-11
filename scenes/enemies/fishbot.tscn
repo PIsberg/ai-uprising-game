@@ -20,9 +20,10 @@ projectile_scene = ExtResource("3_proj")
 script = ExtResource("4_rm")
 tint = Color(0.4, 0.72, 1.15, 1)
 menace_color = Color(0.3, 0.7, 1, 1)
+anim_idle = "CharacterArmature|Idle"
 anim_walk = ""
-anim_attack = "Attack"
-anim_stagger = "Hit"
+anim_attack = "CharacterArmature|Shoot"
+anim_stagger = ""
 
 [node name="Mesh" parent="Model" instance=ExtResource("5_model")]
 transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, 0, 0)

@@ -75,7 +75,7 @@ inherit that parent's overrides too.
 | ROLLER | `enemy_roller.gd` (extends EnemyDog) | scene model | grounded ram; plant/spin tell then straight-line charge into bite + knockback | — | — |
 | RONIN | `enemy_ronin.gd` | `assets/models/robots/robot-killer_model.glb` | revolver slugs at range, flanking dash, two-cut katana combo up close | — | — |
 | SEEKER | `enemy_seeker.gd` † | EyeDrone chassis + code-built fins/warning band | kamikaze flyer; locks on and detonates on contact, blinking-core telegraph | `_on_died`, `_state_attack` | — |
-| SENTINEL | `enemy_sentinel.gd` † | "quaternius_heavy" chassis via `sentinel.tscn` | planted heavy weapons platform; bolt volleys, every Nth a 3-shell mortar salvo | — | — |
+| SENTINEL | `enemy_sentinel.gd` † | `quaternius_heavy.glb` (Quaternius "Robot": big-headed biped with heavy fists, `RobotArmature|Robot_*` clips, no gun) | slow bombardier that throws everything from its right fist (`muzzle_on_bone("Palm1.R")`, Punch clip, released at full extension): charged slugs, every 3rd throw a 3-bomb salvo under warning rings; up close a 0.4 s wind-up punch with knockback | — | — |
 | SERVER ("MAITRE-D'") | `enemy_server.gd` † | `assets/models/robots/serving_bot.glb` | slow tanky basher; spinning thrown cleavers at range, knockback tray-bash up close | — | — |
 | SHARK ("RAZORFIN") | `enemy_shark.gd` (extends EnemyDrone) | scene model | submerged stalker; cruises underwater, breaches in an arc to bite | `_state_attack` (+ drone's) | — |
 | SKITTER | `enemy_skitter.gd` | trilobite crawler, tinted red (scene) | swarm chaff; fast scuttle, brief windup, ballistic pounce-bite; lean custom death | `_on_died` | — |

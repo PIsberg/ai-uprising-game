@@ -290,9 +290,9 @@ const ENTRIES := {
 	},
 	"sentinel": {
 		"scene": "res://scenes/enemies/sentinel.tscn", "name": "SENTINEL", "scale": 1.0, "y": 0.0,
-		"desc": "A four-legged weapons platform — slow, heavily armoured, patient. Plants at range and lobs heavy bolts.",
-		"strengths": ["Very tough", "Heavy hitting bolts from afar"],
-		"weaknesses": ["Slow to relocate", "Use cover and chip it down"],
+		"desc": "A big-fisted bombardier — slow, tough, patient. Hurls charged slugs and bomb salvos from range, and punches you back out if you close in.",
+		"strengths": ["Very tough", "Bomb salvos bracket where you stand"],
+		"weaknesses": ["Slow to relocate", "Every throw winds up first — watch the fist"],
 		"weapons": ["ARC-9 Gauss Lance", "GRK-X Devastator", "VOID-9 Singularity Cannon"],
 	},
 	"mauler": {
