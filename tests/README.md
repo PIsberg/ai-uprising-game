@@ -284,7 +284,7 @@ or GPU-timing probes; `--headless` renders these black).
 | manus_rooted_probe | ROOTED MANUS: holds spawn position at range, finger-eruption telegraph damage, grab is now a yank within grab_reach | headless |
 | map_probe | Campaign map fully unlocked: lava/water sectors, hazard rings, act grouping, drifting motes | windowed |
 | map_shot | Campaign map driven by keyboard cursor: selection reticle + sector intel | windowed |
-| mauler_overload_probe | MAULER's wounded OVERLOAD sprint actually bumps live `move_speed` (was a dead `_speed_mult` write) | suite |
+| mauler_overload_probe | MAULER's wounded OVERLOAD sprint actually bumps live `move_speed` (was a dead `_speed_mult` write), and on a floor with a navmesh the charge plays the Running clip on 80%+ of its frames at 6.5+ m/s (15+ such frames) | suite |
 | mech_shot | Freshly-sourced Quaternius Mech idle pose: scale/orientation before building an enemy from it | windowed |
 | melee_probe | Melee shove: in-cone enemies take damage+knockback, out-of-range ones don't | headless |
 | mender_probe | MENDER flies to a wounded android and beam-heals it, flight/death without errors | headless |
