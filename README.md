@@ -229,7 +229,7 @@ assets/                # materials, PBR textures, audio (sample-override dir), m
 docs/                  # design docs, level_editor_spec, screenshots/ (README gallery)
 ```
 
-**Physics layers:** 1 `world` · 2 `player` · 3 `enemy` · 4 `player_projectile` · 5 `enemy_projectile` · 6 `pickup` · 7 `trigger`.
+**Physics layers:** 1 `world` · 2 `player` · 3 `enemy` · 4 `player_projectile` · 5 `enemy_projectile` · 6 `pickup` · 7 `trigger` · 8 `firewall` (the `firewalls` def key: an energy sheet only the player collides with; robots, rounds and grenades pass).
 
 ---
 
