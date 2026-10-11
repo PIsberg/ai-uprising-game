@@ -622,12 +622,17 @@ func _build_environment(def: Dictionary) -> void:
 			light = omni
 		add_child(light)
 		light.add_to_group("level_light") # a "weather" blackout cuts these (WeatherShift)
+		# LightLevel reads the authored values, so a room is as dark on LOW
+		# (omni) as on ULTRA (area light at AREA_LIGHT_ENERGY_MULT the energy).
+		light.set_meta("lux_energy", float(l.get("energy", 2.0)) * 1.2)
+		light.set_meta("lux_range", float(l.get("range", 16.0)))
 		# Every light gets a visible SOURCE instead of hanging disembodied:
 		# ceiling luminaires indoors, slim floodlight pylons outdoors. An
 		# outdoor god-ray authored straight over an objective opts out with
 		# "mast": false, or the solid pole would stand inside the target.
+		# Indoors the luminaire can be shot out (ShootableLight, LightLevel).
 		if indoor:
-			_add_light_fixture(l["pos"], l.get("color", Color(1, 1, 1)))
+			ShootableLight.build(self, light, l.get("color", Color(1, 1, 1)), WALL_HEIGHT)
 		elif l.get("mast", true):
 			_add_light_pylon(l["pos"], l.get("color", Color(1, 1, 1)))
 		# The last placed light gets a faulty-wiring flicker: occupied
@@ -715,32 +720,6 @@ func _make_interior_area_light(l: Dictionary, shadowed: bool) -> AreaLight3D:
 	area.rotation_degrees = Vector3(-90, 0, 0)
 	return area
 
-## A recessed ceiling luminaire: dark housing + emissive diffuser panel in the
-## light's own color, mounted on the ceiling directly above the omni position.
-func _add_light_fixture(light_pos: Vector3, color: Color) -> void:
-	var housing := MeshInstance3D.new()
-	var hb := BoxMesh.new()
-	hb.size = Vector3(1.2, 0.12, 1.2)
-	hb.material = _color_material(Color(0.1, 0.1, 0.12), 0.5)
-	housing.mesh = hb
-	housing.position = Vector3(light_pos.x, WALL_HEIGHT - 0.06, light_pos.z)
-	add_child(housing)
-	var panel := MeshInstance3D.new()
-	var pb := BoxMesh.new()
-	pb.size = Vector3(1.0, 0.04, 1.0)
-	var pm := StandardMaterial3D.new()
-	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	pm.albedo_color = color
-	pm.emission_enabled = true
-	pm.emission = color
-	pm.emission_energy_multiplier = 2.4
-	pb.material = pm
-	panel.add_to_group("level_light") # the lit panel goes dark with its light in a blackout
-	panel.mesh = pb
-	panel.position = Vector3(light_pos.x, WALL_HEIGHT - 0.13, light_pos.z)
-	panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(panel)
-
 ## A slim floodlight mast under an outdoor light: tapered pole from the ground
 ## up to the omni, topped with an emissive head in the light's color.
 func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
@@ -786,6 +765,7 @@ func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
 func _flicker_light(light: Light3D) -> void:
 	var base := light.light_energy
 	var tw := light.create_tween().set_loops()
+	light.set_meta("flicker_tween", tw) # ShootableLight kills it when shot out
 	for i in 6:
 		var dip := base * randf_range(0.55, 0.85) if randf() < 0.8 else base * 0.15
 		tw.tween_property(light, "light_energy", dip, randf_range(0.04, 0.1))

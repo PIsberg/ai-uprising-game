@@ -690,6 +690,10 @@ func _toggle_flashlight() -> void:
 	_flashlight.visible = not _flashlight.visible
 	AudioBus.play_synth_ui("empty_click", -10.0, 1.4)
 
+## A lit flashlight gives a player standing in the dark away (LightLevel).
+func flashlight_on() -> bool:
+	return _flashlight != null and _flashlight.visible
+
 func _physics_process(delta: float) -> void:
 	if _dead:
 		# Collapsed: gravity holds you on the deck, momentum bleeds off; no control.
