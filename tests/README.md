@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-356 probes total: **106** wired into the headless suite (`suite`), **84**
+357 probes total: **107** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -140,6 +140,7 @@ or GPU-timing probes; `--headless` renders these black).
 | reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
 | overlord_holo_probe | The overlord's sky face: on every open-sky level (22-34 deg up from the arena, 25+ deg off the landmark), none indoors or with `"kind": "none"`; Skyline keeps far towers out of FACE_CLEAR and near towers within FACE_FRAME under FRAME_H; a HUD taunt sends GameState.overlord_spoke (not with callouts off); speaking runs the mouth for the line's length then stops; pupils lead toward a viewer who steps aside, centre once the head has turned, drop for a viewer below | suite |
 | overlord_holo_shot | Each open-sky level from its spawn at eye height, turned toward the overlord's face mid-sentence; `-- --out=<dir> [--levels=...] [--wide]` | windowed |
+| vacuum_hop_probe | CUSTODIAN (vacuum) 1v1 vs a stand-in player for 9 s: it fires 2+ bolts (damage reported, not asserted), every bolt leaves while its body is HOP_HEIGHT x 0.7+ off the floor, every launch comes straight out of a crouch (chassis below 75% of its risen height), weakpoint_multiplier is AIR_DAMAGE_MULT airborne and 1.0 on the floor, it lands back in combat, and killed at the top of a hop its wreck drops to the floor | suite |
 | quantizer_probe | QUANTIZER: wired into the level builder, codex, ALIEN and ARCHON; whole it is FP32 in its own materials at its own cadence; at each STAGE_AT step it is the next precision with every chassis surface on the quantize shader at that STAGE_GRID, the tag reads it, attack_interval x STAGE_CD and aim_spread_deg + STAGE_SPREAD; healed to full it keeps INT4; killed it dies and the tag goes | suite |
 | quantizer_shot | Four QUANTIZERs side by side at FP32, FP16, INT8 and INT4; `-- --out=<dir>` | windowed |
 | head_track_probe | Head tracking (`HeadTrackModifier` from `RobotModel`) on eight rig families (the android, brute and mech FBX mechs, gunner Body/Head, sentinel Torso/Neck/Head, rollback Torso/Chest/Neck/Head, quantizer and alien flyers): one modifier each; the head ends up facing a target 35 deg right / 20 deg up within 7 deg; a target behind stops it at MAX_YAW_DEG; dropped, it eases back within 3 deg of rest; dead, the modifier is off. Reads the bone pose inside `skeleton_updated` (outside it the pose is the clip's) | suite |
