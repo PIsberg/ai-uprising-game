@@ -241,9 +241,9 @@ const ENTRIES := {
 	},
 	"reaper": {
 		"scene": "res://scenes/enemies/reaper.tscn", "name": "REAPER", "scale": 1.0, "y": 0.0,
-		"desc": "A gaunt blade-frame that sprints in and lunges with twin scythe arms.",
-		"strengths": ["Extremely fast charge", "Devastating melee lunge"],
-		"weaknesses": ["Fragile — drop it before it reaches you", "No ranged option"],
+		"desc": "A gaunt battle droid with a heavy rifle at its hip. It sprints at you firing short bursts on the move, then lunges in and drives the rifle into you.",
+		"strengths": ["Extremely fast charge", "Fires while it closes", "Rifle strike shoves you back"],
+		"weaknesses": ["Fragile — drop it before it reaches you", "Its bursts are weak and wide"],
 		"weapons": ["SG-12 Breacher", "NV-X Nova Scatter", ".50 Maelstrom"],
 	},
 	"sniper": {
