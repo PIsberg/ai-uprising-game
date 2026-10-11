@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-390 probes total: **131** wired into the headless suite (`suite`), **84**
+392 probes total: **132** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **175** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **176** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -360,6 +360,8 @@ or GPU-timing probes; `--headless` renders these black).
 | river_view | Themed rivers: the serpentine shape + the gap | windowed |
 | robot_models_check | Every RobotModel-carrying enemy scene resolves its AnimationPlayer + configured clips and has visible meshes | headless |
 | rollout_probe | Several rolled-out levels, one framed hero shot of each | windowed |
+| ronin_katana_probe | RONIN's katana, measured off the GLB's handle parts in the body frame: sheathed with nobody near, drawn within 1 s of a player at 2 m (guard in front, blade no longer point-down; position alone passed with a sheathed sword, the lunge and lean move it 0.25 m), every hit lands with the blade forward and a cut sweeps 90+ deg (145; 14 sheathed), sheathed again (0.05 m, 10 deg) within 3 s of the player leaving | suite |
+| ronin_katana_shot | RONIN from its front-right: guard, wind-up, the middle of each cut with its trail, sheathed; `-- --out=<dir>` | windowed |
 | ronin_revolver_probe | RONIN faces forward (hands either side across x, the katana scabbard behind it: red with the import yaw of 0) and quick-draws: 4 slugs at 16 m, each leaving within 0.12 m of a drawn barrel tip (measured 0.003 m; 0.55 m before) with that barrel within 20 deg of the player (6), hands alternating left/right | suite |
 | ronin_revolver_shot | RONIN front view (face, katana on its back), then each revolver drawn onto a mark from its right side; `-- --out=<dir>` | windowed |
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
