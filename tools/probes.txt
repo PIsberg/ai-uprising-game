@@ -169,3 +169,5 @@ res://tests/sniper_stalker_probe.tscn
 res://tests/siege_cannon_probe.tscn
 # HUNTER/DIFFUSION/OVERFITTER/DEEPFAKE/HIVE fire from their Gun bone's barrel (muzzle_bone).
 res://tests/gun_muzzle_probe.tscn
+# COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
+res://tests/comic_panel_probe.tscn

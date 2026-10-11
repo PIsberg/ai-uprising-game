@@ -45,8 +45,7 @@ func _run() -> void:
 	if not ordered:
 		ok = false
 
-	# 3. The briefing tells it. GUARDRAILS has no comic art of its own, so this
-	# also covers a level that only exists in the thread.
+	# 3. The briefing tells it. (Which panel each level shows: comic_panel_probe.)
 	var idx := campaign.find("res://scenes/levels/level_guardrails.tscn")
 	var seen := await _brief("guardrails")
 	var beat := StoryArc.beat("guardrails")

@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-369 probes total: **116** wired into the headless suite (`suite`), **84**
+370 probes total: **117** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -106,6 +106,7 @@ or GPU-timing probes; `--headless` renders these black).
 | colorblind_render_probe | Colourblind overlay on a real render: a menu swatch on layer 60 and a level swatch under a layer-0 screen read both come out as `colorblind_matrix(2) * colour` within 0.03, and unchanged when Off | windowed |
 | color_grade_probe | Every GraphicsSettings.ColorGrade preset cycled on level_01 and screenshotted | windowed |
 | comic_page_probe | Assembled three-panel comic intro page after all panels slide into place | windowed |
+| comic_panel_probe | Every campaign level has a `LEVEL_COMIC_DEFS` entry and its briefing resolves to its own panel (GUARDRAILS and HIVEMIND showed level 01's until 2026-10-11); a level in `PENDING_ART` shows its themed fallback and fails once its art lands, so the list can't go stale; every FX anchor sits inside the panel | suite |
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | suite |
 | continue_label_probe | Main-menu Continue button names where the run resumes (saved level title, campaign position N/24, difficulty) via GameState.peek_save, which reads the save without touching the live run; hidden without a save (backs up and restores user://savegame.cfg) | suite |
 | continue_sweep_probe | Continue works from every campaign level: saves a returning player's run (two bonus weapons, one equipped, Armory supplies, an upgrade), wipes the singleton, loads it back and deploys the real level scene, asserting the spawned player carries all of it; ~90 s | suite |
