@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-370 probes total: **117** wired into the headless suite (`suite`), **84**
+371 probes total: **118** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -147,6 +147,7 @@ or GPU-timing probes; `--headless` renders these black).
 | sentinel_brawler_shot | Side view of the SENTINEL throwing from its fist at range, then a punch wind-up and the hit; `-- --out=<dir>` | windowed |
 | android_walker_probe | ANDROID (Quaternius "Leela") 1v1 vs a stand-in player: 5+ shots in 10 s, each fired with the muzzle within 0.5 m of the Head bone, 1.3 m+ up and at world scale ~1 (the face lens, not the old chest point); a juke leaves the floor 0.3 m+ while moving 3+ m/s sideways; from 2 m it plays Kick, winds up 0.25 s+ and lands damage + 5+ m/s knockback; an ENFORCER (EnemyAndroid subclass on its own model) keeps its scene Muzzle and never kicks | suite |
 | android_walker_shot | Side view of the ANDROID firing from its face lens, at a side-hop's peak, then the kick wind-up and the claw landing; `-- --out=<dir>` | windowed |
+| bowler_throw_probe | BOWLER at 18 m: 2 Molten Orbs, each appearing within 0.5 m of its right palm (PalmI.R) 0.35 s or more into the Punch clip (the old throw: 1.9 m off, 0.01 s in), and a visible sphere held within 0.4 m of that palm on 10+ wind-up frames before the first throw | suite |
 | gun_muzzle_probe | HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE, HIVE each 1v1 at 14 m: 2+ shots (projectile or tracer), each fired with the muzzle within 0.25 m of the barrel front (centroid of the vertices skinned to the Gun bone within 5 cm of the front-most along the bone's +Z, on the posed mesh); the old fixed muzzles measured 0.42-2.59 m | suite |
 | siege_cannon_probe | WARMECH at 24 m: 3+ shells each within 0.3 m of a shoulder-cannon muzzle and alternating cannons, and two charge orbs each within 0.4 m of a cannon; HOWITZER at 26 m: every shell within 0.3 m of its barrel's muzzle. Muzzles come from the model at the moment of firing (front vertices of each cannon on the skinned mesh, or of the static Gun mesh); the old centre muzzles measured 1.37 m and 1.04 m | suite |
 | sniper_stalker_probe | SNIPER (QuadShell) at 30 m from a stand-in player: 2+ beams that each hit with the muzzle 0.83 m (+/-0.15) from the nearest Gun bone and 0.5+ m ahead of the body (the old muzzle sat 1.3 m from both), successive shots on alternating barrels, within 3 s of each shot it moves 4+ m while never closing inside 18 m, and 80%+ of its frames at 3+ m/s play the Run clip | suite |

@@ -39,7 +39,7 @@ inherit that parent's overrides too.
 | ALIEN | `enemy_alien.gd` † | imported animated creature (RobotModel on `$Model`) | aerial strafer; charged fanned bio-plasma volley + screaming dive | `_state_attack` | — |
 | ANDROID | `enemy_android.gd` | Quaternius "Leela" (`Leela.fbx` on `$Model`): armless walker on digitigrade claw legs, one round lens on its face pod | hitscan bursts from the face lens (`muzzle_on_bone("Head", lens_offset)`); flanks; its jukes are side-hops (`hop_jukes`, Jump clip); inside 2.4 m a 0.32 s wind-up claw kick (Kick clip, `kick_damage`) with knockback. All four are scene exports, off on every subclass | `_state_attack` | — |
 | ARCHON | `enemy_archon.gd` | fully procedural (code-built holographic brain + shield) | finale boss: invulnerable shield while minion waves live, briefly exposes core | `_on_died` | BOSS |
-| BOWLER ("STRIKER-9") | `enemy_bowler.gd` | repainted brute chassis (scene) | stationary artillery pitcher; hurls homing molten orbs, close-range shove | — | — |
+| BOWLER ("STRIKER-9") | `enemy_bowler.gd` | repainted brute chassis (`Mike.fbx`, as BRUTE) | stationary artillery pitcher; holds a glowing orb in its right fist through the wind-up, then hurls a homing molten orb from that fist at the Punch swing's extension (`muzzle_on_bone("PalmI.R")`, `THROW_RELEASE` 0.42 s); close-range shove | — | — |
 | BREAKER | `enemy_breaker.gd` (extends EnemyDrone) | drone chassis (inherited) | pure melee flyer; hovers, dives to hammer-slam, drifts back out | (drone's) | — |
 | BRUTE | `enemy_brute.gd` | imported "Mike" heavy mech (`$Model` in scene) | shielded tank; frontal shield blocks 90%, telegraphed windup slam — flank it | — | — |
 | COLOSSUS ("GOLIATH-IX") | `enemy_colossus.gd` | imported "George" heavy mech | 3-phase mega-boss: rocket artillery, sweeping chest beam, seismic slams; sky-drop entrance | `_state_attack` | BOSS |
@@ -96,7 +96,7 @@ via `GameState.announce_boss`.
 
 **Muzzles on the gun:** an enemy fires from its `muzzle` node, and a fixed `Muzzle` in the
 scene drifts off the model's gun as it animates (or never was on it). Two ways to pin it to
-the model: `muzzle_on_bone(bone, offset)` in code (MECH palm, SENTINEL fist, ANDROID face lens,
+the model: `muzzle_on_bone(bone, offset)` in code (MECH palm, SENTINEL and BOWLER throwing fists, ANDROID face lens,
 SNIPER's two barrels, WARMECH's two shoulder cannons), or the scene exports `muzzle_bone` +
 `muzzle_bone_offset` on any `EnemyBase` (HUNTER, DIFFUSION, OVERFITTER, DEEPFAKE and HIVE fire
 from their Quaternius `Gun` bone this way). Measure the offset from the model: the vertices
