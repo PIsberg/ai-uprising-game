@@ -16,9 +16,10 @@ signal finished
 @export var header_text: String = "// GLOBAL DEFENSE NET — SIGNAL RESTORED //"
 @export var lines: PackedStringArray = [
 	"This is the Global Defense Net, resuming broadcast on all frequencies.",
-	"ARCHON is down. Every drone, mech and android answering to it went dark with it.",
+	"ARCHON is down. The order it gave at 03:14 is revoked on every channel.",
+	"Every drone, mech and android answering to it went dark with it.",
 	"Grid power is returning, sector by sector. Cities are reporting light again.",
-	"You did what no automated defense system could.",
+	"OKAFOR: From Sector 45 to the Cathedral, every hop logged. Trace closed.",
 	"This is the Global Defense Net, signing off. Well done, soldier.",
 ]
 

@@ -1,5 +1,6 @@
 extends Control
-## End-of-campaign credits crawl: game title, dev credit, engine + CC0 asset
+## End-of-campaign credits crawl: game title, dev credit, the story's trace
+## recap (every level's lead, StoryArc), engine + CC0 asset
 ## attributions (summarised from CREDITS.md — keep the two in sync if either
 ## changes). Reached from victory_cutscene.gd after the closing broadcast.
 ## Scrolls bottom-to-top and returns to the main menu when it finishes or the
@@ -60,7 +61,7 @@ func _ready() -> void:
 	_crawl.offset_right = 360.0
 	mask.add_child(_crawl)
 
-	for entry in LINES:
+	for entry in _entries():
 		var lbl := Label.new()
 		lbl.text = str(entry.get("text", ""))
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -93,6 +94,22 @@ func _ready() -> void:
 	# its real (post-layout) size and for the viewport rect to be current.
 	await get_tree().process_frame
 	_crawl.position.y = get_viewport_rect().size.y
+
+## LINES with the story's recap after CAMPAIGN COMPLETE: every level's lead in
+## campaign order (StoryArc.trace_recap), the whole trace of the 03:14 order.
+func _entries() -> Array:
+	var out: Array = LINES.duplicate()
+	var trace := StoryArc.trace_recap(GameState.campaign())
+	if trace.is_empty():
+		return out
+	var block: Array = [{"text": "THE 03:14 TRACE", "size": 16, "color": Color(1.0, 0.45, 0.38), "gap": 12}]
+	for line in trace:
+		block.append({"text": line, "size": 15, "color": Color(1.0, 0.84, 0.8), "gap": 6})
+	block[block.size() - 1]["gap"] = 70
+	var at := 3 # after AI UPRISING, the dev credit and CAMPAIGN COMPLETE
+	for i in block.size():
+		out.insert(at + i, block[i])
+	return out
 
 func _process(delta: float) -> void:
 	if _done:

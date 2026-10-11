@@ -244,6 +244,17 @@ static func act_header(id: String) -> String:
 	const ROMAN := ["I", "II", "III", "IV", "V", "VI"]
 	return "ACT %s · %s" % [ROMAN[int(b["act"])], ACTS[int(b["act"])]]
 
+## The leads of the whole campaign in order, numbered by level: "02  Weights
+## recovered. ...". Read top to bottom they are the story in one breath; the
+## credits open with them.
+static func trace_recap(campaign: Array) -> Array[String]:
+	var out: Array[String] = []
+	for i in campaign.size():
+		var l := lead(String(campaign[i]).get_file().trim_prefix("level_").trim_suffix(".tscn"))
+		if l != "":
+			out.append("%02d  %s" % [i + 1, l])
+	return out
+
 ## The act of every campaign level, in campaign order (-1 = not in the story).
 ## The briefing's thread bar draws from it: one node per level, a tick per act.
 static func campaign_acts(campaign: Array) -> Array[int]:

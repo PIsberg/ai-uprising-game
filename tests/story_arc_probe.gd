@@ -10,7 +10,8 @@ extends Node
 ## (5) SECTOR CLEARED shows the level's lead line in the HUD, and none outside
 ##     the story;
 ## (6) every act gives the overlord lines, none names ARCHON before its level,
-##     and with an empty dossier the HUD opens a level on the act's line.
+##     and with an empty dossier the HUD opens a level on the act's line;
+## (7) the credits open with the whole trace: every level's lead, in order.
 ##   godot --headless --path . --audio-driver Dummy res://tests/story_arc_probe.tscn
 
 const BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
@@ -106,6 +107,22 @@ func _run() -> void:
 	if not (pools_ok and opens):
 		ok = false
 	hud.queue_free()
+
+	# 7. The credits recap the trace, one lead per level, finale last.
+	var credits: Node = load("res://scenes/ui/credits.tscn").instantiate()
+	get_tree().root.add_child(credits)
+	await get_tree().process_frame
+	var ctexts: Array = []
+	for lbl in credits.find_children("*", "Label", true, false):
+		ctexts.append(String((lbl as Label).text))
+	var recap := StoryArc.trace_recap(campaign)
+	var last := "%02d  %s" % [campaign.size(), StoryArc.lead("archon")]
+	var recapped: bool = ctexts.has("THE 03:14 TRACE") and recap.size() == campaign.size() \
+		and recap[recap.size() - 1] == last and recap.all(func(r: String) -> bool: return ctexts.has(r))
+	print("CREDITS: recapped=%s lines=%d" % [recapped, recap.size()])
+	if not recapped:
+		ok = false
+	credits.queue_free()
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()

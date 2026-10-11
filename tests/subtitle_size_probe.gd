@@ -26,7 +26,7 @@ func _ready() -> void:
 static func _px(l: Label) -> int:
 	return l.get_theme_font_size("font_size") if l else -1
 
-const LONG_LINE := "The signal that turned every machine against us — extinguished. The signal that turned every machine against us — extinguished."
+const LONG_LINE := "The order it gave at 03:14, revoked. Every machine that heard it, released. The order it gave at 03:14, revoked. Every machine that heard it, released."
 const BAR_TOP_FRAC := 0.87 # CutscenePlayer's lower letterbox bar (headless viewport is 1920 x 1920)
 
 func _sizes() -> Dictionary:
