@@ -197,3 +197,5 @@ res://tests/stamp_press_probe.tscn
 res://tests/ronin_revolver_probe.tscn
 # WALKER BANK: grounded robots without a walk clip lean like walkers; airborne flyers still bank (#276).
 res://tests/walker_bank_probe.tscn
+# CARGO LIFT: rides a player up, comes when called, lands flush on LAVA WORLD's gantry.
+res://tests/cargo_lift_probe.tscn

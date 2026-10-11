@@ -96,6 +96,16 @@ The `presses` def key builds hydraulic stamping presses: a head that slams a str
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
 * `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
 
+## Cargo Lifts
+<!-- lat: { "require-code-mention": true } -->
+The `lifts` def key builds an open cargo lift: a car on a four-post shaft between its own height and `top`.
+
+* The car is a moving `AnimatableBody3D` on the world layer, so the player stands on it and rides with it. Stand on it for 0.6 s and it carries you to the other landing; stand by a landing it is not at and it comes to you. It waits where it stops.
+* The navmesh cannot see the link, so robots never use a lift: a deck reached only by one is the player's. `tests/hazard_layout_probe` counts a goal past a lift as reached when the navmesh reaches the lift's bottom landing from the spawn and the goal from its top.
+* Pos and footprint scale with the world; heights (`pos.y`, `top`) stay authored, like platform heights.
+* LAVA WORLD stands one on the NE island, up to the ladle gantry 8 m over the NE pool.
+* `tests/cargo_lift_probe` rides it up, calls it back down, checks the car is solid ground at both ends, and checks LAVA WORLD's lift lands flush at both ends beside a deck nothing else reaches.
+
 ## Horizon Walkers
 <!-- lat: { "require-code-mention": true } -->
 Every open-sky level with a landmark gets a colossal war machine walking its horizon (`HorizonWalker.build_for`, from `_build_landmark`).

@@ -294,6 +294,7 @@ func _ready() -> void:
 	_build_firewalls(def)
 	_build_scanners(def)
 	_build_presses(def)
+	_build_lifts(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2401,6 +2402,17 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Cargo lifts (CargoLift): a car between the node's height and `top` that
+## carries a rider to the other landing and comes when called.
+func _build_lifts(def: Dictionary) -> void:
+	for e in def.get("lifts", []):
+		var l := CargoLift.new()
+		l.size = e.get("size", Vector2(2.6, 2.6))
+		l.top = float(e.get("top", 7.0))
+		l.speed = float(e.get("speed", 2.6))
+		l.position = e.get("pos", Vector3.ZERO)
+		add_child(l)
 
 ## Hydraulic stamping presses (StampPress): a head that slams a striped
 ## footprint every `period` s, crushing whatever is under it (player and robots).
