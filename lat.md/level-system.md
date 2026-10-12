@@ -116,7 +116,8 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * The first vent a player sees warming up, from within 7 m of its ring, teaches the rule once per run through `GameState.teach_once`.
 * The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
 * LAVA WORLD puts one on each recycler walkway (two, half a period apart, on the long east one). On a walkway there is no stepping round a vent, so the player waits at the ring for its cold beat; `radius` 1.5 keeps the ring on the scaled 3.64 m walkway and leaves 0.14 m at the edge.
-* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the Crucible rows and the LAVA WORLD walkway vents.
+* `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
+* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
 ## Pendulum Blades
 <!-- lat: { "require-code-mention": true } -->

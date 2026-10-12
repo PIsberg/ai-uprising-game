@@ -13,7 +13,10 @@ extends Node3D
 ##     the (scaled) gap, phased so no two in a row erupt at once;
 ## (7) Vulcan Forge puts vents on its recycler walkways: each sits on a
 ##     walkway's top, its ring fits the walkway, it leaves no gap past it a
-##     body could use, and two on one walkway never erupt together.
+##     body could use, and two on one walkway never erupt together;
+## (8) a cryo vent (Mistral's coolant vents) frosts blue instead of glowing
+##     orange and teaches its own line; the Mistral Cryo-Core floors its east
+##     gap with a row of them, under the same row rules as the Crucible.
 ##   godot --headless --path . --audio-driver Dummy res://tests/fire_vent_probe.tscn
 
 var ok := true
@@ -153,15 +156,36 @@ func _run() -> void:
 	_check("a player outside the ring is never touched", hit_states.is_empty(), "(%d)" % hit_states.size())
 	vent.queue_free()
 
-	_crucible()
+	# (8) a cryo vent looks and teaches like one.
+	var cold := FireVent.new()
+	cold.cryo = true
+	add_child(cold)
+	cold.global_position = Vector3(30, 0, 0)
+	player.global_position = Vector3(30 + cold.radius + FireVent.RING + 1.0, 0, 0)
+	await _phys(4.2)
+	var fire_hot := Vector3(1.0, 0.42, 0.04) # the grate shader's default (fire) hot colour
+	var cold_hot: Vector3 = (cold.get("_floor_mat") as ShaderMaterial).get_shader_parameter("hot_col")
+	_check("a cryo vent's grate frosts blue", cold_hot.z > cold_hot.x and not cold_hot.is_equal_approx(fire_hot), "(%s)" % cold_hot)
+	_check("a cryo vent teaches its own line", taught.count(FireVent.CRYO_TEXT) == 1, "(%s)" % [taught])
+	cold.queue_free()
+
+	_gap_rows("crucible", 2, false)
+	_gap_rows("mistral", 1, true)
 	_forge()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
-func _crucible() -> void:
-	var def := LevelDefs.get_def("crucible")
+## Each gate gap of level `id` that holds vents holds a row spanning it, no two
+## erupting at once; `rows` gaps must hold one, all `cryo` or all fire.
+func _gap_rows(id: String, rows: int, cryo: bool) -> void:
+	var def := LevelDefs.get_def(id)
 	var vents: Array = def.get("fire_vents", [])
-	_check("crucible has fire vents", vents.size() >= 6, "(%d)" % vents.size())
+	_check("%s has vents" % id, vents.size() >= rows * 2, "(%d)" % vents.size())
+	var kind_ok := true
+	for v in vents:
+		kind_ok = kind_ok and bool(v.get("cryo", false)) == cryo
+	_check("%s's vents are all %s" % [id, "cryo" if cryo else "fire"], kind_ok)
+	var found := 0
 	for g in def.get("gates", []):
 		var axis := String(g["axis"])
 		var at := float(g["at"])
@@ -174,9 +198,10 @@ func _crucible() -> void:
 			var along := p.x if axis == "z" else p.z
 			if absf(across - at) < 0.5 and along >= lo - 0.5 and along <= hi + 0.5:
 				row.append(v)
-		_check("a row of vents in the %s=%.1f gap" % [axis, at], row.size() >= 2, "(%d)" % row.size())
 		if row.is_empty():
 			continue
+		found += 1
+		_check("a row of vents in the %s=%.1f gap" % [axis, at], row.size() >= 2, "(%d)" % row.size())
 		var r := float((row[0] as Dictionary).get("radius", 1.4))
 		var min_a := INF
 		var max_a := -INF
@@ -195,6 +220,7 @@ func _crucible() -> void:
 				d = minf(d, 1.0 - d) * per
 				apart = apart and d >= FireVent.ERUPT_TIME
 		_check("no two vents in the %s=%.1f row erupt at once" % [axis, at], apart)
+	_check("%s has %d gap rows" % [id, rows], found == rows, "(%d)" % found)
 
 func _forge() -> void:
 	var def := LevelDefs.get_def("lava_world")

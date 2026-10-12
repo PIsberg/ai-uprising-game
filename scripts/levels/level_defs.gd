@@ -3735,6 +3735,16 @@ static func _mistral() -> Dictionary:
 			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2, "captcha": true},
 			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 14, "height": 4.2},
 		],
+		# Ruptured coolant vents across the east gap: three, a third of a
+		# period apart (the Crucible's rhythm, in ice). A grate frosts over
+		# and hisses for 1.2 s, then blasts freezing vapour for 1.2 s; two are
+		# always cold. Radius 1.6 so the row spans the wider 8 m gap.
+		# tests/fire_vent_probe.
+		"fire_vents": [
+			{"pos": Vector3(22, 0, 11.25), "radius": 1.6, "cryo": true, "phase": 0.0},
+			{"pos": Vector3(22, 0, 14), "radius": 1.6, "cryo": true, "phase": 0.333},
+			{"pos": Vector3(22, 0, 16.75), "radius": 1.6, "cryo": true, "phase": 0.667},
+		],
 		# Burst coolant lines flood the lab floor — serpentine to the cryo-core —
 		# and a third line floods the west annex, forcing the ring route wide.
 		"lava": [
