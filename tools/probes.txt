@@ -199,3 +199,5 @@ res://tests/ronin_revolver_probe.tscn
 res://tests/walker_bank_probe.tscn
 # CARGO LIFT: rides a player up, comes when called, lands flush on LAVA WORLD's gantry.
 res://tests/cargo_lift_probe.tscn
+# RONIN KATANA: drawn when close, swung through both cuts (hits mid-swing), sheathed when you leave.
+res://tests/ronin_katana_probe.tscn
