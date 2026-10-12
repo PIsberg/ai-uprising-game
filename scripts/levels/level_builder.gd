@@ -297,6 +297,7 @@ func _ready() -> void:
 	_build_fire_vents(def)
 	_build_saws(def)
 	_build_shock_floors(def)
+	_build_pendulums(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2550,6 +2551,18 @@ func _build_shock_floors(def: Dictionary) -> void:
 		f.damage = float(e.get("dmg", 12.0))
 		f.position = e.get("pos", Vector3.ZERO)
 		add_child(f)
+
+## Swinging blades (PendulumBlade) on gantries across walkways, with a
+## GO / WAIT sign.
+func _build_pendulums(def: Dictionary) -> void:
+	for e in def.get("pendulums", []):
+		var p := PendulumBlade.new()
+		p.width = float(e.get("width", 4.0))
+		p.path_axis = String(e.get("path", "z"))
+		p.period = float(e.get("period", 2.6))
+		p.phase = float(e.get("phase", 0.0))
+		p.position = e.get("pos", Vector3.ZERO)
+		add_child(p)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):

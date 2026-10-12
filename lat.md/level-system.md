@@ -118,6 +118,17 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * LAVA WORLD puts one on each recycler walkway (two, half a period apart, on the long east one). On a walkway there is no stepping round a vent, so the player waits at the ring for its cold beat; `radius` 1.5 keeps the ring on the scaled 3.64 m walkway and leaves 0.14 m at the edge.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the Crucible rows and the LAVA WORLD walkway vents.
 
+## Pendulum Blades
+<!-- lat: { "require-code-mention": true } -->
+The `pendulums` def key stands a gantry across a walkway with a toothed blade swinging across the path under it.
+
+* Two posts `width` apart (across the path, `path` "z" or "x"), a crossbeam 4 m up, an arm 3.25 m long, a 0.75 m blade swinging 70 degrees either side once every `period` (2.6 s). Through the bottom of the swing it sweeps the whole walkway at body height, so there is no lane round it: you time it.
+* The gantry says when. A big sign on the crossbeam reads GO (green) when the blade will not reach the player's spot across the walkway, at standing height, for the next `LOOKAHEAD` (0.5 s), and WAIT (red) when it will; the lamps on both posts match. A striped band marks the cut on the floor. The lookahead is what makes GO safe for a player who turns up late in a window, not just at its start.
+* A blade that catches the player costs `damage` (30) and throws them along the path. Robots are not hit. The first gantry a player walks up to teaches the rule once per run.
+* Position and `width` scale with the world (the walkway does); pivot height and arm stay authored. No collision; in the `hazard` group.
+* LAVA WORLD stands two on the long west walkway and one on the south walkway of its outer ring, their posts in the slag either side.
+* `tests/pendulum_blade_probe` checks there is no safe lane, the sign, a hit and its shove, 20 careful crossings on GO without a hit (and 7 hits with the lookahead off), a careless walker getting hit, the hint and the LAVA WORLD placement.
+
 ## Shock Floors
 <!-- lat: { "require-code-mention": true } -->
 The `shock_floors` def key lays an electrified tile floor that arcs in a pattern.

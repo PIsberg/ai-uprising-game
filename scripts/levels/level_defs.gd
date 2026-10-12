@@ -230,6 +230,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("cell"):
 			e["cell"] = float(e["cell"]) * s
+	# Pendulum gantries straddle a walkway: position and width stretch with
+	# it (the walkway's footprint scales). Pivot height and arm stay authored.
+	for e in def.get("pendulums", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("width"):
+			e["width"] = float(e["width"]) * s
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -5681,6 +5688,17 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(6, 1.6, -22.5), "radius": 1.5, "phase": 0.25},
 			{"pos": Vector3(19, 1.6, 6), "radius": 1.5, "phase": 0.0},
 			{"pos": Vector3(25, 1.6, 6), "radius": 1.5, "phase": 0.5},
+		],
+		# Swinging blades on the outer ring: two gantries across the long west
+		# walkway and one across the south walkway. A blade sweeps the whole
+		# walkway at body height, so you time it: each gantry's sign reads GO
+		# when the blade will miss where you stand for the next half second and
+		# WAIT when it will not. Width is the walkway's plus the posts, which
+		# stand in the slag. tests/pendulum_blade_probe.
+		"pendulums": [
+			{"pos": Vector3(-22, 1.6, -1), "width": 2.9, "path": "z"},
+			{"pos": Vector3(-22, 1.6, 9), "width": 2.9, "path": "z", "phase": 0.3},
+			{"pos": Vector3(-8, 1.6, 22), "width": 2.9, "path": "x", "phase": 0.6},
 		],
 		"ramps": [
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
