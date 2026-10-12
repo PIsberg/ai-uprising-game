@@ -219,3 +219,5 @@ res://tests/howitzer_gait_probe.tscn
 res://tests/laser_sweep_probe.tscn
 # ZIPLINE: two-way cable rides deck to deck, no bounce-back; TITAN tower to deck.
 res://tests/zipline_probe.tscn
+# SERVER: every throw and bash is a full-turn pirouette of the one-mesh model.
+res://tests/server_spin_probe.tscn
