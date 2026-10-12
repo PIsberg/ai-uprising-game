@@ -39,7 +39,10 @@ func _robot(pos: Vector3) -> EnemyBase:
 	var e: EnemyBase = (load("res://scenes/enemies/android.tscn") as PackedScene).instantiate()
 	add_child(e)
 	e.global_position = pos
-	e.set("move_speed", 0.0)
+	# Frozen where it stands: a live robot steps, strafes and is knocked about,
+	# and on CI's slower runner it drifted half off the grate (6 burns, not 9).
+	# Health, the enemy group and the deferred stat sync still run.
+	e.process_mode = Node.PROCESS_MODE_DISABLED
 	return e
 
 func _phys(t: float) -> void:
