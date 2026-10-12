@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-409 probes total: **141** wired into the headless suite (`suite`), **84**
+410 probes total: **142** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -397,6 +397,7 @@ or GPU-timing probes; `--headless` renders these black).
 | skel_pose_probe | Candidate ArmRelaxModifier rotations on the George rig, to pick a natural arm-carry angle | windowed |
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
 | seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |
+| server_spin_probe | MAITRE-D' (SERVER): around its cleaver throws (9 m out) and its tray-bash (2 m) the model's yaw relative to the body sweeps 300+ deg inside 0.6 s (360; 0 before), and it faces forward again (within 5 deg) once idle | suite |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
 | sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
