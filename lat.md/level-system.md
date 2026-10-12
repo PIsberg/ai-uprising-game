@@ -106,6 +106,17 @@ The `ziplines` def key strings a two-way cable between two decks.
 * TITAN runs one from the east tower roof (off the sky-bridge landing) over the boss floor to the south-west deck. ARCHON runs one from the south tower roof to the south-west deck, clear of the floor where the boss fights (a winch ride into the boss's body would wedge).
 * `tests/zipline_probe` rides one both ways without bouncing back, checks robots stay put, every zipline level's ends sit on a tower roof and a deck with a clear line between, and rides each in its built level.
 
+## Fire Vents
+<!-- lat: { "require-code-mention": true } -->
+The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-and-black hazard ring that erupts a column of flame once a period.
+
+* Every eruption is warned for 1.2 s (`WARN_TIME`): the grate glows from dull red to orange, flames lick up through it, an orange light swells, the ring pulses and it rumbles. The column then burns for 1.2 s (`ERUPT_TIME`).
+* While it erupts, the player standing on it takes `dmg` (12) every 0.25 s and a robot 40, so luring a robot over a vent works. Vents are in the `hazard` group (they count against the "dry" bonus) and have no collision.
+* `phase` (0..1 of a period) staggers a row so the eruption rolls across it. Pos scales with the world; `radius` (1.4) and `height` (3.2) stay authored.
+* The first vent a player sees warming up, from within 7 m of its ring, teaches the rule once per run through `GameState.teach_once`.
+* The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
+* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, and the Crucible rows.
+
 ## Laser Sweeps
 <!-- lat: { "require-code-mention": true } -->
 The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a centre at fixed heights.

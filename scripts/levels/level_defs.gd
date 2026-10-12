@@ -202,6 +202,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("size"):
 			e["size"] = (e["size"] as Vector2) * s
+	# Fire vents sit on the ground plane like presses: a row across a gap
+	# must keep spanning the scaled gap. Grate radius and flame height stay
+	# authored (a vent is a body's width of fire, not layout).
+	for e in def.get("fire_vents", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -1768,6 +1774,18 @@ static func _crucible() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -23, "gap": 7, "gap_pos": 6, "height": 4.4},
 			{"axis": "x", "at": 23, "gap": 7, "gap_pos": 18, "height": 4.4},
+		],
+		# Slag vents floor both bulkhead gaps: three across each, phased a
+		# third of a period apart so the eruption rolls across the gap and two
+		# are always cold. The way in (north) and the meltdown run out (east)
+		# both go over them. tests/fire_vent_probe.
+		"fire_vents": [
+			{"pos": Vector3(3.5, 0, -23), "phase": 0.0},
+			{"pos": Vector3(6, 0, -23), "phase": 0.333},
+			{"pos": Vector3(8.5, 0, -23), "phase": 0.667},
+			{"pos": Vector3(23, 0, 15.5), "phase": 0.0},
+			{"pos": Vector3(23, 0, 18), "phase": 0.333},
+			{"pos": Vector3(23, 0, 20.5), "phase": 0.667},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
