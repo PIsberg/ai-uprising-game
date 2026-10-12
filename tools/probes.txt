@@ -195,3 +195,5 @@ res://tests/howitzer_barrel_probe.tscn
 res://tests/stamp_press_probe.tscn
 # RONIN: faces forward; slugs are revolver quick-draws from a drawn barrel tip, hands alternating.
 res://tests/ronin_revolver_probe.tscn
+# WALKER BANK: grounded robots without a walk clip lean like walkers; airborne flyers still bank (#276).
+res://tests/walker_bank_probe.tscn

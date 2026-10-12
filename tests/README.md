@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-387 probes total: **129** wired into the headless suite (`suite`), **84**
+388 probes total: **130** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -136,6 +136,7 @@ or GPU-timing probes; `--headless` renders these black).
 | captcha_shot | An android caught mid-challenge in a CAPTCHA gate under the panel, then the panel ticked for the player; `-- --out=<dir>` | windowed |
 | rail_trail_probe | Rail trail: gauss and Longshot carry WeaponData.rail_trail, the rifle not; a gauss hitscan leaves one RailTrail from the muzzle to the wall it hit, its mesh as long as the shot; a rifle shot leaves none; a 400 m shot keeps MAX_LEN by the muzzle; MAX_LIVE at once, each freed after LIFE | suite |
 | rail_trail_shot | Three gauss trails side-on 0.5 s apart (fresh, half-life, fading), then the view down the barrel of a fresh one; `-- --out=<dir>` | windowed |
+| walker_bank_probe | Grounded robots without a walk clip (DOG, RONIN, HOWITZER, SERVER, ROLLER, WARBOT, GUNSLINGER, ENFORCER, OPTIC) stand on the floor and, fed a full-speed strafe, roll at most 0.24 rad and pitch at most 0.15 advancing (0.57 / 0.21 before, #276); DRONE, RAPTOR and QUANTIZER off the floor still bank 0.45+ | suite |
 | weapon_rampage_probe | RAMPAGE charge: at tier 0 the rifle shoots its own colour with no rim; at tier 2 shots and the muzzle flash take GameState.RAMPAGE_COLORS[1], the flash grows by RAMPAGE_FLASH_GROW per tier and every viewmodel mesh wears the rim; a broken streak puts it all back | suite |
 | weapon_rampage_shot | The same rifle twice: tier 0 and tier 2 (red rim), before firing and with a flash each; `-- --out=<dir>` | windowed |
 | reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
