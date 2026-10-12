@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-395 probes total: **134** wired into the headless suite (`suite`), **84**
+397 probes total: **135** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **177** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **178** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -200,6 +200,8 @@ or GPU-timing probes; `--headless` renders these black).
 | enemy_react_probe | Grenade-scramble AI (aware android flees a live grenade) + kill-rouses-allies damage-alert cascade | headless |
 | enemy_scale_probe | Every enemy's in-game visual height (post RobotModel fit), flagging under-scaled chassis | headless |
 | enemy_view_probe | MAGMA WRAITH + ANGLER UNIT side by side under even light, silhouettes/FX | windowed |
+| enforcer_rifle_probe | ENFORCER: at port arms the rifle (trigger mesh = grip, tube mesh tip = barrel) points along x; engaged at 14 m every round leaves within 0.12 m of the barrel tip with the barrel within 20 deg of the player (0.000-0.028 m, 0.0-1.3 deg; 0.85 m and 94 deg before); held idle with the player out of sight, back at port arms within 2 s | suite |
+| enforcer_rifle_shot | ENFORCER front-right and top-down at port arms, shouldered onto a mark ahead and onto one on a ledge; `-- --out=<dir>` | windowed |
 | events_probe | Skirmish-event director: ASSASSIN hunter spawn, SUPPLY FLARE cache, GRID SURGE double ultimate-charge rate | headless |
 | execute_probe | Melee EXECUTION: shove into low-HP non-boss instakills + fires the reward; healthy enemy just takes shove damage | windowed |
 | explosion_screenshot | Both explosion FX types detonated, frame captured mid-expansion | windowed |

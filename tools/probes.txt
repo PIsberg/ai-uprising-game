@@ -205,3 +205,5 @@ res://tests/ronin_katana_probe.tscn
 res://tests/conveyor_probe.tscn
 # DOG GAIT: the K-9 HUNTER trots on its split leg parts, diagonal pairs together.
 res://tests/dog_gait_probe.tscn
+# ENFORCER: rifle swings from port arms onto the target; rounds leave the barrel tip.
+res://tests/enforcer_rifle_probe.tscn
