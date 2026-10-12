@@ -215,3 +215,5 @@ res://tests/gunslinger_arm_probe.tscn
 res://tests/jump_pad_probe.tscn
 # HOWITZER GAIT: the one-mesh crab legs cut in four and trotted about their hips.
 res://tests/howitzer_gait_probe.tscn
+# LASER SWEEP: jump the low beam, crouch the high one, walls stop them; GROK mainframe.
+res://tests/laser_sweep_probe.tscn
