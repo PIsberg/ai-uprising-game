@@ -11,6 +11,9 @@ extends Node3D
 ##            supply and the CENTRE OF EVERY PLATFORM. Distances are 3D, so an
 ##            upper deck cannot pass from the catwalk underneath it. One
 ##            non-overlapping segment or one unwalkable ramp fails here.
+##            A goal past a cargo lift (`lifts`) counts when the navmesh reaches
+##            the lift's bottom landing from the spawn and the goal from its top
+##            landing: the lift is the only link the navmesh cannot see.
 ##   godot --headless --path . --audio-driver Dummy res://tests/hazard_layout_probe.tscn
 
 const SEA_LEVELS := ["lava_world", "water_world"]
@@ -89,6 +92,11 @@ func _check_player_lands_on_spawn_deck(id: String) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 
+## How far the navmesh path from `a` toward `b` stops short of `b` (999 if none).
+func _gap(map: RID, a: Vector3, b: Vector3) -> float:
+	var route := NavigationServer3D.map_get_path(map, a, b, true)
+	return (route[route.size() - 1] as Vector3).distance_to(b) if route.size() > 0 else 999.0
+
 func _check_network(id: String) -> void:
 	var def: Dictionary = LevelDefs.get_def(id)
 	var lvl: Node = (load("res://scenes/levels/level_%s.tscn" % id) as PackedScene).instantiate()
@@ -116,10 +124,12 @@ func _check_network(id: String) -> void:
 	var reached := 0
 	for g in goals:
 		var p: Vector3 = g[1]
-		var route := NavigationServer3D.map_get_path(map, spawn, p, true)
-		var gap := 999.0
-		if route.size() > 0:
-			gap = (route[route.size() - 1] as Vector3).distance_to(p)
+		var gap := _gap(map, spawn, p)
+		for l in def.get("lifts", []):
+			var lp: Vector3 = l["pos"]
+			var up := Vector3(lp.x, float(l["top"]), lp.z)
+			if gap >= 1.6 and _gap(map, spawn, lp) < 1.6:
+				gap = minf(gap, _gap(map, up, p))
 		# 1.6: pickups/terminals float ~0.3-0.5 m above the deck they stand on.
 		if gap < 1.6:
 			reached += 1

@@ -154,6 +154,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Lifts stand on the ground plane like platforms: position and footprint
+	# stretch with the arena so the car still meets the (scaled) deck beside
+	# it. Heights (pos.y, top) stay authored, like platform heights.
+	for e in def.get("lifts", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# Presses span a route like walls: footprint and position stretch with the
 	# arena (a press over a gate gap must keep covering the scaled gap).
 	# Clearance stays authored: it is head height over a person, not layout.
@@ -5486,6 +5494,7 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(-31, 5, -10.8), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16}, # GEN-1, W
 			{"pos": Vector3(10.8, 5, -31), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16},  # GEN-2, N
 			{"pos": Vector3(31, 5, 10.8), "color": Color(1.0, 0.42, 0.15), "energy": 2.4, "range": 16},   # GEN-3, E
+			{"pos": Vector3(9, 10.5, -20), "color": Color(1.0, 0.62, 0.3), "energy": 2.2, "range": 12},  # ladle gantry + lift head (mast in the pool, off the deck)
 		],
 		# Catwalk web + a raised forge perch over the central hub (ramp up) so the
 		# arena has a high sniping vantage, not just one flat plane of gantries.
@@ -5500,6 +5509,15 @@ static func _lava_world() -> Dictionary:
 			{"pos": Vector3(6, 1.4, -22.5), "size": Vector3(2.6, 0.4, 15), "color": Color(0.22, 0.2, 0.21)}, # north walkway -> GEN-2
 			{"pos": Vector3(31, 1.4, 6), "size": Vector3(6, 0.4, 6), "color": Color(0.22, 0.2, 0.21)},       # GEN-3 island
 			{"pos": Vector3(22, 1.4, 6), "size": Vector3(17, 0.4, 2.6), "color": Color(0.22, 0.2, 0.21)},    # east walkway -> GEN-3
+			# Ladle gantry: a pouring deck 8 m up over the NE pool, west of the
+			# cargo lift on the NE island and reached by nothing else. The one
+			# place on the level above the flyers' usual height.
+			{"pos": Vector3(8.9, 7.8, -16.6), "size": Vector3(7.6, 0.4, 3.0), "color": Color(0.26, 0.22, 0.2)},
+		],
+		# The cargo lift up to the ladle gantry, standing on the NE island's north
+		# half (its footprint stops short of the island's ammo).
+		"lifts": [
+			{"pos": Vector3(14, 1.6, -16.6), "size": Vector2(2.6, 2.6), "top": 8.0},
 		],
 		"ramps": [
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
@@ -5620,6 +5638,7 @@ static func _lava_world() -> Dictionary:
 		"pickups": [
 			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
+			{"kind": "overclock", "pos": Vector3(7, 8.1, -16.6)}, # ladle gantry: the lift ride's reward
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 			# Loop rewards on the new islands (kind-style like the rest).
 			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},

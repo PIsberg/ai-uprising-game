@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-388 probes total: **130** wired into the headless suite (`suite`), **84**
+390 probes total: **131** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **174** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **175** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -89,6 +89,8 @@ or GPU-timing probes; `--headless` renders these black).
 | campaign_map_probe | Campaign map at a mid-run progress state, screenshotted | windowed |
 | campaign_nav_sweep | Full-campaign softlock guard: every LevelDefs level's exit is navmesh-reachable from spawn | headless |
 | campaign_smoke | Full-campaign live smoke test: boots every level scene, bakes navmesh, reports build/player/health per level | headless |
+| cargo_lift_probe | CargoLift: a player standing on the car is carried to the top landing (6.98 of 7.0 m in 3.3 s, never below the car), the car waits up there, an empty car comes down when the player stands by the bottom landing (2.7 s), the car is solid ground at both ends; LAVA WORLD's lift lands flush at both ends beside a deck nothing else reaches | suite |
+| cargo_lift_shot | LAVA WORLD's lift on the NE island with the car down, the car at the ladle gantry, and the view over the forge from the gantry; `-- --out=<dir>` | windowed |
 | chapters_test | Campaign chapter groupings end on the expected level titles | headless |
 | checkpoint_probe | Mid-level checkpoint/respawn: task completion sets a checkpoint; dying after relocating restores it | headless |
 | claude_showcase | Claude vault showcase; framed views of the centrepiece/lighting | windowed |
@@ -240,7 +242,7 @@ or GPU-timing probes; `--headless` renders these black).
 | hallucination_shot | Two hallucinated humans with an android between them that has turned on the nearer one; `-- --out=<dir>` | windowed |
 | haptics_probe | Gamepad-rumble plumbing without a pad: accessibility scalar mirrors into Haptics, `pulse()` no-ops safely at zero pads/strength | headless |
 | haul_probe | Haul payload: walking into the core shoulders it; the real player.gd then ignores sprint, holds a heavy walk and refuses to dash (each against an uncarried control); hits under drop_damage keep it, crossing it knocks the core behind the player and clears the flag; re-pickup; dying drops it; carrying it into the ring completes the task; every campaign haul core and ring on walkable ground joined by a route (red-checked: removing the player.gd guards fails three checks) | suite |
-| hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation) | suite |
+| hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation); a goal past a cargo lift counts when the navmesh reaches the lift's bottom landing from the spawn and the goal from its top | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
