@@ -5,10 +5,13 @@ extends Node3D
 ##     inside 6 s, and stays there (does not ride straight back);
 ## (2) stepping off and back on rides them back;
 ## (3) robots are not carried;
-## (4) TITAN has a zipline from the east tower roof to the south-west deck,
-##     and the straight line between its stations (at chest height) is clear;
-## (5) in the built TITAN level a ride from the tower lands on the deck.
+## (4) every zipline level (TITAN, ARCHON) runs its cable from a tower roof
+##     to a deck, and the straight line between the stations (at chest
+##     height) is clear;
+## (5) in each built level a ride from the tower lands on the deck.
 ##   godot --headless --path . --audio-driver Dummy res://tests/zipline_probe.tscn
+
+const ZIP_LEVELS := ["titan", "archon"]
 
 var ok := true
 
@@ -95,37 +98,44 @@ func _run() -> void:
 	e.queue_free()
 	zip.queue_free()
 
-	# TITAN.
-	var def := LevelDefs.get_def("titan")
-	var zips: Array = def.get("ziplines", [])
-	_check("titan has a zipline", zips.size() >= 1, "(%d)" % zips.size())
-	var tower: Dictionary = {}
-	for tw in def.get("towers", []):
-		if (tw["pos"] as Vector3).x > 0.0:
-			tower = tw
-	var deck: Dictionary = {}
-	for pl in def.get("platforms", []):
-		if (pl["pos"] as Vector3).x < 0.0 and (pl["pos"] as Vector3).z > 0.0:
-			deck = pl
-	for z in zips:
-		var za: Vector3 = z["a"]
-		var zb: Vector3 = z["b"]
-		var tp: Vector3 = tower["pos"]
-		_check("one end on the east tower roof", Vector2(za.x - tp.x, za.z - tp.z).length() < float(tower["radius"]) - 0.8 and absf(za.y - float(tower["height"])) < 0.3, "(%s)" % za)
-		var dp: Vector3 = deck["pos"]
-		var ds: Vector3 = deck["size"]
-		_check("other end on the south-west deck", absf(zb.x - dp.x) < ds.x * 0.5 - 0.8 and absf(zb.z - dp.z) < ds.z * 0.5 - 0.8 and absf(zb.y - (dp.y + ds.y * 0.5)) < 0.3, "(%s)" % zb)
-	await _live_titan(player)
+	for id in ZIP_LEVELS:
+		_check_level_zips(id)
+	await _live_rides(player)
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()
 
-func _live_titan(test_player: Node) -> void:
+func _check_level_zips(id: String) -> void:
+	var def := LevelDefs.get_def(id)
+	var zips: Array = def.get("ziplines", [])
+	_check("%s has a zipline" % id, zips.size() >= 1, "(%d)" % zips.size())
+	for z in zips:
+		var za: Vector3 = z["a"]
+		var zb: Vector3 = z["b"]
+		var on_roof := false
+		for tw in def.get("towers", []):
+			var tp: Vector3 = tw["pos"]
+			if Vector2(za.x - tp.x, za.z - tp.z).length() < float(tw["radius"]) - 0.8 and absf(za.y - float(tw["height"])) < 0.3:
+				on_roof = true
+		_check("%s zipline starts on a tower roof" % id, on_roof, "(%s)" % za)
+		var on_deck := false
+		for pl in def.get("platforms", []):
+			var dp: Vector3 = pl["pos"]
+			var ds: Vector3 = pl["size"]
+			if absf(zb.x - dp.x) < ds.x * 0.5 - 0.8 and absf(zb.z - dp.z) < ds.z * 0.5 - 0.8 and absf(zb.y - (dp.y + ds.y * 0.5)) < 0.3:
+				on_deck = true
+		_check("%s zipline ends on a deck" % id, on_deck, "(%s)" % zb)
+
+func _live_rides(test_player: Node) -> void:
 	test_player.queue_free()
 	for c in get_children():
 		if c is StaticBody3D:
 			c.queue_free()
 	await get_tree().physics_frame
-	var lvl: Node3D = (load("res://scenes/levels/level_titan.tscn") as PackedScene).instantiate()
+	for id in ZIP_LEVELS:
+		await _live_level(id)
+
+func _live_level(id: String) -> void:
+	var lvl: Node3D = (load("res://scenes/levels/level_%s.tscn" % id) as PackedScene).instantiate()
 	add_child(lvl)
 	for i in 20:
 		await get_tree().physics_frame
@@ -138,8 +148,11 @@ func _live_titan(test_player: Node) -> void:
 		# Straight line between the stations at chest height: nothing in the way.
 		var q := PhysicsRayQueryParameters3D.create(zl.a + Vector3.UP * 1.3, zl.b + Vector3.UP * 1.3, 1)
 		var hit := get_world_3d().direct_space_state.intersect_ray(q)
-		_check("titan cable path is clear", hit.is_empty(), "(hit %s)" % (hit.get("position", Vector3.ZERO) if not hit.is_empty() else ""))
+		_check("%s cable path is clear" % id, hit.is_empty(), "(hit %s)" % (hit.get("position", Vector3.ZERO) if not hit.is_empty() else ""))
 		var r: Array = await _ride(player, zl.a, zl.b)
 		var land: Vector3 = r[0]
-		print("  titan ride: rest %s after %.1f s" % [land, r[1]])
-		_check("titan ride lands on the deck", absf(land.y - zl.b.y) < 0.4 and Vector2(land.x - zl.b.x, land.z - zl.b.z).length() < 2.0, "(%s)" % land)
+		print("  %s ride: rest %s after %.1f s" % [id, land, r[1]])
+		_check("%s ride lands on the deck" % id, absf(land.y - zl.b.y) < 0.4 and Vector2(land.x - zl.b.x, land.z - zl.b.z).length() < 2.0, "(%s)" % land)
+	lvl.queue_free()
+	for i in 3:
+		await get_tree().physics_frame

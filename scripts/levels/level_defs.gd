@@ -2997,6 +2997,11 @@ static func _archon() -> Dictionary:
 			{"from": Vector3(16.0, 0.3, -50.0), "to": Vector3(9.0, 3.4, -50.0), "width": 3.5},
 			{"from": Vector3(-9.0, 3.6, -50.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
+		# A zipline from the south tower roof (off the sky-bridge landing) down to
+		# the south-west deck, clear of the cathedral floor where ARCHON fights.
+		"ziplines": [
+			{"a": Vector3(-1.0, 7.0, 17.8), "b": Vector3(-24.0, 3.2, 24.0)},
+		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},

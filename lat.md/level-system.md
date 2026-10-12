@@ -103,8 +103,8 @@ The `ziplines` def key strings a two-way cable between two decks.
 * A `ZipLine` stands a pylon at each end (`a`, `b`, points on the decks) with a glowing cable between their heads. Stepping into a station calls `Player.zipline_to` (the convoy's scripted ride) with an anchor 1 m over the other deck: the tether winches the player along and the ride ends on that deck. Jump lets go mid-ride. Ziplines cost no stamina.
 * The far station ignores the player until they step off it, so arriving never sends them straight back. Robots do not ride.
 * Both ends scale with the world on the ground plane; heights stay authored. Keep the straight line between the stations clear at chest height: the winch pulls in a line.
-* TITAN runs one from the east tower roof (off the sky-bridge landing) over the boss floor to the south-west deck.
-* `tests/zipline_probe` rides it both ways without bouncing back, checks robots stay put, TITAN's ends sit on the tower roof and the deck with a clear line between, and rides it in the built level.
+* TITAN runs one from the east tower roof (off the sky-bridge landing) over the boss floor to the south-west deck. ARCHON runs one from the south tower roof to the south-west deck, clear of the floor where the boss fights (a winch ride into the boss's body would wedge).
+* `tests/zipline_probe` rides one both ways without bouncing back, checks robots stay put, every zipline level's ends sit on a tower roof and a deck with a clear line between, and rides each in its built level.
 
 ## Laser Sweeps
 <!-- lat: { "require-code-mention": true } -->
