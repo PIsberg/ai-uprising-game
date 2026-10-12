@@ -213,3 +213,5 @@ res://tests/ladle_crane_probe.tscn
 res://tests/gunslinger_arm_probe.tscn
 # JUMP PADS: launch arcs land on their decks, under the ceiling; NEON rides land on target.
 res://tests/jump_pad_probe.tscn
+# HOWITZER GAIT: the one-mesh crab legs cut in four and trotted about their hips.
+res://tests/howitzer_gait_probe.tscn

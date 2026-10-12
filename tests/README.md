@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-403 probes total: **138** wired into the headless suite (`suite`), **84**
+405 probes total: **139** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **181** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **182** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -269,6 +269,8 @@ or GPU-timing probes; `--headless` renders these black).
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
 | howitzer_barrel_probe | HOWITZER at 18 m and 48 m: at the shot the barrel (front-end and mid centroids of the Gun mesh) points within 2.5 deg of the shell's launch pitch, the far shot sits 4+ deg higher (measured -4.7 vs +6.0), the shell leaves within 0.3 m of the barrel's front, the shot slides the barrel back 0.3+ m along its axis and it runs out within 2 s; no drawn mesh outside the Gun keeps a copy of the muzzle end (the GLB's two whole-model Cell duplicates did) | suite |
 | howitzer_barrel_shot | Side view of the HOWITZER barrel at rest, at +20 and -12 deg and at full recoil; `-- --out=<dir>` | windowed |
+| howitzer_gait_probe | The HOWITZER walks: walking toward a target at 2.6 m/s every foot (the lowest 3 cm of each quadrant of the GLB's one-mesh legs, measured at rest in the mesh's own frame and followed through its copy) swings 0.15+ m fore and aft (1.0; 0.00 before), diagonal feet together (r 1.00) and the front pair in opposition (r -1.00); stopped, every foot back within 0.03 m of rest | suite |
+| howitzer_gait_shot | Side view of the HOWITZER at four points of its trot; `-- --out=<dir>` | windowed |
 | hud_upgrade_probe | HUD upgrade-chip row shows only bought tracks at the right rank | windowed |
 | imba_probe | "imba" cheat: every upgrade track maxes + HUD chips rebuild to show all six | windowed |
 | indiv_probe | BRUTE shield-in-left-hand idle+punch; VACUUM codex preview rise | windowed |
