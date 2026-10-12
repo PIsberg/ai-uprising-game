@@ -25,15 +25,20 @@ func _ready() -> void:
 	_run.call_deferred()
 
 ## The opening fight is deliberately knife-edge (min_hp bottoms out in single
-## digits even on good runs), so one run of a reckless bot is a coin with a
-## ~35% tails: RNG spikes (an overlapping spider-pack + android burst) kill it
-## before the gate. Measured per-run survival on a healthy build is ~0.64
-## (20/31 attempts across repeated headless runs). BEST OF 7, need 2: at that
-## rate a healthy onboarding clears the gate ~99% of the time, while a genuine
-## regression (pre-fix bots died EVERY run) essentially never lands 2 survivals.
-## best-of-3 flaked ~1-in-5 CI runs on the same healthy build; this fixes that.
-## Early-exit stops the moment 2 survivals bank, so healthy runs stay ~2-3 loads.
-const ATTEMPTS := 7
+## digits even on good runs), so one attempt of a reckless bot is a coin toss:
+## RNG spikes (an overlapping spider-pack + android burst) kill it before the
+## gate. Per-attempt survival on a healthy build was ~0.64 (20/31) when the gate
+## was set; on 2026-10-12 three 12-attempt runs measured 0.44 (16/36: 5/12 and
+## 5/12 on main, 6/12 on a branch with a clean user:// dir; one earlier run read
+## 10/12, so single runs swing). At 0.44, "2 of 7" fails ~11% of healthy runs,
+## which is what CI showed (#211: four failures in a day, every death to the
+## opening androids). Need 2 of up to 14: a healthy build at 0.44 fails ~0.4%
+## of runs (0.40: 0.8%, 0.30: 5%), while a genuine regression (pre-fix bots died
+## EVERY attempt) never lands 2. Early exit stops once 2 survivals bank, so a
+## healthy run averages ~4.5 loads. Seeding the RNG per attempt does not make
+## attempts repeat (process-driven timers and frame pacing still diverge), so
+## the gate stays a rate, not a replay.
+const ATTEMPTS := 14
 const NEEDED := 2
 
 func _run() -> void:
