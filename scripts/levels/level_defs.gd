@@ -4422,6 +4422,12 @@ static func _claude() -> Dictionary:
 					"warn_title": "ANTI-TAMPER LOCKDOWN", "warn_text": "The vault cut its own power. Carry it out in the dark.",
 					"clear_title": "POWER RESTORED", "clear_text": "The constitution is uploading. The vault lights are back."}},
 		],
+		# The vault fights the decryption: once the keycard is in, a laser fence
+		# spins round the decrypt zone, a knee beam to jump and a chest beam to
+		# duck, while the sentinels converge. It dies with the decryption.
+		"laser_sweeps": [
+			{"pos": Vector3(-12, 0, 10), "radius": 7.0, "speed": 55.0, "wakes_on": "key", "stops_on": "decrypt"},
+		],
 		"open_sky": false,
 		# EXPANSION PASS (2× area): the 42² vault core is untouched at the centre;
 		# a new outer archive ring wraps it — bulkhead-routed entry, an elevated

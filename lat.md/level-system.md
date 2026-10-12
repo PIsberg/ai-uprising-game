@@ -113,8 +113,8 @@ The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a
 * Default beams: one at 0.45 m (jump it) and one at 1.35 m (crouch or slide under it: the player stands 1.8 m, crouches 1.0 m). A beam touching the player's capsule hurts (`damage`, once per pass per beam); robots are never hit.
 * Each beam is raycast against the world every tick and stops at the first wall, so cover still covers. `inner` starts the beams clear of what they spin round; `post: false` hides the emitter post when a core is the emitter.
 * `wakes_on` / `stops_on` take task ids (listened to through `GameState.tasks_changed`). Position scales with the world; radius and heights stay authored.
-* GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed.
-* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, a wall stopping a beam, `stops_on`, and GROK's placement.
+* GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed. The CLAUDE vault spins one round its decrypt zone from the keycard to the end of the decryption, so the 12 s hold is held over the beams.
+* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
 
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->
