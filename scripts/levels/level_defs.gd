@@ -154,6 +154,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Presses span a route like walls: footprint and position stretch with the
+	# arena (a press over a gate gap must keep covering the scaled gap).
+	# Clearance stays authored: it is head height over a person, not layout.
+	for e in def.get("presses", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -3320,6 +3328,18 @@ static func _assembly() -> Dictionary:
 			{"pos": Vector3(-12, 0, -9), "size": Vector2(40, 4.0), "dmg": 30.0},
 			{"pos": Vector3(12, 0, 9), "size": Vector2(40, 4.0), "dmg": 30.0},
 			{"pos": Vector3(41, 0, -4), "size": Vector2(3.6, 24), "dmg": 30.0},
+		],
+		# Line 04 never stops stamping. A press is built into the east freight
+		# bulkhead's gap, so the meltdown run has to time it, and a line of three
+		# runs across the east lane in front of the dock, slamming in a wave
+		# (phase 0, 1/3, 2/3): one is always on its way up. Whatever chases you
+		# through on the wrong beat is scrap. The pillars sit on the bulkhead and
+		# the lane's walls; the line closes the lane (33..50) between them.
+		"presses": [
+			{"pos": Vector3(33, 0, 26), "size": Vector2(3.0, 8.6), "clearance": 3.6, "period": 3.4},
+			{"pos": Vector3(35.85, 0, 31.5), "size": Vector2(4.3, 3.0), "clearance": 3.6, "period": 3.6, "phase": 0.0},
+			{"pos": Vector3(41.5, 0, 31.5), "size": Vector2(4.3, 3.0), "clearance": 3.6, "period": 3.6, "phase": 0.333},
+			{"pos": Vector3(47.15, 0, 31.5), "size": Vector2(4.3, 3.0), "clearance": 3.6, "period": 3.6, "phase": 0.667},
 		],
 		# Freight-ring bulkheads on the OLD perimeter line — the reactor yard
 		# stays uncaged and the sabotage point reachable. In through the north

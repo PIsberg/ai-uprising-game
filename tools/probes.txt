@@ -191,3 +191,5 @@ res://tests/bowler_throw_probe.tscn
 res://tests/comic_panel_probe.tscn
 # HOWITZER: barrel lays to the ballistic solve, kicks back on the shot, shell leaves its front.
 res://tests/howitzer_barrel_probe.tscn
+# STAMP PRESSES: telegraphed slam hits the player once and shoves them out, crushes robots, phases stagger a line.
+res://tests/stamp_press_probe.tscn

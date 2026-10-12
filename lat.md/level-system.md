@@ -86,6 +86,16 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
+## Stamping Presses
+<!-- lat: { "require-code-mention": true } -->
+The `presses` def key builds hydraulic stamping presses: a head that slams a striped footprint once a period and crushes whatever is under it.
+
+* The head cocks for a telegraph (red lamps, glowing lip) before it drops; the slam hits everything in the footprint once. The player takes `dmg` (45) and is shoved out of an open side; a robot takes 600, a boss chassis (500+ authored HP) a fifth of that.
+* Pillars stand at the ends of the footprint's long axis and, with the beam, are solid world geometry the navmesh bakes round. The head has no collision, so the footprint stays walkable and nothing wedges in it.
+* `phase` (0..1 of a period) staggers a line so the slam travels down it. Pos and size scale with the world; clearance does not.
+* The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
+* `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
+
 ## Horizon Walkers
 <!-- lat: { "require-code-mention": true } -->
 Every open-sky level with a landmark gets a colossal war machine walking its horizon (`HorizonWalker.build_for`, from `_build_landmark`).
