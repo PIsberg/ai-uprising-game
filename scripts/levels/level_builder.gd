@@ -297,6 +297,7 @@ func _ready() -> void:
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
+	_build_jump_pads(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2404,6 +2405,22 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Jump pads (JumpPad): throw the player onto a deck. Indoors the arc is
+## capped under the room's ceiling with head room.
+func _build_jump_pads(def: Dictionary) -> void:
+	var cap := INF
+	if not def.get("open_sky", false):
+		var room_h := WALL_HEIGHT
+		for t in def.get("towers", []):
+			room_h = maxf(room_h, float((t as Dictionary).get("height", 8.0)) + PLAYER_CLEARANCE_M + 0.3)
+		cap = room_h - 2.0
+	for e in def.get("jump_pads", []):
+		var p := JumpPad.new()
+		p.to = e.get("to", Vector3.ZERO)
+		p.max_apex = minf(float(e.get("max_apex", INF)), cap)
+		p.position = e.get("pos", Vector3.ZERO)
+		add_child(p)
 
 ## The foundry's hunting overhead crane (LadleCrane): pours molten pools on
 ## the player inside its coverage.

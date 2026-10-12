@@ -154,6 +154,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Jump pads sit on the ground plane and land on a deck: both ends stretch
+	# with the arena; heights stay authored, like the decks they land on.
+	for e in def.get("jump_pads", []):
+		for k in ["pos", "to"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# The ladle crane's coverage stretches with the arena; its rail height
 	# stays authored (it hangs under the roof, not over the floor plan).
 	if def.has("ladle_crane"):
@@ -1286,6 +1292,14 @@ static func _neon() -> Dictionary:
 			{"from": Vector3(-16.0, 0.3, -26.0), "to": Vector3(-9.0, 3.4, -26.0), "width": 3.5},
 			{"from": Vector3(16.0, 0.3, -26.0), "to": Vector3(9.0, 3.4, -26.0), "width": 3.5},
 			{"from": Vector3(9.0, 3.6, -26.0), "to": Vector3(12.0, 9.2, -12.0), "width": 3.0},
+		],
+		# Jump pads, arcade-style: from the floor up to the north balcony, up to
+		# the west deck, and a long throw up onto the tower roof. The arcs stay
+		# under the hall's ceiling (the builder caps them); robots walk past.
+		"jump_pads": [
+			{"pos": Vector3(-4, 0, -17), "to": Vector3(-4, 3.4, -26)},
+			{"pos": Vector3(-13.2, 0, 2), "to": Vector3(-13.2, 3.2, 12.5)},
+			{"pos": Vector3(12, 0, 0), "to": Vector3(12, 9.0, -12)}, # the roof is at the tower height
 		],
 		"towers": [
 			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},

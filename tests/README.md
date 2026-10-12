@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-401 probes total: **137** wired into the headless suite (`suite`), **84**
+403 probes total: **138** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **180** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **181** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -275,6 +275,8 @@ or GPU-timing probes; `--headless` renders these black).
 | intro_screenshot | Intro cutscene's calm phase and post-turn frame | windowed |
 | jamming_playtest | Combat playtest bot for Geofenced Signal Jamming: fires + plants beacons to strip hive shields, beacons and burns the mesh relays, then hunts the HIVE PRIME on a 100000 HP pool (completability; `-- mortal` for a real 100 HP run). Reports kills, rounds fired and HP soaked. Report-only; it completed 10 of 10 runs in 38-76 s on 2026-10-09 (#184) | headless |
 | jamming_probe | Geofenced Signal Jamming: shield absorbs damage, jam zone strips it + disorients, JamZone detection, beacon placement | windowed |
+| jump_pad_probe | JumpPad: a player (no input) lands on its target deck (within 0.3 m height, 1.2 m across; 1.12 s), a capped arc stays under its cap and still lands, robots are not launched; NEON's pads each aim at a deck and clear the ceiling with head room, and a ride from each pad in the built NEON level lands on target (red on the tower pad aimed 0.2 m over the real roof: landed 1.64 m long) | suite |
+| jump_pad_shot | NEON's tower pad, then the throw onto the tower roof from the side; `-- --out=<dir>` | windowed |
 | keybind_probe | Key-rebind persistence: factory defaults, live InputMap application, swap/steal conflict policy, saved overrides | headless |
 | kick_stability_probe | Viewmodel-kick spring doesn't diverge to NaN across a frame hitch (shader-compile stall on first shot) | headless |
 | kill_fx_probe | Weapon-specific deaths through the real hit paths: the energy guns' WeaponData kill styles; a gauss hitscan and a plasma projectile kill DISINTEGRATE (dissolve materials, no death blast, robot gone after the dissolve, ash scorch); an arc-coil kill ELECTROCUTES (shock skin, no blast during the spasms, then the classic blast); an untagged kill after an energy hit and a boss-sized kill stay classic; drone, raptor, mender and skitter dissolve in place with no blast, an arc-killed drone hangs through the spasms then falls, a seeker keeps its blast; a shotgun kill SHREDS (airborne and thrown away from the shooter with no blast in the air, scrap spray, classic blast where it lands 3.2 m back), a wall behind cuts the flight short, a magnum-killed drone is kicked away and falls, never shocked; a rifle headshot kill DECAPITATES (head bone folded, head chunk flung, no blast during the stagger, then the classic blast), a rifle body kill stays classic, a headshot-tagged drone just falls; a Devastator rocket kill BLOWS the robot APART (3+ limbs off at once, chunks flying, torso lofted, no classic blast in the air, then one when it lands) and a rocket-tagged drone detonates mid-air | suite |
