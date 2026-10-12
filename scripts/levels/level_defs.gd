@@ -154,6 +154,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Conveyors lie on the ground plane: position and footprint stretch with
+	# the arena (the bulkhead belt must keep spanning the scaled gap). Speed
+	# and direction stay authored.
+	for e in def.get("conveyors", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# Lifts stand on the ground plane like platforms: position and footprint
 	# stretch with the arena so the car still meets the (scaled) deck beside
 	# it. Heights (pos.y, top) stay authored, like platform heights.
@@ -3343,6 +3351,13 @@ static func _assembly() -> Dictionary:
 		# (phase 0, 1/3, 2/3): one is always on its way up. Whatever chases you
 		# through on the wrong beat is scrap. The pillars sit on the bulkhead and
 		# the lane's walls; the line closes the lane (33..50) between them.
+		# The line feeds the bulkhead press: a belt runs east through the gap,
+		# from the yard to the dock lane. Ride it and the meltdown run is
+		# faster, but it carries you under the press on its beat, not yours;
+		# robots coming the other way walk against it into the stamp.
+		"conveyors": [
+			{"pos": Vector3(33, 0, 26), "size": Vector2(18, 7), "dir": Vector2(1, 0), "speed": 3.0},
+		],
 		"presses": [
 			{"pos": Vector3(33, 0, 26), "size": Vector2(3.0, 8.6), "clearance": 3.6, "period": 3.4},
 			{"pos": Vector3(35.85, 0, 31.5), "size": Vector2(4.3, 3.0), "clearance": 3.6, "period": 3.6, "phase": 0.0},
@@ -3471,7 +3486,7 @@ static func _assembly() -> Dictionary:
 			{"type": "enforcer", "pos": Vector3(-38, 0.5, 24), "trigger": 18, "pack": "assemb_a3"},
 			{"type": "warbot", "pos": Vector3(-26, 0.5, 40), "trigger": 18, "pack": "assemb_a3"},
 			{"type": "whirlwind", "pos": Vector3(10, 3.5, 40), "trigger": 18, "pack": "assemb_a4"},
-			{"type": "mech", "pos": Vector3(38, 0.5, 28), "trigger": 20, "pack": "assemb_a4"},
+			{"type": "mech", "pos": Vector3(38, 0.5, 19), "trigger": 20, "pack": "assemb_a4"}, # off the belt
 			{"type": "warbot", "pos": Vector3(40, 0.5, 40), "trigger": 17, "pack": "assemb_a4"},
 		],
 		# Freight-ring supplies + the catwalk-climb reward (the plant core keeps

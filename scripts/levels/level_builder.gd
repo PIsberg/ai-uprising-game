@@ -295,6 +295,7 @@ func _ready() -> void:
 	_build_scanners(def)
 	_build_presses(def)
 	_build_lifts(def)
+	_build_conveyors(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2402,6 +2403,17 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Conveyor belts (ConveyorBelt): flat belts that carry whatever stands on
+## them along `dir` at `speed`.
+func _build_conveyors(def: Dictionary) -> void:
+	for e in def.get("conveyors", []):
+		var c := ConveyorBelt.new()
+		c.size = e.get("size", Vector2(12.0, 3.0))
+		c.dir = e.get("dir", Vector2(1.0, 0.0))
+		c.speed = float(e.get("speed", 3.0))
+		c.position = e.get("pos", Vector3.ZERO)
+		add_child(c)
 
 ## Cargo lifts (CargoLift): a car between the node's height and `top` that
 ## carries a rider to the other landing and comes when called.

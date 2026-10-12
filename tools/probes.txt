@@ -201,3 +201,5 @@ res://tests/walker_bank_probe.tscn
 res://tests/cargo_lift_probe.tscn
 # RONIN KATANA: drawn when close, swung through both cuts (hits mid-swing), sheathed when you leave.
 res://tests/ronin_katana_probe.tscn
+# CONVEYOR: belts carry the player and robots at their speed; The Assembly belt feeds the bulkhead press.
+res://tests/conveyor_probe.tscn
