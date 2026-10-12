@@ -25,7 +25,8 @@ static func turn(pivot: Vector3, axis: Vector3, angle: float) -> Transform3D:
 
 ## Cut `mi` at body-frame x = `mid` into a left (x < mid) and a right copy,
 ## each keeping the mesh's materials and the instance's overrides, and hide the
-## original. Returns [left entry or null, right entry or null]. The copies join
+## original. Returns [left entry, right entry], or [null, null] (original kept)
+## when either half is empty or fails to build. The copies join
 ## `body._mesh_instances` (hit flash) when the body has one.
 static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
 	var xf := body.global_transform.affine_inverse() * mi.global_transform
@@ -36,7 +37,10 @@ static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
 		for si in mi.mesh.get_surface_count():
 			var arr: Array = mi.mesh.surface_get_arrays(si)
 			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(v.size()))
+			# Unindexed surfaces come back with a null OR an empty index array.
+			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+			if idx.is_empty():
+				idx = PackedInt32Array(range(v.size()))
 			var keep := PackedInt32Array()
 			for t in range(0, idx.size(), 3):
 				var c: Vector3 = xf * ((v[idx[t]] + v[idx[t + 1]] + v[idx[t + 2]]) / 3.0)
@@ -45,6 +49,10 @@ static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
 			if keep.is_empty():
 				continue
 			arr[Mesh.ARRAY_INDEX] = keep
+			# Custom channels need their format flags passed back in; a static
+			# part does not use them (the GUNSLINGER's forearms carry some).
+			for ch in [Mesh.ARRAY_CUSTOM0, Mesh.ARRAY_CUSTOM1, Mesh.ARRAY_CUSTOM2, Mesh.ARRAY_CUSTOM3]:
+				arr[ch] = null
 			am.add_surface_from_arrays(mi.mesh.surface_get_primitive_type(si), arr)
 			am.surface_set_material(am.get_surface_count() - 1, mi.mesh.surface_get_material(si))
 			overrides.append(mi.get_surface_override_material(si))
@@ -58,9 +66,17 @@ static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
 			copy.set_surface_override_material(k, overrides[k])
 		copy.transform = mi.transform
 		mi.get_parent().add_child(copy)
-		if "_mesh_instances" in body:
-			(body.get("_mesh_instances") as Array).append(copy)
 		out[side] = entry(body, copy)
+	# Both halves or nothing: a side that failed to build (a surface format
+	# the copy cannot take) would otherwise leave half the part invisible.
+	if out[0] == null or out[1] == null:
+		for e in out:
+			if e != null:
+				(e[0] as Node).queue_free()
+		return [null, null]
+	for e in out:
+		if "_mesh_instances" in body:
+			(body.get("_mesh_instances") as Array).append(e[0])
 	mi.visible = false
 	return out
 
@@ -72,7 +88,7 @@ static func body_points(body: Node3D, mi: MeshInstance3D) -> PackedVector3Array:
 	for si in mi.mesh.get_surface_count():
 		var arr: Array = mi.mesh.surface_get_arrays(si)
 		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-		if arr[Mesh.ARRAY_INDEX] == null:
+		if arr[Mesh.ARRAY_INDEX] == null or (arr[Mesh.ARRAY_INDEX] as PackedInt32Array).is_empty():
 			for p in v:
 				out.append(xf * p)
 			continue
