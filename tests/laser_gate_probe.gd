@@ -10,7 +10,9 @@ extends Node3D
 ##     the chest beam is live; past a post, never;
 ## (4) walking up to it teaches the rule, once;
 ## (5) both of Skybridge Uplink's blast doors carry a gate centred in the
-##     (scaled) gap and spanning it, half a period apart.
+##     (scaled) gap and spanning it, half a period apart;
+## (6) the campaign's first gate (Gemini, slot 3) is its slowest and spans the
+##     roofed conduit's mouth: the JUMP / DUCK read is taught gently first.
 ##   godot --headless --path . --audio-driver Dummy res://tests/laser_gate_probe.tscn
 
 var ok := true
@@ -127,6 +129,7 @@ func _run() -> void:
 	gate.queue_free()
 
 	_uplink()
+	_first_lesson()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
@@ -149,3 +152,29 @@ func _uplink() -> void:
 					and String(g.get("axis", "x")) == "x", "(%.1f vs gap %.1f)" % [float(g["width"]), float(door["gap"])])
 		_check("a gate in the blast door at %s" % c, found)
 	_check("the two doors are half a period apart", phases.size() == 2 and is_equal_approx(absf(phases[0] - phases[1]), 0.5), "(%s)" % [phases])
+
+func _first_lesson() -> void:
+	var first := ""
+	var first_period := 0.0
+	var slowest_later := 0.0
+	for ch in LevelDefs.CHAPTERS:
+		for id in ch["ids"]:
+			for g in LevelDefs.get_def(String(id)).get("laser_gates", []):
+				var per := float(g.get("period", 3.2))
+				if first == "":
+					first = String(id)
+					first_period = per
+				elif String(id) != first:
+					slowest_later = maxf(slowest_later, per)
+	_check("the campaign's first laser gate is Gemini's", first == "gemini", "(%s)" % first)
+	_check("and the slowest", first_period > slowest_later, "(%.1f s vs %.1f s later)" % [first_period, slowest_later])
+	var def := LevelDefs.get_def("gemini")
+	var door: Dictionary = {}
+	for d in def.get("gates", []):
+		if d.get("roofed", false):
+			door = d
+	var g: Dictionary = (def.get("laser_gates", [{}]) as Array)[0]
+	var p: Vector3 = g.get("pos", Vector3.INF)
+	_check("it stands in the roofed conduit's mouth", absf(p.x - float(door["gap_pos"])) < 0.3 and absf(p.z - float(door["at"])) < 0.3,
+		"(%s vs gap at %.1f, %.1f)" % [p, float(door["gap_pos"]), float(door["at"])])
+	_check("and spans it", float(g.get("width", 0.0)) >= float(door["gap"]) - 0.01)

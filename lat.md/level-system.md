@@ -170,7 +170,8 @@ The `laser_gates` def key strings a laser hurdle across a gap: a knee beam (0.45
 * Touching the live beam costs `damage` (15), once per 0.5 s. Robots are never hit. The first gate a player walks up to teaches the rule once per run.
 * `axis` is the world axis the beams run along; `phase` (0..1 of a period) offsets gates. Position and `width` scale with the world; heights stay authored.
 * Skybridge Uplink strings one across each blast door (the z = -16 and z = 16 gaps), half a period apart, so the two doors never match.
-* `tests/laser_gate_probe` checks the alternation and flicker lead, the tags, who is hit standing, crouched and mid-jump, the hint and the Uplink placement.
+* Gemini (campaign slot 3) strings the campaign's first one across its roofed conduit's mouth, slower than any later gate (period 4.4 s, each beam lit 2.2 s), so the JUMP / DUCK read is learned before the vault and the uplink ask for it at speed.
+* `tests/laser_gate_probe` checks the alternation and flicker lead, the tags, who is hit standing, crouched and mid-jump, the hint, the Uplink placement, and that the campaign's first gate is Gemini's, its slowest, spanning the conduit's mouth.
 
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->
