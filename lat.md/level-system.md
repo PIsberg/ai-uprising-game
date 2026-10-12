@@ -96,6 +96,16 @@ The `presses` def key builds hydraulic stamping presses: a head that slams a str
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
 * `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
 
+## Jump Pads
+<!-- lat: { "require-code-mention": true } -->
+The `jump_pads` def key places launch pads that throw the player onto a deck.
+
+* A `JumpPad` (an `Area3D` on the player layer) solves a ballistic arc from where the player stands to `to`, topping out 2 m above the higher end or at `max_apex`, and hands it to `Player.launch`. Robots are not launched.
+* Indoors the builder caps every arc under the room's ceiling with head room (`room_h - 2.0`, the same room height `_build_geometry` uses).
+* Both ends scale with the world on the ground plane; heights stay authored. Aim `to` at the deck's real surface (a tower roof is at the tower's height, not its stair top).
+* NEON ARCADE has three: floor to the north balcony, floor to the west deck, and a long throw onto the tower roof.
+* `tests/jump_pad_probe` checks a pad lands on its deck, a capped arc stays under its cap, robots stay down, NEON's pads each aim at a deck and clear the ceiling, and a ride from each pad in the built NEON level lands on target.
+
 ## Ladle Cranes
 <!-- lat: { "require-code-mention": true } -->
 The `ladle_crane` def key builds an overhead bridge crane that hunts the player with a ladle of molten metal.

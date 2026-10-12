@@ -23,6 +23,7 @@ Advanced movement mechanics give players defensive evasion and repositioning too
 * **Dash:** A rapid burst of speed (`20.0 m/s` for `0.16s`, `1.1s` cooldown) accompanied by a "Perfect Dodge" bonus window against incoming projectile fire.
 * **Slide:** Crouching while sprinting converts forward momentum into a low friction slide (`12.5 m/s`, duration `0.7s`) that clears low obstacles.
 * **Grappling Hook:** Shoots a physics tether toward world geometry (`Layer 1`), pulling the player toward the anchor point with stamina-dependent winching.
+* **Launch:** `Player.launch(v, seconds)` (called by a jump pad, [[level-system#Jump Pads]]) sets the velocity and suspends air control for the flight, so the solved arc lands where it was aimed; on touchdown horizontal speed drops to a quarter so the player sticks the landing on the deck.
 
 ## Night Vision
 <!-- lat: { "require-code-mention": true } -->

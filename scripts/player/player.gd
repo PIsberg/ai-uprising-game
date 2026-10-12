@@ -745,6 +745,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	_apply_gravity(delta)
+	_tick_launch(delta)
 	_handle_stamina(delta)
 	_handle_gamepad_look(delta)
 	_handle_speed_warp(delta)
@@ -1214,6 +1215,28 @@ func _apply_gravity(delta: float) -> void:
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
 var _sprint_charge: float = 0.0 ## Banked sprint time for the higher running jump.
+
+## A launch (JumpPad): set `v` and fly it for up to `seconds` with no air
+## control, so the arc lands where the pad solved it. Ends on landing.
+var _launch_t: float = 0.0
+var _launch_age: float = 0.0
+func launch(v: Vector3, seconds: float) -> void:
+	velocity = v
+	_launch_t = seconds + 0.2
+	_launch_age = 0.0
+	_coyote = 0.0
+	_jump_buffer = 0.0
+
+func _tick_launch(delta: float) -> void:
+	if _launch_t <= 0.0:
+		return
+	_launch_t -= delta
+	_launch_age += delta
+	if _launch_age > 0.15 and is_on_floor():
+		_launch_t = 0.0
+		# Stick the landing: a pad throws you at a deck, not past it.
+		velocity.x *= 0.25
+		velocity.z *= 0.25
 
 ## Coyote time + jump buffering so jumps land when the player MEANT them: you can
 ## still jump a hair after walking off a ledge, and a jump pressed just before
@@ -1692,8 +1715,9 @@ func _current_speed() -> float:
 	return walk_speed * mult
 
 func _handle_movement(delta: float) -> void:
-	# Dash, slide, wall-run and the grapple winch fully own velocity while active.
-	if _dash_time > 0.0 or _sliding or _wall_running or _grappling:
+	# Dash, slide, wall-run, the grapple winch and a pad launch fully own
+	# velocity while active.
+	if _dash_time > 0.0 or _sliding or _wall_running or _grappling or _launch_t > 0.0:
 		return
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()

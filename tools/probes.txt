@@ -211,3 +211,5 @@ res://tests/enforcer_rifle_probe.tscn
 res://tests/ladle_crane_probe.tscn
 # GUNSLINGER: right gun-arm raised onto the target; slugs leave the gun tip.
 res://tests/gunslinger_arm_probe.tscn
+# JUMP PADS: launch arcs land on their decks, under the ceiling; NEON rides land on target.
+res://tests/jump_pad_probe.tscn
