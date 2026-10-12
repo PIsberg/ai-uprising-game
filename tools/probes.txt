@@ -189,3 +189,5 @@ res://tests/gun_muzzle_probe.tscn
 res://tests/bowler_throw_probe.tscn
 # COMIC PANELS: every campaign level's briefing opens on its own panel, not level 01's.
 res://tests/comic_panel_probe.tscn
+# HOWITZER: barrel lays to the ballistic solve, kicks back on the shot, shell leaves its front.
+res://tests/howitzer_barrel_probe.tscn
