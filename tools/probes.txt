@@ -231,3 +231,5 @@ res://tests/laser_gate_probe.tscn
 res://tests/shock_floor_probe.tscn
 # PENDULUMS: blade sweeps the walkway; crossing on GO is never hit, ignoring the sign is; LAVA WORLD gantries.
 res://tests/pendulum_blade_probe.tscn
+# BUMPERS: player and grounded robots thrown onto the ring, flyers and bosses not; Neon throws over conduits.
+res://tests/bumper_probe.tscn

@@ -302,6 +302,7 @@ func _ready() -> void:
 	_build_conveyors(def)
 	_build_ladle_crane(def)
 	_build_jump_pads(def)
+	_build_bumpers(def)
 	_build_laser_sweeps(def)
 	_build_laser_gates(def)
 	_build_ziplines(def)
@@ -2448,6 +2449,15 @@ func _build_laser_gates(def: Dictionary) -> void:
 		g.phase = float(e.get("phase", 0.0))
 		g.position = e.get("pos", Vector3.ZERO)
 		add_child(g)
+
+## Bumpers (Bumper): pinball pads that throw the player or a grounded robot
+## onto a ring at `to`.
+func _build_bumpers(def: Dictionary) -> void:
+	for e in def.get("bumpers", []):
+		var b := Bumper.new()
+		b.to = e.get("to", Vector3.ZERO)
+		b.position = e.get("pos", Vector3.ZERO)
+		add_child(b)
 
 ## Jump pads (JumpPad): throw the player onto a deck. Indoors the arc is
 ## capped under the room's ceiling with head room.

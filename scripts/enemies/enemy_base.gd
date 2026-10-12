@@ -90,6 +90,8 @@ var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
+var _launch_t: float = 0.0 ## Seconds of thrown flight left (a Bumper); AI movement paused while > 0.
+var _launch_age: float = 0.0
 var hijacked: bool = false ## Converted to the player's side by a HIJACK charge — hunts robots until burnout.
 var _hijack_t: float = 0.0 ## Seconds of stolen loyalty left; burnout (death) at 0.
 var _hijack_shooter: Node = null ## The player who planted the hijack — kills/damage route credit to them.
@@ -214,6 +216,12 @@ func _physics_process(delta: float) -> void:
 		return
 	if _muzzle_bone and muzzle:
 		_follow_muzzle_bone()
+	# Thrown (a Bumper): ballistic until it lands, its own movement paused so the
+	# arc lands where it was solved. Runs before EMP and hijack so every chassis
+	# flies the same way.
+	if _launch_t > 0.0:
+		_tick_launch(delta)
+		return
 	# EMP'd: scrambled and inert — no perception, AI or attacks. Bleed off any
 	# momentum and just settle under gravity until it reboots. Runs in EnemyBase so
 	# every subclass (incl. the flyers, which call super) is disabled uniformly.
@@ -965,6 +973,30 @@ func _consider_cover_seek(_amount: float, source: Node) -> void:
 	_evade_t = 1.6
 	_flinch = 1.0 # the visible "that's enough!" jolt as it breaks off
 	_think("retreat")
+
+## Throw this robot: fly with velocity `v` for up to `seconds` (plus a margin),
+## its own movement paused, until it lands. Called by Bumper. The dead are
+## not thrown. Mirrors Player.launch.
+func launch(v: Vector3, seconds: float) -> void:
+	if state == State.DEAD:
+		return
+	velocity = v
+	_launch_t = seconds + 0.3
+	_launch_age = 0.0
+
+## Whether a throw is still in the air.
+func is_launched() -> bool:
+	return _launch_t > 0.0
+
+func _tick_launch(delta: float) -> void:
+	_launch_t -= delta
+	_launch_age += delta
+	_apply_gravity(delta)
+	move_and_slide()
+	if _launch_age > 0.15 and is_on_floor():
+		_launch_t = 0.0
+		velocity.x *= 0.25 # land where thrown, not skid past it
+		velocity.z *= 0.25
 
 ## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
 ## channel). Broadcast when the player hits a power peak (GODLIKE rampage /
