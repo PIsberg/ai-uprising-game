@@ -229,3 +229,5 @@ res://tests/floor_saw_probe.tscn
 res://tests/laser_gate_probe.tscn
 # SHOCK FLOORS: checker groups glow 0.9 s then arc; only arcing tiles hurt, a jump clears them, robots immune; Neon gap.
 res://tests/shock_floor_probe.tscn
+# PENDULUMS: blade sweeps the walkway; crossing on GO is never hit, ignoring the sign is; LAVA WORLD gantries.
+res://tests/pendulum_blade_probe.tscn

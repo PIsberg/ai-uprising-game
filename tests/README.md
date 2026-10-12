@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-418 probes total: **146** wired into the headless suite (`suite`), **84**
+420 probes total: **147** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **188** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **189** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -350,6 +350,8 @@ or GPU-timing probes; `--headless` renders these black).
 | particles_check | `GraphicsSettings.create_particles` sanity on both GPU and CPU particle paths | headless |
 | patchnotes_probe | ROBOT OS patch notes: AIDirector emits changelog only once calibrated, GameState folds in hijacks/nemesis, consumed once | headless |
 | pcss_shadow_shot | Deterministic PCSS penumbra capture (static scene, sun `light_angular_distance` 1.2) so an engine bump can be diffed for shadow changes; byte-identical run to run | windowed |
+| pendulum_blade_probe | PendulumBlade on a 4 m gantry: the blade reaches every spot across the walkway at standing height (no safe lane); the sign reads GO and WAIT within a swing; a player in the cut is hit and thrown along the path; a careful walker (4 m/s) who crosses whenever the sign reads GO is never hit in 20 crossings (5 spots x 4 arrival times; red, 7 hits, with the sign's lookahead off), one who ignores it is hit; walking up teaches the rule once; LAVA WORLD's gantries are centred on a walkway along their path with the posts outside it | suite |
+| pendulum_blade_shot | A level's pendulum gantry (LAVA WORLD's west walkway) from 6 m up the walkway while its sign reads WAIT and while it reads GO; `-- --out=<dir> [--level=<id>]` | windowed |
 | perf_probe | Average frame time on a heavy level at each graphics tier (`PERF_TIER` env var) | windowed |
 | phase0_test | Level def serialize→reload→build level_custom round-trip + custom build + pickups | headless |
 | pickup_lineup | Health/ammo/weapon pickups rendered side by side | windowed |
