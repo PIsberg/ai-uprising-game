@@ -10,6 +10,10 @@ extends EnemyBase
 ## it lays to the ballistic solve while the walker aims (dipping at a close
 ## target, lofting at a far one), slides back on the shot and runs out again,
 ## and the shell leaves from its front end as drawn. tests/howitzer_barrel_probe.
+## It walks on its four crab legs: the GLB has them in one mesh (Legs), so
+## `_setup_gait` cuts it into four (PartRig, left/right then front/back) and
+## each leg swings about its hip in a slow trot, diagonal pairs together, the
+## swinging leg lifted a little outward. tests/howitzer_gait_probe.
 
 const SHELL := preload("res://scenes/weapons/projectile_howitzer.tscn")
 
@@ -38,6 +42,18 @@ var _gun_rest: Transform3D                  ## Gun's own transform as imported
 var _to_parent: Transform3D                 ## body frame -> Gun's parent frame
 var _muzzle_on_gun: Vector3                 ## Muzzle in Gun's frame
 var elevation: float = 0.0                  ## rad above the barrel's rest lay
+
+# Walking. The legs mesh and the gap between its front and back pairs (body
+# frame z, at fit_height 4.3: front legs end at 0.26, back ones start at 0.44).
+const LEGS := "Legs_Legs_0"
+const LEGS_SPLIT_Z := 0.35
+const STRIDE := 1.6     ## m of ground per gait cycle
+const SWING := 0.22     ## rad each leg swings either side at a walk
+const LIFT := 0.1       ## rad a swinging leg rolls outward (lifts)
+var _legs: Array = []   ## {entries, hip, offset, side}
+var _gait_ready := false
+var _gait_phase := 0.0
+var _gait_amp := 0.0
 var _kick: float = 0.0                      ## m of recoil still to run out
 
 func _ready() -> void:
@@ -69,6 +85,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_lay_gun(delta)
+	_tick_gait(delta)
 	if _winding:
 		_windup_t -= delta
 		if _windup_t <= 0.0:
@@ -157,3 +174,46 @@ func _lay_gun(delta: float) -> void:
 	var lay := Transform3D(r, GUN_PIVOT - r * GUN_PIVOT + r * Vector3(0.0, 0.0, _kick))
 	_gun.transform = _to_parent * lay * _to_parent.affine_inverse() * _gun_rest
 	muzzle.global_position = _gun.global_transform * _muzzle_on_gun
+
+## Cut the legs mesh into four and find each hip (its top band), once the fit
+## has landed.
+func _setup_gait() -> void:
+	var mi := find_child(LEGS, true, false) as MeshInstance3D
+	if mi == null or not mi.is_visible_in_tree():
+		return
+	_gait_ready = true # one attempt: a failed split keeps the legs as they are
+	# Four legs in one pass: left/right of x = 0, front/back of LEGS_SPLIT_Z.
+	var quarters := PartRig.split_groups(self, mi,
+		func(c: Vector3) -> int: return (1 if c.x > 0.0 else 0) * 2 + (1 if c.z > LEGS_SPLIT_Z else 0),
+		["_L_F", "_L_B", "_R_F", "_R_B"])
+	for g in 4:
+		if quarters[g] == null:
+			return
+		var side := g / 2
+		var end := g % 2
+		var pts := PartRig.body_points(self, quarters[g][0])
+		var hip := AimedPart.band_mean(pts, Vector3.UP, 0.08)
+		# Trot: front-left with back-right, front-right with back-left.
+		var offset := 0.0 if (side == 0) == (end == 0) else PI
+		_legs.append({"entries": [quarters[g]], "hip": hip, "offset": offset, "side": -1.0 if side == 0 else 1.0})
+
+## A slow trot whose cadence follows ground speed; the legs come back under the
+## body when it stops (and while it plants to fire).
+func _tick_gait(delta: float) -> void:
+	if not _gait_ready:
+		_setup_gait()
+		return
+	if _legs.is_empty() or state == State.DEAD:
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	_gait_phase = fposmod(_gait_phase + delta * speed / STRIDE * TAU, TAU)
+	_gait_amp = move_toward(_gait_amp, clampf(speed / 2.0, 0.0, 1.0), delta * 2.0)
+	for leg in _legs:
+		var ph := _gait_phase + float(leg["offset"])
+		var swing := sin(ph) * SWING * _gait_amp
+		var lift := maxf(cos(ph), 0.0) * LIFT * _gait_amp * float(leg["side"])
+		var r := Basis(Vector3.RIGHT, swing) * Basis(Vector3.BACK, lift)
+		var hip: Vector3 = leg["hip"]
+		var lay := Transform3D(r, hip - r * hip)
+		for e in leg["entries"]:
+			PartRig.pose(e, lay)

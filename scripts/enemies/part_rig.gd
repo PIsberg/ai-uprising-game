@@ -29,51 +29,74 @@ static func turn(pivot: Vector3, axis: Vector3, angle: float) -> Transform3D:
 ## when either half is empty or fails to build. The copies join
 ## `body._mesh_instances` (hit flash) when the body has one.
 static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
+	return split_groups(body, mi, func(c: Vector3) -> int: return 1 if c.x > mid else 0, ["_L", "_R"])
+
+## `split_x` into any number of groups in ONE pass over the original mesh:
+## `classify` maps a triangle's body-frame centroid to a group index, `names`
+## suffixes each copy (the HOWITZER cuts its legs into four this way). Split
+## the original only: splitting a split copy again produced garbage triangles
+## that covered the screen. All groups or nothing, as in split_x.
+static func split_groups(body: Node3D, mi: MeshInstance3D, classify: Callable, names: Array) -> Array:
 	var xf := body.global_transform.affine_inverse() * mi.global_transform
-	var out := [null, null]
-	for side in 2:
+	var n := names.size()
+	var keeps: Array = []
+	for g in n:
+		keeps.append([])
+	var surfaces: Array = []
+	for si in mi.mesh.get_surface_count():
+		var arr: Array = mi.mesh.surface_get_arrays(si)
+		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		# Unindexed surfaces come back with a null OR an empty index array.
+		var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+		if idx.is_empty():
+			idx = PackedInt32Array(range(v.size()))
+		var per: Array = []
+		for g in n:
+			per.append(PackedInt32Array())
+		for t in range(0, idx.size(), 3):
+			var c: Vector3 = xf * ((v[idx[t]] + v[idx[t + 1]] + v[idx[t + 2]]) / 3.0)
+			var g: int = classify.call(c)
+			if g >= 0 and g < n:
+				per[g] = (per[g] as PackedInt32Array) + PackedInt32Array([idx[t], idx[t + 1], idx[t + 2]])
+		# Custom channels need their format flags passed back in; a static
+		# part does not use them (the GUNSLINGER's forearms carry some).
+		for ch in [Mesh.ARRAY_CUSTOM0, Mesh.ARRAY_CUSTOM1, Mesh.ARRAY_CUSTOM2, Mesh.ARRAY_CUSTOM3]:
+			arr[ch] = null
+		surfaces.append([si, arr, per])
+	var out: Array = []
+	for g in n:
 		var am := ArrayMesh.new()
 		var overrides: Array[Material] = []
-		for si in mi.mesh.get_surface_count():
-			var arr: Array = mi.mesh.surface_get_arrays(si)
-			var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-			# Unindexed surfaces come back with a null OR an empty index array.
-			var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
-			if idx.is_empty():
-				idx = PackedInt32Array(range(v.size()))
-			var keep := PackedInt32Array()
-			for t in range(0, idx.size(), 3):
-				var c: Vector3 = xf * ((v[idx[t]] + v[idx[t + 1]] + v[idx[t + 2]]) / 3.0)
-				if (c.x > mid) == (side == 1):
-					keep.append_array([idx[t], idx[t + 1], idx[t + 2]])
+		for sf in surfaces:
+			var keep: PackedInt32Array = (sf[2] as Array)[g]
 			if keep.is_empty():
 				continue
+			var arr: Array = (sf[1] as Array).duplicate()
 			arr[Mesh.ARRAY_INDEX] = keep
-			# Custom channels need their format flags passed back in; a static
-			# part does not use them (the GUNSLINGER's forearms carry some).
-			for ch in [Mesh.ARRAY_CUSTOM0, Mesh.ARRAY_CUSTOM1, Mesh.ARRAY_CUSTOM2, Mesh.ARRAY_CUSTOM3]:
-				arr[ch] = null
-			am.add_surface_from_arrays(mi.mesh.surface_get_primitive_type(si), arr)
-			am.surface_set_material(am.get_surface_count() - 1, mi.mesh.surface_get_material(si))
-			overrides.append(mi.get_surface_override_material(si))
+			am.add_surface_from_arrays(mi.mesh.surface_get_primitive_type(sf[0]), arr)
+			am.surface_set_material(am.get_surface_count() - 1, mi.mesh.surface_get_material(sf[0]))
+			overrides.append(mi.get_surface_override_material(sf[0]))
 		if am.get_surface_count() == 0:
+			out.append(null)
 			continue
 		var copy := MeshInstance3D.new()
-		copy.name = String(mi.name) + ("_R" if side == 1 else "_L")
+		copy.name = String(mi.name) + String(names[g])
 		copy.mesh = am
 		copy.material_override = mi.material_override
 		for k in overrides.size():
 			copy.set_surface_override_material(k, overrides[k])
 		copy.transform = mi.transform
 		mi.get_parent().add_child(copy)
-		out[side] = entry(body, copy)
-	# Both halves or nothing: a side that failed to build (a surface format
-	# the copy cannot take) would otherwise leave half the part invisible.
-	if out[0] == null or out[1] == null:
+		out.append(entry(body, copy))
+	# All groups or nothing: a group that failed to build (a surface format
+	# the copy cannot take) would otherwise leave part of the mesh invisible.
+	if out.has(null):
 		for e in out:
 			if e != null:
 				(e[0] as Node).queue_free()
-		return [null, null]
+		var none: Array = []
+		none.resize(n)
+		return none
 	for e in out:
 		if "_mesh_instances" in body:
 			(body.get("_mesh_instances") as Array).append(e[0])
