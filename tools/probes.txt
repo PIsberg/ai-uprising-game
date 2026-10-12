@@ -227,3 +227,5 @@ res://tests/fire_vent_probe.tscn
 res://tests/floor_saw_probe.tscn
 # LASER GATES: knee/chest beams take turns, the next flickers first; crouch passes knee-off, jump passes chest-off; Uplink doors.
 res://tests/laser_gate_probe.tscn
+# SHOCK FLOORS: checker groups glow 0.9 s then arc; only arcing tiles hurt, a jump clears them, robots immune; Neon gap.
+res://tests/shock_floor_probe.tscn

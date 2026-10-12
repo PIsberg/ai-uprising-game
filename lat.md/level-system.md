@@ -118,6 +118,17 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * LAVA WORLD puts one on each recycler walkway (two, half a period apart, on the long east one). On a walkway there is no stepping round a vent, so the player waits at the ring for its cold beat; `radius` 1.5 keeps the ring on the scaled 3.64 m walkway and leaves 0.14 m at the edge.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the Crucible rows and the LAVA WORLD walkway vents.
 
+## Shock Floors
+<!-- lat: { "require-code-mention": true } -->
+The `shock_floors` def key lays an electrified tile floor that arcs in a pattern.
+
+* A grid of `cells` tiles, `cell` metres square. `pattern` "checker" splits them into the two colours of a chessboard, so every tile's four neighbours are in the other group; "rows" makes one group per row, a wave. The groups take turns: a group glows for `WARN_TIME` (0.9 s), then arcs for `ZAP_TIME` (0.7 s).
+* The read is one rule: a glowing tile is about to arc, a dark tile is safe. A glowing tile has a dim pulsing fill and a border that thickens as it charges; an arcing one turns electric blue with white crackle and throws bolts up off it. Every tile's outline is lit at all times, so the floor reads before it does anything.
+* Feet on an arcing tile (within 0.35 m of it) take `dmg` (12) every 0.3 s; a jump clears it. Robots are not hurt, so robots placed near a floor do not die before the player arrives. The first floor a player walks up to teaches the rule once per run.
+* Position and `cell` scale with the world. No collision; in the `hazard` group.
+* The Neon Arcade lays a 4 x 2 checker just inside its north gap, from the bulkhead's inner face, so coming in from the spawn you cross it. Its two x = +-7 lane strips stop short of it (34 long, not 40): a cyan strip through it read as part of it.
+* `tests/shock_floor_probe` checks the turns and warning lead, the checker's dark neighbours, who is hit and when (standing, mid-jump, off the floor, robots), the hint and the Neon placement.
+
 ## Floor Saws
 <!-- lat: { "require-code-mention": true } -->
 The `saws` def key builds floor saws: a spinning blade that runs a slot in the floor from `a` to `b` and back, for ever.

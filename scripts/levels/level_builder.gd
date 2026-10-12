@@ -296,6 +296,7 @@ func _ready() -> void:
 	_build_presses(def)
 	_build_fire_vents(def)
 	_build_saws(def)
+	_build_shock_floors(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2538,6 +2539,17 @@ func _build_saws(def: Dictionary) -> void:
 		s.damage = float(e.get("dmg", 25.0))
 		s.position = a
 		add_child(s)
+
+## Electrified floors (ShockFloor): tile groups that glow, then arc, in turn.
+func _build_shock_floors(def: Dictionary) -> void:
+	for e in def.get("shock_floors", []):
+		var f := ShockFloor.new()
+		f.cells = e.get("cells", Vector2i(4, 2))
+		f.cell = float(e.get("cell", 2.0))
+		f.pattern = String(e.get("pattern", "checker"))
+		f.damage = float(e.get("dmg", 12.0))
+		f.position = e.get("pos", Vector3.ZERO)
+		add_child(f)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
