@@ -4376,6 +4376,13 @@ static func _gemini() -> Dictionary:
 			{"axis": "z", "at": -25, "gap": 7, "gap_pos": 10, "height": 4.4},
 			{"axis": "x", "at": 25, "gap": 7, "gap_pos": 20, "height": 4.4},
 		],
+		# The campaign's first obstacle lesson: a laser hurdle across the roofed
+		# conduit's mouth, slower than the later ones (each beam lit 2.2 s, the
+		# next flickering 0.7 s first), so the JUMP / DUCK read is learned here
+		# before the vault and the uplink ask for it at speed. tests/laser_gate_probe.
+		"laser_gates": [
+			{"pos": Vector3(13, 0, -13), "width": 6.5, "axis": "x", "period": 4.4},
+		],
 		# Vertical layer: a climbable spiral tower (ramp wrapping a column) to a
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
