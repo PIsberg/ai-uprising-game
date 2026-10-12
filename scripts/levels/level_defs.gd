@@ -154,6 +154,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# The ladle crane's coverage stretches with the arena; its rail height
+	# stays authored (it hangs under the roof, not over the floor plan).
+	if def.has("ladle_crane"):
+		var lc: Dictionary = def["ladle_crane"]
+		for k in ["span_x", "span_z"]:
+			if lc.has(k):
+				lc[k] = (lc[k] as Vector2) * s
 	# Conveyors lie on the ground plane: position and footprint stretch with
 	# the arena (the bulkhead belt must keep spanning the scaled gap). Speed
 	# and direction stay authored.
@@ -1690,6 +1697,12 @@ static func _crucible() -> Dictionary:
 		# drop-rod) — amber/orange molten-warning beams sweeping the foundry
 		# floor. Nudged off the exact centre (0,0) to clear the "hero" monolith
 		# pillar standing there, which reaches nearly to the ceiling.
+		# The foundry's overhead crane hunts you with a ladle of molten metal:
+		# it rides to where you stand, rings the floor red and pours a pool that
+		# burns for 6 s. Its coverage is the east half of the floor, from the
+		# second forge ring to the pour-gate (the meltdown run is under it); it
+		# stops east of the hero monolith and south of the towers' sky-bridges.
+		"ladle_crane": {"span_x": Vector2(4, 29), "span_z": Vector2(-13, 28), "height": 10.0, "period": 8.0},
 		"disco": [
 			{"pos": Vector3(0, 0, 4), "height": 5.6, "radius": 16.0, "speed": 0.8,
 				"colors": [Color(1, 0.5, 0.15), Color(1, 0.35, 0.1), Color(1, 0.65, 0.2), Color(0.9, 0.25, 0.08)]},

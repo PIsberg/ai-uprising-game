@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-397 probes total: **135** wired into the headless suite (`suite`), **84**
+399 probes total: **136** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **178** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **179** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -282,6 +282,8 @@ or GPU-timing probes; `--headless` renders these black).
 | wreck_shot | Four robots shot from the left (two at a 3 m catwalk edge, two on the floor): standing, mid-fall and at rest, to see the chassis lies on the floor; `-- --out=<dir>` | windowed |
 | kill_fx_shot | Six androids killed at once by a DISINTEGRATE, an ELECTROCUTE, an untagged, a SHRED, a DECAPITATE and a BLAST hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
+| ladle_crane_probe | LadleCrane: hunts a player inside its coverage (ladle over them in 1.4 s), telegraphs each pour 1.0+ s (1.38), pours on them, the pool burns them and cools away within pool_time + 1.5 s, never pours on a player outside the coverage; the Crucible crane covers ring 2 and the pour-gate escape and its ladle clears both towers by 2+ m | suite |
+| ladle_crane_shot | The Crucible's crane: the ladle tilting over the red warning ring on the player, the pour, and the molten pool (also close up); `-- --out=<dir>` | windowed |
 | landmark_probe | Hero landmarks: every open-sky level authors one of a known kind; built from the real scaled def it stands past the floor edge on the spawn-to-exit heading, with no collision and no shadows (caught the stacks' steam casting shadows); its name tag reads the authored label; it carries at least two drone flocks, every drone over 60 m up, which LOW drops and which move frame to frame; every night level (env `stars`) has a data aurora over 70 m up past the floor edge, no day level has one, and LOW drops it; an interior level gets none; LOW drops the steam; level_gemini built through LevelBuilder carries its twin spires; every interior gets the AI core (only when the room is too low or gated does it get the wall screen instead), clear of walkable tops + headroom, the ceiling and route gates, constants mirroring LevelBuilder's, and its eye turns to the camera; the wall screen (claude, guardrails, range) sits just off a perimeter wall ahead of the spawn, above head height and under the ceiling, clear of every gate and authored wall meeting that wall, no collision, its pupil follows the camera, and level_range's billboard moves off its wall; every interior AI is fed by at least four data conduits, each from a perimeter wall to the AI, between 4 m and the ceiling, through no authored wall, platform or tower | suite |
 | skyline_probe | Megacity skyline, every open-sky level's plan: the same city every load; no tower, tier or spire within 10 m of the floor rectangle; at least 6 near towers top 2.5x the wall and 20 far towers top 40 m; no far tower within LANDMARK_CLEAR of the landmark bearing, nothing near it over FRAME_H; every beacon on a top; SIGN_COUNT signs past the floor facing the arena. Built: interiors get none; one tower draw with every planned box, one beacon draw, one panel draw, a Label3D per sign, no shadows | suite |
 | landmark_shot | Each open-sky level from its spawn at eye height, facing its landmark and the megacity skyline round it; each interior from 14 m off its AI core or wall screen; `-- --out=<dir> --levels=a,b --cam_y=<m>` | windowed |
