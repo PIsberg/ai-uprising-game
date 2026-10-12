@@ -208,6 +208,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	for e in def.get("fire_vents", []):
 		if e.has("pos"):
 			e["pos"] = _sv(e["pos"], s)
+	# Saw slots run across a route like a gate's gap: both ends stretch with
+	# the arena so the slot keeps spanning the scaled gap. Blade size stays
+	# authored.
+	for e in def.get("saws", []):
+		for k in ["a", "b"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -3444,6 +3451,15 @@ static func _assembly() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -33, "gap": 9, "gap_pos": -9, "height": 4.4},
 			{"axis": "x", "at": 33, "gap": 8, "gap_pos": 26, "height": 4.4},
+		],
+		# Floor saws guard the way in: two slots run across the north gap, one
+		# either side of the bulkhead, their blades running opposite ways (half
+		# a round trip apart). Each blade reaches to 0.5 m of the gap's edges,
+		# too narrow to slip past. Step between the striped lanes as a blade
+		# passes, or jump it. tests/floor_saw_probe.
+		"saws": [
+			{"a": Vector3(-12.6, 0, -34.2), "b": Vector3(-5.4, 0, -34.2), "phase": 0.0},
+			{"a": Vector3(-12.6, 0, -31.8), "b": Vector3(-5.4, 0, -31.8), "phase": 0.5},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 0.05, -3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.5, 0.2)},

@@ -117,6 +117,17 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, and the Crucible rows.
 
+## Floor Saws
+<!-- lat: { "require-code-mention": true } -->
+The `saws` def key builds floor saws: a spinning blade that runs a slot in the floor from `a` to `b` and back, for ever.
+
+* The lane either side of the slot (`LANE_HALF`, 0.55 m) is painted in hazard stripes, and the stripes are the danger. A blade passing a body in the lane cuts it: the player takes `dmg` (25) and is thrown out of the lane to their side, a robot takes 90 (once per 0.7 s each).
+* It is jumpable: the blade's top is 0.85 m up (`BLADE_TOP`), under a jump's 1.17 m apex. Stepping out of the stripes also clears it.
+* It is always telegraphed: the blade is out of the slot and whines, the end lamp it runs toward blinks red, and a player standing in its lane gets a blip and a flash of the stripes `WARN_LEAD` (0.7 s) before it reaches them, once per approach. The first saw a player walks up to (within 6 m of the lane) teaches the rule once per run through `GameState.teach_once`.
+* `speed` (4.5 m/s), `pause` (0.5 s at each end) and `phase` (0..1 of a round trip). Both ends scale with the world. No collision; in the `hazard` group.
+* The Assembly guards its north entry gap with two slots, one either side of the bulkhead, running opposite ways; each blade reaches to 0.5 m of the gap's edges, too narrow to slip past.
+* `tests/floor_saw_probe` checks the travel, cuts and warning lead, the jump and the step-out, the shove, robots, the hint and the Assembly slots.
+
 ## Laser Sweeps
 <!-- lat: { "require-code-mention": true } -->
 The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a centre at fixed heights.

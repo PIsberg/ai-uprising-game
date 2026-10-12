@@ -223,3 +223,5 @@ res://tests/zipline_probe.tscn
 res://tests/server_spin_probe.tscn
 # FIRE VENTS: warned 1.2 s ahead, burn only while erupting; Crucible gap rows never erupt together.
 res://tests/fire_vent_probe.tscn
+# FLOOR SAWS: blade runs its slot, cuts the lane (warned ahead), a jump or a step out clears it; Assembly gap slots.
+res://tests/floor_saw_probe.tscn
