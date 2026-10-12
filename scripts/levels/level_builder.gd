@@ -298,6 +298,7 @@ func _ready() -> void:
 	_build_conveyors(def)
 	_build_ladle_crane(def)
 	_build_jump_pads(def)
+	_build_laser_sweeps(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2405,6 +2406,21 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Rotating laser fences (LaserSweep): jump the low beam, crouch the high one.
+func _build_laser_sweeps(def: Dictionary) -> void:
+	for e in def.get("laser_sweeps", []):
+		var l := LaserSweep.new()
+		l.radius = float(e.get("radius", 8.0))
+		l.speed_deg = float(e.get("speed", 50.0))
+		l.inner = float(e.get("inner", 0.4))
+		l.post = bool(e.get("post", true))
+		l.wakes_on = String(e.get("wakes_on", ""))
+		l.stops_on = String(e.get("stops_on", ""))
+		if e.has("beams"):
+			l.beams = e["beams"]
+		l.position = e.get("pos", Vector3.ZERO)
+		add_child(l)
 
 ## Jump pads (JumpPad): throw the player onto a deck. Indoors the arc is
 ## capped under the room's ceiling with head room.

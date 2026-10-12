@@ -154,6 +154,11 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Laser sweeps stand on the ground plane; radius and heights stay
+	# authored (beam reach is metres of fence, clipped by walls anyway).
+	for e in def.get("laser_sweeps", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Jump pads sit on the ground plane and land on a deck: both ends stretch
 	# with the arena; heights stay authored, like the decks they land on.
 	for e in def.get("jump_pads", []):
@@ -4699,6 +4704,14 @@ static func _grok() -> Dictionary:
 		# Two ominous crimson searchlight rigs on ground masts (open_sky auto-picks
 		# the mast over the ceiling drop-rod) — off-centre so the wide-open middle
 		# stays clear for the fight, clear of the monolith walls/lava channels/enemies.
+		# The mainframe defends itself: once its enforcer is dead it spins two
+		# red beams round the room, one at the knee (jump it) and one at the
+		# chest (crouch or slide under it), out to 9 m and stopped by any wall.
+		# They die with the core.
+		"laser_sweeps": [
+			{"pos": Vector3(0, 0, 16), "radius": 9.0, "inner": 1.4, "post": false, "speed": 45.0,
+				"wakes_on": "hvt", "stops_on": "core"},
+		],
 		"disco": [
 			{"pos": Vector3(-18, 0, 2), "height": 8.5, "radius": 18.0, "speed": 0.7,
 				"colors": [Color(1, 0.2, 0.15), Color(1, 0.4, 0.2), Color(0.8, 0.1, 0.1), Color(1, 0.3, 0.22)]},

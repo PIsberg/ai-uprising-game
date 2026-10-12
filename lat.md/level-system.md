@@ -96,6 +96,16 @@ The `presses` def key builds hydraulic stamping presses: a head that slams a str
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
 * `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
 
+## Laser Sweeps
+<!-- lat: { "require-code-mention": true } -->
+The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a centre at fixed heights.
+
+* Default beams: one at 0.45 m (jump it) and one at 1.35 m (crouch or slide under it: the player stands 1.8 m, crouches 1.0 m). A beam touching the player's capsule hurts (`damage`, once per pass per beam); robots are never hit.
+* Each beam is raycast against the world every tick and stops at the first wall, so cover still covers. `inner` starts the beams clear of what they spin round; `post: false` hides the emitter post when a core is the emitter.
+* `wakes_on` / `stops_on` take task ids (listened to through `GameState.tasks_changed`). Position scales with the world; radius and heights stay authored.
+* GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed.
+* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, a wall stopping a beam, `stops_on`, and GROK's placement.
+
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->
 The `jump_pads` def key places launch pads that throw the player onto a deck.
