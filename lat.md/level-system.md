@@ -103,18 +103,41 @@ The `ziplines` def key strings a two-way cable between two decks.
 * A `ZipLine` stands a pylon at each end (`a`, `b`, points on the decks) with a glowing cable between their heads. Stepping into a station calls `Player.zipline_to` (the convoy's scripted ride) with an anchor 1 m over the other deck: the tether winches the player along and the ride ends on that deck. Jump lets go mid-ride. Ziplines cost no stamina.
 * The far station ignores the player until they step off it, so arriving never sends them straight back. Robots do not ride.
 * Both ends scale with the world on the ground plane; heights stay authored. Keep the straight line between the stations clear at chest height: the winch pulls in a line.
-* TITAN runs one from the east tower roof (off the sky-bridge landing) over the boss floor to the south-west deck.
-* `tests/zipline_probe` rides it both ways without bouncing back, checks robots stay put, TITAN's ends sit on the tower roof and the deck with a clear line between, and rides it in the built level.
+* TITAN runs one from the east tower roof (off the sky-bridge landing) over the boss floor to the south-west deck. ARCHON runs one from the south tower roof to the south-west deck, clear of the floor where the boss fights (a winch ride into the boss's body would wedge).
+* `tests/zipline_probe` rides one both ways without bouncing back, checks robots stay put, every zipline level's ends sit on a tower roof and a deck with a clear line between, and rides each in its built level.
+
+## Fire Vents
+<!-- lat: { "require-code-mention": true } -->
+The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-and-black hazard ring that erupts a column of flame once a period.
+
+* Every eruption is warned for 1.2 s (`WARN_TIME`): the grate glows from dull red to orange, flames lick up through it, an orange light swells, the ring pulses and it rumbles. The column then burns for 1.2 s (`ERUPT_TIME`).
+* While it erupts, the player standing on it takes `dmg` (12) every 0.25 s and a robot 40, so luring a robot over a vent works. Vents are in the `hazard` group (they count against the "dry" bonus) and have no collision.
+* `phase` (0..1 of a period) staggers a row so the eruption rolls across it. Pos scales with the world; `radius` (1.4) and `height` (3.2) stay authored.
+* The first vent a player sees warming up, from within 7 m of its ring, teaches the rule once per run through `GameState.teach_once`.
+* The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
+* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, and the Crucible rows.
+
+## Floor Saws
+<!-- lat: { "require-code-mention": true } -->
+The `saws` def key builds floor saws: a spinning blade that runs a slot in the floor from `a` to `b` and back, for ever.
+
+* The lane either side of the slot (`LANE_HALF`, 0.55 m) is painted in hazard stripes, and the stripes are the danger. A blade passing a body in the lane cuts it: the player takes `dmg` (25) and is thrown out of the lane to their side, a robot takes 90 (once per 0.7 s each).
+* It is jumpable: the blade's top is 0.85 m up (`BLADE_TOP`), under a jump's 1.17 m apex. Stepping out of the stripes also clears it.
+* It is always telegraphed: the blade is out of the slot and whines, the end lamp it runs toward blinks red, and a player standing in its lane gets a blip and a flash of the stripes `WARN_LEAD` (0.7 s) before it reaches them, once per approach. The first saw a player walks up to (within 6 m of the lane) teaches the rule once per run through `GameState.teach_once`.
+* `speed` (4.5 m/s), `pause` (0.5 s at each end) and `phase` (0..1 of a round trip). Both ends scale with the world. No collision; in the `hazard` group.
+* The Assembly guards its north entry gap with two slots, one either side of the bulkhead, running opposite ways; each blade reaches to 0.5 m of the gap's edges, too narrow to slip past.
+* `tests/floor_saw_probe` checks the travel, cuts and warning lead, the jump and the step-out, the shove, robots, the hint and the Assembly slots.
 
 ## Laser Sweeps
 <!-- lat: { "require-code-mention": true } -->
 The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a centre at fixed heights.
 
 * Default beams: one at 0.45 m (jump it) and one at 1.35 m (crouch or slide under it: the player stands 1.8 m, crouches 1.0 m). A beam touching the player's capsule hurts (`damage`, once per pass per beam); robots are never hit.
+* Each beam shows how to beat it: under 0.9 m it is a jump beam (amber, a JUMP tag riding over it), at or over 0.9 m a duck beam (red, a DUCK tag riding under it). A beam about to reach a player inside its reach blips (high pitch for jump, low for duck) and flashes its tag `WARN_LEAD` (0.6 s) ahead, once per pass. The first fence a player walks up to (within 4 m of its reach) teaches the rule once per run through `GameState.teach_once`.
 * Each beam is raycast against the world every tick and stops at the first wall, so cover still covers. `inner` starts the beams clear of what they spin round; `post: false` hides the emitter post when a core is the emitter.
 * `wakes_on` / `stops_on` take task ids (listened to through `GameState.tasks_changed`). Position scales with the world; radius and heights stay authored.
 * GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed. The CLAUDE vault spins one round its decrypt zone from the keycard to the end of the decryption, so the 12 s hold is held over the beams.
-* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
+* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, the colours, tags, warning lead and teach toast, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
 
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->

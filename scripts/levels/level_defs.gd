@@ -202,6 +202,19 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("size"):
 			e["size"] = (e["size"] as Vector2) * s
+	# Fire vents sit on the ground plane like presses: a row across a gap
+	# must keep spanning the scaled gap. Grate radius and flame height stay
+	# authored (a vent is a body's width of fire, not layout).
+	for e in def.get("fire_vents", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+	# Saw slots run across a route like a gate's gap: both ends stretch with
+	# the arena so the slot keeps spanning the scaled gap. Blade size stays
+	# authored.
+	for e in def.get("saws", []):
+		for k in ["a", "b"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -1769,6 +1782,18 @@ static func _crucible() -> Dictionary:
 			{"axis": "z", "at": -23, "gap": 7, "gap_pos": 6, "height": 4.4},
 			{"axis": "x", "at": 23, "gap": 7, "gap_pos": 18, "height": 4.4},
 		],
+		# Slag vents floor both bulkhead gaps: three across each, phased a
+		# third of a period apart so the eruption rolls across the gap and two
+		# are always cold. The way in (north) and the meltdown run out (east)
+		# both go over them. tests/fire_vent_probe.
+		"fire_vents": [
+			{"pos": Vector3(3.5, 0, -23), "phase": 0.0},
+			{"pos": Vector3(6, 0, -23), "phase": 0.333},
+			{"pos": Vector3(8.5, 0, -23), "phase": 0.667},
+			{"pos": Vector3(23, 0, 15.5), "phase": 0.0},
+			{"pos": Vector3(23, 0, 18), "phase": 0.333},
+			{"pos": Vector3(23, 0, 20.5), "phase": 0.667},
+		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.
 		"platforms": [
@@ -2997,6 +3022,11 @@ static func _archon() -> Dictionary:
 			{"from": Vector3(16.0, 0.3, -50.0), "to": Vector3(9.0, 3.4, -50.0), "width": 3.5},
 			{"from": Vector3(-9.0, 3.6, -50.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
+		# A zipline from the south tower roof (off the sky-bridge landing) down to
+		# the south-west deck, clear of the cathedral floor where ARCHON fights.
+		"ziplines": [
+			{"a": Vector3(-1.0, 7.0, 17.8), "b": Vector3(-24.0, 3.2, 24.0)},
+		],
 		"towers": [
 			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
@@ -3421,6 +3451,15 @@ static func _assembly() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -33, "gap": 9, "gap_pos": -9, "height": 4.4},
 			{"axis": "x", "at": 33, "gap": 8, "gap_pos": 26, "height": 4.4},
+		],
+		# Floor saws guard the way in: two slots run across the north gap, one
+		# either side of the bulkhead, their blades running opposite ways (half
+		# a round trip apart). Each blade reaches to 0.5 m of the gap's edges,
+		# too narrow to slip past. Step between the striped lanes as a blade
+		# passes, or jump it. tests/floor_saw_probe.
+		"saws": [
+			{"a": Vector3(-12.6, 0, -34.2), "b": Vector3(-5.4, 0, -34.2), "phase": 0.0},
+			{"a": Vector3(-12.6, 0, -31.8), "b": Vector3(-5.4, 0, -31.8), "phase": 0.5},
 		],
 		"accents": [
 			{"pos": Vector3(-6, 0.05, -3), "size": Vector3(12, 0.1, 0.3), "color": Color(1.0, 0.5, 0.2)},

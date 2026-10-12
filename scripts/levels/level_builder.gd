@@ -294,6 +294,8 @@ func _ready() -> void:
 	_build_firewalls(def)
 	_build_scanners(def)
 	_build_presses(def)
+	_build_fire_vents(def)
+	_build_saws(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2495,6 +2497,34 @@ func _build_presses(def: Dictionary) -> void:
 		p.damage = float(e.get("dmg", 45.0))
 		p.position = e.get("pos", Vector3.ZERO)
 		add_child(p)
+
+## Floor fire vents (FireVent): a grate that warns for 1.2 s, then erupts a
+## column of flame every `period` s.
+func _build_fire_vents(def: Dictionary) -> void:
+	for e in def.get("fire_vents", []):
+		var v := FireVent.new()
+		v.radius = float(e.get("radius", 1.4))
+		v.period = float(e.get("period", 4.0))
+		v.phase = float(e.get("phase", 0.0))
+		v.height = float(e.get("height", 3.2))
+		v.damage = float(e.get("dmg", 12.0))
+		v.position = e.get("pos", Vector3.ZERO)
+		add_child(v)
+
+## Floor saws (FloorSaw): a blade running a striped slot from `a` to `b`
+## and back.
+func _build_saws(def: Dictionary) -> void:
+	for e in def.get("saws", []):
+		var s := FloorSaw.new()
+		var a: Vector3 = e.get("a", Vector3.ZERO)
+		var b: Vector3 = e.get("b", a + Vector3(8, 0, 0))
+		s.span = Vector3(b.x - a.x, 0.0, b.z - a.z)
+		s.speed = float(e.get("speed", 4.5))
+		s.pause = float(e.get("pause", 0.5))
+		s.phase = float(e.get("phase", 0.0))
+		s.damage = float(e.get("dmg", 25.0))
+		s.position = a
+		add_child(s)
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):
