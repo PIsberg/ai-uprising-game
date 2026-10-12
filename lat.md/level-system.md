@@ -111,10 +111,11 @@ The `ziplines` def key strings a two-way cable between two decks.
 The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a centre at fixed heights.
 
 * Default beams: one at 0.45 m (jump it) and one at 1.35 m (crouch or slide under it: the player stands 1.8 m, crouches 1.0 m). A beam touching the player's capsule hurts (`damage`, once per pass per beam); robots are never hit.
+* Each beam shows how to beat it: under 0.9 m it is a jump beam (amber, a JUMP tag riding over it), at or over 0.9 m a duck beam (red, a DUCK tag riding under it). A beam about to reach a player inside its reach blips (high pitch for jump, low for duck) and flashes its tag `WARN_LEAD` (0.6 s) ahead, once per pass. The first fence a player walks up to (within 4 m of its reach) teaches the rule once per run through `GameState.teach_once`.
 * Each beam is raycast against the world every tick and stops at the first wall, so cover still covers. `inner` starts the beams clear of what they spin round; `post: false` hides the emitter post when a core is the emitter.
 * `wakes_on` / `stops_on` take task ids (listened to through `GameState.tasks_changed`). Position scales with the world; radius and heights stay authored.
 * GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed. The CLAUDE vault spins one round its decrypt zone from the keycard to the end of the decryption, so the 12 s hold is held over the beams.
-* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
+* `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, the colours, tags, warning lead and teach toast, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
 
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->

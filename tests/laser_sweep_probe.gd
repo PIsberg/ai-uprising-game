@@ -10,6 +10,10 @@ extends Node3D
 ## (4) a sweep that `stops_on` a task goes dark once that task is done;
 ## (5) GROK's mainframe sweeps: a sweep on the core, woken by the HVT kill
 ##     and stopped by the core's destruction;
+## (7) it reads: a low beam is amber with a JUMP tag over it, a high one red
+##     with a DUCK tag under it; every hit is preceded by a warning blip at
+##     least 0.3 s ahead, none fires for a player out of reach, and walking
+##     up to a fence teaches the rule once;
 ## (6) the CLAUDE vault's decryption is held under a sweep: centred on the
 ##     decrypt zone, reaching past its edge, woken by the keycard and stopped
 ##     by the decryption.
@@ -18,6 +22,10 @@ extends Node3D
 var ok := true
 var _player: CharacterBody3D
 var _hits := 0
+var _clock := 0.0
+var _hit_at: Array[float] = []
+var _warn_at: Array[float] = []
+var _taught: Array[String] = []
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
@@ -44,11 +52,14 @@ func _revolution(sweep: LaserSweep, at: Vector3, crouched: bool) -> int:
 	_player.global_position = at
 	_player.set("_is_crouching", crouched)
 	_hits = 0
+	_hit_at.clear()
+	_warn_at.clear()
 	var t := 0.0
 	var turn := 360.0 / sweep.speed_deg + 0.3
 	while t < turn:
 		await get_tree().physics_frame
 		t += get_physics_process_delta_time()
+		_clock += get_physics_process_delta_time()
 	return _hits
 
 func _sweep(beams: Array) -> LaserSweep:
@@ -73,7 +84,9 @@ func _run() -> void:
 	php.current_health = 1000000.0
 	php.damaged.connect(func(_a: float, src) -> void:
 		if src is LaserSweep:
-			_hits += 1)
+			_hits += 1
+			_hit_at.append(_clock))
+	GameState.teach_hint.connect(func(text: String) -> void: _taught.append(text))
 
 	var high := _sweep([{"height": 1.35, "angle": 0.0}])
 	var stand := await _revolution(high, Vector3(4, 0, 0), false)
@@ -103,6 +116,35 @@ func _run() -> void:
 	_check("the beam is drawn up to the wall", drawn < 2.5, "(%.2f m)" % drawn)
 	wall.queue_free()
 	low.queue_free()
+
+	# It reads: colour, tag and a warning ahead of every hit. The player
+	# starts 90 degrees ahead of the low beam, as if walking up to it.
+	var pair := _sweep([{"height": 0.45, "angle": 0.0}, {"height": 1.35, "angle": 180.0}])
+	pair.warned.connect(func(_i: int) -> void: _warn_at.append(_clock))
+	_check("low beam is a jump beam", pair.beam_action(0) == "jump" and pair.beam_cue(0).text == "JUMP")
+	_check("high beam is a duck beam", pair.beam_action(1) == "duck" and pair.beam_cue(1).text == "DUCK")
+	_check("jump and duck beams differ in colour", pair.beam_color(0) != pair.beam_color(1),
+		"(%s vs %s)" % [pair.beam_color(0), pair.beam_color(1)])
+	var pair_hits := await _revolution(pair, Vector3(0, 0, 4), false)
+	var leads: Array[float] = []
+	for h in _hit_at:
+		var lead := INF
+		for w in _warn_at:
+			if w <= h:
+				lead = h - w
+		leads.append(lead)
+	var all_warned := pair_hits >= 2
+	for l in leads:
+		all_warned = all_warned and l >= 0.3 and l <= LaserSweep.WARN_LEAD + 0.2
+	_check("every hit is warned 0.3 s or more ahead", all_warned, "(%d hits, leads %s)" % [pair_hits, leads])
+	_check("the tags ride above the jump beam and below the duck beam",
+		pair.beam_cue(0).position.y > 0.45 and pair.beam_cue(1).position.y < 1.35,
+		"(%.2f, %.2f)" % [pair.beam_cue(0).position.y, pair.beam_cue(1).position.y])
+	_check("walking up to a fence teaches the rule, once", _taught.count(LaserSweep.TEACH_TEXT) == 1, "(%s)" % [_taught])
+	await _revolution(pair, Vector3(30, 0, 0), false)
+	_check("no warning out of reach", _warn_at.is_empty(), "(%d)" % _warn_at.size())
+	pair.queue_free()
+
 
 	# stops_on: dark once the task is done.
 	GameState.level_tasks = [{"id": "core", "label": "Core", "done": false, "progress": 0.0, "target": 1.0}]
