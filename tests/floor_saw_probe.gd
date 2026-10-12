@@ -42,7 +42,9 @@ func _robot(pos: Vector3) -> EnemyBase:
 	var e: EnemyBase = (load("res://scenes/enemies/android.tscn") as PackedScene).instantiate()
 	add_child(e)
 	e.global_position = pos
-	e.set("move_speed", 0.0)
+	# Frozen where it stands, in or out of the lane: a live robot steps and is
+	# knocked about (fire_vent_probe's drifted off its grate on CI).
+	e.process_mode = Node.PROCESS_MODE_DISABLED
 	# The base stat too: EnemyBase's deferred _sync_stats rescales health from it.
 	e.max_health = 1000000.0
 	e.hp.max_health = 1000000.0
