@@ -9,7 +9,10 @@ extends Node3D
 ##     the beam is drawn no longer than the wall's distance);
 ## (4) a sweep that `stops_on` a task goes dark once that task is done;
 ## (5) GROK's mainframe sweeps: a sweep on the core, woken by the HVT kill
-##     and stopped by the core's destruction.
+##     and stopped by the core's destruction;
+## (6) the CLAUDE vault's decryption is held under a sweep: centred on the
+##     decrypt zone, reaching past its edge, woken by the keycard and stopped
+##     by the decryption.
 ##   godot --headless --path . --audio-driver Dummy res://tests/laser_sweep_probe.tscn
 
 var ok := true
@@ -126,5 +129,19 @@ func _run() -> void:
 		_check("sweep on the GROK mainframe", Vector2(p.x - core.x, p.z - core.z).length() < 0.5, "(%s vs %s)" % [p, core])
 		_check("woken by the HVT kill", String(s.get("wakes_on", "")) == "hvt")
 		_check("stopped by the core", String(s.get("stops_on", "")) == "core")
+	var vault := LevelDefs.get_def("claude")
+	var vs: Array = vault.get("laser_sweeps", [])
+	_check("claude has a laser sweep", vs.size() >= 1, "(%d)" % vs.size())
+	for task in vault.get("tasks", []):
+		if String(task.get("id", "")) != "decrypt":
+			continue
+		var zp: Vector3 = task["pos"]
+		var zr: float = float(task.get("radius", 4.0))
+		for s in vs:
+			var p: Vector3 = s["pos"]
+			_check("vault sweep centred on the decrypt zone", Vector2(p.x - zp.x, p.z - zp.z).length() < 0.5, "(%s vs %s)" % [p, zp])
+			_check("vault beams reach past the zone", float(s.get("radius", 8.0)) >= zr + 1.0, "(%.1f vs zone %.1f)" % [float(s.get("radius", 8.0)), zr])
+			_check("woken by the keycard", String(s.get("wakes_on", "")) == "key")
+			_check("stopped by the decryption", String(s.get("stops_on", "")) == "decrypt")
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()
