@@ -1,26 +1,29 @@
 extends Node3D
-## Windowed visual check for LAVA WORLD's cargo lift: the shaft on the NE
-## island with the car down, the car at the ladle gantry, and the view over the
-## forge from the gantry. Headless gives black frames.
-##   godot --path . res://tests/cargo_lift_shot.tscn -- --out=<abs dir>
+## Windowed visual check for a level's cargo lift (LAVA WORLD by default, or
+## `--level=water_world`): the shaft with the car down, the car at its top deck,
+## and the view from the deck. Headless gives black frames.
+##   godot --path . res://tests/cargo_lift_shot.tscn -- --out=<abs dir> [--level=<id>]
 
 var _out_dir := ""
+var _level := "lava_world"
 
 func _ready() -> void:
 	_out_dir = ProjectSettings.globalize_path("user://cargo_lift_shots")
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out_dir = a.substr(6)
+		elif a.begins_with("--level="):
+			_level = a.substr(8)
 	DirAccess.make_dir_recursive_absolute(_out_dir)
 	_run.call_deferred()
 
 func _shot(name: String) -> void:
 	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png("%s/lift_%s.png" % [_out_dir, name])
+	get_viewport().get_texture().get_image().save_png("%s/lift_%s_%s.png" % [_out_dir, _level, name])
 	print("SHOT ", name)
 
 func _run() -> void:
-	var lvl: Node3D = (load("res://scenes/levels/level_lava_world.tscn") as PackedScene).instantiate()
+	var lvl: Node3D = (load("res://scenes/levels/level_%s.tscn" % _level) as PackedScene).instantiate()
 	add_child(lvl)
 	for i in 30:
 		await get_tree().process_frame

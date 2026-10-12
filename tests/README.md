@@ -89,8 +89,8 @@ or GPU-timing probes; `--headless` renders these black).
 | campaign_map_probe | Campaign map at a mid-run progress state, screenshotted | windowed |
 | campaign_nav_sweep | Full-campaign softlock guard: every LevelDefs level's exit is navmesh-reachable from spawn | headless |
 | campaign_smoke | Full-campaign live smoke test: boots every level scene, bakes navmesh, reports build/player/health per level | headless |
-| cargo_lift_probe | CargoLift: a player standing on the car is carried to the top landing (6.98 of 7.0 m in 3.3 s, never below the car), the car waits up there, an empty car comes down when the player stands by the bottom landing (2.7 s), the car is solid ground at both ends; LAVA WORLD's lift lands flush at both ends beside a deck nothing else reaches | suite |
-| cargo_lift_shot | LAVA WORLD's lift on the NE island with the car down, the car at the ladle gantry, and the view over the forge from the gantry; `-- --out=<dir>` | windowed |
+| cargo_lift_probe | CargoLift: a player standing on the car is carried to the top landing (6.98 of 7.0 m in 3.3 s, never below the car), the car waits up there, an empty car comes down when the player stands by the bottom landing (2.7 s), the car is solid ground at both ends; LAVA WORLD's and WATER WORLD's lifts each land flush at both ends beside a deck nothing else reaches, at least 1 m above any flood their level raises | suite |
+| cargo_lift_shot | A level's cargo lift (LAVA WORLD, or `--level=water_world`): the shaft with the car down, the car at its top deck, the view from the deck; `-- --out=<dir> [--level=<id>]` | windowed |
 | chapters_test | Campaign chapter groupings end on the expected level titles | headless |
 | checkpoint_probe | Mid-level checkpoint/respawn: task completion sets a checkpoint; dying after relocating restores it | headless |
 | claude_showcase | Claude vault showcase; framed views of the centrepiece/lighting | windowed |
