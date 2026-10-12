@@ -139,6 +139,16 @@ The `laser_sweeps` def key builds a rotating laser fence: beams spinning round a
 * GROK's mainframe sweeps the room round it from the moment its enforcer (HVT) dies until the core is destroyed. The CLAUDE vault spins one round its decrypt zone from the keycard to the end of the decryption, so the 12 s hold is held over the beams.
 * `tests/laser_sweep_probe` checks stand/crouch against the high beam, floor/jump against the low one, the colours, tags, warning lead and teach toast, a wall stopping a beam, `stops_on`, and GROK's and CLAUDE's placement.
 
+## Laser Gates
+<!-- lat: { "require-code-mention": true } -->
+The `laser_gates` def key strings a laser hurdle across a gap: a knee beam (0.45 m, jump it) and a chest beam (1.35 m, duck under it) between two posts, only one live at a time.
+
+* The beams swap every half `period` (3.2 s). The beam about to light flickers for `WARN_TIME` (0.7 s) first, so the player sees which move is coming. The live beam is drawn solid in the Laser Sweeps colours (amber to jump, red to duck) with its JUMP / DUCK tag over the middle of the gap; a flickering or dark beam never hurts.
+* Touching the live beam costs `damage` (15), once per 0.5 s. Robots are never hit. The first gate a player walks up to teaches the rule once per run.
+* `axis` is the world axis the beams run along; `phase` (0..1 of a period) offsets gates. Position and `width` scale with the world; heights stay authored.
+* Skybridge Uplink strings one across each blast door (the z = -16 and z = 16 gaps), half a period apart, so the two doors never match.
+* `tests/laser_gate_probe` checks the alternation and flicker lead, the tags, who is hit standing, crouched and mid-jump, the hint and the Uplink placement.
+
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->
 The `jump_pads` def key places launch pads that throw the player onto a deck.

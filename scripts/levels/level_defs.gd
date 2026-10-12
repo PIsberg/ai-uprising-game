@@ -165,6 +165,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	for e in def.get("laser_sweeps", []):
 		if e.has("pos"):
 			e["pos"] = _sv(e["pos"], s)
+	# Laser gates span a gap like the gate they stand in: centre and width
+	# stretch with the arena. Beam heights stay authored (they are body
+	# heights, not layout).
+	for e in def.get("laser_gates", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("width"):
+			e["width"] = float(e["width"]) * s
 	# Jump pads sit on the ground plane and land on a deck: both ends stretch
 	# with the arena; heights stay authored, like the decks they land on.
 	for e in def.get("jump_pads", []):
@@ -3223,6 +3231,15 @@ static func _uplink() -> Dictionary:
 			# strip north of it is deliberately left empty.
 			{"axis": "z", "at": -30, "gap": 8, "gap_pos": -12, "height": 4.4},
 			{"axis": "x", "at": 30, "gap": 8, "gap_pos": 24, "height": 4.4},
+		],
+		# Both blast doors are strung with laser hurdles: a knee beam and a chest
+		# beam across the doorway, one live at a time, swapping every 1.6 s,
+		# the next one flickering before it lights. Read the lit beam, jump or
+		# duck. Half a period apart, so the two doors never match.
+		# tests/laser_gate_probe.
+		"laser_gates": [
+			{"pos": Vector3(15, 0, -16), "width": 7.0, "axis": "x"},
+			{"pos": Vector3(-15, 0, 16), "width": 7.0, "axis": "x", "phase": 0.5},
 		],
 		"slogans": [
 			"SIGNAL JAMMED. HOPE JAMMED.",
