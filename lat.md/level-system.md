@@ -96,6 +96,16 @@ The `presses` def key builds hydraulic stamping presses: a head that slams a str
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
 * `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
 
+## Conveyor Belts
+<!-- lat: { "require-code-mention": true } -->
+The `conveyors` def key lays factory belts that carry whatever stands on them, the player and robots alike.
+
+* A `StaticBody3D` whose `constant_linear_velocity` is `dir` times `speed`: it never moves, and every `CharacterBody3D` standing on it takes the floor's velocity in `move_and_slide`. A robot walking against it loses that much ground.
+* 6 cm proud of the floor, so the navmesh steps onto it; chevrons scroll the way it runs.
+* Pos and footprint scale with the world; speed and direction do not.
+* The Assembly runs one east through the east freight bulkhead's gap, under its press, so riding it speeds the meltdown run but sets your beat under the press.
+* `tests/conveyor_probe` checks the player and an idle robot are carried at the belt's speed, a robot beside it is not, and the Assembly belt passes under the bulkhead press heading for the dock.
+
 ## Cargo Lifts
 <!-- lat: { "require-code-mention": true } -->
 The `lifts` def key builds an open cargo lift: a car on a four-post shaft between its own height and `top`.

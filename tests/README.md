@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-392 probes total: **132** wired into the headless suite (`suite`), **84**
+393 probes total: **133** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -112,6 +112,7 @@ or GPU-timing probes; `--headless` renders these black).
 | content_probe | Late-game content: TEMPEST chain lightning, VORTEX grenade pull-in+detonate, hoppier SKITTER | suite |
 | continue_label_probe | Main-menu Continue button names where the run resumes (saved level title, campaign position N/24, difficulty) via GameState.peek_save, which reads the save without touching the live run; hidden without a save (backs up and restores user://savegame.cfg) | suite |
 | continue_sweep_probe | Continue works from every campaign level: saves a returning player's run (two bonus weapons, one equipped, Armory supplies, an upgrade), wipes the singleton, loads it back and deploys the real level scene, asserting the spawned player carries all of it; ~90 s | suite |
+| conveyor_probe | ConveyorBelt: a player standing still on a 3 m/s belt is carried at 3.03 m/s and not sideways, an idle robot on it is carried, one beside it stays put (red with the belt's velocity zeroed: 0.00 m/s); The Assembly's belt runs east through the bulkhead gap under its press | suite |
 | convoy_playtest | Playtest bot rides Highway Breakout end to end (stays aboard, aim-assists, fires, exits) — is it winnable | headless |
 | convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius (kills are telemetry, not asserted — they depend on which wave is alive) | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
