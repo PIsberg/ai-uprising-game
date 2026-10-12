@@ -2542,6 +2542,12 @@ static func _alien() -> Dictionary:
 			{"from": Vector3(16.0, 0.3, -48.0), "to": Vector3(9.0, 3.4, -48.0), "width": 3.5},
 			{"from": Vector3(-9.0, 3.6, -48.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
 		],
+		# Bounce pods: two pads on the crater floor throw you up onto the two
+		# tower roofs, the high west one and the low east one.
+		"jump_pads": [
+			{"pos": Vector3(-6, 0, 8), "to": Vector3(-17, 9.0, 0)},
+			{"pos": Vector3(6, 0, -8), "to": Vector3(17, 7.0, 0)},
+		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
 			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.1},
