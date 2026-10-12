@@ -299,6 +299,7 @@ func _ready() -> void:
 	_build_ladle_crane(def)
 	_build_jump_pads(def)
 	_build_laser_sweeps(def)
+	_build_ziplines(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2406,6 +2407,15 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## Two-way ziplines (ZipLine) between decks: the player's tether winches them
+## along the cable (Player.zipline_to).
+func _build_ziplines(def: Dictionary) -> void:
+	for e in def.get("ziplines", []):
+		var z := ZipLine.new()
+		z.a = e.get("a", Vector3.ZERO)
+		z.b = e.get("b", Vector3(10, 0, 0))
+		add_child(z)
 
 ## Rotating laser fences (LaserSweep): jump the low beam, crouch the high one.
 func _build_laser_sweeps(def: Dictionary) -> void:
