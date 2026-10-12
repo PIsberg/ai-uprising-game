@@ -11,6 +11,9 @@ extends Node3D
 ## vent works). Nothing about it is solid. `phase` (0..1 of a period) offsets
 ## vents in a row so the eruption rolls across it and one is always cold.
 ## The first vent a player sees warming up teaches the rule once per run.
+## `cryo` makes it a coolant vent (a cryo core's): the same beats, but the
+## grate frosts over blue and hisses, and the blast is freezing white-blue
+## vapour; it teaches its own line.
 ## Def key `fire_vents` (level_builder `_build_fire_vents`).
 ## tests/fire_vent_probe.
 
@@ -25,6 +28,7 @@ enum Phase { IDLE, WARN, ERUPT }
 @export var height: float = 3.2         ## m, the flame column
 @export var damage: float = 12.0        ## to the player per TICK while erupting
 @export var robot_damage: float = 40.0  ## to a robot per TICK while erupting
+@export var cryo: bool = false          ## a coolant vent: blue frost and a freezing blast
 
 const WARN_TIME := 1.2
 const ERUPT_TIME := 1.2
@@ -33,6 +37,7 @@ const RING := 0.3                ## m, width of the hazard ring outside the grat
 const BODY_RADIUS := 0.35        ## player capsule radius
 const TEACH_REACH := 7.0         ## m outside the ring where a warming vent teaches
 const TEACH_TEXT := "FIRE VENT: when a grate glows and rumbles, get off it. It erupts a second later."
+const CRYO_TEXT := "CRYO VENT: when a grate frosts over and hisses, get off it. It blasts a second later."
 
 var state: Phase = Phase.IDLE
 var _t := 0.0
@@ -86,6 +91,8 @@ uniform float radius = 1.4;
 uniform float ring = 0.3;
 uniform float heat = 0.0;
 uniform float pulse = 0.0;
+uniform vec3 cool_col = vec3(0.6, 0.05, 0.0);
+uniform vec3 hot_col = vec3(1.0, 0.42, 0.04);
 varying vec3 lp;
 void vertex() { lp = VERTEX; }
 void fragment() {
@@ -101,7 +108,7 @@ void fragment() {
 	} else {
 		// The grate: concentric slots glowing from below with the heat.
 		float slot = step(0.55, fract(d * 5.0)) * step(0.12, d);
-		vec3 hot = mix(vec3(0.6, 0.05, 0.0), vec3(1.0, 0.42, 0.04), heat);
+		vec3 hot = mix(cool_col, hot_col, heat);
 		col = mix(vec3(0.05, 0.045, 0.04), hot * (0.4 + heat * 1.8), slot * (0.15 + heat * 0.85));
 	}
 	ALBEDO = col;
@@ -111,6 +118,9 @@ void fragment() {
 	_floor_mat.shader = sh
 	_floor_mat.set_shader_parameter("radius", radius)
 	_floor_mat.set_shader_parameter("ring", RING)
+	if cryo:
+		_floor_mat.set_shader_parameter("cool_col", Vector3(0.05, 0.2, 0.55))
+		_floor_mat.set_shader_parameter("hot_col", Vector3(0.55, 0.9, 1.0))
 	var pm := PlaneMesh.new()
 	pm.size = Vector2.ONE * (radius + RING) * 2.0
 	var floor_mi := MeshInstance3D.new()
@@ -138,13 +148,13 @@ void fragment() {
 	cm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	cm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	cm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	cm.albedo_color = Color(1.0, 0.5, 0.12, 0.85)
+	cm.albedo_color = Color(0.6, 0.85, 1.0, 0.85) if cryo else Color(1.0, 0.5, 0.12, 0.85)
 	core.material_override = cm
 	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	core.scale = Vector3(1.0, height * 0.92, 1.0) # rides the column's own stretch
 	_column.add_child(core)
 	_light = OmniLight3D.new()
-	_light.light_color = Color(1.0, 0.45, 0.12)
+	_light.light_color = Color(0.5, 0.8, 1.0) if cryo else Color(1.0, 0.45, 0.12)
 	_light.omni_range = radius + 6.0
 	_light.light_energy = 0.0
 	_light.shadow_enabled = false
@@ -157,7 +167,9 @@ func _flame(base: float, tall: float, energy: float, density: float) -> MeshInst
 	cm.bottom_radius = base
 	cm.height = tall
 	cm.radial_segments = 16
-	cm.material = FlameMaterial.make(Color(1.0, 0.8, 0.4), Color(1.0, 0.35, 0.08),
+	var core_c := Color(0.9, 0.97, 1.0) if cryo else Color(1.0, 0.8, 0.4)
+	var edge_c := Color(0.35, 0.7, 1.0) if cryo else Color(1.0, 0.35, 0.08)
+	cm.material = FlameMaterial.make(core_c, edge_c,
 			energy, Vector2(0.0, 9.0), density, 0.3) # pan base->apex: flames lick upward
 	var mi := MeshInstance3D.new()
 	mi.mesh = cm
@@ -174,8 +186,8 @@ func _physics_process(delta: float) -> void:
 	state = _phase_at(u)
 	if state != prev:
 		if state == Phase.WARN:
-			AudioBus.play_synth_at("charge", global_position, -2.0, 0.45)
-			AudioBus.play_synth_at("acid_spit", global_position, -4.0, 0.5)
+			AudioBus.play_synth_at("charge", global_position, -2.0, 0.8 if cryo else 0.45)
+			AudioBus.play_synth_at("acid_spit", global_position, -4.0, 1.1 if cryo else 0.5)
 			warning.emit()
 		elif state == Phase.ERUPT:
 			_tick = 0.0
@@ -185,7 +197,10 @@ func _physics_process(delta: float) -> void:
 	_apply(u, delta)
 	var pl := get_tree().get_first_node_in_group("player") as Node3D
 	if state == Phase.WARN and pl != null and _flat_dist(pl) <= radius + RING + TEACH_REACH:
-		GameState.teach_once("fire_vent", TEACH_TEXT)
+		if cryo:
+			GameState.teach_once("cryo_vent", CRYO_TEXT)
+		else:
+			GameState.teach_once("fire_vent", TEACH_TEXT)
 	if state == Phase.ERUPT:
 		_tick -= delta
 		if _tick <= 0.0:

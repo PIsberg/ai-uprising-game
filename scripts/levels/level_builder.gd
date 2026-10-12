@@ -2523,6 +2523,7 @@ func _build_fire_vents(def: Dictionary) -> void:
 		v.phase = float(e.get("phase", 0.0))
 		v.height = float(e.get("height", 3.2))
 		v.damage = float(e.get("dmg", 12.0))
+		v.cryo = bool(e.get("cryo", false))
 		v.position = e.get("pos", Vector3.ZERO)
 		add_child(v)
 
