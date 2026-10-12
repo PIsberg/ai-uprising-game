@@ -115,7 +115,8 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `phase` (0..1 of a period) staggers a row so the eruption rolls across it. Pos scales with the world; `radius` (1.4) and `height` (3.2) stay authored.
 * The first vent a player sees warming up, from within 7 m of its ring, teaches the rule once per run through `GameState.teach_once`.
 * The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
-* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, and the Crucible rows.
+* LAVA WORLD puts one on each recycler walkway (two, half a period apart, on the long east one). On a walkway there is no stepping round a vent, so the player waits at the ring for its cold beat; `radius` 1.5 keeps the ring on the scaled 3.64 m walkway and leaves 0.14 m at the edge.
+* `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the Crucible rows and the LAVA WORLD walkway vents.
 
 ## Floor Saws
 <!-- lat: { "require-code-mention": true } -->

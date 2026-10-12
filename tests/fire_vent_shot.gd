@@ -1,7 +1,8 @@
 extends Node3D
 ## Windowed visual check for a level's fire vents (the Crucible's north gap by
 ## default): the row from the approach, caught while one vent warns and while
-## one erupts. Headless gives black frames.
+## one erupts (`--level=lava_world`: a lone walkway vent, from along its
+## walkway). Headless gives black frames.
 ##   godot --path . res://tests/fire_vent_shot.tscn -- --out=<abs dir> [--level=<id>]
 
 var _out_dir := ""
@@ -47,7 +48,12 @@ func _run() -> void:
 	_still()
 	var vents := lvl.find_children("*", "FireVent", true, false)
 	var a := vents[0] as FireVent
-	var b := vents[1] as FireVent
+	# Frame a row with its neighbour; a lone vent (on a walkway) on its own.
+	var b := a
+	for v in vents:
+		if v != a and (v as FireVent).global_position.distance_to(a.global_position) < 8.0:
+			b = v as FireVent
+			break
 	var player := get_tree().get_first_node_in_group("player") as Node3D
 	player.global_position = a.global_position + Vector3(0, 0, 40)
 	player.get_node("Damageable").set("invulnerable", true)
@@ -56,7 +62,7 @@ func _run() -> void:
 	cam.current = true
 	cam.fov = 70.0
 	var mid := (a.global_position + b.global_position) * 0.5
-	var across := (b.global_position - a.global_position).normalized()
+	var across := (b.global_position - a.global_position).normalized() if b != a else Vector3.BACK # a lone vent: look along an x walkway
 	var toward := across.cross(Vector3.UP)
 	cam.global_position = mid + toward * 7.0 + Vector3.UP * 1.7
 	cam.look_at(mid + Vector3.UP * 1.0)

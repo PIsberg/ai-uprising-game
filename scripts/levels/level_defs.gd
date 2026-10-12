@@ -5653,6 +5653,17 @@ static func _lava_world() -> Dictionary:
 		"lifts": [
 			{"pos": Vector3(14, 1.6, -16.6), "size": Vector2(2.6, 2.6), "top": 8.0},
 		],
+		# Slag vents on the recycler walkways: every run out to a furnace island
+		# crosses one, and there is no stepping round it on a walkway, so you
+		# wait at the hazard ring for its cold beat. The long east walkway has
+		# two, half a period apart. Radius 1.5 keeps the ring on the (scaled)
+		# 3.64 m walkway. Heights are the walkway top. tests/fire_vent_probe.
+		"fire_vents": [
+			{"pos": Vector3(-26.5, 1.6, -6), "radius": 1.5},
+			{"pos": Vector3(6, 1.6, -22.5), "radius": 1.5, "phase": 0.25},
+			{"pos": Vector3(19, 1.6, 6), "radius": 1.5, "phase": 0.0},
+			{"pos": Vector3(25, 1.6, 6), "radius": 1.5, "phase": 0.5},
+		],
 		"ramps": [
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
 		],
