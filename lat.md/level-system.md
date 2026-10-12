@@ -150,7 +150,8 @@ The `saws` def key builds floor saws: a spinning blade that runs a slot in the f
 * It is always telegraphed: the blade is out of the slot and whines, the end lamp it runs toward blinks red, and a player standing in its lane gets a blip and a flash of the stripes `WARN_LEAD` (0.7 s) before it reaches them, once per approach. The first saw a player walks up to (within 6 m of the lane) teaches the rule once per run through `GameState.teach_once`.
 * `speed` (4.5 m/s), `pause` (0.5 s at each end) and `phase` (0..1 of a round trip). Both ends scale with the world. No collision; in the `hazard` group.
 * The Assembly guards its north entry gap with two slots, one either side of the bulkhead, running opposite ways; each blade reaches to 0.5 m of the gap's edges, too narrow to slip past.
-* `tests/floor_saw_probe` checks the travel, cuts and warning lead, the jump and the step-out, the shove, robots, the hint and the Assembly slots.
+* The suburb (Maple Grove) runs two slots across its canal bridge's deck (the low crossing), half a round trip apart; each blade cuts to within a body's radius of both deck edges, so there is no sneaking along the rail, and the tower sky-bridge stays the safe high road. A saw's `a` and `b` carry the deck's height (y is authored).
+* `tests/floor_saw_probe` checks the travel, cuts and warning lead, the jump and the step-out, the shove, robots, the hint, the Assembly slots and the suburb bridge slots.
 
 ## Laser Sweeps
 <!-- lat: { "require-code-mention": true } -->
