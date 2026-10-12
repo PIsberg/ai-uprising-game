@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-420 probes total: **147** wired into the headless suite (`suite`), **84**
+422 probes total: **148** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **189** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **190** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -85,6 +85,8 @@ or GPU-timing probes; `--headless` renders these black).
 | breakable_cover_shot | Frames one breakable block of a level (default `neon`) at eye height: intact, from a raised three-quarter view, next to a solid wall, cracked, failing, mid-shatter and as rubble. `-- --out=<dir> [--level=<id>]` | windowed |
 | briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective, act header, story thread and trace card all show (gpt, mistral, suburb_boss, desert, archon) | windowed |
 | brute_shield_probe | BRUTE still visibly carries its frontal shield slab (front + 3/4 shots) | windowed |
+| bumper_probe | Bumper aimed at a ring 9 m off: a player stepping on lands within 1.2 m of the ring on a real arc (feet 1.5 m+ up) in time; a grounded robot on it is thrown too (red with robots ignored), lands within 2 m of the ring unhurt and is back under its AI once down; a flyer brushing the floor over it is not thrown (red with flyers thrown); the ring is drawn where it throws; walking up teaches the rule once; the Neon Arcade's bumpers each throw across an energy conduit, standing and landing clear of conduits, cabinets and jump pads | suite |
+| bumper_shot | A level's bumper (the Neon Arcade's first) from behind with its chevrons, the conduit and its ring, then a robot thrown mid-arc; `-- --out=<dir> [--level=<id>]` | windowed |
 | campaign_dump | SceneTree script dumping `max_level_reached` + full campaign roster for inspection | headless |
 | campaign_map_probe | Campaign map at a mid-run progress state, screenshotted | windowed |
 | campaign_nav_sweep | Full-campaign softlock guard: every LevelDefs level's exit is navmesh-reachable from spawn | headless |

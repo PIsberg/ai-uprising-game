@@ -175,6 +175,17 @@ The `laser_gates` def key strings a laser hurdle across a gap: a knee beam (0.45
 * Gemini (campaign slot 3) strings the campaign's first one across its roofed conduit's mouth, slower than any later gate (period 4.4 s, each beam lit 2.2 s), so the JUMP / DUCK read is learned before the vault and the uplink ask for it at speed.
 * `tests/laser_gate_probe` checks the alternation and flicker lead, the tags, who is hit standing, crouched and mid-jump, the hint, the Uplink placement, and that the campaign's first gate is Gemini's, its slowest, spanning the conduit's mouth.
 
+## Bumpers
+<!-- lat: { "require-code-mention": true } -->
+The `bumpers` def key places pinball bumpers: low orange domes that throw whoever steps on them onto a ring drawn on the floor at `to`.
+
+* A `Bumper` (an `Area3D` on the player and enemy layers) polls the bodies standing on it every tick and throws the player (`Player.launch`) or a robot (`EnemyBase.launch`) on the jump pad's solved arc (`JumpPad.solve`), 0.5 m higher. A body standing off the pad's centre lands the same offset from the ring. The same body is not thrown again for 0.8 s.
+* Robots are thrown too, so one chasing you over a bumper follows you over: `EnemyBase.launch` flies it ballistically with its own movement paused until it lands (`is_launched`). Flyers (a `hover_height`) and boss chassis (500+ authored HP) are never thrown, nor a robot already in the air. Nothing is hurt.
+* It reads at a glance: chevrons on the dome point at the ring, the ring glows where you will land, the dome squashes and pops when it fires, and the first bumper a player walks up to teaches it once per run.
+* Unlike a jump pad (player only, aimed at a deck), a bumper is a floor-to-floor throw for everyone. Both ends scale with the world.
+* The Neon Arcade has two, each throwing over one of the floor's energy conduits onto a ring on the far side.
+* `tests/bumper_probe` checks the player and a grounded robot land on the ring, the robot unhurt and back under its AI, a flyer is not thrown, the ring, the hint, and that Neon's bumpers throw across a conduit and stand clear of conduits, cabinets and jump pads.
+
 ## Jump Pads
 <!-- lat: { "require-code-mention": true } -->
 The `jump_pads` def key places launch pads that throw the player onto a deck.

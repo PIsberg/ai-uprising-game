@@ -173,6 +173,11 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("width"):
 			e["width"] = float(e["width"]) * s
+	# Bumpers throw floor to floor: both ends stretch with the arena.
+	for e in def.get("bumpers", []):
+		for k in ["pos", "to"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Jump pads sit on the ground plane and land on a deck: both ends stretch
 	# with the arena; heights stay authored, like the decks they land on.
 	for e in def.get("jump_pads", []):
@@ -1357,6 +1362,13 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(-4, 0, -17), "to": Vector3(-4, 3.4, -26)},
 			{"pos": Vector3(-13.2, 0, 2), "to": Vector3(-13.2, 3.2, 12.5)},
 			{"pos": Vector3(12, 0, 0), "to": Vector3(12, 9.0, -12)}, # the roof is at the tower height
+		],
+		# Pinball bumpers: two orange domes that throw whoever steps on them over
+		# an energy conduit, onto a ring on the far side. Robots chasing you get
+		# thrown too. tests/bumper_probe.
+		"bumpers": [
+			{"pos": Vector3(-12, 0, -11), "to": Vector3(-12, 0, -3)},
+			{"pos": Vector3(14, 0, 12), "to": Vector3(14, 0, 4)},
 		],
 		"towers": [
 			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
