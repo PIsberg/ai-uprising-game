@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-393 probes total: **133** wired into the headless suite (`suite`), **84**
+395 probes total: **134** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **176** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **177** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -185,6 +185,8 @@ or GPU-timing probes; `--headless` renders these black).
 | directive_probe | Per-level COMBAT DIRECTIVE mutators: mult getters, damage-hook effects, roll chance, HUD announcement | windowed |
 | dismember_probe | Android damaged past health thresholds; panels shed mid-degradation without errors | windowed |
 | dodge_probe | PERFECT DODGE: a hit negated by dash i-frames scores a bonus+banner once per dash; non-dashing hit does not | windowed |
+| dog_gait_probe | The DOG trots: running after a target at 9.2 m/s every paw (the GLB's paw meshes, by side, body frame) swings 0.12+ m fore and aft (0.50; 0.00 before), diagonal paws together (r 1.00) and the front pair in opposition (r -1.00); stopped, every paw back within 0.03 m of rest | suite |
+| dog_gait_shot | Side view of the DOG at four points of its trot and in the stretched pounce pose; `-- --out=<dir>` | windowed |
 | elite_probe | `Elite.maybe_apply` pre-`add_child` with a forced roll (catches the "get_node from outside tree" regression) | suite |
 | elite_marker_probe | A real elite of each affix gets a marker with its own silhouette (mesh types and sizes under `EliteMarker` all differ), and every pair of marker colours is at least 0.3 apart in RGB: the affix reads by shape for colourblind players | suite |
 | ember_probe | Lava beds build ember emitters with a visibility_aabb large enough to survive frustum culling; water beds don't spark | headless |

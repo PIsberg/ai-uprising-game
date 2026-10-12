@@ -203,3 +203,5 @@ res://tests/cargo_lift_probe.tscn
 res://tests/ronin_katana_probe.tscn
 # CONVEYOR: belts carry the player and robots at their speed; The Assembly belt feeds the bulkhead press.
 res://tests/conveyor_probe.tscn
+# DOG GAIT: the K-9 HUNTER trots on its split leg parts, diagonal pairs together.
+res://tests/dog_gait_probe.tscn

@@ -178,15 +178,13 @@ func _cut() -> void:
 		AudioBus.play_synth_at("impact_metal", global_position, -5.0, 1.5)
 	recoil = 1.0
 
-## Cut every gun mesh into a left and a right copy (by which side of the gap
-## between the guns each triangle lies), hide the merged original, and measure
-## each hand's wrist (top of its gun) and barrel tip. Runs once RobotModel's
-## deferred fit has landed.
+## Cut every gun mesh into a left and a right copy (PartRig.split_x, at the
+## gap between the guns) and measure each hand's wrist (top of its gun) and
+## barrel tip. Runs once RobotModel's deferred fit has landed.
 func _split_guns() -> void:
 	var first := find_child(GUN_PARTS[0], true, false) as Node3D
 	if first == null or not first.is_visible_in_tree():
 		return
-	var inv := global_transform.affine_inverse()
 	var parts: Array[MeshInstance3D] = []
 	var lo_x := INF
 	var hi_x := -INF
@@ -198,75 +196,38 @@ func _split_guns() -> void:
 		if mi == null or mi.mesh == null:
 			return
 		parts.append(mi)
-		var xf := inv * mi.global_transform
-		for p in mi.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
-			var x: float = (xf * (p as Vector3)).x
-			lo_x = minf(lo_x, x)
-			hi_x = maxf(hi_x, x)
+		for q in PartRig.body_points(self, mi):
+			lo_x = minf(lo_x, q.x)
+			hi_x = maxf(hi_x, q.x)
 	var mid := (lo_x + hi_x) * 0.5
-	var top_y: Array[float] = [-INF, -INF]
-	var tip_y: Array[float] = [INF, INF]
-	var tops: Array = [[], []]
-	var tips: Array = [[], []]
+	var all_pts: Array = [PackedVector3Array(), PackedVector3Array()]
+	var barrel_pts: Array = [PackedVector3Array(), PackedVector3Array()]
 	for mi in parts:
-		var xf := inv * mi.global_transform
 		var barrel := String(mi.get_parent().name) in BARREL_PARTS
+		var halves := PartRig.split_x(self, mi, mid)
 		for hand in 2:
-			var am := ArrayMesh.new()
-			var overrides: Array[Material] = []
-			for si in mi.mesh.get_surface_count():
-				var arr: Array = mi.mesh.surface_get_arrays(si)
-				var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
-				var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(v.size()))
-				var keep := PackedInt32Array()
-				for t in range(0, idx.size(), 3):
-					var c: Vector3 = xf * ((v[idx[t]] + v[idx[t + 1]] + v[idx[t + 2]]) / 3.0)
-					if (c.x > mid) == (hand == 1):
-						keep.append_array([idx[t], idx[t + 1], idx[t + 2]])
-						for k in 3:
-							var q: Vector3 = xf * v[idx[t + k]]
-							if q.y > top_y[hand] + 0.03:
-								top_y[hand] = q.y
-								tops[hand] = []
-							if q.y > top_y[hand] - 0.03:
-								(tops[hand] as Array).append(q)
-							if barrel:
-								if q.y < tip_y[hand] - 0.02:
-									tip_y[hand] = q.y
-									tips[hand] = []
-								if q.y < tip_y[hand] + 0.02:
-									(tips[hand] as Array).append(q)
-				if keep.is_empty():
-					continue
-				arr[Mesh.ARRAY_INDEX] = keep
-				am.add_surface_from_arrays(mi.mesh.surface_get_primitive_type(si), arr)
-				am.surface_set_material(am.get_surface_count() - 1, mi.mesh.surface_get_material(si))
-				overrides.append(mi.get_surface_override_material(si))
-			if am.get_surface_count() == 0:
+			if halves[hand] == null:
 				continue
-			# Same look as the merged original: RobotModel's materials live in
-			# its overrides, the GLB's in the mesh.
-			var copy := MeshInstance3D.new()
-			copy.mesh = am
-			copy.material_override = mi.material_override
-			for k in overrides.size():
-				copy.set_surface_override_material(k, overrides[k])
-			copy.transform = mi.transform
-			mi.get_parent().add_child(copy)
-			_mesh_instances.append(copy)
-			var to_parent: Transform3D = (mi.get_parent() as Node3D).global_transform.affine_inverse() * global_transform
-			(_guns[hand] as Array).append([copy, copy.transform, to_parent])
-		mi.visible = false
+			(_guns[hand] as Array).append(halves[hand])
+			var pts := PartRig.body_points(self, halves[hand][0])
+			all_pts[hand] = (all_pts[hand] as PackedVector3Array) + pts # packed arrays copy on read
+			if barrel:
+				barrel_pts[hand] = (barrel_pts[hand] as PackedVector3Array) + pts
 	for hand in 2:
-		_pivot[hand] = _mean(tops[hand])
-		_tip[hand] = _mean(tips[hand])
+		_pivot[hand] = _band_mean(all_pts[hand], true, 0.03)
+		_tip[hand] = _band_mean(barrel_pts[hand], false, 0.02)
 	_guns_ready = true
 
-static func _mean(pts: Array) -> Vector3:
-	var c := Vector3.ZERO
-	for p in pts:
-		c += p
-	return c / maxf(pts.size(), 1)
+## Mean of the points within `band` m of the highest (`top`) or lowest y.
+static func _band_mean(pts: PackedVector3Array, top: bool, band: float) -> Vector3:
+	var edge := -INF if top else INF
+	for q in pts:
+		edge = maxf(edge, q.y) if top else minf(edge, q.y)
+	var sel := PackedVector3Array()
+	for q in pts:
+		if absf(q.y - edge) < band:
+			sel.append(q)
+	return PartRig.mean(sel)
 
 ## Advance a quick-draw: flick up, fire at the top, hold, drop. The drawn gun
 ## tracks the target the whole time; the muzzle rides its barrel tip.
@@ -293,9 +254,7 @@ func _tick_guns(delta: float) -> void:
 			r = Basis(Quaternion.IDENTITY.slerp(Quaternion(rest, aim.normalized()), smoothstep(0.0, 1.0, w)))
 	var lay := Transform3D(r, _pivot[h] - r * _pivot[h])
 	for g in _guns[h]:
-		var mi := g[0] as MeshInstance3D
-		var to_parent := g[2] as Transform3D
-		mi.transform = to_parent * lay * to_parent.affine_inverse() * (g[1] as Transform3D)
+		PartRig.pose(g, lay)
 	if muzzle:
 		muzzle.global_position = global_transform * (_pivot[h] + r * (_tip[h] - _pivot[h]))
 	if _shot_pending and _draw_t >= DRAW_TIME:
@@ -316,9 +275,7 @@ func _setup_sword() -> void:
 		if node == null:
 			return
 		for m in node.find_children("*", "MeshInstance3D", true, false):
-			var mi := m as MeshInstance3D
-			var to_parent: Transform3D = (mi.get_parent() as Node3D).global_transform.affine_inverse() * global_transform
-			_sword_parts.append([mi, mi.transform, to_parent])
+			_sword_parts.append(PartRig.entry(self, m as MeshInstance3D))
 	_guard0 = _verts_mean(guard, inv, -1.0)
 	var bottom := _verts_mean(scab, inv, 0.06) # the scabbard's lowest 6 cm
 	var b0 := (bottom - _guard0).normalized()
@@ -432,8 +389,7 @@ func _tick_sword(delta: float) -> void:
 
 func _apply_sword() -> void:
 	for p in _sword_parts:
-		var to_parent := p[2] as Transform3D
-		(p[0] as MeshInstance3D).transform = to_parent * _sword_xf * to_parent.affine_inverse() * (p[1] as Transform3D)
+		PartRig.pose(p, _sword_xf)
 	_blade.transform = _sword_xf * _blade_rest
 
 ## The slash trail: a ribbon over the outer blade's path while it swings, then
