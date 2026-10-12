@@ -193,3 +193,5 @@ res://tests/comic_panel_probe.tscn
 res://tests/howitzer_barrel_probe.tscn
 # STAMP PRESSES: telegraphed slam hits the player once and shoves them out, crushes robots, phases stagger a line.
 res://tests/stamp_press_probe.tscn
+# RONIN: faces forward; slugs are revolver quick-draws from a drawn barrel tip, hands alternating.
+res://tests/ronin_revolver_probe.tscn

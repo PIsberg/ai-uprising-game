@@ -101,7 +101,7 @@ const ENTRIES := {
 	},
 	"ronin": {
 		"scene": "res://scenes/enemies/ronin.tscn", "name": "RONIN", "scale": 1.0, "y": 0.0,
-		"desc": "A hooded assassin frame in a tattered green cloak — one red eye, a katana across its back, revolvers on each hip. It snaps off hard slugs at range, breaks your aim with sudden flanking dashes, and finishes inside your guard with a two-cut katana combo.",
+		"desc": "A hooded assassin frame in a tattered green cloak — one red eye, a katana across its back, a revolver hanging in each hand. It snaps off hard slugs at range, breaks your aim with sudden flanking dashes, and finishes inside your guard with a two-cut katana combo.",
 		"strengths": ["Sudden angled dashes ruin your tracking", "Two-cut katana combo hits fast up close", "Accurate revolver slugs at range"],
 		"weaknesses": ["Lighter armour than it looks — sustained fire drops it", "The pause between dashes is your window", "Backpedal during its slash combo"],
 		"weapons": ["SG-12 Breacher", "AR-7 Pulse Rifle", "NV-X Nova Scatter"],
