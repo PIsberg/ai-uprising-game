@@ -5204,6 +5204,17 @@ static func _suburb() -> Dictionary:
 			# canal's east bank, reached by the yard stair below.
 			{"pos": Vector3(7, 4.55, 15), "size": Vector3(7.2, 0.3, 7.2), "color": Color(0.36, 0.3, 0.3)},
 		],
+		# The low crossing bites: two saw slots run across the canal bridge's
+		# deck, their blades half a round trip apart (one always on its way
+		# back). Step between the striped lanes, or jump a blade. Each blade
+		# cuts to within a body's radius of both deck edges, so there is no
+		# sneaking along the rail; the slot housings sit at the edges, just
+		# over them. The tower sky-bridge stays the safe high road.
+		# tests/floor_saw_probe.
+		"saws": [
+			{"a": Vector3(-2, 1.725, 6.5), "b": Vector3(-2, 1.725, 9.5), "speed": 3.6, "phase": 0.0},
+			{"a": Vector3(2, 1.725, 6.5), "b": Vector3(2, 1.725, 9.5), "speed": 3.6, "phase": 0.5},
+		],
 		# Vertical layer: climbable spiral tower(s) to rooftop vantages.
 		# Sky-bridges: an upper traversal route linking the tower rooftops —
 		# with the canal below, the tower climb is now the HIGH crossing.

@@ -2,7 +2,7 @@ extends Node3D
 ## Probe: StampPress, the hydraulic stamping press hazard ("presses" def key).
 ## (1) a player standing under a press is hit once per slam (not on every
 ##     frame the head is down) and shoved out of the footprint;
-## (2) a robot under it is crushed (dies), a robot 1 m outside is untouched;
+## (2) robots are never hurt, under it or 1 m outside (traps are for the player);
 ## (3) every slam is telegraphed: the press is `telegraphing` for at least
 ##     0.5 s before the head comes down, and the head's underside drops from
 ##     its full clearance to within 0.3 m of the floor at the slam;
@@ -37,7 +37,11 @@ func _robot(pos: Vector3) -> Node3D:
 	var e: Node3D = (load("res://scenes/enemies/android.tscn") as PackedScene).instantiate()
 	add_child(e)
 	e.global_position = pos
-	e.set("move_speed", 0.0)
+	# Frozen where it stands (a live robot steps and is knocked about), but
+	# kept in the physics world: the press finds bodies through an Area3D, and
+	# a disabled body is otherwise removed from it (a vacuous pass).
+	(e as CollisionObject3D).disable_mode = CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
+	e.process_mode = Node.PROCESS_MODE_DISABLED
 	return e
 
 func _phys(t: float) -> void:
@@ -102,7 +106,7 @@ func _run() -> void:
 	for l in tele_lead:
 		_check("slam telegraphed", l >= 0.5, "(%.2f s)" % l)
 	_check("head comes down to the floor", low < 0.3, "(%.2f m)" % low)
-	_check("robot under the press crushed", not is_instance_valid(inside) or (inside.get("state") == EnemyBase.State.DEAD), "")
+	_check("robot under the press is not hurt", is_instance_valid(inside) and (inside.get("hp") as Node).get("current_health") == (inside.get("hp") as Node).get("max_health"))
 	_check("robot 1 m outside untouched", is_instance_valid(outside) and (outside.get("hp") as Node).get("current_health") == (outside.get("hp") as Node).get("max_health"))
 	press.queue_free()
 	player.queue_free()

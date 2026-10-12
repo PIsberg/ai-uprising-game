@@ -7,11 +7,14 @@ extends Node3D
 ## (3) a player in the lane with their feet 1.0 m up (mid-jump) is never cut;
 ##     one standing just outside the stripes is never cut nor warned;
 ## (4) a cut throws the player out of the lane, to their side;
-## (5) a robot in the lane is cut, one 2 m off is not;
+## (5) robots are never cut, in the lane or 2 m off (traps are for the player);
 ## (6) walking up to a saw teaches the rule, once;
 ## (7) the Assembly's north gap is guarded by two slots, either side of the
 ##     bulkhead, each blade reaching to within a body's width of both edges
-##     of the (scaled) gap, running opposite ways.
+##     of the (scaled) gap, running opposite ways;
+## (8) the suburb's canal bridge carries two slots across its deck: on the
+##     deck's top, housings at its edges, each blade cutting to within a
+##     body's radius of both edges, running opposite ways.
 ##   godot --headless --path . --audio-driver Dummy res://tests/floor_saw_probe.tscn
 
 var ok := true
@@ -151,11 +154,12 @@ func _run() -> void:
 			if src is FloorSaw:
 				robot_cuts[bot] += 1)
 	await _phys(saw.round_trip() + 0.2)
-	_check("a robot in the lane is cut", robot_cuts[in_lane] >= 2, "(%d)" % robot_cuts[in_lane])
-	_check("a robot 2 m off is not", robot_cuts[off_lane] == 0, "(%d)" % robot_cuts[off_lane])
+	_check("a robot in the lane is not cut", robot_cuts[in_lane] == 0, "(%d)" % robot_cuts[in_lane])
+	_check("a robot 2 m off is not cut", robot_cuts[off_lane] == 0, "(%d)" % robot_cuts[off_lane])
 	saw.queue_free()
 
 	_assembly()
+	_bridge()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
@@ -186,3 +190,38 @@ func _assembly() -> void:
 		dirs.append(float(s.get("phase", 0.0)))
 	_check("slots on both sides of the bulkhead", sides.size() == 2, "(%s)" % [sides.keys()])
 	_check("the two blades run opposite ways", dirs.size() == 2 and is_equal_approx(absf(dirs[0] - dirs[1]), 0.5), "(%s)" % [dirs])
+
+func _bridge() -> void:
+	var def := LevelDefs.get_def("suburb")
+	var saws: Array = def.get("saws", [])
+	_check("suburb has bridge saws", saws.size() >= 2, "(%d)" % saws.size())
+	var deck: Dictionary = {}
+	for pl in def.get("platforms", []):
+		var c: Vector3 = pl["pos"]
+		if absf(c.x) < 0.5 and c.y < 2.0: # the canal bridge deck, centred on the canal
+			deck = pl
+	_check("the canal bridge deck is found", not deck.is_empty())
+	if deck.is_empty():
+		return
+	var dc: Vector3 = deck["pos"]
+	var ds: Vector3 = deck["size"]
+	var top := dc.y + ds.y * 0.5
+	var z0 := dc.z - ds.z * 0.5
+	var z1 := dc.z + ds.z * 0.5
+	var phases: Array[float] = []
+	for sw in saws:
+		var a: Vector3 = sw["a"]
+		var b: Vector3 = sw["b"]
+		var on_deck := absf(a.y - top) < 0.02 and absf(a.x - dc.x) <= ds.x * 0.5 and absf(a.x - b.x) < 0.01
+		_check("slot at x=%.1f runs across the deck on its top" % a.x, on_deck, "(y %.3f vs %.3f)" % [a.y, top])
+		var lo := minf(a.z, b.z)
+		var hi := maxf(a.z, b.z)
+		var housing := FloorSaw.RADIUS + 0.35 # FloorSaw puts a housing's centre this far past each end
+		_check("its housings sit at the deck's edges", lo - housing >= z0 - 0.15 and hi + housing <= z1 + 0.15,
+			"(%.2f..%.2f vs deck %.2f..%.2f)" % [lo - housing, hi + housing, z0, z1])
+		# The blade cuts within RADIUS * 0.9 of its centre along the slot; a body
+		# (0.35 m radius) standing wholly on the deck must not fit outside that.
+		var gap := maxf((lo - FloorSaw.RADIUS * 0.9) - z0, z1 - (hi + FloorSaw.RADIUS * 0.9))
+		_check("no spot at the deck's edges clears the blade", gap < 0.35, "(%.2f m)" % gap)
+		phases.append(float(sw.get("phase", 0.0)))
+	_check("the two blades run opposite ways", phases.size() == 2 and is_equal_approx(absf(phases[0] - phases[1]), 0.5), "(%s)" % [phases])

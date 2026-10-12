@@ -6,9 +6,9 @@ extends Node3D
 ## telegraphed for WARN_TIME seconds first, so a player who is paying any
 ## attention gets off it: the grate glows from dull red to white-hot, small
 ## flames lick up through it, an orange light swells, the ring pulses and it
-## rumbles. During the eruption anything standing on it burns: the player takes
-## `damage` every TICK seconds, a robot `robot_damage` (so luring one over a
-## vent works). Nothing about it is solid. `phase` (0..1 of a period) offsets
+## rumbles. During the eruption the player standing on it takes `damage` every
+## TICK seconds. Robots are never hurt: traps are for the player. Nothing about
+## it is solid. `phase` (0..1 of a period) offsets
 ## vents in a row so the eruption rolls across it and one is always cold.
 ## The first vent a player sees warming up teaches the rule once per run.
 ## `cryo` makes it a coolant vent (a cryo core's): the same beats, but the
@@ -27,7 +27,6 @@ enum Phase { IDLE, WARN, ERUPT }
 @export var phase: float = 0.0          ## 0..1 of a period
 @export var height: float = 3.2         ## m, the flame column
 @export var damage: float = 12.0        ## to the player per TICK while erupting
-@export var robot_damage: float = 40.0  ## to a robot per TICK while erupting
 @export var cryo: bool = false          ## a coolant vent: blue frost and a freezing blast
 
 const WARN_TIME := 1.2
@@ -254,9 +253,3 @@ func _burn(pl: Node3D) -> void:
 		var php: Node = pl.get_node_or_null("Damageable")
 		if php:
 			php.apply_damage(damage, self, false, at, true)
-	for n in get_tree().get_nodes_in_group("enemy"):
-		var e := n as EnemyBase
-		if e == null or e.state == EnemyBase.State.DEAD or e.hp == null:
-			continue
-		if _inside(e, 0.3):
-			e.hp.apply_damage(robot_damage, self, false, at, true)
