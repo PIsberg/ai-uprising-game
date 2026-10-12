@@ -223,6 +223,13 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		for k in ["a", "b"]:
 			if e.has(k):
 				e[k] = _sv(e[k], s)
+	# Shock floors are floor area: centre and tile size stretch with the arena
+	# (a floor across a gate's mouth must keep spanning the scaled gap).
+	for e in def.get("shock_floors", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("cell"):
+			e["cell"] = float(e["cell"]) * s
 	# Scanners: the mast and its alarm squad's landing spot sit on the ground
 	# plane. Mount height, reach and cone stay authored: detection is metres
 	# of sightline, not arena proportion.
@@ -1242,8 +1249,10 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(5, 1.9, 5), "size": Vector3(2.8, 3.8, 2.8)},
 		],
 		"accents": [
-			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(1.0, 0.2, 0.8)},
-			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 40), "color": Color(0.2, 0.9, 1.0)},
+			# The two lane strips stop short of the shock floor inside the north
+			# gap (34, not 40, long): a cyan strip through it read as part of it.
+			{"pos": Vector3(-7, 0.05, 0), "size": Vector3(0.3, 0.1, 34), "color": Color(1.0, 0.2, 0.8)},
+			{"pos": Vector3(7, 0.05, 0), "size": Vector3(0.3, 0.1, 34), "color": Color(0.2, 0.9, 1.0)},
 			{"pos": Vector3(0, 0.05, -7), "size": Vector3(40, 0.1, 0.3), "color": Color(0.7, 0.3, 1.0)},
 			{"pos": Vector3(0, 0.05, 7), "size": Vector3(40, 0.1, 0.3), "color": Color(1.0, 0.6, 0.2)},
 			# Ring guidance: strips marking each perimeter-bulkhead gap + exit pool.
@@ -1279,6 +1288,15 @@ static func _neon() -> Dictionary:
 		"gates": [
 			{"axis": "z", "at": -22, "gap": 7, "gap_pos": 10, "height": 4.4},
 			{"axis": "x", "at": 22, "gap": 7, "gap_pos": 18, "height": 4.4},
+		],
+		# The arcade's dance floor is live: just inside the north gap, a 4 x 2
+		# grid of tiles arcs in a checker. Half the tiles glow and buzz for
+		# 0.9 s, then arc; then the other half. A glowing tile is about to arc,
+		# a dark one is safe, and every tile's neighbours are the other colour.
+		# Coming in from the spawn you cross it to get anywhere. Robots are not
+		# hurt. tests/shock_floor_probe.
+		"shock_floors": [
+			{"pos": Vector3(10, 0, -19.5), "cells": Vector2i(4, 2), "cell": 2.0, "pattern": "checker"},
 		],
 		# A raised vantage deck with a ramp up to it — verticality + a sightline to
 		# fight from, so the arena has somewhere to GO besides the floor.

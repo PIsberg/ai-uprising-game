@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-416 probes total: **145** wired into the headless suite (`suite`), **84**
+418 probes total: **146** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **187** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **188** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -422,6 +422,8 @@ or GPU-timing probes; `--headless` renders these black).
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | night_vision_probe | Night vision: a fresh run has none and the toggle does nothing; the goggles pickup grants it and is gone; `night_vision` is an action on N and on the rebind screen; toggled on, the `NightVision` goggle pass shows, off it hides; it does not count as a flashlight; Continue keeps it, a new run clears it; once owned another goggles pickup removes itself; GPT and SUBLEVEL place one | suite |
 | night_vision_shot | A dark room (its lamp shot out) with three robots through the player's camera, goggles off and on; `-- --out=<dir>` | windowed |
+| shock_floor_probe | ShockFloor (4 x 2 checker) over two cycles: the groups take turns and every arc comes 0.9 s after its glow; every tile's neighbours are in the other group; a player on a tile is hit only while it arcs (red with the warning hurting too), never mid-jump or off the floor; a robot on an arcing tile is not hurt; walking up teaches the rule once; the Neon Arcade's floor spans the inside of its north gap from the bulkhead's face, a tile deep at least, with no task zone or pad on it | suite |
+| shock_floor_shot | A level's shock floor (the Neon Arcade's, inside the north gap) from inside the hall while one group glows its warning and while it arcs; `-- --out=<dir> [--level=<id>]` | windowed |
 | shootable_light_probe | Shoot out the lights (`ShootableLight`, `LightLevel`): lit, a robot 20 m away sees the player; robot rounds leave a lamp on, the player's put it out (energy 0, panel dark); in the dark the player is hidden, the 20 m robot loses it, a 6 m robot and a boss still see it; a shot (1.6 s) or a lit flashlight gives it away; a blackout lifting does not relight; no shootable lamps (open sky) is never dark; a corner no lamp reaches is no hiding spot; a flickering lamp stays out; in SUBLEVEL every luminaire is shootable and shooting the one overhead hides the player | suite |
 | synth_boot_probe | SoundSynth does not block boot: re-running its `_ready` returns within 1 s (it synthesized all 57 streams on the main thread, 4.3 s of the 5.1 s before the first frame), every stream id still resolves to non-empty PCM right away, the background pass finishes, and the menu theme plays | suite |
 | synth_probe | Every key procedural sound generates non-silent, non-degenerate audio (a music theme judged by its summed stems, each stem non-silent) | suite |
