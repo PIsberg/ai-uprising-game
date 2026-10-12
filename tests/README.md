@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-407 probes total: **140** wired into the headless suite (`suite`), **84**
+409 probes total: **141** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **183** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **184** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -453,6 +453,8 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_stats_probe | Every weapon's WeaponData is sane (guards a `.tres` regression silently shipping a broken gun) | suite |
 | weapon_vanish_probe | Reproduces "I shoot/get shot and lose my weapons": rack watched every frame for null/invisible/shrinking/index-drift | headless |
 | weaponfx_probe | TEMPEST chain lightning + VORTEX grenade implosion fired into a real crowd, effects captured live | windowed |
+| zipline_probe | ZipLine: a player stepping into one station rides to the other deck and rests there (2.3 s; no ride straight back), stepping off and on again rides them back, robots are not carried; TITAN's zipline ends on the east tower roof and the south-west deck with a clear straight line between, and a ride in the built level lands on the deck (3.7 s) | suite |
+| zipline_shot | TITAN's zipline: the cable from the south-west deck, the tower-top station, and the view down the cable; `-- --out=<dir>` | windowed |
 
 ### Candidates to add to the suite
 

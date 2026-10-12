@@ -154,6 +154,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e[k] = _sv(e[k], s)
 		if e.has("length"):
 			e["length"] = float(e["length"]) * s
+	# Ziplines run deck to deck: both ends stretch with the arena on the
+	# ground plane, heights stay authored like the decks they stand on.
+	for e in def.get("ziplines", []):
+		for k in ["a", "b"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Laser sweeps stand on the ground plane; radius and heights stay
 	# authored (beam reach is metres of fence, clipped by walls anyway).
 	for e in def.get("laser_sweeps", []):
@@ -2758,6 +2764,11 @@ static func _titan() -> Dictionary:
 			{"from": Vector3(-16.0, 0.3, -53.0), "to": Vector3(-9.0, 3.4, -53.0), "width": 3.5},
 			{"from": Vector3(16.0, 0.3, -53.0), "to": Vector3(9.0, 3.4, -53.0), "width": 3.5},
 			{"from": Vector3(-9.0, 3.6, -53.0), "to": Vector3(-17.0, 9.2, 0.0), "width": 3.0},
+		],
+		# A zipline across the arena: from the east tower roof (off the sky-bridge
+		# landing) down over the boss floor to the south-west deck, and back.
+		"ziplines": [
+			{"a": Vector3(16.2, 7.0, 0.8), "b": Vector3(-25.2, 3.2, 25.2)},
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
