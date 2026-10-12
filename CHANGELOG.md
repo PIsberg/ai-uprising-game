@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- **Traps no longer hurt robots.** Fire and cryo vents, floor saws and the Assembly's stamping presses now only hurt you; a robot walking through a vent's eruption, a saw's lane or under a press comes out untouched, so the STAMPED callouts are gone. The laser fences and gates, the shock floor, the swinging blades and the ladle crane's pools already spared robots. Traps are the course's challenge for the player, not a way to clear robots. `fire_vent_probe`, `floor_saw_probe`, `stamp_press_probe`, `ladle_crane_probe` (suite).
+
 ### Added
 - **Saws on Maple Grove's canal bridge.** The low road across the suburb's burst canal now has two saw slots across the bridge deck, blades running opposite ways, so one is always on its way back. Watch the stripes, step between the two lanes as a blade passes, or jump it; each blade cuts to the very edge of the deck, so there is no sneaking along the rail. The tower sky-bridge is still the safe high road. `floor_saw_probe` (suite), `floor_saw_shot --level=suburb` (windowed).
 - **Cryo vents in the Mistral Cryo-Core.** The core's east gap now has three ruptured coolant vents across it. They work like the Crucible's fire vents, in ice: a grate frosts over white and hisses for 1.2 s, then blasts a column of freezing vapour for 1.2 s, and the three go off a third of a beat apart, so two are always cold. The first one you see frosting over pops its own one-time hint. They count against the core's "never touch a hazard" bonus. Def key `fire_vents` with `cryo: true`. `fire_vent_probe` (suite), `fire_vent_shot --level=mistral` (windowed).

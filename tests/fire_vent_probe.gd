@@ -7,7 +7,8 @@ extends Node3D
 ## (3) a player standing on the grate burns only while it erupts, several
 ##     ticks per eruption, never while it warns; one standing just outside
 ##     the ring is never touched;
-## (4) a robot on the grate burns, one 3 m off does not;
+## (4) robots are never hurt: not on the grate, not 3 m off (traps are for the
+##     player);
 ## (5) the first warning a nearby player sees teaches the rule, once;
 ## (6) the Crucible floors both bulkhead gaps with a row of vents that spans
 ##     the (scaled) gap, phased so no two in a row erupt at once;
@@ -145,8 +146,8 @@ func _run() -> void:
 		only_erupt = only_erupt and s == FireVent.Phase.ERUPT
 	_check("a player on the grate burns while it erupts, never while it warns", only_erupt,
 		"(%d hits, states %s)" % [hit_states.size(), hit_states])
-	_check("a robot on the grate burns", bot_hits[near_bot] >= 8, "(%d)" % bot_hits[near_bot])
-	_check("a robot 3 m off does not", bot_hits[far_bot] == 0, "(%d)" % bot_hits[far_bot])
+	_check("a robot on the grate is not hurt", bot_hits[near_bot] == 0, "(%d)" % bot_hits[near_bot])
+	_check("a robot 3 m off is not hurt", bot_hits[far_bot] == 0, "(%d)" % bot_hits[far_bot])
 	_check("the first warning teaches the rule, once", taught.count(FireVent.TEACH_TEXT) == 1, "(%s)" % [taught])
 
 	# Just outside the hazard ring: never touched.

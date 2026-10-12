@@ -4,7 +4,7 @@ extends Node3D
 ##     ground plane) of a player standing inside its coverage;
 ## (2) every pour is telegraphed: `aiming` for at least 1.0 s before it pours;
 ## (3) the pour lands where it aimed, on the player, and the molten pool hurts
-##     them;
+##     them, but not a robot standing in it;
 ## (4) the pool cools away: gone within pool_time + 1.5 s;
 ## (5) a player outside the coverage is never poured on;
 ## (6) The Crucible's crane covers the second forge ring and the pour-gate
@@ -79,6 +79,24 @@ func _run() -> void:
 			await get_tree().physics_frame
 			w += get_physics_process_delta_time()
 		_check("the pool burns the player", not burns.is_empty(), "(%s)" % str(burns))
+		# A robot standing in the same pool is not burned (traps are for the player).
+		var bot: EnemyBase = (load("res://scenes/enemies/android.tscn") as PackedScene).instantiate()
+		add_child(bot)
+		bot.global_position = at + Vector3(0.6, 0.0, 0.0)
+		# Kept in the physics world while frozen: the pool finds bodies through
+		# its Area3D, and a disabled body is otherwise removed (a vacuous pass).
+		bot.disable_mode = CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
+		bot.process_mode = Node.PROCESS_MODE_DISABLED
+		var bot_burns := [0]
+		bot.hp.damaged.connect(func(_a: float, src) -> void:
+			if src is LavaHazard:
+				bot_burns[0] += 1)
+		w = 0.0
+		while w < 1.5:
+			await get_tree().physics_frame
+			w += get_physics_process_delta_time()
+		_check("a robot in the pool is not burned", bot_burns[0] == 0, "(%d)" % bot_burns[0])
+		bot.queue_free()
 		w = 0.0
 		var gone := false
 		while w < crane.pool_time + 1.5 and not gone:

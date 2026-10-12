@@ -90,7 +90,7 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 <!-- lat: { "require-code-mention": true } -->
 The `presses` def key builds hydraulic stamping presses: a head that slams a striped footprint once a period and crushes whatever is under it.
 
-* The head cocks for a telegraph (red lamps, glowing lip) before it drops; the slam hits everything in the footprint once. The player takes `dmg` (45) and is shoved out of an open side; a robot takes 600, a boss chassis (500+ authored HP) a fifth of that.
+* The head cocks for a telegraph (red lamps, glowing lip) before it drops; a player in the footprint at the slam takes `dmg` (45), once, and is shoved out of an open side. Robots are never hurt (traps are for the player; the zone only watches the player layer).
 * Pillars stand at the ends of the footprint's long axis and, with the beam, are solid world geometry the navmesh bakes round. The head has no collision, so the footprint stays walkable and nothing wedges in it.
 * `phase` (0..1 of a period) staggers a line so the slam travels down it. Pos and size scale with the world; clearance does not.
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
@@ -111,7 +111,7 @@ The `ziplines` def key strings a two-way cable between two decks.
 The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-and-black hazard ring that erupts a column of flame once a period.
 
 * Every eruption is warned for 1.2 s (`WARN_TIME`): the grate glows from dull red to orange, flames lick up through it, an orange light swells, the ring pulses and it rumbles. The column then burns for 1.2 s (`ERUPT_TIME`).
-* While it erupts, the player standing on it takes `dmg` (12) every 0.25 s and a robot 40, so luring a robot over a vent works. Vents are in the `hazard` group (they count against the "dry" bonus) and have no collision.
+* While it erupts, the player standing on it takes `dmg` (12) every 0.25 s. Robots are never hurt: traps are for the player. Vents are in the `hazard` group (they count against the "dry" bonus) and have no collision.
 * `phase` (0..1 of a period) staggers a row so the eruption rolls across it. Pos scales with the world; `radius` (1.4) and `height` (3.2) stay authored.
 * The first vent a player sees warming up, from within 7 m of its ring, teaches the rule once per run through `GameState.teach_once`.
 * The Crucible floors both bulkhead gaps with a row of three, a third of a period apart, so the way in and the meltdown run out both cross a row with two vents always cold.
@@ -145,7 +145,7 @@ The `shock_floors` def key lays an electrified tile floor that arcs in a pattern
 <!-- lat: { "require-code-mention": true } -->
 The `saws` def key builds floor saws: a spinning blade that runs a slot in the floor from `a` to `b` and back, for ever.
 
-* The lane either side of the slot (`LANE_HALF`, 0.55 m) is painted in hazard stripes, and the stripes are the danger. A blade passing a body in the lane cuts it: the player takes `dmg` (25) and is thrown out of the lane to their side, a robot takes 90 (once per 0.7 s each).
+* The lane either side of the slot (`LANE_HALF`, 0.55 m) is painted in hazard stripes, and the stripes are the danger. A blade passing a body in the lane cuts it: the player takes `dmg` (25), once per 0.7 s, and is thrown out of the lane to their side. Robots are never cut: traps are for the player.
 * It is jumpable: the blade's top is 0.85 m up (`BLADE_TOP`), under a jump's 1.17 m apex. Stepping out of the stripes also clears it.
 * It is always telegraphed: the blade is out of the slot and whines, the end lamp it runs toward blinks red, and a player standing in its lane gets a blip and a flash of the stripes `WARN_LEAD` (0.7 s) before it reaches them, once per approach. The first saw a player walks up to (within 6 m of the lane) teaches the rule once per run through `GameState.teach_once`.
 * `speed` (4.5 m/s), `pause` (0.5 s at each end) and `phase` (0..1 of a round trip). Both ends scale with the world. No collision; in the `hazard` group.
@@ -193,7 +193,7 @@ The `ladle_crane` def key builds an overhead bridge crane that hunts the player 
 * Each pour is telegraphed: the ladle stops over the player, a red ring pulses on the floor and the ladle tilts for 1.4 s. Then a molten pool (a recoloured `LavaHazard` with the amber hazard border, burns the player only) lies there for 6 s. One pour every `period` s.
 * Keep the coverage clear of towers, sky-bridges and tall hero pieces: the ladle hangs 4.2 m under the rails.
 * The Crucible's crane covers the east half of the foundry floor, from the second forge ring to the pour-gate.
-* `tests/ladle_crane_probe` checks it hunts, telegraphs 1.0+ s, pours on the player, the pool burns and cools away, it never pours outside its coverage, and that the Crucible coverage holds ring 2 and the escape while the ladle clears both towers by 2 m.
+* `tests/ladle_crane_probe` checks it hunts, telegraphs 1.0+ s, pours on the player, the pool burns the player but not a robot in it (a `LavaHazard` only watches the player layer) and cools away, it never pours outside its coverage, and that the Crucible coverage holds ring 2 and the escape while the ladle clears both towers by 2 m.
 
 ## Conveyor Belts
 <!-- lat: { "require-code-mention": true } -->

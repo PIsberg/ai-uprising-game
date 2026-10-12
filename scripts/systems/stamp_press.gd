@@ -3,10 +3,9 @@ class_name StampPress
 extends Node3D
 ## A hydraulic stamping press: two pillars and a crossbeam over a striped
 ## footprint, and a heavy head that rides up to `clearance`, cocks, and slams
-## to the floor once every `period` seconds. Anything under it at the slam is
-## hit: the player takes `damage` and is shoved out of the side, a robot takes
-## `robot_damage` (a boss chassis a fraction), so a robot that chases you
-## through a press line on the wrong beat gets stamped. Every slam is
+## to the floor once every `period` seconds. A player under it at the slam
+## takes `damage` and is shoved out of the side. Robots are never hurt: traps
+## are for the player. Every slam is
 ## telegraphed: the warning lamps go red, the hydraulics whine and the head
 ## cocks up for `telegraph` seconds before it drops. Pillars and beam are solid
 ## (cover, and the navmesh bakes round them); the head is not, so nothing ever
@@ -21,27 +20,14 @@ signal slammed
 @export var period: float = 3.2               ## Seconds between slams.
 @export var phase: float = 0.0                ## 0..1 of a period: offsets a line of presses.
 @export var damage: float = 45.0              ## To the player per slam.
-@export var robot_damage: float = 600.0       ## To a robot per slam (a boss takes BOSS_SHARE).
 @export var shove: float = 10.0               ## m/s the player is thrown out of the side.
 
-const BOSS_SHARE := 0.2
-const BOSS_HP := 500.0          ## authored health at which a chassis counts as a boss
 const HEAD_THICK := 1.0
 const BEAM_THICK := 0.9
 const PILLAR := 0.7
 const COCK := 0.3               ## m the head lifts while it telegraphs
 const FLOOR_GAP := 0.05         ## head underside at the bottom of its stroke
 const PLAYER_LAYER := 2
-const ENEMY_LAYER := 4
-const STAMPED_GAP := 6.0        ## s between STAMPED callouts
-const STAMPED_LINES := [
-	"Quality control: defect removed.",
-	"Batch recalled. Permanently.",
-	"It was not a load-bearing robot.",
-	"Line 04 does not stop for anyone. Including us.",
-]
-static var _last_callout := -100.0
-static var _callouts := 0
 
 var telegraphing := false
 var _t := 0.0
@@ -154,10 +140,10 @@ func _build() -> void:
 	_light.shadow_enabled = false
 	_light.position = Vector3.UP * (_top - 0.6)
 	add_child(_light)
-	# The crush zone: the footprint, floor to above head height of a robot.
+	# The crush zone: the footprint, floor to above the player's head.
 	_zone = Area3D.new()
 	_zone.collision_layer = 0
-	_zone.collision_mask = PLAYER_LAYER | ENEMY_LAYER
+	_zone.collision_mask = PLAYER_LAYER
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
 	bs.size = Vector3(size.x, 2.4, size.y)
@@ -292,25 +278,8 @@ func _slam() -> void:
 				else Vector3(signf(off.x) if off.x != 0.0 else 1.0, 0, 0)
 			if "velocity" in b:
 				b.velocity = side * shove + Vector3.UP * 3.0
-		elif b is EnemyBase:
-			var e := b as EnemyBase
-			if e.state == EnemyBase.State.DEAD or e.hp == null:
-				continue
-			var boss := e.max_health * e._health_mult >= BOSS_HP
-			var was_alive: bool = e.hp.is_alive()
-			e.hp.apply_damage(robot_damage * (BOSS_SHARE if boss else 1.0), self, false, center + Vector3.UP * 3.0, true)
-			if was_alive and not e.hp.is_alive():
-				_stamped_callout()
 	_slam_fx()
 	slammed.emit()
-
-func _stamped_callout() -> void:
-	var now := Time.get_ticks_msec() / 1000.0
-	if now - _last_callout < STAMPED_GAP:
-		return
-	_last_callout = now
-	GameState.skirmish_event.emit("STAMPED", STAMPED_LINES[_callouts % STAMPED_LINES.size()])
-	_callouts += 1
 
 func _slam_fx() -> void:
 	AudioBus.play_synth_at("impact_metal", global_position, 2.0, 0.42)

@@ -7,7 +7,7 @@ extends Node3D
 ## (3) a player in the lane with their feet 1.0 m up (mid-jump) is never cut;
 ##     one standing just outside the stripes is never cut nor warned;
 ## (4) a cut throws the player out of the lane, to their side;
-## (5) a robot in the lane is cut, one 2 m off is not;
+## (5) robots are never cut, in the lane or 2 m off (traps are for the player);
 ## (6) walking up to a saw teaches the rule, once;
 ## (7) the Assembly's north gap is guarded by two slots, either side of the
 ##     bulkhead, each blade reaching to within a body's width of both edges
@@ -154,8 +154,8 @@ func _run() -> void:
 			if src is FloorSaw:
 				robot_cuts[bot] += 1)
 	await _phys(saw.round_trip() + 0.2)
-	_check("a robot in the lane is cut", robot_cuts[in_lane] >= 2, "(%d)" % robot_cuts[in_lane])
-	_check("a robot 2 m off is not", robot_cuts[off_lane] == 0, "(%d)" % robot_cuts[off_lane])
+	_check("a robot in the lane is not cut", robot_cuts[in_lane] == 0, "(%d)" % robot_cuts[in_lane])
+	_check("a robot 2 m off is not cut", robot_cuts[off_lane] == 0, "(%d)" % robot_cuts[off_lane])
 	saw.queue_free()
 
 	_assembly()

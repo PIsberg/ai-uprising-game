@@ -7,8 +7,8 @@ extends Node3D
 ## yellow-and-black stripes, and the stripes are the danger: stand in them
 ## when the blade comes and it cuts you (`damage`, and you are thrown out of
 ## the lane); step out of the stripes, or jump it (its top is BLADE_TOP m up,
-## under a jump's 1.17 m), and it passes. Robots in its way are cut too
-## (`robot_damage`). It is always telegraphed: the blade is out and loud,
+## under a jump's 1.17 m), and it passes. Robots are never cut: traps are for
+## the player. It is always telegraphed: the blade is out and loud,
 ## the end lamp it is running toward blinks red, and a player standing in its
 ## lane gets a blip and a flash of the stripes WARN_LEAD s before it reaches
 ## them (`warned`). The first saw a player walks up to teaches the rule once
@@ -22,7 +22,6 @@ signal warned   ## the blade will reach the player in its lane in WARN_LEAD s
 @export var pause: float = 0.5                ## s the blade idles at each end
 @export var phase: float = 0.0                ## 0..1 of a round trip
 @export var damage: float = 25.0              ## to the player per cut
-@export var robot_damage: float = 90.0        ## to a robot per cut
 
 const RADIUS := 0.75          ## blade radius
 const AXLE_Y := 0.1           ## blade centre over the floor (the rest is in the slot)
@@ -253,14 +252,6 @@ func _physics_process(delta: float) -> void:
 	var pl := get_tree().get_first_node_in_group("player") as Node3D
 	if pl != null:
 		_player_tick(pl, off, head)
-	for n in get_tree().get_nodes_in_group("enemy"):
-		var e := n as EnemyBase
-		if e == null or e.state == EnemyBase.State.DEAD or e.hp == null:
-			continue
-		if _cuts(e, off) and float(_cool.get(e.get_instance_id(), 0.0)) <= 0.0:
-			_cool[e.get_instance_id()] = CUT_GAP
-			e.hp.apply_damage(robot_damage, self, false, blade_position(), true)
-			AudioBus.play_synth_at("impact_metal", e.global_position, 0.0, 1.6)
 
 ## Where `n` stands relative to the slot: (along, across), on the ground plane.
 func _lane_coords(n: Node3D) -> Vector2:
