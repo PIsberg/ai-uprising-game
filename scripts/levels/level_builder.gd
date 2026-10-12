@@ -296,6 +296,7 @@ func _ready() -> void:
 	_build_presses(def)
 	_build_lifts(def)
 	_build_conveyors(def)
+	_build_ladle_crane(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
@@ -2403,6 +2404,19 @@ func _build_scanners(def: Dictionary) -> void:
 		sc.position = e.get("pos", Vector3(0, 5, 0))
 		sc.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 		add_child(sc)
+
+## The foundry's hunting overhead crane (LadleCrane): pours molten pools on
+## the player inside its coverage.
+func _build_ladle_crane(def: Dictionary) -> void:
+	if not def.has("ladle_crane"):
+		return
+	var e: Dictionary = def["ladle_crane"]
+	var c := LadleCrane.new()
+	c.span_x = e.get("span_x", Vector2(-10, 10))
+	c.span_z = e.get("span_z", Vector2(-10, 10))
+	c.height = float(e.get("height", 10.0))
+	c.period = float(e.get("period", 8.0))
+	add_child(c)
 
 ## Conveyor belts (ConveyorBelt): flat belts that carry whatever stands on
 ## them along `dir` at `speed`.

@@ -96,6 +96,16 @@ The `presses` def key builds hydraulic stamping presses: a head that slams a str
 * The Assembly builds one into the east freight bulkhead's gap and a line of three across the dock lane, so the meltdown run times them.
 * `tests/stamp_press_probe` covers the hit, the shove, the crush, the telegraph and the phase, and checks the bulkhead press covers the scaled gap.
 
+## Ladle Cranes
+<!-- lat: { "require-code-mention": true } -->
+The `ladle_crane` def key builds an overhead bridge crane that hunts the player with a ladle of molten metal.
+
+* It rides two runway rails under the roof across its coverage (`span_x` by `span_z`, scaled with the world; rail `height` authored). A player inside the coverage (or within 3 m of it) is followed; outside it the crane waits.
+* Each pour is telegraphed: the ladle stops over the player, a red ring pulses on the floor and the ladle tilts for 1.4 s. Then a molten pool (a recoloured `LavaHazard` with the amber hazard border, burns the player only) lies there for 6 s. One pour every `period` s.
+* Keep the coverage clear of towers, sky-bridges and tall hero pieces: the ladle hangs 4.2 m under the rails.
+* The Crucible's crane covers the east half of the foundry floor, from the second forge ring to the pour-gate.
+* `tests/ladle_crane_probe` checks it hunts, telegraphs 1.0+ s, pours on the player, the pool burns and cools away, it never pours outside its coverage, and that the Crucible coverage holds ring 2 and the escape while the ladle clears both towers by 2 m.
+
 ## Conveyor Belts
 <!-- lat: { "require-code-mention": true } -->
 The `conveyors` def key lays factory belts that carry whatever stands on them, the player and robots alike.
