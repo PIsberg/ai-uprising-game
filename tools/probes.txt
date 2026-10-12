@@ -209,3 +209,5 @@ res://tests/dog_gait_probe.tscn
 res://tests/enforcer_rifle_probe.tscn
 # LADLE CRANE: hunts the player, telegraphs, pours a cooling molten pool; Crucible coverage clear of the towers.
 res://tests/ladle_crane_probe.tscn
+# GUNSLINGER: right gun-arm raised onto the target; slugs leave the gun tip.
+res://tests/gunslinger_arm_probe.tscn

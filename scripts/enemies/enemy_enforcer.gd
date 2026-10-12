@@ -32,12 +32,7 @@ const RIFLE_PARTS := ["Object_11", "Object_3", "Object_4", "Object_17", "Object_
 const RIFLE_GRIP := "Object_10"
 const RIFLE_BARREL := "Object_11"
 const AIM_RATE := 5.0 ## 1/s: port arms to shouldered in about 0.2 s
-var _rifle: Array = []
-var _rifle_ready := false
-var _grip := Vector3.ZERO ## body frame, at port arms
-var _tip := Vector3.ZERO
-var _aim_w := 0.0
-var _aim_q := Quaternion.IDENTITY ## rest barrel -> the last aim, body frame
+var _rifle: AimedPart
 
 func _ready() -> void:
 	super._ready()
@@ -112,39 +107,23 @@ func _setup_rifle() -> void:
 	var tube := find_child(RIFLE_BARREL, true, false) as MeshInstance3D
 	if grip == null or tube == null or not grip.is_visible_in_tree():
 		return
+	var parts: Array = []
 	for n in RIFLE_PARTS:
 		var mi := find_child(n, true, false) as MeshInstance3D
 		if mi:
-			_rifle.append(PartRig.entry(self, mi))
-	_grip = PartRig.mean(PartRig.body_points(self, grip))
-	var pts := PartRig.body_points(self, tube)
-	var far := 0.0
-	for q in pts:
-		far = maxf(far, q.distance_to(_grip))
-	var tip := PackedVector3Array()
-	for q in pts:
-		if q.distance_to(_grip) > far - 0.03:
-			tip.append(q)
-	_tip = PartRig.mean(tip)
-	_rifle_ready = true
+			parts.append(PartRig.entry(self, mi))
+	var g := PartRig.mean(PartRig.body_points(self, grip))
+	_rifle = AimedPart.new(parts, g, AimedPart.far_mean(PartRig.body_points(self, tube), g, 0.03), AIM_RATE)
 
 ## Shoulder the rifle onto the target while engaged (port arms otherwise);
 ## the muzzle rides the barrel's tip.
 func _tick_rifle(delta: float) -> void:
-	if not _rifle_ready:
+	if _rifle == null:
 		_setup_rifle()
 		return
 	var live := target != null and is_instance_valid(target)
 	var engaged := live and state in [State.CHASE, State.ATTACK]
-	_aim_w = move_toward(_aim_w, 1.0 if engaged else 0.0, AIM_RATE * delta)
-	if live:
-		var aim := global_transform.basis.inverse() * (target.global_position + Vector3.UP * 0.6 - global_transform * _grip)
-		if aim.length() > 0.01:
-			_aim_q = Quaternion((_tip - _grip).normalized(), aim.normalized())
-	# Eases out of the last aim when the target is gone.
-	var r := Basis(Quaternion.IDENTITY.slerp(_aim_q, smoothstep(0.0, 1.0, _aim_w)))
-	var lay := Transform3D(r, _grip - r * _grip)
-	for e in _rifle:
-		PartRig.pose(e, lay)
+	var at: Variant = target.global_position + Vector3.UP * 0.6 if live else null
+	var tip := _rifle.tick(self, at, engaged, delta)
 	if muzzle:
-		muzzle.global_position = global_transform * (_grip + r * (_tip - _grip))
+		muzzle.global_position = tip
