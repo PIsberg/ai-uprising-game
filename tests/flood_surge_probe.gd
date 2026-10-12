@@ -203,6 +203,18 @@ func _beds_overlap(a: Dictionary, b: Dictionary) -> bool:
 	var oz := (sa.y + sb.y) * 0.5 - absf(pa.z - pb.z)
 	return ox > 0.01 and oz > 0.01
 
+## The built level's own player must not die while a flood is forced: a death
+## frees the live beds and re-arms the surge (FloodSurge._on_player_died), so a
+## bed's stub was never burned and the check failed at random. On Tidecore the
+## real player took 106 damage from the level's robots in one live window
+## (#301). The real player is made invulnerable and the robots are frozen.
+func _spare_the_player() -> void:
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl and pl.get_node_or_null("Damageable"):
+		pl.get_node("Damageable").set("invulnerable", true)
+	for e in get_tree().get_nodes_in_group("enemy"):
+		(e as Node).process_mode = Node.PROCESS_MODE_DISABLED
+
 ## Build each flood level for real, force its surge, and put bodies on the exit
 ## (must stay dry) and in each bed (must burn).
 func _live() -> void:
@@ -217,7 +229,9 @@ func _live() -> void:
 		add_child(lvl)
 		for i in 10:
 			await get_tree().create_timer(0.25).timeout
+			_spare_the_player() # from the first tick: it must not die while the level loads either
 		GameState.current_state = GameState.State.PLAYING
+		_spare_the_player()
 		for f in floods:
 			var flood: Dictionary = (f["flood"] as Dictionary).duplicate(true)
 			flood["warn"] = 0.2
