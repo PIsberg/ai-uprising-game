@@ -6,12 +6,15 @@ extends Node3D
 ## (2) a pad with a height cap (`max_apex`, the indoor ceiling) keeps the
 ##     player's feet under it the whole flight, and still lands on target;
 ## (3) robots are not launched;
-## (4) NEON ARCADE's pads each land on a deck (a platform or the tower roof)
-##     and every arc clears the room's ceiling with head room (feet apex +
-##     1.9 m under it);
-## (5) in the built NEON level, a ride from each pad lands on its target
+## (4) on every level with pads (NEON ARCADE indoors, ALIEN under open sky)
+##     each pad lands on a deck (a platform or a tower roof), and indoors
+##     every arc clears the room's ceiling with head room (feet apex + 1.9 m
+##     under it);
+## (5) in each built level, a ride from each pad lands on its target
 ##     (nothing in the way: railings, pillars, the ceiling).
 ##   godot --headless --path . --audio-driver Dummy res://tests/jump_pad_probe.tscn
+
+const PAD_LEVELS := ["neon", "alien"]
 
 var ok := true
 
@@ -96,10 +99,17 @@ func _run() -> void:
 		hi = maxf(hi, e.global_position.y)
 	_check("robots are not launched", hi < 1.0, "(rose to %.2f)" % hi)
 
-	# NEON ARCADE.
-	var def := LevelDefs.get_def("neon")
+	for id in PAD_LEVELS:
+		_check_level_pads(id)
+	await _live_rides(player)
+	print("RESULT %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit()
+
+func _check_level_pads(id: String) -> void:
+	var def := LevelDefs.get_def(id)
 	var pads: Array = def.get("jump_pads", [])
-	_check("neon has jump pads", pads.size() >= 2, "(%d)" % pads.size())
+	_check("%s has jump pads" % id, pads.size() >= 2, "(%d)" % pads.size())
+	var indoor: bool = not def.get("open_sky", false)
 	var ceiling := 6.0
 	for tw in def.get("towers", []):
 		ceiling = maxf(ceiling, float(tw.get("height", 8.0)) + 2.5)
@@ -113,22 +123,24 @@ func _run() -> void:
 				on_deck = true
 		for tw in def.get("towers", []):
 			var tp: Vector3 = tw["pos"]
-			if Vector2(to.x - tp.x, to.z - tp.z).length() < float(tw.get("radius", 3.0)) - 0.6 and absf(to.y - (float(tw["height"]) + 0.2)) < 0.4:
+			if Vector2(to.x - tp.x, to.z - tp.z).length() < float(tw.get("radius", 3.0)) - 0.6 and absf(to.y - float(tw["height"])) < 0.3:
 				on_deck = true
-		_check("pad to %s lands on a deck" % to, on_deck)
-		var apex := JumpPad.apex_for(p["pos"], to, float(p.get("max_apex", ceiling - 2.0)))
-		_check("pad to %s clears the ceiling" % to, apex + 1.9 <= ceiling, "(feet apex %.2f, ceiling %.2f)" % [apex, ceiling])
-	await _live_neon(player)
-	print("RESULT %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit()
+		_check("%s pad to %s lands on a deck" % [id, to], on_deck)
+		if indoor:
+			var apex := JumpPad.apex_for(p["pos"], to, float(p.get("max_apex", ceiling - 2.0)))
+			_check("%s pad to %s clears the ceiling" % [id, to], apex + 1.9 <= ceiling, "(feet apex %.2f, ceiling %.2f)" % [apex, ceiling])
 
-func _live_neon(test_player: Node) -> void:
+func _live_rides(test_player: Node) -> void:
 	test_player.queue_free()
 	for c in get_children():
 		if c is StaticBody3D or c is JumpPad or c is EnemyBase:
 			c.queue_free()
 	await get_tree().physics_frame
-	var lvl: Node3D = (load("res://scenes/levels/level_neon.tscn") as PackedScene).instantiate()
+	for id in PAD_LEVELS:
+		await _live_level(id)
+
+func _live_level(id: String) -> void:
+	var lvl: Node3D = (load("res://scenes/levels/level_%s.tscn" % id) as PackedScene).instantiate()
 	add_child(lvl)
 	for i in 20:
 		await get_tree().physics_frame
@@ -141,5 +153,8 @@ func _live_neon(test_player: Node) -> void:
 		var jp := pad as JumpPad
 		var r: Array = await _ride(player, jp, jp.to)
 		var land: Vector3 = r[0]
-		print("  neon pad -> %s: landed %s after %.2f s" % [jp.to, land, r[2]])
-		_check("neon ride lands on %s" % jp.to, absf(land.y - jp.to.y) < 0.4 and Vector2(land.x - jp.to.x, land.z - jp.to.z).length() < 1.5, "(%s)" % land)
+		print("  %s pad -> %s: landed %s after %.2f s" % [id, jp.to, land, r[2]])
+		_check("%s ride lands on %s" % [id, jp.to], absf(land.y - jp.to.y) < 0.4 and Vector2(land.x - jp.to.x, land.z - jp.to.z).length() < 1.5, "(%s)" % land)
+	lvl.queue_free()
+	for i in 3:
+		await get_tree().physics_frame
