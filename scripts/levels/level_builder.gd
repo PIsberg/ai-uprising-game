@@ -301,6 +301,7 @@ func _ready() -> void:
 	_build_ladle_crane(def)
 	_build_jump_pads(def)
 	_build_laser_sweeps(def)
+	_build_laser_gates(def)
 	_build_ziplines(def)
 	_build_injectors(def)
 	_apply_objective_text(def)
@@ -2433,6 +2434,18 @@ func _build_laser_sweeps(def: Dictionary) -> void:
 			l.beams = e["beams"]
 		l.position = e.get("pos", Vector3.ZERO)
 		add_child(l)
+
+## Laser hurdle gates (LaserGate): a knee and a chest beam across a gap,
+## one live at a time, the next flickering before it lights.
+func _build_laser_gates(def: Dictionary) -> void:
+	for e in def.get("laser_gates", []):
+		var g := LaserGate.new()
+		g.width = float(e.get("width", 7.0))
+		g.axis = String(e.get("axis", "x"))
+		g.period = float(e.get("period", 3.2))
+		g.phase = float(e.get("phase", 0.0))
+		g.position = e.get("pos", Vector3.ZERO)
+		add_child(g)
 
 ## Jump pads (JumpPad): throw the player onto a deck. Indoors the arc is
 ## capped under the room's ceiling with head room.

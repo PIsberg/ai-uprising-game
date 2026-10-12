@@ -10,7 +10,10 @@ extends Node3D
 ## (4) a robot on the grate burns, one 3 m off does not;
 ## (5) the first warning a nearby player sees teaches the rule, once;
 ## (6) the Crucible floors both bulkhead gaps with a row of vents that spans
-##     the (scaled) gap, phased so no two in a row erupt at once.
+##     the (scaled) gap, phased so no two in a row erupt at once;
+## (7) Vulcan Forge puts vents on its recycler walkways: each sits on a
+##     walkway's top, its ring fits the walkway, it leaves no gap past it a
+##     body could use, and two on one walkway never erupt together.
 ##   godot --headless --path . --audio-driver Dummy res://tests/fire_vent_probe.tscn
 
 var ok := true
@@ -151,6 +154,7 @@ func _run() -> void:
 	vent.queue_free()
 
 	_crucible()
+	_forge()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
@@ -191,3 +195,41 @@ func _crucible() -> void:
 				d = minf(d, 1.0 - d) * per
 				apart = apart and d >= FireVent.ERUPT_TIME
 		_check("no two vents in the %s=%.1f row erupt at once" % [axis, at], apart)
+
+func _forge() -> void:
+	var def := LevelDefs.get_def("lava_world")
+	var vents: Array = def.get("fire_vents", [])
+	_check("lava_world has walkway vents", vents.size() >= 3, "(%d)" % vents.size())
+	var by_walk := {}
+	for v in vents:
+		var p: Vector3 = v["pos"]
+		var r := float(v.get("radius", 1.4))
+		var on: Dictionary = {}
+		for pl in def.get("platforms", []):
+			var c: Vector3 = pl["pos"]
+			var sz: Vector3 = pl["size"]
+			if absf(p.x - c.x) <= sz.x * 0.5 and absf(p.z - c.z) <= sz.z * 0.5 					and absf(c.y + sz.y * 0.5 - p.y) < 0.05:
+				# The narrowest platform under it is the walkway.
+				if on.is_empty() or minf(sz.x, sz.z) < minf((on["size"] as Vector3).x, (on["size"] as Vector3).z):
+					on = pl
+		_check("vent at %s sits on a walkway top" % p, not on.is_empty())
+		if on.is_empty():
+			continue
+		var sz: Vector3 = on["size"]
+		var half := minf(sz.x, sz.z) * 0.5
+		var c: Vector3 = on["pos"]
+		var off := absf(p.z - c.z) if sz.x > sz.z else absf(p.x - c.x)
+		_check("its ring fits the walkway", off + r + FireVent.RING <= half + 0.01,
+			"(ring %.2f, half width %.2f)" % [off + r + FireVent.RING, half])
+		_check("no gap past it a body could use", half - (r + FireVent.BODY_RADIUS * 0.5) - off <= 0.2,
+			"(%.2f m)" % (half - (r + FireVent.BODY_RADIUS * 0.5) - off))
+		var k := str(c)
+		if not by_walk.has(k):
+			by_walk[k] = []
+		(by_walk[k] as Array).append(float(v.get("phase", 0.0)))
+	for k in by_walk:
+		var ph: Array = by_walk[k]
+		for i in ph.size():
+			for j in range(i + 1, ph.size()):
+				var d := absf(float(ph[i]) - float(ph[j]))
+				_check("two vents on one walkway never erupt together", minf(d, 1.0 - d) * 4.0 >= FireVent.ERUPT_TIME)

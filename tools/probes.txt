@@ -225,3 +225,5 @@ res://tests/server_spin_probe.tscn
 res://tests/fire_vent_probe.tscn
 # FLOOR SAWS: blade runs its slot, cuts the lane (warned ahead), a jump or a step out clears it; Assembly gap slots.
 res://tests/floor_saw_probe.tscn
+# LASER GATES: knee/chest beams take turns, the next flickers first; crouch passes knee-off, jump passes chest-off; Uplink doors.
+res://tests/laser_gate_probe.tscn

@@ -165,6 +165,14 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	for e in def.get("laser_sweeps", []):
 		if e.has("pos"):
 			e["pos"] = _sv(e["pos"], s)
+	# Laser gates span a gap like the gate they stand in: centre and width
+	# stretch with the arena. Beam heights stay authored (they are body
+	# heights, not layout).
+	for e in def.get("laser_gates", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("width"):
+			e["width"] = float(e["width"]) * s
 	# Jump pads sit on the ground plane and land on a deck: both ends stretch
 	# with the arena; heights stay authored, like the decks they land on.
 	for e in def.get("jump_pads", []):
@@ -3224,6 +3232,15 @@ static func _uplink() -> Dictionary:
 			{"axis": "z", "at": -30, "gap": 8, "gap_pos": -12, "height": 4.4},
 			{"axis": "x", "at": 30, "gap": 8, "gap_pos": 24, "height": 4.4},
 		],
+		# Both blast doors are strung with laser hurdles: a knee beam and a chest
+		# beam across the doorway, one live at a time, swapping every 1.6 s,
+		# the next one flickering before it lights. Read the lit beam, jump or
+		# duck. Half a period apart, so the two doors never match.
+		# tests/laser_gate_probe.
+		"laser_gates": [
+			{"pos": Vector3(15, 0, -16), "width": 7.0, "axis": "x"},
+			{"pos": Vector3(-15, 0, 16), "width": 7.0, "axis": "x", "phase": 0.5},
+		],
 		"slogans": [
 			"SIGNAL JAMMED. HOPE JAMMED.",
 			"NO BARS FOR THE RESISTANCE",
@@ -5635,6 +5652,17 @@ static func _lava_world() -> Dictionary:
 		# half (its footprint stops short of the island's ammo).
 		"lifts": [
 			{"pos": Vector3(14, 1.6, -16.6), "size": Vector2(2.6, 2.6), "top": 8.0},
+		],
+		# Slag vents on the recycler walkways: every run out to a furnace island
+		# crosses one, and there is no stepping round it on a walkway, so you
+		# wait at the hazard ring for its cold beat. The long east walkway has
+		# two, half a period apart. Radius 1.5 keeps the ring on the (scaled)
+		# 3.64 m walkway. Heights are the walkway top. tests/fire_vent_probe.
+		"fire_vents": [
+			{"pos": Vector3(-26.5, 1.6, -6), "radius": 1.5},
+			{"pos": Vector3(6, 1.6, -22.5), "radius": 1.5, "phase": 0.25},
+			{"pos": Vector3(19, 1.6, 6), "radius": 1.5, "phase": 0.0},
+			{"pos": Vector3(25, 1.6, 6), "radius": 1.5, "phase": 0.5},
 		],
 		"ramps": [
 			{"pos": Vector3(0, 2.0, 2.4), "size": Vector3(2.6, 0.4, 4), "pitch": 14, "yaw": 0},
