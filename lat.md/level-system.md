@@ -113,8 +113,8 @@ The `lifts` def key builds an open cargo lift: a car on a four-post shaft betwee
 * The car is a moving `AnimatableBody3D` on the world layer, so the player stands on it and rides with it. Stand on it for 0.6 s and it carries you to the other landing; stand by a landing it is not at and it comes to you. It waits where it stops.
 * The navmesh cannot see the link, so robots never use a lift: a deck reached only by one is the player's. `tests/hazard_layout_probe` counts a goal past a lift as reached when the navmesh reaches the lift's bottom landing from the spawn and the goal from its top.
 * Pos and footprint scale with the world; heights (`pos.y`, `top`) stay authored, like platform heights.
-* LAVA WORLD stands one on the NE island, up to the ladle gantry 8 m over the NE pool.
-* `tests/cargo_lift_probe` rides it up, calls it back down, checks the car is solid ground at both ends, and checks LAVA WORLD's lift lands flush at both ends beside a deck nothing else reaches.
+* LAVA WORLD stands one on the NE island, up to the ladle gantry 8 m over the NE pool. WATER WORLD stands one on PUMP B, up to the pump crane cab 8 m over the water, the one dry place besides the reactor cap when the tide surge floods the low tier.
+* `tests/cargo_lift_probe` rides it up, calls it back down, checks the car is solid ground at both ends, and checks each sea level's lift lands flush at both ends beside a deck nothing else reaches, at least 1 m above any flood its level raises.
 
 ## Horizon Walkers
 <!-- lat: { "require-code-mention": true } -->

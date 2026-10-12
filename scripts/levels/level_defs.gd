@@ -5809,6 +5809,7 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(-4.5, 4, -31), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14}, # SCRAM north
 			{"pos": Vector3(31, 4, -4.5), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14},  # SCRAM east
 			{"pos": Vector3(-24.5, 4, 31), "color": Color(1.0, 0.25, 0.18), "energy": 2.6, "range": 14}, # SCRAM south
+			{"pos": Vector3(25.5, 10.0, 6.0), "color": Color(0.55, 0.85, 1.0), "energy": 2.0, "range": 12}, # pump crane cab (mast in the water, off the deck)
 		],
 		# Every segment OVERLAPS its neighbours (no jump gaps: a missed jump is a
 		# swim with the sharks). Low tier y=1.4 (deck top 1.6): 2.6-wide gantries,
@@ -5840,6 +5841,13 @@ static func _water_world() -> Dictionary:
 			{"pos": Vector3(31, 1.4, 0), "size": Vector3(6, 0.4, 6), "color": Color(0.16, 0.2, 0.24)},       # SCRAM east
 			{"pos": Vector3(-20, 1.4, 26.5), "size": Vector3(2.6, 0.4, 7), "color": Color(0.16, 0.2, 0.24)}, # PUMP C -> SCRAM south
 			{"pos": Vector3(-20, 1.4, 31), "size": Vector3(6, 0.4, 6), "color": Color(0.16, 0.2, 0.24)},     # SCRAM south
+			# Pump crane cab: a deck 8 m up over the water south of PUMP B, reached
+			# only by the cargo lift on the island's south-east corner. When the
+			# tide surge drowns the low tier, it is the other dry place.
+			{"pos": Vector3(21.5, 7.8, 6.0), "size": Vector3(4, 0.4, 5), "color": Color(0.2, 0.24, 0.28)},
+		],
+		"lifts": [
+			{"pos": Vector3(21.5, 1.6, 2.2), "size": Vector2(2.6, 2.6), "top": 8.0},
 		],
 		# Two climbs onto the cap, from the ring's south and east sides, so the top
 		# is a loop and not a cul-de-sac. "stairs", not "ramps": stair endpoints
@@ -5936,6 +5944,7 @@ static func _water_world() -> Dictionary:
 			{"kind": "health", "pos": Vector3(-16, 3.5, 0)},   # west lookout
 			{"kind": "ammo", "pos": Vector3(2, 1.7, -21)},     # PUMP A
 			{"kind": "ammo", "pos": Vector3(19, 1.7, 2)},      # PUMP B
+			{"kind": "health", "pos": Vector3(21.5, 8.1, 7.0)}, # pump crane cab, up the lift
 			{"kind": "health", "pos": Vector3(-21, 1.7, 21)},  # PUMP C
 			{"kind": "ammo", "pos": Vector3(-19, 1.7, 19)},    # PUMP C
 			{"kind": "ammo", "pos": Vector3(10, 1.7, 10)},     # ring SE corner

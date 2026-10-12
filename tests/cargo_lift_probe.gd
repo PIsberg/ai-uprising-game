@@ -7,9 +7,11 @@ extends Node3D
 ##     empty car back down within travel time + 2 s;
 ## (3) the car's top surface is solid ground at both ends (a ray down from
 ##     above its centre hits it within 0.05 m of the landing height);
-## (4) LAVA WORLD has a lift whose top lands flush (within 0.15 m) beside a
-##     deck that nothing else reaches, and whose bottom is flush with the
-##     island it stands on.
+## (4) LAVA WORLD and WATER WORLD each have a lift whose top lands flush
+##     (within 0.15 m) beside a deck that nothing else reaches, and whose
+##     bottom is flush with the island it stands on;
+## (5) a lift's top landing stays dry: at least 1 m above the highest flood
+##     any task on its level raises (WATER WORLD's tide surge).
 ##   godot --headless --path . --audio-driver Dummy res://tests/cargo_lift_probe.tscn
 
 var ok := true
@@ -91,10 +93,22 @@ func _run() -> void:
 		t2 += get_physics_process_delta_time()
 	_check("empty car comes down when called", lift.at_bottom(), "(%.1f s)" % t2)
 
-	# LAVA WORLD's lift: flush at both ends, the top deck reached by nothing else.
-	var def := LevelDefs.get_def("lava_world")
+	# The sea levels' lifts: flush at both ends, the top deck reached by
+	# nothing else, and above the flood.
+	for id in ["lava_world", "water_world"]:
+		await _check_level(id)
+	print("RESULT %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit()
+
+func _check_level(id: String) -> void:
+	var def := LevelDefs.get_def(id)
 	var lifts: Array = def.get("lifts", [])
-	_check("lava_world has a lift", lifts.size() >= 1, "(%d)" % lifts.size())
+	_check("%s has a lift" % id, lifts.size() >= 1, "(%d)" % lifts.size())
+	var flood := -INF
+	for t in def.get("tasks", []):
+		for w in t.get("waves", []):
+			for b in (w.get("flood", {}) as Dictionary).get("beds", []):
+				flood = maxf(flood, (b["pos"] as Vector3).y)
 	for l in lifts:
 		var lp: Vector3 = l["pos"]
 		var ls: Vector2 = l.get("size", Vector2(2.6, 2.6))
@@ -121,5 +135,5 @@ func _run() -> void:
 			if absf(to.y - ltop) < 1.0 and Vector2(to.x - lp.x, to.z - lp.z).length() < 12.0:
 				reached = true
 		_check("only the lift reaches that deck", not reached)
-	print("RESULT %s" % ("PASS" if ok else "FAIL"))
-	get_tree().quit()
+		if flood > -INF:
+			_check("%s lift top stays above the flood" % id, ltop >= flood + 1.0, "(top %.2f, flood %.2f)" % [ltop, flood])
