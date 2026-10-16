@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-422 probes total: **148** wired into the headless suite (`suite`), **84**
+423 probes total: **149** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -373,6 +373,7 @@ or GPU-timing probes; `--headless` renders these black).
 | prop_lineup | Prop scenes lined up to eyeball model swaps | windowed |
 | props_test | MeshInstance3D count across `LevelBuilder.PROP_SCENES` sanity-checks every prop scene loads | headless |
 | purge_probe | "survive" wave escalation authoring drift + GPT Foundry PURGE PROTOCOL climax against silently-firing-nothing waves | headless |
+| ramp_foot_probe | Ramps robots can climb (`LevelBuilder._build_ramp_wedge`): a ground-foot ramp has its surface across its width 1 m up the climb, 1.5 m off the centre line; a real android walking to the deck from 1.6 m off the centre line climbs it (red before the fix: the foot tapered to a point left 0.3-0.5 m side faces and both androids sat at the foot); an elevated-foot ramp still tapers so a tower corner's departing ramp never overhangs the arriving one | suite |
 | ramp_probe | Player capsule swept up every authored ramp (`test_move`) to catch lips/gaps that block walkability | headless |
 | rampage_probe | RAMPAGE kill-streak: chained kills spike escalating damage/fire/speed buffs + heal + banner, collapsing on break | windowed |
 | range_screenshot | Gun range captured after the builder settles | windowed |

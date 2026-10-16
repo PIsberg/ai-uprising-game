@@ -1352,6 +1352,7 @@ func _merged_aabb(root: Node3D) -> AABB:
 # RAMP_TOP_EMBED metres (buries into the landing instead of poking above it).
 const RAMP_FOOT_SINK := 0.05   # foot sits this far below the true ground point
 const RAMP_TOP_EMBED := 0.4    # flat run-out past the true top point, into the landing
+const RAMP_GROUND_FOOT := 0.3  # a foot at or below this height is on the ground: no width taper
 const PLAYER_CLEARANCE_M := 2.2   # player capsule (1.8 m, see player.tscn) + margin
 
 func _build_ramps(def: Dictionary) -> void:
@@ -1463,11 +1464,21 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 	# function already fixes). Tapering to a point removes that overhanging
 	# shelf; for an ordinary (non-crossing) ramp it's imperceptible — just a
 	# few centimetres of pointed toe right at ground/landing level.
+	# ...for the PLAYER, whose step-up assist climbs the taper's side faces.
+	# Robots have none: a ground-level foot tapered to a point leaves 0.3-0.5 m
+	# walls either side of the tip that pin any robot approaching off the centre
+	# line (tests/ramp_foot_probe; an android sat 20 s at the Suburb bridge).
+	# A ground foot has no ramp arriving beneath it to overhang, so it keeps
+	# full width; only an elevated foot (a tower corner, a sky-bridge) tapers.
 	var taper_t := minf(run * 0.35, 1.8) / run if run > 0.01 else 1.0
 	var taper_pt := from.lerp(to, taper_t)
 
 	var pts := PackedVector3Array()
-	pts.append(foot)   # single point: zero width AND thickness at the foot
+	if from.y <= RAMP_GROUND_FOOT:
+		pts.append(foot + right) # full-width knife edge on the ground
+		pts.append(foot - right)
+	else:
+		pts.append(foot) # single point: zero width AND thickness at the foot
 	for p in [taper_pt, top, tab]:
 		pts.append(p + right)
 		pts.append(p - right)
