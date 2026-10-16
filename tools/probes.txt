@@ -239,3 +239,5 @@ res://tests/ramp_foot_probe.tscn
 res://tests/intercept_probe.tscn
 # DATA LEAK event: a mid-range robot runs for an uplink; kill pays and drops, an upload vanishes it and sends a hunter.
 res://tests/data_leak_probe.tscn
+# CRUMBLE TILES: slabs crack, drop and reform for the player only; authored lines are jumpable, over a bed, off the navmesh.
+res://tests/crumble_tile_probe.tscn

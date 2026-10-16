@@ -298,6 +298,7 @@ func _ready() -> void:
 	_build_saws(def)
 	_build_shock_floors(def)
 	_build_pendulums(def)
+	_build_crumble_tiles(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2585,6 +2586,24 @@ func _build_pendulums(def: Dictionary) -> void:
 		p.phase = float(e.get("phase", 0.0))
 		p.position = e.get("pos", Vector3.ZERO)
 		add_child(p)
+
+## Lines of crumbling slabs over a hazard bed (CrumbleTile): `count` slabs
+## evenly spaced strictly between `from` and `to` (the deck edges you jump
+## from and onto), tops at their y. Parented to the level root, not the
+## navmesh region, so no robot ever paths across them.
+func _build_crumble_tiles(def: Dictionary) -> void:
+	var li := 0
+	for e in def.get("crumble_tiles", []):
+		var from: Vector3 = e.get("from", Vector3.ZERO)
+		var to: Vector3 = e.get("to", Vector3.ZERO)
+		var n := int(e.get("count", 4))
+		for i in n:
+			var tile := CrumbleTile.new()
+			tile.size = float(e.get("size", 2.2))
+			tile.line = li
+			tile.position = from.lerp(to, float(i + 1) / float(n + 1))
+			add_child(tile)
+		li += 1
 
 func _build_lava(def: Dictionary) -> void:
 	for entry in def.get("lava", []):

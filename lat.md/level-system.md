@@ -119,6 +119,16 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
+## Crumbling Slabs
+<!-- lat: { "require-code-mention": true } -->
+`crumble_tiles` lines are stepping-stone shortcuts over a hazard bed (`CrumbleTile`, built by `_build_crumble_tiles`).
+
+* A slab is a `StaticBody3D` on layer 1 whose origin is the top face's centre. It watches the player's feet (no Area3D): over the footprint and within `FEET_ABOVE` of the top starts CRACKING, and `HOLD` s later the collision shape is disabled and the visual sinks.
+* `GONE_TIME` later it reforms over `REFORM_TIME`, never while the player is in its column (both the start and the end of the reform check).
+* The warning is a hue and width change (`_heat`: amber to white-hot, cracks thickening, the slab body glowing), not brightness: the crack material is unshaded, so emission energy did nothing.
+* Slabs are children of the level root, not the navmesh region, so robots never path over them; they never crack for robots either.
+* Vulcan Forge (lava_world): five slabs across the NW pool from the spawn island to the hub's west edge. `tests/crumble_tile_probe`, `tests/crumble_tile_shot`.
+
 ## Pendulum Blades
 <!-- lat: { "require-code-mention": true } -->
 The `pendulums` def key stands a gantry across a walkway with a toothed blade swinging across the path under it.

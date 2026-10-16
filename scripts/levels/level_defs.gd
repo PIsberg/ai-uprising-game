@@ -235,6 +235,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("cell"):
 			e["cell"] = float(e["cell"]) * s
+	# Crumble lines run deck edge to deck edge: both ends scale on the ground
+	# plane; slab size and heights stay authored.
+	for e in def.get("crumble_tiles", []):
+		for k in ["from", "to"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Pendulum gantries straddle a walkway: position and width stretch with
 	# it (the walkway's footprint scales). Pivot height and arm stay authored.
 	for e in def.get("pendulums", []):
@@ -5754,6 +5760,18 @@ static func _lava_world() -> Dictionary:
 		# when the blade will miss where you stand for the next half second and
 		# WAIT when it will not. Width is the walkway's plus the posts, which
 		# stand in the slag. tests/pendulum_blade_probe.
+		# The stepping-stone shortcut: five slabs of cooled slag across the NW
+		# pool, from the spawn island's south edge to the central hub's west
+		# edge, a straight run where the walkways go round by the north spur.
+		# Each slab drops 0.7 s after you land on it and reforms 3.5 s later,
+		# so you cross at a run, hopping 1 m gaps. Robots never path over
+		# them. The far end lands on the hub just north of the dry cross-lane
+		# (|z| < 3 before scaling): aimed at the hub's middle, the last slab
+		# hung over the lane, where a fall costs nothing. Passes 1.9 m (scaled)
+		# from the smelter pillar at (-9.5, -9.5). tests/crumble_tile_probe.
+		"crumble_tiles": [
+			{"from": Vector3(-15, 1.6, -12), "to": Vector3(-4, 1.6, -3.5), "count": 5},
+		],
 		"pendulums": [
 			{"pos": Vector3(-22, 1.6, -1), "width": 2.9, "path": "z"},
 			{"pos": Vector3(-22, 1.6, 9), "width": 2.9, "path": "z", "phase": 0.3},
