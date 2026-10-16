@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **Coaching hints are translated.** The one-time hints that explain a trap, an elite affix or a new move the first time you meet it showed in English in every language. All 33 now have Spanish, French, German and Portuguese text and reach the screen translated, and the strings check fails CI on any new hint without a row. `teach_hint_i18n_probe` (suite).
 - **Robots climb ramps from any side.** A ramp rising from the ground used to taper to a point at its foot, leaving knee-high side walls either side of the tip. You never noticed, because your step-up climbs them, but a robot approaching off the centre line walked into them and stopped: an android chasing you over Maple Grove's canal bridge sat at the foot of the approach for 20 s. Ground-level ramp feet are now full width; ramps that start on a tower corner or a deck keep the taper, so they still never overhang the ramp below. Maple Grove's two bridge approaches now land on the deck's edge instead of 0.4 m short of it, which left a 12 cm lip robots could not climb. `ramp_foot_probe` (suite).
 
 ### Changed

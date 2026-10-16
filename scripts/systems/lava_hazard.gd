@@ -420,4 +420,4 @@ func _process(delta: float) -> void:
 			d.apply_damage(damage_per_tick, self)
 			if body.is_in_group("player"):
 				GameState.teach_once("hazard_in",
-					"⚠ You're in the %s — get back onto the walkway!" % ("water" if water else "molten sea"))
+					tr("⚠ You're in the %s — get back onto the walkway!") % tr("water" if water else "molten sea"))
