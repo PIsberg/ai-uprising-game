@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-430 probes total: **153** wired into the headless suite (`suite`), **84**
+432 probes total: **154** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **193** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **194** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -434,6 +434,8 @@ or GPU-timing probes; `--headless` renders these black).
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | night_vision_probe | Night vision: a fresh run has none and the toggle does nothing; the goggles pickup grants it and is gone; `night_vision` is an action on N and on the rebind screen; toggled on, the `NightVision` goggle pass shows, off it hides; it does not count as a flashlight; Continue keeps it, a new run clears it; once owned another goggles pickup removes itself; GPT and SUBLEVEL place one | suite |
 | night_vision_shot | A dark room (its lamp shot out) with three robots through the player's camera, goggles off and on; `-- --out=<dir>` | windowed |
+| sentry_turret_probe | Sentry turrets on a flat floor: in view it hits the player, never before its 0.8 s lock-on (0.85 s measured); a wall between them stops it; right under the gun (2.4 m) it cannot hit you (red-checked: with no dead zone it did) and standing there 2.5 s hacks it; hacked, it shoots a robot and never the player, burns out when its time is up and then fires at nothing; an EMP shuts it up and it wakes after; shot to pieces it is dead and quiet; on GROK both turrets stand clear of geometry and can be reached and hacked from spawn | suite |
+| sentry_turret_shot | GROK's first turret painting the player with its lock-on laser, the hack ring under the gun mid-hack, and the turret hacked green (`--out=<dir>`, `--level=<id>`) | windowed |
 | shock_floor_probe | ShockFloor (4 x 2 checker) over two cycles: the groups take turns and every arc comes 0.9 s after its glow; every tile's neighbours are in the other group; a player on a tile is hit only while it arcs (red with the warning hurting too), never mid-jump or off the floor; a robot on an arcing tile is not hurt; walking up teaches the rule once; the Neon Arcade's floor spans the inside of its north gap from the bulkhead's face, a tile deep at least, with no task zone or pad on it | suite |
 | shock_floor_shot | A level's shock floor (the Neon Arcade's, inside the north gap) from inside the hall while one group glows its warning and while it arcs; `-- --out=<dir> [--level=<id>]` | windowed |
 | shootable_light_probe | Shoot out the lights (`ShootableLight`, `LightLevel`): lit, a robot 20 m away sees the player; robot rounds leave a lamp on, the player's put it out (energy 0, panel dark); in the dark the player is hidden, the 20 m robot loses it, a 6 m robot and a boss still see it; a shot (1.6 s) or a lit flashlight gives it away; a blackout lifting does not relight; no shootable lamps (open sky) is never dark; a corner no lamp reaches is no hiding spot; a flickering lamp stays out; in SUBLEVEL every luminaire is shootable and shooting the one overhead hides the player | suite |
