@@ -387,3 +387,13 @@ LEAK TURNED,LEAK TURNED,FUGA CAPTADA,FUITE RETOURNÉE,LECK UMGEDREHT,VAZAMENTO V
 "The shard never left. +%d, and it dropped an overclock.","The shard never left. +%d, and it dropped an overclock.","El fragmento nunca salió. +%d, y soltó un overclock.","Le fragment n'est jamais sorti. +%d, et il a lâché un overclock.","Der Splitter kam nie raus. +%d, und er hat einen Overclock fallen lassen.","O fragmento nunca saiu. +%d, e ele deixou cair um overclock."
 DATA LEAKED,DATA LEAKED,DATOS FILTRADOS,DONNÉES FUITÉES,DATEN GELEAKT,DADOS VAZADOS
 It uploaded. They know where you are.,It uploaded. They know where you are.,Lo subió. Saben dónde estás.,Il a téléversé. Ils savent où tu es.,"Er hat hochgeladen. Sie wissen, wo du bist.",Ele enviou. Eles sabem onde você está.
+LOCKDOWN,LOCKDOWN,CIERRE DE EMERGENCIA,CONFINEMENT,ABRIEGELUNG,BLOQUEIO
+%s: intruder contained. Doors sealed.,%s: intruder contained. Doors sealed.,%s: intruso contenido. Puertas selladas.,%s : intrus confiné. Portes scellées.,%s: Eindringling festgesetzt. Türen versiegelt.,%s: intruso contido. Portas seladas.
+SMART HOME SECURITY,SMART HOME SECURITY,SEGURIDAD DEL HOGAR INTELIGENTE,SÉCURITÉ MAISON CONNECTÉE,SMART-HOME-SICHERHEIT,SEGURANÇA DA CASA INTELIGENTE
+LOCKDOWN TIMEOUT,LOCKDOWN TIMEOUT,TIEMPO DE CIERRE AGOTADO,FIN DU CONFINEMENT,ABRIEGELUNG ABGELAUFEN,BLOQUEIO EXPIRADO
+Security lost the feed. The doors are open.,Security lost the feed. The doors are open.,Seguridad perdió la señal. Las puertas están abiertas.,La sécurité a perdu le flux. Les portes sont ouvertes.,Die Sicherheit hat das Signal verloren. Die Türen sind offen.,A segurança perdeu o sinal. As portas estão abertas.
+LOCKDOWN LIFTED,LOCKDOWN LIFTED,CIERRE LEVANTADO,CONFINEMENT LEVÉ,ABRIEGELUNG AUFGEHOBEN,BLOQUEIO SUSPENSO
+"The house gave up. +%d, and its safe is open.","The house gave up. +%d, and its safe is open.","La casa se rindió. +%d, y su caja fuerte está abierta.","La maison a cédé. +%d, et son coffre est ouvert.","Das Haus gibt auf. +%d, und sein Safe ist offen.","A casa desistiu. +%d, e o cofre está aberto."
+LOCKDOWN WAVE %d,LOCKDOWN WAVE %d,OLEADA DE CIERRE %d,VAGUE DE CONFINEMENT %d,ABRIEGELUNGSWELLE %d,ONDA DO BLOQUEIO %d
+SMART SAFE: LOCKED,SMART SAFE: LOCKED,CAJA INTELIGENTE: CERRADA,COFFRE CONNECTÉ : VERROUILLÉ,SMART-SAFE: GESPERRT,COFRE INTELIGENTE: TRANCADO
+SMART SAFE: OPEN,SMART SAFE: OPEN,CAJA INTELIGENTE: ABIERTA,COFFRE CONNECTÉ : OUVERT,SMART-SAFE: OFFEN,COFRE INTELIGENTE: ABERTO

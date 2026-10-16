@@ -241,3 +241,5 @@ res://tests/intercept_probe.tscn
 res://tests/data_leak_probe.tscn
 # CRUMBLE TILES: slabs crack, drop and reform for the player only; authored lines are jumpable, over a bed, off the navmesh.
 res://tests/crumble_tile_probe.tscn
+# LOCKDOWN: a house seals on entry, waves gated on kills, clear pays; death and timeout release; authored houses seal.
+res://tests/lockdown_probe.tscn

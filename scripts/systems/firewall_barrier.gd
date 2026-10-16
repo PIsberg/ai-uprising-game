@@ -25,6 +25,10 @@ const SHADER := preload("res://shaders/firewall.gdshader")
 @export var has_relay: bool = false
 @export var node_pos: Vector3 = Vector3.ZERO ## relay position, in the PARENT's space
 @export var label: String = ""
+## A lockdown door (LockdownZone): built dropped, raised by `raise()` and
+## dropped again by `open()`, without the FIREWALL BREACHED toast (`quiet`).
+@export var starts_open: bool = false
+@export var quiet: bool = false
 
 var is_open: bool = false
 var relay: FirewallNode
@@ -43,6 +47,15 @@ func _ready() -> void:
 	_build_visual()
 	_build_collision()
 	_build_audio()
+	if starts_open:
+		is_open = true
+		_shape.disabled = true
+		_touch.monitoring = false
+		_set_collapse(1.0)
+		_light.light_energy = 0.0
+		_hum.stop()
+		for m in _strip_mats:
+			m.emission_energy_multiplier = 0.25
 	if has_relay:
 		_spawn_relay.call_deferred()
 	if not opens_on.is_empty():
@@ -190,8 +203,9 @@ func open() -> void:
 	opened.emit()
 	if is_inside_tree():
 		AudioBus.play_synth_at("overlord_glitch", global_position + Vector3.UP * 1.5, 2.0, 0.7)
-		GameState.skirmish_event.emit("FIREWALL BREACHED",
-			label if label != "" else "The route ahead is open.")
+		if not quiet:
+			GameState.skirmish_event.emit("FIREWALL BREACHED",
+				label if label != "" else "The route ahead is open.")
 		var tw := create_tween()
 		tw.tween_method(_set_collapse, 0.0, 1.0, 1.1)
 		tw.parallel().tween_property(_light, "light_energy", 0.0, 1.1)
@@ -202,6 +216,29 @@ func open() -> void:
 		m.emission_energy_multiplier = 0.25
 	if is_instance_valid(relay):
 		relay.queue_free()
+
+## Bring a dropped sheet back up (a lockdown door sealing): collision on at
+## once, the sheet fills bottom-up.
+func raise() -> void:
+	if not is_open:
+		return
+	is_open = false
+	if _shape:
+		_shape.set_deferred("disabled", false)
+	if _touch:
+		_touch.set_deferred("monitoring", true)
+	if _hum and _hum.stream:
+		_hum.play()
+	for m in _strip_mats:
+		m.emission_energy_multiplier = 3.0
+	if is_inside_tree():
+		AudioBus.play_synth_at("eas_alert", global_position + Vector3.UP * 1.5, 0.0, 1.0)
+		var tw := create_tween()
+		tw.tween_method(_set_collapse, 1.0, 0.0, 0.5)
+		tw.parallel().tween_property(_light, "light_energy", 1.8, 0.5)
+	else:
+		_set_collapse(0.0)
+		_light.light_energy = 1.8
 
 func _set_collapse(v: float) -> void:
 	_mat.set_shader_parameter("collapse", v)

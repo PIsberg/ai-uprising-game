@@ -5143,7 +5143,22 @@ static func _suburb() -> Dictionary:
 			{"pos": Vector3(-32, 2.2, -30), "size": Vector3(7, 4.4, 7), "color": Color(0.72, 0.66, 0.56), "roof_color": Color(0.3, 0.18, 0.16)},
 			{"pos": Vector3(-14, 3.2, -30), "size": Vector3(8, 6.4, 8), "open": true},
 			{"pos": Vector3(32, 2.2, -30), "size": Vector3(7, 4.4, 7), "color": Color(0.62, 0.68, 0.62), "roof_color": Color(0.26, 0.18, 0.14)},
-			{"pos": Vector3(14, 3.2, 30), "size": Vector3(8, 6.4, 8), "open": true},
+			# SMART HOME LOCKDOWN: a locked smart safe glows inside this shell.
+			# Step in and the house seals its door (an energy sheet that stops
+			# only you) and warps two waves in over both floors; the safe opens
+			# when the last one drops. A death or 90 s sealed drops the door.
+			# Wave/reward positions are local to the floor centre (footprints
+			# keep their authored size). tests/lockdown_probe.
+			{"pos": Vector3(14, 3.2, 30), "size": Vector3(8, 6.4, 8), "open": true,
+				"lockdown": {
+					"waves": [
+						[{"type": "dog", "count": 2, "pos": Vector3(-2.2, 0.1, -2.0)},
+							{"type": "dog", "count": 1, "pos": Vector3(2.0, 3.4, -2.0)}],
+						[{"type": "android", "count": 2, "pos": Vector3(-1.8, 3.4, -2.2)},
+							{"type": "spider", "count": 1, "pos": Vector3(2.2, 0.1, -1.6)}],
+					],
+					"reward": Vector3(0, 0, -1.2),
+				}},
 			{"pos": Vector3(-32, 2.2, 30), "size": Vector3(7, 4.4, 7), "color": Color(0.68, 0.62, 0.7), "roof_color": Color(0.3, 0.2, 0.18)},
 			{"pos": Vector3(32, 2.2, 28), "size": Vector3(7, 4.4, 7), "color": Color(0.76, 0.7, 0.58), "roof_color": Color(0.34, 0.18, 0.14)},
 		],
