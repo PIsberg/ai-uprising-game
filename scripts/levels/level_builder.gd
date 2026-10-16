@@ -302,6 +302,7 @@ func _ready() -> void:
 	_build_crumble_tiles(def)
 	_build_turrets(def)
 	_build_low_grav(def)
+	_build_nests(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2618,6 +2619,15 @@ func _build_pendulums(def: Dictionary) -> void:
 		p.phase = float(e.get("phase", 0.0))
 		p.position = e.get("pos", Vector3.ZERO)
 		add_child(p)
+
+## Spawn nests (SpawnNest): `pos` on the floor, `kind` (default skitter).
+## Under the navmesh region so the bake routes robots round the pod.
+func _build_nests(def: Dictionary) -> void:
+	for e in def.get("nests", []):
+		var n := SpawnNest.new()
+		n.kind = String(e.get("kind", "skitter"))
+		n.position = e.get("pos", Vector3.ZERO)
+		(_nav_region if _nav_region else self).add_child(n)
 
 ## Low-gravity columns (LowGravField): `pos` on the floor, `radius`, `height`,
 ## `scale` (gravity multiplier). `ledge` is authoring data for the probe only.

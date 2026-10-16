@@ -119,6 +119,14 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
+## Spawn Nests
+<!-- lat: { "require-code-mention": true } -->
+`nests` places brood pods (`SpawnNest`, built by `_build_nests`) that keep a fight coming until they are destroyed.
+
+* Awake only while the player is within `WAKE_RANGE`; every `INTERVAL` it adds an `EnemySpawner` beside itself, so each arrival gets the warp telegraph. `EnemySpawner.spawned` is how it tracks its own robots, and arrivals still in their telegraph (`_pending`) count toward `MAX_ALIVE`.
+* `HEALTH` worth of damage destroys it (`BONUS`, NEST DESTROYED toast); nothing it already hatched dies with it.
+* The Hollow (alien): two skitter nests in the far quadrants beyond the acid channels. `tests/spawn_nest_probe`.
+
 ## Low-Gravity Fields
 <!-- lat: { "require-code-mention": true } -->
 `low_grav` columns lower gravity for whatever stands in them (`LowGravField`, built by `_build_low_grav`).

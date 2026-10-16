@@ -253,3 +253,5 @@ res://tests/orbital_strike_probe.tscn
 res://tests/teach_hint_i18n_probe.tscn
 # AEGIS: shield drone wards the ally nearest the player; killing it drops the ward; never a boss.
 res://tests/aegis_probe.tscn
+# SPAWN NESTS: hatch while you are near, cap 3 alive, destroyed pays and stops; placed nests reachable.
+res://tests/spawn_nest_probe.tscn

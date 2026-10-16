@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-438 probes total: **158** wired into the headless suite (`suite`), **84**
+439 probes total: **159** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -427,6 +427,7 @@ or GPU-timing probes; `--headless` renders these black).
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
 | sound_id_probe | Every sound id referenced by literal in scripts/ (play_synth_at/ui, synth, play_music, play_ambience_layer, play_lore, level `music` keys) and every weapon .tres sound_id (+_fire) resolves through AudioBus.synth; a never-registered id is a silent event (caught the Armory's silent purchase clink) | suite |
+| spawn_nest_probe | Spawn nests on a baked floor: asleep with the player far away; awake it spawns, teaches once, never holds more than 3 alive (red-checked: with the cap removed it reached 6) and spawns again once its brood is killed; destroyed it pays +150, toasts NEST DESTROYED and spawns nothing more; on the Hollow both nests stand clear of geometry and can be reached from spawn | suite |
 | stamina_probe | Sprint/grapple stamina drains to exhaustion (walk-only lock), regen + lock clear; HUD bar screenshotted | windowed |
 | stamp_press_probe | StampPress: a player under a press is hit once per slam (45) and shoved out of the footprint (10 m/s), a robot under it or 1 m outside is never hurt (red while presses crushed robots; the frozen test robot is kept in the physics world, or the press's Area3D cannot see it), every slam is telegraphed 0.5+ s ahead (red with the telegraph removed: 0.10 s), the head falls to within 0.3 m of the floor, presses at phase 0 and 0.5 slam half a period apart; Assembly has its presses and one covers the scaled east bulkhead gap | suite |
 | stamp_press_shot | The Assembly's press line across the dock lane at three moments of the wave, then the bulkhead press cocked and at the bottom of its slam; `-- --out=<dir>` | windowed |
