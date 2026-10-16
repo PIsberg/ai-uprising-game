@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Robots climb ramps from any side.** A ramp rising from the ground used to taper to a point at its foot, leaving knee-high side walls either side of the tip. You never noticed, because your step-up climbs them, but a robot approaching off the centre line walked into them and stopped: an android chasing you over Maple Grove's canal bridge sat at the foot of the approach for 20 s. Ground-level ramp feet are now full width; ramps that start on a tower corner or a deck keep the taper, so they still never overhang the ramp below. Maple Grove's two bridge approaches now land on the deck's edge instead of 0.4 m short of it, which left a 12 cm lip robots could not climb. `ramp_foot_probe` (suite).
+
 ### Changed
 - **Traps no longer hurt robots.** Fire and cryo vents, floor saws and the Assembly's stamping presses now only hurt you; a robot walking through a vent's eruption, a saw's lane or under a press comes out untouched, so the STAMPED callouts are gone. The laser fences and gates, the shock floor, the swinging blades and the ladle crane's pools already spared robots. Traps are the course's challenge for the player, not a way to clear robots. `fire_vent_probe`, `floor_saw_probe`, `stamp_press_probe`, `ladle_crane_probe` (suite).
 

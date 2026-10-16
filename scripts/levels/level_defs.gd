@@ -5232,9 +5232,12 @@ static func _suburb() -> Dictionary:
 		# with the canal below, the tower climb is now the HIGH crossing.
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(13.0, 7.2, 0.0), "width": 3.5},
-			# Bridge approaches: solved ramps from each bank up onto the deck.
-			{"from": Vector3(-8.5, 0, 8), "to": Vector3(-4.2, 1.72, 8), "width": 4.0},
-			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.2, 1.72, 8), "width": 4.0},
+			# Bridge approaches: solved ramps from each bank up onto the deck,
+			# landing on its edge (x=4.5 scales to the deck's 6.3 half-length):
+			# topping out 0.4 m short (x=4.2) left a 12 cm lip at the edge that
+			# the player's step-up hid and every robot stopped at.
+			{"from": Vector3(-8.5, 0, 8), "to": Vector3(-4.5, 1.72, 8), "width": 4.0},
+			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.5, 1.72, 8), "width": 4.0},
 			# Yard stair up to the SE rooftop deck.
 			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.6), "width": 3.0},
 			# East-yard ramp onto the overwatch slab (was a freestanding ramp
