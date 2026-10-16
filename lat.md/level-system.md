@@ -134,7 +134,7 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * Hostile: it only engages the player, inside `RANGE` and beyond `DEAD_ZONE`, with a world-layer line of sight. `LOCK_TIME` of laser before every burst, then `BURST` rounds `SHOT_GAP` apart and `BURST_GAP` of rest.
 * Hack: standing within `HACK_RANGE` accrues `hack_t` (ebbing at half speed outside it). At `HACK_SECONDS` it is `ALLIED` for `ALLY_TIME`: it targets the nearest unhijacked robot it can see, crediting the player, then `BURNT`.
 * `emp_disable` stuns it (it sits on layer 4 as well as 1, so the EMP burst query finds it); its `Damageable` (`HEALTH`) kills it.
-* GROK black site: one on the spawn-side approach, one in the escape corridor between the kill team's drops. `tests/sentry_turret_probe`, `tests/sentry_turret_shot`.
+* GROK black site: one on the spawn-side approach, one in the escape corridor between the kill team's drops. Desert (Relay 7): two on the approach to the relay mast. `tests/sentry_turret_probe`, `tests/sentry_turret_shot`.
 
 ## Lockdowns
 <!-- lat: { "require-code-mention": true } -->

@@ -88,4 +88,4 @@ Categorizes the rogue AI combat units into distinct tactical roles.
 
 * Its target is the ally nearest the player, skipping support drones, hijacked units and boss-class robots (`HIJACK_BOSS_HP`).
 * While the beam holds, `Damageable.warded_by` points at it: `apply_damage` returns before any damage and calls `on_ward_hit` (bubble flash, one-time hint). The ward is cleared when the target changes, the beam breaks, or the AEGIS dies or leaves the tree.
-* Skybridge Uplink: one rides in with the survive hold's second wave. `tests/aegis_probe`.
+* Skybridge Uplink: one rides in with the survive hold's second wave; Desert (Relay 7): one with the counterstrike's armour wave. `tests/aegis_probe`.
