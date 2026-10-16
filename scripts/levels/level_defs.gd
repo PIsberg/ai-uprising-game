@@ -1220,8 +1220,20 @@ static func _neon() -> Dictionary:
 			{"type": "hold_zone", "pos": Vector3(0, 0, 8), "seconds": 14.0, "radius": 4.0,
 				"color": Color(1.0, 0.3, 0.9), "label": "Hold the broadcast booth",
 				"reinforce": [{"type": "raptor", "count": 2, "pos": Vector3(0, 0, -8)}]},
+			# The broadcast is being traced: a TRACE courier breaks from the SW
+			# promenade and runs the fix east, then to the arcade's uplink by the
+			# NE wall. Its route takes the SE pinball
+			# bumper over the cyan conduit (a throw near its waypoint counts as
+			# reaching it), so you follow it over the bumper or run round the
+			# conduit's end. Kill it inside its 10 s upload or a backup trace
+			# starts again and two reapers answer. tests/intercept_probe.
+			{"type": "intercept", "id": "trace", "after": "hold", "pos": Vector3(-18, 0, 18),
+				"label": "Kill the TRACE before it pins your broadcast",
+				"route": [Vector3(6, 0, 17), Vector3(14, 0, 15), Vector3(14, 0, 12), Vector3(16, 0, -2)],
+				"to": Vector3(18, 0, -17), "upload": 10.0,
+				"penalty": [{"type": "reaper", "count": 2, "pos": Vector3(14, 0, -12)}]},
 			# Your pirate broadcast drew out the arcade's undefeated champion.
-			{"type": "assassinate", "after": "hold", "enemy": "raptor", "elite": "swift", "bulk": 2.0,
+			{"type": "assassinate", "after": "trace", "enemy": "raptor", "elite": "swift", "bulk": 2.0,
 				"pos": Vector3(0, 0, -12), "label": "Take down the ARCADE CHAMPION"},
 		],
 		"open_sky": false,

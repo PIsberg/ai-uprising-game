@@ -30,6 +30,9 @@ const DEFAULT_UPLOAD := 10.0
 const HEALTH_MULT := 3.0
 const CLEAN_BONUS := 400
 const UPLINK_RADIUS := 2.2
+## A throw (Bumper) that starts this close to the waypoint it is running for
+## counts as reaching it, so the courier carries on instead of running back.
+const THROWN_REACH := 3.0
 const COURIER_ACCENT := Color(1.0, 0.72, 0.18)
 ## The idle uplink beam has to read against a bright dusk sky from the far
 ## bank (0.12 was invisible from the bridge in tests/intercept_shot).
@@ -57,6 +60,7 @@ var leg: int = 0
 var uploading: bool = false
 var upload_t: float = 0.0
 var copies: int = 0
+var _airborne: bool = false
 var done: bool = false
 var _state_key: String = ""
 var _pad: Node3D
@@ -186,6 +190,10 @@ func _dress(u: EnemyBase) -> void:
 	tag.position = Vector3(0, 2.6, 0)
 	u.add_child(tag)
 
+func _flat_to_goal() -> float:
+	var d := unit.global_position - _goal()
+	return Vector2(d.x, d.z).length()
+
 func _goal() -> Vector3:
 	return route[leg] if leg < route.size() else uplink
 
@@ -210,6 +218,12 @@ func _physics_process(delta: float) -> void:
 		if upload_t >= upload_seconds:
 			_escape()
 		return
+	# Thrown (a Bumper) near the waypoint it was running for: that waypoint is
+	# used. Checked on the first airborne tick, before the arc carries it off.
+	var thrown := unit.is_launched()
+	if thrown and not _airborne and leg < route.size() and _flat_to_goal() <= THROWN_REACH:
+		leg += 1
+	_airborne = thrown
 	unit.courier_goal = _goal()
 	var reach := UPLINK_RADIUS if leg >= route.size() else maxf(1.0, unit.nav_agent.target_desired_distance + 0.4)
 	var flat := unit.global_position - _goal()

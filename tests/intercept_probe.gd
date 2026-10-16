@@ -33,6 +33,7 @@ func _ready() -> void:
 	GameState.current_state = GameState.State.PLAYING
 	await _unit()
 	await _clean_and_turned()
+	await _thrown()
 	GameState.current_state = prev_state
 	await _campaign()
 	print("RESULT " + ("PASS" if _fails.is_empty() else "FAIL"))
@@ -202,6 +203,44 @@ func _unit() -> void:
 	GameState.reset_tasks()
 	await _frames(4)
 
+## A courier thrown (a Bumper, EnemyBase.launch) while it is running for a
+## waypoint close by has used that waypoint: it carries on to the next one
+## after landing instead of running back to the launch spot (the Neon chase
+## routes it over a bumper on purpose).
+func _thrown() -> void:
+	print("thrown off a waypoint:")
+	var nav := _floor()
+	await _frames(10)
+	var player := _player(Vector3(45, 0.05, 45))
+	GameState.reset_tasks()
+	var ic := _courier(nav, "thrown", 10.0)
+	ic.route = [Vector3(10, 0, 4), Vector3(10, 0, -12)]
+	ic.uplink = Vector3(-10, 0, -12)
+	await _frames(20)
+	var u := ic.unit
+	# Short of the first waypoint (inside the throw radius, outside the reach).
+	for i in 60:
+		await _frames(2)
+		if _flat(u.global_position, ic.route[0]) < InterceptCourier.THROWN_REACH - 0.5:
+			break
+	_check(ic.leg == 0, "running for the first waypoint (%.1f m off)" % _flat(u.global_position, ic.route[0]))
+	# Sideways, never passing over the waypoint (a throw along the route
+	# would "reach" it in mid-air and prove nothing).
+	u.launch(Vector3(7, 6, 0), 1.0)
+	for i in 120:
+		await _frames(2)
+		if not u.is_launched():
+			break
+	await _frames(30)
+	_check(ic.leg >= 1, "after the throw it runs for the next waypoint (leg %d)" % ic.leg)
+	var z0 := u.global_position.z
+	await _frames(40)
+	_check(u.global_position.z < z0 - 1.0 and ic.leg >= 1, "and heads on, not back to the waypoint it skipped (z %.1f -> %.1f)" % [z0, u.global_position.z])
+	nav.queue_free()
+	player.queue_free()
+	GameState.reset_tasks()
+	await _frames(4)
+
 func _clean_and_turned() -> void:
 	print("clean kill + hijack:")
 	var nav := _floor()
@@ -279,10 +318,21 @@ func _campaign() -> void:
 			level.add_child(ic)
 			var budget := secs * 2.0 + 6.0
 			var ran := 0.0
+			# A route authored over a bumper must actually be thrown by it.
+			var over_bumper := false
+			for bp in level.find_children("*", "Bumper", true, false):
+				for w in t.get("route", []):
+					if _flat((bp as Node3D).global_position, w) < 1.5:
+						over_bumper = true
+			var thrown := false
 			while ran < budget and not ic.uploading:
-				await _frames(15)
-				ran += 0.25
+				await _frames(3)
+				ran += 0.05
+				if is_instance_valid(ic.unit) and ic.unit.is_launched():
+					thrown = true
 			var where: Vector3 = ic.unit.global_position if is_instance_valid(ic.unit) else Vector3.ZERO
+			if over_bumper:
+				_check(thrown, "%s courier is thrown by the bumper on its route" % id)
 			_check(ic.uploading, "%s courier runs the real route to the uplink (%.1f s of %.0f; leg %d at %s)" % [id, ran, budget, ic.leg, where])
 			level.queue_free()
 			await _frames(4)
