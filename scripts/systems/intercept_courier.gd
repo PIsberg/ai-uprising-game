@@ -24,6 +24,9 @@ const HEALTH_MULT := 3.0
 const CLEAN_BONUS := 400
 const UPLINK_RADIUS := 2.2
 const COURIER_ACCENT := Color(1.0, 0.72, 0.18)
+## The idle uplink beam has to read against a bright dusk sky from the far
+## bank (0.12 was invisible from the bridge in tests/intercept_shot).
+const BEAM_IDLE_ALPHA := 0.4
 
 var task_id: String = "courier"
 var base_label: String = "Run down the data courier"
@@ -80,14 +83,14 @@ func _build_uplink() -> void:
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ring.position = Vector3.UP * 0.08
 	_pad.add_child(ring)
-	_beam_mat = _accent_mat(1.0)
+	_beam_mat = _accent_mat(2.0)
 	_beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_beam_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	_beam_mat.albedo_color.a = 0.12
+	_beam_mat.albedo_color.a = BEAM_IDLE_ALPHA
 	_beam = MeshInstance3D.new()
 	var cm := CylinderMesh.new()
-	cm.top_radius = 0.35
-	cm.bottom_radius = 0.6
+	cm.top_radius = 0.6
+	cm.bottom_radius = 0.9
 	cm.height = 40.0
 	cm.radial_segments = 12
 	_beam.mesh = cm
@@ -176,7 +179,7 @@ func _physics_process(delta: float) -> void:
 		if unit._emp_t <= 0.0:
 			upload_t += delta
 		if _beam_mat:
-			_beam_mat.albedo_color.a = 0.12 + 0.6 * clampf(upload_t / upload_seconds, 0.0, 1.0)
+			_beam_mat.albedo_color.a = BEAM_IDLE_ALPHA + (1.0 - BEAM_IDLE_ALPHA) * clampf(upload_t / upload_seconds, 0.0, 1.0)
 		_relabel("upload:%d" % ceili(upload_seconds - upload_t))
 		if upload_t >= upload_seconds:
 			_escape()
@@ -206,7 +209,7 @@ func _escape() -> void:
 	upload_t = 0.0
 	leg = 0
 	if _beam_mat:
-		_beam_mat.albedo_color.a = 0.12
+		_beam_mat.albedo_color.a = BEAM_IDLE_ALPHA
 	unit.global_position = position
 	unit.velocity = Vector3.ZERO
 	unit.courier_goal = _goal()
