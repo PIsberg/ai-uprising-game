@@ -1204,13 +1204,19 @@ func add_grenade(amount: int = 1, kind: int = GrenadeType.FRAG) -> void:
 	grenade_counts[kind] = mini(int(grenade_kinds[kind]["max"]), grenade_counts[kind] + amount)
 	_sync_grenades()
 
+## Multiplier on gravity while standing in a LowGravField (the field sets and
+## restores it). A launch (JumpPad, Bumper) ignores it: its arc was solved at
+## full gravity and must land where it was aimed.
+var gravity_scale: float = 1.0
+
 func _apply_gravity(delta: float) -> void:
 	if _wall_running:
 		return  # _update_wall_run owns velocity.y with its own eased fall rate
 	if _grappling:
 		return  # the winch is taut — _update_grapple owns the pull
 	if not is_on_floor():
-		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+		var k := gravity_scale if _launch_t <= 0.0 else 1.0
+		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * k * delta
 
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0

@@ -300,6 +300,7 @@ func _ready() -> void:
 	_build_pendulums(def)
 	_build_crumble_tiles(def)
 	_build_turrets(def)
+	_build_low_grav(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2616,6 +2617,17 @@ func _build_pendulums(def: Dictionary) -> void:
 		p.phase = float(e.get("phase", 0.0))
 		p.position = e.get("pos", Vector3.ZERO)
 		add_child(p)
+
+## Low-gravity columns (LowGravField): `pos` on the floor, `radius`, `height`,
+## `scale` (gravity multiplier). `ledge` is authoring data for the probe only.
+func _build_low_grav(def: Dictionary) -> void:
+	for e in def.get("low_grav", []):
+		var f := LowGravField.new()
+		f.radius = float(e.get("radius", 4.0))
+		f.height = float(e.get("height", 10.0))
+		f.gravity = float(e.get("scale", LowGravField.DEFAULT_SCALE))
+		f.position = e.get("pos", Vector3.ZERO)
+		add_child(f)
 
 ## Sentry turrets (SentryTurret) at `pos`, facing `yaw` degrees. Under the
 ## navmesh region so the bake routes robots round the post.
