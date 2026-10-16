@@ -75,7 +75,9 @@ warps in pre-marked as the bounty), SUPPLY FLARE (timed cache beacon, 40s),
 GRID SURGE (20s double ultimate charge), MODEL HALLUCINATION (12 s: three
 phantoms of the player draw the fire of every robot nearer one, `tests/hallucination_probe`),
 DATA LEAK (a robot in the fight grabs a shard and runs for an uplink 30 m away; kill it inside
-its 6 s upload for +300 and an overclock, or a hunter answers at the uplink, `tests/data_leak_probe`).
+its 6 s upload for +300 and an overclock, or a hunter answers at the uplink, `tests/data_leak_probe`),
+ORBITAL STRIKE (a satellite circle tracks you, locks red, fires 45; step out or get under a roof;
+open-sky only, `tests/orbital_strike_probe`).
 Gated off boss/convoy/horde levels,
 max 2/level. 🎮 Needs playtest: frequency (75s first / ~90s interval) and
 whether more event types are wanted (rogue patrol, jammer, double-bounty hour), and
