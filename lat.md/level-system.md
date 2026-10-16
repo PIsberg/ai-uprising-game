@@ -354,6 +354,16 @@ An `escort` task walks one robot that has come over to the player's side from `p
 * It stays in the `enemy` group, so never pair it with `kill_all`; the bounty director skips hijacked robots so it is never marked.
 * Skybridge Uplink (uplink): the broadcast wakes one android by the core, which is walked south through the blast-door gap and east through the ring gate. `tests/escort_probe` covers it.
 
+## Intercept Courier
+<!-- lat: { "require-code-mention": true } -->
+An `intercept` task is a chase: a hostile robot takes the data at `pos` and runs the `route` to an uplink at `to` (`InterceptCourier`).
+
+* The robot runs with `EnemyBase.courier_goal` set: `_courier_process` replaces perception and the state machine, so it never attacks or staggers, and weaves sideways by `COURIER_JINK` of its speed. `chase_speed` returns `courier_speed` (default 7.4 m/s, between the player's walk and sprint) with no wounded frenzy. EMP, a bumper throw and a hijack run before it in `_physics_process`, so they still take it.
+* Its health is `HEALTH_MULT` times stock, applied through `_health_mult` so the subclass `_ready` stats do not clobber it.
+* At the uplink it stops and uploads for `upload` s (an EMP pauses the upload). A finished upload fires `escaped`: the courier warps back to `pos` at full health and the builder spawns the task's `penalty` squad.
+* Killing it completes the task, paying `CLEAN_BONUS` if no copy escaped; a hijack completes it too.
+* Maple Grove Estates (suburb): the relay blast flushes a courier with the evac codes; it takes the saw bridge (traps spare robots) and runs the far bank north to an uplink in the NE block. `tests/intercept_probe` covers it, including a courier run through the built level.
+
 ## Objective Placement
 
 The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.

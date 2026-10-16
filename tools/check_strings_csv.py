@@ -34,6 +34,8 @@ LABEL_SOURCES = [
     # task objects' own default labels and fallback banners
     ("scripts/systems/escape_zone.gd", r'var base_label: String = "([^"]+)"'),
     ("scripts/systems/haul_payload.gd", r'var base_label: String = "([^"]+)"'),
+    ("scripts/systems/intercept_courier.gd", r'var base_label: String = "([^"]+)"'),
+    ("scripts/systems/intercept_courier.gd", r'skirmish_event\.emit\("([^"]+)"'),
     ("scripts/systems/firewall_barrier.gd", r'skirmish_event\.emit\("([^"]+)"'),
     ("scripts/systems/firewall_barrier.gd", r'else "([^"]+)"\)'),
     # a survive wave's flood alerts (HUD skirmish toast) and their defaults

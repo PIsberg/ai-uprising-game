@@ -294,8 +294,15 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		# A haul task's delivery ring sits on the ground plane like its pickup.
 		if t.has("to"):
 			t["to"] = _sv(t["to"], s)
-		# Reinforcement waves triggered by the task land at authored spots too.
-		for r in t.get("reinforce", []):
+		# An intercept courier's waypoints run on the ground plane like its uplink.
+		if t.has("route"):
+			var rr: Array = []
+			for p in t["route"]:
+				rr.append(_sv(p, s))
+			t["route"] = rr
+		# Reinforcement waves triggered by the task land at authored spots too
+		# (and so does an intercept's penalty squad).
+		for r in t.get("reinforce", []) + t.get("penalty", []):
 			if r.has("pos"):
 				r["pos"] = _sv(r["pos"], s)
 		# …as do the timed waves of a "survive" hold. Same reason as "reinforce":
@@ -5042,13 +5049,22 @@ static func _suburb() -> Dictionary:
 			# tasks are NOT auto-relocated out of hazard beds, so keep it dry).
 			{"type": "sabotage", "label": "Plant charges on the relay", "pos": Vector3(-9, 0, -8), "seconds": 3.5, "color": Color(1.0, 0.5, 0.15),
 				"reinforce": [{"type": "dog", "count": 3, "pos": Vector3(-6, 0, -4)}]},
-			# The blast scrambles the evac net — pull the codes before you leave.
-			# (Spawn-side bank like the relay: the flood canal at x=0 stays wet.)
-			{"type": "key", "after": "sabotage", "pos": Vector3(-16, 0, 10), "label": "Grab the evac codes"},
+			# The blast flushes a courier carrying the evac codes (it used to be a
+			# keycard lying in the yard). It breaks from the spawn-side yard, takes
+			# the saw bridge (traps spare robots, so it runs the blades; the
+			# player has to time them) and runs the far bank north to an uplink
+			# in the NE block. Kill it before its 10 s upload ends, or a backup
+			# courier restarts at the yard and two K-9s answer at the uplink.
+			# tests/intercept_probe.
+			{"type": "intercept", "id": "courier", "after": "sabotage", "pos": Vector3(-16, 0, 10),
+				"label": "Run down the courier with the evac codes",
+				"route": [Vector3(-8.8, 0, 8), Vector3(10, 0, 8), Vector3(28, 0, 6)],
+				"to": Vector3(26, 0, -22), "upload": 10.0,
+				"penalty": [{"type": "dog", "count": 2, "pos": Vector3(22, 0, -18)}]},
 			# Every task used to sit on the spawn-side bank, so the far half was
 			# a walk to the exit. The codes now call the evac in on the far bank:
 			# cross under the security cams, then hold the pickup in the open.
-			{"type": "hold_zone", "id": "evac", "after": "key", "pos": Vector3(26, 0, 38), "seconds": 10.0,
+			{"type": "hold_zone", "id": "evac", "after": "courier", "pos": Vector3(26, 0, 38), "seconds": 10.0,
 				"radius": 4.5, "color": Color(0.45, 1.0, 0.55), "label": "Hold the evac pickup"},
 		],
 		"open_sky": true,
