@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-432 probes total: **154** wired into the headless suite (`suite`), **84**
+434 probes total: **155** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **194** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **195** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -158,6 +158,8 @@ or GPU-timing probes; `--headless` renders these black).
 | siege_cannon_probe | WARMECH at 24 m: 3+ shells each within 0.3 m of a shoulder-cannon muzzle and alternating cannons, and two charge orbs each within 0.4 m of a cannon; HOWITZER at 26 m: every shell within 0.3 m of its barrel's muzzle. Muzzles come from the model at the moment of firing (front vertices of each cannon on the skinned mesh, or of the static Gun mesh); the old centre muzzles measured 1.37 m and 1.04 m | suite |
 | sniper_stalker_probe | SNIPER (QuadShell) at 30 m from a stand-in player: 2+ beams that each hit with the muzzle 0.83 m (+/-0.15) from the nearest Gun bone and 0.5+ m ahead of the body (the old muzzle sat 1.3 m from both), successive shots on alternating barrels, within 3 s of each shot it moves 4+ m while never closing inside 18 m, and 80%+ of its frames at 3+ m/s play the Run clip | suite |
 | reaper_rifle_probe | REAPER closing from 22 m on a stand-in player: 3+ shots, each fired with the muzzle within 0.2 m of the rifle mesh's barrel end (its vertices within 0.08 m of the front; the old chest muzzle measured 0.39 m), 2+ of them while moving 3+ m/s and closing 6+ m; from 2.2 m its lunge lands damage and shoves the player 4+ m/s | suite |
+| low_grav_probe | Low-gravity fields with the real player scene and a real android: a jump peaks 1.24 m outside and 3.97 m inside (3.2x); walking in teaches once; stepping out restores full gravity; a launch keeps its arc inside the field (red-checked: with launches scaled it peaked 4.51 m, not 1.40); a robot falls 1.07 s inside vs 0.58 s outside; on the Hollow the jump clears the ledge, the ledge is within reach of the column, the field floor is open ground and the ledge is a deck top on the built level | suite |
+| low_grav_shot | The Hollow's gravity rift (violet column, ring, rising motes) from eye height (`--out=<dir>`, `--level=<id>`) | windowed |
 | mech_stilt_probe | Stilt MECH 1v1 vs a stand-in player: it lopes on the Run clip at 5+ m/s, fires 2+ bolts that each leave within 1.2 m of its right palm bone (PalmI.R) and none with splash, the muzzle (parent of the flash) is at world scale ~1 (not the rig's 57x), and from 7 m it plants for 0.4 s+ before a leap that rises 0.4 m+ and lands within KICK_RADIUS of the player for damage and 5+ m/s knockback | suite |
 | mech_stilt_shot | Side view of the stilt MECH firing from its palm, then crouching (ground warning), at the apex and landing; `-- --out=<dir>` | windowed |
 | vacuum_hop_probe | CUSTODIAN (vacuum) 1v1 vs a stand-in player for 9 s: it fires 2+ bolts (damage reported, not asserted), every bolt leaves while its body is HOP_HEIGHT x 0.7+ off the floor, every launch comes straight out of a crouch (chassis below 75% of its risen height), weakpoint_multiplier is AIR_DAMAGE_MULT airborne and 1.0 on the floor, it lands back in combat, and killed at the top of a hop its wreck drops to the floor | suite |

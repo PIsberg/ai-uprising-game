@@ -235,6 +235,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("cell"):
 			e["cell"] = float(e["cell"]) * s
+	# Low-gravity columns and the ledge each is authored to reach: ground plane;
+	# radius and height stay in metres.
+	for e in def.get("low_grav", []):
+		for k in ["pos", "ledge"]:
+			if e.has(k):
+				e[k] = _sv(e[k], s)
 	# Turret posts stand on the ground plane.
 	for e in def.get("turrets", []):
 		if e.has("pos"):
@@ -2643,6 +2649,14 @@ static func _alien() -> Dictionary:
 		],
 		# Bounce pods: two pads on the crater floor throw you up onto the two
 		# tower roofs, the high west one and the low east one.
+		# A GRAVITY RIFT at the foot of the SW vantage deck: inside the violet
+		# column gravity drops to 0.3, so a plain jump (3.9 m) carries you onto
+		# the deck (3.2 m) without the long way round, and anything that leaves
+		# the floor in it drifts. It stands south of both acid channels and
+		# their overflow, by the survive waves' west flank. tests/low_grav_probe.
+		"low_grav": [
+			{"pos": Vector3(-22.8, 0, 18.7), "radius": 3.2, "height": 9.0, "ledge": Vector3(-22.8, 3.2, 20.5)},
+		],
 		"jump_pads": [
 			{"pos": Vector3(-6, 0, 8), "to": Vector3(-17, 9.0, 0)},
 			{"pos": Vector3(6, 0, -8), "to": Vector3(17, 7.0, 0)},

@@ -119,6 +119,14 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
+## Low-Gravity Fields
+<!-- lat: { "require-code-mention": true } -->
+`low_grav` columns lower gravity for whatever stands in them (`LowGravField`, built by `_build_low_grav`).
+
+* `Player.gravity_scale` and `EnemyBase.gravity_scale` multiply gravity in each body's own `_apply_gravity`, except while launched (`_launch_t > 0`), so jump-pad and bumper arcs land where they were solved. Flyers override `_apply_gravity` and are unaffected.
+* The field polls the player and the `enemy` group each tick, sets `gravity_scale` on bodies that enter its column and restores 1.0 only on bodies it set (`_held`).
+* The Hollow (alien): a 0.3 g rift at the foot of the SW vantage deck; a plain jump (3.9 m) reaches the deck (3.2 m). `tests/low_grav_probe`, `tests/low_grav_shot`.
+
 ## Sentry Turrets
 <!-- lat: { "require-code-mention": true } -->
 `turrets` places site-defence guns (`SentryTurret`, built by `_build_turrets`) that a player can beat three ways.

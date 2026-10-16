@@ -557,9 +557,14 @@ func _update_hit_react(delta: float) -> void:
 	# Reel backward (lean about X) when staggered.
 	_visual_root.rotation = _visual_base_rot + Vector3(-0.5 * _stagger, 0.0, 0.0)
 
+## Multiplier on gravity inside a LowGravField (set and restored by the field);
+## a Bumper throw ignores it so the solved arc still lands on its ring.
+var gravity_scale: float = 1.0
+
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
-		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
+		var k := gravity_scale if _launch_t <= 0.0 else 1.0
+		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * k * delta
 
 ## Family-weighted step/servo audio for continuous movement feel — see the
 ## "locomotion servo tick" comment above _step_cd for the budget design. Cheap
