@@ -247,3 +247,5 @@ res://tests/lockdown_probe.tscn
 res://tests/sentry_turret_probe.tscn
 # LOW GRAVITY: real player jumps higher and robots fall slower in the column; launches unbent; authored ledges reachable.
 res://tests/low_grav_probe.tscn
+# ORBITAL STRIKE: tracks, locks, fires; out of the circle or under a roof misses; robots spared; indoor fallback.
+res://tests/orbital_strike_probe.tscn

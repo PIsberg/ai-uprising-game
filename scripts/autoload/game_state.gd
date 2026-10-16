@@ -864,6 +864,8 @@ func claim_bounty() -> void:
 ##                  player draw the fire of every robot closer to one (12 s)
 ##   DATA LEAK    — a robot in the fight grabs a shard and runs for an uplink
 ##                  (InterceptCourier, adopt mode); kill it before it uploads
+##   ORBITAL STRIKE — a satellite circle tracks the player, locks red, fires;
+##                  step out of it or get under a roof (OrbitalStrike)
 ## Hard-gated: PLAYING only, never on boss/convoy/horde levels, never in the
 ## opening minute, never while a bounty is live, max 2 per level. Everything
 ## it spawns cleans itself up.
@@ -903,12 +905,13 @@ func _tick_events(delta: float) -> void:
 	if _bounty != null and _bounty.get_ref() != null:
 		return
 	_level_events += 1
-	match randi() % 5:
+	match randi() % 6:
 		0: _event_assassin()
 		1: _event_supply_flare()
 		2: _event_grid_surge()
 		3: _event_hallucination()
 		4: _event_data_leak()
+		5: _event_orbital_strike()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -1015,6 +1018,22 @@ func _event_hallucination() -> void:
 		ph.global_position = at
 	skirmish_event.emit("MODEL HALLUCINATION", "Their vision model is glitching: they see three of you for %d seconds. Flank them." % int(PlayerPhantom.LIFE))
 	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.8)
+
+## ORBITAL STRIKE: the overlord's satellite paints the player (OrbitalStrike):
+## a circle tracks them, locks red for a beat, then a column of light comes
+## down. Out of the circle or under a roof, it misses. Robots are spared.
+## A player already under a roof (an indoor level) gets a SUPPLY FLARE instead:
+## a strike there could never land.
+func _event_orbital_strike() -> void:
+	var scene := get_tree().current_scene
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if scene == null or p == null:
+		return
+	if OrbitalStrike.covered(p):
+		_event_supply_flare()
+		return
+	scene.add_child(OrbitalStrike.new())
+	skirmish_event.emit("ORBITAL STRIKE", "A satellite is painting you. When the circle turns red, get out of it or get under a roof.")
 
 ## DATA LEAK: a robot already in the fight, mid-range and on foot, grabs a
 ## data shard and runs for an uplink LEAK_RUN away on the far side from the

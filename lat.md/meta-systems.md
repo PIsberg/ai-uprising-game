@@ -49,3 +49,12 @@ The weapon codex (`scripts/ui/weapon_codex.gd`) documents the full arsenal avail
 * **Arsenal Roster:** Covers the 13 wieldable weapons in `GameState.WEAPON_ORDER` (weakest to strongest, pistol through OMEGA-X), spanning kinetic firearms, energy beam platforms, and heavy ordnance. Only weapons the player has held appear, plus the `STANDARD_ISSUE` trio.
 * **Comparative Statistics:** Normalized comparative bar graphs for raw DPS, effective range, fire rate, recoil severity, and handling.
 * **Firing Profiles:** Explains primary hitscan/projectile dynamics, alt-fire charge cycles, and special mechanics (piercing, splash, chain lightning, homing).
+
+## Orbital Strike
+<!-- lat: { "require-code-mention": true } -->
+A skirmish event (`GameState._event_orbital_strike`, one of the director's six kinds) that makes the player move or take cover (`OrbitalStrike`).
+
+* A ground circle of `RADIUS` under a thin sky beam tracks the player for `TRACK_TIME`, lagging (`FOLLOW`), so a moving player stays near its edge; then it LOCKS for `LOCK_TIME` (red, pulsing, rising whine) and FIRES: `DAMAGE` to a player inside the circle with nothing (world layer) over their head within `SKY`.
+* Robots are never hurt. The node frees itself after the column fades.
+* `OrbitalStrike.covered` is also the event's gate: a player already under a roof (an indoor level) gets a SUPPLY FLARE instead, since a strike there could never land.
+* `tests/orbital_strike_probe`, `tests/orbital_strike_shot`.
