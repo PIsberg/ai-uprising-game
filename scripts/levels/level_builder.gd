@@ -299,6 +299,7 @@ func _ready() -> void:
 	_build_shock_floors(def)
 	_build_pendulums(def)
 	_build_crumble_tiles(def)
+	_build_turrets(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2615,6 +2616,15 @@ func _build_pendulums(def: Dictionary) -> void:
 		p.phase = float(e.get("phase", 0.0))
 		p.position = e.get("pos", Vector3.ZERO)
 		add_child(p)
+
+## Sentry turrets (SentryTurret) at `pos`, facing `yaw` degrees. Under the
+## navmesh region so the bake routes robots round the post.
+func _build_turrets(def: Dictionary) -> void:
+	for e in def.get("turrets", []):
+		var tur := SentryTurret.new()
+		tur.position = e.get("pos", Vector3.ZERO)
+		tur.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
+		(_nav_region if _nav_region else self).add_child(tur)
 
 ## Lines of crumbling slabs over a hazard bed (CrumbleTile): `count` slabs
 ## evenly spaced strictly between `from` and `to` (the deck edges you jump

@@ -119,6 +119,15 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
+## Sentry Turrets
+<!-- lat: { "require-code-mention": true } -->
+`turrets` places site-defence guns (`SentryTurret`, built by `_build_turrets`) that a player can beat three ways.
+
+* Hostile: it only engages the player, inside `RANGE` and beyond `DEAD_ZONE`, with a world-layer line of sight. `LOCK_TIME` of laser before every burst, then `BURST` rounds `SHOT_GAP` apart and `BURST_GAP` of rest.
+* Hack: standing within `HACK_RANGE` accrues `hack_t` (ebbing at half speed outside it). At `HACK_SECONDS` it is `ALLIED` for `ALLY_TIME`: it targets the nearest unhijacked robot it can see, crediting the player, then `BURNT`.
+* `emp_disable` stuns it (it sits on layer 4 as well as 1, so the EMP burst query finds it); its `Damageable` (`HEALTH`) kills it.
+* GROK black site: one on the spawn-side approach, one in the escape corridor between the kill team's drops. `tests/sentry_turret_probe`, `tests/sentry_turret_shot`.
+
 ## Lockdowns
 <!-- lat: { "require-code-mention": true } -->
 An open building's `lockdown` entry turns the house into a trap room (`LockdownZone`, built by `_build_lockdown`).

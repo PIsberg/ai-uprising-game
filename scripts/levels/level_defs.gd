@@ -235,6 +235,10 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 			e["pos"] = _sv(e["pos"], s)
 		if e.has("cell"):
 			e["cell"] = float(e["cell"]) * s
+	# Turret posts stand on the ground plane.
+	for e in def.get("turrets", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Crumble lines run deck edge to deck edge: both ends scale on the ground
 	# plane; slab size and heights stay authored.
 	for e in def.get("crumble_tiles", []):
@@ -4854,6 +4858,16 @@ static func _grok() -> Dictionary:
 		# red beams round the room, one at the knee (jump it) and one at the
 		# chest (crouch or slide under it), out to 9 m and stopped by any wall.
 		# They die with the core.
+		# Site-defence sentry guns. One covers the way in from the spawn
+		# corner, where the player first meets one; the other stands in the
+		# escape corridor between the kill team's drop points, so the purge
+		# run either breaks its line of sight or hacks it to shred the kill
+		# team. Get under the gun (2.4 m) and stand by it 2.5 s to hack it.
+		# tests/sentry_turret_probe.
+		"turrets": [
+			{"pos": Vector3(-20, 0, -14), "yaw": 135},
+			{"pos": Vector3(32, 0, 12), "yaw": 90},
+		],
 		"laser_sweeps": [
 			{"pos": Vector3(0, 0, 16), "radius": 9.0, "inner": 1.4, "post": false, "speed": 45.0,
 				"wakes_on": "hvt", "stops_on": "core"},

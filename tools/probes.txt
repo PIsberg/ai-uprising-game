@@ -243,3 +243,5 @@ res://tests/data_leak_probe.tscn
 res://tests/crumble_tile_probe.tscn
 # LOCKDOWN: a house seals on entry, waves gated on kills, clear pays; death and timeout release; authored houses seal.
 res://tests/lockdown_probe.tscn
+# SENTRY TURRETS: lock-on before firing, LOS, dead zone + hack, allied fire, burnout, EMP, death; placed turrets hackable.
+res://tests/sentry_turret_probe.tscn
