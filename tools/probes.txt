@@ -237,3 +237,5 @@ res://tests/bumper_probe.tscn
 res://tests/ramp_foot_probe.tscn
 # INTERCEPT: the courier runs, uploads, escapes and restarts, dies or turns; authored routes run on the built level.
 res://tests/intercept_probe.tscn
+# DATA LEAK event: a mid-range robot runs for an uplink; kill pays and drops, an upload vanishes it and sends a hunter.
+res://tests/data_leak_probe.tscn

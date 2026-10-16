@@ -362,6 +362,7 @@ An `intercept` task is a chase: a hostile robot takes the data at `pos` and runs
 * Its health is `HEALTH_MULT` times stock, applied through `_health_mult` so the subclass `_ready` stats do not clobber it.
 * At the uplink it stops and uploads for `upload` s (an EMP pauses the upload). A finished upload fires `escaped`: the courier warps back to `pos` at full health and the builder spawns the task's `penalty` squad.
 * Killing it completes the task, paying `CLEAN_BONUS` if no copy escaped; a hijack completes it too.
+* Adopt mode drives the DATA LEAK skirmish event (`GameState._event_data_leak`): `adopt` is a live mid-range ground robot (`_leak_candidate`: `LEAK_BAND` from the player, no flyers, bosses, bounties or hijacked units), `_leak_uplink` puts the uplink `LEAK_RUN` away on the far side from the player, `task_id` is empty and `restart_on_escape` is off. `caught` pays `LEAK_BONUS` and drops an overclock; a finished upload frees the robot with no kill credit and calls `_event_assassin` at the uplink. The node frees itself either way, and a caught courier leaves the `intercept_courier` and `objective` groups so only a live one blocks a second leak. `tests/data_leak_probe`.
 * Maple Grove Estates (suburb): the relay blast flushes a courier with the evac codes; it takes the saw bridge (traps spare robots) and runs the far bank north to an uplink in the NE block. `tests/intercept_probe` covers it, including a courier run through the built level.
 
 ## Objective Placement
