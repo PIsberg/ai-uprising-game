@@ -249,3 +249,5 @@ res://tests/sentry_turret_probe.tscn
 res://tests/low_grav_probe.tscn
 # ORBITAL STRIKE: tracks, locks, fires; out of the circle or under a roof misses; robots spared; indoor fallback.
 res://tests/orbital_strike_probe.tscn
+# TEACH HINTS i18n: coaching hints reach the HUD toast translated (#317).
+res://tests/teach_hint_i18n_probe.tscn

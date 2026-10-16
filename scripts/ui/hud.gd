@@ -227,7 +227,9 @@ func _ready() -> void:
 	GameState.player_dealt_damage.connect(_on_player_dealt_damage)
 	GameState.enemy_killed.connect(_on_enemy_killed)
 	GameState.objective_blocked.connect(_show_toast)
-	GameState.teach_hint.connect(_show_toast) # one-off coaching toasts (elite affixes, hazards)
+	# One-off coaching toasts (elite affixes, hazards), translated here like the
+	# skirmish toasts: they reached the toast as English keys until #317.
+	GameState.teach_hint.connect(func(text: String) -> void: _show_toast(tr(text)))
 	GameState.checkpoint_set.connect(func(): _show_toast("⚑ CHECKPOINT"))
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)

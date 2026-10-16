@@ -15,6 +15,10 @@ fall back to, that has no row: the HUD passes them through tr(), which returns
 the English key unchanged when the row is missing, so es/fr/de/pt players see
 English mid-mission and nothing else notices (64 of 78 labels, 2026-10-04).
 
+Also fails on any one-time coaching hint (GameState.teach_once: a literal, a
+same-file constant, or a MECHANIC_HINTS/ELITE_HINTS value) with no row: the
+HUD toast translates them, and until #317 none of the 30-odd hints had one.
+
     python tools/check_strings_csv.py
 """
 import csv
@@ -79,7 +83,46 @@ def required_labels() -> dict:
     return out
 
 
+# One-time coaching hints (GameState.teach_once -> HUD toast, through tr()).
+# A hint argument is a string literal (possibly on the next line), a constant
+# in the same file, or a lookup into one of these hint dictionaries.
+HINT_DICTS = ("MECHANIC_HINTS", "ELITE_HINTS")
+
+
+def _dict_values(src: str, name: str) -> list:
+    m = re.search(r"const %s := \{(.*?)\n\}" % name, src, re.S)
+    return re.findall(r'"[a-z_]+":\s*"((?:[^"\\]|\\.)+)"', m.group(1)) if m else []
+
+
+def teach_hints() -> dict:
+    """Map each teach-hint text to the file that authors it."""
+    out = {}
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for fn in files:
+            if not fn.endswith(".gd"):
+                continue
+            path = os.path.join(dirpath, fn)
+            rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            with open(path, encoding="utf-8") as f:
+                src = f.read()
+            for m in re.finditer(r'teach_once\(\s*[^,()]+,\s*(?:tr\()?("((?:[^"\\]|\\.)+)"|[A-Z_][A-Z0-9_]*)', src):
+                if m.group(2) is not None:
+                    out.setdefault(m.group(2), rel)
+                    continue
+                const = re.search(r'const %s := "((?:[^"\\]|\\.)+)"' % m.group(1), src)
+                if const:
+                    out.setdefault(const.group(1), rel)
+            for name in HINT_DICTS:
+                if ("teach_once(" in src or "teach_elite" in src) and ("const %s" % name) in src:
+                    for v in _dict_values(src, name):
+                        out.setdefault(v, rel)
+    return out
+
+
 def main() -> int:
+    # The hints carry symbols (◆ ✦ ☠) a Windows cp1252 console cannot print.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     with open(CSV, encoding="utf-8", newline="") as f:
         rows = list(csv.reader(f))
     header = rows[0]
@@ -101,6 +144,9 @@ def main() -> int:
     for label, rel in sorted(required_labels().items()):
         if label not in seen:
             errors.append("no row for label %r (%s)" % (label, rel))
+    for hint, rel in sorted(teach_hints().items()):
+        if hint not in seen:
+            errors.append("no row for teach hint %r (%s)" % (hint, rel))
     if errors:
         print("strings.csv: %d problem(s)" % len(errors))
         for e in errors:
