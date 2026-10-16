@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-423 probes total: **149** wired into the headless suite (`suite`), **84**
+425 probes total: **150** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **190** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **191** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -222,6 +222,8 @@ or GPU-timing probes; `--headless` renders these black).
 | fire_vent_shot | A level's fire vent row (the Crucible's north gap; `--level=lava_world` for a lone walkway vent, `--level=mistral` for the cryo row) while one vent warns and while one erupts, from both sides; `-- --out=<dir> [--level=<id>]` | windowed |
 | firewall_probe | Firewall barriers: the real player.tscn body masks the firewall layer (and not enemy projectiles), a player-masked body stops at the sheet while a robot-masked one walks through, the relay and the linked objective each drop it, a checkpoint-resumed level starts it open; then on every campaign level that authors firewalls, each relay, objective and the exit is reachable on the built navmesh without crossing a firewall that cannot be open yet (red-checked: relay moved behind its own wall fails) | suite |
 | firewall_shot | Each campaign firewall framed from the spawn side, its relay node, and the first one mid-collapse, to judge the firewall shader in-level | windowed |
+| intercept_probe | INTERCEPT courier on a baked floor with a real android: it spawns on the waypoint with 3x health, runs the route at 7.47 m/s (between walk 5.5 and sprint 9.0), keeps running and never hurts a player beside it, an EMP stops it, it uploads still on the uplink; a finished upload fires escaped(1) and restarts it at the route start at full health with the copy in the label; a kill after an escape pays no CLEAN INTERCEPT bonus, a clean kill does (+400); a hijack completes the task and stops the run; on every intercept level each leg exists on the built navmesh, the run lasts 12 s+ and a courier runs the real route to the uplink (red-checked: it caught the tapered ramp foot and the deck lip on Maple Grove's bridge) | suite |
+| intercept_shot | Maple Grove's courier from a chasing player's eye height on the bridge (amber core, DATA COURIER tag), the uplink beam seen from the bridge across the estate, and the courier uploading on the pad (`--out=<dir>`, `--level=<id>`) | windowed |
 | jam_relay_probe | Jam-shielded cores: a shielded core ignores damage until a jam zone covers it (an unshielded core takes the same hit as the control), a zone out of range does nothing, the shield closes when the zone expires, a jammed core dies and completes its task; every jam-shielded core is on a level with the jammer; live, hivemind's two relays shrug off 500 damage unjammed, the HIVE PRIME stays staged until both fall and goes live after (red-checked: a shield that never closes fails 5 checks) | suite |
 | bonus_objective_probe | Optional bonus objectives: a ghost bonus is won and paid once when the tasks complete with no scanner alarm, one alarm loses it for good, a lost bonus never seals the exit; a dry bonus survives a robot hit (control) and is lost to hazard damage; a deathless bonus is lost to one death; every campaign bonus has a known kind and a label, ghost only with scanners, dry only with hazard beds; live, neon's bonus hooks all its scanners and lava_world's hooks the real player, and the debrief highlights show a won bonus with its score and a lost one unpaid (red-checked: failing on any damage breaks the control) | suite |
 | flood_surge_probe | Hazard surges: a flood warns before it burns, rises and burns a body on the floor while a deck 1.6 m up over the same bed stays dry, death clears the beds and play resuming re-runs the warning, completing the hold drains and frees them; then every campaign flood scales with the world, lands with 5 s of hold left, has no overlapping beds, leaves the exit and 3+ decks dry and every later supply on dry ground; live, each flood level is built and its beds burn bodies in them but not one on the exit (red-checked: dropping the death reset and the drain fails 6 checks) | suite |

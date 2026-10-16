@@ -235,3 +235,5 @@ res://tests/pendulum_blade_probe.tscn
 res://tests/bumper_probe.tscn
 # RAMP FEET: robots climb a ground-foot ramp from off its centre line; elevated feet keep their taper.
 res://tests/ramp_foot_probe.tscn
+# INTERCEPT: the courier runs, uploads, escapes and restarts, dies or turns; authored routes run on the built level.
+res://tests/intercept_probe.tscn

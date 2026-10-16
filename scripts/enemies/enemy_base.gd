@@ -241,6 +241,10 @@ func _physics_process(delta: float) -> void:
 	if hijacked:
 		_hijack_process(delta)
 		return
+	# A data courier (InterceptCourier) runs its route instead of fighting.
+	if courier_goal != null:
+		_courier_process(delta)
+		return
 	_attack_timer = maxf(0.0, _attack_timer - delta)
 	_state_timer += delta
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
@@ -330,6 +334,33 @@ const ESCORT_ENGAGE := 12.0
 ## point (when `escort_go`) instead of hunting robots across the map.
 var escort_goal: Variant = null
 var escort_go: bool = false
+
+## InterceptCourier: while set, this hostile robot runs for this point at
+## `courier_speed` instead of fighting: no perception, no attacks, no stagger.
+## EMP, a Bumper throw and a hijack still take it (their branches run first).
+var courier_goal: Variant = null
+var courier_speed: float = 0.0
+var _courier_t: float = 0.0
+## Sideways weave while it runs, as a fraction of courier_speed: a courier on
+## a straight line is a free headshot.
+const COURIER_JINK := 0.3
+
+func _courier_process(delta: float) -> void:
+	_courier_t += delta
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	_move_toward(courier_goal, delta)
+	_apply_gravity(delta)
+	var jink := Vector3.ZERO
+	var run := Vector3(velocity.x, 0.0, velocity.z)
+	if run.length() > courier_speed * 0.5:
+		jink = Vector3(-run.z, 0.0, run.x).normalized() * sin(_courier_t * 2.6) * courier_speed * COURIER_JINK
+	# The weave rides on top of the steering velocity for this step only, so
+	# _move_toward keeps steering the route rather than fighting the sway.
+	velocity += jink
+	move_and_slide()
+	velocity -= jink
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
 
 ## Convert this unit to the player's side for `duration` seconds, then burnout
 ## (its loyalty firmware violently reasserts itself and the chassis dies).
@@ -1228,6 +1259,8 @@ func attack_interval() -> float:
 	return attack_cooldown * (0.55 if last_stand_active() else 1.0)
 
 func chase_speed() -> float:
+	if courier_goal != null and courier_speed > 0.0:
+		return courier_speed # a courier holds its pace: no wounded frenzy
 	# Wounded frenzy, with an extra surge once it's making its last stand.
 	var frenzy := 1.0 + damage_heat * 0.45
 	if last_stand_active():

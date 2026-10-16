@@ -51,6 +51,7 @@ func _task_id(t: Dictionary) -> String:
 		"assassinate": return t.get("id", "hvt")
 		"kill_switch": return t.get("id", "switches")
 		"escort": return t.get("id", "escort")
+		"intercept": return t.get("id", "courier")
 	return t.get("id", "task")
 
 func _validate_defs() -> void:
@@ -79,7 +80,10 @@ func _validate_defs() -> void:
 				pts.append(t["pos"])
 			for sp in t.get("points", []):
 				pts.append(sp["pos"] if sp is Dictionary else sp)
-			for r in t.get("reinforce", []):
+			pts.append_array(t.get("route", []))
+			if t.has("to"):
+				pts.append(t["to"])
+			for r in t.get("reinforce", []) + t.get("penalty", []):
 				if r.has("pos"):
 					pts.append(r["pos"])
 				_check("%s reinforce type" % lid,
