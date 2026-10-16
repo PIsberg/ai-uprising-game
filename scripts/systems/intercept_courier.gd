@@ -15,8 +15,15 @@ extends Node3D
 ##
 ## This node stays at `pos` (the route start, and where the task probes judge
 ## the task); the robot is its sibling under the level.
+##
+## Adopt mode (the DATA LEAK skirmish event, GameState._event_data_leak): `adopt`
+## is a robot already in the fight, `task_id` is empty (no checklist entry, no
+## CLEAN bonus) and `restart_on_escape` is false, so a finished upload takes the
+## courier off the map instead of restarting it. The caller pays out on `caught`.
 
 signal escaped(copies: int)
+## The courier went down (`killed`) or was hijacked, at `at`.
+signal caught(killed: bool, at: Vector3)
 
 const DEFAULT_SPEED := 7.4
 const DEFAULT_UPLOAD := 10.0
@@ -37,6 +44,12 @@ var uplink: Vector3 = Vector3.ZERO
 var upload_seconds: float = DEFAULT_UPLOAD
 var speed: float = DEFAULT_SPEED
 var health_mult: float = HEALTH_MULT
+## A live robot to turn into the courier instead of spawning `unit_scene`.
+var adopt: EnemyBase = null
+## A finished upload restarts the run (task) or takes the courier away (event).
+var restart_on_escape: bool = true
+## Spawn toast and one-time hint (the event announces itself).
+var announce: bool = true
 
 var unit: EnemyBase
 ## Index of the waypoint it is running for; route.size() means the uplink.
@@ -110,23 +123,36 @@ func _build_uplink() -> void:
 	_pad.add_child(tag)
 
 func _spawn_unit() -> void:
-	if unit_scene == null or not is_inside_tree():
+	if not is_inside_tree():
 		return
-	unit = unit_scene.instantiate() as EnemyBase
-	if unit == null:
-		return
-	# Stat scaling must ride _health_mult: subclasses hardcode stats in _ready
-	# and _sync_stats applies the multiplier after them.
-	unit._health_mult *= health_mult
-	unit.courier_speed = speed
-	unit.courier_goal = _goal()
-	unit.position = position
-	get_parent().add_child(unit)
+	if adopt != null:
+		if not is_instance_valid(adopt) or adopt.state == EnemyBase.State.DEAD:
+			done = true
+			return
+		unit = adopt
+		unit.target = null
+		unit.courier_speed = speed
+		unit.courier_goal = _goal()
+	else:
+		if unit_scene == null:
+			return
+		unit = unit_scene.instantiate() as EnemyBase
+		if unit == null:
+			return
+		# Stat scaling must ride _health_mult: subclasses hardcode stats in _ready
+		# and _sync_stats applies the multiplier after them.
+		unit._health_mult *= health_mult
+		unit.courier_speed = speed
+		unit.courier_goal = _goal()
+		unit.position = position
+		get_parent().add_child(unit)
 	unit.add_to_group("objective") # the HUD waypoint follows the courier
 	unit.add_to_group("intercept_courier")
 	if unit.hp:
 		unit.hp.died.connect(_on_unit_died)
 	_dress(unit)
+	if not announce:
+		return
 	GameState.teach_once("intercept", "DATA COURIER: it runs for the uplink and never fights back. Sprint, dash and shoot. An EMP stops it cold.")
 	GameState.skirmish_event.emit("DATA COURIER RUNNING", "It has the data and it is running for the uplink. Run it down.")
 	AudioBus.play_synth_at("overlord_glitch", unit.global_position, -2.0, 1.2)
@@ -207,6 +233,15 @@ func _escape() -> void:
 	copies += 1
 	uploading = false
 	upload_t = 0.0
+	if not restart_on_escape:
+		# Gone with the data: off the map, no kill credit.
+		done = true
+		escaped.emit(copies)
+		AudioBus.play_synth_at("overlord_glitch", unit.global_position, 0.0, 0.7)
+		unit.courier_goal = null
+		unit.queue_free()
+		queue_free()
+		return
 	leg = 0
 	if _beam_mat:
 		_beam_mat.albedo_color.a = BEAM_IDLE_ALPHA
@@ -228,6 +263,16 @@ func _finish(killed: bool) -> void:
 	uploading = false
 	if is_instance_valid(unit):
 		unit.courier_goal = null
+		# The wreck lingers: off the waypoint, and no longer a live courier
+		# (the DATA LEAK event refuses to start a second one while one runs).
+		unit.remove_from_group("intercept_courier")
+		unit.remove_from_group("objective")
+	if _pad:
+		_pad.queue_free()
+	caught.emit(killed, unit.global_position if is_instance_valid(unit) else position)
+	if task_id == "":
+		queue_free() # adopt mode: the caller pays out on `caught`
+		return
 	GameState.relabel_task(task_id, base_label)
 	GameState.complete_task(task_id)
 	if copies == 0:
@@ -237,10 +282,10 @@ func _finish(killed: bool) -> void:
 		GameState.skirmish_event.emit("COURIER DOWN", "The data is yours. The copies are someone else's problem.")
 	if not killed:
 		GameState.skirmish_event.emit("COURIER TURNED", "It works for you now, and so does what it carried.")
-	if _pad:
-		_pad.queue_free()
 
 func _relabel(key: String) -> void:
+	if task_id == "":
+		return
 	var full := key + ":%d" % copies
 	if full == _state_key:
 		return

@@ -862,6 +862,8 @@ func claim_bounty() -> void:
 ##   GRID SURGE   — 20s where ultimate charge builds at double rate
 ##   MODEL HALLUCINATION — the robots' vision glitches: three phantoms of the
 ##                  player draw the fire of every robot closer to one (12 s)
+##   DATA LEAK    — a robot in the fight grabs a shard and runs for an uplink
+##                  (InterceptCourier, adopt mode); kill it before it uploads
 ## Hard-gated: PLAYING only, never on boss/convoy/horde levels, never in the
 ## opening minute, never while a bounty is live, max 2 per level. Everything
 ## it spawns cleans itself up.
@@ -876,6 +878,12 @@ const EVENT_ASSASSIN := preload("res://scenes/enemies/hunter.tscn")
 const EVENT_PICKUP_OVERCLOCK := preload("res://scenes/pickups/overclock.tscn")
 const EVENT_PICKUP_AMMO := preload("res://scenes/pickups/ammo_box.tscn")
 const EVENT_PHANTOMS := 3
+const LEAK_BONUS := 300        ## score for killing (or hijacking) a leaking courier
+const LEAK_BAND := Vector2(12.0, 40.0) ## a leaker is picked this far from the player
+const LEAK_RUN := 30.0         ## how far away from the player its uplink is placed
+const LEAK_RUN_MIN := 20.0     ## shortest run accepted after snapping to the navmesh
+const LEAK_UPLOAD := 6.0       ## seconds it uploads before the shard is out
+const EVENT_PICKUP_LEAK := preload("res://scenes/pickups/overclock.tscn")
 
 var _event_cd: float = EVENT_FIRST_DELAY
 var _level_events: int = 0
@@ -895,11 +903,12 @@ func _tick_events(delta: float) -> void:
 	if _bounty != null and _bounty.get_ref() != null:
 		return
 	_level_events += 1
-	match randi() % 4:
+	match randi() % 5:
 		0: _event_assassin()
 		1: _event_supply_flare()
 		2: _event_grid_surge()
 		3: _event_hallucination()
+		4: _event_data_leak()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -932,11 +941,11 @@ func _event_point_near_player(dist: float) -> Vector3:
 
 ## ASSASSIN: one dangerous skirmisher warps in close, pre-marked as a bounty —
 ## an instant duel with the payoff already on its head.
-func _event_assassin() -> void:
+func _event_assassin(at_override: Variant = null) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
-	var at := _event_point_near_player(16.0)
+	var at: Vector3 = at_override if at_override is Vector3 else _event_point_near_player(16.0)
 	var e := EVENT_ASSASSIN.instantiate() as EnemyBase
 	Elite.maybe_apply(e, 0.5) # even odds it comes up-tiered: it's meant to be a duel
 	e.position = at
@@ -1006,6 +1015,97 @@ func _event_hallucination() -> void:
 		ph.global_position = at
 	skirmish_event.emit("MODEL HALLUCINATION", "Their vision model is glitching: they see three of you for %d seconds. Flank them." % int(PlayerPhantom.LIFE))
 	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.8)
+
+## DATA LEAK: a robot already in the fight, mid-range and on foot, grabs a
+## data shard and runs for an uplink LEAK_RUN away on the far side from the
+## player (InterceptCourier in adopt mode: it never fights back, it weaves, an
+## EMP stops it). Kill or hijack it before its LEAK_UPLOAD s upload for
+## LEAK_BONUS and the overclock it was carrying; let it upload and it is gone
+## with the shard, and a hunter answers at the uplink as an ASSASSIN CONTRACT.
+## No candidate (or a courier already running) falls back to a SUPPLY FLARE.
+func _event_data_leak() -> void:
+	var scene := get_tree().current_scene
+	var p := get_tree().get_first_node_in_group("player") as Node3D
+	if scene == null or p == null:
+		return
+	if not get_tree().get_nodes_in_group("intercept_courier").is_empty():
+		_event_supply_flare()
+		return
+	var pick := _leak_candidate(p)
+	var to: Variant = _leak_uplink(pick, p) if pick else null
+	if pick == null or to == null:
+		_event_supply_flare()
+		return
+	var ic := InterceptCourier.new()
+	ic.name = "DataLeak"
+	ic.task_id = ""
+	ic.adopt = pick
+	ic.uplink = to
+	ic.upload_seconds = LEAK_UPLOAD
+	ic.restart_on_escape = false
+	ic.announce = false
+	scene.add_child(ic)
+	ic.global_position = pick.global_position
+	ic.caught.connect(_on_leak_caught)
+	ic.escaped.connect(func(_n: int) -> void: _on_leak_escaped(to))
+	skirmish_event.emit("DATA LEAK", "One of them grabbed a data shard and is running for an uplink. Kill it before it uploads.")
+	AudioBus.play_synth_at("overlord_glitch", pick.global_position, 0.0, 1.2)
+
+## A live, hostile, ground-bound, non-boss robot LEAK_BAND from the player,
+## standing on the navmesh: one that can run, and one the player can chase.
+func _leak_candidate(p: Node3D) -> EnemyBase:
+	var picks: Array[EnemyBase] = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var r := e as EnemyBase
+		if r == null or r.state == EnemyBase.State.DEAD or r.hp == null or not r.hp.is_alive():
+			continue
+		if r.hijacked or r.is_bounty or r.escort_goal != null or r.courier_goal != null or r.is_launched():
+			continue
+		if "hover_height" in r or r.max_health * r._health_mult >= EnemyBase.HIJACK_BOSS_HP:
+			continue
+		var d := Vector2(r.global_position.x - p.global_position.x, r.global_position.z - p.global_position.z).length()
+		if d < LEAK_BAND.x or d > LEAK_BAND.y:
+			continue
+		var map := r.get_world_3d().navigation_map
+		if NavigationServer3D.map_get_closest_point(map, r.global_position).distance_to(r.global_position) > 1.5:
+			continue
+		picks.append(r)
+	return picks[randi() % picks.size()] if not picks.is_empty() else null
+
+## A navmesh point about LEAK_RUN from the leaker, on the far side from the
+## player (straight away first, then fanning out), or null if none qualifies.
+func _leak_uplink(r: EnemyBase, p: Node3D) -> Variant:
+	var map := r.get_world_3d().navigation_map
+	var away := r.global_position - p.global_position
+	away.y = 0.0
+	away = away.normalized()
+	var d0 := Vector2(r.global_position.x - p.global_position.x, r.global_position.z - p.global_position.z).length()
+	for ang in [0.0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5]:
+		var want: Vector3 = r.global_position + away.rotated(Vector3.UP, ang) * LEAK_RUN
+		var q := NavigationServer3D.map_get_closest_point(map, want)
+		var run := Vector2(q.x - r.global_position.x, q.z - r.global_position.z).length()
+		var from_p := Vector2(q.x - p.global_position.x, q.z - p.global_position.z).length()
+		if run >= LEAK_RUN_MIN and from_p > d0 + 10.0:
+			var path := NavigationServer3D.map_get_path(map, r.global_position, q, true)
+			if path.size() > 1 and path[-1].distance_to(q) < 1.0:
+				return q
+	return null
+
+func _on_leak_caught(killed: bool, at: Vector3) -> void:
+	add_score(LEAK_BONUS)
+	var scene := get_tree().current_scene
+	if scene != null:
+		var drop := EVENT_PICKUP_LEAK.instantiate() as Node3D
+		scene.add_child(drop)
+		drop.global_position = at + Vector3.UP * 0.4
+	skirmish_event.emit("LEAK PLUGGED" if killed else "LEAK TURNED",
+		tr("The shard never left. +%d, and it dropped an overclock.") % LEAK_BONUS)
+	AudioBus.play_synth_ui("combo_up", -2.0, 1.1)
+
+func _on_leak_escaped(at: Vector3) -> void:
+	skirmish_event.emit("DATA LEAKED", "It uploaded. They know where you are.")
+	_bounty = null
+	_event_assassin(at)
 
 # ---------- kill-streak combo ----------
 const COMBO_WINDOW := 3.5 ## Seconds between kills before the streak resets.
