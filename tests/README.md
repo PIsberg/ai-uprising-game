@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-437 probes total: **157** wired into the headless suite (`suite`), **84**
+438 probes total: **158** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -49,8 +49,9 @@ or GPU-timing probes; `--headless` renders these black).
 | aaa_axes_probe | Batch-3 five-axis AAA gaps on a live level: warp-in telegraph before spawn, lava heat-haze curtains, per-level par time + speed bonus, wounded-grunt cover-seek fallback | headless |
 | adrenaline_probe | ADRENALINE SURGE: critical-HP hit fires heal+buff+banner, buffs collapse on end, cooldown blocks immediate re-trigger | windowed |
 | ads_zoom_probe | Holding aim (RMB) converges FOV to the weapon's ads_fov; release restores base FOV | headless |
+| aegis_probe | AEGIS shield drone on a baked floor: with two androids live it wards the one nearer the player (gold beam, bubble) and only that one; the warded android takes no damage (red-checked: without the ward check it took 200) while the other does; shooting the bubble teaches the rule once; killing the AEGIS drops the ward and the bubble and the android takes damage again; a boss-class robot is never warded; the builder knows it, the codex lists it and it is placed on a campaign level | suite |
 | ai_director_probe | Adaptive AI Director's counter logic against synthetic playstyle profiles | suite |
-| aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every one of the 43 enemies vs the rifle (~319s, run deliberately) | headless |
+| aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every enemy scene in scenes/enemies vs the rifle (~319s, run deliberately) | headless |
 | alien_probe | ALIEN charges, spits bio-plasma orbs, orbs damage the player without melee | headless |
 | archon_probe | ARCHON boss full lifecycle (boot→wave spawn→exposure→energy fire→death cascade) headlessly for script errors | headless |
 | armed_lineup_probe | Blender-armed bot forks lined up to eyeball welded weapons | windowed |
@@ -438,7 +439,7 @@ or GPU-timing probes; `--headless` renders these black).
 | swarm_probe | Homing swarm missile steers into an off-axis enemy target | headless |
 | night_vision_probe | Night vision: a fresh run has none and the toggle does nothing; the goggles pickup grants it and is gone; `night_vision` is an action on N and on the rebind screen; toggled on, the `NightVision` goggle pass shows, off it hides; it does not count as a flashlight; Continue keeps it, a new run clears it; once owned another goggles pickup removes itself; GPT and SUBLEVEL place one | suite |
 | night_vision_shot | A dark room (its lamp shot out) with three robots through the player's camera, goggles off and on; `-- --out=<dir>` | windowed |
-| sentry_turret_probe | Sentry turrets on a flat floor: in view it hits the player, never before its 0.8 s lock-on (0.85 s measured); a wall between them stops it; right under the gun (2.4 m) it cannot hit you (red-checked: with no dead zone it did) and standing there 2.5 s hacks it; hacked, it shoots a robot and never the player, burns out when its time is up and then fires at nothing; an EMP shuts it up and it wakes after; shot to pieces it is dead and quiet; on GROK both turrets stand clear of geometry and can be reached and hacked from spawn | suite |
+| sentry_turret_probe | Sentry turrets on a flat floor: in view it hits the player, never before its 0.8 s lock-on (0.85 s measured); a wall between them stops it; right under the gun (2.4 m) it cannot hit you (red-checked: with no dead zone it did) and standing there 2.5 s hacks it; hacked, it shoots a robot and never the player, burns out when its time is up and then fires at nothing; an EMP shuts it up and it wakes after; shot to pieces it is dead and quiet; on every turret level (GROK, Desert) each turret stands clear of geometry and can be reached and hacked from spawn | suite |
 | sentry_turret_shot | GROK's first turret painting the player with its lock-on laser, the hack ring under the gun mid-hack, and the turret hacked green (`--out=<dir>`, `--level=<id>`) | windowed |
 | shock_floor_probe | ShockFloor (4 x 2 checker) over two cycles: the groups take turns and every arc comes 0.9 s after its glow; every tile's neighbours are in the other group; a player on a tile is hit only while it arcs (red with the warning hurting too), never mid-jump or off the floor; a robot on an arcing tile is not hurt; walking up teaches the rule once; the Neon Arcade's floor spans the inside of its north gap from the bulkhead's face, a tile deep at least, with no task zone or pad on it | suite |
 | shock_floor_shot | A level's shock floor (the Neon Arcade's, inside the north gap) from inside the hall while one group glows its warning and while it arcs; `-- --out=<dir> [--level=<id>]` | windowed |

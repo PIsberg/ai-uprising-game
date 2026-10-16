@@ -47,9 +47,9 @@ func _build_beam() -> void:
 	_beam_mat = StandardMaterial3D.new()
 	_beam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_beam_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	_beam_mat.albedo_color = Color(0.4, 1.0, 0.6)
+	_beam_mat.albedo_color = support_color()
 	_beam_mat.emission_enabled = true
-	_beam_mat.emission = Color(0.4, 1.0, 0.6)
+	_beam_mat.emission = support_color()
 	_beam_mat.emission_energy_multiplier = 6.0
 	bm.material = _beam_mat
 	_beam.mesh = bm
@@ -57,7 +57,7 @@ func _build_beam() -> void:
 	_beam.visible = false
 	add_child(_beam)
 	_beam_light = OmniLight3D.new()
-	_beam_light.light_color = Color(0.4, 1.0, 0.6)
+	_beam_light.light_color = support_color()
 	_beam_light.light_energy = 0.0
 	_beam_light.omni_range = 5.0
 	_beam_light.shadow_enabled = false
@@ -80,41 +80,58 @@ func _physics_process(delta: float) -> void:
 	var player := _find_player()
 	target = player
 
-	# Refresh the heal target periodically or when it's full / gone.
+	# Refresh the support target periodically or when it is done with / gone.
 	_retarget -= delta
-	var stale := _heal_target == null or not is_instance_valid(_heal_target) \
-		or _heal_target.state == State.DEAD or _heal_target.hp == null \
-		or not _heal_target.hp.is_alive() \
-		or _heal_target.hp.current_health >= _heal_target.hp.max_health
-	if _retarget <= 0.0 or stale:
+	if _retarget <= 0.0 or _support_stale(_heal_target):
 		_retarget = 0.5
-		_heal_target = _find_wounded_ally()
+		_heal_target = _pick_support_target()
 
 	_fly(player, delta)
 
-	# Beam-heal if a wounded ally is in range.
+	# Beam-support (heal, for a MENDER) if the target is in range.
 	var healing := false
 	if _heal_target and is_instance_valid(_heal_target) and _heal_target.hp \
 			and global_position.distance_to(_heal_target.global_position) <= heal_range + 1.0:
 		healing = true
-		_heal_target.hp.heal(heal_per_sec * delta)
+		_support(_heal_target, delta)
 		_show_beam(_eye_light.global_position if _eye_light else global_position,
 			_heal_target.global_position + Vector3.UP * 0.6)
-		if _repair_cd <= 0.0:
-			_repair_cd = 0.9
-			AudioBus.play_synth_at("pickup_health", _heal_target.global_position, -8.0, 1.4)
-			var rm := _heal_target.get_node_or_null("Model") as RobotModel
-			if rm and rm.has_method("damage_blink"):
-				pass # the green beam already reads as repair
 	if not healing:
 		_hide_beam()
+		_support_lost()
 
 	move_and_slide()
 
-	# Teal eye throb, hotter while actively mending.
+	# Eye throb in the support colour, hotter while actively supporting.
 	if _eye_light:
-		_eye_light.light_color = Color(0.4, 1.0, 0.6)
+		_eye_light.light_color = support_color()
 		_eye_light.light_energy = 0.7 + sin(_hover_phase * 2.0) * 0.3 + (1.2 if healing else 0.0)
+
+# --- support hooks (EnemyAegis overrides these to shield instead of heal) ---
+
+## The colour of the beam and the eye.
+func support_color() -> Color:
+	return Color(0.4, 1.0, 0.6)
+
+## True when the current target needs replacing now: gone, dead, or (for a
+## MENDER) back at full health.
+func _support_stale(t: EnemyBase) -> bool:
+	return t == null or not is_instance_valid(t) or t.state == State.DEAD or t.hp == null \
+		or not t.hp.is_alive() or t.hp.current_health >= t.hp.max_health
+
+func _pick_support_target() -> EnemyBase:
+	return _find_wounded_ally()
+
+## One tick of support on `t`, which is in beam range.
+func _support(t: EnemyBase, delta: float) -> void:
+	t.hp.heal(heal_per_sec * delta)
+	if _repair_cd <= 0.0:
+		_repair_cd = 0.9
+		AudioBus.play_synth_at("pickup_health", t.global_position, -8.0, 1.4)
+
+## Called on a tick with no target in beam range.
+func _support_lost() -> void:
+	pass
 
 func _fly(player: Node3D, delta: float) -> void:
 	var pos := global_position

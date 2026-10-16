@@ -8,6 +8,9 @@ signal died(source: Node)
 @export var max_health: float = 100.0
 @export var armor: float = 0.0
 @export var invulnerable: bool = false
+## The EnemyAegis currently shielding this owner (null when unwarded). Kept
+## apart from `invulnerable`, which other systems set and clear.
+var warded_by: Node = null
 ## Health never drops below this, so above 0 the owner can never die: an
 ## escorted ALIGNED unit (AlignedEscort) sets 1.0 and goes down for a reboot
 ## instead. 0 (the default) changes nothing.
@@ -59,6 +62,12 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 		var s_hijacked: bool = source.get("hijacked") == true
 		if v_hijacked == s_hijacked:
 			return
+	# Warded by an AEGIS drone: the bubble takes the hit. The drone clears
+	# warded_by when its beam breaks or it dies.
+	if warded_by != null and is_instance_valid(warded_by) and current_health > 0.0:
+		if warded_by.has_method("on_ward_hit"):
+			warded_by.on_ward_hit(get_parent(), source)
+		return
 	if invulnerable or current_health <= 0.0:
 		var parent := get_parent()
 		if parent and parent.has_method("notify_shield_hit"):

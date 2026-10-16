@@ -3187,10 +3187,13 @@ static func _uplink() -> Dictionary:
 						"particles": "rain",
 						"warn_title": "SIGNAL STORM", "warn_text": "The jamming is answering the broadcast. The storm is closing in.",
 						"clear_title": "STORM PASSING", "clear_text": "The counter-signal is through."}},
+					# The crew brings an AEGIS: it wards whichever of them is nearest
+					# you (gold bubble, immune) until you shoot it. tests/aegis_probe.
 					{"at": 10.0, "label": "SECOND WAVE — JAMMER CREW", "enemies": [
 						{"type": "android", "pos": Vector3(12, 0.5, -12)},
 						{"type": "gunner", "pos": Vector3(-14, 0.5, -12)},
 						{"type": "enforcer", "pos": Vector3(-7, 0.5, -6)},
+						{"type": "aegis", "pos": Vector3(-10, 3.0, -9)},
 					]},
 					{"at": 18.0, "label": "THE STORM'S EYE", "enemies": [
 						{"type": "roller", "pos": Vector3(7, 0.5, 6)},
@@ -6315,12 +6318,23 @@ static func _desert() -> Dictionary:
 						{"type": "ammo", "pos": Vector3(10, 0, 12)},
 						{"type": "health", "pos": Vector3(8, 0, 24)},
 					]},
+					# An AEGIS rides with the armour: it shields whichever of them is
+					# nearest you, often the warbot. tests/aegis_probe.
 					{"at": 17.0, "label": "HEAVY ARMOUR INBOUND", "enemies": [
 						{"type": "warbot", "pos": Vector3(38, 0, 38)},
 						{"type": "howitzer", "pos": Vector3(-8, 0, 26)},
 						{"type": "raptor", "pos": Vector3(24, 3, 10)},
+						{"type": "aegis", "pos": Vector3(34, 3, 30)},
 					]},
 				]},
+		],
+		# Relay 7's site defence: two sentry guns on the approach to the relay
+		# mast, clear of the three fire trenches. Hack one (get under the gun,
+		# stand 2.5 s) and it shreds the gunner squad the mast calls in when it
+		# falls. tests/sentry_turret_probe.
+		"turrets": [
+			{"pos": Vector3(18, 0, 16), "yaw": 225},
+			{"pos": Vector3(32, 0, 22), "yaw": 135},
 		],
 		"open_sky": true,
 		# Hero landmark past the skyline (Landmark).
