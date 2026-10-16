@@ -1298,6 +1298,35 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 		li.omni_range = maxf(w, d) * 0.8
 		add_child(li)
 		li.position = Vector3(pos.x, fy, pos.z)
+	if b.has("lockdown"):
+		_build_lockdown(b["lockdown"], pos, ground, w, h, d, t, door_w, door_on_x, front_sign)
+
+## An open building's `lockdown` (LockdownZone): an energy door built dropped
+## just outside the doorway (FirewallBarrier, starts_open + quiet), and the zone
+## over the interior. Wave `pos` and `reward` are LOCAL to the house's floor
+## centre (house footprints keep their authored size, so these never scale).
+func _build_lockdown(ld: Dictionary, pos: Vector3, ground: float, w: float, h: float, d: float,
+		t: float, door_w: float, door_on_x: bool, front_sign: float) -> void:
+	var door := FirewallBarrier.new()
+	door.length = door_w + 0.2
+	door.starts_open = true
+	door.quiet = true
+	door.accent = Color(1.0, 0.25, 0.1)
+	if door_on_x:
+		door.position = Vector3(pos.x + front_sign * (w * 0.5 + 0.25), ground, pos.z)
+		door.rotation.y = PI * 0.5
+	else:
+		door.position = Vector3(pos.x, ground, pos.z + front_sign * (d * 0.5 + 0.25))
+	add_child(door)
+	var z := LockdownZone.new()
+	z.half = Vector3(w * 0.5 - t - 0.1, h * 0.5, d * 0.5 - t - 0.1)
+	z.doors = [door]
+	z.waves = ld.get("waves", [])
+	z.reward = ld.get("reward", Vector3.ZERO)
+	z.label = String(ld.get("label", "SMART HOME SECURITY"))
+	z.max_lock = float(ld.get("max_lock", 90.0))
+	z.position = Vector3(pos.x, ground, pos.z)
+	add_child(z)
 
 ## Multiply every mesh-surface albedo of `root` by `tint` (duplicating materials
 ## so the shared source resources are untouched). Used to grime-down buildings.

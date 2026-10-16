@@ -1,6 +1,10 @@
 class_name EnemySpawner
 extends Marker3D
 
+## The robot this spawner put in the world (after its warp telegraph): lets
+## an encounter (LockdownZone) track exactly the robots it called in.
+signal spawned(enemy: Node3D)
+
 @export var enemy_scene: PackedScene
 @export var spawn_on_ready: bool = true
 @export var spawn_delay: float = 0.0
@@ -116,6 +120,7 @@ func _spawn(telegraph: bool = true) -> void:
 	# landing spot, relocations included.)
 	e.position = pos
 	get_tree().current_scene.add_child.call_deferred(e)
+	spawned.emit.call_deferred(e) # deferred calls run in order: after the add
 
 ## The arrival read: an unshaded emissive pillar snaps up over the landing
 ## point with a charge-whine, hangs for the telegraph, then collapses as the

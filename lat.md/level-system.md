@@ -119,6 +119,15 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `cryo: true` makes a coolant vent: the same beats and damage, but the grate frosts over blue-white and hisses, the blast is white-blue vapour, and it teaches its own line ("CRYO VENT"). MISTRAL's cryo-core puts a row of three across its east gap (radius 1.6 so the row spans the wider 8 m gap), a third of a period apart like the Crucible's.
 * `tests/fire_vent_probe` checks the warning lead and look, who burns and when, the hint, the cryo look and hint, the Crucible and MISTRAL gap rows and the LAVA WORLD walkway vents.
 
+## Lockdowns
+<!-- lat: { "require-code-mention": true } -->
+An open building's `lockdown` entry turns the house into a trap room (`LockdownZone`, built by `_build_lockdown`).
+
+* The door is a `FirewallBarrier` built with `starts_open` (dropped) and `quiet` (no FIREWALL BREACHED toast); `raise()` brings it back. Like any firewall it stops only the player, so the robots warping in are not shut out.
+* The zone seals when the player's feet are inside its interior box (`half`), SEAL_WARN after the LOCKDOWN toast. Each wave is spawned through `EnemySpawner`s parented to the zone; their `spawned` signal is how the zone tracks exactly its own robots, and a wave advances only when they are all down (the level's own trigger spawns waking nearby do not count).
+* Releases: clearing (`BONUS` score, the safe's supplies), a player death (re-arms after `REARM`), and `max_lock` seconds sealed. Unarrived spawners are freed on release.
+* Maple Grove Estates (suburb): the SE open shell, two waves over both floors. `tests/lockdown_probe`, `tests/lockdown_shot`.
+
 ## Crumbling Slabs
 <!-- lat: { "require-code-mention": true } -->
 `crumble_tiles` lines are stepping-stone shortcuts over a hazard bed (`CrumbleTile`, built by `_build_crumble_tiles`).
