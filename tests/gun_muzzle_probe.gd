@@ -151,30 +151,40 @@ func _run() -> void:
 			await get_tree().physics_frame
 		e.target = player
 		e.set_state(EnemyBase.State.ATTACK)
-		var fired: Array = [] # shots spawned this frame, checked after it
-		var on_added := func(n: Node) -> void:
-			if n is Projectile or n.scene_file_path.contains("tracer"):
-				fired.append(n)
-		get_tree().node_added.connect(on_added)
+		# Measured the moment a round is spawned (node_added fires inside the
+		# robot's fire code), the pose the shot actually left from. Measuring a
+		# physics frame later was the #265 flake: a HUNTER blade-dashing at
+		# 12-18 m/s had moved its body 0.3-1.2 m by then, while all 144 shots
+		# instrumented at spawn read 0.00 m.
 		var dists: Array = []
-		var sides := ""
+		# Lambdas capture locals by value: state the callback writes lives in a
+		# Dictionary (shared by reference), or the writes are lost.
+		var st := {"sides": "", "last": -1}
+		var on_added := func(n: Node) -> void:
+			if not (n is Projectile or n.scene_file_path.contains("tracer")):
+				return
+			if not is_instance_valid(e) or dists.size() >= 6:
+				return
+			var frame := Engine.get_physics_frames()
+			if frame == st["last"]:
+				return # one sample per shot (a shot may spawn a tracer and a round)
+			st["last"] = frame
+			if name in TWIN:
+				var dl := e.muzzle.global_position.distance_to(_barrel_front(e, -1.0))
+				var dr := e.muzzle.global_position.distance_to(_barrel_front(e, 1.0))
+				dists.append(snappedf(minf(dl, dr), 0.01))
+				st["sides"] += "L" if dl < dr else "R"
+			else:
+				dists.append(snappedf(e.muzzle.global_position.distance_to(_barrel_front(e)), 0.01))
+		get_tree().node_added.connect(on_added)
 		for f in 60 * 7:
 			await get_tree().physics_frame
 			if not is_instance_valid(e):
 				break
 			if e.state != EnemyBase.State.ATTACK and e.state != EnemyBase.State.STAGGER:
 				e.set_state(EnemyBase.State.ATTACK)
-			if not fired.is_empty():
-				fired.clear()
-				if dists.size() < 6:
-					if name in TWIN:
-						var dl := e.muzzle.global_position.distance_to(_barrel_front(e, -1.0))
-						var dr := e.muzzle.global_position.distance_to(_barrel_front(e, 1.0))
-						dists.append(snappedf(minf(dl, dr), 0.01))
-						sides += "L" if dl < dr else "R"
-					else:
-						dists.append(snappedf(e.muzzle.global_position.distance_to(_barrel_front(e)), 0.01))
 		get_tree().node_added.disconnect(on_added)
+		var sides: String = st["sides"]
 		var far := 0.0
 		for d: float in dists:
 			far = maxf(far, d)
