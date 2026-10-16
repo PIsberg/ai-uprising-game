@@ -28,7 +28,7 @@ const AIR_Y := 2.5
 const SWIMMERS := ["shark"]
 ## Ranged units allowed to hold a platform with no walkable route off it.
 const PERCHERS := ["sniper"]
-const FLYERS := ["drone", "raptor", "seeker", "fishbot", "breaker", "whirlwind", "mender", "reaper"]
+const FLYERS := ["drone", "raptor", "seeker", "fishbot", "breaker", "whirlwind", "mender", "aegis", "reaper"]
 
 var _ok := true
 

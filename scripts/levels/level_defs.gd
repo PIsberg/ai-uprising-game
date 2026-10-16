@@ -3187,10 +3187,13 @@ static func _uplink() -> Dictionary:
 						"particles": "rain",
 						"warn_title": "SIGNAL STORM", "warn_text": "The jamming is answering the broadcast. The storm is closing in.",
 						"clear_title": "STORM PASSING", "clear_text": "The counter-signal is through."}},
+					# The crew brings an AEGIS: it wards whichever of them is nearest
+					# you (gold bubble, immune) until you shoot it. tests/aegis_probe.
 					{"at": 10.0, "label": "SECOND WAVE — JAMMER CREW", "enemies": [
 						{"type": "android", "pos": Vector3(12, 0.5, -12)},
 						{"type": "gunner", "pos": Vector3(-14, 0.5, -12)},
 						{"type": "enforcer", "pos": Vector3(-7, 0.5, -6)},
+						{"type": "aegis", "pos": Vector3(-10, 3.0, -9)},
 					]},
 					{"at": 18.0, "label": "THE STORM'S EYE", "enemies": [
 						{"type": "roller", "pos": Vector3(7, 0.5, 6)},

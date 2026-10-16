@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-437 probes total: **157** wired into the headless suite (`suite`), **84**
+438 probes total: **158** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -49,8 +49,9 @@ or GPU-timing probes; `--headless` renders these black).
 | aaa_axes_probe | Batch-3 five-axis AAA gaps on a live level: warp-in telegraph before spawn, lava heat-haze curtains, per-level par time + speed bonus, wounded-grunt cover-seek fallback | headless |
 | adrenaline_probe | ADRENALINE SURGE: critical-HP hit fires heal+buff+banner, buffs collapse on end, cooldown blocks immediate re-trigger | windowed |
 | ads_zoom_probe | Holding aim (RMB) converges FOV to the weapon's ads_fov; release restores base FOV | headless |
+| aegis_probe | AEGIS shield drone on a baked floor: with two androids live it wards the one nearer the player (gold beam, bubble) and only that one; the warded android takes no damage (red-checked: without the ward check it took 200) while the other does; shooting the bubble teaches the rule once; killing the AEGIS drops the ward and the bubble and the android takes damage again; a boss-class robot is never warded; the builder knows it, the codex lists it and it is placed on a campaign level | suite |
 | ai_director_probe | Adaptive AI Director's counter logic against synthetic playstyle profiles | suite |
-| aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every one of the 43 enemies vs the rifle (~319s, run deliberately) | headless |
+| aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every enemy scene in scenes/enemies vs the rifle (~319s, run deliberately) | headless |
 | alien_probe | ALIEN charges, spits bio-plasma orbs, orbs damage the player without melee | headless |
 | archon_probe | ARCHON boss full lifecycle (boot→wave spawn→exposure→energy fire→death cascade) headlessly for script errors | headless |
 | armed_lineup_probe | Blender-armed bot forks lined up to eyeball welded weapons | windowed |

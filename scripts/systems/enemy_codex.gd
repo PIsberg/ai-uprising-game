@@ -15,7 +15,7 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "sniper", "seeker", "brute",
-	"gunner", "raptor", "mender", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
+	"gunner", "raptor", "mender", "aegis", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
 	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback", "quantizer",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
@@ -286,6 +286,13 @@ const ENTRIES := {
 		"desc": "A support flyer that beam-heals other robots and flees from you. Kill it FIRST or nothing else dies.",
 		"strengths": ["Keeps the whole pack alive", "Runs and hides behind allies"],
 		"weaknesses": ["No real offence of its own", "Fragile once cornered"],
+		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "ARC-9 Gauss Lance"],
+	},
+	"aegis": {
+		"scene": "res://scenes/enemies/aegis.tscn", "name": "AEGIS", "scale": 1.0, "y": 1.5,
+		"desc": "A shield drone. It wraps the robot nearest you in a gold bubble that no shot gets through, and flees when you close in. Kill it and the bubble drops at once.",
+		"strengths": ["Makes one robot completely immune", "Always shields whoever is closest to you"],
+		"weaknesses": ["Fragile, and the shield dies with it", "Its gold beam points straight back at it"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "ARC-9 Gauss Lance"],
 	},
 	"sentinel": {
