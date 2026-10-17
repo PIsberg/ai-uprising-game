@@ -26,6 +26,7 @@ const ENEMY_SCENES := { # type -> scene path; resolved lazily by enemy_scene()
 	"alien": "res://scenes/enemies/alien.tscn",
 	"sniper": "res://scenes/enemies/sniper.tscn",
 	"seeker": "res://scenes/enemies/seeker.tscn",
+	"leech": "res://scenes/enemies/leech.tscn",
 	"overseer": "res://scenes/enemies/overseer.tscn",
 	"brute": "res://scenes/enemies/brute.tscn",
 	"archon": "res://scenes/enemies/archon.tscn",

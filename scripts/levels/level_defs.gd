@@ -1714,6 +1714,12 @@ static func _sublevel() -> Dictionary:
 			{"type": "rollback", "pos": Vector3(-25, 0.5, 0), "trigger": 16, "pack": "sublev_a2"},
 			{"type": "roller", "pos": Vector3(-22, 0.5, 10), "trigger": 18, "pack": "sublev_a2"},
 			{"type": "gunner", "pos": Vector3(0, 3.8, -24), "trigger": 20},
+			# TELEMETRY LEECH debut: one in the west service ring, one in the east
+			# yard. Latched, it phones your position to every unaware robot within
+			# 45 m, and this level is wall-to-wall sleeping packs: rip it off.
+			# tests/leech_probe.
+			{"type": "leech", "pos": Vector3(-28, 1.5, -8), "trigger": 20, "pack": "sublev_a2"},
+			{"type": "leech", "pos": Vector3(26, 1.5, 8), "trigger": 20},
 			{"type": "reaper", "pos": Vector3(18, 0.5, -24), "trigger": 18, "pack": "sublev_a3"},
 			{"type": "optic", "pos": Vector3(4, 0.5, -26), "trigger": 17, "pack": "sublev_a3"},
 			{"type": "sentinel", "pos": Vector3(24, 0.5, 20), "trigger": 20, "pack": "sublev_a4"},

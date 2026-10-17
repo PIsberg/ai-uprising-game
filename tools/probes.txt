@@ -263,3 +263,5 @@ res://tests/returner_probe.tscn
 res://tests/behaviour_clone_probe.tscn
 # SIGNAL HUNT task: hidden transmitter, ping + SIGNAL bars, reveal in sight or when shot; the Hollow's cloak emitter.
 res://tests/signal_hunt_probe.tscn
+# TELEMETRY LEECH: latches on, drains, slows, wakes robots in range; melee rips it off, dash shakes it loose.
+res://tests/leech_probe.tscn
