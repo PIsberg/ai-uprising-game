@@ -5,9 +5,9 @@ extends Node
 ## slope limit and collision, tests/ramp_walker.gd), so a ramp ramp_probe flags
 ## can be told apart from one a player is really stopped on.
 ## Every ramp body the builder tags ("ramp_surface", ramp_from/ramp_to meta) is
-## walked once per run. Builder decor is random, so run it twice and compare
-## before calling a stop real. Physics time only: run with --fixed-fps so a slow
-## machine does not change results.
+## walked once per run. The global RNG is seeded per level, so with --fixed-fps
+## a pass repeats; physics time only, so a slow machine does not change results.
+## The walker is in god mode: a dead walker used to read as a stopped ramp.
 ##   godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/ramp_walk_triage.tscn -- levels=01,gpt
 ## Prints one WALK line per ramp (OK, or STOPPED with where it ended, how high
 ## it got and what stands in front of it) and a per-level and total summary.
@@ -40,6 +40,9 @@ func _run() -> void:
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			continue
+		# Builder decor and robot AI draw from the global RNG: seed it per level
+		# so a pass repeats (with --fixed-fps) and a stop can be re-checked.
+		seed(hash(id))
 		var lvl: Node = (load(path) as PackedScene).instantiate()
 		add_child(lvl)
 		for i in 150: # build + navmesh bake, on the physics clock
@@ -50,6 +53,10 @@ func _run() -> void:
 			lvl.queue_free()
 			await get_tree().process_frame
 			continue
+		# God mode, not just hp.invulnerable: the spawn grace and dash i-frames
+		# reset invulnerable to _god when they end, and the player then died
+		# mid-pass (7 of level 01's 11 stops were a dead walker).
+		player.set("_god", true)
 		var hp = player.get("hp")
 		if hp:
 			hp.invulnerable = true
@@ -67,8 +74,8 @@ func _run() -> void:
 				continue
 			bad += 1
 			var p: Vector3 = r["at"]
-			print("WALK %s STOPPED %s [%s -> %s] at %s (got to y %.2f of %.2f, %.1f m short; ahead: %s)" % [
-				id, body.name, from, to, p, float(r["best_y"]), to.y, Vector2(p.x - to.x, p.z - to.z).length(), _ahead(player, to)])
+			print("WALK %s STOPPED %s [%s -> %s] at %s (got to y %.2f of %.2f, %.1f m short; ahead: %s; state: %s)" % [
+				id, body.name, from, to, p, float(r["best_y"]), to.y, Vector2(p.x - to.x, p.z - to.z).length(), _ahead(player, to), r["state"]])
 		_total += n
 		_stopped += bad
 		print("WALKS %s: %d ramp(s), %d stopped" % [id, n, bad])
