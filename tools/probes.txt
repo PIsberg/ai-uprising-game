@@ -279,3 +279,5 @@ res://tests/custodian_loot_probe.tscn
 res://tests/house_stairs_probe.tscn
 # No outdoor light mast stands inside a bridge, tower or wall (#290).
 res://tests/pylon_clearance_probe.tscn
+# Dead skinned robots' limbs hang toward the ground and stay out of the floor (#259).
+res://tests/limb_flop_probe.tscn

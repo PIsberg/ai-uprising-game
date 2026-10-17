@@ -2126,6 +2126,11 @@ func _classic_death_fx() -> void:
 		if fire:
 			wb.carry(fire, Vector3(0, top * 0.5, 0))
 		wb.settled.connect(_sink_wreck)
+		# A skinned rig's limbs go limp as the chassis tumbles (#259).
+		if _visual_root:
+			for sk in _visual_root.find_children("*", "Skeleton3D", true, false):
+				LimpLimbsModifier.attach(sk as Skeleton3D)
+				break
 		return
 	# Boss topple: fall away from the shot with a settle bounce, then sink.
 	var pitch: float = dir.z * deg_to_rad(96.0)

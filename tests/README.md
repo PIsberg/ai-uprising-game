@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-458 probes total: **171** wired into the headless suite (`suite`), **85**
+459 probes total: **172** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -314,6 +314,7 @@ or GPU-timing probes; `--headless` renders these black).
 | data_bleed_probe | Robots bleed data: the glyph sheet holds a distinct 0 and 1; a rifle hit on a robot spills one emitter at the hit, inside HIT_MIN..HIT_MAX, more for a crit or a harder hit; a wall hit spills nothing; one frame's spills cap at FRAME_BUDGET; a non-weapon kill bursts BURST_AMOUNT glyphs from mid-body; every emitter frees itself | suite |
 | data_bleed_shot | Binary spraying out of rifle hits on one android, then the death fountain off a second; `-- --out=<dir>` | windowed |
 | wreck_physics_probe | Physics wrecks (`WreckBody`), each measured at its `settled` signal on the physics timeline and printing its settle time and cause (asleep or the 2.2 s tumble cap; #302: the catwalk gunner settles in 1.5-2.2 s and sometimes at the cap, still moving, which the old 1 cm process-time sampler could read as never at rest): a GUNNER killed on flat floor comes to rest > 50 deg off upright, > 0.3 m along the shot, origin above y -0.6; a GUNNER (skinned) and a REAPER (rigid) killed at the edge of a 3 m catwalk go over it and rest on the floor below; wrecks and their bodies are freed within 7 s; a boss (SMASHER) gets no wreck body. Measures the first still sample (the settled wreck then sinks by design) | suite |
+| limb_flop_probe | Dead skinned robots go limp (#259, `LimpLimbsModifier`): a GUNNER, STILT MECH and SENTINEL killed 15 m up with the wreck held on its side mid-air; read in `skeleton_updated`, their limb bones' mean angle from straight down falls by 20+ deg in 1.5 s (red with the modifier off: 76-84 deg unchanged; now about 80->30, 60->30, 62->12). Killed on the floor, no limb joint goes deeper than the stiff pose's (or under the floor at all) before the wreck settles | suite |
 | wreck_shot | Four robots shot from the left (two at a 3 m catwalk edge, two on the floor): standing, mid-fall and at rest, to see the chassis lies on the floor; `-- --out=<dir>` | windowed |
 | kill_fx_shot | Six androids killed at once by a DISINTEGRATE, an ELECTROCUTE, an untagged, a SHRED, a DECAPITATE and a BLAST hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
