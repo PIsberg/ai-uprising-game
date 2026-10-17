@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-443 probes total: **161** wired into the headless suite (`suite`), **84**
+445 probes total: **162** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **198** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **199** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -69,6 +69,8 @@ or GPU-timing probes; `--headless` renders these black).
 | benchmark_probe | QualityBenchmark run twice; measured avg ms (needs real GPU timings) | windowed |
 | bevel_smoke | BeveledBoxMesh instances from both a `.tscn` sub_resource and code, non-empty geometry | headless |
 | bevel_winding_probe | Every `BeveledBoxMesh` triangle winds the way the engine's own `BoxMesh` does (front faces clockwise from outside); 44 of 44 were inside-out until 2026-10-08, so every builder box drew its inner faces | suite |
+| behaviour_clone_probe | BEHAVIOUR CLONE event with a scripted player walking 2 m/s and firing 4/s along +X: announces itself, trains where the player stood and fires nothing for 4 s, then replays with its laser on, 4 s behind (at x 3.97 when the player's path says 4); walking on along your own line of fire gets you shot (75 in 4 s, 15 hits) and a robot in that line is neither hurt nor a shield; stepped 4 m off the line its 15 shots all miss; standing still where you fired gets you shot from inside (75); a second roll while one is alive is a SUPPLY FLARE; it fades after 20 s with no bonus and frees itself; 160 damage deletes it (+250, CLONE DELETED). Red-checked: without hit_from_inside the standing-still check fails; replaying the newest frame (no lag) fails 3 | suite |
+| behaviour_clone_shot | The clone in GPT Foundry from behind and to the side while it replays a scripted walk, red hologram and laser sight, then mid-volley (`--out=<dir> [--level=<id>]`) | windowed |
 | blast_direction_probe | A BRUTE's frontal shield judges an explosion by the BLAST's position, not the thrower's — a grenade behind it lands, one in front is blocked | suite |
 | blur_shot | Clean high-res indoor capture (forced HIGH + full render scale) to diagnose "indoor looks blurry" | windowed |
 | bolt_bare_probe | Bare-scene isolation of the bolt material on distant columns; transparent-surface culling | windowed |

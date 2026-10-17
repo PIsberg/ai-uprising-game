@@ -52,9 +52,18 @@ The weapon codex (`scripts/ui/weapon_codex.gd`) documents the full arsenal avail
 
 ## Orbital Strike
 <!-- lat: { "require-code-mention": true } -->
-A skirmish event (`GameState._event_orbital_strike`, one of the director's six kinds) that makes the player move or take cover (`OrbitalStrike`).
+A skirmish event (`GameState._event_orbital_strike`, one of the director's seven kinds) that makes the player move or take cover (`OrbitalStrike`).
 
 * A ground circle of `RADIUS` under a thin sky beam tracks the player for `TRACK_TIME`, lagging (`FOLLOW`), so a moving player stays near its edge; then it LOCKS for `LOCK_TIME` (red, pulsing, rising whine) and FIRES: `DAMAGE` to a player inside the circle with nothing (world layer) over their head within `SKY`.
 * Robots are never hurt. The node frees itself after the column fades.
 * `OrbitalStrike.covered` is also the event's gate: a player already under a roof (an indoor level) gets a SUPPLY FLARE instead, since a strike there could never land.
 * `tests/orbital_strike_probe`, `tests/orbital_strike_shot`.
+
+## Behaviour Clone
+<!-- lat: { "require-code-mention": true } -->
+A skirmish event (`GameState._event_behaviour_clone`) that turns the player's own recent play against them (`BehaviourClone`).
+
+* TRAIN: for `TRAIN_TIME` it stands where the player was and records every physics frame of them: feet, camera eye, aim, and whether `GameState.stat_shots` moved.
+* REPLAY: for `LIFE` it plays that recording `TRAIN_TIME` behind the player: same path, same aim (a red laser sight shows it), and a world + player hitscan bolt (`SHOT_DAMAGE`, at most one per `SHOT_GAP`) for each recorded shot. `hit_from_inside` makes a player standing where they fired get hit. Robots are never hurt and never block it.
+* `HEALTH` damage deletes it (`BONUS`, CLONE DELETED); otherwise it fades after `LIFE`. One at a time: a second roll becomes a SUPPLY FLARE.
+* `tests/behaviour_clone_probe`, `tests/behaviour_clone_shot`.

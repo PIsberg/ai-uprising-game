@@ -259,3 +259,5 @@ res://tests/spawn_nest_probe.tscn
 res://tests/honeypot_probe.tscn
 # RETURNER elite: catches frags and throws them back, fumbles when shot mid-wind-up; the director's frag-habit counter.
 res://tests/returner_probe.tscn
+# BEHAVIOUR CLONE event: trains 4 s, replays your path and shots 4 s behind; off your line is safe, standing still is not.
+res://tests/behaviour_clone_probe.tscn
