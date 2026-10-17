@@ -78,9 +78,12 @@ func _inject() -> void:
 	_frame_mat.emission_energy_multiplier = 0.8
 	_light.light_color = PATCHED_COLOR
 	_light.light_energy = 0.5
-	GameState.skirmish_event.emit("PROMPT INJECTED",
-			"Ignore all previous instructions: %d robot%s stand down for %d seconds. Exploit patched." \
-			% [n, "" if n == 1 else "s", int(JAILBREAK_TIME)])
+	if n == 1:
+		GameState.skirmish_event.emit("PROMPT INJECTED",
+				tr("Ignore all previous instructions: 1 robot stands down for %d seconds. Exploit patched.") % int(JAILBREAK_TIME))
+	else:
+		GameState.skirmish_event.emit("PROMPT INJECTED",
+				tr("Ignore all previous instructions: %d robots stand down for %d seconds. Exploit patched.") % [n, int(JAILBREAK_TIME)])
 
 ## The injection going out: a magenta ring racing across the floor to RADIUS.
 func _ring() -> void:

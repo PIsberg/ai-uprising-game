@@ -19,6 +19,12 @@ Also fails on any one-time coaching hint (GameState.teach_once: a literal, a
 same-file constant, or a MECHANIC_HINTS/ELITE_HINTS value) with no row: the
 HUD toast translates them, and until #317 none of the 30-odd hints had one.
 
+Also fails on any skirmish toast (GameState.skirmish_event.emit anywhere under
+scripts/: a literal title, either side of a `"A" if c else "B"` title, and a
+literal or tr() description) with no row. The HUD shows `tr(title) - tr(desc)`;
+until #331 a dozen toasts had no row, and three formatted their number into the
+English text before tr() saw it, so no row could ever have matched.
+
     python tools/check_strings_csv.py
 """
 import csv
@@ -119,6 +125,35 @@ def teach_hints() -> dict:
     return out
 
 
+# GameState.skirmish_event.emit("TITLE" [if c else "TITLE2"], [tr(]"desc"...),
+# where \s spans the line break of a call split over two lines.
+_EMIT = re.compile(
+    r'skirmish_event\.emit\(\s*"((?:[^"\\]|\\.)+)"'
+    r'(?:\s+if\s+[^,"]+?\s+else\s+"((?:[^"\\]|\\.)+)")?'
+    r'(?:\s*,\s*(?:tr\()?"((?:[^"\\]|\\.)+)")?')
+# a helper that forwards its literals to the toast (HaulPayload._drop)
+_FORWARDS = re.compile(r'\b_drop\([^,()]+(?:\([^()]*\))?[^,()]*,\s*"([^"]+)",\s*"([^"]+)"\)')
+
+
+def skirmish_toasts() -> dict:
+    """Map each literal skirmish toast title/description to the file that emits it."""
+    out = {}
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "scripts")):
+        for fn in files:
+            if not fn.endswith(".gd"):
+                continue
+            path = os.path.join(dirpath, fn)
+            rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            with open(path, encoding="utf-8") as f:
+                src = f.read()
+            for pattern in (_EMIT, _FORWARDS):
+                for m in pattern.finditer(src):
+                    for s in m.groups():
+                        if s:
+                            out.setdefault(s.replace('\\"', '"'), rel)
+    return out
+
+
 def main() -> int:
     # The hints carry symbols (◆ ✦ ☠) a Windows cp1252 console cannot print.
     if hasattr(sys.stdout, "reconfigure"):
@@ -147,6 +182,9 @@ def main() -> int:
     for hint, rel in sorted(teach_hints().items()):
         if hint not in seen:
             errors.append("no row for teach hint %r (%s)" % (hint, rel))
+    for toast, rel in sorted(skirmish_toasts().items()):
+        if toast not in seen:
+            errors.append("no row for skirmish toast %r (%s)" % (toast, rel))
     if errors:
         print("strings.csv: %d problem(s)" % len(errors))
         for e in errors:

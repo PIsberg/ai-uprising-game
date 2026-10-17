@@ -29,7 +29,7 @@ func _ready() -> void:
 	# respawned player all the way here, a death loop. Death holds the clock
 	# (GAME_OVER is not PLAYING) and this hands the respawn a fresh one.
 	GameState.player_died.connect(_restart_clock)
-	GameState.skirmish_event.emit("PURGE INITIATED", "%d seconds to extraction." % int(seconds))
+	GameState.skirmish_event.emit("PURGE INITIATED", tr("%d seconds to extraction.") % int(seconds))
 	if has_node("/root/AudioBus"):
 		AudioBus.play_synth_ui("overlord_glitch", -2.0, 0.7)
 
