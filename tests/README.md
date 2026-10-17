@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-460 probes total: **173** wired into the headless suite (`suite`), **85**
+462 probes total: **174** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **202** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **203** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -507,6 +507,8 @@ or GPU-timing probes; `--headless` renders these black).
 | weaponfx_probe | TEMPEST chain lightning + VORTEX grenade implosion fired into a real crowd, effects captured live | windowed |
 | zipline_probe | ZipLine: a player stepping into one station rides to the other deck and rests there (2.3 s; no ride straight back), stepping off and on again rides them back, robots are not carried; every zipline level's cable (TITAN, ARCHON) runs from a tower roof to a deck with a clear straight line between, and a ride in each built level lands on the deck (TITAN 3.7 s, ARCHON 2.3 s) | suite |
 | zipline_shot | TITAN's zipline: the cable from the south-west deck, the tower-top station, and the view down the cable; `-- --out=<dir>` | windowed |
+| neural_uplink_probe | NEURAL UPLINK on a bare floor with the real player: a hijacked robot in the crosshair is the candidate, an unhijacked one is not; interact links (body flagged `linked_out`, chassis camera current, weapon rack disabled); move input walks the chassis 4 m along its facing while the body stays put; fire input damages a hostile through the chassis; interact again unlinks, hands the camera and weapons back and burns the chassis out (reason exit); 21 damage to the body snaps the link (body); the ride clock ends it (time); an unhijacked robot and an escort ally refuse; a hijacked drone climbs on jump (red-checked: with pilot speed and damage zeroed, walk, fire and climb all fail) | suite |
+| neural_uplink_shot | NEURAL UPLINK chase camera on Level 01: a hijacked android near the spawn ridden from the uplink camera (green tint, ride HUD, the chassis ahead of the crosshair), then after walking it forward | windowed |
 
 ### Candidates to add to the suite
 

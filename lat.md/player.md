@@ -32,6 +32,15 @@ Night-vision goggles let the player see in the dark that shot-out lamps and blac
 * The goggles are a pickup (`Pickup.Kind.NIGHT_VISION`, `scenes/pickups/night_vision.tscn`, def pickup type `nightvision`) near the spawn on GPT and again on SUBLEVEL; it removes itself once owned. `GameState.grant_night_vision` sets `has_night_vision` for the run (saved as `night_vision`, cleared by `reset_run`, kept across a Daily Op) and teaches the key.
 * `Player.toggle_night_vision` (action `night_vision`: N / D-pad down, rebindable via `GraphicsSettings.KEYBIND_ACTIONS`) shows a `NightVision` ColorRect, the last child of PostFX, running `shaders/night_vision.gdshader`: auto-gain 1 - exp(-l x gain), a blurred phosphor bloom, grain, scanlines and a round goggle mask, with a 0.35 s power-up flash. It emits no light, so unlike `flashlight_on` it never gives the player away. `tests/night_vision_probe`, `tests/night_vision_shot`.
 
+## Neural Uplink
+<!-- lat: { "require-code-mention": true } -->
+Look at a robot you have hijacked ([[enemies#Collisions and Hijacking]]) and press interact to ride it: `NeuralUplink` (`scripts/systems/neural_uplink.gd`, built by the player as its `NeuralUplink` child) moves the mind into the chassis for 20 s.
+
+* The body stays where it was left: `Player.linked_out` routes `_physics_process` into the frozen branch the death state uses and drops mouse look, and the weapon rack is disabled. The body is still a target; 20 damage to it snaps the link.
+* The uplink owns a chase camera (4.2 m back, pulled in by a world ray) and writes `EnemyBase.pilot_move`, `pilot_yaw` and `pilot_lift`; `EnemyBase._hijack_process` hands a ridden unit to `_pilot_process` instead of the hijack brain and the burnout clock.
+* Fire calls `EnemyBase.pilot_fire`: 34 damage per second at the chassis's own cadence (`pilot_cooldown`, from `attack_cooldown`), a hitscan from the muzzle for gunners and a 4.5 m frontal slam at x1.6 for brawlers (`attack_range` <= 4.5). Shots snap to a hostile within 6 deg of the crosshair. Flyers (`pilot_flies`) climb on jump and dive on crouch.
+* Every ending (interact again, the clock, body damage, the chassis dying, a chassis whose own loop never reaches the hijack path) calls `release_pilot`, which burns the chassis out credited to the player. Escort allies refuse the link. `tests/neural_uplink_probe`.
+
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:
