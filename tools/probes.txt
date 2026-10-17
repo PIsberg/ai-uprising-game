@@ -261,3 +261,5 @@ res://tests/honeypot_probe.tscn
 res://tests/returner_probe.tscn
 # BEHAVIOUR CLONE event: trains 4 s, replays your path and shots 4 s behind; off your line is safe, standing still is not.
 res://tests/behaviour_clone_probe.tscn
+# SIGNAL HUNT task: hidden transmitter, ping + SIGNAL bars, reveal in sight or when shot; the Hollow's cloak emitter.
+res://tests/signal_hunt_probe.tscn

@@ -127,6 +127,14 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `HEALTH` worth of damage destroys it (`BONUS`, NEST DESTROYED toast); nothing it already hatched dies with it.
 * The Hollow (alien): two skitter nests in the far quadrants beyond the acid channels. `tests/spawn_nest_probe`.
 
+## Signal Hunt
+<!-- lat: { "require-code-mention": true } -->
+The `trace_signal` task hides its target (`SignalTransmitter`, activated in `_activate_task`): the player finds it by ear and by a meter instead of a waypoint.
+
+* Hidden, it is not in the `objective` group, so neither the waypoint nor the radar shows it. It pings positionally (`broadcast_blip`) every `_interval(bars)` seconds, faster and higher as the player closes in, and the task label ends in a five-bar SIGNAL meter (`bars_for`, `BAR_RANGES`). A bar change clamps the pending ping, so stepping closer is heard at once.
+* The player within `REVEAL_RANGE` with line of sight, or any damage, calls `reveal`: the aerial telescopes up under a red beacon, it joins `objective`, and `revealed` spawns the task's `alarm` squads (scaled like `reinforce`). `HEALTH` damage destroys it and completes the task.
+* The Hollow (alien): the contact beacon is cloaked until its emitter in the far north-east quadrant is destroyed (`destroy_core` `after: signal`). `tests/signal_hunt_probe`.
+
 ## Honeypots
 <!-- lat: { "require-code-mention": true } -->
 `honeypots` places bait supplies (`HoneypotCache`, built by `_build_honeypots`) that look like a health pack or ammo box.

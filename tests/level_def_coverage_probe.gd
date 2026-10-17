@@ -6,7 +6,7 @@ extends Node
 ## objective that never exists and nothing reports (this repo once shipped ~88
 ## pickups authored under the wrong key that never spawned). Walks the real
 ## defs (LevelDefs.get_def, i.e. after WORLD_SCALE) and checks:
-##   enemies[].type, tasks[].enemy, tasks[].reinforce[].type, tasks[].penalty[].type,
+##   enemies[].type, tasks[].enemy, tasks[].reinforce[].type, tasks[].penalty[].type, tasks[].alarm[].type,
 ##   tasks[].waves[].enemies[].type -> LevelBuilder.ENEMY_SCENES
 ##   props[].type                   -> LevelBuilder.PROP_SCENES
 ##   pickups[].type|kind            -> LevelBuilder.PICKUP_SCENES
@@ -17,7 +17,7 @@ extends Node
 ##   godot --headless --path . --audio-driver Dummy res://tests/level_def_coverage_probe.tscn
 
 const TASK_TYPES := ["assassinate", "collect_shards", "destroy_core", "escape", "escort", "generative_zone", "haul",
-	"hack_terminal", "hold_zone", "intercept", "key", "kill_all", "kill_quota", "kill_switch", "none", "sabotage", "survive"]
+	"hack_terminal", "hold_zone", "intercept", "key", "kill_all", "kill_quota", "kill_switch", "none", "sabotage", "survive", "trace_signal"]
 const MIN_ENTRIES := 300 ## fewer than this and the walk itself is broken
 
 var _fail: Array[String] = []
@@ -59,6 +59,9 @@ func _ready() -> void:
 			for r in t.get("reinforce", []):
 				if r is Dictionary and r.has("type"):
 					_enemy(id, "tasks.reinforce", r["type"])
+			for r in t.get("alarm", []):
+				if r.has("type"):
+					_enemy(id, "tasks.alarm", r["type"])
 			for r in t.get("penalty", []):
 				if r is Dictionary and r.has("type"):
 					_enemy(id, "tasks.penalty", r["type"])

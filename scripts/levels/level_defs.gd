@@ -325,8 +325,8 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				rr.append(_sv(p, s))
 			t["route"] = rr
 		# Reinforcement waves triggered by the task land at authored spots too
-		# (and so does an intercept's penalty squad).
-		for r in t.get("reinforce", []) + t.get("penalty", []):
+		# (and so does an intercept's penalty squad, and a signal hunt's alarm).
+		for r in t.get("reinforce", []) + t.get("penalty", []) + t.get("alarm", []):
 			if r.has("pos"):
 				r["pos"] = _sv(r["pos"], s)
 		# …as do the timed waves of a "survive" hold. Same reason as "reinforce":
@@ -2460,7 +2460,16 @@ static func _alien() -> Dictionary:
 		"objective": "Sever the off-world beacon and survive the welcoming party",
 		"tasks": [
 			{"type": "kill_all"},
-			{"type": "destroy_core", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.82, 0.32, 1.0), "health": 320.0,
+			# SIGNAL HUNT: the beacon is cloaked, and its cloak emitter hides in the
+			# far north-east quadrant, off the spawn-to-exit diagonal. No waypoint:
+			# its ping (positional) and the SIGNAL bars lead the player there; up
+			# close it shows itself and a xeno pack drops in on it.
+			# tests/signal_hunt_probe.
+			{"type": "trace_signal", "id": "signal", "pos": Vector3(30, 0, -34),
+				"label": "Find and destroy the beacon's cloak emitter",
+				"alarm": [{"type": "alien", "count": 2, "pos": Vector3(24, 0, -30)},
+					{"type": "skitter", "count": 4, "pos": Vector3(34, 0, -26)}]},
+			{"type": "destroy_core", "after": "signal", "label": "Destroy the off-world contact beacon", "pos": Vector3(0, 0, 14), "color": Color(0.82, 0.32, 1.0), "health": 320.0,
 				"reinforce": [{"type": "alien", "count": 4, "pos": Vector3(0, 0, 10)}]},
 			# Breaking the beacon doesn't end the call — something answers it.
 			{"type": "survive", "after": "core", "seconds": 30.0, "label": "Survive the Hollow's answer",
