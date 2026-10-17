@@ -14,6 +14,7 @@ Defines the custom resource configuration files that govern weapon attributes.
 
 * Individual weapon stats are defined via `WeaponData` resource files (`.tres` and `scripts/weapons/weapon_data.gd`) located under `assets/weapons/` across 13 distinct weapons (`GameState.WEAPON_ORDER`).
 * Modifications to ammo capacity, reload speed, damage, and projectile patterns should be edited in these resource files.
+* Every gun builds a holographic round counter (`Weapon._build_ammo_readout`, node `AmmoReadout` under the viewmodel) off `_fit_box`, the fitted model's bounds from `_apply_real_model`: left flank, above the top, at most `READOUT_REACH` forward of the stock. It refreshes on `ammo_changed` / `reload_started` / `_finish_reload` and turns `READOUT_LOW_COLOR` with a pulse while `readout_low()`. `tests/ammo_readout_probe`.
 * Feel lives there too. The "Kick Feel" group is each gun's recoil signature in the hands: `kick_back` / `kick_lift` / `kick_climb` / `kick_roll` / `kick_roll_bias` / `kick_side` are the per-shot velocity impulse `WeaponManager._on_fired` gives the viewmodel, and `kick_stiffness` / `kick_damping` are the spring that settles it (clamped to `KICK_MAX_STIFFNESS` / `KICK_MAX_DAMPING`). `fov_punch` widens the view through `Player.fov_punch`, `fire_thump` layers the `fire_thump` sub-bass under the report and scales the rumble, `action_clack` plays `action_clack` a beat after it. Every gun has its own `sound_id` (`<id>_fire` in `SoundSynth`; the Tesla beam plays it per tick). `tests/weapon_feel_probe`.
 
 ## Weapon Mods

@@ -124,6 +124,7 @@ func _ready() -> void:
 	if not _apply_real_model():
 		_bevel_viewmodel()
 	_build_heat_glow()
+	_build_ammo_readout()
 	GameState.rampage_changed.connect(_on_rampage_changed)
 	_on_rampage_changed(GameState.rampage_tier, "")
 
@@ -208,6 +209,7 @@ func _apply_real_model() -> bool:
 		-(aabb.position.x + aabb.size.x * 0.5) * s,
 		0.02 - (aabb.position.y + aabb.size.y * 0.8) * s,
 		0.18 - aabb.end.z * s)
+	_fit_box = AABB(model.position + aabb.position * s, aabb.size * s)
 	# Barrel tip = front face of the fitted model, slightly proud of it.
 	if muzzle:
 		muzzle.position.z = 0.18 - cfg["len"] - 0.03
@@ -323,6 +325,62 @@ func _bevel_viewmodel() -> void:
 		bev.material = box.material
 		mi.mesh = bev
 
+## The fitted gun's box in viewmodel space (set by _apply_real_model; the
+## primitive viewmodel's own box otherwise). The ammo readout hangs off it.
+var _fit_box := AABB()
+var _ammo_label: Label3D = null
+const READOUT_LOW := 0.25 ## mag fraction at which the readout turns red and pulses
+const READOUT_LOW_COLOR := Color(1.0, 0.22, 0.15)
+const READOUT_REACH := 0.2 ## metres forward of the stock the readout sits, at most
+
+## A holographic round counter on the gun's left flank, above its rear third,
+## the side you see in your hands: rounds in the mag in the gun's own glow
+## colour, red and pulsing at READOUT_LOW, "--" while reloading. The HUD's
+## corner counter stays; this one is where your eyes already are.
+func _build_ammo_readout() -> void:
+	if viewmodel == null or data == null:
+		return
+	var box := _fit_box
+	if box.size == Vector3.ZERO:
+		box = _merged_aabb(viewmodel)
+	_ammo_label = Label3D.new()
+	_ammo_label.name = "AmmoReadout"
+	_ammo_label.font_size = 64
+	_ammo_label.pixel_size = 0.0005
+	_ammo_label.outline_size = 10
+	_ammo_label.outline_modulate = Color(0, 0, 0, 0.6)
+	_ammo_label.shaded = false
+	_ammo_label.double_sided = false
+	_ammo_label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Left flank, just proud of the top edge, a third of the way up from the
+	# rear but never more than READOUT_REACH (on the 1.22 m Longshot a third
+	# floated it out by the barrel); turned a little toward the eye, which sits
+	# behind and to the left.
+	_ammo_label.position = Vector3(box.position.x - 0.006, box.end.y + 0.012,
+		box.end.z - minf(box.size.z * 0.32, READOUT_REACH))
+	_ammo_label.rotation_degrees = Vector3(-12.0, -28.0, 0.0)
+	viewmodel.add_child(_ammo_label)
+	ammo_changed.connect(func(_m: int, _r: int) -> void: _refresh_readout())
+	reload_started.connect(func(_w: Weapon) -> void: _refresh_readout())
+	_refresh_readout()
+
+func _refresh_readout() -> void:
+	if _ammo_label == null:
+		return
+	var size := maxi(1, eff_mag_size())
+	if _reloading or mag <= 0:
+		_ammo_label.text = "--"
+	else:
+		_ammo_label.text = "%02d" % mag if size >= 10 else str(mag)
+	_ammo_label.modulate = READOUT_LOW_COLOR if readout_low() else data.tracer_color.lerp(Color.WHITE, 0.25)
+
+## True while the readout warns: the mag is at or under READOUT_LOW, or dry.
+## Rounded up like the low-mag click in _fire_once, so a 3-round OMEGA warns
+## on its last shot.
+func readout_low() -> bool:
+	return not _reloading and mag <= ceili(maxi(1, eff_mag_size()) * READOUT_LOW)
+
 ## A small emissive element pinned at the muzzle tip; alpha/energy ride _heat so
 ## the barrel visibly glows hotter the longer you hold the trigger.
 func _build_heat_glow() -> void:
@@ -353,6 +411,9 @@ func _build_heat_glow() -> void:
 
 func _process(delta: float) -> void:
 	_update_heat(delta)
+	if _ammo_label and readout_low():
+		# Low-mag pulse: the warning breathes at 3 Hz instead of sitting still.
+		_ammo_label.modulate.a = 0.55 + 0.45 * absf(sin(Time.get_ticks_msec() * 0.0094))
 	_update_beam(delta)
 	_since_shot += delta
 	if _bloom > 0.0 and data and _since_shot > 0.1:
@@ -1445,6 +1506,7 @@ func _finish_reload() -> void:
 	_reloading = false
 	ammo_changed.emit(mag, reserve)
 	reload_finished.emit(self)
+	_refresh_readout()
 
 func add_ammo(amount: int) -> void:
 	reserve = mini(data.reserve_max, reserve + amount)
