@@ -77,7 +77,9 @@ phantoms of the player draw the fire of every robot nearer one, `tests/hallucina
 DATA LEAK (a robot in the fight grabs a shard and runs for an uplink 30 m away; kill it inside
 its 6 s upload for +300 and an overclock, or a hunter answers at the uplink, `tests/data_leak_probe`),
 ORBITAL STRIKE (a satellite circle tracks you, locks red, fires 45; step out or get under a roof;
-open-sky only, `tests/orbital_strike_probe`).
+open-sky only, `tests/orbital_strike_probe`),
+BEHAVIOUR CLONE (a model trains on you for 4 s, then walks your path 4 s behind and fires every shot you
+fired where you aimed; delete it for +250, `tests/behaviour_clone_probe`).
 Gated off boss/convoy/horde levels,
 max 2/level. 🎮 Needs playtest: frequency (75s first / ~90s interval) and
 whether more event types are wanted (rogue patrol, jammer, double-bounty hour), and

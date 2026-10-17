@@ -905,13 +905,14 @@ func _tick_events(delta: float) -> void:
 	if _bounty != null and _bounty.get_ref() != null:
 		return
 	_level_events += 1
-	match randi() % 6:
+	match randi() % 7:
 		0: _event_assassin()
 		1: _event_supply_flare()
 		2: _event_grid_surge()
 		3: _event_hallucination()
 		4: _event_data_leak()
 		5: _event_orbital_strike()
+		6: _event_behaviour_clone()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -1034,6 +1035,21 @@ func _event_orbital_strike() -> void:
 		return
 	scene.add_child(OrbitalStrike.new())
 	skirmish_event.emit("ORBITAL STRIKE", "A satellite is painting you. When the circle turns red, get out of it or get under a roof.")
+
+## BEHAVIOUR CLONE: the overlord trains a model on the player for 4 s, then
+## it walks their recorded path 4 s behind them, firing every shot they fired
+## where they aimed (BehaviourClone). Strafe off your own line of fire, or
+## turn round and delete it. One at a time: a second roll is a SUPPLY FLARE.
+func _event_behaviour_clone() -> void:
+	var scene := get_tree().current_scene
+	if scene == null or get_tree().get_first_node_in_group("player") == null:
+		return
+	if not get_tree().get_nodes_in_group("behaviour_clone").is_empty():
+		_event_supply_flare()
+		return
+	scene.add_child(BehaviourClone.new())
+	skirmish_event.emit("BEHAVIOUR CLONE", tr("A model is training on you. In 4 s it walks your path and fires every shot you fire, where you aimed. Get off your own line of fire."))
+	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.7)
 
 ## DATA LEAK: a robot already in the fight, mid-range and on foot, grabs a
 ## data shard and runs for an uplink LEAK_RUN away on the far side from the
