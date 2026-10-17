@@ -22,9 +22,10 @@ godot --path . res://tests/<name>.tscn
 ```
 
 Full headless suite (imports the project, then runs every probe listed in
-`tools/probes.txt` and checks each printed `RESULT PASS`; both runners read
-that one file, and `tools/check_suite_manifest.py` fails CI if the list and
-the `suite` rows below disagree):
+`tools/probes.txt` and checks each printed `RESULT PASS` and logged no
+`SCRIPT ERROR`; both runners read that one file, and
+`tools/check_suite_manifest.py` fails CI if the list and the `suite` rows
+below disagree):
 
 ```sh
 tools/run_tests.sh          # bash / CI
@@ -526,6 +527,12 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
 - **Sample with short timer loops (0.25–0.3 s)**, not one long
   `SceneTreeTimer` await — a single long await stalls autoload `_process`
   ticking headless.
+- **A `SCRIPT ERROR` fails the probe even after `RESULT PASS`.** A runtime
+  error aborts only the coroutine it happens in, so `_ready` can still print
+  `RESULT PASS` with half the checks never run (#267: a typed `_gone(n: Node)`
+  handed a freed node skipped 8 of 12 checks). Both runners fail such a probe.
+  Untyped parameters for anything that may already be freed; `is_instance_valid`
+  first.
 - **`get_tree().change_scene_*` frees the probe scene itself.** Run watchers
   from a node parented directly under root, not under the scene being
   replaced.

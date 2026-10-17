@@ -7,7 +7,7 @@ We follow a rigorous automated verification philosophy. Every feature added to t
 All changes should be proved headlessly. Every logic test ships with a matching pair:
 1. A logic probe script (`.gd`).
 2. A matching probe scene (`.tscn`).
-Probes run in Godot's headless mode and print either `RESULT PASS` or `RESULT FAIL`.
+Probes run in Godot's headless mode and print either `RESULT PASS` or `RESULT FAIL`; the suite runners also fail a probe that logged a `SCRIPT ERROR`, since a runtime error skips the rest of its coroutine (#267).
 
 ## Test Probes Guidelines
 To ensure test probes run correctly and do not freeze:
