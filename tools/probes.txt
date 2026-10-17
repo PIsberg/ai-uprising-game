@@ -255,6 +255,8 @@ res://tests/orbital_strike_probe.tscn
 res://tests/teach_hint_i18n_probe.tscn
 # The story (briefing, lead line, overlord, credits recap) reaches the screen translated (#236).
 res://tests/story_i18n_probe.tscn
+# The game-over screen (taunt, recap, tip, restart button) is translated (#337).
+res://tests/death_screen_i18n_probe.tscn
 # AEGIS: shield drone wards the ally nearest the player; killing it drops the ward; never a boss.
 res://tests/aegis_probe.tscn
 # SPAWN NESTS: hatch while you are near, cap 3 alive, destroyed pays and stops; placed nests reachable.

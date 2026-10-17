@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-457 probes total: **170** wired into the headless suite (`suite`), **85**
+458 probes total: **171** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -132,6 +132,7 @@ or GPU-timing probes; `--headless` renders these black).
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
 | story_arc_probe | The red thread: every campaign level has a StoryArc beat (tagline and lead, and a trace entry after the first), acts run in campaign order with none skipped, the briefing shows act header + tagline + numbered trace card + thread bar (guardrails), and a level outside the story (range) shows none of it; the HUD's SECTOR CLEARED lead line shows gpt's lead and hides on the range; every act has 3+ overlord lines, none naming ARCHON, and with an empty dossier the HUD opens uplink on an act-III line; the credits list THE 03:14 TRACE with one numbered lead per level, the finale's last | suite |
 | story_i18n_probe | The story reaches the screen translated (#236): with the locale set to German, the briefing displays the tagline, "AKT V · DIE RELAISKETTE", the trace log and the trace card header in German; the SECTOR CLEARED lead line, an act overlord line and an ambient taunt show German in the HUD; the credits' trace title and recap are German (red on the old code: act header, trace header and lead line were built with %, nothing had a row) | suite |
+| death_screen_i18n_probe | The game-over screen is translated (#337): with the locale set to German and a K-9 killer, the overlord taunt, the "Erledigt von" recap, the dog tip and the restart button display German (red on the old code: all built with % around English) | suite |
 | subtitle_size_probe | Accessibility Subtitle Size (GraphicsSettings.subtitle_scale 0.8..2.0): the real cutscene subtitle (26 px), overlord taunt (22 px) and victory transmission body (22 px) double at 2.0; at 2.0 the longest overlord taunt fits the HUD and a subtitle twice the longest written today wraps inside the screen above the letterbox bar; setter clamps, value persists | suite |
 | damage_number_size_probe | Accessibility Damage Number Size (GraphicsSettings.damage_number_scale 0.6..2.0): a real player-dealt hit spawns a Label3D whose fixed-size pixel_size is 0.0028 x the slider (1.0 / 2.0 / 0.6 measured), setter clamps, value persists; restores the user's values | suite |
 | damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |

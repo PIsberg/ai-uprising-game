@@ -22,6 +22,7 @@ HUD toast translates them, and until #317 none of the 30-odd hints had one.
 Also fails on any story string with no row (#236): each StoryArc beat's
 tagline, trace and lead, the act names, the overlord's act lines, the HUD's
 taunt pools and the format strings the briefing, HUD and credits build.
+The game-over screen's taunts, tips and formats likewise (#337).
 
 Also fails on any skirmish toast (GameState.skirmish_event.emit anywhere under
 scripts/: a literal title, either side of a `"A" if c else "B"` title, and a
@@ -87,6 +88,11 @@ LABEL_SOURCES = [
     ("scripts/ui/hud.gd", r'tr\("(◆ LEAD: %s)"\)'),
     ("scripts/cutscene/level_comic_briefing.gd", r'tr\("(◆ THE 03:14 TRACE · LOG %d/%d)"\)'),
     ("scripts/ui/credits.gd", r'"text": "(THE 03:14 TRACE)"'),
+    # the game-over screen (#337): per-killer tips (the DEATH_TIPS values) and
+    # the formats its taunt, recap and tip are built with
+    ("scripts/ui/hud.gd", r'(?m)^\t"[A-Z0-9-]+": "([^"]+)",\r?$'),
+    ("scripts/ui/hud.gd", r'tr\("(“%s”|Taken down by %s|%s  ·  %d kills  ·  objectives %d/%d|TIP: %s)"\)'),
+    ("scripts/ui/hud.gd", r'"((?:RESPAWN|TRY AGAIN) \(SPACE\))"'),
 ]
 
 
@@ -99,6 +105,8 @@ CONST_ARRAYS = [
     ("scripts/ui/hud.gd", "OVERLORD_BOSS"),
     ("scripts/ui/hud.gd", "OVERLORD_LOWHP"),
     ("scripts/ui/hud.gd", "OVERLORD_RATTLED"),
+    ("scripts/ui/hud.gd", "DEATH_TAUNTS"),
+    ("scripts/ui/hud.gd", "DEATH_TIPS_GENERIC"),
 ]
 
 

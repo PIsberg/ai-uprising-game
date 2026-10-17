@@ -1637,14 +1637,16 @@ func _fill_death_recap() -> void:
 		_tip_label.add_theme_color_override("font_color", Color(0.75, 0.78, 0.85))
 		vbox.add_child(_tip_label)
 		vbox.move_child(_tip_label, 3)
-	_taunt_label.text = "“%s”" % DEATH_TAUNTS[randi() % DEATH_TAUNTS.size()]
+	# Every line here is built with %, which a Label cannot auto-translate:
+	# tr() the format and the line that goes into it (#337).
+	_taunt_label.text = tr("“%s”") % tr(DEATH_TAUNTS[randi() % DEATH_TAUNTS.size()])
 	var killer := GameState.last_killer
 	var done := 0
 	for t in GameState.level_tasks:
 		if t["done"]:
 			done += 1
-	var head := ("Taken down by %s" % killer) if killer != "" else "K.I.A."
-	_recap_label.text = "%s  ·  %d kills  ·  objectives %d/%d" % [
+	var head := (tr("Taken down by %s") % killer) if killer != "" else "K.I.A."
+	_recap_label.text = tr("%s  ·  %d kills  ·  objectives %d/%d") % [
 		head, GameState.kills, done, GameState.level_tasks.size()]
 	var tip: String = ""
 	for k in DEATH_TIPS:
@@ -1653,7 +1655,7 @@ func _fill_death_recap() -> void:
 			break
 	if tip == "":
 		tip = DEATH_TIPS_GENERIC[randi() % DEATH_TIPS_GENERIC.size()]
-	_tip_label.text = "TIP: %s" % tip
+	_tip_label.text = tr("TIP: %s") % tr(tip)
 	# The button (and SPACE) read differently depending on whether there's a
 	# mid-level checkpoint to come back to, so the player knows what they're
 	# about to get before they press it.
