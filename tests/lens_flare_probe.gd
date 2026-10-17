@@ -1,6 +1,7 @@
 extends Node3D
 ## Probe: the camera lens flare (scripts/fx/lens_flare.gd, shaders/lens_flare.gdshader).
 ## (1) source_for: an open-sky level's sun is the brightest DirectionalLight3D
+##     (an HDRI sky's is its def's measured `hdri_sun_dir`, #234)
 ##     (pointing back along its +Z); a night_sky level flares off its moon_dir,
 ##     weaker; an HDRI sky (sun position unknown) and an interior get none;
 ## (2) looking straight at the sun the flare comes up to the source's power,
@@ -46,6 +47,33 @@ func _level(sky_mat: Material, open_sky: bool) -> Node3D:
 	root.add_child(sun)
 	return root
 
+## Every level def with an `hdri` sky carries `hdri_sun_dir`, unscaled by
+## get_def, within 2 deg of the sun re-measured in the photo by
+## tools/hdri_sun_dir.gd; and the builder hands it to LensFlare.source_for.
+func _hdri_levels() -> void:
+	var tool: GDScript = load("res://tools/hdri_sun_dir.gd")
+	var n := 0
+	for id: String in LevelDefs._defs().keys():
+		var env: Dictionary = LevelDefs.get_def(id).get("env", {})
+		if not env.has("hdri"):
+			continue
+		n += 1
+		var authored: Vector3 = env.get("hdri_sun_dir", Vector3.ZERO)
+		var measured: Dictionary = tool.sun_dir(String(env["hdri"]))
+		_check("%s: hdri_sun_dir matches the photo's sun" % id, authored != Vector3.ZERO and not measured.is_empty()
+			and rad_to_deg(authored.normalized().angle_to(measured["dir"])) < 2.0,
+			"authored %s, measured %s" % [authored, measured.get("dir")])
+		# Out of the tree: in it, the builder's _ready builds a whole default level.
+		# (Logs one harmless get_node error: no /root/GraphicsSettings off-tree.)
+		var lb := LevelBuilder.new()
+		lb._build_environment(LevelDefs.get_def(id))
+		var src := LensFlare.source_for(lb)
+		_check("%s: the built level flares off it" % id, not src.is_empty()
+			and (src["dir"] as Vector3).angle_to(authored.normalized()) < 0.01, str(src.get("dir")))
+		lb.free()
+		await get_tree().process_frame
+	_check("found the HDRI levels", n >= 2, "%d" % n)
+
 func _run() -> void:
 	# 1. Sources.
 	var day := _level(ProceduralSkyMaterial.new(), true)
@@ -70,8 +98,14 @@ func _run() -> void:
 	night.queue_free()
 	var hdri := _level(PanoramaSkyMaterial.new(), true)
 	add_child(hdri)
-	_check("hdri: no flare", LensFlare.source_for(hdri).is_empty())
+	_check("hdri without a measured sun: no flare", LensFlare.source_for(hdri).is_empty())
+	var painted := Vector3(-0.6, 0.1, 0.8)
+	(hdri.find_children("*", "WorldEnvironment", true, false)[0] as Node).set_meta("hdri_sun_dir", painted)
+	src = LensFlare.source_for(hdri)
+	_check("hdri: flares off the painted sun, not the key light (#234)", not src.is_empty()
+		and (src["dir"] as Vector3).angle_to(painted) < 0.01, str(src.get("dir")))
 	hdri.queue_free()
+	await _hdri_levels()
 	var inside := _level(ProceduralSkyMaterial.new(), false)
 	add_child(inside)
 	_check("interior: no flare", LensFlare.source_for(inside).is_empty())

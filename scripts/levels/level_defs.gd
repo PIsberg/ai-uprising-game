@@ -5195,6 +5195,8 @@ static func _suburb() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-34, 0, -36), "color": Color(1, 0.7, 0.3)},
 		"env": {
 			"hdri": "res://assets/environments/hdri/industrial_sunset_puresky_2k.hdr",
+			# where the photo's sun is, for the lens flare (tools/hdri_sun_dir.gd)
+			"hdri_sun_dir": Vector3(-0.589, 0.080, 0.804),
 			"physical_sky": true, "turbidity": 8.0,
 			"sky_top": Color(0.2, 0.32, 0.55), "sky_horizon": Color(0.95, 0.6, 0.38),
 			"ground": Color(0.12, 0.12, 0.13), "fog": Color(0.62, 0.5, 0.42),
@@ -5481,6 +5483,7 @@ static func _suburb_boss() -> Dictionary:
 		"weapon": {"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(-45, 0, -38), "color": Color(1, 0.75, 0.35)}, # in front of the corner house
 		"env": {
 			"hdri": "res://assets/environments/hdri/kloppenheim_06_puresky_2k.hdr", "sky_energy": 0.9,
+			"hdri_sun_dir": Vector3(-0.614, 0.141, 0.777), # tools/hdri_sun_dir.gd
 			"physical_sky": true, "turbidity": 10.0,
 			"sky_top": Color(0.12, 0.1, 0.22), "sky_horizon": Color(0.7, 0.3, 0.2),
 			"stars": true, "star_density": 0.04, "star_brightness": 1.0, "milkyway": 0.1, "moon_glow": 0.8,
