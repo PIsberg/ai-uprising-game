@@ -4727,6 +4727,7 @@ func _task_id(t: Dictionary) -> String:
 		"kill_switch": return t.get("id", "switches")
 		"escort": return t.get("id", "escort")
 		"intercept": return t.get("id", "courier")
+		"trace_signal": return t.get("id", "signal")
 	return t.get("id", "task")
 
 func _prereqs_of(t: Dictionary) -> Array:
@@ -4775,6 +4776,9 @@ func _register_task_entry(t: Dictionary) -> void:
 			GameState.register_task(id, t.get("label", "Escort the ALIGNED unit to the uplink"), 0.0, staged)
 		"intercept":
 			GameState.register_task(id, t.get("label", "Run down the data courier"), 0.0, staged)
+		"trace_signal":
+			# No goal meter: the SIGNAL bars live in the label (SignalTransmitter).
+			GameState.register_task(id, t.get("label", "Trace and destroy the hidden transmitter"), 0.0, staged)
 		"escape":
 			# No goal meter: the countdown lives in the label (EscapeZone).
 			GameState.register_task(id, t.get("label", "Reach extraction before the purge"), 0.0, staged)
@@ -4933,6 +4937,17 @@ func _activate_task(t: Dictionary) -> void:
 				add_child(ks)
 				bank.add_switch(ks)
 				_relocate_when_clear(ks)
+		"trace_signal":
+			# Hidden: no waypoint until found. `alarm` squads come when it is.
+			var st := SignalTransmitter.new()
+			st.task_id = id
+			st.base_label = t.get("label", "Trace and destroy the hidden transmitter")
+			st.position = t.get("pos", Vector3.ZERO)
+			var alarm: Array = t.get("alarm", [])
+			if not alarm.is_empty():
+				st.revealed.connect(func() -> void: _spawn_reinforcements.call_deferred(alarm))
+			add_child(st)
+			_relocate_when_clear(st)
 		"escape":
 			var ez := EscapeZone.new()
 			ez.task_id = id

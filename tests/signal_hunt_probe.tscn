@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/signal_hunt_probe.gd" id="1"]
+
+[node name="SignalHuntProbe" type="Node3D"]
+script = ExtResource("1")
