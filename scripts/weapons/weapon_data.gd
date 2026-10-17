@@ -11,6 +11,9 @@ enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
 enum DamageClass { KINETIC, SHRED, THERMAL, ARC, EXPLOSIVE, RAIL }
+## How the gun is reloaded in your hands (Weapon._play_reload_anim): swap a
+## mag, thumb in shells, vent and recharge a cell, or load a launcher tube.
+enum ReloadStyle { MAG, SHELLS, CELL, TUBE }
 
 @export var display_name: String = "Weapon"
 @export var fire_mode: FireMode = FireMode.SEMI
@@ -90,6 +93,7 @@ enum DamageClass { KINETIC, SHRED, THERMAL, ARC, EXPLOSIVE, RAIL }
 @export var mag_size: int = 18
 @export var reserve_max: int = 180
 @export var reload_time: float = 1.6
+@export var reload_style: ReloadStyle = ReloadStyle.MAG
 
 @export_group("Projectile (when PROJECTILE)")
 @export var projectile_scene: PackedScene

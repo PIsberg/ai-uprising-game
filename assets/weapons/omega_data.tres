@@ -47,3 +47,4 @@ kick_damping = 10.0
 fov_punch = 6.0
 fire_thump = 1.0
 action_clack = false
+reload_style = 2
