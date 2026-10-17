@@ -262,7 +262,7 @@ or GPU-timing probes; `--headless` renders these black).
 | grenade_screenshot | Grenade rendered up close, frozen with its core lit | windowed |
 | guardrails_playtest | Playtest bot for Generative Guardrails: aims real camera, fires anchor tags, bridges to the override gate | windowed |
 | guardrails_probe | Generative Guardrails end-to-end: zone+task registration, hazard pillars, anchor-tag locking, bridging completes the task | windowed |
-| gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model | suite |
+| gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model. A pull the gun refuses (cooldown not yet elapsed) is retried for up to 1.5 game s and fired rounds are counted, so a loaded runner delays a shot instead of dropping it (#202: CI saw 9 shotgun decals, one blast of two; the old probe with a 0.3 s gap reproduces it at 8) | suite |
 | gunner_probe | GUNNER suppresses a player at range; spin-up burst connects, dies cleanly | headless |
 | hallucination_probe | MODEL HALLUCINATION skirmish event: spawns EVENT_PHANTOMS phantoms and announces itself; a robot nearer a phantom targets it and its fire lands on the phantom, not the player; a robot nearer the player keeps the player; phantoms are not in the "player" group and the player's fire passes through them; when the hallucination ends they are gone and the robot turns back | suite |
 | hallucination_shot | Two hallucinated humans with an android between them that has turned on the nearer one; `-- --out=<dir>` | windowed |
