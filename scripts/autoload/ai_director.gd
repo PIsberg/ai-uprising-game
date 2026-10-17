@@ -302,6 +302,81 @@ func dominant_weapon() -> String:
 func calibrating() -> bool:
 	return _shots < MIN_SAMPLES
 
+# ---------- ARCHON fine-tune: the finale trains on the player ----------
+# @lat: [[meta-systems#ARCHON Fine-Tune]]
+## Up to FINETUNE_HABITS habits read from this level once it is calibrated, else
+## from the dossier, strongest first. Each is {id, line, strength, swaps?, affix?}:
+## `swaps` re-rolls ARCHON's wave tables (unit -> counter unit), `affix` is the
+## elite affix its heavies wear. Returns {habits, swaps, affix}; all empty with
+## nothing to train on. EnemyArchon reads it once at boot.
+const FINETUNE_HABITS := 3
+
+func finetune_plan() -> Dictionary:
+	var acc: float
+	var heads: float
+	var rng: float
+	var mob: float
+	var top: Array
+	if not calibrating():
+		acc = accuracy
+		heads = headshot_rate
+		rng = range_pref
+		mob = mobility
+		top = [dominant_weapon(), weapon_focus()]
+	elif dossier_known():
+		acc = float(dossier["accuracy"])
+		heads = float(dossier["headshot_rate"])
+		rng = float(dossier["range_pref"])
+		mob = float(dossier["mobility"])
+		top = _dossier_top_weapon()
+	else:
+		return {"habits": [], "swaps": {}, "affix": ""}
+	var c: Array = []
+	if rng > 0.6:
+		c.append({"id": "range", "line": "KEEPS ITS DISTANCE", "strength": rng - 0.5,
+			"swaps": {"drone": "seeker", "spider": "skitter"}})
+	elif rng < 0.35:
+		c.append({"id": "close", "line": "FIGHTS UP CLOSE", "strength": 0.5 - rng,
+			"swaps": {"skitter": "drone", "spider": "gunner"}})
+	if mob > 0.65:
+		c.append({"id": "mobile", "line": "NEVER STOPS MOVING", "strength": mob - 0.5,
+			"swaps": {"android": "seeker"}})
+	elif mob < 0.3:
+		c.append({"id": "camper", "line": "HOLDS ONE SPOT", "strength": 0.5 - mob,
+			"swaps": {"android": "brute"}})
+	if String(top[0]) != "" and float(top[1]) >= COUNTERMEASURE_SHARE:
+		c.append({"id": "crutch", "line": "LEANS ON THE %s" % top[0], "key": "LEANS ON THE %s", "arg": String(top[0]),
+			"strength": float(top[1]) - 0.3,
+			"affix": "shielded"})
+	if heads > 0.35 or acc > 0.55:
+		c.append({"id": "precise", "line": "AIMS FOR THE HEAD", "strength": maxf(heads - 0.3, acc - 0.5),
+			"affix": "warden"})
+	c.sort_custom(func(a, b): return float(a["strength"]) > float(b["strength"]))
+	var habits := c.slice(0, FINETUNE_HABITS)
+	var swaps := {}
+	var affix := ""
+	for h in habits:
+		for k in (h.get("swaps", {}) as Dictionary):
+			if not swaps.has(k):
+				swaps[k] = h["swaps"][k]
+		if affix == "" and h.has("affix"):
+			affix = String(h["affix"])
+	return {"habits": habits, "swaps": swaps, "affix": affix}
+
+## `roster` with the plan's swaps applied to every other occurrence of each
+## swapped unit (first, third, ...), so a counter shifts the mix instead of
+## replacing a whole unit type: two habits swapping drones and androids for
+## seekers otherwise left a wave of nothing but seekers and skitters.
+static func finetune_roster(roster: Array, plan: Dictionary) -> Array:
+	var swaps: Dictionary = plan.get("swaps", {})
+	var seen := {}
+	var out: Array = []
+	for u in roster:
+		var n: int = seen.get(u, 0)
+		seen[u] = n + 1
+		out.append(swaps[u] if swaps.has(u) and n % 2 == 0 else u)
+	return out
+
 ## The Elite affix the swarm should lean on to counter the player's current style.
 ## While this level is still calibrating it counters the DOSSIER instead (the overlord
 ## remembers you), and only with no usable history does it return "" (random affixes).

@@ -289,3 +289,5 @@ res://tests/neural_uplink_probe.tscn
 res://tests/adversarial_patch_probe.tscn
 # REWARD REWRITE consoles: shots / huddle / kill-count rewrites, one use, authored on sublevel + water world.
 res://tests/reward_rewrite_probe.tscn
+# ARCHON fine-tunes on the dossier: habit plan, swapped wave rosters, affixed heavies, phase-3 clone.
+res://tests/archon_finetune_probe.tscn

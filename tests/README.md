@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-464 probes total: **176** wired into the headless suite (`suite`), **85**
+465 probes total: **177** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -511,6 +511,7 @@ or GPU-timing probes; `--headless` renders these black).
 | neural_uplink_shot | NEURAL UPLINK chase camera on Level 01: a hijacked android near the spawn ridden from the uplink camera (green tint, ride HUD, the chassis ahead of the crosshair), then after walking it forward | windowed |
 | adversarial_patch_probe | ADVERSARIAL PATCH on a bare floor with the real player: an unpatched player at 20 m is seen; the patch action spends one of two charges; patched, a robot facing the player at 20 m still does not see them after 2 s and carries a partial confidence with a decoy tag ("FLOOR LAMP 82%"), while one 3 m away sees through in about 1.2 s and its tag reads HUMAN; a shot breaks the patch; a robot already hunting starts at the 0.6 head start; the clock ends it and with no charges the action does nothing; melee while patched tags a robot (player layer, squad fire lands, the squad retargets it) and the tag wears off; a vision scanner ignores a patched player at 12 m (red-checked: without the classify hook the 20 m robot sees the player, without the Damageable exception the tagged robot takes 0) | suite |
 | reward_rewrite_probe | REWARD REWRITE consoles on a baked floor with the real player: interact cycles the reward line and restarts the upload, stepping off drains it; `shots` makes every robot within 26 m stand and fire into the sky (18 rounds in 2 s, 0 m moved) while one past the radius and a boss are untouched, then the console reads PATCHED and uploads nothing again; the rewrite wears off after 12 s; `huddle` packs three robots 16 m apart within 0.8 m of their centroid; `kills` mislabels the squad and they damage each other, then it wears off; SUBLEVEL and WATER WORLD author one console each, built on the floor with clear room (red-checked: with `_reward_process` bypassed, the sky fire, standing still and the huddle all fail) | suite |
+| archon_finetune_probe | ARCHON FINE-TUNES ON YOU: no history and a calibrating level give an empty plan and unchanged wave tables; a dossier that keeps its distance, never stops moving, aims for the head and leans on one gun gives the three strongest habits in order (range, mobile, crutch), their swaps and the crutch's shielded affix, with the gun named; booted on it, ARCHON announces FINE-TUNED ON YOU with the habits, builds wave 1 from the swapped roster (every other drone, spider and android swapped) and one heavy wears the affix; the first phase-3 wave sends one BEHAVIOUR CLONE and a second phase-3 wave does not (red-checked: with the plan unread at boot, the announcement, the swaps and the affix all fail) | suite |
 
 ### Candidates to add to the suite
 
