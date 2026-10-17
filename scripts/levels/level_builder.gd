@@ -1525,8 +1525,8 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float,
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
 ## both ends, so rooftop access and multi-tier routes can be authored as plain
 ## endpoints (def "stairs": [{from, to, width?}]) without hand-solving transforms.
-func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness: float = 0.5, debug_name: String = "") -> void:
-	_build_ramp_wedge(from, to, width, thickness, debug_name)
+func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness: float = 0.5, debug_name: String = "", full_foot: bool = false) -> void:
+	_build_ramp_wedge(from, to, width, thickness, debug_name, full_foot)
 
 ## Shared ramp geometry. Builds the COLLISION as a wedge (ConvexPolygonShape3D)
 ## whose top face runs exactly through `from` (foot, ground level) and `to`
@@ -1538,7 +1538,7 @@ func _add_ramp_between(from: Vector3, to: Vector3, width: float = 3.5, thickness
 ## is fine as long as it's sunk so no gap shows) — reusing the old rotated-box
 ## mesh, sunk half a thickness plus a small margin, is simpler and safer than
 ## hand-rolling a new mesh's triangle winding.
-func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: float, debug_name: String = "") -> void:
+func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: float, debug_name: String = "", full_foot: bool = false) -> void:
 	var delta := to - from
 	var horiz := Vector3(delta.x, 0.0, delta.z)
 	var run := horiz.length()
@@ -1572,11 +1572,17 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 	# line (tests/ramp_foot_probe; an android sat 20 s at the Suburb bridge).
 	# A ground foot has no ramp arriving beneath it to overhang, so it keeps
 	# full width; only an elevated foot (a tower corner, a sky-bridge) tapers.
+	# ...unless the caller says the foot stands on a deck with nothing under
+	# it to overhang (`full_foot`). For the player the point is a wall, not a
+	# lip: its side faces meet the deck at ~48 deg, and on its first metre the
+	# ridge is narrower than the capsule, so the walk stops dead at the foot
+	# (tests/ramp_walk_triage, #339: horde's SkyBridge 3 of 3 walks, and the
+	# corner ramps of most towers).
 	var taper_t := minf(run * 0.35, 1.8) / run if run > 0.01 else 1.0
 	var taper_pt := from.lerp(to, taper_t)
 
 	var pts := PackedVector3Array()
-	if from.y <= RAMP_GROUND_FOOT:
+	if from.y <= RAMP_GROUND_FOOT or full_foot:
 		pts.append(foot + right) # full-width knife edge on the ground
 		pts.append(foot - right)
 	else:
@@ -1621,10 +1627,22 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 	(_nav_region if _nav_region else self).add_child(body)
 
 func _build_stairs(def: Dictionary) -> void:
-	for s in def.get("stairs", []):
+	var stairs: Array = def.get("stairs", [])
+	for s in stairs:
 		var from: Vector3 = s["from"]
 		var to: Vector3 = s["to"]
-		_add_ramp_between(from, to, s.get("width", 3.0), 0.5, "SkyBridge")
+		# Full-width foot for a stair that starts up on a roof or a deck: a
+		# pointed foot there is a spike to walk into (#339: horde's SkyBridge
+		# stopped 3 of 3 walks), unless another stair arrives just below it.
+		# A switchback's next flight starts over the end of the last one (six
+		# levels' (-12.6, 3.4) -> (-12.6, 3.6) turn), and full width it hangs
+		# 0.2 m over that run as a lip ramp_probe sticks on.
+		var full := from.y >= 1.0
+		for o in stairs:
+			var o_to: Vector3 = o["to"]
+			if o != s and o_to.y < from.y and Vector2(o_to.x - from.x, o_to.z - from.z).length() < float(s.get("width", 3.0)):
+				full = false
+		_add_ramp_between(from, to, s.get("width", 3.0), 0.5, "SkyBridge", full)
 		# Sky-bridge edge lights: this same array also holds ground-to-elevated
 		# approach ramps (one endpoint near y=0) — only the TRUE sky-bridges
 		# (both endpoints high, up at tower-roof height) get the deck-edge
@@ -1780,7 +1798,12 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 		dir_in = dir_in.normalized()
 		var ramp_to := c - dir_in * LANDING_HALF
 		ramp_to.y = c.y
-		_add_ramp_between(prev, ramp_to, 3.0, 0.5, "TwrRamp%d" % i)
+		# A departing segment's foot sits DEPART_INSET into the corner landing
+		# and the arriving segment ends LANDING_HALF back from the corner, at
+		# right angles: in plan they meet only where both sit at the landing's
+		# height, so the foot has nothing under it to overhang and can be full
+		# width (see _build_ramp_wedge).
+		_add_ramp_between(prev, ramp_to, 3.0, 0.5, "TwrRamp%d" % i, i > 1)
 		# Corner landing, flush-topped at the segment height, so the player can
 		# turn. Thickness solved above so its underside clears the still-rising
 		# ramp across the full overhang (see the note above the loop).

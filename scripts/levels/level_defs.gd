@@ -5017,7 +5017,7 @@ static func _grok() -> Dictionary:
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
-			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
+			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 2.0), "width": 3.5},
 			# Gallery access ramps at both ends + a gallery->tower sky-bridge that
 			# crosses the perimeter bulkhead through its gap — the high road in.
 			{"from": Vector3(-16.0, 0.3, -36.0), "to": Vector3(-9.0, 3.4, -36.0), "width": 3.5},
@@ -5026,7 +5026,11 @@ static func _grok() -> Dictionary:
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
-			{"pos": Vector3(17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
+			# z 2, not 0: at z 0 the two towers' footprints overlapped by 2.2 m and
+			# this one's 4.67 m corner landing hung 1.7 m over the other's 2.0 m
+			# landing, so the climb stuck head-first at the first corner (#339,
+			# tests/tower_spacing_probe).
+			{"pos": Vector3(17.0, 0, 2.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
@@ -5077,7 +5081,7 @@ static func _grok() -> Dictionary:
 			{"type": "brute", "pos": Vector3(14, 0.5, -14), "trigger": 22, "pack": "grok_p3"},
 			# DEEPFAKE debut (the black-site's misinformation wing): two of the
 			# site's riflemen are now deepfakes on the same spots.
-			{"type": "deepfake", "pos": Vector3(14, 0.5, 4), "trigger": 20, "pack": "grok_p4"},
+			{"type": "deepfake", "pos": Vector3(13, 0.5, 5.5), "trigger": 20, "pack": "grok_p4"}, # clear of the moved tower's spiral
 			{"type": "drone", "pos": Vector3(-4, 2.5, 16), "trigger": 22, "pack": "grok_p1"},
 			{"type": "mech", "pos": Vector3(16, 0.5, 16), "trigger": 24},
 			{"type": "android", "pos": Vector3(10, 0.5, -14), "trigger": 22, "pack": "grok_p3"},

@@ -281,3 +281,5 @@ res://tests/house_stairs_probe.tscn
 res://tests/pylon_clearance_probe.tscn
 # Dead skinned robots' limbs hang toward the ground and stay out of the floor (#259).
 res://tests/limb_flop_probe.tscn
+# No two towers' spirals and corner landings overlap in any level (#339).
+res://tests/tower_spacing_probe.tscn

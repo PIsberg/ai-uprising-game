@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-459 probes total: **172** wired into the headless suite (`suite`), **85**
+460 probes total: **173** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -275,6 +275,7 @@ or GPU-timing probes; `--headless` renders these black).
 | hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation); a goal past a cargo lift counts when the navmesh reaches the lift's bottom landing from the spawn and the goal from its top | suite |
 | house_stairs_probe | The real player walks up every enterable house's stairs (levels 01, suburb, suburb_boss; `HouseRamp_*`, `ramp_walker.gd`, no jump): red on the old stairwell, all 6 stopped (level 01's at 49 and 56 deg at the foot, Maple Grove's four at 1.25 m with the head against the slab) (#290) | suite |
 | pylon_clearance_probe | No outdoor light mast stands inside geometry: for 26 levels each `light_pylon`'s column overlaps no world body but itself, and open-sky levels still get masts (92). Red before `_place_light_pylons`: 34 of 126 masts in 14 levels went through SkyBridge decks, towers or walls (#290) | suite |
+| tower_spacing_probe | No two towers in any level overlap: each tower's spiral square (`radius`) plus its corner landings (1.9 m) stays clear of every other tower's, from the level defs alone (21 pairs). Red on grok before its 7 m tower moved from z 0 to z 2: overlap 2.2 m, that tower's 4.67 m landing 1.7 m over the other's 2.0 m landing, where the real player stuck (#339) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
