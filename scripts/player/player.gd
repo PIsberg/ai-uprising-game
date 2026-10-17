@@ -934,6 +934,9 @@ func _handle_melee(delta: float) -> void:
 	# A quick viewmodel jab so the shove reads in first person.
 	if weapon_holder:
 		_kick_weapon_holder(Vector3(0, -0.05, -0.14), 0.06, 0.16)
+	# A TELEMETRY LEECH on your back is the first thing a swing deals with.
+	for l in get_tree().get_nodes_in_group("leech_latched"):
+		(l as EnemyLeech).rip_off(self)
 	_do_melee()
 
 func _do_melee() -> void:
@@ -1015,6 +1018,8 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		for l in get_tree().get_nodes_in_group("leech_latched"):
+			(l as EnemyLeech).shake_off(_dash_dir) # the lunge throws it loose
 		_dodge_scored = false
 		_spend_stamina(dash_stamina_cost) # a dodge-dash is exertion too
 		hp.invulnerable = true
@@ -1712,6 +1717,9 @@ func _current_speed() -> float:
 	var mult: float = minf(MAX_MOVE_MULT,
 		GameState.move_speed_mult() * GameState.rampage_speed_mult() \
 		* GameState.adrenaline_speed_mult() * GameState.directive_move_mult())
+	# A latched TELEMETRY LEECH drags at you until you get it off.
+	if get_tree().get_first_node_in_group("leech_latched") != null:
+		mult *= EnemyLeech.SLOW
 	if _is_crouching:
 		return crouch_speed * mult
 	# Shouldering a haul payload: a heavy walk, sprint ignored.

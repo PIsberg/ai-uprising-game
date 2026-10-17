@@ -14,7 +14,7 @@ extends Object
 ## specials → bosses). The Encyclopedia shows only the ones the player has met.
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
-	"hunter", "reaper", "sniper", "seeker", "brute",
+	"hunter", "reaper", "sniper", "seeker", "leech", "brute",
 	"gunner", "raptor", "mender", "aegis", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
 	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback", "quantizer",
@@ -287,6 +287,13 @@ const ENTRIES := {
 		"strengths": ["Keeps the whole pack alive", "Runs and hides behind allies"],
 		"weaknesses": ["No real offence of its own", "Fragile once cornered"],
 		"weapons": ["MK-VII Longshot", "AR-7 Pulse Rifle", "ARC-9 Gauss Lance"],
+	},
+	"leech": {
+		"scene": "res://scenes/enemies/leech.tscn", "name": "TELEMETRY LEECH", "scale": 3.0, "y": 1.5,
+		"desc": "A small green drone that never fires a shot. It clamps onto your back, drains you, slows you down, and phones your position to every robot nearby every two seconds.",
+		"strengths": ["Wakes every sleeping robot around you", "You cannot shoot it once it is on your back"],
+		"weaknesses": ["24 hp: shoot it on the way in", "Melee rips it off; a dash shakes it loose"],
+		"weapons": ["NV-X Nova Scatter", "SG-12 Breacher", "AR-7 Pulse Rifle"],
 	},
 	"aegis": {
 		"scene": "res://scenes/enemies/aegis.tscn", "name": "AEGIS", "scale": 1.0, "y": 1.5,

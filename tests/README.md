@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-447 probes total: **163** wired into the headless suite (`suite`), **84**
+449 probes total: **164** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **200** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **201** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -435,6 +435,8 @@ or GPU-timing probes; `--headless` renders these black).
 | sound_id_probe | Every sound id referenced by literal in scripts/ (play_synth_at/ui, synth, play_music, play_ambience_layer, play_lore, level `music` keys) and every weapon .tres sound_id (+_fire) resolves through AudioBus.synth; a never-registered id is a silent event (caught the Armory's silent purchase clink) | suite |
 | signal_hunt_probe | Signal hunt (`trace_signal`, SignalTransmitter) on a flat floor: SIGNAL bars 0 at 70 m, 1 at 50, 3 at 20, 5 at 5; hidden it is no objective (no waypoint or radar) and the task label ends in the meter; the first ping in range teaches; 4 pings in 6 s at 50 m, 9 at 9 m (red at 7 before a closer step clamped the pending ping); behind a wall at 5 m it stays hidden, in sight it reveals (objective, toast, `revealed`, plain label); a shot from 46 m reveals it; destroyed it completes its task. The Hollow: built hidden, the beacon and survive stages wait on it, clear of geometry, out of every hazard and flood bed, reachable, 111 m from spawn; revealing it brings its alarm squad; destroying it puts the beacon up. Red-checked: without the line-of-sight test 2 checks fail, with a waypoint from the start 2 fail | suite |
 | signal_hunt_shot | The Hollow's cloak emitter from 9 m at eye height: hidden (a near-black box in the north-east corner, LED mid-ping; the task label's SIGNAL meter renders), then revealed (aerial up, red beacon, waypoint) (`--out=<dir> [--level=<id>]`) | windowed |
+| leech_probe | TELEMETRY LEECH against the real player scene: flies in and latches (collision off, `leech_latched`, hint), rides 0.38 m from the camera; drains 8.0 in 2.1 s, slows 5.50 -> 4.40; its beacon wakes an idle android 36 m away but not one 72 m away; the melee key rips it off and kills it and the slow lifts; the dash key shakes the next one loose (stunned, shootable), flings it 13.6 m and it comes back and latches again; no latch through i-frames; shot in flight it dies. Red-checked: without the player's melee hook 2 checks fail, without the dash hook 2 fail | suite |
+| leech_shot | The TELEMETRY LEECH in a lit room: in flight beside a stand-in player (a head-sized green tick on four grapple claws; the first build was a 1 m ball, scaled to 0.45), then latched on the back of the head (`--out=<dir>`) | windowed |
 | spawn_nest_probe | Spawn nests on a baked floor: asleep with the player far away; awake it spawns, teaches once, never holds more than 3 alive (red-checked: with the cap removed it reached 6) and spawns again once its brood is killed; destroyed it pays +150, toasts NEST DESTROYED and spawns nothing more; on the Hollow both nests stand clear of geometry and can be reached from spawn | suite |
 | stamina_probe | Sprint/grapple stamina drains to exhaustion (walk-only lock), regen + lock clear; HUD bar screenshotted | windowed |
 | stamp_press_probe | StampPress: a player under a press is hit once per slam (45) and shoved out of the footprint (10 m/s), a robot under it or 1 m outside is never hurt (red while presses crushed robots; the frozen test robot is kept in the physics world, or the press's Area3D cannot see it), every slam is telegraphed 0.5+ s ahead (red with the telegraph removed: 0.10 s), the head falls to within 0.3 m of the floor, presses at phase 0 and 0.5 slam half a period apart; Assembly has its presses and one covers the scaled east bulkhead gap | suite |
