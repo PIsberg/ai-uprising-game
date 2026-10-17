@@ -5,6 +5,10 @@ extends EnemyBase
 ## unfolds four legs and rears up into a hostile walker, then chases and fires
 ## energy bolts. Built entirely from procedural primitives so the transform can
 ## be animated in code.
+## While still a disc it CLEANS UP: any supply pickup (health, ammo, overclock,
+## overdrive: kill drops included, never weapons) within SCAVENGE_RANGE in a
+## straight line of sight, it trundles to and swallows (`swallowed`), bulging a
+## little per item. Destroyed, it spills everything it ate. tests/custodian_loot_probe.
 
 enum Phase { GROUND, RISING, COMBAT }
 
@@ -44,6 +48,15 @@ var _wander: Vector3 = Vector3.FORWARD
 var _wander_cd: float = 0.0
 var _burst_left: int = 0
 var _burst_t: float = 0.0
+
+const SCAVENGE_RANGE := 14.0
+const SCAVENGE_SPEED := 3.6
+const SWALLOW_RANGE := 0.9
+const SCAVENGE_KINDS := {0: "health", 1: "ammo", 3: "overclock", 4: "overdrive"} ## Pickup.Kind -> pickup_scene key
+const LOOT_TEACH := "CUSTODIAN: it vacuums up supplies, your kill drops too. Destroy it and it spills everything it ate."
+## What it has eaten: [{kind: String, amount: int}], spilled on death.
+var swallowed: Array[Dictionary] = []
+var _loot_target: Node3D = null
 
 
 func _ready() -> void:
@@ -203,6 +216,8 @@ func _ground_tick(delta: float) -> void:
 		if d <= wake_range and _can_see(target):
 			_begin_rise()
 			return
+	if _scavenge(delta):
+		return
 	# Slow cleaning wander.
 	_wander_cd -= delta
 	if _wander_cd <= 0.0:
@@ -215,6 +230,78 @@ func _ground_tick(delta: float) -> void:
 	_apply_gravity(delta)
 	move_and_slide()
 
+
+## Cleaning duty: go for the nearest visible supply pickup and swallow it.
+## True while it is busy with one (it owns this frame's movement).
+func _scavenge(delta: float) -> bool:
+	if _loot_target == null or not is_instance_valid(_loot_target) or not _loot_target.is_inside_tree():
+		_loot_target = _nearest_loot()
+		if _loot_target == null:
+			return false
+	var to := _loot_target.global_position - global_position
+	to.y = 0.0
+	if to.length() <= SWALLOW_RANGE:
+		_swallow(_loot_target)
+		_loot_target = null
+		return true
+	var d := to.normalized()
+	velocity.x = d.x * SCAVENGE_SPEED
+	velocity.z = d.z * SCAVENGE_SPEED
+	_face_dir(d, delta)
+	_apply_gravity(delta)
+	move_and_slide()
+	return true
+
+func _nearest_loot() -> Node3D:
+	var best: Node3D = null
+	var best_d := SCAVENGE_RANGE
+	var space := get_world_3d().direct_space_state
+	for n in get_tree().get_nodes_in_group("pickup"):
+		var p := n as Pickup
+		if p == null or not is_instance_valid(p) or p.is_queued_for_deletion() or p.get("_taken") or not SCAVENGE_KINDS.has(int(p.kind)):
+			continue
+		var d := p.global_position.distance_to(global_position)
+		if d >= best_d or absf(p.global_position.y - global_position.y) > 1.5:
+			continue
+		var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.4, p.global_position + Vector3.UP * 0.4, 1)
+		q.exclude = [get_rid()]
+		if not space.intersect_ray(q).is_empty():
+			continue # it wanders on direct velocity: only a straight run is a run
+		best = p
+		best_d = d
+	return best
+
+func _swallow(p: Node3D) -> void:
+	var pk := p as Pickup
+	swallowed.append({"kind": String(SCAVENGE_KINDS[int(pk.kind)]), "amount": int(pk.amount)})
+	pk.set("_taken", true)
+	pk.queue_free()
+	if _chassis:
+		var k := 1.0 + 0.07 * float(mini(swallowed.size(), 4))
+		_chassis.scale = Vector3(k, 1.0 + 0.04 * float(mini(swallowed.size(), 4)), k)
+	AudioBus.play_synth_at("pickup_clink", global_position, -4.0, 0.6)
+	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	if pl and pl.global_position.distance_to(global_position) <= 35.0:
+		GameState.teach_once("custodian_loot", LOOT_TEACH)
+
+## Everything it ate comes back out, on a ring around the wreck.
+func _spill() -> void:
+	var parent := get_parent()
+	if parent == null or swallowed.is_empty():
+		return
+	var n := swallowed.size()
+	for i in n:
+		var e: Dictionary = swallowed[i]
+		var scene := LevelBuilder.pickup_scene(String(e["kind"]))
+		if scene == null:
+			continue
+		var inst := scene.instantiate() as Pickup
+		inst.amount = int(e["amount"])
+		parent.add_child(inst)
+		var a := TAU * float(i) / float(n)
+		inst.global_position = global_position + Vector3(cos(a), 0.0, sin(a)) * (1.2 if n > 1 else 0.0) + Vector3.UP * 0.1
+	swallowed.clear()
+	AudioBus.play_synth_at("pickup_ammo", global_position, 0.0, 0.7)
 
 func _begin_rise() -> void:
 	if _phase != Phase.GROUND:
@@ -323,6 +410,7 @@ func is_hopping() -> bool:
 ## blast and scorch mark land on the ground, not in the air (the wreck itself
 ## would fall on its own, WreckBody).
 func _on_died(source: Node) -> void:
+	_spill()
 	if is_hopping():
 		_hop = Hop.NONE
 		_burst_left = 0

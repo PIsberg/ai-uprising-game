@@ -267,3 +267,5 @@ res://tests/signal_hunt_probe.tscn
 res://tests/leech_probe.tscn
 # CROSSWINDS: telegraphed gusts blow a still player off a deck; crouch braces, leaning in makes headway; Water World gantries.
 res://tests/wind_probe.tscn
+# CUSTODIAN LOOT: a dormant custodian swallows supplies in sight (never weapons), spills them all on death.
+res://tests/custodian_loot_probe.tscn

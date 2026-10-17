@@ -228,8 +228,8 @@ const ENTRIES := {
 	"vacuum": {
 		"scene": "res://scenes/enemies/vacuum.tscn", "name": "CUSTODIAN UNIT", "scale": 1.0, "y": 0.0,
 		"desc": "A cleaning disc that trundles the floor — until it sees you, rears up on four legs and springs into the air to fire.",
-		"strengths": ["Disguised as harmless until it stands", "Tough once it unfolds into a walker"],
-		"weaknesses": ["Helpless while still a disc — hit it before it rises", "Has to hop to shoot: its glowing underside crits in the air"],
+		"strengths": ["Disguised as harmless until it stands", "Tough once it unfolds into a walker", "Vacuums up supplies, your kill drops too"],
+		"weaknesses": ["Helpless while still a disc — hit it before it rises", "Has to hop to shoot: its glowing underside crits in the air", "Spills everything it swallowed when it dies"],
 		"weapons": ["SG-12 Breacher", "GRK-X Devastator", "AR-7 Pulse Rifle"],
 	},
 	"hunter": {
