@@ -20,6 +20,13 @@ Also fails on a tracked `.import` whose source file is gone: a screenshot a
 probe once saved into res:// leaves its stub behind (16 at the project root on
 2026-10-08), and the editor re-imports nothing for it.
 
+Also fails on a shipped model (.glb/.gltf/.fbx/.obj) that no game file names by
+path: the export packs every resource (export_filter=all_resources), so a model
+superseded by a fork or a v2 keeps shipping: 17.7 MB of imports on 2026-10-17
+(robot_dog.glb under robot_dog_v2, EyeDrone_fishbot.glb, four cars, five
+blasters, the reverted health-pack model and the textures only it used).
+References from tests/, tools/ and docs/ do not count, since those do not ship.
+
     python tools/check_import_budget.py     # needs a populated .godot (run --import first)
 """
 import os
@@ -29,7 +36,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 272 * MB  # 2026-10-09: 9 unread textures + the unused George_smasher.glb removed, 283.5 -> 270.8 MB
+TOTAL_BUDGET = 255 * MB  # 2026-10-17: 14 unused models + 3 textures only one used removed, 271.4 -> 253.7 MB
 FILE_BUDGET = 40 * MB
 # A texture imported lossless (compress/mode=0) ships as a lossless WebP and, on a
 # mesh, uploads uncompressed with no mipmaps: the 23 comics were 1.2-1.5 MB each
@@ -39,6 +46,26 @@ LOSSLESS_BUDGET = 1 * MB
 LOSSLESS = re.compile(r'^importer="texture"$.*^compress/mode=0$', re.MULTILINE | re.DOTALL)
 EXCLUDED = ("tests/", "tools/", "docs/")  # export_presets.cfg exclude_filter
 DEST = re.compile(r'^dest_files=\[(.*)\]', re.MULTILINE)
+MODEL_EXT = (".glb", ".gltf", ".fbx", ".obj")
+# Files that can name a model by its res:// path. A .gltf names its textures and
+# buffers by bare uri, which is why only models are checked here.
+REF_EXT = (".gd", ".tscn", ".tres", ".gdshader", ".cfg", ".lvl", ".json", ".godot")
+
+
+def unreferenced_models(shipped: list) -> list:
+    """Shipped models whose path appears in no shipped game file."""
+    out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True)
+    corpus = []
+    for path in out.stdout.splitlines():
+        if path.startswith(EXCLUDED) or not path.endswith(REF_EXT):
+            continue
+        try:
+            with open(os.path.join(ROOT, path), encoding="utf-8", errors="ignore") as f:
+                corpus.append(f.read())
+        except OSError:
+            continue
+    text = "\n".join(corpus)
+    return [src for src in shipped if src.endswith(MODEL_EXT) and ("res://" + src) not in text]
 
 
 def main() -> int:
@@ -83,6 +110,8 @@ def main() -> int:
     for size, src in lossless:
         errors.append("%s is imported lossless (%.1f MB): set compress/mode=1 (lossy) for 2D art, "
                       "2 (VRAM compressed, mipmaps on) for a texture on a mesh" % (src, size / MB))
+    for src in unreferenced_models([src for _, src in rows]):
+        errors.append("%s ships but no scene, script or resource loads it (git rm it and its .import)" % src)
     for size, src in rows:
         if size > FILE_BUDGET:
             errors.append("%s imports to %.1f MB, per-file budget %d MB" % (src, size / MB, FILE_BUDGET // MB))
