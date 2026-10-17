@@ -84,6 +84,7 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * Detection needs the player's chest inside the cone, within `reach`, with a clear world-layer ray, held for `detect_time` (0.7 s).
 * An alarm hands the authored `alarm` squad to the task reinforcement spawner, then the head tracks the player and cools down. `alarms` caps how often it can fire.
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
+* A player wearing an adversarial patch is not detected beyond `AdversarialPatch.SCANNER_RANGE` (4 m), see [[player#Adversarial Patch]].
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
 ## Stamping Presses

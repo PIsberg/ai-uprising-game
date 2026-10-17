@@ -60,7 +60,10 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 			and victim.is_in_group("enemy") and source.is_in_group("enemy"):
 		var v_hijacked: bool = victim.get("hijacked") == true
 		var s_hijacked: bool = source.get("hijacked") == true
-		if v_hijacked == s_hijacked:
+		# A MISLABELED victim (EnemyBase.mislabel) reads as human to its squad,
+		# so their fire lands on it too.
+		var v_tagged: bool = victim.get("mislabeled_t") != null and float(victim.get("mislabeled_t")) > 0.0
+		if v_hijacked == s_hijacked and not v_tagged:
 			return
 	# Warded by an AEGIS drone: the bubble takes the hit. The drone clears
 	# warded_by when its beam breaks or it dies.

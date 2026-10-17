@@ -237,6 +237,9 @@ func _sees(player: Node3D) -> bool:
 	var d := to.length()
 	if d > reach or d < 0.1:
 		return false
+	# An ADVERSARIAL PATCH reads as furniture to the vision model past arm's length.
+	if d > AdversarialPatch.SCANNER_RANGE and AdversarialPatch.active_on(player) != null:
+		return false
 	if rad_to_deg(look_dir().angle_to(to / d)) > cone_deg:
 		return false
 	var q := PhysicsRayQueryParameters3D.create(eye, chest, 1)

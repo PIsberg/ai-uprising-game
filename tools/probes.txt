@@ -285,3 +285,5 @@ res://tests/limb_flop_probe.tscn
 res://tests/tower_spacing_probe.tscn
 # NEURAL UPLINK: ride a hijacked robot (move, fire, flyer climb), body freeze, every way the link ends.
 res://tests/neural_uplink_probe.tscn
+# ADVERSARIAL PATCH: robot optics misclassify a patched player by range and time; shots break it; melee tags a robot.
+res://tests/adversarial_patch_probe.tscn

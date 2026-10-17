@@ -1283,10 +1283,12 @@ func reset_level_stats() -> void:
 ## Last player shot (ms): the muzzle flash gives a player in the dark away for
 ## LightLevel.EXPOSE_MS.
 var _last_shot_ms: int = -100000
+signal shot_registered ## The player fired: an AdversarialPatch drops on it.
 
 func register_shot() -> void:
 	stat_shots += 1
 	_last_shot_ms = Time.get_ticks_msec()
+	shot_registered.emit()
 	AIDirector.note_shot() # feed the adaptive director (shot count + weapon focus)
 
 func register_hit() -> void:
@@ -1467,6 +1469,8 @@ const MECHANIC_HINTS := {
 	"night_vision": "◉ NIGHT VISION — press [N] to see in the dark. It does not give you away like a flashlight.",
 	"lights_out": "◐ LIGHTS OUT — robots can't see you in the dark past a few metres. Firing or a flashlight gives you away.",
 	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
+	"patch_key": "◇ ADVERSARIAL PATCH ready — press [T] and robot vision reads you as furniture for 15 s. Two per level.",
+	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

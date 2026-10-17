@@ -604,6 +604,60 @@ func release_pilot() -> void:
 			_hijack_shooter = by
 		_burnout()
 
+# ---------- adversarial patch (AdversarialPatch) ----------
+## How sure this robot is that the patched player is a human (0..1); at 1 it
+## sees through the patch. AdversarialPatch.classify raises it, and resets it
+## on each new patch.
+var patch_confidence: float = 0.0
+## Seconds left reading as HUMAN to its own squad (a patch slapped onto it, or
+## a "kill count" reward rewrite). Whoever applied it owns the clock and calls
+## clear_mislabel at 0: a timer here would never tick on the subclasses whose
+## _physics_process skips super.
+var mislabeled_t: float = 0.0
+var _mislabel_layer: int = 4
+var _mislabel_tag: Label3D = null
+
+## Make this robot read as a human target to the other robots for `duration`:
+## it moves to the player's collision layer (hostile hitscans and LOS mask
+## world+player) and joins `mislabeled`, which _perceive treats like a traitor.
+## False for a hijacked or dead unit.
+func mislabel(duration: float) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or hijacked:
+		return false
+	if not is_in_group("mislabeled"):
+		_mislabel_layer = collision_layer
+		collision_layer = 2
+		add_to_group("mislabeled")
+		hp.died.connect(_on_mislabel_died)
+		_mislabel_tag = Label3D.new()
+		_mislabel_tag.text = "%s 98%%" % tr("HUMAN")
+		_mislabel_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_mislabel_tag.no_depth_test = true
+		_mislabel_tag.fixed_size = true
+		_mislabel_tag.pixel_size = 0.0012
+		_mislabel_tag.font_size = 30
+		_mislabel_tag.outline_size = 8
+		_mislabel_tag.modulate = Color(1.0, 0.25, 0.2)
+		_mislabel_tag.position = Vector3.UP * clampf(RobotModel.body_top(self, _mesh_instances) + 0.6, 1.8, 7.5)
+		add_child(_mislabel_tag)
+	mislabeled_t = maxf(mislabeled_t, duration)
+	return true
+
+func clear_mislabel() -> void:
+	mislabeled_t = 0.0
+	if not is_in_group("mislabeled"):
+		return
+	remove_from_group("mislabeled")
+	collision_layer = _mislabel_layer
+	if hp and hp.died.is_connected(_on_mislabel_died):
+		hp.died.disconnect(_on_mislabel_died)
+	if _mislabel_tag and is_instance_valid(_mislabel_tag):
+		_mislabel_tag.queue_free()
+	_mislabel_tag = null
+
+func _on_mislabel_died(_source: Node) -> void:
+	clear_mislabel()
+
 ## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
 func _cleanup_hijack() -> void:
 	if not hijacked:
@@ -748,7 +802,7 @@ func _perceive() -> void:
 	# to the player. (Only hijacked units ever put a robot in `target`.)
 	if target is EnemyBase:
 		var tb := target as EnemyBase
-		if tb.state == State.DEAD or not tb.hijacked:
+		if tb.state == State.DEAD or not (tb.hijacked or tb.mislabeled_t > 0.0):
 			target = null
 	if target == null:
 		target = _find_player()
@@ -757,7 +811,12 @@ func _perceive() -> void:
 	# fantasy and the counterplay. Free when nothing is hijacked (empty group).
 	if not (target is EnemyBase):
 		var best_d := global_position.distance_to(target.global_position) if target else sight_range
-		for h in get_tree().get_nodes_in_group("hijacked"):
+		# A MISLABELED robot (AdversarialPatch, RewardRewriter) reads as a human
+		# target and draws fire by the same rule.
+		var turncoats := get_tree().get_nodes_in_group("hijacked")
+		if get_tree().has_group("mislabeled"):
+			turncoats += get_tree().get_nodes_in_group("mislabeled")
+		for h in turncoats:
 			var hb := h as EnemyBase
 			if hb == null or hb == self or not is_instance_valid(hb) or hb.state == State.DEAD:
 				continue
@@ -859,7 +918,15 @@ func _compute_can_see(t: Node3D) -> bool:
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
 		return false
-	return hit.collider == t or (hit.collider as Node).is_in_group("player")
+	var seen: bool = hit.collider == t or (hit.collider as Node).is_in_group("player")
+	# ADVERSARIAL PATCH: optics that find the player still have to classify
+	# them; until this robot is sure, it sees a household object. Bosses see
+	# through it.
+	if seen and score_value < 1000 and t.is_in_group("player"):
+		var patch := AdversarialPatch.active_on(t)
+		if patch:
+			return patch.classify(self, dist)
+	return seen
 
 func set_state(new_state: State) -> void:
 	if state == new_state:
