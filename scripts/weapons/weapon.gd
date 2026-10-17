@@ -567,7 +567,9 @@ func _do_shot() -> void:
 	# Gamepad rumble: every trigger pull snaps the buzz motor; the thump motor
 	# grows with the round's total heft, so a shotgun blast kicks the pad the
 	# way a pistol tap doesn't.
-	Haptics.pulse(0.35, clampf(eff_damage() * float(data.pellets) / 140.0, 0.0, 0.85), 0.09)
+	# A gun with a chest thump (fire_thump) thumps the pad too, and longer.
+	Haptics.pulse(0.35, maxf(clampf(eff_damage() * float(data.pellets) / 140.0, 0.0, 0.85), data.fire_thump * 0.9),
+		0.09 + 0.08 * data.fire_thump)
 	fired.emit(self)
 
 ## The live cone half-angle in degrees: base spread opened by bloom and
@@ -864,7 +866,8 @@ func _update_beam(delta: float) -> void:
 	ammo_changed.emit(mag, reserve)
 	GameState.register_shot()
 	_heat = minf(1.0, _heat + 0.06)
-	AudioBus.play_synth_at("drone_shot", from, -12.0, randf_range(1.5, 2.1))
+	# The beam's own voice per tick (tesla_fire), the old shared zap if it has none.
+	AudioBus.play_synth_at(data.sound_id + "_fire" if data.sound_id != "" else "drone_shot", from, -9.0, randf_range(0.9, 1.15))
 	if not hit.is_empty():
 		var col := hit.collider as Node
 		var dmg_node: Node = _find_damageable(col) if col else null
@@ -1336,6 +1339,15 @@ func _play_fire_sound() -> void:
 	var s := _resolve_sound(data.fire_sound, data.sound_id + "_fire" if data.sound_id != "" else "")
 	if s:
 		AudioBus.play_at(s, muzzle.global_position, -2.0, randf_range(0.97, 1.03))
+	# Layers that make a shot felt, not just heard: a sub-bass chest thump under
+	# the heavy reports, and the action cycling a beat behind a cartridge gun's.
+	if data.fire_thump > 0.0:
+		AudioBus.play_synth_at("fire_thump", muzzle.global_position, lerpf(-16.0, -1.0, clampf(data.fire_thump, 0.0, 1.0)),
+			randf_range(0.94, 1.04))
+	if data.action_clack:
+		var at := muzzle.global_position
+		get_tree().create_timer(randf_range(0.045, 0.06)).timeout.connect(
+			func() -> void: AudioBus.play_synth_at("action_clack", at, -13.0, randf_range(0.92, 1.08)))
 
 func _play_empty() -> void:
 	if muzzle == null:

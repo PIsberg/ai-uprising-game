@@ -12,8 +12,9 @@ The `WeaponManager` resides under the player's camera:
 ## Weapon Resources
 Defines the custom resource configuration files that govern weapon attributes.
 
-* Individual weapon stats are defined via `WeaponData` resource files (`.tres` and `scripts/weapons/weapon_data.gd`) located under `assets/weapons/` across 17 distinct weapons.
+* Individual weapon stats are defined via `WeaponData` resource files (`.tres` and `scripts/weapons/weapon_data.gd`) located under `assets/weapons/` across 13 distinct weapons (`GameState.WEAPON_ORDER`).
 * Modifications to ammo capacity, reload speed, damage, and projectile patterns should be edited in these resource files.
+* Feel lives there too. The "Kick Feel" group is each gun's recoil signature in the hands: `kick_back` / `kick_lift` / `kick_climb` / `kick_roll` / `kick_roll_bias` / `kick_side` are the per-shot velocity impulse `WeaponManager._on_fired` gives the viewmodel, and `kick_stiffness` / `kick_damping` are the spring that settles it (clamped to `KICK_MAX_STIFFNESS` / `KICK_MAX_DAMPING`). `fov_punch` widens the view through `Player.fov_punch`, `fire_thump` layers the `fire_thump` sub-bass under the report and scales the rumble, `action_clack` plays `action_clack` a beat after it. Every gun has its own `sound_id` (`<id>_fire` in `SoundSynth`; the Tesla beam plays it per tick). `tests/weapon_feel_probe`.
 
 ## Weapon Mods
 <!-- lat: { "require-code-mention": true } -->

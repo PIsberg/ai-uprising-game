@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-461 probes total: **174** wired into the headless suite (`suite`), **85**
+462 probes total: **175** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -193,6 +193,7 @@ or GPU-timing probes; `--headless` renders these black).
 | attention_shot | ATTENTION HEAD from the side: its searchlight sweep, then its gaze locked red on a stand-in player; `-- --out=<dir>` | windowed |
 | overfitter_probe | OVERFITTER: wired into the level builder, codex, GEMINI (1) and UPLINK (2); a weapon hit carries its WeaponData on the Damageable only during the hit; full damage while training, overfit after FIT_DAMAGE of one gun, then that gun deals FIT_MULT with the shell lit and the hologram naming it; another gun breaks it (OOD_MULT for OOD_TIME, shell down, learns nothing, hologram OUT OF DISTRIBUTION); untagged damage neither resisted nor learned; full damage once the window closes | suite |
 | weapon_matchup_probe | Weapon matchups (DamageMatrix): every spawnable enemy and codex entry has an armour class and every gun a damage class; all six classes are carried, each counters one armour class and is resisted by another, every non-CHASSIS armour has 2+ counter classes; bosses take half the swing; a tagged 100 on real robots comes off as 100 x the table (red-checked: without the multiply every pair read 100); the real hitscan, shotgun pellet, Tesla beam tick and plasma splash paths each record the table's multiplier; neutral hits emit nothing, counters and resists emit `weapon_matchup`, tint the damage number cyan / steel and teach their armour hint once; untagged damage ignores the table; the codex lists only existing guns that counter the robot and no entry still authors a weapons list | suite |
+| weapon_feel_probe | Every gun's feel in the hands: each of the 13 guns resolves its own fire stream with real signal and no two share one, the fire_thump / action_clack layers carry signal; one shot per gun through the real WeaponManager spring at 60 fps punches and settles within 1 s, the heavy guns (Breacher, Longshot, Gauss, Devastator, OMEGA) climb harder and settle slower than every light one (rifle, Tesla, Arc Coil; red-checked: with the shared spring every settle read 0.27 s), every gun has its own kick signature, the .50 Maelstrom rolls the same way 20 shots of 20; OMEGA's soft spring stays finite through 10 fps frames; an OMEGA shot widens the view by its fov_punch and a pistol shot does not | suite |
 | overfitter_shot | Three OVERFITTERs: training on the rifle, overfit to the shotgun (orange shell), overfit to the rifle then hit by the pistol (out of distribution); `-- --out=<dir>` | windowed |
 | deepfake_shot | DEEPFAKE and its two copies facing the camera over 2 s, so a copy's glitch lands in a frame; `-- --out=<dir>` | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |

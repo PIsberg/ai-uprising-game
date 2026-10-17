@@ -59,6 +59,11 @@ const KICK_MAX_STEP := 1.0 / 120.0
 ## long since settled anyway.
 const KICK_MAX_SIM := 0.1
 const KICK_SANE := 2.0
+## Per-gun spring bounds (WeaponData.kick_stiffness / kick_damping). The
+## substepped integrator stays stable while h * sqrt(k) < 2 and h * c < 2, i.e.
+## k < 57600 and c < 240 at KICK_MAX_STEP; these keep a typo far inside that.
+const KICK_MAX_STIFFNESS := 900.0
+const KICK_MAX_DAMPING := 80.0
 
 var external_kick_pos: Vector3 = Vector3.ZERO
 var block_ads: bool = false
@@ -434,10 +439,16 @@ func _process(delta: float) -> void:
 	var sim := minf(delta, KICK_MAX_SIM)
 	var steps := maxi(1, int(ceil(sim / KICK_MAX_STEP)))
 	var h := sim / float(steps)
+	# The equipped gun's spring: a light gun snaps home, a heavy one drifts.
+	var k := KICK_STIFFNESS
+	var c := KICK_DAMPING
+	if current and current.data:
+		k = clampf(current.data.kick_stiffness, 40.0, KICK_MAX_STIFFNESS)
+		c = clampf(current.data.kick_damping, 4.0, KICK_MAX_DAMPING)
 	for _i in steps:
-		_kick_pos_vel -= (_kick_pos * KICK_STIFFNESS + _kick_pos_vel * KICK_DAMPING) * h
+		_kick_pos_vel -= (_kick_pos * k + _kick_pos_vel * c) * h
 		_kick_pos += _kick_pos_vel * h
-		_kick_rot_vel -= (_kick_rot * KICK_STIFFNESS + _kick_rot_vel * KICK_DAMPING) * h
+		_kick_rot_vel -= (_kick_rot * k + _kick_rot_vel * c) * h
 		_kick_rot += _kick_rot_vel * h
 	_sanitize_kick()
 
@@ -475,12 +486,18 @@ func _on_fired(_w: Weapon) -> void:
 	# Punchy per-shot camera trauma, scaled by the weapon's recoil weight.
 	if shooter and shooter.has_method("shake"):
 		shooter.shake(clampf(0.18 + current.data.recoil_pitch * 0.05, 0.0, 0.6))
-	# Punch the GUN itself: a velocity impulse the spring then settles — the
-	# viewmodel jolts back (+Z, toward the player), lifts and the muzzle climbs,
-	# with a touch of random yaw/roll so repeat fire never looks metronomic.
-	var rw: float = current.data.recoil_pitch
-	_kick_pos_vel += Vector3(randf_range(-0.06, 0.06), 0.14, 0.85 + 0.45 * rw)
-	_kick_rot_vel += Vector3(1.4 + 0.8 * rw, randf_range(-0.22, 0.22), randf_range(-0.45, 0.45))
+	# Punch the GUN itself with this gun's kick signature (WeaponData "Kick
+	# Feel"): a velocity impulse the spring then settles — the viewmodel jolts
+	# back (+Z, toward the player), lifts and the muzzle climbs, with random
+	# yaw/roll so repeat fire never looks metronomic and a roll bias for the
+	# guns that twist.
+	var d: WeaponData = current.data
+	_kick_pos_vel += Vector3(randf_range(-0.06, 0.06), d.kick_lift, d.kick_back)
+	_kick_rot_vel += Vector3(d.kick_climb, randf_range(-d.kick_side, d.kick_side),
+		d.kick_roll_bias + randf_range(-d.kick_roll, d.kick_roll))
+	# The blast pushing on you: a beat of wider view on the heavy rounds.
+	if d.fov_punch > 0.0 and shooter and shooter.has_method("fov_punch"):
+		shooter.fov_punch(d.fov_punch)
 
 func _equip(index: int) -> void:
 	if index == current_index or index < 0 or index >= weapons.size():
