@@ -228,6 +228,7 @@ const LEVEL_MUSIC := {
 
 var _nav_region: NavigationRegion3D
 var _env: Environment
+var _pending_pylons: Array = [] ## [light_pos, color] per outdoor light, placed by _place_light_pylons
 var _tower_count: int = 0   ## cycles rooftop-pickup kind across a level's towers
 
 func _ready() -> void:
@@ -317,6 +318,7 @@ func _ready() -> void:
 	_build_injectors(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
+	_place_light_pylons() # after every solid exists, before the bake routes round them
 	_bake_navmesh.call_deferred()
 	## Openings are the deadliest seconds (playtest: 100->16 HP before the
 	## first orientation). Enemies still close in and jockey for position;
@@ -744,9 +746,40 @@ func _make_interior_area_light(l: Dictionary, shadowed: bool) -> AreaLight3D:
 	area.rotation_degrees = Vector3(-90, 0, 0)
 	return area
 
+## Queue a floodlight mast for an outdoor light. Lights are built first, before
+## any ramp, bridge, tower or wall exists, so the mast is placed at the end of
+## the build (_place_light_pylons), once it can see what stands in its way.
+func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
+	_pending_pylons.append([light_pos, color])
+
+## Place each queued mast whose column is clear. A light authored over a sky
+## bridge, a tower roof or a wall used to get its pole anyway, straight through
+## the solid: titan's, uplink's and archon's centre lights stood a 0.14 m post
+## in the middle of the SkyBridge deck that stopped a walking player dead
+## (#290; 14 levels had at least one). Such a light keeps no mast, like one
+## authored with "mast": false. tests/pylon_clearance_probe.
+func _place_light_pylons() -> void:
+	if _pending_pylons.is_empty() or not is_inside_tree():
+		return
+	var space := get_world_3d().direct_space_state
+	for p in _pending_pylons:
+		var pos: Vector3 = p[0]
+		if pos.y > 0.9:
+			var col := CylinderShape3D.new()
+			col.radius = 0.14
+			col.height = pos.y - 0.6
+			var q := PhysicsShapeQueryParameters3D.new()
+			q.shape = col
+			q.transform = Transform3D(Basis(), Vector3(pos.x, 0.3 + col.height * 0.5, pos.z))
+			q.collision_mask = 1
+			if not space.intersect_shape(q, 1).is_empty():
+				continue
+		_build_light_pylon(pos, p[1])
+	_pending_pylons.clear()
+
 ## A slim floodlight mast under an outdoor light: tapered pole from the ground
 ## up to the omni, topped with an emissive head in the light's color.
-func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
+func _build_light_pylon(light_pos: Vector3, color: Color) -> void:
 	var pole := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
 	cm.top_radius = 0.06
@@ -768,6 +801,7 @@ func _add_light_pylon(light_pos: Vector3, color: Color) -> void:
 	cs.shape = shape
 	body.add_child(cs)
 	body.position = pole.position
+	body.add_to_group("light_pylon")
 	add_child(body)
 	var head := MeshInstance3D.new()
 	var hb := BoxMesh.new()
@@ -1219,11 +1253,10 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 	var h := size.y
 	var t := 0.35             # wall thickness
 	var floor_h := h * 0.5    # upper slab height
-	# The interior ramp's horizontal run is aligned entirely under the slab's
-	# stairwell opening (see the ramp calls below — their z-span matches the
-	# hole's), so nothing overhangs it before the upper floor; the binding
-	# headroom check is just "is each storey tall enough" for a player plus the
-	# ramp's own top embed. Enforce it here rather than trusting `h` per level.
+	# The stairwell below opens the slab over every part of the interior ramp
+	# where a player's head would meet it, so the binding headroom check is just
+	# "is each storey tall enough" for a player plus the ramp's own top embed.
+	# Enforce it here rather than trusting `h` per level.
 	assert(floor_h >= PLAYER_CLEARANCE_M + RAMP_TOP_EMBED + 0.3,
 		"open building storey too short for ramp headroom: floor_h=%.2f m" % floor_h)
 	var door_w := 2.6
@@ -1234,7 +1267,7 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 		wall_mat.albedo_color *= def["building_tint"]
 	wall_mat.roughness = 0.9
 
-	var mk := func(center: Vector3, s: Vector3) -> void:
+	var mk := func(center: Vector3, s: Vector3) -> StaticBody3D:
 		var body := StaticBody3D.new()
 		body.collision_layer = 1
 		body.collision_mask = 0
@@ -1252,6 +1285,7 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 		body.add_child(mi)
 		body.add_child(cs)
 		_nav_region.add_child(body)
+		return body
 
 	# Door on the face pointing toward the level centre (the street).
 	var door_on_x := absf(pos.x) > absf(pos.z)
@@ -1277,25 +1311,52 @@ func _build_open_building(b: Dictionary, def: Dictionary) -> void:
 		mk.call(Vector3(pos.x - w * 0.5 + t * 0.5, cy, pos.z), Vector3(t, h, d - t * 2.0))
 		mk.call(Vector3(pos.x + w * 0.5 - t * 0.5, cy, pos.z), Vector3(t, h, d - t * 2.0))
 
-	# Upper floor: a slab with a stairwell opening along the back edge, plus an
-	# interior ramp running up the back wall into the opening.
-	var hole := 3.2
+	# Upper floor: a slab with a stairwell along the back wall. The interior
+	# ramp climbs the wall's whole inner length from STAIR_FOOT_GAP off one end
+	# to a STAIR_LANDING strip of slab at the other, and the slab is open over
+	# every part of it where a player's head would meet the slab's underside.
+	# The old stairwell was a fixed 3.2 m hole beside a 3.2 m-short ramp: the
+	# ramp ran under the slab for its first 2.5 m, so in a 3.2 m storey a
+	# walking player hit their head 1.25 m up and could not climb (Maple Grove's
+	# four houses), and in level 01's 4.5 m and 6 m storeys the short run made
+	# it 49 and 56 deg, past the player's 45.8 deg slope limit (#290).
 	var slab_y := ground + floor_h
 	var back_sign := -front_sign
-	if door_on_x:
-		var main_w := w - t * 2.0
-		mk.call(Vector3(pos.x - back_sign * hole * 0.5, slab_y, pos.z), Vector3(main_w - hole, 0.3, d - t * 2.0))
-		mk.call(Vector3(pos.x + back_sign * (main_w - hole) * 0.5, slab_y, pos.z + hole * 0.5), Vector3(hole, 0.3, d - t * 2.0 - hole))
-		_add_ramp_between(
-			Vector3(pos.x + back_sign * (w * 0.5 - t - 1.2), ground, pos.z + d * 0.5 - t - hole * 0.5),
-			Vector3(pos.x + back_sign * (w * 0.5 - t - 1.2), slab_y + 0.15, pos.z - d * 0.5 + t + hole * 0.5), 2.4, 0.3)
-	else:
-		var main_d := d - t * 2.0
-		mk.call(Vector3(pos.x, slab_y, pos.z - back_sign * hole * 0.5), Vector3(w - t * 2.0, 0.3, main_d - hole))
-		mk.call(Vector3(pos.x + hole * 0.5, slab_y, pos.z + back_sign * (main_d - hole) * 0.5), Vector3(w - t * 2.0 - hole, 0.3, hole))
-		_add_ramp_between(
-			Vector3(pos.x + w * 0.5 - t - hole * 0.5, ground, pos.z + back_sign * (d * 0.5 - t - 1.2)),
-			Vector3(pos.x - w * 0.5 + t + hole * 0.5, slab_y + 0.15, pos.z + back_sign * (d * 0.5 - t - 1.2)), 2.4, 0.3)
+	var u := Vector3(0, 0, 1) if door_on_x else Vector3(1, 0, 0) # along the back wall
+	var back := Vector3(back_sign, 0, 0) if door_on_x else Vector3(0, 0, back_sign)
+	var along := (d if door_on_x else w) - t * 2.0  # inner length of the back wall
+	var across := (w if door_on_x else d) - t * 2.0
+	var half := along * 0.5
+	var strip := 3.2 # stairwell width, the ramp (2.4) hugging the back wall
+	var rise := floor_h + 0.15
+	var foot_u := half - STAIR_FOOT_GAP
+	var run := along - STAIR_FOOT_GAP - STAIR_LANDING
+	var top_u := foot_u - run
+	# How far up the ramp the slab may still overhang it with PLAYER_CLEARANCE_M
+	# of headroom; from there to the top the slab is open (0.3 m spare).
+	var covered := maxf(0.0, run * clampf((floor_h - 0.15 - PLAYER_CLEARANCE_M) / rise, 0.0, 1.0) - 0.3)
+	var open_end_u := foot_u - covered
+	var slab := func(u0: float, u1: float, a0: float, a1: float) -> StaticBody3D:
+		# A slab piece spanning [u0, u1] along the wall and [a0, a1] across it
+		# (0 = the back wall's inner face, growing toward the door).
+		if u1 - u0 < 0.05 or a1 - a0 < 0.05:
+			return null
+		var c := pos + u * ((u0 + u1) * 0.5) + back * (across * 0.5 - (a0 + a1) * 0.5)
+		c.y = slab_y
+		var s_u := u1 - u0
+		var s_a := a1 - a0
+		return mk.call(c, Vector3(s_a, 0.3, s_u) if door_on_x else Vector3(s_u, 0.3, s_a))
+	slab.call(-half, half, strip, across)           # the floor beside the stairwell
+	slab.call(-half, top_u, 0.0, strip)             # the landing at the ramp's top
+	var over: StaticBody3D = slab.call(open_end_u, half, 0.0, strip) # over the ramp's low end
+	if over:
+		# Overhead by design (PLAYER_CLEARANCE_M over the ramp): ramp_probe must
+		# not take it for the surface the ramp is walked on.
+		over.add_to_group("stair_ceiling")
+	var lane := back * (across * 0.5 - 1.2)
+	_add_ramp_between(
+		Vector3(pos.x, ground, pos.z) + lane + u * foot_u,
+		Vector3(pos.x, slab_y + 0.15, pos.z) + lane + u * top_u, 2.4, 0.3, "HouseRamp_%d_%d" % [roundi(pos.x), roundi(pos.z)])
 
 	# Flat roof caps the shell (grapple up to it from outside).
 	mk.call(Vector3(pos.x, ground + h - 0.15, pos.z), Vector3(w, 0.3, d))
@@ -1393,6 +1454,8 @@ const RAMP_FOOT_SINK := 0.05   # foot sits this far below the true ground point
 const RAMP_TOP_EMBED := 0.4    # flat run-out past the true top point, into the landing
 const RAMP_GROUND_FOOT := 0.3  # a foot at or below this height is on the ground: no width taper
 const PLAYER_CLEARANCE_M := 2.2   # player capsule (1.8 m, see player.tscn) + margin
+const STAIR_FOOT_GAP := 0.3 ## Open building: floor between the end wall and the ramp's foot.
+const STAIR_LANDING := 1.2  ## Open building: slab between the ramp's top and the far end wall.
 
 func _build_ramps(def: Dictionary) -> void:
 	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
@@ -3716,7 +3779,7 @@ func _build_streetlamps(def: Dictionary) -> void:
 
 ## One street lamp: tapered pole, an arm reaching over the road with an
 ## emissive sodium head, and a matching OmniLight3D. A thin collider goes up
-## before the deferred navmesh bake (same pattern as _add_light_pylon) so
+## before the deferred navmesh bake (same pattern as _build_light_pylon) so
 ## ground robots route around the post instead of clipping it.
 func _add_streetlamp(pos: Vector3, yaw: float, flicker: bool, energy: float = 2.6) -> void:
 	var pivot := Node3D.new()
@@ -4486,7 +4549,7 @@ func _build_disco(def: Dictionary) -> void:
 			pivot.add_child(mast)
 
 			# Solid: built before the deferred navmesh bake (same pattern as
-			# _add_light_pylon/_add_streetlamp) so ground robots route around it.
+			# _build_light_pylon/_add_streetlamp) so ground robots route around it.
 			var body := StaticBody3D.new()
 			body.collision_layer = 1
 			body.collision_mask = 0

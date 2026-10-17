@@ -273,3 +273,7 @@ res://tests/leech_probe.tscn
 res://tests/wind_probe.tscn
 # CUSTODIAN LOOT: a dormant custodian swallows supplies in sight (never weapons), spills them all on death.
 res://tests/custodian_loot_probe.tscn
+# The real player walks up every enterable house's stairs (#290).
+res://tests/house_stairs_probe.tscn
+# No outdoor light mast stands inside a bridge, tower or wall (#290).
+res://tests/pylon_clearance_probe.tscn

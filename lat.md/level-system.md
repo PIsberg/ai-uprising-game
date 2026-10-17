@@ -440,7 +440,7 @@ An `intercept` task is a chase: a hostile robot takes the data at `pos` and runs
 The builder rescues an objective or weapon pickup authored inside solid geometry by moving it to the nearest clear spot near the navmesh, and logs `Task position ... buried in geometry`.
 
 * The test ignores the task object's own bodies (an `ObjectiveCore` is a world-layer StaticBody), and a hold or escape zone counts as clear while any point on the ring at half its radius is clear.
-* Every outdoor light builds a solid mast from the floor to the lamp, so a light authored over an objective buries it. A god-ray over a target opts out with `"mast": false`.
+* Every outdoor light builds a solid mast from the floor to the lamp, so a light authored over an objective buries it. A god-ray over a target opts out with `"mast": false`. The masts are placed last (`_place_light_pylons`), and one whose column would pass through a bridge deck, tower, platform or wall is skipped.
 * `tests/task_reach_probe` builds every campaign level and fails if any objective or weapon pickup moved, so the log line only ever fires for a real authoring mistake.
 
 ## Hazards and Objectives

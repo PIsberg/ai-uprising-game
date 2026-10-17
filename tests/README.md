@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-454 probes total: **168** wired into the headless suite (`suite`), **84**
+457 probes total: **170** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -272,6 +272,8 @@ or GPU-timing probes; `--headless` renders these black).
 | haptics_probe | Gamepad-rumble plumbing without a pad: accessibility scalar mirrors into Haptics, `pulse()` no-ops safely at zero pads/strength | headless |
 | haul_probe | Haul payload: walking into the core shoulders it; the real player.gd then ignores sprint, holds a heavy walk and refuses to dash (each against an uncarried control); hits under drop_damage keep it, crossing it knocks the core behind the player and clears the flag; re-pickup; dying drops it; carrying it into the ring completes the task; every campaign haul core and ring on walkable ground joined by a route (red-checked: removing the player.gd guards fails three checks) | suite |
 | hazard_layout_probe | The two sea levels (lava_world, water_world) stand every outdoor light mast in the sea, never on a deck (lava_world held to it since #118), keep separate catwalk networks (water_world shipped as a verbatim twin: 18 of 18 segments, same spawn/exit/pickups), and on the BUILT navmesh the exit, every pickup, weapon, lore terminal, vented wave supply and the centre of every platform is reachable from spawn in 3D; one non-overlapping segment fails it (verified by mutation); a goal past a cargo lift counts when the navmesh reaches the lift's bottom landing from the spawn and the goal from its top | suite |
+| house_stairs_probe | The real player walks up every enterable house's stairs (levels 01, suburb, suburb_boss; `HouseRamp_*`, `ramp_walker.gd`, no jump): red on the old stairwell, all 6 stopped (level 01's at 49 and 56 deg at the foot, Maple Grove's four at 1.25 m with the head against the slab) (#290) | suite |
+| pylon_clearance_probe | No outdoor light mast stands inside geometry: for 26 levels each `light_pylon`'s column overlaps no world body but itself, and open-sky levels still get masts (92). Red before `_place_light_pylons`: 34 of 126 masts in 14 levels went through SkyBridge decks, towers or walls (#290) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
@@ -396,7 +398,8 @@ or GPU-timing probes; `--headless` renders these black).
 | props_test | MeshInstance3D count across `LevelBuilder.PROP_SCENES` sanity-checks every prop scene loads | headless |
 | purge_probe | "survive" wave escalation authoring drift + GPT Foundry PURGE PROTOCOL climax against silently-firing-nothing waves | headless |
 | ramp_foot_probe | Ramps robots can climb (`LevelBuilder._build_ramp_wedge`): a ground-foot ramp has its surface across its width 1 m up the climb, 1.5 m off the centre line; a real android walking to the deck from 1.6 m off the centre line climbs it (red before the fix: the foot tapered to a point left 0.3-0.5 m side faces and both androids sat at the foot); an elevated-foot ramp still tapers so a tower corner's departing ramp never overhangs the arriving one | suite |
-| ramp_probe | Player capsule swept up every authored ramp (`test_move`) to catch lips/gaps that block walkability | headless |
+| ramp_probe | Player capsule swept up every authored ramp (`test_move`) to catch lips/gaps that block walkability. A touch the player's step-up assist clears is counted as step-assisted and is not an issue; the issue count is only what the assist cannot clear. The surface search ignores `level_ceiling` and the house slab over the low end of its stairs (`stair_ceiling`); 62 issues before #290's fixes, 54 after (43 stuck, 11 headroom) | headless |
+| ramp_walk_triage | Report (#290): the real Player (`ramp_walker.gd`) walks every tagged ramp and prints OK or STOPPED with where it ended and what is in front of it; decor is random, so compare two runs. `-- levels=01,gpt`, run with `--fixed-fps 60` | headless |
 | rampage_probe | RAMPAGE kill-streak: chained kills spike escalating damage/fire/speed buffs + heal + banner, collapsing on break | windowed |
 | range_screenshot | Gun range captured after the builder settles | windowed |
 | ravager_shot | RAVAGER beside a REAPER (same chassis, smaller): scale/tint reads as a heavier bruiser | windowed |

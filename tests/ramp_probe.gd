@@ -170,10 +170,16 @@ func _test_ramp(level_id: String, body: Node) -> Array:
 	# point) hit the ceiling's underside first and the probe mistook "the
 	# room's overhead cap" for the walkable surface, a false STUCK/LOW
 	# HEADROOM against geometry nobody ever stands on.
+	#
+	# Likewise an enterable house's slab over the low end of its stairs (group
+	# "stair_ceiling"): built PLAYER_CLEARANCE_M over the ramp on purpose, but
+	# within the 3 m search, so the probe "walked" on it and reported a 2.7 m
+	# drop on stairs the real player climbs (#290, tests/house_stairs_probe).
 	var exclude: Array[RID] = []
-	for n in get_tree().get_nodes_in_group("level_ceiling"):
-		if n is CollisionObject3D:
-			exclude.append((n as CollisionObject3D).get_rid())
+	for g in ["level_ceiling", "stair_ceiling"]:
+		for n in get_tree().get_nodes_in_group(g):
+			if n is CollisionObject3D:
+				exclude.append((n as CollisionObject3D).get_rid())
 	var surfaces: Array[Vector3] = []
 	for i in range(steps + 1):
 		var s: Vector3 = from.lerp(to, float(i) / float(steps))

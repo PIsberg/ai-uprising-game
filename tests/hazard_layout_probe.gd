@@ -65,9 +65,10 @@ func _check_not_twins() -> void:
 	print("twin check: %d/%d shared segments" % [shared, total])
 
 ## Every outdoor light builds a solid mast from the floor up to the lamp
-## (LevelBuilder._add_light_pylon). On a sea level a mast on a deck is a pole in
-## the middle of a 3.6 m gantry, or under the player spawn. Masts belong in the
-## water (or the molten pools).
+## (LevelBuilder._build_light_pylon), unless a deck stands in its column, in
+## which case it gets none (_place_light_pylons). On a sea level the lamps are
+## meant to read as channel markers, so they belong in the water (or the molten
+## pools), not over a 3.6 m gantry or the player spawn.
 func _check_masts_off_decks(id: String) -> void:
 	var def: Dictionary = LevelDefs.get_def(id)
 	for l in def.get("lights", []):

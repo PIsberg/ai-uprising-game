@@ -888,7 +888,9 @@ static func _nexus() -> Dictionary:
 			{"pos": Vector3(-20, 4.5, 4), "size": Vector3(8, 9, 8), "open": true},
 			{"pos": Vector3(-10, 5.5, 18), "size": Vector3(9, 11, 8)},
 			{"pos": Vector3(12, 4.0, 18), "size": Vector3(8, 8, 8)},
-			{"pos": Vector3(20, 6.0, -2), "size": Vector3(8, 12, 8), "open": true},
+			# 10 m, not 12: a 6 m storey put its interior ramp past the player's
+			# slope limit even over the house's full depth (#290).
+			{"pos": Vector3(20, 5.0, -2), "size": Vector3(8, 10, 8), "open": true},
 			{"pos": Vector3(8, 4.5, -19), "size": Vector3(9, 9, 8)},
 			{"pos": Vector3(-20, 5.0, -8), "size": Vector3(8, 10, 8)},
 			{"pos": Vector3(20, 4.0, 12), "size": Vector3(8, 8, 8)},
@@ -6136,9 +6138,10 @@ static func _water_world() -> Dictionary:
 		},
 		"lights": [
 			# Every outdoor light builds a SOLID mast from the floor up to the lamp
-			# (_add_light_pylon). So none of these stands on a deck: they rise out of
-			# the flood beside the gantries, like channel markers. A lamp authored on
-			# the spawn island put the player on top of a 4 m pole (tests/hazard_probe).
+			# (_build_light_pylon), and none at all over a deck (_place_light_pylons).
+			# So none of these stands over a deck: they rise out of the flood beside
+			# the gantries, like channel markers. A lamp authored on the spawn island
+			# once put the player on top of a 4 m pole (tests/hazard_probe).
 			{"pos": Vector3(2.5, 7, -6.3), "color": Color(0.3, 0.7, 1.0), "energy": 2.6, "range": 22},
 			{"pos": Vector3(-25, 4, -25), "color": Color(0.25, 0.6, 1.0), "energy": 2.0, "range": 16},
 			{"pos": Vector3(25, 4, -5), "color": Color(0.3, 0.7, 1.0), "energy": 2.0, "range": 16},
