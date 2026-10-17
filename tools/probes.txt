@@ -255,6 +255,8 @@ res://tests/orbital_strike_probe.tscn
 res://tests/teach_hint_i18n_probe.tscn
 # The story (briefing, lead line, overlord, credits recap) reaches the screen translated (#236).
 res://tests/story_i18n_probe.tscn
+# The game-over screen (taunt, recap, tip, restart button) is translated (#337).
+res://tests/death_screen_i18n_probe.tscn
 # AEGIS: shield drone wards the ally nearest the player; killing it drops the ward; never a boss.
 res://tests/aegis_probe.tscn
 # SPAWN NESTS: hatch while you are near, cap 3 alive, destroyed pays and stops; placed nests reachable.
@@ -273,3 +275,9 @@ res://tests/leech_probe.tscn
 res://tests/wind_probe.tscn
 # CUSTODIAN LOOT: a dormant custodian swallows supplies in sight (never weapons), spills them all on death.
 res://tests/custodian_loot_probe.tscn
+# The real player walks up every enterable house's stairs (#290).
+res://tests/house_stairs_probe.tscn
+# No outdoor light mast stands inside a bridge, tower or wall (#290).
+res://tests/pylon_clearance_probe.tscn
+# Dead skinned robots' limbs hang toward the ground and stay out of the floor (#259).
+res://tests/limb_flop_probe.tscn
