@@ -7,6 +7,10 @@
 # add a probe here). Each probe runs with stdout AND stderr captured, under a
 # timeout, so a probe that script-errors or hangs before printing RESULT shows
 # its cause instead of nothing (issues #74, #75, #100).
+#
+# A probe that prints RESULT PASS but also logged a SCRIPT ERROR fails too: a
+# runtime error aborts the coroutine it happens in, so the checks after it never
+# ran while _ready still reached its RESULT line (#267).
 param([string]$Godot = $env:GODOT_BIN, [int]$ProbeTimeout = 900, [string]$Manifest = "")
 if (-not $Godot) { $Godot = "godot" }
 
@@ -33,10 +37,11 @@ foreach ($p in $probes) {
   $out = ((Get-Content $log -Raw -ErrorAction SilentlyContinue) + "`n" + (Get-Content $err -Raw -ErrorAction SilentlyContinue))
   Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $err -Force -ErrorAction SilentlyContinue
-  if ($out -match "RESULT\s+PASS") {
+  if (($out -match "RESULT\s+PASS") -and ($out -notmatch "SCRIPT ERROR")) {
     Write-Host "PASS  $p"
   } else {
-    if ($timedOut) { Write-Host "FAIL  $p  (timed out after ${ProbeTimeout}s - no RESULT line)" }
+    if ($out -match "RESULT\s+PASS") { Write-Host "FAIL  $p  (printed RESULT PASS, but a SCRIPT ERROR aborted part of it)" }
+    elseif ($timedOut) { Write-Host "FAIL  $p  (timed out after ${ProbeTimeout}s - no RESULT line)" }
     else { Write-Host "FAIL  $p  (exit $($proc.ExitCode))" }
     $lines = $out -split "`r?`n"
     $lines | Where-Object { $_ -match "SCRIPT ERROR|ERROR:|Parse Error" } | Select-Object -First 10 | ForEach-Object { Write-Host "      $_" }

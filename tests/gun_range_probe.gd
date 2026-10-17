@@ -135,11 +135,23 @@ func _new_hole_angles(before: Array, origin: Vector3, fwd: Vector3) -> Array[flo
 		angles.append(rad_to_deg(fwd.angle_to((p - origin).normalized())))
 	return angles
 
+## Rounds the last _fire_series actually fired (the mag went down).
+var _fired := 0
+
 ## Fire `shots` rounds one at a time (trigger released between), `gap` seconds
 ## apart, ADS per `aiming`, re-zeroing the camera before every shot. Returns the
 ## per-shot deviation angle of every decal punched (pellets give several).
+##
+## A pull the gun refuses (its cooldown runs on process time, the gap on game
+## time) is pulled again each physics frame for up to READY_WAIT game seconds,
+## so a loaded machine delays a shot instead of dropping it: the CI flake in
+## #202 was 9 shotgun decals, one blast's worth, from a 2-blast series.
+## _fired counts the rounds that really left the gun.
+const READY_WAIT := 1.5
+
 func _fire_series(w: Weapon, shots: int, gap: float, aiming: bool) -> Array[float]:
 	var all: Array[float] = []
+	_fired = 0
 	for i in shots:
 		if all.size() > 24: # stay clear of the 36-decal recycle cap
 			await _clear_holes()
@@ -149,8 +161,17 @@ func _fire_series(w: Weapon, shots: int, gap: float, aiming: bool) -> Array[floa
 		var origin := _cam.global_position
 		var fwd := -_cam.global_transform.basis.z
 		w.mag = maxi(w.mag, 10)
-		w.try_fire(true, aiming, _cam, _player)
-		w.try_fire(false, aiming, _cam, _player)
+		var mag_before := w.mag
+		var waited := 0.0
+		while true:
+			w.try_fire(true, aiming, _cam, _player)
+			w.try_fire(false, aiming, _cam, _player)
+			if w.mag < mag_before or waited >= READY_WAIT:
+				break
+			await get_tree().physics_frame
+			waited += get_physics_process_delta_time()
+		if w.mag < mag_before:
+			_fired += 1
 		# The hit has to resolve in physics before its decal exists; one
 		# process_frame was enough on a fast machine and could silently drop
 		# shots on a slow one, thinning the sample the means are computed from.
@@ -258,7 +279,8 @@ func _test_shotgun_cone() -> void:
 	await _wait_game(0.6)
 	var angles := await _fire_series(w, 2, 0.9, false)
 	var d: WeaponData = w.data
-	_check("shotgun pellets land", angles.size() >= 10, "decals=%d" % angles.size())
+	_check("shotgun fires both blasts", _fired == 2, "fired=%d" % _fired)
+	_check("shotgun pellets land", angles.size() >= 10, "decals=%d fired=%d" % [angles.size(), _fired])
 	_check("shotgun cone bounded", _peak(angles) <= d.spread_deg + 0.3,
 		"peak=%.2f° max=%.2f°" % [_peak(angles), d.spread_deg])
 	_check("shotgun cone opens", _peak(angles) >= d.spread_deg * 0.4,

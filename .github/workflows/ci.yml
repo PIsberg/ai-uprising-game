@@ -71,6 +71,9 @@ jobs:
       - name: Check no tracked file is over its size budget (every checkout downloads it)
         run: python3 tools/check_large_files.py
 
+      - name: Check every tracked README still is referenced (capture tools write to gitignored folders)
+        run: python3 tools/check_screenshot_refs.py
+
       - name: Check the imported assets a release ships stay inside the size budget
         run: python3 tools/check_import_budget.py
 

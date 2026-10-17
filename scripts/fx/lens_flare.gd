@@ -73,8 +73,9 @@ static func _stamp(acc: PackedFloat32Array, w: int, h: int, c: Vector2, r: float
 
 ## The light to flare off in `root`'s level: {"dir": unit Vector3 toward the
 ## light, "color": Color, "power": float}, or {} when there is none to see:
-## interiors (WorldEnvironment meta open_sky false), HDRI skies (their sun is
-## painted into the photo, not at the light), no sun.
+## interiors (WorldEnvironment meta open_sky false), an HDRI sky without a
+## measured sun (meta `hdri_sun_dir`, from the def; the sun is painted into the
+## photo, not at the light), no sun.
 static func source_for(root: Node) -> Dictionary:
 	if root == null:
 		return {}
@@ -86,8 +87,20 @@ static func source_for(root: Node) -> Dictionary:
 		return {}
 	var sky := we.environment.sky
 	var mat: Material = sky.sky_material if sky else null
-	if mat == null or mat is PanoramaSkyMaterial:
+	if mat == null:
 		return {}
+	var key := _key_light(root)
+	if mat is PanoramaSkyMaterial:
+		# The sun is painted into the photograph: only the def knows where
+		# (env `hdri_sun_dir`, measured by tools/hdri_sun_dir.gd). The key
+		# light's direction need not match the photo, so it only lends colour.
+		if not we.has_meta("hdri_sun_dir"):
+			return {}
+		var hd: Vector3 = (we.get_meta("hdri_sun_dir") as Vector3).normalized()
+		if hd.y < -0.02:
+			return {}
+		return {"dir": hd, "color": key.light_color if key else Color(1.0, 0.85, 0.65),
+			"power": clampf(key.light_energy, 0.3, 1.0) if key else 1.0}
 	if mat is ShaderMaterial:
 		var sm := mat as ShaderMaterial
 		if sm.shader == null or not sm.shader.resource_path.ends_with("night_sky.gdshader"):
@@ -98,17 +111,21 @@ static func source_for(root: Node) -> Dictionary:
 		return {"dir": md.normalized(), "color": mc if mc is Color else Color(0.85, 0.9, 1.0),
 			"power": NIGHT_POWER}
 	# Procedural / physical sky: the sun disc sits where the key light points from.
+	if key == null:
+		return {}
+	var dir := key.global_transform.basis.z.normalized()
+	if dir.y < -0.02:
+		return {} # below the horizon
+	return {"dir": dir, "color": key.light_color, "power": clampf(key.light_energy, 0.3, 1.0)}
+
+## The brightest visible DirectionalLight3D under `root`, or null.
+static func _key_light(root: Node) -> DirectionalLight3D:
 	var best: DirectionalLight3D = null
 	for n in root.find_children("*", "DirectionalLight3D", true, false):
 		var l := n as DirectionalLight3D
 		if l.visible and (best == null or l.light_energy > best.light_energy):
 			best = l
-	if best == null:
-		return {}
-	var dir := best.global_transform.basis.z.normalized()
-	if dir.y < -0.02:
-		return {} # below the horizon
-	return {"dir": dir, "color": best.light_color, "power": clampf(best.light_energy, 0.3, 1.0)}
+	return best
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

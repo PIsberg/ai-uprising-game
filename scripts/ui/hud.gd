@@ -1269,7 +1269,7 @@ func _update_lead_block() -> void:
 		vbox.move_child(_lead_label, win_title.get_index() + 1)
 	var lead := "" if GameState.is_daily_op() 		else StoryArc.lead(GameState.level_id_from_path(GameState.current_level_path))
 	_lead_label.visible = lead != ""
-	_lead_label.text = "◆ LEAD: " + lead
+	_lead_label.text = tr("◆ LEAD: %s") % tr(lead)
 
 func _process(delta: float) -> void:
 	_update_combat_music(delta)

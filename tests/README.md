@@ -22,9 +22,10 @@ godot --path . res://tests/<name>.tscn
 ```
 
 Full headless suite (imports the project, then runs every probe listed in
-`tools/probes.txt` and checks each printed `RESULT PASS`; both runners read
-that one file, and `tools/check_suite_manifest.py` fails CI if the list and
-the `suite` rows below disagree):
+`tools/probes.txt` and checks each printed `RESULT PASS` and logged no
+`SCRIPT ERROR`; both runners read that one file, and
+`tools/check_suite_manifest.py` fails CI if the list and the `suite` rows
+below disagree):
 
 ```sh
 tools/run_tests.sh          # bash / CI
@@ -37,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-452 probes total: **166** wired into the headless suite (`suite`), **84**
+454 probes total: **168** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -107,6 +108,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
 | cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
+| cull_aabb_probe | Every enemy scene's effective culling box (custom_aabb, else the mesh AABB) tops out within 4x its collision top (6 m floor) and spans at most twice that, so skinned robots frustum-cull (#207: the clamp has held since ff8eda5; red with `_clamp_cull_aabbs` disabled, 10 robots at 18-298 m) | suite |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |
 | quality_restart_probe | Dropping the quality tier below the one the session started at (`GraphicsSettings.launch_quality`) recommends a restart, and Settings shows a Restart-to-apply button exactly then, following the real stepper; raising it never does (#156) | suite |
 | radar_shape_probe | HUD radar blips differ by shape, not colour alone: renders the real radar x4 with an enemy, an elite and an objective, simulates protanopia and requires every pair of lit-pixel masks to overlap at most 0.5 (IoU); was 0.77 / 0.60 / 0.79 with same-shape dots | windowed |
@@ -129,6 +131,7 @@ or GPU-timing probes; `--headless` renders these black).
 | settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
 | story_arc_probe | The red thread: every campaign level has a StoryArc beat (tagline and lead, and a trace entry after the first), acts run in campaign order with none skipped, the briefing shows act header + tagline + numbered trace card + thread bar (guardrails), and a level outside the story (range) shows none of it; the HUD's SECTOR CLEARED lead line shows gpt's lead and hides on the range; every act has 3+ overlord lines, none naming ARCHON, and with an empty dossier the HUD opens uplink on an act-III line; the credits list THE 03:14 TRACE with one numbered lead per level, the finale's last | suite |
+| story_i18n_probe | The story reaches the screen translated (#236): with the locale set to German, the briefing displays the tagline, "AKT V · DIE RELAISKETTE", the trace log and the trace card header in German; the SECTOR CLEARED lead line, an act overlord line and an ambient taunt show German in the HUD; the credits' trace title and recap are German (red on the old code: act header, trace header and lead line were built with %, nothing had a row) | suite |
 | subtitle_size_probe | Accessibility Subtitle Size (GraphicsSettings.subtitle_scale 0.8..2.0): the real cutscene subtitle (26 px), overlord taunt (22 px) and victory transmission body (22 px) double at 2.0; at 2.0 the longest overlord taunt fits the HUD and a subtitle twice the longest written today wraps inside the screen above the letterbox bar; setter clamps, value persists | suite |
 | damage_number_size_probe | Accessibility Damage Number Size (GraphicsSettings.damage_number_scale 0.6..2.0): a real player-dealt hit spawns a Label3D whose fixed-size pixel_size is 0.0028 x the slider (1.0 / 2.0 / 0.6 measured), setter clamps, value persists; restores the user's values | suite |
 | damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |
@@ -172,8 +175,8 @@ or GPU-timing probes; `--headless` renders these black).
 | quantizer_probe | QUANTIZER: wired into the level builder, codex, ALIEN and ARCHON; whole it is FP32 in its own materials at its own cadence; at each STAGE_AT step it is the next precision with every chassis surface on the quantize shader at that STAGE_GRID, the tag reads it, attack_interval x STAGE_CD and aim_spread_deg + STAGE_SPREAD; healed to full it keeps INT4; killed it dies and the tag goes | suite |
 | quantizer_shot | Four QUANTIZERs side by side at FP32, FP16, INT8 and INT4; `-- --out=<dir>` | windowed |
 | head_track_probe | Head tracking (`HeadTrackModifier` from `RobotModel`) on eight rig families (the android, brute and mech FBX mechs, gunner Body/Head, sentinel Torso/Neck/Head, rollback Torso/Chest/Neck/Head, quantizer and alien flyers): one modifier each; the head ends up facing a target 35 deg right / 20 deg up within 7 deg; a target behind stops it at MAX_YAW_DEG; dropped, it eases back within 3 deg of rest; dead, the modifier is off. Reads the bone pose inside `skeleton_updated` (outside it the pose is the clip's) | suite |
-| lens_flare_probe | Lens flare: `source_for` takes the brightest sun on a procedural sky, the moon_dir on night_sky (weaker), none for HDRI skies or interiors; facing the sun the flare reaches the source power, centred, over the whole screen, and feeds the shader; a wall, then a collision-less Skyline tower (through `flare_boxes`), fades it out and hides it; looking away or with advanced post off it is off; the player carries one under PostFX before the overlay | suite |
-| lens_flare_shot | Each level's sun or moon flaring from above the spawn through the player's own LensFlare; `-- --out=<dir> --levels=desert,gemini` | windowed |
+| lens_flare_probe | Lens flare: `source_for` takes the brightest sun on a procedural sky, the moon_dir on night_sky (weaker), on an HDRI sky the def's measured `hdri_sun_dir` and nothing without one, none for interiors; every `hdri` level def carries `hdri_sun_dir` within 2 deg of the sun re-measured in the photo (`tools/hdri_sun_dir.gd`) and its built environment flares off it (#234); facing the sun the flare reaches the source power, centred, over the whole screen, and feeds the shader; a wall, then a collision-less Skyline tower (through `flare_boxes`), fades it out and hides it; looking away or with advanced post off it is off; the player carries one under PostFX before the overlay | suite |
+| lens_flare_shot | Each level's sun or moon flaring from above the spawn through the player's own LensFlare, HDRI levels included (suburb, suburb_boss); `-- --out=<dir> --levels=desert,gemini` | windowed |
 | arm_aim_probe | Gun-arm aim (`HeadTrackModifier` arms, #232) on eight gun chassis (the HUNTER, OVERFITTER, DEEPFAKE, DIFFUSION and HIVE turret `Gun` bones, the QUANTIZER's head gun, the STILT MECH's right palm from its upper arm, both SNIPER guns): the barrel (pivot to muzzle, a twin gun's midline) points at a target 25 deg right / 30 deg up within 8 deg; `EnemyBase.muzzle` sits on the drawn, aimed barrel (within 0.15 m); dropped, the gun eases back within 3 deg of its clip pose; dead, it keeps the clip pose. Reads poses inside `skeleton_updated` | suite |
 | head_track_shot | Five rig families facing the viewer, at rest and then tracking a "player" on a ledge up and to the right; `-- --out=<dir>`, `--rigs=hunter,mech,sniper,...` for the gun robots' arm aim | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
@@ -262,7 +265,7 @@ or GPU-timing probes; `--headless` renders these black).
 | grenade_screenshot | Grenade rendered up close, frozen with its core lit | windowed |
 | guardrails_playtest | Playtest bot for Generative Guardrails: aims real camera, fires anchor tags, bridges to the override gate | windowed |
 | guardrails_probe | Generative Guardrails end-to-end: zone+task registration, hazard pillars, anchor-tag locking, bridging completes the task | windowed |
-| gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model | suite |
+| gun_range_probe | Live-fires the hitscan arsenal at the range floor; real angular deviation via bullet-hole decals verifies the accuracy model. A pull the gun refuses (cooldown not yet elapsed) is retried for up to 1.5 game s and fired rounds are counted, so a loaded runner delays a shot instead of dropping it (#202: CI saw 9 shotgun decals, one blast of two; the old probe with a 0.3 s gap reproduces it at 8) | suite |
 | gunner_probe | GUNNER suppresses a player at range; spin-up burst connects, dies cleanly | headless |
 | hallucination_probe | MODEL HALLUCINATION skirmish event: spawns EVENT_PHANTOMS phantoms and announces itself; a robot nearer a phantom targets it and its fire lands on the phantom, not the player; a robot nearer the player keeps the player; phantoms are not in the "player" group and the player's fire passes through them; when the hallucination ends they are gone and the robot turns back | suite |
 | hallucination_shot | Two hallucinated humans with an android between them that has turned on the nearer one; `-- --out=<dir>` | windowed |
@@ -307,7 +310,7 @@ or GPU-timing probes; `--headless` renders these black).
 | kill_fx_probe | Weapon-specific deaths through the real hit paths: the energy guns' WeaponData kill styles; a gauss hitscan and a plasma projectile kill DISINTEGRATE (dissolve materials, no death blast, robot gone after the dissolve, ash scorch); an arc-coil kill ELECTROCUTES (shock skin, no blast during the spasms, then the classic blast); an untagged kill after an energy hit and a boss-sized kill stay classic; drone, raptor, mender and skitter dissolve in place with no blast, an arc-killed drone hangs through the spasms then falls, a seeker keeps its blast; a shotgun kill SHREDS (airborne and thrown away from the shooter with no blast in the air, scrap spray, classic blast where it lands 3.2 m back), a wall behind cuts the flight short, a magnum-killed drone is kicked away and falls, never shocked; a rifle headshot kill DECAPITATES (head bone folded, head chunk flung, no blast during the stagger, then the classic blast), a rifle body kill stays classic, a headshot-tagged drone just falls; a Devastator rocket kill BLOWS the robot APART (3+ limbs off at once, chunks flying, torso lofted, no classic blast in the air, then one when it lands) and a rocket-tagged drone detonates mid-air | suite |
 | data_bleed_probe | Robots bleed data: the glyph sheet holds a distinct 0 and 1; a rifle hit on a robot spills one emitter at the hit, inside HIT_MIN..HIT_MAX, more for a crit or a harder hit; a wall hit spills nothing; one frame's spills cap at FRAME_BUDGET; a non-weapon kill bursts BURST_AMOUNT glyphs from mid-body; every emitter frees itself | suite |
 | data_bleed_shot | Binary spraying out of rifle hits on one android, then the death fountain off a second; `-- --out=<dir>` | windowed |
-| wreck_physics_probe | Physics wrecks (`WreckBody`): a GUNNER killed on flat floor comes to rest > 50 deg off upright, > 0.3 m along the shot, origin above y -0.6; a GUNNER (skinned) and a REAPER (rigid) killed at the edge of a 3 m catwalk go over it and rest on the floor below; wrecks and their bodies are freed within 7 s; a boss (SMASHER) gets no wreck body. Measures the first still sample (the settled wreck then sinks by design) | suite |
+| wreck_physics_probe | Physics wrecks (`WreckBody`), each measured at its `settled` signal on the physics timeline and printing its settle time and cause (asleep or the 2.2 s tumble cap; #302: the catwalk gunner settles in 1.5-2.2 s and sometimes at the cap, still moving, which the old 1 cm process-time sampler could read as never at rest): a GUNNER killed on flat floor comes to rest > 50 deg off upright, > 0.3 m along the shot, origin above y -0.6; a GUNNER (skinned) and a REAPER (rigid) killed at the edge of a 3 m catwalk go over it and rest on the floor below; wrecks and their bodies are freed within 7 s; a boss (SMASHER) gets no wreck body. Measures the first still sample (the settled wreck then sinks by design) | suite |
 | wreck_shot | Four robots shot from the left (two at a 3 m catwalk edge, two on the floor): standing, mid-fall and at rest, to see the chassis lies on the floor; `-- --out=<dir>` | windowed |
 | kill_fx_shot | Six androids killed at once by a DISINTEGRATE, an ELECTROCUTE, an untagged, a SHRED, a DECAPITATE and a BLAST hit, framed through the deaths; `-- --out=<dir>` | windowed |
 | killcam_probe | Boss kill-cam time dilation: freeze on boss kill, ease-back to 1.0, sub-boss kills don't trigger it | headless |
@@ -383,7 +386,7 @@ or GPU-timing probes; `--headless` renders these black).
 | pointblank_los_probe | An enemy whose eye sits INSIDE the player's capsule still sees the player and keeps attacking (LOS ray now reports the shape it starts in at point-blank); a skitter pinned at zero distance: 0 bites and stuck in CHASE before, 5 bites in 6 s after | suite |
 | preset_probe | `GraphicsSettings.apply_preset()`/`set_window_mode()` batch-applies the quality/render-scale/feature-toggle matrix per tier | windowed |
 | projectile_fx_probe | Heavy projectile rounds (incl. glowing head-orb FX): launch, fly, detonate, trail head built, no errors | suite |
-| promo_3d | Cinematic promo: fierce-enemy showcase, Tempest chain lightning, Vortex grenade implosion | windowed |
+| promo_3d | Cinematic promo: fierce-enemy showcase, Tempest chain lightning, Vortex grenade implosion. Every promo_* script writes to the gitignored `docs/screenshots/promo/` (`promo_out.gd`); copy a still from there to refresh the README gallery (#272) | windowed |
 | promo_boss | GOLIATH-IX's sky-drop planetfall over Maple Grove Plaza | windowed |
 | promo_codex | Enemy codex/bestiary entries | windowed |
 | promo_ingame | Real FPS gameplay against a mixed enemy roster | windowed |
@@ -468,7 +471,7 @@ or GPU-timing probes; `--headless` renders these black).
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
 | threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60. `-- nowarm` skips the warm-up to reproduce the engine deadlock (#139) for a native debugger | suite |
 | tick_clock_probe | The per-tick CPU instrument (`tests/tick_clock.gd`, used by `enemy_cost_probe` and `cpu_cost_sweep`) reads a rig's known 2 ms physics tick as ~2 ms despite a 50 ms spike once a second. `Performance.TIME_PHYSICS_PROCESS` is the worst tick of the last second, so its median read 50 ms (#89) | suite |
-| teach_hint_i18n_probe | One-time coaching hints are translated (#317): with the locale set to German, a trap TEACH_TEXT and an elite affix hint each have a German row and reach the HUD toast as it (red-checked: with the HUD passing the hint through untranslated, both toasts showed English); tools/check_strings_csv.py fails CI on any hint without a row | suite |
+| teach_hint_i18n_probe | One-time coaching hints are translated (#317): with the locale set to German, a trap TEACH_TEXT and an elite affix hint each have a German row and reach the HUD toast as it; a GRID SURGE skirmish toast reaches it in German with its seconds formatted in (#331; red on the old code, which formatted the English key before tr()) (red-checked: with the HUD passing the hint through untranslated, both toasts showed English); tools/check_strings_csv.py fails CI on any hint without a row | suite |
 | threat_probe | Ground-truth per-enemy DPS on the player (report-only, real per-enemy attack vars, not scripted defaults) | headless |
 | titan_blink_probe | PROMETHEUS-0's phase-blink beam charges (`BLINK_BEAM_TELL`) before sweeping instead of firing instantly undodgeable | suite |
 | titan_ingame_probe | Real `titan.tscn` instantiated, sky-drop cancelled, planted boss screenshotted | windowed |
@@ -524,6 +527,12 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
 - **Sample with short timer loops (0.25–0.3 s)**, not one long
   `SceneTreeTimer` await — a single long await stalls autoload `_process`
   ticking headless.
+- **A `SCRIPT ERROR` fails the probe even after `RESULT PASS`.** A runtime
+  error aborts only the coroutine it happens in, so `_ready` can still print
+  `RESULT PASS` with half the checks never run (#267: a typed `_gone(n: Node)`
+  handed a freed node skipped 8 of 12 checks). Both runners fail such a probe.
+  Untyped parameters for anything that may already be freed; `is_instance_valid`
+  first.
 - **`get_tree().change_scene_*` frees the probe scene itself.** Run watchers
   from a node parented directly under root, not under the scene being
   replaced.

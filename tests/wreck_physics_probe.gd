@@ -54,20 +54,30 @@ func _kill(e: EnemyBase, shooter: Node3D) -> void:
 func _tilt_deg(t: Transform3D) -> float:
 	return rad_to_deg(t.basis.orthonormalized().y.angle_to(Vector3.UP))
 
-## The wreck's transform once it has come to rest: the first 0.1 s sample
-## (after 0.4 s) that moved under 1 cm. The settled wreck then sinks away by
-## design, so it is measured before that. Empty if it never stops within 3 s.
+## The wreck's transform when its WreckBody settles (asleep after 1 s, or the
+## 2.2 s tumble cap) and freezes, just before the sink. Waited on the physics
+## timeline, up to 5 game seconds. Empty if it never settles.
+##
+## It used to sample the robot every 0.1 s of process time for 3 s and want two
+## samples within 1 cm. A wreck still moving at the tumble cap freezes and goes
+## straight into the sink (always moving), so it read as "never comes to rest"
+## on CI (#302) though the game had settled it like any other.
 func _rest(e: EnemyBase) -> Array:
-	var last := e.global_transform
-	for i in 30:
-		await get_tree().create_timer(0.1).timeout
-		if not is_instance_valid(e):
-			return []
-		var now := e.global_transform
-		if i >= 4 and now.origin.distance_to(last.origin) < 0.01:
-			return [now]
-		last = now
-	return []
+	var got: Array = []
+	var wb: WreckBody = null
+	var t := 0.0
+	while got.is_empty() and t < 5.0:
+		if wb == null:
+			for b in get_tree().get_nodes_in_group("wreck_bodies"):
+				if b is WreckBody and (b as WreckBody).follower == e:
+					wb = b
+					wb.settled.connect(func() -> void:
+						got.append(e.global_transform)
+						print("  (settled after %.2f game s, %s)" % [wb._t, "asleep" if wb.sleeping else "tumble cap"]),
+						CONNECT_ONE_SHOT)
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	return got
 
 func _run() -> void:
 	_box(Vector3(120, 1, 120), Vector3(0, -0.5, 0)) # floor, top at y = 0

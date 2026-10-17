@@ -567,6 +567,8 @@ func _build_environment(def: Dictionary) -> void:
 	# Live re-tiering (GraphicsSettings._apply_to_live_environment) needs to
 	# know the volumetric-fog rule for this level.
 	we.set_meta("open_sky", def.get("open_sky", false))
+	if e.has("hdri") and e.has("hdri_sun_dir"):
+		we.set_meta("hdri_sun_dir", e["hdri_sun_dir"]) # LensFlare.source_for
 	add_child(we)
 
 	var sun := DirectionalLight3D.new()

@@ -46,7 +46,7 @@ godot --headless --path . --script res://tools/remote_profile.gd -- scene=res://
 
 ## Verification philosophy
 
-**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`. Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to `tools/probes.txt` (the single list both runners read) and mark them `suite` in `tests/README.md`; `tools/check_suite_manifest.py` fails CI if the two disagree, or if the per-mode counts in the sentence above that table no longer match the rows.
+**Build it, prove it headlessly.** Every feature ships with a probe in `tests/` (a `.gd` + `.tscn` pair) that asserts behavior and prints `RESULT PASS`; the suite runners also fail a probe that logged any `SCRIPT ERROR` (a runtime error silently skips the rest of its coroutine). Logic probes run headless; screenshot/`save_png` probes (`*_shot`, `*_screenshot`, `boot_probe`, `dismember_probe`, …) need a window and are excluded from `run_tests.sh`. Add new logic probes to `tools/probes.txt` (the single list both runners read) and mark them `suite` in `tests/README.md`; `tools/check_suite_manifest.py` fails CI if the two disagree, or if the per-mode counts in the sentence above that table no longer match the rows.
 
 Probe-writing rules learned the hard way:
 - Spawn a floor (`StaticBody3D`, collision layer 1) or every CharacterBody falls forever and position/range assertions lie.

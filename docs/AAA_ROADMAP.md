@@ -113,7 +113,7 @@ is now parked and frozen for the capture).
   floor grid (owner-approved crisp look), guardrails' red floor + cyan HUD panel (intentional).
 
 ## Camera lens flare (2026-10-10)
-- Looking at the sun or moon flares the lens: core, iris spikes, anamorphic streak, ghosts, halo and baked lens dirt (`scripts/fx/lens_flare.gd`, `shaders/lens_flare.gdshader`). Occluded by geometry, robots and the collision-less skyline towers through a ray fan, so it fades rather than pops. 13 of 24 campaign levels; 1.2-1.4 ms GPU at 3840x2400 on an Arc A370M while visible (the first version computed the dirt per pixel and cost 3.4 ms). Open: HDRI-sky levels have no flare (their sun is in the photo).
+- Looking at the sun or moon flares the lens: core, iris spikes, anamorphic streak, ghosts, halo and baked lens dirt (`scripts/fx/lens_flare.gd`, `shaders/lens_flare.gdshader`). Occluded by geometry, robots and the collision-less skyline towers through a ray fan, so it fades rather than pops. 15 of 24 campaign levels; 1.2-1.4 ms GPU at 3840x2400 on an Arc A370M while visible (the first version computed the dirt per pixel and cost 3.4 ms). The two HDRI-sky levels flare off the sun painted into the photo, located once by `tools/hdri_sun_dir.gd` and carried as env `hdri_sun_dir` (#234).
 
 ## Remaining toward full AAA (larger / asset- or art-dependent)
 - **Skinned imported character meshes** (Mixamo/Synty) into the rig structure — true character fidelity; needs offline asset work.

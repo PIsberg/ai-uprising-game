@@ -7,6 +7,11 @@
 # add a probe here). Each probe runs with stdout AND stderr captured, under a
 # timeout, so a probe that script-errors or hangs before printing RESULT shows
 # its cause instead of a truncated list of "ok" lines (issues #74, #75, #100).
+#
+# A probe that prints RESULT PASS but also logged a SCRIPT ERROR fails too: a
+# runtime error aborts the coroutine it happens in, so the checks after it never
+# ran while _ready still reached its RESULT line (#267). The census that added
+# this rule found no suite probe that errors on purpose.
 set -uo pipefail
 GODOT="${GODOT_BIN:-godot}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,10 +35,12 @@ for p in "${PROBES[@]}"; do
   else
     out="$("$GODOT" --headless --path . --audio-driver Dummy "$p" 2>&1)"; rc=$?
   fi
-  if grep -q "RESULT PASS" <<<"$out"; then
+  if grep -q "RESULT PASS" <<<"$out" && ! grep -q "SCRIPT ERROR" <<<"$out"; then
     echo "PASS  $p"
   else
-    if [ "$rc" -eq 124 ]; then
+    if grep -q "RESULT PASS" <<<"$out"; then
+      echo "FAIL  $p  (printed RESULT PASS, but a SCRIPT ERROR aborted part of it)"
+    elif [ "$rc" -eq 124 ]; then
       echo "FAIL  $p  (timed out after ${PROBE_TIMEOUT}s - no RESULT line)"
     else
       echo "FAIL  $p  (exit $rc)"

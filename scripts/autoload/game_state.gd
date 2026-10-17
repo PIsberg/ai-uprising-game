@@ -993,14 +993,14 @@ func _event_supply_flare() -> void:
 	get_tree().create_timer(EVENT_SUPPLY_LIFETIME).timeout.connect(func() -> void:
 		if is_instance_valid(root):
 			root.queue_free())
-	skirmish_event.emit("SUPPLY FLARE", "A cache beacon just lit nearby — it burns out in %d seconds." % int(EVENT_SUPPLY_LIFETIME))
+	skirmish_event.emit("SUPPLY FLARE", tr("A cache beacon just lit nearby — it burns out in %d seconds.") % int(EVENT_SUPPLY_LIFETIME))
 	AudioBus.play_synth_at("broadcast_blip", at, 0.0, 1.1)
 
 ## GRID SURGE: a power window — ultimate charge builds at double rate. Pure
 ## upside, so it's the rarest kind of beat: play HARD right now.
 func _event_grid_surge() -> void:
 	_surge_t = EVENT_SURGE_TIME
-	skirmish_event.emit("GRID SURGE", "Local power spike: OVERLOAD charges at double rate for %d seconds." % int(EVENT_SURGE_TIME))
+	skirmish_event.emit("GRID SURGE", tr("Local power spike: OVERLOAD charges at double rate for %d seconds.") % int(EVENT_SURGE_TIME))
 	AudioBus.play_synth_ui("combo_up", -4.0, 1.3)
 
 ## MODEL HALLUCINATION: the overlord's vision model drifts and its robots see
@@ -1017,7 +1017,7 @@ func _event_hallucination() -> void:
 		var ph := PlayerPhantom.new()
 		scene.add_child(ph)
 		ph.global_position = at
-	skirmish_event.emit("MODEL HALLUCINATION", "Their vision model is glitching: they see three of you for %d seconds. Flank them." % int(PlayerPhantom.LIFE))
+	skirmish_event.emit("MODEL HALLUCINATION", tr("Their vision model is glitching: they see three of you for %d seconds. Flank them.") % int(PlayerPhantom.LIFE))
 	AudioBus.play_synth_ui("overlord_glitch", -4.0, 0.8)
 
 ## ORBITAL STRIKE: the overlord's satellite paints the player (OrbitalStrike):

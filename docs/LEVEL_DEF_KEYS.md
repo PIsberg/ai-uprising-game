@@ -75,6 +75,7 @@ nested inside the top-level `env` dictionary.
 |---|---|---|---|---|---|
 | `env` | Dictionary | Parent bag for sky/fog/grade/sun settings below | `_build_environment`, `_theme_color`, `_build_atmosphere`, `_build_weather`, `_build_ash`, `_build_lightning` | No | — |
 | `hdri` | String (resource path) | Photographic CC0 Poly Haven sky instead of a procedural gradient | `_build_environment` | n/a | — |
+| `hdri_sun_dir` | Vector3 (unit direction toward the sun, env key) | Where the `hdri` photo's sun is, so the lens flare flares off it; measure with `godot --headless --path . --script res://tools/hdri_sun_dir.gd -- <hdr>`. Without it an HDRI level has no flare | `_build_environment` (WorldEnvironment meta) -> `LensFlare.source_for` | no (a direction) | `lens_flare_probe` |
 | `physical_sky` | bool | Physically-based Rayleigh/Mie atmosphere sky, for naturalistic outdoor levels | `_build_environment` | n/a | — |
 | `stars` | bool | Stylized night sky: tinted gradient + procedural stars/Milky Way/moon shader; also densifies/brightens streetlamps | `_build_environment`, `_build_streetlamps` | n/a | `tests/level_shot` (visual only, windowed) |
 | `sky_top`, `sky_horizon`, `ground` | Color | Sky gradient stops (procedural sky, or the night-sky shader's zenith/horizon/ground) | `_build_environment` | No | — |

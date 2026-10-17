@@ -1,4 +1,7 @@
 extends Node
+## Promo: real FPS gameplay against a mixed roster. Saves
+## docs/screenshots/promo/ingame_suburb.png (PromoOut).
+const PromoOut := preload("res://tests/promo_out.gd")
 const TYPES := ["skitter", "android", "skitter", "raptor", "skitter"]
 func _ready() -> void:
 	GameState.unlock_all_weapons()
@@ -22,6 +25,6 @@ func _run() -> void:
 	var img := get_viewport().get_texture().get_image()
 	var th := int(round(1600.0 * img.get_height() / float(img.get_width())))
 	img.resize(1600, th, Image.INTERPOLATE_LANCZOS)
-	img.save_png("res://docs/screenshots/ingame_suburb.png")
+	PromoOut.save(img, "ingame_suburb")
 	print("SAVED ingame_suburb 1600x", th)
 	get_tree().quit()
