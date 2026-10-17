@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-439 probes total: **159** wired into the headless suite (`suite`), **84**
+441 probes total: **160** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **196** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **197** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -281,6 +281,8 @@ or GPU-timing probes; `--headless` renders these black).
 | raptor_stoop_shot | Look-check of the RAPTOR strike fork: chase view of one unit mid-stoop over a target dummy with a second holding its hover beyond | windowed |
 | hive_uplink_probe | HIVE uplink-mast model fork is wired + keeps its clips; link beacon rides the Head bone at the mast tip, is beacon-sized, lit while networked and dead while jammed | suite |
 | hive_uplink_shot | Look-check of the HIVE uplink fork: networked unit (beacon lit, shield up) beside a jammed one (beacon dead, shield down) | windowed |
+| honeypot_probe | Honeypots on a baked floor: the bait wears the real health pack's mesh, is neither a pickup nor an enemy, player fire finds it and a robot beside it does not spring it; it glitches red at least twice in 6.6 s; walking within 2.6 m springs it (12 damage, HONEYPOT toast, the hint, its 3 skitters warp in around it, the bait is gone); a shot first defuses it (+150, HONEYPOT DEFUSED, the real ammo box in its place, nothing springs after). Red-checked: with the spring and the drop removed, 7 checks fail; the visual-node check failed on the GroundRing before the fix. On MISTRAL both honeypots stand clear of geometry, out of every hazard and flood bed, and reachable from spawn | suite |
+| honeypot_shot | MISTRAL's first honeypot beside a real pickup of its kind at eye height: between tears the two must look the same (this shot found the bait missing the real pack's GroundRing), mid-tear the bait is red, squashed and knocked sideways (`--out=<dir> [--level=<id>]`) | windowed |
 | horde_cost_probe | Report-only CPU instrument for Last Stand: starts waves 8 to 23 back to back so the crowd grows to ~55-60, prints enemy count with physics-tick and process-frame p50/p90/max (`tests/tick_clock.gd`); never writes the horde record (findings in docs/PERF_NOTES.md) | headless |
 | horde_screenshot | Last Stand's first wave, telegraphed, screenshotted | windowed |
 | howitzer_barrel_probe | HOWITZER at 18 m and 48 m: at the shot the barrel (front-end and mid centroids of the Gun mesh) points within 2.5 deg of the shell's launch pitch, the far shot sits 4+ deg higher (measured -4.7 vs +6.0), the shell leaves within 0.3 m of the barrel's front, the shot slides the barrel back 0.3+ m along its axis and it runs out within 2 s; no drawn mesh outside the Gun keeps a copy of the muzzle end (the GLB's two whole-model Cell duplicates did) | suite |

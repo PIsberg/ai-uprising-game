@@ -303,6 +303,7 @@ func _ready() -> void:
 	_build_turrets(def)
 	_build_low_grav(def)
 	_build_nests(def)
+	_build_honeypots(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2628,6 +2629,17 @@ func _build_nests(def: Dictionary) -> void:
 		n.kind = String(e.get("kind", "skitter"))
 		n.position = e.get("pos", Vector3.ZERO)
 		(_nav_region if _nav_region else self).add_child(n)
+
+## Bait supplies (HoneypotCache): `pos` on the floor, `kind` (health/ammo,
+## the pickup it imitates), `squad` robot type and `count` it springs.
+func _build_honeypots(def: Dictionary) -> void:
+	for e in def.get("honeypots", []):
+		var h := HoneypotCache.new()
+		h.kind = String(e.get("kind", "health"))
+		h.squad = String(e.get("squad", "skitter"))
+		h.count = int(e.get("count", 4))
+		h.position = e.get("pos", Vector3.ZERO)
+		add_child(h)
 
 ## Low-gravity columns (LowGravField): `pos` on the floor, `radius`, `height`,
 ## `scale` (gravity multiplier). `ledge` is authoring data for the probe only.

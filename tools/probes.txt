@@ -255,3 +255,5 @@ res://tests/teach_hint_i18n_probe.tscn
 res://tests/aegis_probe.tscn
 # SPAWN NESTS: hatch while you are near, cap 3 alive, destroyed pays and stops; placed nests reachable.
 res://tests/spawn_nest_probe.tscn
+# HONEYPOTS: bait supplies glitch red, spring an ambush when walked into, defuse into the real item when shot.
+res://tests/honeypot_probe.tscn
