@@ -121,6 +121,15 @@ func _run() -> void:
 	await _press("melee")
 	await _seconds(1.2)
 
+	# Same frame as the latch: it must already be on the head (CI once sampled
+	# the frame between and read 1.31 m).
+	var l4 := _leech(_player.global_position + Vector3(10, 1.5, 0))
+	await _frames(2)
+	l4.latch(_player)
+	_check(l4.global_position.distance_to(cam.global_position) < 0.6, "it is on the head the frame it latches (%.2f m)" % l4.global_position.distance_to(cam.global_position))
+	l4.rip_off(_player)
+	await _seconds(1.2)
+
 	print("i-frames and gunfire:")
 	_pdmg.invulnerable = true
 	var l3 := _leech(_player.global_position + Vector3(0, 1.4, -0.8))

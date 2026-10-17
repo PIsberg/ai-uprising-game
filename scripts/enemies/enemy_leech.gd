@@ -131,7 +131,9 @@ func latch(p: Node3D) -> void:
 	_beacon_t = 0.0
 	add_to_group("leech_latched")
 	collision_layer = 0
-	velocity = Vector3.ZERO
+	# On the head the moment it latches, not one physics frame later (a probe
+	# sampling between the two read it 1.31 m off, on CI only).
+	_snap()
 	GameState.teach_once("leech", TEACH_TEXT)
 	if p.has_method("notify_pickup"):
 		p.notify_pickup(tr("⚠ LEECH ON YOU: MELEE OR DASH"))
@@ -140,15 +142,19 @@ func latch(p: Node3D) -> void:
 	AudioBus.play_synth_at("acid_spit", global_position, 0.0, 1.6)
 	_beacon() # the first call home is the latch itself
 
-func _ride(delta: float) -> void:
-	if not is_instance_valid(_victim):
-		_detach()
-		return
+## Onto the back of the victim's head.
+func _snap() -> void:
 	var cam := _victim.get_node_or_null("Head/Camera3D") as Node3D
 	var anchor := cam if cam else _victim
 	var base: Vector3 = anchor.global_position if cam else _victim.global_position + Vector3.UP * 1.6
 	global_position = base + anchor.global_transform.basis * BACK_OFFSET
 	velocity = Vector3.ZERO
+
+func _ride(delta: float) -> void:
+	if not is_instance_valid(_victim):
+		_detach()
+		return
+	_snap()
 	_drain_acc += DRAIN_DPS * delta
 	if _drain_acc >= 1.0:
 		var d := _victim.get_node_or_null("Damageable") as Damageable
