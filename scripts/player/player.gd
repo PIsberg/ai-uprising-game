@@ -253,6 +253,12 @@ var _melee_cd: float = 0.0
 @export var separation_radius: float = 1.2 ## Sphere probe radius, centred on the capsule's mid-torso.
 @export var separation_max_speed: float = 6.0 ## Hard cap on the push, m/s.
 var _separation_push: Vector3 = Vector3.ZERO
+## Set each physics frame by a WindZone the player stands in while it gusts;
+## applied as its own collision move after move_and_slide (so it never builds
+## up in the controller's velocity, and a wall stops it), then cleared.
+## Crouching on the floor braces against it (WIND_BRACE).
+var wind_velocity: Vector3 = Vector3.ZERO
+const WIND_BRACE := 0.15
 
 ## Sphere-probes the enemy layer around the player and builds this frame's soft
 ## push-away velocity into _separation_push (added onto velocity in
@@ -781,6 +787,10 @@ func _physics_process(delta: float) -> void:
 	_pre_step_grounded = is_on_floor()
 	move_and_slide()
 	_try_step_up()
+	if wind_velocity != Vector3.ZERO:
+		var brace := WIND_BRACE if _is_crouching and is_on_floor() else 1.0
+		move_and_collide(wind_velocity * brace * delta)
+		wind_velocity = Vector3.ZERO
 	_update_dof()
 	_check_landing()
 	_handle_footsteps(delta)

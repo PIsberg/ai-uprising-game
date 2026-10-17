@@ -245,6 +245,12 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	for e in def.get("nests", []):
 		if e.has("pos"):
 			e["pos"] = _sv(e["pos"], s)
+	# Crosswind boxes cover a walkway: footprint AND size stretch with it.
+	for e in def.get("wind", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
+		if e.has("size"):
+			e["size"] = (e["size"] as Vector2) * s
 	# Honeypots sit on the ground plane like the pickups they imitate.
 	for e in def.get("honeypots", []):
 		if e.has("pos"):
@@ -6189,6 +6195,17 @@ static func _water_world() -> Dictionary:
 		],
 		"lifts": [
 			{"pos": Vector3(21.5, 1.6, 2.2), "size": Vector2(2.6, 2.6), "top": 8.0},
+		],
+		# CROSSWINDS: the storm funnels across the three SCRAM gantries, a third
+		# of a period apart. Every 6 s the windsocks lift for 1 s, then a 1.6 s
+		# gust shoves anyone on the 7 m gantry sideways toward the water and the
+		# sharks. Crouch to brace, or lean into it. The box is the gantry plus
+		# open water either side, so a blown player keeps being blown.
+		# tests/wind_probe.
+		"wind": [
+			{"pos": Vector3(0, 1.6, -26.5), "size": Vector2(10, 7), "dir": Vector2(-1, 0), "phase": 0.0},
+			{"pos": Vector3(26.5, 1.6, 0), "size": Vector2(7, 10), "dir": Vector2(0, 1), "phase": 0.333},
+			{"pos": Vector3(-20, 1.6, 26.5), "size": Vector2(10, 7), "dir": Vector2(1, 0), "phase": 0.667},
 		],
 		# Two climbs onto the cap, from the ring's south and east sides, so the top
 		# is a loop and not a cul-de-sac. "stairs", not "ramps": stair endpoints

@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-449 probes total: **164** wired into the headless suite (`suite`), **84**
+451 probes total: **165** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **201** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **202** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -145,6 +145,8 @@ or GPU-timing probes; `--headless` renders these black).
 | rail_trail_probe | Rail trail: gauss and Longshot carry WeaponData.rail_trail, the rifle not; a gauss hitscan leaves one RailTrail from the muzzle to the wall it hit, its mesh as long as the shot; a rifle shot leaves none; a 400 m shot keeps MAX_LEN by the muzzle; MAX_LIVE at once, each freed after LIFE | suite |
 | rail_trail_shot | Three gauss trails side-on 0.5 s apart (fresh, half-life, fading), then the view down the barrel of a fresh one; `-- --out=<dir>` | windowed |
 | walker_bank_probe | Grounded robots without a walk clip (DOG, RONIN, HOWITZER, SERVER, ROLLER, WARBOT, GUNSLINGER, ENFORCER, OPTIC) stand on the floor and, fed a full-speed strafe, roll at most 0.24 rad and pitch at most 0.15 advancing (0.57 / 0.21 before, #276); DRONE, RAPTOR and QUANTIZER off the floor still bank 0.45+ | suite |
+| wind_probe | Crosswinds (WindZone) with the real player on a 2.6 m deck 1.6 m up: outside the box a gust does nothing; stepping in teaches; windsocks droop when calm (-0.95) and stand out in a gust (-0.01); standing still a gust blows you off the deck (2.8 m, lands on the floor); crouched you brace (1.09 m, still on the deck); walking into it makes headway, slowed (0.41 m in 0.8 s vs 4.4 walking). Water World: each zone sits on a SCRAM gantry, blows across it, and just past the downwind edge is water, not a deck. A first version passed the lean-in check by walking out of the box during the warning; at 4.5 m/s walking into a gust made no headway, so the default is 4.0. Red-checked: without the wind move 2 checks fail, without the brace 1 | suite |
+| wind_shot | Water World's first SCRAM gantry from its start at eye height: a fresh calm (windsock hanging, no streaks; the first version waited on the level's initial calm and captured the warning), then mid-gust (sock straight out, streaks running) (`--out=<dir> [--level=<id>]`) | windowed |
 | weapon_rampage_probe | RAMPAGE charge: at tier 0 the rifle shoots its own colour with no rim; at tier 2 shots and the muzzle flash take GameState.RAMPAGE_COLORS[1], the flash grows by RAMPAGE_FLASH_GROW per tier and every viewmodel mesh wears the rim; a broken streak puts it all back | suite |
 | weapon_rampage_shot | The same rifle twice: tier 0 and tier 2 (red rim), before firing and with a flash each; `-- --out=<dir>` | windowed |
 | reward_probe | REWARD MODEL: wired into the level builder, codex, MISTRAL and the Claude vault; a robot near it that hurts the player is rewarded (cooldown x REWARD_CD, reward tag), not again inside REWARD_GAP, capped at REWARD_MAX; none for a robot out of range, a boss-sized one or sourceless damage; its death revokes every reward | suite |
