@@ -5,6 +5,7 @@ extends Node3D
 @export var lifetime: float = 2.5
 var _age: float = 0.0
 var _flash_mult: float = 1.0 # accessibility: flash-intensity multiplier, cached in _ready
+var _light_peak: float = 3.0 # the spark light's first-frame energy (set_damage_class raises it)
 @onready var _decal: Decal = $Decal
 @onready var _light: OmniLight3D = $Light
 @onready var _sparks: CPUParticles3D = $Sparks
@@ -70,6 +71,29 @@ func set_surface(kind: String) -> void:
 			"stone": _smoke.color = Color(0.72, 0.7, 0.66)
 			_: _smoke.color = Color(0.72, 0.72, 0.72)
 	_spawn_debris(kind)
+
+## Re-tints the hit to the round that made it (WeaponData.DamageClass), after
+## set_surface: a rail slug splashes hot cyan, an arc round crackles blue-white,
+## and each of a Breacher's nine pellets throws a smaller burst than a rifle
+## round so a blast reads as a pattern, not nine rifle hits. Ballistic rounds
+## keep the surface's own colours.
+func set_damage_class(c: int) -> void:
+	match c:
+		WeaponData.DamageClass.RAIL:
+			if _sparks:
+				_sparks.color = Color(0.6, 1.0, 0.95); _sparks.amount = 40
+			if _light:
+				_light.light_color = Color(0.45, 1.0, 0.95)
+			_light_peak = 6.0
+		WeaponData.DamageClass.ARC:
+			if _sparks:
+				_sparks.color = Color(0.62, 0.82, 1.0); _sparks.amount = 34
+			if _light:
+				_light.light_color = Color(0.35, 0.65, 1.0)
+			_light_peak = 5.0
+		WeaponData.DamageClass.SHRED:
+			if _sparks:
+				_sparks.amount = maxi(3, _sparks.amount / 2)
 
 ## A short spray of chunky fragments blasted off the surface along the hit
 ## normal — metal sheds bright hot shards, concrete grey chips, dirt brown clods.
@@ -137,7 +161,7 @@ func _process(delta: float) -> void:
 	_age += delta
 	# Spark flash light snaps out fast; scaled by the accessibility flash-intensity slider.
 	if _light:
-		_light.light_energy = maxf(0.0, 3.0 * (1.0 - _age / 0.12) * _flash_mult)
+		_light.light_energy = maxf(0.0, _light_peak * (1.0 - _age / 0.12) * _flash_mult)
 	# Scorch holds, then fades over the back half of its life.
 	if _decal:
 		_decal.modulate.a = clampf((1.0 - _age / lifetime) / 0.5, 0.0, 1.0)

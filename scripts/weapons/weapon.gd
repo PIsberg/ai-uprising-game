@@ -818,7 +818,7 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 ## BulletMark utility (scripts/fx/bullet_mark.gd) so hitscan AND projectile
 ## impacts (projectile.gd) draw from ONE capped pool instead of two.
 func _spawn_bullet_hole(pos: Vector3, normal: Vector3) -> void:
-	BulletMark.spawn(get_tree().current_scene, pos, normal)
+	BulletMark.spawn(get_tree().current_scene, pos, normal, data.damage_class if data else 0)
 
 func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") -> void:
 	if data.impact_scene == null:
@@ -830,6 +830,8 @@ func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") 
 		i.orient(normal)
 	if i.has_method("set_surface"):
 		i.set_surface(surface)
+	if i.has_method("set_damage_class"):
+		i.set_damage_class(data.damage_class)
 
 ## Continuous beam: raycast + redraw the lightning every frame while firing;
 ## damage and ammo tick at data.fire_rate (1 cell per tick).
@@ -1112,16 +1114,18 @@ func _spawn_arc_overlay(root: Node3D, from: Vector3, to: Vector3, col: Color) ->
 		prev = p
 
 ## An additive ring that snaps out flat against the impact surface and fades — the
-## shockwave of an energy bolt biting in. Detached so it outlives the flash.
+## shockwave of an energy bolt biting in. Detached so it outlives the flash. A
+## thin band: the old 0.05-0.12 tube grown 6x read as a solid hexagon 0.7 m
+## across on the wall, not a ring (tests/impact_class_probe).
 func _spawn_impact_ring(at: Vector3, dir: Vector3, col: Color) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
 	var tm := TorusMesh.new()
-	tm.inner_radius = 0.05
+	tm.inner_radius = 0.1
 	tm.outer_radius = 0.12
-	tm.rings = 6
-	tm.ring_segments = 16
+	tm.rings = 32
+	tm.ring_segments = 6
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1135,12 +1139,13 @@ func _spawn_impact_ring(at: Vector3, dir: Vector3, col: Color) -> void:
 	mi.mesh = tm
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Torus lies in its local XZ plane (axis +Y); face it along the bolt so the ring
-	# sits flat on the struck surface, lifted slightly off to avoid z-fighting.
+	# sits flat on the struck surface, lifted clear of it: the tube grows to 0.08 m
+	# thick, so at 0.03 m half of it sank into the wall and only arcs showed.
 	var up := Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
-	mi.transform = Transform3D(Basis.looking_at(dir, up) * Basis(Vector3.RIGHT, PI * 0.5), at - dir * 0.03)
+	mi.transform = Transform3D(Basis.looking_at(dir, up) * Basis(Vector3.RIGHT, PI * 0.5), at - dir * 0.1)
 	scene.add_child(mi)
 	var tw := mi.create_tween().set_parallel(true)
-	tw.tween_property(mi, "scale", Vector3.ONE * 6.0, 0.22).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mi, "scale", Vector3.ONE * 4.0, 0.22).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.22)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.22)
 	tw.chain().tween_callback(mi.queue_free)

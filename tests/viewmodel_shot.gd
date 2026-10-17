@@ -20,7 +20,6 @@ func _run() -> void:
 		elif a.begins_with("--only="):
 			only = a.substr(7).split(",")
 	DirAccess.make_dir_recursive_absolute(out_dir)
-	get_window().size = Vector2i(1280, 720)
 	add_child((load(level) as PackedScene).instantiate())
 	for i in 60:
 		await get_tree().physics_frame
