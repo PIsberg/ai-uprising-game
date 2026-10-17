@@ -52,7 +52,7 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_screenshot_refs.py
   ```
-* Verify the imported assets a release ships stay inside their size budget (the pack is almost all `.godot/imported`, so this tracks build size without exporting). Needs a populated `.godot`; the budgets in the script are a ratchet, lowered when an asset pass lands. It also fails on any shipped texture over 1 MB imported lossless: 2D art goes lossy, a texture on a mesh VRAM-compressed with mipmaps (a headless import never runs the editor's detect-3D step, so extracted model textures stay lossless until set):
+* Verify the imported assets a release ships stay inside their size budget (the pack is almost all `.godot/imported`, so this tracks build size without exporting). Needs a populated `.godot`; the budgets in the script are a ratchet, lowered when an asset pass lands. It also fails on any shipped texture over 1 MB imported lossless: 2D art goes lossy, a texture on a mesh VRAM-compressed with mipmaps (a headless import never runs the editor's detect-3D step, so extracted model textures stay lossless until set). It also fails on a shipped model (`.glb`/`.gltf`/`.fbx`/`.obj`) whose `res://` path no game file names: the export packs every resource, so a model superseded by a fork or a v2 keeps shipping (14 such models, plus 3 textures only one of them used, were 17.7 MB of imports on 2026-10-17):
   ```sh
   python tools/check_import_budget.py
   ```
