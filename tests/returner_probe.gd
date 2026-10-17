@@ -101,6 +101,13 @@ func _catch_and_return() -> void:
 	_check(r != null, "a returner elite carries a GrenadeReturner")
 	if r == null:
 		return
+	# Elite._add_marker builds the marker after 4 PROCESS frames; _frames counts
+	# physics frames, several of which can run in one process frame on a loaded
+	# machine (#338), so wait for the marker itself.
+	for i in 60:
+		if e.get_node_or_null("EliteMarker"):
+			break
+		await get_tree().process_frame
 	var marker := e.get_node_or_null("EliteMarker")
 	var ring := marker.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D if marker else null
 	_check(ring != null and ring.mesh is TorusMesh and absf(ring.rotation.x) > 1.0, "its marker is an upright ring")
