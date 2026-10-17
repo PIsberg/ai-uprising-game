@@ -48,6 +48,10 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_large_files.py
   ```
+* Verify every tracked still in `docs/screenshots/` is referenced from a tracked .md or .html file (the README gallery). The `tests/promo_*` capture scripts write to the gitignored `docs/screenshots/promo/` (`tests/promo_out.gd`); copy a still from there to refresh the gallery:
+  ```sh
+  python tools/check_screenshot_refs.py
+  ```
 * Verify the imported assets a release ships stay inside their size budget (the pack is almost all `.godot/imported`, so this tracks build size without exporting). Needs a populated `.godot`; the budgets in the script are a ratchet, lowered when an asset pass lands. It also fails on any shipped texture over 1 MB imported lossless: 2D art goes lossy, a texture on a mesh VRAM-compressed with mipmaps (a headless import never runs the editor's detect-3D step, so extracted model textures stay lossless until set):
   ```sh
   python tools/check_import_budget.py

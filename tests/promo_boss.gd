@@ -1,6 +1,8 @@
 extends Node
 ## Promo: the first sky-drop boss — GOLIATH-IX (Colossus) making planetfall on its
-## retro-rockets over Maple Grove Plaza. Saves docs/screenshots/sky_boss.png
+## retro-rockets over Maple Grove Plaza. Saves docs/screenshots/promo/sky_boss.png
+## (PromoOut); copy it over the README's sky_boss.png to refresh the gallery.
+const PromoOut := preload("res://tests/promo_out.gd")
 func _ready() -> void:
 	add_child((load("res://scenes/levels/level_suburb_boss.tscn") as PackedScene).instantiate())
 	_run.call_deferred()
@@ -23,6 +25,6 @@ func _run() -> void:
 	var img := get_viewport().get_texture().get_image()
 	var th := int(round(1600.0 * img.get_height() / float(img.get_width())))
 	img.resize(1600, th, Image.INTERPOLATE_LANCZOS)
-	img.save_png("res://docs/screenshots/sky_boss.png")
+	PromoOut.save(img, "sky_boss")
 	print("SAVED sky_boss boss_y=%.1f 1600x%d" % [boss.global_position.y, th])
 	get_tree().quit()

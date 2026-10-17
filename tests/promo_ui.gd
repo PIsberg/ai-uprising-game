@@ -1,5 +1,7 @@
 extends Control
-## Promo: campaign map + armory shop. Saves docs/screenshots/{campaign_map,armory}.png
+## Promo: campaign map + armory shop. Saves
+## docs/screenshots/promo/{campaign_map,armory}.png (PromoOut); the README shows armory.png.
+const PromoOut := preload("res://tests/promo_out.gd")
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# --- campaign map ---
@@ -31,5 +33,5 @@ func _save(name: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	var th := int(round(1600.0 * img.get_height() / float(img.get_width())))
 	img.resize(1600, th, Image.INTERPOLATE_LANCZOS)
-	img.save_png("res://docs/screenshots/%s.png" % name)
+	PromoOut.save(img, name)
 	print("SAVED ", name, " 1600x", th)

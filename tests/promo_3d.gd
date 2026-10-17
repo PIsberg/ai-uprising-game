@@ -1,9 +1,10 @@
 extends Node3D
 ## Promo screenshots (3D): a fierce-enemy showcase, the Tempest chain lightning,
-## and the Vortex grenade implosion — lit cinematically and saved straight into
-## docs/screenshots/ for the README. Run windowed:
+## and the Vortex grenade implosion, lit cinematically and saved into
+## docs/screenshots/promo/ (PromoOut). Run windowed:
 ##   godot --path . res://tests/promo_3d.tscn
 
+const PromoOut := preload("res://tests/promo_out.gd")
 const SKITTER := preload("res://scenes/enemies/skitter.tscn")
 const TEMPEST := preload("res://scenes/weapons/projectile_tempest.tscn")
 const VORTEX := preload("res://scenes/weapons/grenade_vortex.tscn")
@@ -88,7 +89,7 @@ func _save(name: String) -> void:
 	var tw := 1600
 	var th := int(round(1600.0 * img.get_height() / float(img.get_width())))
 	img.resize(tw, th, Image.INTERPOLATE_LANCZOS)
-	img.save_png("res://docs/screenshots/%s.png" % name)
+	PromoOut.save(img, name)
 	print("SAVED ", name, " ", tw, "x", th)
 
 ## A fierce-enemy lineup: the looming Warmech flanked by a Ravager and a skitter pack.

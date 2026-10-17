@@ -383,7 +383,7 @@ or GPU-timing probes; `--headless` renders these black).
 | pointblank_los_probe | An enemy whose eye sits INSIDE the player's capsule still sees the player and keeps attacking (LOS ray now reports the shape it starts in at point-blank); a skitter pinned at zero distance: 0 bites and stuck in CHASE before, 5 bites in 6 s after | suite |
 | preset_probe | `GraphicsSettings.apply_preset()`/`set_window_mode()` batch-applies the quality/render-scale/feature-toggle matrix per tier | windowed |
 | projectile_fx_probe | Heavy projectile rounds (incl. glowing head-orb FX): launch, fly, detonate, trail head built, no errors | suite |
-| promo_3d | Cinematic promo: fierce-enemy showcase, Tempest chain lightning, Vortex grenade implosion | windowed |
+| promo_3d | Cinematic promo: fierce-enemy showcase, Tempest chain lightning, Vortex grenade implosion. Every promo_* script writes to the gitignored `docs/screenshots/promo/` (`promo_out.gd`); copy a still from there to refresh the README gallery (#272) | windowed |
 | promo_boss | GOLIATH-IX's sky-drop planetfall over Maple Grove Plaza | windowed |
 | promo_codex | Enemy codex/bestiary entries | windowed |
 | promo_ingame | Real FPS gameplay against a mixed enemy roster | windowed |
