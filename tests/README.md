@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-451 probes total: **165** wired into the headless suite (`suite`), **84**
+452 probes total: **166** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -122,6 +122,7 @@ or GPU-timing probes; `--headless` renders these black).
 | convoy_probe | Highway Breakout ride end to end: hauler rolls, player rides the deck, pursuit waves spawn, brute boards, friendly fire blocked, zipline out/back, and the demo charge reaches every Damageable inside its radius (kills are telemetry, not asserted — they depend on which wave is alive) | suite |
 | convoy_shot | Highway Breakout ride mid-roll: truck deck + roadside dressing | windowed |
 | crosshair_probe | Weapons with different spread identities; crosshair reads real per-weapon spread/aim data | windowed |
+| custodian_loot_probe | A real CUSTODIAN on a flat floor, the player 30 m off: it drives to a 35-point health pack 6 m away and swallows it, bulging (chassis 1.00 -> 1.07), and the swallow teaches; it never eats a weapon pickup, never heads for an ammo box behind a 40 m wall, leaves one beyond 14 m, and stays a disc throughout; destroyed (own kill drop off) it spills exactly what it ate; risen to fight it scavenges nothing. Red-checked: no spill, no line-of-sight filter, and weapons edible each fail. The first version passed its wall check by luck (a 6 m wall it could see round) and counted its random kill drop as spill | suite |
 | damage_dir_probe | Damage-direction arc renders screen-right of the crosshair for a hit from the player's right | windowed |
 | daily_op_probe | Daily Op (#172): `daily_op_for` is deterministic per date and varies over 14 days (never a boss or the first level); the arsenal follows campaign pacing; best score and streak rules incl. month/leap boundaries; the real flow from a watcher under root: start today's op (HARD, its directive and arsenal, savegame.cfg byte-identical), clear it (DAILY OP COMPLETE + score on the win screen, records.cfg updated), Continue returns to the menu with the campaign state handed back and the button showing the clear. Never writes savegame.cfg; backs records.cfg up to disk first | suite |
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
