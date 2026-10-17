@@ -37,6 +37,8 @@ var accuracy: float = 0.0
 var headshot_rate: float = 0.0
 
 const MIN_SAMPLES := 12         ## below this many shots the read is "still calibrating"
+const FRAG_HABIT_MIN := 3       ## frags thrown before a grenade habit can register
+const FRAG_HABIT_SHOTS := 12    ## ...and at least one frag per this many shots
 
 var _shots: int = 0
 var _hits: int = 0
@@ -46,6 +48,7 @@ var _range_sum: float = 0.0
 var _mob_n: int = 0
 var _mob_sum: float = 0.0
 var _weapon_shots: Dictionary = {}   ## display_name -> shots
+var _frags: int = 0                  ## frag grenades thrown this level
 var _sample_t: float = 0.0
 var _player: Node3D = null
 var _wm: Node = null
@@ -72,6 +75,7 @@ func reset_profile() -> void:
 	_range_n = 0; _range_sum = 0.0
 	_mob_n = 0; _mob_sum = 0.0
 	_weapon_shots.clear()
+	_frags = 0
 
 func _ready() -> void:
 	forget_dossier(false)
@@ -268,6 +272,15 @@ func note_hit(is_head: bool, world_pos: Vector3) -> void:
 	accuracy = float(_hits) / float(maxi(_shots, 1))
 	headshot_rate = float(_heads) / float(maxi(_hits, 1))
 
+## Called once per frag grenade the player throws (player._throw_grenade).
+func note_frag() -> void:
+	_frags += 1
+
+## True when frags are a habit this level: FRAG_HABIT_MIN thrown and at least one
+## per FRAG_HABIT_SHOTS shots. Counters with RETURNER elites.
+func frag_habit() -> bool:
+	return _frags >= FRAG_HABIT_MIN and _frags * FRAG_HABIT_SHOTS >= _shots
+
 ## Fraction of shots that went into the single most-used weapon (1.0 = one-trick).
 func weapon_focus() -> float:
 	if _shots <= 0:
@@ -298,9 +311,11 @@ func counter_affix() -> String:
 			return ""
 		return _counter_for(float(dossier["accuracy"]), float(dossier["headshot_rate"]),
 			float(dossier["range_pref"]), float(dossier["mobility"]), float(_dossier_top_weapon()[1]))
-	return _counter_for(accuracy, headshot_rate, range_pref, mobility, weapon_focus())
+	return _counter_for(accuracy, headshot_rate, range_pref, mobility, weapon_focus(), frag_habit())
 
-static func _counter_for(acc: float, heads: float, rng: float, mob: float, focus: float) -> String:
+static func _counter_for(acc: float, heads: float, rng: float, mob: float, focus: float, frags: bool = false) -> String:
+	if frags:
+		return "returner"   # grenade habit -> it catches them and throws them back
 	if heads > 0.35 or acc > 0.55:
 		return "warden"     # precise -> unflinching: you must DODGE, not suppress
 	if rng > 0.6:

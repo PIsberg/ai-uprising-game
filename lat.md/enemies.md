@@ -63,8 +63,9 @@ The elite system (`scripts/systems/elite.gd`) upgrades standard hostile units in
 * **SWIFT:** Accelerated movement speed, faster attack animations, and shortened reaction delays with a bright teal glow.
 * **WARDEN:** Immune to stagger and poise interrupts; forces tactical dodging rather than suppression fire.
 * **SPLITTER:** Splits into two active `Skitter` swarmers upon fatal damage, punishing blind cluster clearing.
+* **RETURNER:** A `GrenadeReturner` child catches a player frag (`Grenade`, not `hostile`) within `CATCH_RANGE` in its line of sight with more than `MIN_FUSE` left, holds it for `WINDUP`, then lobs a `hostile` charge (`hit_mask` world + player) that sticks where it lands. Damage or death during the wind-up fumbles: the player's own charge, with its original blast, drops at its feet. The director's counter to a frag habit (`AIDirector.frag_habit`, fed by `note_frag`). `tests/returner_probe`.
 
-Each elite carries a spinning marker above its head whose SHAPE names the affix (`MARKER_SHAPES`): a sphere for SHIELDED, a spike for VOLATILE, a double-cone diamond for SWIFT, a pillar for WARDEN and a block split in two for SPLITTER. Colour (`AFFIX_COLORS`) is only the second cue, so the marker still reads for colourblind players.
+Each elite carries a spinning marker above its head whose SHAPE names the affix (`MARKER_SHAPES`): a sphere for SHIELDED, a spike for VOLATILE, a double-cone diamond for SWIFT, a pillar for WARDEN, a block split in two for SPLITTER and an upright ring for RETURNER. Colour (`AFFIX_COLORS`) is only the second cue, so the marker still reads for colourblind players.
 
 ## Nemesis System
 <!-- lat: { "require-code-mention": true } -->

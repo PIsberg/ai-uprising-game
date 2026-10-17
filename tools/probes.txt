@@ -257,3 +257,5 @@ res://tests/aegis_probe.tscn
 res://tests/spawn_nest_probe.tscn
 # HONEYPOTS: bait supplies glitch red, spring an ambush when walked into, defuse into the real item when shot.
 res://tests/honeypot_probe.tscn
+# RETURNER elite: catches frags and throws them back, fumbles when shot mid-wind-up; the director's frag-habit counter.
+res://tests/returner_probe.tscn

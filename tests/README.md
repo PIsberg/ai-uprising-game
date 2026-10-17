@@ -37,11 +37,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-441 probes total: **160** wired into the headless suite (`suite`), **84**
+443 probes total: **161** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **197** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **198** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -397,6 +397,8 @@ or GPU-timing probes; `--headless` renders these black).
 | death_log_shot | An android and a boss-sized one killed side by side, caught with both log lines typed out; `-- --out=<dir>` | windowed |
 | reasoning_trace_probe | Leaked robot reasoning: first contact floats a typed-out `<think>` alert line over a robot in view and it clears itself; a second contact inside the global gap, a robot behind the camera and one past RANGE stay quiet; an EMP over a pack inside the gap shows exactly one line; Combat Callouts off shows none | suite |
 | reasoning_trace_shot | An android spotting the camera at 9 m with its `<think>` line typed out; `-- --out=<dir>` | windowed |
+| returner_probe | RETURNER elite on a flat floor (real android, AI frozen): a player frag 3 m away in its sight is caught and held, the first catch teaches the rule; after the 0.7 s wind-up it lobs back a world + player charge that sticks where it lands, 0.7 m from a player 12 m away (41.6 damage, at most 50), robot unhurt; stepping 5.5 m aside after the throw takes nothing; a hit during the wind-up fumbles the player's own charge at its feet (the elite drops from 125 to 18 hp, the far player unhurt, +100, FUMBLED); no catch out of range, near the end of the fuse, of a hostile charge, while EMP-stunned, or by a plain android; the director answers 3 frags in 24 shots with returner, not in 54. Red-checked: with the fumble unhooked 3 checks fail, with the return keeping the enemy mask 2 fail | suite |
+| returner_shot | A RETURNER android elite in a lit room: idle with its upright magenta ring marker, then mid-wind-up holding a caught frag as a glowing magenta charge at chest height (`--out=<dir>`) | windowed |
 | river_view | Themed rivers: the serpentine shape + the gap | windowed |
 | robot_models_check | Every RobotModel-carrying enemy scene resolves its AnimationPlayer + configured clips and has visible meshes | headless |
 | rollout_probe | Several rolled-out levels, one framed hero shot of each | windowed |

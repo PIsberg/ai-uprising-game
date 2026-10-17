@@ -1437,6 +1437,7 @@ const ELITE_HINTS := {
 	"swift": "◆ ELITE · SWIFT — fast mover. Lead your shots.",
 	"warden": "◆ ELITE · WARDEN — can't be staggered. Dodge it, don't trade.",
 	"splitter": "◆ ELITE · SPLITTER — splits into skitters on death. Watch the spawn.",
+	"returner": "◆ ELITE · RETURNER — catches your grenades and throws them back. Shoot it while it winds up.",
 }
 
 ## First-time coaching for the engagement systems — each fires once per run the
