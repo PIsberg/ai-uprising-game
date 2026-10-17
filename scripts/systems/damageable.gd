@@ -25,6 +25,10 @@ var kill_fx: int = 0
 ## (KillFx.tag/untag). Null for grenades, hazards, melee and enemy fire. The
 ## OVERFITTER reads it to learn which weapon is hurting it.
 var hit_weapon: WeaponData = null
+## DamageMatrix multiplier of the last hit that got through the shield checks
+## (1.0 for untagged damage). Tints its damage number and drives the HUD's
+## WEAK / RESISTED read.
+var matchup: float = 1.0
 
 func _ready() -> void:
 	current_health = max_health
@@ -73,8 +77,12 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 		if parent and parent.has_method("notify_shield_hit"):
 			parent.notify_shield_hit(source)
 		return
-	# Owners can intercept/scale incoming damage (e.g. a brute's frontal shield).
+	# Weapon matchup: the tagged gun's damage class against this robot's armour
+	# class (DamageMatrix). Untagged damage (grenades, melee, hazards) stays 1.0.
 	var parent := get_parent()
+	matchup = DamageMatrix.mult_for(parent, hit_weapon)
+	amount *= matchup
+	# Owners can intercept/scale incoming damage (e.g. a brute's frontal shield).
 	if parent and parent.has_method("modify_incoming_damage"):
 		amount = parent.modify_incoming_damage(amount, source, origin)
 		if amount <= 0.0:
@@ -95,10 +103,16 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 			and not owner_node.is_in_group("shootable_light") and not owner_node.is_in_group("deepfake_decoy"):
 		var pos: Vector3 = (owner_node as Node3D).global_position + Vector3.UP * 1.5
 		GameState.report_player_hit(mitigated, pos, killed, crit)
+		if hit_weapon != null and owner_node.has_method("codex_key"):
+			GameState.report_matchup(owner_node.codex_key(), hit_weapon, matchup, pos)
 		_spawn_damage_number(mitigated, pos, killed, crit)
 	if killed:
 		died.emit(source)
 
+
+## Damage-number tints for a counter hit / a resisted hit (DamageMatrix).
+const WEAK_TINT := Color(0.35, 1.0, 0.95)
+const RESIST_TINT := Color(0.58, 0.6, 0.66)
 
 ## Floating world-space damage number that drifts up and fades — anchored at the
 ## hit point in 3D so it tracks as you move. Heavier hits read bigger; headshots
@@ -127,6 +141,14 @@ func _spawn_damage_number(amount: float, pos: Vector3, killed: bool, crit: bool 
 	elif killed:
 		lbl.modulate = Color(1.0, 0.3, 0.2)
 		lbl.font_size = 56 + int(heavy * 18.0)
+	elif matchup >= DamageMatrix.WEAK_AT:
+		# The right gun: electric cyan, a size up, so a counter reads at a glance.
+		lbl.modulate = WEAK_TINT
+		lbl.font_size = 48 + int(heavy * 22.0)
+	elif matchup <= DamageMatrix.RESIST_AT:
+		# Plating soaked it: dull steel and small, the gun is the wrong tool.
+		lbl.modulate = RESIST_TINT
+		lbl.font_size = 32 + int(heavy * 14.0)
 	else:
 		lbl.modulate = Color(1.0, 0.95, 0.9).lerp(Color(1.0, 0.55, 0.3), heavy)
 		lbl.font_size = 40 + int(heavy * 22.0)

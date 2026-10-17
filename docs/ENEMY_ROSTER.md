@@ -25,6 +25,11 @@ Two base-class conventions make the flags in this table matter:
    `_kill_style()` / `_prep_kill_fx()`; SEEKER keeps its shot-down blast (that blast is a
    mechanic) and the bosses ARCHON and OVERSEER keep their deaths.
 
+**Armour class.** Every enemy type here also has an armour class (CHASSIS, HEAVY PLATE,
+LIGHTWEIGHT, NETWORKED) that scales player weapon hits by the gun's damage class. The
+source of truth is `DamageMatrix.ARMOUR` in `scripts/weapons/damage_matrix.gd`, keyed by
+`codex_key()`; a new enemy needs a row there or `tests/weapon_matchup_probe` fails.
+
 Column notes: "Overrides w/o super" lists only overrides that do **not** call
 `super._on_died(...)` / `super._state_attack(...)` / `super(...)` — an override that calls
 super is safe and not listed. A `†` on the script means its `_ready` sets stats **before**

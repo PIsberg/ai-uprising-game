@@ -111,6 +111,9 @@ func _register_jobs() -> void:
 	# double thock when the round kills.
 	_job("hit_tick", _hit_tick.bind(0.05))
 	_job("kill_thock", _kill_thock.bind(0.16))
+	# Weapon matchup reads (DamageMatrix): the right gun crackles, plating thunks.
+	_job("hit_weak", _hit_weak.bind(0.16))
+	_job("hit_resist", _hit_resist.bind(0.2))
 	# A spent casing striking the floor a beat after ejection.
 	_job("brass_tink", _brass_tink.bind(0.09))
 	# Menu sounds campaign_map already referenced but nothing registered — both
@@ -1092,6 +1095,39 @@ func _hit_tick(duration: float) -> AudioStreamWAV:
 		lp = lerpf(lp, noise, 0.6)
 		var s := lp * env + sin(TAU * 2600.0 * t) * env * 0.35
 		_write(bytes, i, tanh(s * 1.1) * 0.8)
+	return _to_stream(bytes)
+
+## Counter hit: a rising two-step electric chirp over a bright crack, so the
+## right gun for this robot sounds like it is tearing something open.
+func _hit_weak(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var f := 1900.0 if t < 0.05 else 2850.0
+		ph += TAU * f / SR
+		var env := exp(-fmod(t, 0.05) * 60.0) * exp(-t * 9.0)
+		var crack := (randf() * 2.0 - 1.0) * exp(-t * 140.0) * 0.6
+		var s := signf(sin(ph)) * 0.3 * env + sin(ph * 1.5) * 0.25 * env + crack
+		_write(bytes, i, tanh(s * 1.4) * 0.7)
+	return _to_stream(bytes)
+
+## Resisted hit: a dull low "tunk" with a short ricochet whine falling off it,
+## plating shrugging the round off. Deliberately duller than impact_metal.
+func _hit_resist(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var body := sin(TAU * 210.0 * t) * exp(-t * 34.0)
+		ph += TAU * lerpf(3400.0, 1500.0, t / duration) / SR
+		var whine := sin(ph) * exp(-t * 26.0) * 0.18
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.25)
+		var thud := lp * exp(-t * 90.0) * 0.5
+		_write(bytes, i, tanh((body + whine + thud) * 1.3) * 0.75)
 	return _to_stream(bytes)
 
 ## Kill-confirm thock: a heavier low knock through the same crosshair channel

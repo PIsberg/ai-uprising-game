@@ -133,7 +133,7 @@ def required_labels() -> dict:
 # One-time coaching hints (GameState.teach_once -> HUD toast, through tr()).
 # A hint argument is a string literal (possibly on the next line), a constant
 # in the same file, or a lookup into one of these hint dictionaries.
-HINT_DICTS = ("MECHANIC_HINTS", "ELITE_HINTS")
+HINT_DICTS = ("MECHANIC_HINTS", "ELITE_HINTS", "MATCHUP_HINTS")
 
 
 def _dict_values(src: str, name: str) -> list:

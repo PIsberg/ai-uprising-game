@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1_data")
+damage_class = 3
 display_name = "TPX-9 Tempest Coil"
 kill_fx = 2
 alt_mode = 0

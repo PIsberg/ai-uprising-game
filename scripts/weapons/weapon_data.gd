@@ -7,11 +7,16 @@ enum DamageType { HITSCAN, PROJECTILE }
 ## shot (3 ammo). VOLLEY: instant tight 3-round burst (3 ammo). SLUG: collapse
 ## all pellets into one accurate heavy slug (shotguns).
 enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
+## What the round does to plating: DamageMatrix.TABLE scales every hit by this
+## against the victim's armour class, so each gun is the right tool for some
+## robots and the wrong one for others.
+enum DamageClass { KINETIC, SHRED, THERMAL, ARC, EXPLOSIVE, RAIL }
 
 @export var display_name: String = "Weapon"
 @export var fire_mode: FireMode = FireMode.SEMI
 @export var damage_type: DamageType = DamageType.HITSCAN
 @export var alt_mode: AltMode = AltMode.NONE
+@export var damage_class: DamageClass = DamageClass.KINETIC
 
 @export_group("Damage / Fire")
 @export var damage: float = 20.0

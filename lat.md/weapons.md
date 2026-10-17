@@ -26,6 +26,15 @@ Bought in the Armory, a mod changes what a gun's hit does, not how hard it lands
 * Proc damage goes through `GameState.apply_secondary_damage`, which pays score, leech and OVERLOAD charge but is not a new hit for accuracy or the AI Director. Breakable-cover shrapnel uses it too.
 * `WeaponMods` and `GameState.mod_compatible` duck-type robots and weapons: naming `EnemyBase` or `Weapon` there closes a load cycle through the pickup scenes and `pickup.gd` fails to load.
 
+## Damage Matchups
+<!-- lat: { "require-code-mention": true } -->
+Every gun deals a damage class and every robot wears an armour class; the pair scales each player weapon hit (`scripts/weapons/damage_matrix.gd`).
+
+* `WeaponData.damage_class`: KINETIC (pistol, rifle, .50), SHRED (Breacher), THERMAL (plasma, OMEGA), ARC (Tesla, Arc Coil, Tempest), EXPLOSIVE (Devastator, Swarm), RAIL (Longshot, Gauss). `DamageMatrix.ARMOUR` maps every `EnemyBase.codex_key` to CHASSIS (neutral), PLATED, LIGHT or NETWORKED; `TABLE` holds the multipliers (0.75 to 1.6). Bosses in `BOSSES` take the swing at `BOSS_DAMP` (half).
+* Applied once in `Damageable.apply_damage`, before the owner's `modify_incoming_damage` and flat armour, from `hit_weapon` (set by `KillFx.tag`), so hitscan, beam ticks, projectile hits and splash all pass through it and untagged damage (grenades, melee, hazards, mod procs) never does. The multiplier the last hit took is kept on `Damageable.matchup`.
+* Feedback: a counter hit (>= `WEAK_AT`) draws a cyan damage number, a resisted one (<= `RESIST_AT`) a small steel one; both reach `GameState.report_matchup`, which emits `weapon_matchup`, plays `hit_weak` / `hit_resist` (one per `MATCHUP_CUE_GAP_MS`) and teaches each armour class's `MATCHUP_HINTS` line once per run.
+* The enemy codex and the HUD field manual compute "effective weapons" from the table (`DamageMatrix.codex_lines`, `counters_text`); `EnemyCodex` entries no longer author a weapons list. The weapon codex shows each gun's `describe_class`. `tests/weapon_matchup_probe`.
+
 ## Kill Styles
 <!-- lat: { "require-code-mention": true } -->
 The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`).

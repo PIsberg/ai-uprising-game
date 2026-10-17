@@ -16,7 +16,7 @@ it matters and **where** it plugs into the codebase. Tags:
 The whole game is verified *by probe* ("it builds, it spawns, the task completes") but
 never tuned *by feel*. Play the 20-level campaign and report:
 - Difficulty curve — spikes, dead spots, the new hazard arenas (are they fun or just annoying?).
-- Weapon viability — do all 15 guns have a niche, or do 3 dominate? (cross-check the Weapon Codex bars).
+- Weapon viability — do all 13 guns have a niche, or do 3 dominate? (cross-check the Weapon Codex bars). Damage-class matchups (`DamageMatrix`, 2026-10-17) give each class an armour it counters; 🎮 needs play to judge whether the 0.75-1.6 swing makes switching worth it without making the starter guns feel useless on HEAVY PLATE levels.
 - AI Director fairness — do its counters feel clever or cheap? Tune thresholds in `scripts/autoload/ai_director.gd` (`counter_affix`, `MIN_SAMPLES`, the 0.7 bias in `Elite.maybe_apply`).
 - Hazard damage / walkway widths in `scripts/levels/level_defs.gd` (`_lava_world` / `_water_world`, `_hazard_platforms`).
 

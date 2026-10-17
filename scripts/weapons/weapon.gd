@@ -660,7 +660,8 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)
 			if mod_id != "":
-				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage)
+				# x matchup: a mod works off what the hit dealt after the armour-class table.
+				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage * dmg_node.matchup)
 			# Punch through to the next enemy if this weapon pierces.
 			if pierces_left > 0 and col is CollisionObject3D:
 				pierces_left -= 1
@@ -877,7 +878,7 @@ func _update_beam(delta: float) -> void:
 			dmg_node.apply_damage(beam_dmg, _active_shooter, weak_mult > 1.0)
 			KillFx.untag(dmg_node)
 			if mod_id != "":
-				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hit.position, beam_dmg)
+				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hit.position, beam_dmg * dmg_node.matchup)
 			# Hit pop on every 4th tick — constant feedback without the FX spam.
 			if _beam_pop % 4 == 0:
 				_enemy_hit_pop(hit.position, weak_mult > 1.0, beam_dmg * 2.0)

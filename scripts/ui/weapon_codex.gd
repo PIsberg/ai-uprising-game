@@ -36,6 +36,7 @@ var _max: Dictionary = {}  # arsenal maxima for the comparison bars
 var _list: VBoxContainer
 var _name_lbl: Label
 var _class_lbl: Label
+var _matchup_lbl: Label
 var _count_lbl: Label
 var _desc_lbl: Label
 var _stats: VBoxContainer
@@ -171,6 +172,12 @@ func _build_ui() -> void:
 	_class_lbl.add_theme_font_size_override("font_size", 16)
 	_class_lbl.add_theme_color_override("font_color", ACCENT)
 	vb.add_child(_class_lbl)
+	# Damage class and the armour it beats / bounces off (DamageMatrix).
+	_matchup_lbl = Label.new()
+	_matchup_lbl.add_theme_font_size_override("font_size", 14)
+	_matchup_lbl.add_theme_color_override("font_color", Color(0.45, 1.0, 0.92))
+	_matchup_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vb.add_child(_matchup_lbl)
 
 	_count_lbl = Label.new()
 	_count_lbl.add_theme_font_size_override("font_size", 13)
@@ -543,6 +550,7 @@ func _refresh() -> void:
 		ALT_NAMES[clampi(d.alt_mode, 0, 3)]]
 	_count_lbl.text = "%d / %d  ·  weakest → strongest" % [_index + 1, _weapons.size()]
 	_desc_lbl.text = DOSSIER.get(id, "")
+	_matchup_lbl.text = DamageMatrix.describe_class(d.damage_class)
 
 	for c in _stats.get_children():
 		c.queue_free()

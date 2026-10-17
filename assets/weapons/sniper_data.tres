@@ -7,6 +7,7 @@
 
 [resource]
 script = ExtResource("1_data")
+damage_class = 5
 display_name = "MK-VII Longshot"
 kill_fx = 1
 rail_trail = true
