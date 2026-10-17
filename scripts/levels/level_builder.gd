@@ -305,6 +305,7 @@ func _ready() -> void:
 	_build_low_grav(def)
 	_build_nests(def)
 	_build_honeypots(def)
+	_build_wind(def)
 	_build_lifts(def)
 	_build_conveyors(def)
 	_build_ladle_crane(def)
@@ -2630,6 +2631,22 @@ func _build_nests(def: Dictionary) -> void:
 		n.kind = String(e.get("kind", "skitter"))
 		n.position = e.get("pos", Vector3.ZERO)
 		(_nav_region if _nav_region else self).add_child(n)
+
+## Crosswinds (WindZone): `pos` (deck top), `size` (Vector2 x by z), `dir`
+## (Vector2 on the ground plane), `speed`, `period`, `gust`, `warn`, `phase`.
+func _build_wind(def: Dictionary) -> void:
+	for e in def.get("wind", []):
+		var w := WindZone.new()
+		w.size = e.get("size", Vector2(8, 8))
+		var d: Vector2 = e.get("dir", Vector2(1, 0))
+		w.dir = Vector3(d.x, 0.0, d.y)
+		w.speed = float(e.get("speed", 4.0))
+		w.period = float(e.get("period", 6.0))
+		w.gust = float(e.get("gust", 1.6))
+		w.warn = float(e.get("warn", 1.0))
+		w.phase_offset = float(e.get("phase", 0.0))
+		w.position = e.get("pos", Vector3.ZERO)
+		add_child(w)
 
 ## Bait supplies (HoneypotCache): `pos` on the floor, `kind` (health/ammo,
 ## the pickup it imitates), `squad` robot type and `count` it springs.

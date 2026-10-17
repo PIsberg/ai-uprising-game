@@ -127,6 +127,14 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `HEALTH` worth of damage destroys it (`BONUS`, NEST DESTROYED toast); nothing it already hatched dies with it.
 * The Hollow (alien): two skitter nests in the far quadrants beyond the acid channels. `tests/spawn_nest_probe`.
 
+## Crosswinds
+<!-- lat: { "require-code-mention": true } -->
+`wind` boxes (`WindZone`, built by `_build_wind`) gust across walkways on a fixed cycle.
+
+* `_phase_at` splits each `period` into CALM, WARN (`warn` s) and GUST (`gust` s); the windsocks (`_socks`) droop, flutter and stand out, and streaks run during WARN and GUST.
+* During a GUST a player inside (`contains`) gets `Player.wind_velocity` set to `dir * speed`; the player applies it after `move_and_slide` as a `move_and_collide`, times `WIND_BRACE` when crouched on the floor, then clears it. It never enters the controller's velocity, so walking against it still makes headway.
+* Water World: one across each SCRAM gantry, a third of a period apart. `tests/wind_probe`.
+
 ## Signal Hunt
 <!-- lat: { "require-code-mention": true } -->
 The `trace_signal` task hides its target (`SignalTransmitter`, activated in `_activate_task`): the player finds it by ear and by a meter instead of a waypoint.

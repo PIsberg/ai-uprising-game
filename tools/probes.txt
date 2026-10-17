@@ -265,3 +265,5 @@ res://tests/behaviour_clone_probe.tscn
 res://tests/signal_hunt_probe.tscn
 # TELEMETRY LEECH: latches on, drains, slows, wakes robots in range; melee rips it off, dash shakes it loose.
 res://tests/leech_probe.tscn
+# CROSSWINDS: telegraphed gusts blow a still player off a deck; crouch braces, leaning in makes headway; Water World gantries.
+res://tests/wind_probe.tscn
