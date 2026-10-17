@@ -62,6 +62,10 @@ func _ready() -> void:
 		if not ResourceLoader.exists(path):
 			print("SKIP %s: no scene" % id)
 			continue
+		# Builder decor is random: seed per level so two runs sweep the same
+		# layout and a before/after count compares geometry, not dice (#339:
+		# unseeded, 5 ramps flipped between runs of identical ramp code).
+		seed(hash(id))
 		var lvl: Node = (load(path) as PackedScene).instantiate()
 		add_child(lvl)
 		var pdmg := lvl.find_child("Damageable", true, false)
