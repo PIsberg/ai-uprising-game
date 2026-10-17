@@ -4,8 +4,11 @@ extends RefCounted
 ## starts 0.3 m before the foot facing the top, walks (no sprint, no jump),
 ## re-aims at the top every physics tick, and has 2x the walk time plus 2 s to
 ## arrive within ARRIVE_XZ of the top at no less than ARRIVE_DY below it.
-## Robots are freed every tick, so a late spawn (a boss entrance, a wave)
-## cannot shove the walker. Physics time only.
+## Every robot is switched off each tick (no processing, no collision, hidden),
+## so a late spawn (a boss entrance, a wave) cannot shove the walker. Not freed:
+## clearing a level's robots completes its kill-all objective, which ends play
+## and froze the player on every ramp of horde, frostbreak and desert.
+## Physics time only.
 
 const ARRIVE_XZ := 0.8
 const ARRIVE_DY := 0.35
@@ -13,6 +16,11 @@ const ARRIVE_DY := 0.35
 ## {ok, at: Vector3 where it ended, best_y: highest point reached}.
 static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Dictionary:
 	var tree := player.get_tree()
+	# A ramp that ends in a zipline station (level 01's and titan's SkyBridge)
+	# leaves the player riding the cable, which then holds them through every
+	# later walk: let go first.
+	if player.get("_grappling") and player.has_method("_end_grapple"):
+		player.call("_end_grapple")
 	var flat := Vector3(to.x - from.x, 0, to.z - from.z)
 	var dir := flat.normalized()
 	player.velocity = Vector3.ZERO
@@ -28,7 +36,12 @@ static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Diction
 		if to_top.length() > 0.05:
 			player.rotation.y = atan2(-to_top.x, -to_top.z)
 		for e in tree.get_nodes_in_group("enemies"):
-			e.queue_free()
+			if e.process_mode != Node.PROCESS_MODE_DISABLED:
+				e.process_mode = Node.PROCESS_MODE_DISABLED
+				if e is CollisionObject3D:
+					(e as CollisionObject3D).collision_layer = 0
+				if e is Node3D:
+					(e as Node3D).visible = false
 		await tree.physics_frame
 		t += player.get_physics_process_delta_time()
 		best_y = maxf(best_y, player.global_position.y)
