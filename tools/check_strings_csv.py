@@ -19,6 +19,10 @@ Also fails on any one-time coaching hint (GameState.teach_once: a literal, a
 same-file constant, or a MECHANIC_HINTS/ELITE_HINTS value) with no row: the
 HUD toast translates them, and until #317 none of the 30-odd hints had one.
 
+Also fails on any story string with no row (#236): each StoryArc beat's
+tagline, trace and lead, the act names, the overlord's act lines, the HUD's
+taunt pools and the format strings the briefing, HUD and credits build.
+
 Also fails on any skirmish toast (GameState.skirmish_event.emit anywhere under
 scripts/: a literal title, either side of a `"A" if c else "B"` title, and a
 literal or tr() description) with no row. The HUD shows `tr(title) - tr(desc)`;
@@ -75,6 +79,26 @@ LABEL_SOURCES = [
     # the optional bonus objective: HUD tag and its toasts (labels are "label" in the defs)
     ("scripts/ui/hud.gd", r'tr\("(BONUS)"\)'),
     ("scripts/autoload/game_state.gd", r'skirmish_event\.emit\("(BONUS [A-Z]+)"'),
+    # the story (#236): every beat's briefing tagline, trace log and SECTOR
+    # CLEARED lead, the act names, the overlord's act lines and the HUD's
+    # ambient taunts, plus the formats the briefing, HUD and credits build
+    ("scripts/systems/story_arc.gd", r'"(?:tagline|trace|lead)":\s*"((?:[^"\\]|\\.)+)"'),
+    ("scripts/systems/story_arc.gd", r'translate\("([^"]+)"\)'),
+    ("scripts/ui/hud.gd", r'tr\("(◆ LEAD: %s)"\)'),
+    ("scripts/cutscene/level_comic_briefing.gd", r'tr\("(◆ THE 03:14 TRACE · LOG %d/%d)"\)'),
+    ("scripts/ui/credits.gd", r'"text": "(THE 03:14 TRACE)"'),
+]
+
+
+# (file, const) pairs: every string literal in that constant array is shown
+# through tr() (the story's act names and overlord pools, the HUD's taunts).
+CONST_ARRAYS = [
+    ("scripts/systems/story_arc.gd", "ACTS"),
+    ("scripts/systems/story_arc.gd", "OVERLORD_LINES"),
+    ("scripts/ui/hud.gd", "OVERLORD_TAUNTS"),
+    ("scripts/ui/hud.gd", "OVERLORD_BOSS"),
+    ("scripts/ui/hud.gd", "OVERLORD_LOWHP"),
+    ("scripts/ui/hud.gd", "OVERLORD_RATTLED"),
 ]
 
 
@@ -86,6 +110,15 @@ def required_labels() -> dict:
             src = f.read()
         for m in re.finditer(pattern, src):
             out.setdefault(m.group(1).replace('\\"', '"'), rel)
+    for rel, name in CONST_ARRAYS:
+        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
+            src = f.read()
+        block = re.search(r"const %s\b[^=]*= \[(.*?)\n\]" % name, src, re.S)
+        if block is None:
+            out.setdefault("<const %s not found>" % name, rel)
+            continue
+        for s in re.findall(r'"((?:[^"\\]|\\.)+)"', block.group(1)):
+            out.setdefault(s.replace('\\"', '"'), rel)
     return out
 
 

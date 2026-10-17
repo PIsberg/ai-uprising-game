@@ -236,23 +236,25 @@ static func act_name(id: String) -> String:
 	var b := beat(id)
 	return ACTS[int(b["act"])] if not b.is_empty() else ""
 
-## "ACT II · MAPLE GROVE": the act header the briefing prints over the title.
+## "ACT II · MAPLE GROVE": the act header the briefing prints over the title,
+## translated (a Label cannot auto-translate a string built with %).
 static func act_header(id: String) -> String:
 	var b := beat(id)
 	if b.is_empty():
 		return ""
 	const ROMAN := ["I", "II", "III", "IV", "V", "VI"]
-	return "ACT %s · %s" % [ROMAN[int(b["act"])], ACTS[int(b["act"])]]
+	return TranslationServer.translate("ACT %s · %s") % [ROMAN[int(b["act"])],
+		TranslationServer.translate(ACTS[int(b["act"])])]
 
 ## The leads of the whole campaign in order, numbered by level: "02  Weights
-## recovered. ...". Read top to bottom they are the story in one breath; the
-## credits open with them.
+## recovered. ...", each translated. Read top to bottom they are the story in
+## one breath; the credits open with them.
 static func trace_recap(campaign: Array) -> Array[String]:
 	var out: Array[String] = []
 	for i in campaign.size():
 		var l := lead(String(campaign[i]).get_file().trim_prefix("level_").trim_suffix(".tscn"))
 		if l != "":
-			out.append("%02d  %s" % [i + 1, l])
+			out.append("%02d  %s" % [i + 1, TranslationServer.translate(l)])
 	return out
 
 ## The act of every campaign level, in campaign order (-1 = not in the story).

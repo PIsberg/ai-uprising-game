@@ -551,7 +551,7 @@ func _build_trace_panel(trace: String, total: int) -> void:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(vbox)
 	var head := Label.new()
-	head.text = "◆ THE 03:14 TRACE · LOG %d/%d" % [_chapter + 1, total]
+	head.text = tr("◆ THE 03:14 TRACE · LOG %d/%d") % [_chapter + 1, total]
 	head.add_theme_font_size_override("font_size", 15)
 	head.add_theme_color_override("font_color", Color(1.0, 0.5, 0.42))
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE

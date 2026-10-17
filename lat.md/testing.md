@@ -36,7 +36,7 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_suite_manifest.py
   ```
-* Verify every localization row parses into one column per language (an unquoted comma in `assets/i18n/strings.csv` silently re-keys or shifts a row), and that every task, wave and firewall label in the level defs, every builder default label, and every literal skirmish toast title and description emitted anywhere under `scripts/` has a row:
+* Verify every localization row parses into one column per language (an unquoted comma in `assets/i18n/strings.csv` silently re-keys or shifts a row), and that every task, wave and firewall label in the level defs, every builder default label, every literal skirmish toast title and description emitted anywhere under `scripts/`, and every story string (StoryArc taglines, trace logs, leads, act names, overlord lines, the HUD's overlord pools and the formats built around them) has a row:
   ```sh
   python tools/check_strings_csv.py
   ```
