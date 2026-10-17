@@ -10,18 +10,23 @@ extends Object
 ##              DODGE its attacks instead of suppressing it. Violet-iron tint.
 ##   SPLITTER — forks into two skitters on death, so you can't just nuke a
 ##              cluster without watching the spawn. Acid-green tint.
+##   RETURNER — catches your frag grenades and throws them back
+##              (GrenadeReturner); shoot it during the wind-up and it fumbles
+##              the charge at its own feet. Magenta tint. The director's
+##              counter to a frag habit.
 ## Call `maybe_apply` on a freshly instantiated enemy BEFORE add_child: export
 ## tweaks land before _ready wiring, visuals/death-hooks attach on ready.
 
 const SKITTER := preload("res://scenes/enemies/skitter.tscn")
 
-const KINDS := ["shielded", "volatile", "swift", "warden", "splitter"]
+const KINDS := ["shielded", "volatile", "swift", "warden", "splitter", "returner"]
 const TINTS := {
 	"shielded": Color(0.55, 0.75, 1.45),
 	"volatile": Color(1.5, 0.65, 0.35),
 	"swift": Color(0.5, 1.4, 1.05),
 	"warden": Color(0.85, 0.6, 1.35),
 	"splitter": Color(0.55, 1.35, 0.45),
+	"returner": Color(1.45, 0.5, 1.15),
 }
 const LIGHTS := {
 	"shielded": Color(0.4, 0.65, 1.0),
@@ -29,6 +34,7 @@ const LIGHTS := {
 	"swift": Color(0.3, 1.0, 0.8),
 	"warden": Color(0.7, 0.4, 1.0),
 	"splitter": Color(0.4, 1.0, 0.3),
+	"returner": Color(1.0, 0.3, 0.8),
 }
 ## Persistent on-body marker colours (a floating spinning gem, separate from the
 ## LIGHTS glow above and the TINTS material recolor). Kept distinct from both so
@@ -44,9 +50,11 @@ const AFFIX_COLORS := {
 	"swift": Color(0.55, 1.0, 0.35),     # stim green
 	"warden": Color(0.7, 0.4, 1.0),
 	"splitter": Color(1.0, 0.9, 0.25),
+	"returner": Color(1.0, 0.25, 0.75),  # catcher's magenta
 }
 ## One silhouette per affix: a shield bubble, a warning spike, a double-cone
-## diamond, a guard pillar, and a block broken in two (stacked with a gap). The
+## diamond, a guard pillar, a block broken in two (stacked with a gap), and an
+## upright catcher's ring. The
 ## marker spins about Y, so all but the spike keep their outline at every angle.
 const MARKER_SHAPES := {
 	"shielded": "sphere",
@@ -54,6 +62,7 @@ const MARKER_SHAPES := {
 	"swift": "diamond",
 	"warden": "pillar",
 	"splitter": "split",
+	"returner": "ring",
 }
 
 ## Per-difficulty elite share (EASY, NORMAL, HARD).
@@ -149,6 +158,8 @@ static func apply(enemy: Node3D, kind: String) -> void:
 			eb._speed_mult *= 0.92 # relentless, not fast
 		"splitter":
 			eb._health_mult *= 1.2 # the death-fork is the twist (see _finalize)
+		"returner":
+			eb._health_mult *= 1.15 # the catch is the twist (see _finalize)
 	# Recolor the imported model: tint is read by RobotModel._ready, so setting
 	# the export now (pre-add) is enough.
 	var model := eb.get_node_or_null("Model")
@@ -164,6 +175,10 @@ static func _finalize(eb: EnemyBase, kind: String) -> void:
 		eb.hp.died.connect(func(_src: Node): _detonate(eb))
 	if kind == "splitter" and eb.hp:
 		eb.hp.died.connect(func(_src: Node): _split(eb))
+	if kind == "returner":
+		var r := GrenadeReturner.new()
+		r.name = "GrenadeReturner"
+		eb.add_child(r)
 	# Identity glow so an elite reads at a distance.
 	var light := OmniLight3D.new()
 	light.light_color = LIGHTS.get(kind, Color.WHITE)
@@ -257,6 +272,12 @@ static func _marker_meshes(shape: String) -> Array[MeshInstance3D]:
 			cm.bottom_radius = 0.07
 			cm.height = 0.3
 			mi.mesh = cm
+		"ring":
+			var tm := TorusMesh.new()
+			tm.inner_radius = 0.09
+			tm.outer_radius = 0.15
+			mi.mesh = tm
+			mi.rotation.x = PI * 0.5 # upright, so it reads from eye level
 		"split":
 			for up in [1.0, -1.0]:
 				var half := MeshInstance3D.new()

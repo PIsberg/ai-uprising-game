@@ -1196,6 +1196,8 @@ func _throw_grenade() -> void:
 	var throw_vel := dir * 17.0 + Vector3.UP * 3.5 + Vector3(velocity.x, 0, velocity.z) * 0.5
 	if g.has_method("throw_grenade"):
 		g.throw_grenade(throw_vel, self)
+	if g is Grenade:
+		AIDirector.note_frag() # a frag habit earns RETURNER elites
 	AudioBus.play_synth_at("grenade_throw", global_position, -3.0, randf_range(0.95, 1.1))
 	_sync_grenades()
 

@@ -14,6 +14,10 @@ const EXPLOSION_SCENE := preload("res://scenes/fx/grenade_explosion.tscn")
 @export var damage: float = 28.0
 @export var splash_radius: float = 4.8
 @export var splash_damage: float = 82.0
+## What the blast hurts: world + enemy for the player's own charge. A RETURNER
+## elite's throw-back (GrenadeReturner) is world + player and `hostile`.
+var hit_mask: int = 0b0000101
+var hostile: bool = false
 
 var _shooter: Node
 var _t: float = 0.0
@@ -59,14 +63,14 @@ func _explode() -> void:
 		return
 	_dead = true
 	var pos := global_position
-	# Splash via overlap query (world + enemy); falloff by distance.
+	# Splash via overlap query (hit_mask); falloff by distance.
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
 	sphere.radius = splash_radius
 	q.shape = sphere
 	q.transform = Transform3D(Basis(), pos)
-	q.collision_mask = 0b0000101 # world + enemy
+	q.collision_mask = hit_mask
 	var hits := space.intersect_shape(q, 24)
 	var done := {}
 	for h in hits:
