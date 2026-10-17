@@ -5,9 +5,10 @@ extends Node
 ## slope limit and collision, tests/ramp_walker.gd), so a ramp ramp_probe flags
 ## can be told apart from one a player is really stopped on.
 ## Every ramp body the builder tags ("ramp_surface", ramp_from/ramp_to meta) is
-## walked once per run. The global RNG is seeded per level, so with --fixed-fps
-## a pass repeats; physics time only, so a slow machine does not change results.
-## The walker is in god mode: a dead walker used to read as a stopped ramp.
+## walked; one that stops is walked TRIES times and reported REPEATABLE only if
+## it stops every time (seeded passes still differ run to run). Physics time
+## only, so a slow machine does not change results. The walker is in god mode
+## from the first frame: a dead walker used to read as a stopped ramp.
 ##   godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/ramp_walk_triage.tscn -- levels=01,gpt
 ## Prints one WALK line per ramp (OK, or STOPPED with where it ended, how high
 ## it got and what stands in front of it) and a per-level and total summary.
@@ -23,8 +24,11 @@ const IDS := [
 	"water_world", "desert", "convoy",
 ]
 
+const TRIES := 3 ## walks of a ramp that stopped once; REPEATABLE = stopped on all
+
 var _total := 0
 var _stopped := 0
+var _repeatable := 0
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -40,49 +44,69 @@ func _run() -> void:
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			continue
-		# Builder decor and robot AI draw from the global RNG: seed it per level
-		# so a pass repeats (with --fixed-fps) and a stop can be re-checked.
+		# Builder decor draws from the global RNG: seed it per level so every
+		# pass walks the same layout. Walk outcomes still vary (see TRIES).
 		seed(hash(id))
 		var lvl: Node = (load(path) as PackedScene).instantiate()
 		add_child(lvl)
+		# God mode, not just hp.invulnerable: the spawn grace and dash i-frames
+		# reset invulnerable to _god when they end, and the player then died
+		# mid-pass (7 of level 01's 11 stops were a dead walker). Set from the
+		# first frame the player exists: horde and frostbreak robots killed it
+		# during the build wait, and every walk on them read as stopped.
+		var player: CharacterBody3D = null
 		for i in 150: # build + navmesh bake, on the physics clock
+			if player == null:
+				player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+				if player:
+					player.set("_god", true)
+					var hp = player.get("hp")
+					if hp:
+						hp.invulnerable = true
 			await get_tree().physics_frame
-		var player := get_tree().get_first_node_in_group("player") as CharacterBody3D
 		if player == null:
 			print("WALK %s: no player" % id)
 			lvl.queue_free()
 			await get_tree().process_frame
 			continue
-		# God mode, not just hp.invulnerable: the spawn grace and dash i-frames
-		# reset invulnerable to _god when they end, and the player then died
-		# mid-pass (7 of level 01's 11 stops were a dead walker).
-		player.set("_god", true)
-		var hp = player.get("hp")
-		if hp:
-			hp.invulnerable = true
 		var n := 0
 		var bad := 0
+		var real := 0
 		for body in get_tree().get_nodes_in_group("ramp_surface"):
 			if not (body.has_meta("ramp_from") and body.has_meta("ramp_to")):
 				continue
 			n += 1
 			var from: Vector3 = body.get_meta("ramp_from")
 			var to: Vector3 = body.get_meta("ramp_to")
+			# Seeding does not make a pass repeat (physics and robot AI still
+			# diverge between runs: level 01 stopped on 3 ramps in one seeded
+			# pass and 5 in the next), so a stopped ramp is walked again and only
+			# a stop on every try counts as REPEATABLE, the ones worth fixing.
 			var r: Dictionary = await Walker.walk(player, from, to)
 			if r["ok"]:
 				print("WALK %s OK %s [%s -> %s]" % [id, body.name, from, to])
 				continue
+			var stops := 1
+			for k in TRIES - 1:
+				var again: Dictionary = await Walker.walk(player, from, to)
+				if not again["ok"]:
+					stops += 1
+					r = again
 			bad += 1
+			if stops == TRIES:
+				real += 1
 			var p: Vector3 = r["at"]
-			print("WALK %s STOPPED %s [%s -> %s] at %s (got to y %.2f of %.2f, %.1f m short; ahead: %s; state: %s)" % [
-				id, body.name, from, to, p, float(r["best_y"]), to.y, Vector2(p.x - to.x, p.z - to.z).length(), _ahead(player, to), r["state"]])
+			print("WALK %s STOPPED %d/%d%s %s [%s -> %s] at %s (got to y %.2f of %.2f, %.1f m short; ahead: %s; state: %s)" % [
+				id, stops, TRIES, " REPEATABLE" if stops == TRIES else "", body.name, from, to, p, float(r["best_y"]), to.y,
+				Vector2(p.x - to.x, p.z - to.z).length(), _ahead(player, to), r["state"]])
 		_total += n
 		_stopped += bad
-		print("WALKS %s: %d ramp(s), %d stopped" % [id, n, bad])
+		_repeatable += real
+		print("WALKS %s: %d ramp(s), %d stopped, %d repeatable" % [id, n, bad, real])
 		lvl.queue_free()
 		await get_tree().process_frame
 		await get_tree().process_frame
-	print("RAMP_WALK %d ramp(s), %d stopped" % [_total, _stopped])
+	print("RAMP_WALK %d ramp(s), %d stopped, %d repeatable" % [_total, _stopped, _repeatable])
 	get_tree().quit()
 
 ## What stands in front of the player at ankle, knee and chest height toward
