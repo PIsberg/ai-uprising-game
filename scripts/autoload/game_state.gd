@@ -1471,6 +1471,7 @@ const MECHANIC_HINTS := {
 	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
 	"patch_key": "◇ ADVERSARIAL PATCH ready — press [T] and robot vision reads you as furniture for 15 s. Two per level.",
 	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",
+	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

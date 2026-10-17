@@ -287,3 +287,5 @@ res://tests/tower_spacing_probe.tscn
 res://tests/neural_uplink_probe.tscn
 # ADVERSARIAL PATCH: robot optics misclassify a patched player by range and time; shots break it; melee tags a robot.
 res://tests/adversarial_patch_probe.tscn
+# REWARD REWRITE consoles: shots / huddle / kill-count rewrites, one use, authored on sublevel + water world.
+res://tests/reward_rewrite_probe.tscn

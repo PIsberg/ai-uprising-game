@@ -241,6 +241,10 @@ func _physics_process(delta: float) -> void:
 	if hijacked:
 		_hijack_process(delta)
 		return
+	# A REWARD REWRITE (RewardRewriter) optimises its new line instead of fighting.
+	if reward_hack != "":
+		_reward_process(delta)
+		return
 	# A data courier (InterceptCourier) runs its route instead of fighting.
 	if courier_goal != null:
 		_courier_process(delta)
@@ -657,6 +661,64 @@ func clear_mislabel() -> void:
 
 func _on_mislabel_died(_source: Node) -> void:
 	clear_mislabel()
+
+# ---------- reward rewrite (RewardRewriter) ----------
+## The literal objective a REWARD REWRITE console uploaded, "" for its own.
+## "shots": stand and empty the gun into the sky. "huddle": walk to
+## reward_goal (the console keeps it on the squad's centroid). The console
+## owns the clock and calls reward_hack_clear. ("kills" uses mislabel.)
+var reward_hack: String = ""
+var reward_goal: Variant = null
+var reward_shots: int = 0 ## Rounds fired into the sky under "shots".
+var _reward_shot_cd: float = 0.0
+const REWARD_SHOT_GAP := 0.16
+
+func reward_hack_set(kind: String) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or hijacked:
+		return false
+	reward_hack = kind
+	reward_goal = null
+	_telegraphing = false
+	return true
+
+func reward_hack_clear() -> void:
+	reward_hack = ""
+	reward_goal = null
+
+func _reward_process(delta: float) -> void:
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	if reward_hack == "shots":
+		_decelerate()
+		rotation.y += delta * 1.2 # sweeping the sky, as if that scored
+		_reward_shot_cd -= delta
+		if _reward_shot_cd <= 0.0:
+			_reward_shot_cd = REWARD_SHOT_GAP
+			_reward_sky_shot()
+	elif reward_hack == "huddle" and reward_goal != null \
+			and Vector2(global_position.x - reward_goal.x, global_position.z - reward_goal.z).length() > 1.0:
+		_move_toward(reward_goal, delta)
+	else:
+		_decelerate()
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## One harmless round into the sky: a tracer and a flash, every third one heard.
+func _reward_sky_shot() -> void:
+	reward_shots += 1
+	recoil = 1.0
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.4
+	var to := from + Vector3(randf_range(-6.0, 6.0), 30.0, randf_range(-6.0, 6.0))
+	var t: Node = HIJACK_TRACER.instantiate()
+	var fx_parent: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	fx_parent.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to)
+	if muzzle:
+		muzzle.add_child(MUZZLE_FLASH.instantiate())
+	if reward_shots % 3 == 0:
+		AudioBus.play_synth_at("drone_shot", from, -6.0, randf_range(0.9, 1.15))
 
 ## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
 func _cleanup_hijack() -> void:
