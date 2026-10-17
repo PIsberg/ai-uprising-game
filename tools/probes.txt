@@ -135,6 +135,8 @@ res://tests/data_bleed_probe.tscn
 res://tests/deepfake_probe.tscn
 res://tests/overfitter_probe.tscn
 res://tests/body_top_probe.tscn
+# Every robot's culling box is the size of the robot, not its 18-300 m bind-pose box (#207).
+res://tests/cull_aabb_probe.tscn
 res://tests/attention_probe.tscn
 res://tests/injector_probe.tscn
 res://tests/captcha_probe.tscn

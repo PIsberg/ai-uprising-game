@@ -37,7 +37,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-452 probes total: **166** wired into the headless suite (`suite`), **84**
+453 probes total: **167** wired into the headless suite (`suite`), **84**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -107,6 +107,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
 | cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
+| cull_aabb_probe | Every enemy scene's effective culling box (custom_aabb, else the mesh AABB) tops out within 4x its collision top (6 m floor) and spans at most twice that, so skinned robots frustum-cull (#207: the clamp has held since ff8eda5; red with `_clamp_cull_aabbs` disabled, 10 robots at 18-298 m) | suite |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |
 | quality_restart_probe | Dropping the quality tier below the one the session started at (`GraphicsSettings.launch_quality`) recommends a restart, and Settings shows a Restart-to-apply button exactly then, following the real stepper; raising it never does (#156) | suite |
 | radar_shape_probe | HUD radar blips differ by shape, not colour alone: renders the real radar x4 with an enemy, an elite and an objective, simulates protanopia and requires every pair of lit-pixel masks to overlap at most 0.5 (IoU); was 0.77 / 0.60 / 0.79 with same-shape dots | windowed |
