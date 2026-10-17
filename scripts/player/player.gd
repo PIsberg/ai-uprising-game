@@ -1717,8 +1717,9 @@ func _current_speed() -> float:
 	var mult: float = minf(MAX_MOVE_MULT,
 		GameState.move_speed_mult() * GameState.rampage_speed_mult() \
 		* GameState.adrenaline_speed_mult() * GameState.directive_move_mult())
-	# A latched TELEMETRY LEECH drags at you until you get it off.
-	if get_tree().get_first_node_in_group("leech_latched") != null:
+	# A latched TELEMETRY LEECH drags at you until you get it off. (Guarded:
+	# probes read the speed off a player that is not in the tree.)
+	if is_inside_tree() and get_tree().get_first_node_in_group("leech_latched") != null:
 		mult *= EnemyLeech.SLOW
 	if _is_crouching:
 		return crouch_speed * mult
