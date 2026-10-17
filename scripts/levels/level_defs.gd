@@ -245,6 +245,10 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 	for e in def.get("nests", []):
 		if e.has("pos"):
 			e["pos"] = _sv(e["pos"], s)
+	# Honeypots sit on the ground plane like the pickups they imitate.
+	for e in def.get("honeypots", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Turret posts stand on the ground plane.
 	for e in def.get("turrets", []):
 		if e.has("pos"):
@@ -3926,6 +3930,15 @@ static func _mistral() -> Dictionary:
 			{"type": "ammo", "pos": Vector3(26, 0, -26)},
 			{"type": "health", "pos": Vector3(24, 0, 12)},
 			{"type": "overclock", "pos": Vector3(0, 3.6, -28)},
+		],
+		# HONEYPOTS: two of the vault's supplies are bait. The west-annex med
+		# pack is a lonely detour off the ring route and springs a skitter
+		# swarm (the lesson); the ammo crate on the lab's north side springs
+		# two androids: by then the red glitch should give it away.
+		# tests/honeypot_probe.
+		"honeypots": [
+			{"kind": "health", "pos": Vector3(-29, 0, 20), "squad": "skitter", "count": 5},
+			{"kind": "ammo", "pos": Vector3(-6, 0, -18), "squad": "android", "count": 2},
 		],
 	}
 

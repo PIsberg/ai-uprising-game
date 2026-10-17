@@ -127,6 +127,14 @@ The `fire_vents` def key builds floor fire vents: a round grate inside a yellow-
 * `HEALTH` worth of damage destroys it (`BONUS`, NEST DESTROYED toast); nothing it already hatched dies with it.
 * The Hollow (alien): two skitter nests in the far quadrants beyond the acid channels. `tests/spawn_nest_probe`.
 
+## Honeypots
+<!-- lat: { "require-code-mention": true } -->
+`honeypots` places bait supplies (`HoneypotCache`, built by `_build_honeypots`) that look like a health pack or ammo box.
+
+* The disguise is every visual child of the real pickup scene (`Mesh`, `GroundRing`, `Light`), moved under its own pivot; the `Area3D` is discarded, so it can never be collected. The tell is a red tear every `GLITCH_MIN`..`GLITCH_MAX` seconds.
+* The player within `SPRING_RANGE` springs it: `SPRING_DAMAGE` and `count` `squad` robots through `EnemySpawner`s on a `RING_RADIUS` ring. Any damage before that defuses it (`DEFUSE_BONUS`) and drops the real pickup.
+* MISTRAL: a health bait on the west-annex detour (skitters) and an ammo bait on the lab's north side (androids). `tests/honeypot_probe`.
+
 ## Low-Gravity Fields
 <!-- lat: { "require-code-mention": true } -->
 `low_grav` columns lower gravity for whatever stands in them (`LowGravField`, built by `_build_low_grav`).
