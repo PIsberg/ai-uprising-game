@@ -241,6 +241,10 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 		for k in ["pos", "ledge"]:
 			if e.has(k):
 				e[k] = _sv(e[k], s)
+	# Spawn nests stand on the ground plane.
+	for e in def.get("nests", []):
+		if e.has("pos"):
+			e["pos"] = _sv(e["pos"], s)
 	# Turret posts stand on the ground plane.
 	for e in def.get("turrets", []):
 		if e.has("pos"):
@@ -2649,6 +2653,14 @@ static func _alien() -> Dictionary:
 		],
 		# Bounce pods: two pads on the crater floor throw you up onto the two
 		# tower roofs, the high west one and the low east one.
+		# Brood pods: two SPAWN NESTS in the far quadrants beyond the acid
+		# channels keep hatching skitters while you are within 26 m (one every
+		# 5 s, three alive at most). Destroy the pod or leave its range.
+		# tests/spawn_nest_probe.
+		"nests": [
+			{"pos": Vector3(-24, 0, -24), "kind": "skitter"},
+			{"pos": Vector3(24, 0, 30), "kind": "skitter"},
+		],
 		# A GRAVITY RIFT at the foot of the SW vantage deck: inside the violet
 		# column gravity drops to 0.3, so a plain jump (3.9 m) carries you onto
 		# the deck (3.2 m) without the long way round, and anything that leaves
