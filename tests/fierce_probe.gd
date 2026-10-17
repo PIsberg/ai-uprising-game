@@ -11,7 +11,7 @@ var _specs := [
 	 "scale": 5.0, "tint": Color(1, 0.42, 0.4), "menace": Color(1, 0.15, 0.1), "x": -5.0},
 	{"glb": "res://assets/models/robots/quaternius_gunner_bladed.glb",
 	 "scale": 2.7, "tint": Color(1, 0.72, 0.4), "menace": Color(1, 0.4, 0.1), "x": 0.0},
-	{"glb": "res://assets/models/robots/quaternius_flyergun_bladed.glb",
+	{"glb": "res://assets/models/robots/quaternius_flyergun_strike.glb",
 	 "scale": 2.0, "tint": Color(1, 1, 1), "menace": Color(1, 0.2, 0.14), "x": 5.0},
 ]
 

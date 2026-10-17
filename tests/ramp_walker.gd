@@ -49,5 +49,25 @@ static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Diction
 		if Vector2(p.x - to.x, p.z - to.z).length() < ARRIVE_XZ and p.y > to.y - ARRIVE_DY:
 			ok = true
 			break
+	var why := _state(player)
 	Input.action_release("move_forward")
-	return {"ok": ok, "at": player.global_position, "best_y": best_y}
+	return {"ok": ok, "at": player.global_position, "best_y": best_y, "state": why}
+
+## What could be holding the player when a walk ends: anything here other than
+## an on-floor walk is the harness or a game system, not the ramp.
+static func _state(player: CharacterBody3D) -> String:
+	var out: Array[String] = []
+	if player.get_tree().paused:
+		out.append("tree paused")
+	if not player.can_process():
+		out.append("player not processing")
+	for k in ["_dead", "_sliding", "_wall_running", "_grappling"]:
+		if player.get(k):
+			out.append(k)
+	for k in ["_dash_time", "_launch_t"]:
+		if float(player.get(k) if player.get(k) != null else 0.0) > 0.0:
+			out.append(k)
+	if not Input.is_action_pressed("move_forward"):
+		out.append("move_forward not pressed")
+	out.append("v %.2f floor %s gs %s ts %.2f" % [player.velocity.length(), player.is_on_floor(), str(GameState.current_state), Engine.time_scale])
+	return ", ".join(out)
