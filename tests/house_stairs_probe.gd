@@ -44,6 +44,15 @@ func _run() -> void:
 			var slope := rad_to_deg(atan2(to.y - from.y, Vector2(to.x - from.x, to.z - from.z).length()))
 			_check("%s: the player walks up the house stairs at %s" % [id, Vector3(from.x, 0, from.z)], r["ok"],
 				"%.0f deg; got to y %.2f of %.2f, ended at %s" % [slope, r["best_y"], to.y, r["at"]])
+		# The walker must have switched every robot off, or they shove, block and
+		# knock back the walk (it once looked them up in a group nothing joins).
+		var live := 0
+		var robots := get_tree().get_nodes_in_group("enemy")
+		for e in robots:
+			if e.process_mode != Node.PROCESS_MODE_DISABLED or (e is CollisionObject3D and (e as CollisionObject3D).collision_layer != 0):
+				live += 1
+		_check("%s: every robot is switched off during the walks" % id, robots.size() > 0 and live == 0,
+			"%d of %d still live" % [live, robots.size()])
 		lvl.queue_free()
 		await get_tree().process_frame
 		await get_tree().process_frame

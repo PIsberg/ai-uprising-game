@@ -35,7 +35,7 @@ static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Diction
 		var to_top := Vector3(to.x - player.global_position.x, 0, to.z - player.global_position.z)
 		if to_top.length() > 0.05:
 			player.rotation.y = atan2(-to_top.x, -to_top.z)
-		for e in tree.get_nodes_in_group("enemies"):
+		for e in tree.get_nodes_in_group("enemy"): # the group EnemyBase scenes join ("enemies" matched nothing)
 			if e.process_mode != Node.PROCESS_MODE_DISABLED:
 				e.process_mode = Node.PROCESS_MODE_DISABLED
 				if e is CollisionObject3D:

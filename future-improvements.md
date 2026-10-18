@@ -66,6 +66,11 @@ daily run, a local leaderboard off the existing grade/records system (`GameState
 disables robots for a few seconds (`EnemyBase.emp_disable`, `grenade_emp.{gd,tscn}`).
 ✅ **HIJACK charge shipped** (4th grenade type) — converts the nearest robot to your
 side until burnout (`EnemyBase.hijack`, `grenade_hijack.{gd,tscn}`, `tests/hijack_probe`).
+✅ **NEURAL UPLINK shipped** — interact on a hijacked robot rides it for 20 s while the body
+waits exposed (`NeuralUplink`, `EnemyBase.pilot_fire`, `tests/neural_uplink_probe`). 🎮 Needs
+playtest: the 20 s ride, the 20-damage body break, and whether 34 DPS per chassis is enough.
+🎨 Optional: per-chassis signature attacks (the BEHEMOTH's real smash, the HOWITZER's shells)
+instead of the generic shot/slam.
 ✅ **AI patch-notes escalation shipped** — the director's per-level read ships as an
 "INTERCEPTED — ROBOT OS PATCH NOTES" terminal card on the next briefing
 (`AIDirector.patch_notes`, `GameState._build_patch_notes`, `tests/patchnotes_probe`).
