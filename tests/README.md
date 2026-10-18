@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-481 probes total: **188** wired into the headless suite (`suite`), **85**
+483 probes total: **189** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **208** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **209** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -109,6 +109,8 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
 | cpu_cost_sweep | Report-only: builds each campaign level, wakes every enemy onto the player, prints median/p90 process ms per frame and median/p90/max physics ms per tick (`tests/tick_clock.gd`), plus the same with navigation off and enemies frozen, and flags levels over 2x the median (findings in docs/PERF_NOTES.md) | headless |
+| colossus_clip_probe | GOLIATH-IX acts out each attack on its George rig: walking, every seismic footfall ring lands under a planted foot (8 in 4 s; 1.8-4.0 m off before, at the body centre on a timer) and the reactor rides the Body bone (gap varies 0.01 m; 1.89 m before, as the bone bobs through the walk); the slam plays Jump, leaping +4.3 m in the windup and down (-0.4 m) as the slam lands; artillery plays Shoot (fell straight back to Idle before); the beam holds Shoot through its sweep | suite |
+| colossus_clip_shot | Look-check of GOLIATH-IX's clips: idle, the slam's crouch, leap and landing, the artillery Shoot; `-- --out=<dir>` | windowed |
 | cull_aabb_probe | Every enemy scene's effective culling box (custom_aabb, else the mesh AABB) tops out within 4x its collision top (6 m floor) and spans at most twice that, so skinned robots frustum-cull (#207: the clamp has held since ff8eda5; red with `_clamp_cull_aabbs` disabled, 10 robots at 18-298 m) | suite |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |
 | quality_restart_probe | Dropping the quality tier below the one the session started at (`GraphicsSettings.launch_quality`) recommends a restart, and Settings shows a Restart-to-apply button exactly then, following the real stepper; raising it never does (#156) | suite |
