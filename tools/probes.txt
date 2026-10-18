@@ -301,3 +301,4 @@ res://tests/archon_finetune_probe.tscn
 # Changelog clip scene: aims at the parked target, burst lands, reloads, live input locked, enemy=none lane mode.
 res://tests/changelog_clip_probe.tscn
 res://tests/smasher_gait_probe.tscn
+res://tests/terminator_rig_probe.tscn

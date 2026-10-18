@@ -1,15 +1,16 @@
 class_name EnemyTerminator
 extends EnemyBase
-## Boss android built around an imported glTF model (CC0, Quaternius "Animated
-## Robot" — see CREDITS.md). Heavily armored and fast, fires alternating
-## dual-muzzle red beams. The model is rigged, so its idle/walk clips drive the
-## limbs while the script layers a heavy whole-body stomp bob + lean + recoil on
-## the wrapper and a pulsing red eye light. The model is auto-fit at runtime:
-## scaled to `target_height` and stood on the floor regardless of its authored
-## scale/pivot.
-
-const ANIM_IDLE := "RobotArmature|Robot_Idle"
-const ANIM_WALK := "RobotArmature|Robot_Walking"
+## Boss mech built around an imported glTF model (combat_robot.glb, a bipedal
+## walker whose arms are rotary cannons). Heavily armored and fast, it hoses you
+## with alternating bursts from the two cannons and charges a tracking green
+## Optic Lance from its eye. The model is auto-fit at runtime: scaled to
+## `target_height` and stood on the floor regardless of its authored
+## scale/pivot. It has no rig: the GLB is cut offline into Body, gun arms,
+## barrel clusters, thighs and shins (tools/blender/split_regions.py,
+## cfg_combat_robot_limbs.json), and `_tick_rig` walks the legs the way it
+## travels, pitches the cannons onto the target, spins the barrels through a
+## burst and keeps the muzzles on the barrel tips. The script layers a heavy
+## whole-body stomp bob + lean + recoil on the wrapper and a pulsing red eye light.
 
 @export var hitscan_damage: float = 9.0
 @export var burst_count: int = 6
@@ -54,7 +55,26 @@ var _fire_left_next: bool = false
 var _walk_phase: float = 0.0
 var _model_base_y: float = 0.0
 var _entrance: float = 0.0          ## eye-blaze / power-up intensity, decays after the rise
-var _anim: AnimationPlayer = null
+# Rig (see _tick_rig).
+const STRIDE := 2.6         ## Ground covered per full gait cycle (m).
+const HIP_SWING := 0.42     ## Hip swing at full stride (rad).
+const KNEE_FLEX := 0.6      ## Knee fold through the swing (rad).
+const AIM_MAX := 0.6        ## Cannon pitch limit, up and down (rad).
+const AIM_RATE := 2.5       ## Cannon pitch tracking (rad/s).
+const SPIN_MAX := 30.0      ## Barrel spin while a burst is live (rad/s).
+const SPIN_UP := 90.0       ## rad/s^2
+const SPIN_DOWN := 14.0     ## rad/s^2
+const KICK := 0.1           ## Cannon pitch kick per shot (rad).
+const KICK_RECOVER := 1.2   ## rad/s
+var _legs: Array = []  ## {"thigh", "shin", "hip", "knee", "side"}
+var _guns: Array = []  ## {"arm", "barrel", "mesh", "muzzle", "shoulder", "axis", "tip", "side", "kick"}
+var _rig_tried := false
+var _stride_phase := 0.0
+var _stride_amp := 0.0
+var _stride_dir := Vector2(0.0, 1.0) ## travel direction (x right, y forward)
+var _aim_pitch := 0.0
+var _spin := 0.0
+var _spin_angle := 0.0
 # Eruption entrance state.
 var _rising: bool = false
 var _rise_t: float = 0.0
@@ -96,15 +116,6 @@ func _ready() -> void:
 	if _model:
 		_model.visible = false
 	_fit_model.call_deferred()
-	# Drive the rig's looping locomotion clips (idle <-> walk in _process).
-	if _model:
-		_anim = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if _anim:
-		for clip in [ANIM_IDLE, ANIM_WALK]:
-			if _anim.has_animation(clip):
-				_anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
-		if _anim.has_animation(ANIM_IDLE):
-			_anim.play(ANIM_IDLE)
 	# Codex/briefing: stand idle on the dais — skip the eruption entrance (which
 	# spawns a warning ring into the scene that would litter/stick in the viewer).
 	# _fit_model (queued above) still runs to size + reveal the model.
@@ -287,42 +298,119 @@ func _process(delta: float) -> void:
 	if not _rising and _entrance > 0.0:
 		_entrance = maxf(0.0, _entrance - delta * 0.6)
 	var speed := Vector2(velocity.x, velocity.z).length()
-	var rate := 4.5 + speed * 1.8
-	_walk_phase += delta * rate
-	var amp := clampf(speed / move_speed, 0.0, 1.0)
-	# Blend the rig's locomotion: walk while moving (clip speed tracks ground
-	# speed), idle when planted.
-	if _anim:
-		if amp > 0.12 and _anim.has_animation(ANIM_WALK):
-			if _anim.current_animation != ANIM_WALK:
-				_anim.play(ANIM_WALK, 0.2)
-			_anim.speed_scale = lerpf(0.9, 1.7, amp)
-		elif _anim.has_animation(ANIM_IDLE):
-			if _anim.current_animation != ANIM_IDLE:
-				_anim.play(ANIM_IDLE, 0.3)
-			_anim.speed_scale = 1.0
-	# A subtler whole-body sway layered on the rig: lean into movement, recoil
-	# rocks it back. The rig now does the leg stomp, so the wrapper bob is light.
+	_walk_phase += delta * (4.5 + speed * 1.8)
+	var amp := clampf(speed / maxf(move_speed, 0.1), 0.0, 1.0)
+	var prev_stride := _stride_phase
+	_stride_phase = fposmod(_stride_phase + delta * speed / STRIDE * TAU, TAU)
+	# The whole chassis rides the stride: it drops onto each planted foot, shifts
+	# its weight over it, counter-twists, and hunches forward the faster it
+	# closes; recoil rocks it back. The legs themselves are _tick_rig's.
 	if _model:
-		# The combat_robot GLB is rigless (no AnimationPlayer), so this wrapper
-		# motion IS the whole gait: a heavy two-beat bob (the chassis drops
-		# onto each foot), a lateral weight shift, a torso counter-twist, and
-		# an aggressive forward hunch that leans harder the faster it closes.
-		_model.position.y = _model_base_y - absf(sin(_walk_phase)) * amp * 0.07
+		_model.position.y = _model_base_y - absf(sin(_stride_phase)) * amp * 0.05
 		_model.rotation.x = amp * 0.10 - recoil * 0.12          # forward stomp hunch
-		_model.rotation.z = sin(_walk_phase) * amp * 0.06       # lateral weight shift
-		_model.rotation.y = deg_to_rad(model_yaw_deg) + sin(_walk_phase) * amp * 0.045  # torso counter-twist
+		_model.rotation.z = sin(_stride_phase) * amp * 0.05     # lateral weight shift
+		_model.rotation.y = deg_to_rad(model_yaw_deg) + sin(_stride_phase) * amp * 0.04  # torso counter-twist
+	_tick_rig(delta)
 	if _eye_glow:
 		var flare := _entrance * 6.0 # eyes blaze brighter while powering up
 		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare + _beam_charge * 10.0
 		# The optic shifts from its combat red to a hot green as the lance charges.
 		_eye_glow.light_color = Color(1, 0.1, 0.1).lerp(BEAM_COLOR, _beam_charge)
-	# Footstep booms on each footfall.
-	if speed > 0.1 and is_on_floor():
-		var fs := sin(_walk_phase)
-		var last := sin(_walk_phase - delta * rate)
-		if (fs > 0.0) != (last > 0.0):
-			AudioBus.play_synth_at("mech_step", global_position, -2.0, randf_range(1.15, 1.3))
+	# A footfall boom as each foot plants (the stride's extremes).
+	if amp > 0.15 and is_on_floor() and (cos(_stride_phase) > 0.0) != (cos(prev_stride) > 0.0):
+		AudioBus.play_synth_at("mech_step", global_position, -2.0, randf_range(1.15, 1.3))
+
+# ---------- rig: legs, gun arms, rotary barrels ----------
+
+## Find the cut parts once _fit_model has scaled and revealed the model. Joints
+## come from each part's body-frame bounds: the hip on top of the thigh, the
+## knee on top of the shin, the shoulder at the gun arm's inboard edge, the
+## barrel axis through the barrel cluster's centre.
+func _setup_rig() -> void:
+	if _model == null or not _model.visible:
+		return
+	_rig_tried = true
+	var inv := global_transform.affine_inverse()
+	var box := func(n: String) -> AABB:
+		var mi := _model.find_child(n, true, false) as MeshInstance3D
+		return inv * (mi.global_transform * mi.mesh.get_aabb()) if mi else AABB()
+	for suffix in ["P", "N"]:
+		var thigh := _model.find_child("Thigh" + suffix, true, false) as MeshInstance3D
+		var shin := _model.find_child("Shin" + suffix, true, false) as MeshInstance3D
+		var gun := _model.find_child("Gun" + suffix, true, false) as MeshInstance3D
+		var barrel := _model.find_child("Barrel" + suffix, true, false) as MeshInstance3D
+		if thigh == null or shin == null or gun == null or barrel == null:
+			_legs.clear()
+			_guns.clear()
+			return
+		var tb: AABB = box.call("Thigh" + suffix)
+		var sb: AABB = box.call("Shin" + suffix)
+		var side := signf(tb.get_center().x)
+		_legs.append({"thigh": PartRig.entry(self, thigh), "shin": PartRig.entry(self, shin), "side": side,
+			"hip": Vector3(tb.get_center().x, tb.end.y - 0.05, tb.get_center().z),
+			"knee": Vector3(sb.get_center().x, sb.end.y - 0.05, sb.get_center().z)})
+		var gb: AABB = box.call("Gun" + suffix)
+		var bb: AABB = box.call("Barrel" + suffix)
+		var inboard := gb.get_center().x - side * gb.size.x * 0.5
+		# The tip, in the barrel mesh's own frame, so the muzzle follows the
+		# barrel as drawn (chassis sway included).
+		var tip := Vector3(bb.get_center().x, bb.get_center().y, bb.position.z)
+		_guns.append({"arm": PartRig.entry(self, gun), "barrel": PartRig.entry(self, barrel), "mesh": barrel,
+			"side": side, "kick": 0.0, "muzzle": _muzzle_l if side < 0.0 else _muzzle_r,
+			"shoulder": Vector3(inboard, gb.get_center().y + gb.size.y * 0.2, gb.get_center().z + gb.size.z * 0.25),
+			"axis": bb.get_center(),
+			"tip": barrel.global_transform.affine_inverse() * global_transform * tip})
+
+## Each frame: the legs step the way it is travelling (a strafe sidesteps),
+## knees lifting each foot through its swing; the gun arms pitch onto the target
+## and kick on each shot; the barrels spin up through a burst and wind down.
+func _tick_rig(delta: float) -> void:
+	if not _rig_tried:
+		_setup_rig()
+	if _legs.is_empty():
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	_stride_amp = move_toward(_stride_amp, clampf(speed / 3.0, 0.0, 1.0), delta * 4.0)
+	# Travel direction in the body frame: forward runs pitch the hips, strafes
+	# roll them, so each foot reaches the way it is going.
+	var local := global_transform.basis.inverse() * Vector3(velocity.x, 0.0, velocity.z)
+	if speed > 0.1:
+		_stride_dir = _stride_dir.lerp(Vector2(local.x, -local.z) / speed, minf(1.0, delta * 8.0))
+	for leg in _legs:
+		var side: float = leg["side"]
+		var ph := _stride_phase + (0.0 if side > 0.0 else PI)
+		var swing := sin(ph) * HIP_SWING * _stride_amp
+		var hip_r := Basis(Vector3.RIGHT, swing * _stride_dir.y) * Basis(Vector3.BACK, swing * _stride_dir.x)
+		var hip: Vector3 = leg["hip"]
+		var thigh_lay := Transform3D(hip_r, hip - hip_r * hip)
+		# The knee folds while the foot travels forward through the air.
+		var flex := maxf(cos(ph), 0.0) * KNEE_FLEX * _stride_amp
+		var knee: Vector3 = leg["knee"]
+		PartRig.pose(leg["thigh"], thigh_lay)
+		PartRig.pose(leg["shin"], thigh_lay * PartRig.turn(knee, Vector3.RIGHT, -flex))
+	# Gun arms: pitch to the target's elevation from the shoulders.
+	var want := 0.0
+	if target != null and is_instance_valid(target) and state in [State.ALERT, State.CHASE, State.ATTACK]:
+		var shoulder := global_transform * (_guns[0]["shoulder"] as Vector3)
+		var to := target.global_position + Vector3.UP * 0.7 - shoulder
+		want = clampf(atan2(to.y, Vector2(to.x, to.z).length()), -AIM_MAX, AIM_MAX)
+	_aim_pitch = move_toward(_aim_pitch, want, AIM_RATE * delta)
+	# Barrels: spin up while a burst is live, wind down after.
+	if _burst_remaining > 0:
+		_spin = move_toward(_spin, SPIN_MAX, SPIN_UP * delta)
+	else:
+		_spin = move_toward(_spin, 0.0, SPIN_DOWN * delta)
+	_spin_angle = fposmod(_spin_angle + _spin * delta, TAU)
+	for g in _guns:
+		g["kick"] = move_toward(float(g["kick"]), 0.0, KICK_RECOVER * delta)
+		var sh: Vector3 = g["shoulder"]
+		var arm_lay := PartRig.turn(sh, Vector3.RIGHT, _aim_pitch + float(g["kick"]))
+		PartRig.pose(g["arm"], arm_lay)
+		var spin := _spin_angle * float(g["side"]) # the pair counter-rotates
+		PartRig.pose(g["barrel"], arm_lay * PartRig.turn(g["axis"], Vector3.BACK, spin))
+		var muzzle: Node3D = g["muzzle"]
+		if muzzle:
+			muzzle.global_position = (g["mesh"] as MeshInstance3D).global_transform * (g["tip"] as Vector3)
 
 func _physics_process(delta: float) -> void:
 	if _rising:
@@ -463,6 +551,9 @@ func _fire_one_shot() -> void:
 	recoil = 1.0
 	var active := _muzzle_l if _fire_left_next else _muzzle_r
 	_fire_left_next = not _fire_left_next
+	for g in _guns:
+		if g["muzzle"] == active:
+			g["kick"] = KICK
 	if muzzle_flash_scene:
 		active.add_child(muzzle_flash_scene.instantiate())
 	AudioBus.play_synth_at("drone_shot", active.global_position, -2.0, randf_range(0.85, 0.95))
