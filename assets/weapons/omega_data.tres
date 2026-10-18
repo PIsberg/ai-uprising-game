@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1_data")
+damage_class = 2
 display_name = "OMEGA-X Annihilator"
 kill_fx = 1
 alt_mode = 1

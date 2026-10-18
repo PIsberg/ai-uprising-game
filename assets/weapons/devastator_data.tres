@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1_data")
+damage_class = 4
 display_name = "GRK-X Devastator"
 alt_mode = 1
 fire_mode = 0

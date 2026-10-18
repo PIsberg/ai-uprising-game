@@ -7,6 +7,7 @@
 
 [resource]
 script = ExtResource("1_data")
+damage_class = 0
 display_name = "AR-7 Pulse Rifle"
 alt_mode = 2
 fire_mode = 1

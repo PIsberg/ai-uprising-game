@@ -280,7 +280,7 @@ func _refresh() -> void:
 	_desc_lbl.text = e.get("desc", "")
 	_fill_bullets(_strengths_lbl, e.get("strengths", []), "#ff8a66")
 	_fill_bullets(_weaknesses_lbl, e.get("weaknesses", []), "#7fe69a")
-	_fill_bullets(_weapons_lbl, e.get("weapons", []), "#80ccff")
+	_fill_bullets(_weapons_lbl, DamageMatrix.codex_lines(t), "#80ccff")
 	_spawn_model(e)
 
 ## Swap in the selected hostile as a live, idle-animating model on the turntable.

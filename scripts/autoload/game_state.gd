@@ -1485,6 +1485,39 @@ func teach_once(key: String, text: String) -> void:
 func teach_elite(kind: String) -> void:
 	teach_once("elite_" + kind, ELITE_HINTS.get(kind, ""))
 
+# ---------- weapon matchups (DamageMatrix) ----------
+## A player gun hit a robot whose armour class it counters (mult >= WEAK_AT) or
+## that resists it (mult <= RESIST_AT). Neutral hits never emit.
+signal weapon_matchup(enemy_key: String, weapon_name: String, mult: float, world_pos: Vector3)
+## The first counter / resisted hit on each armour class per run explains it.
+## Keys: "<armour>_weak" / "<armour>_resist" (DamageMatrix.Armour, lowercased).
+const MATCHUP_HINTS := {
+	"plated_weak": "▲ HEAVY PLATE breached — explosives, rail slugs and plasma cut through armour.",
+	"plated_resist": "▼ HEAVY PLATE — bullets and pellets glance off. Switch to EXPLOSIVE, RAIL or THERMAL.",
+	"light_weak": "▲ LIGHTWEIGHT frame — pellets, bullets and arcs tear it apart.",
+	"light_resist": "▼ LIGHTWEIGHT — too light to catch a blast or stop a rail. Shotguns, bullets and arcs shred it.",
+	"networked_weak": "▲ NETWORKED — arc current fries its electronics. Rail slugs crack it too.",
+	"networked_resist": "▼ NETWORKED — its heat sinks soak plasma and pellets. Switch to ARC or RAIL.",
+}
+const _MATCHUP_HINT_ARMOUR := ["", "plated", "light", "networked"]
+## Gap between two matchup cues, so an SMG mag-dump is a rhythm, not a buzz.
+const MATCHUP_CUE_GAP_MS := 140
+var _matchup_cue_ms: int = -100000
+
+func report_matchup(enemy_key: String, weapon: WeaponData, mult: float, world_pos: Vector3) -> void:
+	var weak := mult >= DamageMatrix.WEAK_AT
+	if not weak and mult > DamageMatrix.RESIST_AT:
+		return
+	weapon_matchup.emit(enemy_key, weapon.display_name if weapon else "", mult, world_pos)
+	var now := Time.get_ticks_msec()
+	if now - _matchup_cue_ms >= MATCHUP_CUE_GAP_MS:
+		_matchup_cue_ms = now
+		AudioBus.play_synth_ui("hit_weak" if weak else "hit_resist", -7.0 if weak else -5.0, randf_range(0.95, 1.06))
+	var armour: String = _MATCHUP_HINT_ARMOUR[DamageMatrix.armour_of(enemy_key)]
+	if armour != "":
+		var key := "%s_%s" % [armour, "weak" if weak else "resist"]
+		teach_once("matchup_" + key, MATCHUP_HINTS.get(key, ""))
+
 ## Brief slow-motion payoff (e.g. boss death, area clear) AND the primitive
 ## behind the per-hit combat punch. A guard token means overlapping freezes
 ## don't restore early — the most recent freeze owns the restore — so a kill's
