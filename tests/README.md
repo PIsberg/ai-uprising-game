@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-483 probes total: **189** wired into the headless suite (`suite`), **85**
+485 probes total: **190** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **209** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **210** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -388,6 +388,8 @@ or GPU-timing probes; `--headless` renders these black).
 | orbital_strike_probe | ORBITAL STRIKE event: the event spawns a strike and toasts; the circle tracks the player; standing still through the lock costs 45; the strike frees itself; stepping out of the locked circle is a miss; under a roof it never reaches you (red-checked: with cover ignored it hit); a robot on the locked spot is untouched; fired at a player already under a roof, the event falls back to a SUPPLY FLARE (red before the gate) | suite |
 | orbital_strike_shot | The ORBITAL STRIKE circle tracking (amber), locked (red) and firing (white column) beside the player on a level (`--out=<dir>`, `--level=<id>`) | windowed |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |
+| overseer_clip_probe | The OVERSEER flies its fight on its EyeDrone rig: the rocket barrage no longer fires on the call (7 rockets did) but plays Charging while it rears 0.35 rad nose-up, then lobs all 7 after 0.72 s and plays Attack; the bolt volley fires on the call and plays Attack (fell back to Idle before); crossing into phase II it BackFlips; killed, its collision goes off and it falls spinning (it used to vanish on the spot) and is gone about 1.2 s later, its kill counted once | suite |
+| overseer_clip_shot | Look-check of the OVERSEER: hovering, reared in the barrage tell, mid-BackFlip, crashing, the impact; `-- --out=<dir>` | windowed |
 | pacing_sweep | Auto-player difficulty sweep across campaign levels: kills/HP%/deaths/progress per level | headless |
 | pack_probe | Player walked spawn→exit, timestamping every enemy spawn to detect "pack" bursts within a time window | headless |
 | particles_check | `GraphicsSettings.create_particles` sanity on both GPU and CPU particle paths | headless |

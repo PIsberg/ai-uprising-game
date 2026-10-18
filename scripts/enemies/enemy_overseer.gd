@@ -13,7 +13,10 @@ extends EnemyBase
 ## Signature gunship weapon: on a cooldown the OVERSEER rears up and salvos a fan
 ## of arcing rockets that rain down AROUND the player — a bombing run you have to
 ## keep moving through, distinct from the direct bolt spray. Denser the more it's
-## wounded.
+## wounded. The EyeDrone rig acts it out: Charging through the BARRAGE_WINDUP tell
+## while it rears nose-up, Attack on each salvo and volley, a BackFlip as it
+## enters each new phase. Killed, it crashes: it drops out of the sky spinning,
+## shedding fire, and blows apart where it hits (_tick_crash).
 @export var barrage_cooldown: float = 8.5
 @export var barrage_rockets: int = 6
 @export var barrage_spread: float = 6.5
@@ -33,6 +36,18 @@ const MUZZLES := [
 var _summon_cd: float = 0.0
 var _arriving: bool = false
 var _hover_t: float = 0.0   ## drives the idle vertical hover bob
+const BARRAGE_WINDUP := 0.7 ## Charging tell before the rocket barrage fires (s).
+const REAR_PITCH := 0.35    ## Nose-up rear through that tell (rad).
+const CRASH_GRAVITY := 16.0
+const CRASH_TIME := 3.5     ## Longest the wreck falls before it blows anyway (s).
+var _barrage_windup := 0.0
+var _rear := 0.0
+var _last_phase := 1
+var _crashing := false
+var _crash_t := 0.0
+var _crash_vy := 0.0
+var _crash_floor := 0.0
+var _crash_puff := 0.0
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
@@ -144,10 +159,25 @@ func _physics_process(delta: float) -> void:
 	var base_y: float = (target.global_position.y if target else 0.0) + fly_height
 	var goal := base_y + sin(_hover_t * 1.7) * 0.55   # gentle ±0.55 m float
 	velocity.y = clampf((goal - global_position.y) * 3.5, -6.0, 6.0)
+	_tick_barrage(delta)
+	# Rear nose-up about the craft itself (it hangs fly_height above this body),
+	# on top of the base's flinch/stagger pose of _visual_root.
+	if _visual_root and _rear > 0.0:
+		_visual_root.rotation.x += _rear
+		_visual_root.position += Vector3(0.0, fly_height * (1.0 - cos(_rear)), -fly_height * sin(_rear))
 
 func _process(delta: float) -> void:
+	if _crashing:
+		_tick_crash(delta)
+		return
 	if state == State.DEAD:
 		return
+	# Each new phase: a show-off flip.
+	var ph := _phase()
+	if ph != _last_phase:
+		if ph > _last_phase:
+			_play_clip("BackFlip")
+		_last_phase = ph
 	# The eye lamp burns hotter each phase and spikes with every volley.
 	if _eye_light:
 		_eye_light.light_energy = 3.0 + float(_phase()) * 1.5 + recoil * 6.0
@@ -160,15 +190,16 @@ func _process(delta: float) -> void:
 ## final phase it also spits out a Seeker. On its cooldown it instead unloads the
 ## signature ROCKET BARRAGE.
 func _perform_attack() -> void:
-	if target == null:
+	if target == null or _barrage_windup > 0.0:
 		return
 	recoil = 1.0
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
 	if _barrage_cd <= 0.0:
-		_barrage(scene)
+		_begin_barrage()
 		return
+	_play_clip("Attack")
 	var phase := _phase()
 	var shots := 2 + phase # 3 / 4 / 5 bolts
 	for i in shots:
@@ -186,11 +217,42 @@ func _perform_attack() -> void:
 	if phase >= 3:
 		_maybe_summon(scene)
 
+## The barrage's tell: it charges (Charging clip, a rising whine, the eye
+## flaring) and rears nose-up for BARRAGE_WINDUP, then _tick_barrage lets fly.
+func _begin_barrage() -> void:
+	_barrage_cd = maxf(4.5, barrage_cooldown - float(_phase() - 1) * 2.0)
+	_barrage_windup = BARRAGE_WINDUP
+	_play_clip("Charging", BARRAGE_WINDUP)
+	AudioBus.play_synth_at("charge", global_position + Vector3.UP * fly_height, 0.0, 0.6)
+
+## Barrage tell: rear up while it charges, then let fly. Ticked from
+## _physics_process like every boss windup (an entrance freeze holds it too).
+func _tick_barrage(delta: float) -> void:
+	if _barrage_windup <= 0.0:
+		_rear = move_toward(_rear, 0.0, delta * 2.5)
+		return
+	_barrage_windup -= delta
+	_rear = minf(REAR_PITCH, REAR_PITCH * 1.4 * (1.0 - _barrage_windup / BARRAGE_WINDUP))
+	if _barrage_windup <= 0.0:
+		var scene := get_tree().current_scene
+		if scene and target != null and is_instance_valid(target):
+			_barrage(scene)
+
+## Plays an EyeDrone clip once and holds the idle off it (over `seconds` if given).
+func _play_clip(clip: String, seconds: float = 0.0) -> void:
+	var model := get_node_or_null("Model") as RobotModel
+	if model == null:
+		return
+	if seconds > 0.0:
+		model.play_oneshot_over(clip, seconds)
+	else:
+		model.play_oneshot(clip)
+
 ## Rocket barrage: a ring of arcing rockets lobbed to land AROUND the player,
 ## staggered so the impacts walk across the ground — keep moving or get carpeted.
 func _barrage(scene: Node) -> void:
-	_barrage_cd = maxf(4.5, barrage_cooldown - float(_phase() - 1) * 2.0)
 	recoil = 1.0
+	_play_clip("Attack")
 	var n := barrage_rockets + _phase() # 7 / 8 / 9 rockets
 	var base_ang := randf() * TAU
 	for i in n:
@@ -217,13 +279,56 @@ func _on_died(source: Node) -> void:
 	GameState.add_kill(score_value, _kill_label())
 	GameState.hit_stop(0.35, 0.5)
 	set_physics_process(false)
+	collision_layer = 0
+	collision_mask = 0
+	_barrage_windup = 0.0
 	var scene := get_tree().current_scene
 	if scene:
-		for i in 6:
+		for i in 3:
 			var fx := EXPLOSION.instantiate()
 			scene.add_child(fx)
 			(fx as Node3D).global_position = global_position + Vector3(randf_range(-2, 2), fly_height + randf_range(-1, 2), randf_range(-2, 2))
 	var p := get_tree().get_first_node_in_group("player")
 	if p and p.has_method("shake"):
-		p.shake(1.5)
+		p.shake(1.0)
+	_play_clip("Hit")
+	# Crash: find the deck under the craft, then fall to it (_tick_crash).
+	var craft := global_position + Vector3.UP * fly_height
+	_crash_floor = craft.y - 30.0
+	var q := PhysicsRayQueryParameters3D.create(craft, craft + Vector3.DOWN * 80.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if not hit.is_empty():
+		_crash_floor = (hit.position as Vector3).y
+	_crashing = true
+
+## The wreck drops out of the sky, spinning and rolling, shedding fire, and
+## blows apart where it hits (or after CRASH_TIME, over a pit).
+func _tick_crash(delta: float) -> void:
+	_crash_t += delta
+	_crash_vy += CRASH_GRAVITY * delta
+	global_position.y -= _crash_vy * delta
+	rotation.y += delta * (2.5 + _crash_t * 2.0)
+	if _visual_root:
+		_visual_root.rotation.z = minf(_crash_t * 0.6, 0.9)
+	var craft := global_position + Vector3.UP * fly_height
+	var scene := get_tree().current_scene
+	_crash_puff -= delta
+	if _crash_puff <= 0.0 and scene:
+		_crash_puff = 0.28
+		var fx := EXPLOSION.instantiate()
+		scene.add_child(fx)
+		(fx as Node3D).global_position = craft + Vector3(randf_range(-1.5, 1.5), randf_range(-1, 1), randf_range(-1.5, 1.5))
+	if craft.y - 1.5 > _crash_floor and _crash_t < CRASH_TIME:
+		return
+	_crashing = false
+	if scene:
+		for i in 5:
+			var fx := EXPLOSION.instantiate()
+			scene.add_child(fx)
+			(fx as Node3D).global_position = Vector3(craft.x, _crash_floor + 0.5, craft.z) + Vector3(randf_range(-3, 3), randf_range(0, 2), randf_range(-3, 3))
+	spawn_shockwave_ring(9.0, Color(1.0, 0.5, 0.2), Vector3(craft.x, _crash_floor, craft.z))
+	AudioBus.play_synth_at("explosion", craft, 6.0, 0.45)
+	var p2 := get_tree().get_first_node_in_group("player")
+	if p2 and p2.has_method("shake") and (p2 as Node3D).global_position.distance_to(craft) < 40.0:
+		p2.shake(1.5)
 	queue_free()

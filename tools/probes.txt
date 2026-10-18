@@ -304,3 +304,4 @@ res://tests/smasher_gait_probe.tscn
 res://tests/terminator_rig_probe.tscn
 res://tests/boss_presence_probe.tscn
 res://tests/colossus_clip_probe.tscn
+res://tests/overseer_clip_probe.tscn

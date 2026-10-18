@@ -126,6 +126,12 @@ func _overseer() -> void:
 		o._barrage_cd = 0.0
 		var before := get_children()
 		o._perform_attack()
+		# The barrage is telegraphed (Charging, nose-up) for BARRAGE_WINDUP, then
+		# lobs; run its clock by hand, the boss being frozen here.
+		var ticks := 0
+		while float(o._barrage_windup) > 0.0 and ticks < 100:
+			o._tick_barrage(0.05)
+			ticks += 1
 		var added := _added(before)
 		rockets.append(added.size())
 		_clear(added)
