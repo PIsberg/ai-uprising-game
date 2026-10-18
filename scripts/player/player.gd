@@ -127,6 +127,9 @@ var _glitch: float = 0.0
 var _glitch_decay: float = 2.5
 
 var _dead: bool = false
+## NeuralUplink: the mind is out riding a hijacked robot. The body stands where
+## it was left, takes no input and can still be shot (which snaps the link).
+var linked_out: bool = false
 var _bob_phase: float = 0.0
 var _was_on_floor: bool = true
 var _camera_base_y: float = 0.0
@@ -305,6 +308,9 @@ func _ready() -> void:
 	_register_melee_action()
 	_register_grapple_action()
 	_register_ultimate_action()
+	var uplink := NeuralUplink.new()
+	uplink.name = "NeuralUplink"
+	add_child(uplink)
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -671,8 +677,8 @@ func _input(event: InputEvent) -> void:
 		_toggle_flashlight()
 	if InputMap.has_action("night_vision") and event.is_action_pressed("night_vision"):
 		toggle_night_vision()
-	if _dead:
-		return  # no looking around once you're down
+	if _dead or linked_out:
+		return  # no looking around once you're down (or riding a robot: NeuralUplink looks)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var m := event as InputEventMouseMotion
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
@@ -740,8 +746,9 @@ func toggle_night_vision() -> void:
 		AudioBus.play_synth_ui("empty_click", -10.0, 0.9)
 
 func _physics_process(delta: float) -> void:
-	if _dead:
-		# Collapsed: gravity holds you on the deck, momentum bleeds off; no control.
+	if _dead or linked_out:
+		# Collapsed (or vacated by a NeuralUplink ride): gravity holds you on the
+		# deck, momentum bleeds off; no control.
 		# Blast rings still age out down here — otherwise the very blast that
 		# killed you freezes mid-expansion across the whole death screen.
 		_handle_screen_shock(delta)

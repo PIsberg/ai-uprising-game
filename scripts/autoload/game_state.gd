@@ -1466,6 +1466,7 @@ const MECHANIC_HINTS := {
 	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
 	"night_vision": "◉ NIGHT VISION — press [N] to see in the dark. It does not give you away like a flashlight.",
 	"lights_out": "◐ LIGHTS OUT — robots can't see you in the dark past a few metres. Firing or a flashlight gives you away.",
+	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

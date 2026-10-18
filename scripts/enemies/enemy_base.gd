@@ -401,6 +401,11 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 ## hostile robot, close in, zap it. Damage is applied directly (src = the
 ## player) so score, hit markers and kill quotas all credit the liberator.
 func _hijack_process(delta: float) -> void:
+	# Ridden by the player's mind (NeuralUplink): their input drives it and the
+	# uplink owns the clock, so the hijack brain and burnout both stand down.
+	if pilot != null and is_instance_valid(pilot):
+		_pilot_process(delta)
+		return
 	# An escort (AlignedEscort) is aligned for good: no burnout clock.
 	var escorting := escort_goal != null
 	if not escorting:
@@ -497,6 +502,107 @@ func _burnout() -> void:
 	if hp and hp.is_alive():
 		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
 		hp.apply_damage(hp.max_health + 999.0, src)
+
+# ---------- neural uplink (the player rides a hijacked chassis) ----------
+## Damage per second a ridden chassis puts out whatever its cadence: a slow
+## heavy fires fewer, bigger rounds, so chassis differ in feel, not in output.
+const PILOT_DPS := 34.0
+## A chassis with attack_range at or under this is a brawler: it slams the
+## ground in front of it instead of shooting.
+const PILOT_MELEE_RANGE := 4.5
+const PILOT_SLAM_RADIUS := 4.5
+const PILOT_SLAM_MULT := 1.6 ## Brawlers hit harder: they have to walk into the fight.
+const PILOT_MIN_SPEED := 3.5 ## Floor for slow chassis, so a ride never crawls.
+const PILOT_SPEED_MULT := 1.15
+
+## NeuralUplink sets these while the player's mind rides this unit.
+var pilot: Node = null
+var pilot_move: Vector3 = Vector3.ZERO ## World-space wish direction, length <= 1.
+var pilot_yaw: float = 0.0
+var pilot_lift: float = 0.0 ## -1..1 climb, used only by chassis that fly.
+## Frames this chassis actually ran _pilot_process: a subclass whose own
+## _physics_process never reaches the hijack path reads 0, and the uplink
+## drops it rather than freeze the player inside a statue.
+var pilot_ticks: int = 0
+
+## Flyers override _apply_gravity to hover; they say so here so a pilot can climb.
+func pilot_flies() -> bool:
+	return false
+
+func pilot_is_brawler() -> bool:
+	return attack_range <= PILOT_MELEE_RANGE
+
+## Seconds between ridden shots, from this chassis's own attack cadence.
+func pilot_cooldown() -> float:
+	return clampf(attack_cooldown * 0.4, 0.16, 0.9)
+
+func _pilot_process(delta: float) -> void:
+	pilot_ticks += 1
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	var spd := maxf(move_speed, PILOT_MIN_SPEED) * PILOT_SPEED_MULT
+	velocity.x = move_toward(velocity.x, pilot_move.x * spd, 40.0 * delta)
+	velocity.z = move_toward(velocity.z, pilot_move.z * spd, 40.0 * delta)
+	rotation.y = pilot_yaw
+	if pilot_flies():
+		velocity.y = move_toward(velocity.y, pilot_lift * spd * 0.6, 20.0 * delta)
+	else:
+		_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## One ridden attack toward `aim` (world point). Damage is credited to the
+## pilot, like the hijack zap, so score and kill quotas count it.
+func pilot_fire(aim: Vector3) -> void:
+	recoil = 1.0
+	var src: Node = pilot if (pilot != null and is_instance_valid(pilot)) else self
+	var dmg := PILOT_DPS * pilot_cooldown()
+	if pilot_is_brawler():
+		var fwd := -global_transform.basis.z
+		for e in get_tree().get_nodes_in_group("enemy"):
+			var eb := e as EnemyBase
+			if eb == null or eb == self or not is_instance_valid(eb) or eb.hijacked \
+					or eb.state == State.DEAD or eb.hp == null or not eb.hp.is_alive():
+				continue
+			var to := eb.global_position - global_position
+			to.y = 0.0
+			var d := to.length()
+			if d > PILOT_SLAM_RADIUS or (d > 1.0 and fwd.dot(to / d) < 0.2):
+				continue
+			eb.hp.apply_damage(dmg * PILOT_SLAM_MULT, src)
+			eb.velocity += (to / maxf(d, 0.01)) * 6.0 + Vector3.UP * 2.0
+		AudioBus.play_synth_at("impact_metal", global_position, 0.0, 0.7)
+		return
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.2
+	var dir := (aim - from).normalized()
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 90.0)
+	q.collision_mask = 0b0000101 # world + enemy
+	q.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	var to_pt: Vector3 = hit.position if not hit.is_empty() else from + dir * 90.0
+	if not hit.is_empty():
+		var d: Node = hit.collider.get_node_or_null("Damageable") if hit.collider is Node else null
+		if d and d.has_method("apply_damage"):
+			d.apply_damage(dmg, src)
+	var t: Node = HIJACK_TRACER.instantiate()
+	var fx_parent: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	fx_parent.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to_pt)
+	if muzzle:
+		muzzle.add_child(MUZZLE_FLASH.instantiate())
+	AudioBus.play_synth_at("gauss_fire" if pilot_cooldown() >= 0.5 else "drone_shot", from, -3.0, 1.0)
+
+## The pilot left: the chassis burns out, credited to them. Called by NeuralUplink.
+func release_pilot() -> void:
+	var by := pilot
+	pilot = null
+	pilot_move = Vector3.ZERO
+	pilot_lift = 0.0
+	if hijacked and hp and hp.is_alive():
+		if by != null and is_instance_valid(by):
+			_hijack_shooter = by
+		_burnout()
 
 ## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
 func _cleanup_hijack() -> void:
