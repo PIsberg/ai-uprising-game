@@ -289,3 +289,11 @@ res://tests/pylon_clearance_probe.tscn
 res://tests/limb_flop_probe.tscn
 # No two towers' spirals and corner landings overlap in any level (#339).
 res://tests/tower_spacing_probe.tscn
+# NEURAL UPLINK: ride a hijacked robot (move, fire, flyer climb), body freeze, every way the link ends.
+res://tests/neural_uplink_probe.tscn
+# ADVERSARIAL PATCH: robot optics misclassify a patched player by range and time; shots break it; melee tags a robot.
+res://tests/adversarial_patch_probe.tscn
+# REWARD REWRITE consoles: shots / huddle / kill-count rewrites, one use, authored on sublevel + water world.
+res://tests/reward_rewrite_probe.tscn
+# ARCHON fine-tunes on the dossier: habit plan, swapped wave rosters, affixed heavies, phase-3 clone.
+res://tests/archon_finetune_probe.tscn

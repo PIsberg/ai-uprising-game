@@ -135,6 +135,9 @@ func _update_pitch(delta: float) -> void:
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies (until it dies)
 
+func pilot_flies() -> bool:
+	return true # a NeuralUplink pilot climbs and dives on jump/crouch
+
 func _process(delta: float) -> void:
 	if state == State.DEAD:
 		return
