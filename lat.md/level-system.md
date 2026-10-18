@@ -84,6 +84,7 @@ The `scanners` def key mounts sweeping surveillance heads that call reinforcemen
 * Detection needs the player's chest inside the cone, within `reach`, with a clear world-layer ray, held for `detect_time` (0.7 s).
 * An alarm hands the authored `alarm` squad to the task reinforcement spawner, then the head tracks the player and cools down. `alarms` caps how often it can fire.
 * The head carries a Damageable (80 HP) on the world layer: shooting it out blinds the scanner for good. Robots are never detected.
+* A player wearing an adversarial patch is not detected beyond `AdversarialPatch.SCANNER_RANGE` (4 m), see [[player#Adversarial Patch]].
 * `tests/scanner_probe` covers detection, wall occlusion and the alarm cap, and checks that every authored alarm squad lands on walkable ground with a route to the spawn.
 
 ## Stamping Presses
@@ -318,6 +319,13 @@ The `injectors` def key places one-use consoles that jailbreak the robots around
 * `jailbreak` rides the EMP path (`_emp_t`: no perception, AI or attacks) plus `_jailbreak_t`, which spins the body and floats a `jailbreak` reasoning trace. Chassis that resist a hijack (`HIJACK_BOSS_HP`) only take `BOSS_STUN`.
 * `pos` scales with the arena. `tests/injector_probe` builds each authored level and checks the terminal stands on clear floor.
 
+## Reward Rewrite Consoles
+<!-- lat: { "require-code-mention": true } -->
+The `rewriters` def key places one-use consoles that rewrite the nearby robots' reward function, which they then optimise literally.
+
+* Standing in its zone shows the current line (`RewardRewriter.LINES`); interact cycles `shots`, `huddle` and `kills` and restarts the upload. `UPLOAD_TIME` (2.5 s) on one line uploads it to every non-boss robot within `RADIUS` (26 m) for `REWRITE_TIME` (12 s), then the console reads PATCHED.
+* `shots` and `huddle` set `EnemyBase.reward_hack`, which `_physics_process` routes to `_reward_process`: stand and fire harmless tracers into the sky, or walk to `reward_goal`, the squad's centroid the console refreshes every 0.5 s. `kills` calls `EnemyBase.mislabel` on the squad ([[enemies#Collisions and Hijacking]]), so they target and damage each other.
+* The console owns the clock and calls `reward_hack_clear` / `clear_mislabel` at the end. `pos` scales with the arena. `tests/reward_rewrite_probe` builds SUBLEVEL and WATER WORLD and checks each console stands on clear floor.
 ## Escape Countdown
 <!-- lat: { "require-code-mention": true } -->
 An `escape` task turns a level's last stage into a timed run: the purge clock starts when the stage goes live.

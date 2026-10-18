@@ -86,6 +86,9 @@ func _build_throat() -> void:
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies
 
+func pilot_flies() -> bool:
+	return true # a NeuralUplink pilot climbs and dives on jump/crouch
+
 func _state_chase(delta: float) -> void:
 	if target == null:
 		set_state(State.IDLE)

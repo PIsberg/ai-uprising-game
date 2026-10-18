@@ -243,6 +243,10 @@ func _physics_process(delta: float) -> void:
 	if hijacked:
 		_hijack_process(delta)
 		return
+	# A REWARD REWRITE (RewardRewriter) optimises its new line instead of fighting.
+	if reward_hack != "":
+		_reward_process(delta)
+		return
 	# A data courier (InterceptCourier) runs its route instead of fighting.
 	if courier_goal != null:
 		_courier_process(delta)
@@ -403,6 +407,11 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 ## hostile robot, close in, zap it. Damage is applied directly (src = the
 ## player) so score, hit markers and kill quotas all credit the liberator.
 func _hijack_process(delta: float) -> void:
+	# Ridden by the player's mind (NeuralUplink): their input drives it and the
+	# uplink owns the clock, so the hijack brain and burnout both stand down.
+	if pilot != null and is_instance_valid(pilot):
+		_pilot_process(delta)
+		return
 	# An escort (AlignedEscort) is aligned for good: no burnout clock.
 	var escorting := escort_goal != null
 	if not escorting:
@@ -499,6 +508,219 @@ func _burnout() -> void:
 	if hp and hp.is_alive():
 		var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
 		hp.apply_damage(hp.max_health + 999.0, src)
+
+# ---------- neural uplink (the player rides a hijacked chassis) ----------
+## Damage per second a ridden chassis puts out whatever its cadence: a slow
+## heavy fires fewer, bigger rounds, so chassis differ in feel, not in output.
+const PILOT_DPS := 34.0
+## A chassis with attack_range at or under this is a brawler: it slams the
+## ground in front of it instead of shooting.
+const PILOT_MELEE_RANGE := 4.5
+const PILOT_SLAM_RADIUS := 4.5
+const PILOT_SLAM_MULT := 1.6 ## Brawlers hit harder: they have to walk into the fight.
+const PILOT_MIN_SPEED := 3.5 ## Floor for slow chassis, so a ride never crawls.
+const PILOT_SPEED_MULT := 1.15
+
+## NeuralUplink sets these while the player's mind rides this unit.
+var pilot: Node = null
+var pilot_move: Vector3 = Vector3.ZERO ## World-space wish direction, length <= 1.
+var pilot_yaw: float = 0.0
+var pilot_lift: float = 0.0 ## -1..1 climb, used only by chassis that fly.
+## Frames this chassis actually ran _pilot_process: a subclass whose own
+## _physics_process never reaches the hijack path reads 0, and the uplink
+## drops it rather than freeze the player inside a statue.
+var pilot_ticks: int = 0
+
+## Flyers override _apply_gravity to hover; they say so here so a pilot can climb.
+func pilot_flies() -> bool:
+	return false
+
+func pilot_is_brawler() -> bool:
+	return attack_range <= PILOT_MELEE_RANGE
+
+## Seconds between ridden shots, from this chassis's own attack cadence.
+func pilot_cooldown() -> float:
+	return clampf(attack_cooldown * 0.4, 0.16, 0.9)
+
+func _pilot_process(delta: float) -> void:
+	pilot_ticks += 1
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	var spd := maxf(move_speed, PILOT_MIN_SPEED) * PILOT_SPEED_MULT
+	velocity.x = move_toward(velocity.x, pilot_move.x * spd, 40.0 * delta)
+	velocity.z = move_toward(velocity.z, pilot_move.z * spd, 40.0 * delta)
+	rotation.y = pilot_yaw
+	if pilot_flies():
+		velocity.y = move_toward(velocity.y, pilot_lift * spd * 0.6, 20.0 * delta)
+	else:
+		_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## One ridden attack toward `aim` (world point). Damage is credited to the
+## pilot, like the hijack zap, so score and kill quotas count it.
+func pilot_fire(aim: Vector3) -> void:
+	recoil = 1.0
+	var src: Node = pilot if (pilot != null and is_instance_valid(pilot)) else self
+	var dmg := PILOT_DPS * pilot_cooldown()
+	if pilot_is_brawler():
+		var fwd := -global_transform.basis.z
+		for e in get_tree().get_nodes_in_group("enemy"):
+			var eb := e as EnemyBase
+			if eb == null or eb == self or not is_instance_valid(eb) or eb.hijacked \
+					or eb.state == State.DEAD or eb.hp == null or not eb.hp.is_alive():
+				continue
+			var to := eb.global_position - global_position
+			to.y = 0.0
+			var d := to.length()
+			if d > PILOT_SLAM_RADIUS or (d > 1.0 and fwd.dot(to / d) < 0.2):
+				continue
+			eb.hp.apply_damage(dmg * PILOT_SLAM_MULT, src)
+			eb.velocity += (to / maxf(d, 0.01)) * 6.0 + Vector3.UP * 2.0
+		AudioBus.play_synth_at("impact_metal", global_position, 0.0, 0.7)
+		return
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.2
+	var dir := (aim - from).normalized()
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 90.0)
+	q.collision_mask = 0b0000101 # world + enemy
+	q.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	var to_pt: Vector3 = hit.position if not hit.is_empty() else from + dir * 90.0
+	if not hit.is_empty():
+		var d: Node = hit.collider.get_node_or_null("Damageable") if hit.collider is Node else null
+		if d and d.has_method("apply_damage"):
+			d.apply_damage(dmg, src)
+	var t: Node = HIJACK_TRACER.instantiate()
+	var fx_parent: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	fx_parent.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to_pt)
+	if muzzle:
+		muzzle.add_child(MUZZLE_FLASH.instantiate())
+	AudioBus.play_synth_at("gauss_fire" if pilot_cooldown() >= 0.5 else "drone_shot", from, -3.0, 1.0)
+
+## The pilot left: the chassis burns out, credited to them. Called by NeuralUplink.
+func release_pilot() -> void:
+	var by := pilot
+	pilot = null
+	pilot_move = Vector3.ZERO
+	pilot_lift = 0.0
+	if hijacked and hp and hp.is_alive():
+		if by != null and is_instance_valid(by):
+			_hijack_shooter = by
+		_burnout()
+
+# ---------- adversarial patch (AdversarialPatch) ----------
+## How sure this robot is that the patched player is a human (0..1); at 1 it
+## sees through the patch. AdversarialPatch.classify raises it, and resets it
+## on each new patch.
+var patch_confidence: float = 0.0
+## Seconds left reading as HUMAN to its own squad (a patch slapped onto it, or
+## a "kill count" reward rewrite). Whoever applied it owns the clock and calls
+## clear_mislabel at 0: a timer here would never tick on the subclasses whose
+## _physics_process skips super.
+var mislabeled_t: float = 0.0
+var _mislabel_layer: int = 4
+var _mislabel_tag: Label3D = null
+
+## Make this robot read as a human target to the other robots for `duration`:
+## it moves to the player's collision layer (hostile hitscans and LOS mask
+## world+player) and joins `mislabeled`, which _perceive treats like a traitor.
+## False for a hijacked or dead unit.
+func mislabel(duration: float) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or hijacked:
+		return false
+	if not is_in_group("mislabeled"):
+		_mislabel_layer = collision_layer
+		collision_layer = 2
+		add_to_group("mislabeled")
+		hp.died.connect(_on_mislabel_died)
+		_mislabel_tag = Label3D.new()
+		_mislabel_tag.text = "%s 98%%" % tr("HUMAN")
+		_mislabel_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_mislabel_tag.no_depth_test = true
+		_mislabel_tag.fixed_size = true
+		_mislabel_tag.pixel_size = 0.0012
+		_mislabel_tag.font_size = 30
+		_mislabel_tag.outline_size = 8
+		_mislabel_tag.modulate = Color(1.0, 0.25, 0.2)
+		_mislabel_tag.position = Vector3.UP * clampf(RobotModel.body_top(self, _mesh_instances) + 0.6, 1.8, 7.5)
+		add_child(_mislabel_tag)
+	mislabeled_t = maxf(mislabeled_t, duration)
+	return true
+
+func clear_mislabel() -> void:
+	mislabeled_t = 0.0
+	if not is_in_group("mislabeled"):
+		return
+	remove_from_group("mislabeled")
+	collision_layer = _mislabel_layer
+	if hp and hp.died.is_connected(_on_mislabel_died):
+		hp.died.disconnect(_on_mislabel_died)
+	if _mislabel_tag and is_instance_valid(_mislabel_tag):
+		_mislabel_tag.queue_free()
+	_mislabel_tag = null
+
+func _on_mislabel_died(_source: Node) -> void:
+	clear_mislabel()
+
+# ---------- reward rewrite (RewardRewriter) ----------
+## The literal objective a REWARD REWRITE console uploaded, "" for its own.
+## "shots": stand and empty the gun into the sky. "huddle": walk to
+## reward_goal (the console keeps it on the squad's centroid). The console
+## owns the clock and calls reward_hack_clear. ("kills" uses mislabel.)
+var reward_hack: String = ""
+var reward_goal: Variant = null
+var reward_shots: int = 0 ## Rounds fired into the sky under "shots".
+var _reward_shot_cd: float = 0.0
+const REWARD_SHOT_GAP := 0.16
+
+func reward_hack_set(kind: String) -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or hijacked:
+		return false
+	reward_hack = kind
+	reward_goal = null
+	_telegraphing = false
+	return true
+
+func reward_hack_clear() -> void:
+	reward_hack = ""
+	reward_goal = null
+
+func _reward_process(delta: float) -> void:
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	if reward_hack == "shots":
+		_decelerate()
+		rotation.y += delta * 1.2 # sweeping the sky, as if that scored
+		_reward_shot_cd -= delta
+		if _reward_shot_cd <= 0.0:
+			_reward_shot_cd = REWARD_SHOT_GAP
+			_reward_sky_shot()
+	elif reward_hack == "huddle" and reward_goal != null \
+			and Vector2(global_position.x - reward_goal.x, global_position.z - reward_goal.z).length() > 1.0:
+		_move_toward(reward_goal, delta)
+	else:
+		_decelerate()
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## One harmless round into the sky: a tracer and a flash, every third one heard.
+func _reward_sky_shot() -> void:
+	reward_shots += 1
+	recoil = 1.0
+	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.4
+	var to := from + Vector3(randf_range(-6.0, 6.0), 30.0, randf_range(-6.0, 6.0))
+	var t: Node = HIJACK_TRACER.instantiate()
+	var fx_parent: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	fx_parent.add_child(t)
+	if t.has_method("setup"):
+		t.setup(from, to)
+	if muzzle:
+		muzzle.add_child(MUZZLE_FLASH.instantiate())
+	if reward_shots % 3 == 0:
+		AudioBus.play_synth_at("drone_shot", from, -6.0, randf_range(0.9, 1.15))
 
 ## Group/layer/FX bookkeeping off — safe to call twice (burnout + died hook).
 func _cleanup_hijack() -> void:
@@ -644,7 +866,7 @@ func _perceive() -> void:
 	# to the player. (Only hijacked units ever put a robot in `target`.)
 	if target is EnemyBase:
 		var tb := target as EnemyBase
-		if tb.state == State.DEAD or not tb.hijacked:
+		if tb.state == State.DEAD or not (tb.hijacked or tb.mislabeled_t > 0.0):
 			target = null
 	if target == null:
 		target = _find_player()
@@ -653,7 +875,12 @@ func _perceive() -> void:
 	# fantasy and the counterplay. Free when nothing is hijacked (empty group).
 	if not (target is EnemyBase):
 		var best_d := global_position.distance_to(target.global_position) if target else sight_range
-		for h in get_tree().get_nodes_in_group("hijacked"):
+		# A MISLABELED robot (AdversarialPatch, RewardRewriter) reads as a human
+		# target and draws fire by the same rule.
+		var turncoats := get_tree().get_nodes_in_group("hijacked")
+		if get_tree().has_group("mislabeled"):
+			turncoats += get_tree().get_nodes_in_group("mislabeled")
+		for h in turncoats:
 			var hb := h as EnemyBase
 			if hb == null or hb == self or not is_instance_valid(hb) or hb.state == State.DEAD:
 				continue
@@ -755,7 +982,15 @@ func _compute_can_see(t: Node3D) -> bool:
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
 		return false
-	return hit.collider == t or (hit.collider as Node).is_in_group("player")
+	var seen: bool = hit.collider == t or (hit.collider as Node).is_in_group("player")
+	# ADVERSARIAL PATCH: optics that find the player still have to classify
+	# them; until this robot is sure, it sees a household object. Bosses see
+	# through it.
+	if seen and score_value < 1000 and t.is_in_group("player"):
+		var patch := AdversarialPatch.active_on(t)
+		if patch:
+			return patch.classify(self, dist)
+	return seen
 
 func set_state(new_state: State) -> void:
 	if state == new_state:

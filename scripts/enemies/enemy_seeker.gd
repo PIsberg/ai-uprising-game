@@ -90,6 +90,9 @@ func _build_warhead_dressing() -> void:
 func _apply_gravity(_delta: float) -> void:
 	pass # it flies
 
+func pilot_flies() -> bool:
+	return true # a NeuralUplink pilot climbs and dives on jump/crouch
+
 # Rush straight at the target instead of holding at a range.
 func _state_chase(delta: float) -> void:
 	if target == null:

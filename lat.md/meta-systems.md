@@ -59,6 +59,13 @@ A skirmish event (`GameState._event_orbital_strike`, one of the director's seven
 * `OrbitalStrike.covered` is also the event's gate: a player already under a roof (an indoor level) gets a SUPPLY FLARE instead, since a strike there could never land.
 * `tests/orbital_strike_probe`, `tests/orbital_strike_shot`.
 
+## ARCHON Fine-Tune
+<!-- lat: { "require-code-mention": true } -->
+The finale trains on the player: ARCHON reads `AIDirector.finetune_plan` once at boot and reshapes every wave around the player's strongest habits.
+
+* The plan takes up to `FINETUNE_HABITS` (3) habits from this level's read once it is calibrated, else from the dossier ([[architecture#Autoloads]]), ranked by how far each sits past its threshold: KEEPS ITS DISTANCE / FIGHTS UP CLOSE (range), NEVER STOPS MOVING / HOLDS ONE SPOT (mobility), LEANS ON THE <gun> (a 45%+ weapon share) and AIMS FOR THE HEAD.
+* Range and mobility habits carry roster `swaps` (drones to seekers for a long-range player, androids to seekers for a mover), which `finetune_roster` applies to every other occurrence of a unit so a wave keeps its mix. The strongest habit with an `affix` (crutch: shielded, precise: warden) puts it on up to 2 heavies per wave.
+* Boot announces FINE-TUNED ON YOU with the habits, each translated (the crutch line is a format key). The first phase-3 wave sends one `BehaviourClone` of the player ([[meta-systems#Behaviour Clone]]). No history means an empty plan and the stock waves. `tests/archon_finetune_probe`.
 ## Behaviour Clone
 <!-- lat: { "require-code-mention": true } -->
 A skirmish event (`GameState._event_behaviour_clone`) that turns the player's own recent play against them (`BehaviourClone`).
