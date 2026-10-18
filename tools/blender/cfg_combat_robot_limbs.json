@@ -1,0 +1,15 @@
+{
+  "_doc": "APEX ENDOFRAME limbs (combat_robot.glb). World after import: Z up (feet -4.82, top 1.69), X lateral, front is -Y. Each part mesh holds both its left and right copy, textured Legs / Torse / Hands; Floor is a display slab. The six rotary barrels per cannon sit around x +-2.49, z -0.48 from y -2.81 to -0.79; the knee is at z -2.62. Leg parts are mirrored pairs, so legs split by the sign of x alone (a 0.5 m inboard margin left inner foot plates on the body, floating as the feet moved). tools/blender/split_regions.py",
+  "rest": "Body",
+  "drop_materials": ["Floor"],
+  "regions": [
+    {"name": "BarrelP", "material": "Hands", "min": [2.2, -2.9, -0.75], "max": [2.85, -0.95, -0.2]},
+    {"name": "BarrelN", "material": "Hands", "min": [-2.85, -2.9, -0.75], "max": [-2.2, -0.95, -0.2]},
+    {"name": "GunP", "material": "Hands", "min": [1.45, -9, -1.8], "max": [9, 9, 0.35]},
+    {"name": "GunN", "material": "Hands", "min": [-9, -9, -1.8], "max": [-1.45, 9, 0.35]},
+    {"name": "ThighP", "material": "Legs", "min": [0.0, -9, -2.62], "max": [9, 9, 9]},
+    {"name": "ThighN", "material": "Legs", "min": [-9, -9, -2.62], "max": [0.0, 9, 9]},
+    {"name": "ShinP", "material": "Legs", "min": [0.0, -9, -9], "max": [9, 9, -2.62]},
+    {"name": "ShinN", "material": "Legs", "min": [-9, -9, -9], "max": [0.0, 9, -2.62]}
+  ]
+}

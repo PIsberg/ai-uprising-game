@@ -13,7 +13,15 @@ named after it, all under the original parent with its original transform.
 
 Config:
     {"rest": "Body",
-     "regions": [{"name": "ArmP", "min": [-9, 0.245, -0.36], "max": [9, 9, 0.22]}, ...]}
+     "drop_materials": ["Floor"],
+     "regions": [{"name": "ArmP", "min": [-9, 0.245, -0.36], "max": [9, 9, 0.22]},
+                 {"name": "GunP", "material": "Hands", "min": [...], "max": [...]}, ...]}
+
+"drop_materials" (optional) deletes every face whose material name is listed,
+before any region is cut (APEX's model ships welded to a display slab). A
+region's "material" (optional) narrows it to faces whose material name
+contains that string, for models whose limbs reach into the same box as the
+torso but are textured apart from it.
 
 Why offline: BEHEMOTH-X (rusty_claws_robot.glb, 337k triangles in 12 meshes,
 each mesh a material slice through the whole body) took about 1.3 s to cut
@@ -41,12 +49,28 @@ whole = bpy.context.view_layer.objects.active
 mw = whole.matrix_world
 
 
-def region_of(c):
+mat_names = [m.name if m else "" for m in whole.data.materials]
+
+
+def region_of(c, mat_index):
     for i, r in enumerate(cfg["regions"]):
         lo, hi = r["min"], r["max"]
+        if "material" in r and r["material"] not in mat_names[mat_index]:
+            continue
         if all(lo[k] <= c[k] < hi[k] for k in range(3)):
             return i
     return -1
+
+
+drop = cfg.get("drop_materials", [])
+if drop:
+    bpy.ops.object.mode_set(mode="EDIT")
+    bm = bmesh.from_edit_mesh(whole.data)
+    doomed = [f for f in bm.faces if mat_names[f.material_index] in drop]
+    bmesh.ops.delete(bm, geom=doomed, context="FACES")
+    bmesh.update_edit_mesh(whole.data)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print("DROPPED", len(doomed))
 
 
 for g, r in enumerate(cfg["regions"]):
@@ -59,7 +83,7 @@ for g, r in enumerate(cfg["regions"]):
     bm = bmesh.from_edit_mesh(whole.data)
     n = 0
     for face in bm.faces:
-        if region_of(mw @ face.calc_center_median()) == g:
+        if region_of(mw @ face.calc_center_median(), face.material_index) == g:
             face.select_set(True)
             n += 1
     bm.select_flush_mode()

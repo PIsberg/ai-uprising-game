@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-477 probes total: **186** wired into the headless suite (`suite`), **85**
+479 probes total: **187** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **206** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **207** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -485,6 +485,8 @@ or GPU-timing probes; `--headless` renders these black).
 | teach_probe | Each first-encounter teaching hint fires once, repeats suppressed, a new run re-arms them | suite |
 | terminator_beam_probe | TERMINATOR's Optic Lance charges/fires/tracks/renders/burns the player | windowed |
 | terminator_entrance_probe | TERMINATOR's eruption entrance (buried rumble→breach→rise→settle) | windowed |
+| terminator_rig_probe | APEX ENDOFRAME walks and fights with its limbs (rig-less GLB cut offline into gun arms, barrels, thighs, shins): the muzzles sit on the barrel tips (1.18 m off before, mid-chest), chasing the toes swing 1.19 m along the run (0.03 m before) and lift 0.16 m, legs in opposition (r -0.94), strafing they step 0.9-1.1 m sideways; the cannons pitch to dir.y +0.56 onto a target 39 deg up and -0.56 below with the muzzles still on the tips; a burst spins the barrels 14 rad in 0.5 s, 3 s later they are still; stopped, toes and tips back at rest | suite |
+| terminator_rig_shot | Look-check of APEX ENDOFRAME's rig: four points of its stride side-on, a strafe from the front, cannons aimed up and down; `-- --out=<dir>` | windowed |
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
 | tesla_ingame_probe | Full-chain Tesla-beam-in-play via the real player's WeaponManager trigger | windowed |
 | threaded_load_probe | Every campaign level and flow scene (cutscenes, briefing, custom level, loading screen, menu, map) loads through the loading screen's real path, GameState.warm_scripts then ResourceLoader.load_threaded_request (use_sub_threads off), to a PackedScene that can instantiate; reports wall time per scene and flags loads over 8 s (the first level paid ~13 s for the shared scene chunk until LevelBuilder's tables went lazy; now ~1.7 s). Without the main-thread script warm-up it wedged at IN_PROGRESS in 10 of 94 solo runs (#125); with it, 0 of 60. `-- nowarm` skips the warm-up to reproduce the engine deadlock (#139) for a native debugger | suite |

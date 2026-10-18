@@ -21,7 +21,7 @@ loop is the fast iteration path; the real check is re-importing into Godot.
 > built in Godot on the `Gun` bone because it has to spin. `raptor` ships a third
 > (`quaternius_flyergun_strike.glb`, `cfg_flyergun_strike.json`): wings, engines, V tail,
 > beak, belly gun and talons, with its strafing run reflown as a stoop to match. The humanoid
-> (`quaternius_heavy` = `RobotExpressive`, used by terminator/sentinel/mauler) is a
+> (`quaternius_heavy` = `RobotExpressive`, used by sentinel/mauler) is a
 > known-hard case — see [Gotchas](#gotchas).
 
 ## Install
@@ -175,6 +175,6 @@ unit is jammed), mount a node on the bone the part is skinned to, as
 - `tools/blender/bones.py` — bone world positions + base render
 - `tools/blender/meshbounds.py` — per-mesh world bounds (for bone-parented models)
 - `tools/blender/fierce2.py` — the config-driven build/export/render engine
-- `tools/blender/split_regions.py` — cuts a rig-less GLB into named limb parts by world-space boxes (`cfg_rusty_claws_limbs.json` for BEHEMOTH-X), so a script can swing each part with `PartRig` without splitting a big mesh at spawn (`PartRig.split_groups` took about 1.3 s on its 337k triangles)
+- `tools/blender/split_regions.py` — cuts a rig-less GLB into named limb parts by world-space boxes, optionally narrowed to one material, and can drop a material outright (`cfg_rusty_claws_limbs.json` for BEHEMOTH-X; `cfg_combat_robot_limbs.json` for APEX ENDOFRAME, whose cannons, barrels, thighs and shins are mirrored pairs in shared meshes and whose display slab is dropped), so a script can swing each part with `PartRig` without splitting a big mesh at spawn (`PartRig.split_groups` took about 1.3 s on its 337k triangles)
 - `tools/blender/cfg_*.json` — example part configs (one per enemy flavor)
 - `tests/fierce_probe.tscn` / `.gd` — in-engine screenshot of the fierce models
