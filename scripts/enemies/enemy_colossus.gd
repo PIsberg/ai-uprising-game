@@ -10,6 +10,7 @@ extends EnemyBase
 ## are scene markers layered on top.
 
 @export var boss_name: String = "GOLIATH-IX"   ## Shown on the HUD boss bar.
+@export var boss_epithet: String = "WALKING SIEGE ENGINE" ## Under the name on the intro card (BossPresence).
 @export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the sky-drop entrance, thrusters, boss bar + AI.
 @export var rocket_scene: PackedScene
 @export var tracer_scene: PackedScene
@@ -196,12 +197,10 @@ func _land() -> void:
 	_thrusters.clear()
 
 func _phase() -> int:
-	var frac := hp.current_health / hp.max_health
-	if frac <= 0.33:
-		return 3
-	elif frac <= 0.66:
-		return 2
-	return 1
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.66, 0.33]
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
@@ -244,15 +243,12 @@ func _physics_process(delta: float) -> void:
 			hp.invulnerable = false
 		return
 	super._physics_process(delta)
-	# Phase-change punch: brief quake + alarm when crossing a threshold.
+	# Phase change: its reactor flares (the roar, quake and banner are
+	# EnemyBase._boss_phase_beat's).
 	var ph := _phase()
 	if ph != _last_phase:
 		_last_phase = ph
 		recoil = 1.0
-		AudioBus.play_synth_ui("eas_alert", -10.0)
-		var pl := get_tree().get_first_node_in_group("player")
-		if pl and pl.has_method("shake"):
-			pl.shake(0.6)
 	# Tick cooldowns.
 	_artillery_cd = maxf(0.0, _artillery_cd - delta)
 	_beam_cd = maxf(0.0, _beam_cd - delta)

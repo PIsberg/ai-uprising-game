@@ -17,6 +17,7 @@ extends EnemyBase
 ## layered on top.
 
 @export var boss_name: String = "BEHEMOTH-X"   ## Shown on the HUD boss bar.
+@export var boss_epithet: String = "FOUNDRY BERSERKER" ## Under the name on the intro card (BossPresence).
 @export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the wake-roar entrance, boss bar + AI.
 
 @export_group("Smash")
@@ -162,12 +163,10 @@ func _do_entrance() -> void:
 		p.shake(1.5)
 
 func _phase() -> int:
-	var frac := hp.current_health / hp.max_health
-	if frac <= 0.33:
-		return 3
-	elif frac <= 0.66:
-		return 2
-	return 1
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.66, 0.33]
 
 func _cd_mult() -> float:
 	return float(PHASE_CD_MULT[_phase() - 1])
@@ -276,15 +275,12 @@ func _physics_process(delta: float) -> void:
 		if _wake <= 0.0:
 			hp.invulnerable = false
 		return
-	# Phase-change punch.
+	# Phase change: the reactor flares (the roar, quake and banner are
+	# EnemyBase._boss_phase_beat's).
 	var ph := _phase()
 	if ph != _last_phase:
 		_last_phase = ph
 		recoil = 1.0
-		AudioBus.play_synth_ui("eas_alert", -10.0)
-		var pl := get_tree().get_first_node_in_group("player")
-		if pl and pl.has_method("shake"):
-			pl.shake(0.6)
 	_smash_cd = maxf(0.0, _smash_cd - delta)
 	_slam_cd = maxf(0.0, _slam_cd - delta)
 	_rake_cd = maxf(0.0, _rake_cd - delta)

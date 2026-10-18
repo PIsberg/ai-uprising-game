@@ -158,6 +158,8 @@ func _ready() -> void:
 	# Wounded fallback hangs off the signal, NOT _on_damaged — same
 	# subclass-override trap as the death bark above.
 	hp.damaged.connect(_consider_cover_seek)
+	if not boss_phase_marks().is_empty():
+		hp.health_changed.connect(_boss_phase_beat)
 	# Mark this type as encountered when it spawns in an actual level (fixes
 	# hand-authored level_01, whose roster has no def for the briefing to
 	# mark). Gated on a live player so cutscene/briefing actors don't count.
@@ -1932,8 +1934,9 @@ const SLAM_COVER_DAMAGE := 120.0 ## base hit a shockwave ring deals to breakable
 ## A single expanding shock ring blasting out from a ground impact — a bright
 ## torus that scales out to `radius` while fading, then frees itself. Reusable
 ## impact FX (boss slams, wake-quakes). Parents to the scene so it stays put.
-## Also damages BreakableCover inside the ring, so slams wreck the arena.
-func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), origin: Vector3 = Vector3.INF) -> void:
+## Also damages BreakableCover inside the ring, so slams wreck the arena, unless
+## `wreck_cover` is false (a boss's phase beat is a roar, not a blow).
+func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), origin: Vector3 = Vector3.INF, wreck_cover: bool = true) -> void:
 	var parent := get_tree().current_scene
 	if parent == null:
 		return
@@ -1965,7 +1968,7 @@ func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), or
 	# with distance, and no-ops when Advanced Post-Process is off.
 	# Slams wreck the arena: breakable cover inside the ring takes a heavy hit
 	# (BreakableCover doubles it again for boss-weight chassis).
-	for c in get_tree().get_nodes_in_group("breakable_cover"):
+	for c in (get_tree().get_nodes_in_group("breakable_cover") if wreck_cover else []):
 		var cd := Vector2((c as Node3D).global_position.x - at.x, (c as Node3D).global_position.z - at.z).length()
 		var reach_c := radius * 1.6 + 1.0
 		if cd < reach_c and c.get("hp"):
@@ -1981,6 +1984,47 @@ func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), or
 ## in-progress actions (a charging shot, a slam wind-up, …).
 func _on_staggered() -> void:
 	pass
+
+# ---------- boss presence: phases ----------
+
+## HP fractions where a boss's fight escalates, highest first. A boss's own
+## `_phase()` counts them through boss_phase(), the HUD notches the boss bar at
+## them (BossPresence), and crossing one stages a phase beat. Empty for every
+## robot that is not a phased boss.
+func boss_phase_marks() -> Array:
+	return []
+
+## 1 + how many of boss_phase_marks() current health has fallen to.
+func boss_phase() -> int:
+	if hp == null or hp.max_health <= 0.0:
+		return 1
+	var frac := hp.current_health / hp.max_health
+	var n := 1
+	for m in boss_phase_marks():
+		if frac <= float(m):
+			n += 1
+	return n
+
+var _boss_phase_seen := 1
+
+## Crossing into a new phase: the boss roars (a shock ring that leaves cover
+## standing, the alarm, a quake and a beat of hit-stop) and GameState tells the
+## HUD, which banners it. Off hp.health_changed, so no subclass override of
+## _on_damaged or _physics_process can skip it.
+func _boss_phase_beat(_cur: float, _max: float) -> void:
+	var ph := boss_phase()
+	if ph <= _boss_phase_seen or state == State.DEAD or hp.current_health <= 0.0:
+		return
+	_boss_phase_seen = ph
+	var final := ph > boss_phase_marks().size()
+	spawn_shockwave_ring(9.0 if final else 6.5, Color(1.0, 0.22, 0.12) if final else Color(1.0, 0.55, 0.2), global_position, false)
+	AudioBus.play_synth_ui("eas_alert", -6.0)
+	AudioBus.play_synth_at("explosion", global_position, 2.0, 0.4)
+	var pl := get_tree().get_first_node_in_group("player")
+	if pl and pl.has_method("shake"):
+		pl.shake(0.9 if final else 0.7)
+	GameState.hit_stop(0.25, 0.35)
+	GameState.boss_phase_changed.emit(self, ph, final)
 
 ## A burst of dark oil globules + bright sparks thrown from the wound, arcing
 ## away from the shooter. Lives on the scene so it trails as the robot moves.

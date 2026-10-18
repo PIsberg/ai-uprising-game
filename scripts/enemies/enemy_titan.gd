@@ -15,6 +15,7 @@ func _ready() -> void:
 	# Re-skin identity + a faster, glassier tuning (changed synchronously here,
 	# before the deferred boss announcement reads them).
 	boss_name = "PROMETHEUS-0"
+	boss_epithet = "THE FIRST AGI ON LEGS"
 	max_health = 2600.0
 	move_speed = 3.4   # a strider, not a siege engine
 	turn_speed = 2.2

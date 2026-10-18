@@ -101,7 +101,19 @@ inherit that parent's overrides too.
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing
 via `GameState.announce_boss`.
 
-**Moving parts on static models:** a GLB without a rig can still move a part if it is its own mesh. `PartRig` (`scripts/enemies/part_rig.gd`) poses a part by a transform built in the robot's body frame (conjugated into the part's parent frame, so the fit, RobotModel's lean and import scale carry through), and `PartRig.split_x` cuts a mesh that holds a left and a right copy into two (`split_groups` into any number in one pass, always from the original mesh: splitting a split copy again gave garbage triangles). Used by the HOWITZER's barrel (its own conjugation) and legs, the RONIN's revolvers and katana, the DOG's legs, the ENFORCER's rifle and the GUNSLINGER's gun-arm. `AimedPart` (`scripts/enemies/aimed_part.gd`) swings a part about a pivot onto a target and back (ENFORCER, GUNSLINGER). Measure parts only after RobotModel's deferred fit has landed.
+**Boss presence:** every boss has a `boss_name` and a `boss_epithet` (translated; the
+strings check fails on an epithet without a row). On `announce_boss` the HUD's
+`BossPresence` (`scripts/ui/boss_presence.gd`) plays an intro card: letterbox, warning
+header, name, epithet. A phased boss lists the HP fractions where its fight escalates in
+`boss_phase_marks()` (66 % and 33 %; ARCHON 67 % and 34 %; TERMINATOR has none) and its
+`_phase()` returns `boss_phase()`, so the boss bar's notches sit exactly where it really
+escalates. Crossing a mark fires `EnemyBase._boss_phase_beat` off `hp.health_changed`
+(override-proof): a roar ring that leaves cover standing, the alarm, a quake, a beat of
+hit-stop, and `GameState.boss_phase_changed`, which the HUD banners ("PHASE II",
+"FINAL PHASE"). A new boss needs an epithet, a strings row and, if it escalates, marks
+(`tests/boss_presence_probe`).
+
+**Moving parts on static models:** a GLB without a rig can still move a part if it is its own mesh. `PartRig` (`scripts/enemies/part_rig.gd`) poses a part by a transform built in the robot's body frame (conjugated into the part's parent frame, so the fit, RobotModel's lean and import scale carry through), and `PartRig.split_x` cuts a mesh that holds a left and a right copy into two (`split_groups` into any number in one pass, always from the original mesh: splitting a split copy again gave garbage triangles). Used by the HOWITZER's barrel (its own conjugation) and legs, the RONIN's revolvers and katana, the DOG's legs, the ENFORCER's rifle and the GUNSLINGER's gun-arm. A big mesh is cut offline instead (`tools/blender/split_regions.py`; `split_groups` took about 1.3 s on BEHEMOTH-X's 337k triangles): BEHEMOTH-X's arms and legs, APEX ENDOFRAME's gun arms, barrel clusters, thighs and shins. `AimedPart` (`scripts/enemies/aimed_part.gd`) swings a part about a pivot onto a target and back (ENFORCER, GUNSLINGER). Measure parts only after RobotModel's deferred fit has landed.
 
 **Muzzles on the gun:** an enemy fires from its `muzzle` node, and a fixed `Muzzle` in the
 scene drifts off the model's gun as it animates (or never was on it). Two ways to pin it to

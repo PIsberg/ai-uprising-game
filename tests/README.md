@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-479 probes total: **187** wired into the headless suite (`suite`), **85**
+481 probes total: **188** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **207** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **208** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -130,6 +130,8 @@ or GPU-timing probes; `--headless` renders these black).
 | daily_op_probe | Daily Op (#172): `daily_op_for` is deterministic per date and varies over 14 days (never a boss or the first level); the arsenal follows campaign pacing; best score and streak rules incl. month/leap boundaries; the real flow from a watcher under root: start today's op (HARD, its directive and arsenal, savegame.cfg byte-identical), clear it (DAILY OP COMPLETE + score on the win screen, records.cfg updated), Continue returns to the menu with the campaign state handed back and the button showing the clear. Never writes savegame.cfg; backs records.cfg up to disk first | suite |
 | damage_math_probe | Combat damage math measured in-engine from real shots at real enemies (range falloff bands, headshots, pierce), never derived from .tres fields | suite |
 | settings_roundtrip_probe | Every public GraphicsSettings variable (30 today, found by reflection, not a list) is moved to another in-range value, saved, reverted in memory and loaded: all must come back; runtime-only state must be named in TRANSIENT with a reason. Restores the player's settings.cfg byte for byte. Dropping one load line fails it, naming the setting | suite |
+| boss_presence_probe | Boss fights are staged: all 7 bosses have a name and an epithet that translates (es); each phased boss's `_phase()` follows its `boss_phase_marks()` at 90/50/20 % (1, 2, 3); with the real HUD, BEHEMOTH-X's arrival slides the letterbox in (211 px), shows its name and epithet and holds them (a tween that chained its fade-out into the hold cleared the card 0.85 s in), then clears; the bar is notched at 66/33 %; a 10 % hit leaves a trail that drains to the bar; crossing 66 % stages PHASE II once (signal, banner, a roar ring), crossing 33 % the FINAL PHASE; a 4 s hitch frame advances the card 0.05 s, not to its end | suite |
+| boss_presence_shot | Look-check of the boss presence HUD over BEHEMOTH-X: the intro card at its peak, the notched bar with a damage trail, the PHASE II and FINAL PHASE banners; `-- --out=<dir>` | windowed |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
 | story_arc_probe | The red thread: every campaign level has a StoryArc beat (tagline and lead, and a trace entry after the first), acts run in campaign order with none skipped, the briefing shows act header + tagline + numbered trace card + thread bar (guardrails), and a level outside the story (range) shows none of it; the HUD's SECTOR CLEARED lead line shows gpt's lead and hides on the range; every act has 3+ overlord lines, none naming ARCHON, and with an empty dossier the HUD opens uplink on an act-III line; the credits list THE 03:14 TRACE with one numbered lead per level, the finale's last | suite |
 | story_i18n_probe | The story reaches the screen translated (#236): with the locale set to German, the briefing displays the tagline, "AKT V · DIE RELAISKETTE", the trace log and the trace card header in German; the SECTOR CLEARED lead line, an act overlord line and an ambient taunt show German in the HUD; the credits' trace title and recap are German (red on the old code: act header, trace header and lead line were built with %, nothing had a row) | suite |
