@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
+[ext_resource type="PackedScene" uid="uid://b0proj0plasma1" path="res://scenes/weapons/projectile_plasma.tscn" id="3_proj"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "PALM Cannon"
+damage_class = 2
+kill_fx = 1
+alt_mode = 0
+fire_mode = 0
+damage_type = 1
+damage = 45.0
+fire_rate = 3.0
+range_m = 44.0
+spread_deg = 0.8
+aim_spread_mult = 0.5
+pellets = 1
+headshot_mult = 1.0
+recoil_pitch = 2.2
+recoil_yaw = 0.5
+recoil_recovery = 7.0
+mag_size = 16
+reserve_max = 0
+reload_time = 1.0
+projectile_scene = ExtResource("3_proj")
+projectile_speed = 50.0
+splash_radius = 3.5
+splash_damage = 50.0
+muzzle_flash_scene = ExtResource("2_mf")
+muzzle_scale = 1.4
+sound_id = "palm"
+slide_kick = 0.0
+tracer_color = Color(0.55, 0.85, 1, 1)
+viewmodel_color = Color(0.3, 0.5, 0.65, 1)
+kick_back = 1.8
+kick_lift = 0.2
+kick_climb = 2.8
+kick_roll = 0.5
+kick_roll_bias = 0.0
+kick_side = 0.3
+kick_stiffness = 190.0
+kick_damping = 19.0
+fov_punch = 1.2
+fire_thump = 0.6
+action_clack = false
+reload_style = 2

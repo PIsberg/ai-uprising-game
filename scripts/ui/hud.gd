@@ -211,6 +211,7 @@ func _ready() -> void:
 			wm.weapon_changed.connect(_on_weapon_changed)
 			wm.ammo_changed.connect(_on_ammo_changed)
 			wm.weapon_added.connect(_on_weapon_added)
+			wm.weapon_removed.connect(func(_w) -> void: _refresh_carousel())
 			if wm.current:
 				_on_weapon_changed(wm.current)
 				_on_ammo_changed(wm.current.mag, wm.current.reserve)
@@ -2013,7 +2014,7 @@ func _reticle_hue(name: String) -> Color:
 	return Color.from_hsv(h, 0.32, 1.0)
 
 func _on_weapon_added(w: Weapon) -> void:
-	if w and w.data:
+	if w and w.data and not w.salvage: # a salvage grab has its own pickup line
 		_show_toast(tr("WEAPON ACQUIRED — ") + w.data.display_name)
 	_refresh_carousel() # a new slot joined the rack — rebuild the strip
 	_flash_carousel()

@@ -152,6 +152,7 @@ func _ready() -> void:
 	hp.died.connect(_on_died_voice)
 	# Its weights pour out on death (DataBleed) - off the signal for the same reason.
 	hp.died.connect(_data_burst)
+	hp.died.connect(func(_s) -> void: Salvage.drop_from(self)) # heavies drop their gun
 	# ...and its last log line (DeathLog), off the signal too.
 	hp.died.connect(_death_log)
 	hp.damaged.connect(_on_damaged)

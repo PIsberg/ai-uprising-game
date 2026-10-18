@@ -302,6 +302,7 @@ res://tests/archon_finetune_probe.tscn
 res://tests/changelog_clip_probe.tscn
 res://tests/cascade_probe.tscn
 res://tests/codex_family_probe.tscn
+res://tests/salvage_probe.tscn
 res://tests/smasher_gait_probe.tscn
 res://tests/terminator_rig_probe.tscn
 res://tests/boss_presence_probe.tscn
