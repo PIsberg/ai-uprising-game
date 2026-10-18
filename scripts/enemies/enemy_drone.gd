@@ -101,6 +101,9 @@ func _setup_hum() -> void:
 func _apply_gravity(_delta: float) -> void:
 	pass # drones float
 
+func pilot_flies() -> bool:
+	return true # a NeuralUplink pilot climbs and dives on jump/crouch
+
 func _move_toward(dest: Vector3, delta: float) -> void:
 	_hover_phase += delta * hover_freq
 	var desired_y := dest.y + hover_height + sin(_hover_phase) * hover_amplitude

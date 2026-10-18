@@ -127,6 +127,9 @@ var _glitch: float = 0.0
 var _glitch_decay: float = 2.5
 
 var _dead: bool = false
+## NeuralUplink: the mind is out riding a hijacked robot. The body stands where
+## it was left, takes no input and can still be shot (which snaps the link).
+var linked_out: bool = false
 var _bob_phase: float = 0.0
 var _was_on_floor: bool = true
 var _camera_base_y: float = 0.0
@@ -311,6 +314,12 @@ func _ready() -> void:
 	_register_melee_action()
 	_register_grapple_action()
 	_register_ultimate_action()
+	var uplink := NeuralUplink.new()
+	uplink.name = "NeuralUplink"
+	add_child(uplink)
+	var patch := AdversarialPatch.new()
+	patch.name = "AdversarialPatch"
+	add_child(patch)
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -677,8 +686,8 @@ func _input(event: InputEvent) -> void:
 		_toggle_flashlight()
 	if InputMap.has_action("night_vision") and event.is_action_pressed("night_vision"):
 		toggle_night_vision()
-	if _dead:
-		return  # no looking around once you're down
+	if _dead or linked_out:
+		return  # no looking around once you're down (or riding a robot: NeuralUplink looks)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var m := event as InputEventMouseMotion
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
@@ -746,8 +755,9 @@ func toggle_night_vision() -> void:
 		AudioBus.play_synth_ui("empty_click", -10.0, 0.9)
 
 func _physics_process(delta: float) -> void:
-	if _dead:
-		# Collapsed: gravity holds you on the deck, momentum bleeds off; no control.
+	if _dead or linked_out:
+		# Collapsed (or vacated by a NeuralUplink ride): gravity holds you on the
+		# deck, momentum bleeds off; no control.
 		# Blast rings still age out down here — otherwise the very blast that
 		# killed you freezes mid-expansion across the whole death screen.
 		_handle_screen_shock(delta)
@@ -983,6 +993,11 @@ func _do_melee() -> void:
 		# Frontal cone only — it's a shove, not an aura.
 		var flat := to; flat.y = 0.0
 		if flat.length() > 0.1 and rad_to_deg(fwd.angle_to(flat.normalized())) > melee_arc_deg * 0.5:
+			continue
+		# Wearing an ADVERSARIAL PATCH: the shove slaps it onto the robot instead.
+		var patch := AdversarialPatch.active_on(self)
+		if patch and col is EnemyBase and patch.tag_robot(col as EnemyBase):
+			struck = true
 			continue
 		var d := col.get_node_or_null("Damageable")
 		if d and d.has_method("apply_damage"):
