@@ -46,6 +46,7 @@ The CX-4 Cascade's kills chain-detonate through a pack (`scripts/weapons/cascade
 
 * A gun with `WeaponData.cascade_damage` > 0 primes every robot its hitscan hits (`Cascade.prime`, before the hit lands so the killing round counts): a `CascadeCharge` child with a cyan pilot light, live for `PRIME_TIME` (2.5 s) and refreshed by each hit. The blast scales with the Armory damage track (`eff_damage() / damage`).
 * A primed robot that dies to anything (grenade, mod proc, hazard) detonates `POP_DELAY` later via its `Damageable.died`: everything hostile within `cascade_radius` is primed one generation deeper at `DECAY` (0.8x) and then takes the blast through `GameState.apply_secondary_damage`. Victims it kills detonate in turn; `MAX_GEN` caps the depth. Only the `enemy` group is hit, so the player never is; bosses (`BOSS_HP`) are never primed.
+* Explosive props in range (`destructible` group with `Destructible.explode`: barrels, gas canisters, cars) take `PROP_MULT` x the blast, so they always go off, and their own splash (which can hurt the player, like any barrel) kills and so pops more primed robots. Crates and fences are left standing.
 * A chain of 2+ pops reports through `GameState.note_cascade` once `SETTLE` passes with no new pop: `cascade_chain(pops, pos)` drives the HUD stamp (`CASCADE xN`, `STACK OVERFLOW xN` from 6), chains of `CASCADE_CALLOUT` (3) or more pay `CASCADE_BONUS` per robot past the second and teach the `cascade` hint, and `stat_best_cascade` lands in the debrief highlights. `tests/cascade_probe`.
 
 ## Salvage

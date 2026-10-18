@@ -12,7 +12,8 @@ extends RefCounted
 ##
 ## The blast goes through GameState.apply_secondary_damage (score, leech and
 ## OVERLOAD like any hit, not counted as a fresh hit) and only ever reaches the
-## "enemy" group, so it can't hurt the player. Bosses (BOSS_HP) are never primed:
+## "enemy" group, so it can't hurt the player directly. It also sets off any
+## explosive prop in range (a barrel's own blast can hurt the player, as always). Bosses (BOSS_HP) are never primed:
 ## their deaths are set pieces. When a chain of two or more pops settles,
 ## GameState.note_cascade reports its length. Covered by tests/cascade_probe.
 ##
@@ -26,6 +27,7 @@ const MAX_GEN := 6
 const SETTLE := 0.6     ## seconds after the last pop before the chain is reported
 const BOSS_HP := 500.0  ## same tell as EnemyBase.HIJACK_BOSS_HP
 const COLOR := Color(0.55, 0.95, 1.0)
+const PROP_MULT := 10.0 ## an explosive prop in range always goes off
 
 ## One chain reaction: how many robots have popped and when the last one did.
 class Chain extends RefCounted:
@@ -89,6 +91,12 @@ static func _detonate(tree: SceneTree, pos: Vector3, damage: float, radius: floa
 	for e in victims:
 		if is_instance_valid(e):
 			GameState.apply_secondary_damage(_hp(e), damage, src, pos)
+	# Explosive props in range go off too (Destructible.explode: barrels, gas
+	# canisters, cars), and their blasts kill and so pop more primed robots.
+	# Plain props (crates, fences) are left standing.
+	for p in tree.get_nodes_in_group("destructible"):
+		if is_instance_valid(p) and p.get("explode") and (p as Node3D).global_position.distance_to(pos) <= radius:
+			GameState.apply_secondary_damage(_hp(p), damage * PROP_MULT, src, pos)
 	var mine := chain.serial
 	tree.create_timer(SETTLE, false).timeout.connect(func() -> void:
 			if chain.serial == mine and chain.pops >= 2:
