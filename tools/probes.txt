@@ -298,3 +298,5 @@ res://tests/adversarial_patch_probe.tscn
 res://tests/reward_rewrite_probe.tscn
 # ARCHON fine-tunes on the dossier: habit plan, swapped wave rosters, affixed heavies, phase-3 clone.
 res://tests/archon_finetune_probe.tscn
+# Changelog clip scene: aims at the parked target, burst lands, reloads, live input locked, enemy=none lane mode.
+res://tests/changelog_clip_probe.tscn

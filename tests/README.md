@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-474 probes total: **184** wired into the headless suite (`suite`), **85**
+475 probes total: **185** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -97,6 +97,7 @@ or GPU-timing probes; `--headless` renders these black).
 | campaign_smoke | Full-campaign live smoke test: boots every level scene, bakes navmesh, reports build/player/health per level | headless |
 | cargo_lift_probe | CargoLift: a player standing on the car is carried to the top landing (6.98 of 7.0 m in 3.3 s, never below the car), the car waits up there, an empty car comes down when the player stands by the bottom landing (2.7 s), the car is solid ground at both ends; LAVA WORLD's and WATER WORLD's lifts each land flush at both ends beside a deck nothing else reaches, at least 1 m above any flood their level raises | suite |
 | cargo_lift_shot | A level's cargo lift (LAVA WORLD, or `--level=water_world`): the shaft with the car down, the car at its top deck, the view from the deck; `-- --out=<dir> [--level=<id>]` | windowed |
+| changelog_clip_probe | The changelog-clip skill's scene (`tools/changelog_clip.tscn`): at the trim mark the camera is within 3 deg of the parked target and the mark precedes the first shot; the burst fires 2+ shots that land (target health drops) while the target holds its spot; the clip reloads; the player and WeaponManager take no live input (red-checked: without the lock both read true; a pushed mouse event cannot show it headless, where the mouse is never captured); `enemy=none` parks a wall slab in the line of fire instead of a target and still fires and reloads | suite |
 | chapters_test | Campaign chapter groupings end on the expected level titles | headless |
 | checkpoint_probe | Mid-level checkpoint/respawn: task completion sets a checkpoint; dying after relocating restores it | headless |
 | claude_showcase | Claude vault showcase; framed views of the centrepiece/lighting | windowed |
