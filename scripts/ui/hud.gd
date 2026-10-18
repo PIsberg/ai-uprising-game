@@ -179,6 +179,12 @@ func _ready() -> void:
 	toast.modulate.a = 0.0
 	boss_bar.visible = false
 	GameState.boss_spawned.connect(_on_boss_spawned)
+	# Intro card, phase banners, and the bar's notches + damage trail.
+	var presence := BossPresence.new()
+	presence.name = "BossPresence"
+	add_child(presence)
+	move_child(presence, 0) # its letterbox sits under the boss bar and the rest of the HUD
+	presence.setup(boss_health_bar)
 	_style_health_bar()
 	_style_stamina_bar()
 	_build_upgrade_chips()
@@ -2094,7 +2100,7 @@ func _on_boss_spawned(boss: Node) -> void:
 	# Let the overlord gloat a beat after the warning toast lands.
 	var t := get_tree().create_timer(1.3)
 	t.timeout.connect(func(): _overlord_say(OVERLORD_BOSS[randi() % OVERLORD_BOSS.size()]))
-	_show_toast(tr("⚠ WARNING — ") + boss_name_label.text)
+	# The arrival itself is BossPresence's intro card (it replaced a toast).
 
 func _on_boss_health(cur: float, max_: float) -> void:
 	boss_health_bar.max_value = max_

@@ -18,6 +18,7 @@ extends EnemyBase
 ## scene supplies only the body, collider, Eye/Muzzle markers and Damageable.
 
 @export var boss_name: String = "ARCHON"   ## Shown on the HUD boss bar.
+@export var boss_epithet: String = "THE MIND BEHIND THE MACHINES" ## Under the name on the intro card (BossPresence).
 @export var hover_height: float = 4.6      ## Brain centre height above the floor.
 @export var proj_speed: float = 36.0
 @export var proj_damage: float = 12.0
@@ -381,14 +382,10 @@ func _boot_strike(offset: Vector3, h: float) -> void:
 # ---------- siege loop ----------
 
 func _phase() -> int:
-	if hp == null or hp.max_health <= 0.0:
-		return 1
-	var frac := hp.current_health / hp.max_health
-	if frac <= 0.34:
-		return 3
-	elif frac <= 0.67:
-		return 2
-	return 1
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.67, 0.34]
 
 ## Tear gates and pour out a fresh legion. Shield stays up until they're cleared.
 func _start_wave() -> void:

@@ -23,6 +23,9 @@ Also fails on any story string with no row (#236): each StoryArc beat's
 tagline, trace and lead, the act names, the overlord's act lines, the HUD's
 taunt pools and the format strings the briefing, HUD and credits build.
 The game-over screen's taunts, tips and formats likewise (#337).
+Also fails on any boss epithet (`boss_epithet` in scripts/enemies/enemy_*.gd)
+or BossPresence card/banner line with no row: the intro card and the phase
+banner show them through tr().
 
 Also fails on any skirmish toast (GameState.skirmish_event.emit anywhere under
 scripts/: a literal title, either side of a `"A" if c else "B"` title, and a
@@ -33,6 +36,7 @@ English text before tr() saw it, so no row could ever have matched.
     python tools/check_strings_csv.py
 """
 import csv
+import glob
 import os
 import re
 import sys
@@ -42,6 +46,11 @@ CSV = os.path.join(ROOT, "assets", "i18n", "strings.csv")
 
 # (file, regex) pairs whose first group is a string the HUD shows through tr().
 LABEL_SOURCES = [
+    # boss intro card: each boss's epithet, the card header and phase banners
+    # (a path may be a glob)
+    ("scripts/enemies/enemy_*.gd", r'boss_epithet(?:: String)? = "([^"]+)"'),
+    ("scripts/ui/boss_presence.gd", r'(?:HEADER|FINAL_TITLE) := "([^"]+)"'),
+    ("scripts/ui/boss_presence.gd", r'"(PHASE [IVX]+)"'),
     # every "label": "..." in the level defs (tasks, survive waves, firewalls)
     ("scripts/levels/level_defs.gd", r'"label":\s*"((?:[^"\\]|\\.)+)"'),
     # builder fallbacks: t.get("label", "Hack the terminal")
@@ -113,11 +122,16 @@ CONST_ARRAYS = [
 def required_labels() -> dict:
     """Map each label the HUD translates to the first file that authors it."""
     out = {}
-    for rel, pattern in LABEL_SOURCES:
-        with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
-            src = f.read()
-        for m in re.finditer(pattern, src):
-            out.setdefault(m.group(1).replace('\\"', '"'), rel)
+    for rel_glob, pattern in LABEL_SOURCES:
+        paths = sorted(glob.glob(os.path.join(ROOT, rel_glob)))
+        if not paths:
+            out.setdefault("<no file matches %s>" % rel_glob, rel_glob)
+        for path in paths:
+            rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            with open(path, encoding="utf-8") as f:
+                src = f.read()
+            for m in re.finditer(pattern, src):
+                out.setdefault(m.group(1).replace('\\"', '"'), rel)
     for rel, name in CONST_ARRAYS:
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             src = f.read()

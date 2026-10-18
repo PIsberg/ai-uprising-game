@@ -6,6 +6,7 @@ signal player_died
 signal level_completed
 signal score_changed(new_score: int)
 signal boss_spawned(boss: Node) ## A boss enemy appeared — HUD shows its health bar.
+signal boss_phase_changed(boss: Node, phase: int, final: bool) ## A boss crossed one of its boss_phase_marks() — HUD banners the new phase (final = its last).
 signal player_dealt_damage(amount: float, world_pos: Vector3, killed: bool, crit: bool) ## Player landed a hit — drives hit markers + damage numbers (crit = headshot).
 signal enemy_killed(score: int, label: String) ## An enemy was destroyed — drives the HUD kill feed.
 signal objective_blocked(text: String) ## Player reached a locked portal — HUD posts why.

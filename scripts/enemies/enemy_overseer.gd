@@ -20,6 +20,8 @@ extends EnemyBase
 @export var barrage_damage: float = 30.0
 var _barrage_cd: float = 4.5
 @export var preview: bool = false ## Codex/briefing showcase: hover idle, skip the portal arrival (BossPortal swirl), boss bar + AI.
+@export var boss_name: String = "OVERSEER" ## Shown on the HUD boss bar (it read "BOSS" until 2026-10-18: none was set).
+@export var boss_epithet: String = "SKYHOLD COMMAND GUNSHIP" ## Under the name on the intro card (BossPresence).
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
 const SEEKER := preload("res://scenes/enemies/seeker.tscn")
@@ -114,14 +116,10 @@ func _finish_arrival() -> void:
 	set_physics_process(true)
 
 func _phase() -> int:
-	if hp == null or hp.max_health <= 0.0:
-		return 1
-	var frac := hp.current_health / hp.max_health
-	if frac <= 0.33:
-		return 3
-	elif frac <= 0.66:
-		return 2
-	return 1
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.66, 0.33]
 
 func _apply_gravity(_delta: float) -> void:
 	pass

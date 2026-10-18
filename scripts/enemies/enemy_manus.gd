@@ -18,6 +18,7 @@ extends EnemyBase
 ## finger eruption strikes TWICE — the second burst leads where you're running.
 
 @export var boss_name: String = "MANUS"   ## Shown on the HUD boss bar.
+@export var boss_epithet: String = "THE ASSEMBLY'S MASTER HAND" ## Under the name on the intro card (BossPresence).
 @export var preview: bool = false ## Codex/briefing showcase: idle, skip entrance/boss bar.
 @export_group("Weak spot")
 @export var core_radius: float = 1.1      ## Hit tolerance around the wrist core.
@@ -162,16 +163,12 @@ func _physics_process(delta: float) -> void:
 		if _wake <= 0.0:
 			hp.invulnerable = false
 		return
-	# Phase-change punch: the arm rears, the alarm sounds, the floor shakes —
-	# the tell that the fight just got faster (same read as SMASHER/COLOSSUS).
+	# Phase change: the arm rears and the core rings out (the roar, quake and
+	# banner are EnemyBase._boss_phase_beat's).
 	var ph := _phase()
 	if ph != _last_phase:
 		_last_phase = ph
 		recoil = 1.0
-		AudioBus.play_synth_ui("eas_alert", -10.0)
-		var pl := get_tree().get_first_node_in_group("player")
-		if pl and pl.has_method("shake"):
-			pl.shake(0.6)
 		spawn_shockwave_ring(sweep_range * 0.6, Color(0.5, 0.85, 1.0), global_position)
 	_sweep_cd = maxf(0.0, _sweep_cd - delta)
 	_slam_cd = maxf(0.0, _slam_cd - delta)
@@ -247,12 +244,10 @@ func _state_chase(delta: float) -> void:
 ## Health-keyed phase, 1..3 (same thresholds as the other bosses): the core
 ## reads hotter and every attack cycles faster the more damage it has taken.
 func _phase() -> int:
-	var frac := hp.current_health / maxf(hp.max_health, 1.0)
-	if frac <= 0.33:
-		return 3
-	elif frac <= 0.66:
-		return 2
-	return 1
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.66, 0.33]
 
 func _cd_mult() -> float:
 	return float(PHASE_CD_MULT[_phase() - 1])

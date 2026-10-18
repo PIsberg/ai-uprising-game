@@ -21,6 +21,7 @@ extends EnemyBase
 @export var target_height: float = 2.2   ## The model is scaled to this height (metres).
 @export var model_yaw_deg: float = 180.0 ## Flip (0/180) if the model faces the wrong way.
 @export var boss_name: String = "APEX ENDOFRAME" ## Shown on the HUD boss bar.
+@export var boss_epithet: String = "ROTARY HUNTER-KILLER" ## Under the name on the intro card (BossPresence).
 @export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the eruption entrance (telegraph ring), boss bar + AI.
 
 const ENTRANCE_FX := preload("res://scenes/fx/enemy_explosion.tscn")
