@@ -6,8 +6,11 @@ extends EnemyBase
 ## Uses the HUD boss bar (GameState.announce_boss) and a cinematic entrance.
 ##
 ## Visuals are the imported "George" heavy mech (RobotModel on $Model drives the
-## walk/shoot clips); the pulsing Reactor weak-point sphere and the eye spotlight
-## are scene markers layered on top.
+## walk/idle clips; each attack plays its own: Shoot for the artillery, Shoot
+## held through the beam sweep, a crouch-leap-land Jump for the slam). The
+## pulsing Reactor weak-point sphere, the eye spotlight and the muzzles are scene
+## markers that ride the rig's Body bone, and each seismic footfall fires as a
+## foot plants (_follow_rig).
 
 @export var boss_name: String = "GOLIATH-IX"   ## Shown on the HUD boss bar.
 @export var boss_epithet: String = "WALKING SIEGE ENGINE" ## Under the name on the intro card (BossPresence).
@@ -58,6 +61,18 @@ var _drop_target_y: float = 0.0
 var _thrusters: Array[RocketExhaust] = []
 var _glow_mat: StandardMaterial3D
 var _last_phase: int = 1
+# Rig (see _setup_rig): markers ride the Body bone, footfalls land on the feet.
+const FOOT_PLANTED := 0.3  ## A foot this close to the floor (m) is planted...
+const FOOT_LIFTED := 0.45  ## ...once it has been lifted at least this high.
+## Fraction of the George Jump clip where it lands (Body bone back to its
+## crouch): the slam plays the clip so that landing falls on the impact.
+const JUMP_LANDS_AT := 0.75
+var _rig_tried := false
+var _rig_sk: Skeleton3D
+var _rig_body := -1
+var _rig_feet: Array = []
+var _rig_markers: Array = [] ## [node, position in the Body bone's frame at idle]
+var _foot_up: Array = [false, false]
 
 # Attack timers.
 var _artillery_cd: float = 1.5
@@ -222,12 +237,77 @@ func _process(delta: float) -> void:
 	# rips out from the foot, and anyone caught underfoot is flung and crushed. Its
 	# movement itself is a weapon (matches the colossal siege chassis) — you never
 	# want to be beneath it.
-	if speed > 0.1 and is_on_floor():
+	if not _rig_tried:
+		_setup_rig()
+	if _rig_sk:
+		_follow_rig(speed)
+	elif speed > 0.1 and is_on_floor():
+		# Rig-less (the titan): its procedural stride runs on _walk_phase.
 		var fs := sin(_walk_phase)
 		var last := sin(_walk_phase - delta * rate)
 		if (fs > 0.0) != (last > 0.0):
 			AudioBus.play_synth_at("mech_step", global_position, 1.0, randf_range(0.6, 0.75))
 			_footfall_quake()
+
+# ---------- rig: markers ride the body, quakes land under the feet ----------
+
+## The George rig's Body bone bobs ~1.9 m through a walk cycle and leaps ~3.8 m
+## in the Jump clip, so the scene's markers (reactor, head and eye, muzzles)
+## follow its offset from the idle pose, and each seismic footfall fires when a
+## foot actually plants, under that foot. Rig-less subclasses (the titan) keep
+## the static markers and the _walk_phase footfall.
+func _setup_rig() -> void:
+	var model := get_node_or_null("Model") as RobotModel
+	if model == null or not model.is_visible_in_tree():
+		return
+	var sks := model.find_children("*", "Skeleton3D", true, false)
+	var aps := model.find_children("*", "AnimationPlayer", true, false)
+	if sks.is_empty() or aps.is_empty():
+		_rig_tried = true
+		return
+	var sk := sks[0] as Skeleton3D
+	if (aps[0] as AnimationPlayer).current_animation != model.anim_idle:
+		return # measure the idle pose
+	_rig_tried = true
+	_rig_body = sk.find_bone("Body")
+	_rig_feet = [sk.find_bone("Foot.L"), sk.find_bone("Foot.R")]
+	if _rig_body < 0 or _rig_feet.has(-1):
+		return
+	_rig_sk = sk
+	# Each marker's place in the Body bone's frame at idle, so it carries the
+	# bone's bob, leap and RobotModel's lean alike.
+	var to_bone := _rig_bone_xf().affine_inverse()
+	for n in [_reactor, _head, _muzzle_l, _muzzle_r, _muzzle_core]:
+		if n:
+			_rig_markers.append([n, to_bone * (n as Node3D).position])
+	# After the pose is final, so the markers never trail the animation a frame.
+	sk.skeleton_updated.connect(_place_markers)
+
+## A bone's position in the boss's own frame.
+func _rig_point(bone: int) -> Vector3:
+	return global_transform.affine_inverse() * (_rig_sk.global_transform * _rig_sk.get_bone_global_pose(bone).origin)
+
+## The Body bone's transform in the boss's own frame.
+func _rig_bone_xf() -> Transform3D:
+	return global_transform.affine_inverse() * _rig_sk.global_transform * _rig_sk.get_bone_global_pose(_rig_body)
+
+func _place_markers() -> void:
+	if not is_instance_valid(_rig_sk):
+		return
+	var xf := _rig_bone_xf()
+	for m in _rig_markers:
+		(m[0] as Node3D).position = xf * (m[1] as Vector3)
+
+func _follow_rig(speed: float) -> void:
+	for i in _rig_feet.size():
+		var foot := _rig_point(_rig_feet[i])
+		if foot.y > FOOT_LIFTED:
+			_foot_up[i] = true
+		elif foot.y < FOOT_PLANTED and _foot_up[i]:
+			_foot_up[i] = false
+			if speed > 0.1 and is_on_floor():
+				AudioBus.play_synth_at("mech_step", global_transform * foot, 1.0, randf_range(0.6, 0.75))
+				_footfall_quake(global_transform * foot)
 
 func _physics_process(delta: float) -> void:
 	if _descending:
@@ -300,12 +380,14 @@ func _choose_attack(dist: float) -> void:
 ## Every heavy step quakes the arena: a dust-ring rips outward, the camera jolts
 ## (scaled by how close you are), and anyone caught under the foot is crushed and
 ## flung clear. Distant steps are just an ominous rumble.
-func _footfall_quake() -> void:
-	_footfall_ring()
+func _footfall_quake(at: Vector3 = Vector3.INF) -> void:
+	if at == Vector3.INF:
+		at = global_position
+	_footfall_ring(at)
 	var p := get_tree().get_first_node_in_group("player")
 	if p == null or not (p is Node3D):
 		return
-	var to: Vector3 = (p as Node3D).global_position - global_position
+	var to: Vector3 = (p as Node3D).global_position - at
 	to.y = 0.0
 	var d := to.length()
 	if d <= footfall_radius:
@@ -323,7 +405,7 @@ func _footfall_quake() -> void:
 		p.shake(0.12) # far-off tremor as the giant approaches
 
 ## An expanding shockwave dust-ring flung out from the foot on impact.
-func _footfall_ring() -> void:
+func _footfall_ring(at: Vector3) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -346,7 +428,7 @@ func _footfall_ring() -> void:
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ring.scale = Vector3(0.6, 0.1, 0.6)
 	scene.add_child(ring)
-	ring.global_position = Vector3(global_position.x, 0.2, global_position.z)
+	ring.global_position = Vector3(at.x, 0.2, at.z)
 	var tw := ring.create_tween().set_parallel(true)
 	tw.tween_property(ring, "scale", Vector3(footfall_radius, 0.05, footfall_radius), 0.4) \
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
@@ -361,6 +443,7 @@ func _fire_artillery() -> void:
 	_artillery_cd = maxf(0.9, artillery_cooldown - float(_phase() - 1) * 0.5)
 	recoil = 1.0
 	var volley := 2 + _phase()  # 3 / 4 / 5 rockets
+	_play_clip("Shoot")
 	var muzzle := _muzzle_l if _fire_left_next else _muzzle_r
 	_fire_left_next = not _fire_left_next
 	if muzzle == null:
@@ -388,6 +471,7 @@ func _begin_beam() -> void:
 	_beam_tick = 0.0
 	var to := target.global_position - global_position
 	_beam_dir0 = atan2(to.x, to.z)
+	_play_clip("Shoot", beam_duration) # braced, gun arm out, through the sweep
 	AudioBus.play_synth_at("plasma_fire", global_position, 3.0, 0.4)
 
 func _tick_beam(delta: float) -> void:
@@ -427,11 +511,24 @@ func _tick_beam(delta: float) -> void:
 			if tr.has_method("setup"):
 				tr.setup(origin, end_point)
 
+## Plays a George clip once and holds locomotion off it (over `seconds` if
+## given). No-op on rig-less subclasses (the titan).
+func _play_clip(clip: String, seconds: float = 0.0) -> void:
+	var model := get_node_or_null("Model") as RobotModel
+	if model == null:
+		return
+	if seconds > 0.0:
+		model.play_oneshot_over(clip, seconds)
+	else:
+		model.play_oneshot(clip)
+
 # ---------- ground slam ----------
 
 func _begin_slam() -> void:
 	_slam_windup = 0.5
 	_slam_cd = slam_cooldown
+	# A leaping stomp: crouch, leap, and land on the impact.
+	_play_clip("Jump", _slam_windup / JUMP_LANDS_AT)
 	recoil = 1.0
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.45)
 	# Paint the kill zone on the ground so the slam is dodgeable, not a surprise.
