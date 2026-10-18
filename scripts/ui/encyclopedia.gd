@@ -4,7 +4,9 @@ extends Node3D
 ## hostile (the very scene the player fights, idle-animating and periodically
 ## striking) on a lit stage, with a dossier panel — dossier, strengths,
 ## weaknesses, and the weapons that counter it. Only hostiles the player has
-## actually encountered (GameState.discovered_enemies) are listed.
+## actually encountered (GameState.discovered_enemies) are listed. Robots built on
+## the same model share a page (EnemyCodex.FAMILIES): Prev/Next walk the pages,
+## the variant bar (or up/down) picks the robot on it.
 
 var _turntable: Node3D
 var _bot: Node3D
@@ -19,12 +21,15 @@ var _key_e: float = 5.0
 var _fill_e: float = 2.0
 var _rim_e: float = 1.6
 
-var _types: Array = []   # discovered codex types, in roster order
-var _index: int = 0
+var _pages: Array = []   # EnemyCodex.pages() of the discovered types
+var _index: int = 0      # page
+var _variant: int = 0    # robot on the page
 var _reframe: int = 0    # frames left to re-fit the camera after a model settles
 
 # UI
 var _name_lbl: Label
+var _family_lbl: Label
+var _variant_bar: HBoxContainer
 var _count_lbl: Label
 var _desc_lbl: Label
 var _strengths_lbl: RichTextLabel
@@ -45,10 +50,7 @@ func _ready() -> void:
 	_refresh()
 
 func _collect_types() -> void:
-	_types.clear()
-	for t in EnemyCodex.ORDER:
-		if GameState.is_enemy_discovered(t) and EnemyCodex.has(t):
-			_types.append(t)
+	_pages = EnemyCodex.pages(GameState.discovered_enemies.keys())
 
 # ---------- 3D stage ----------
 
@@ -167,6 +169,15 @@ func _build_ui() -> void:
 	header.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
 	vb.add_child(header)
 
+	# Family title + one button per discovered variant, on shared-model pages.
+	_family_lbl = Label.new()
+	_family_lbl.add_theme_font_size_override("font_size", 15)
+	_family_lbl.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	vb.add_child(_family_lbl)
+	_variant_bar = HBoxContainer.new()
+	_variant_bar.add_theme_constant_override("separation", 6)
+	vb.add_child(_variant_bar)
+
 	_name_lbl = Label.new()
 	_name_lbl.add_theme_font_size_override("font_size", 40)
 	_name_lbl.add_theme_color_override("font_color", Color(1, 0.95, 0.9))
@@ -260,11 +271,13 @@ func _fill_bullets(rt: RichTextLabel, items: Array, col: String) -> void:
 # ---------- selection ----------
 
 func _refresh() -> void:
-	var any := _types.size() > 0
+	var any := _pages.size() > 0
 	_empty_lbl.visible = not any
-	_prev_btn.disabled = _types.size() <= 1
-	_next_btn.disabled = _types.size() <= 1
+	_prev_btn.disabled = _pages.size() <= 1
+	_next_btn.disabled = _pages.size() <= 1
 	if not any:
+		_family_lbl.text = ""
+		_variant_bar.visible = false
 		_name_lbl.text = ""
 		_count_lbl.text = ""
 		_desc_lbl.text = ""
@@ -272,16 +285,74 @@ func _refresh() -> void:
 		_weaknesses_lbl.text = ""
 		_weapons_lbl.text = ""
 		return
-	_index = wrapi(_index, 0, _types.size())
-	var t: String = _types[_index]
+	_index = wrapi(_index, 0, _pages.size())
+	var page: Array = _pages[_index]
+	_variant = clampi(_variant, 0, page.size() - 1)
+	var t: String = page[_variant]
 	var e := EnemyCodex.get_entry(t)
+	_refresh_variants(page, t)
 	_name_lbl.text = e.get("name", t.to_upper())
-	_count_lbl.text = "%d / %d  encountered" % [_index + 1, _types.size()]
+	_count_lbl.text = "%d / %d  encountered" % [_index + 1, _pages.size()]
+	if page.size() > 1:
+		_count_lbl.text += "   ·   variant %d / %d" % [_variant + 1, page.size()]
 	_desc_lbl.text = e.get("desc", "")
 	_fill_bullets(_strengths_lbl, e.get("strengths", []), "#ff8a66")
 	_fill_bullets(_weaknesses_lbl, e.get("weaknesses", []), "#7fe69a")
 	_fill_bullets(_weapons_lbl, DamageMatrix.codex_lines(t), "#80ccff")
 	_spawn_model(e)
+
+## Family title and variant buttons for a shared-model page; hidden on a page
+## with one robot. The pressed button is the robot on show.
+func _refresh_variants(page: Array, shown: String) -> void:
+	var fam := EnemyCodex.family_of(shown)
+	_family_lbl.text = "%s  ·  %d %s" % [EnemyCodex.family_name(fam), page.size(), "VARIANTS"] 			if page.size() > 1 else ""
+	_family_lbl.visible = page.size() > 1
+	_variant_bar.visible = page.size() > 1
+	for c in _variant_bar.get_children():
+		_variant_bar.remove_child(c)
+		c.queue_free()
+	if page.size() <= 1:
+		return
+	for i in page.size():
+		var b := Button.new()
+		b.text = String(EnemyCodex.get_entry(page[i]).get("name", String(page[i]).to_upper()))
+		b.toggle_mode = true
+		b.button_pressed = i == _variant
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 13)
+		# The robot on show reads cyan, the rest dimmed: the pressed style alone is subtle.
+		var col := Color(0.5, 0.9, 1.0) if i == _variant else Color(0.6, 0.64, 0.72)
+		for k in ["font_color", "font_pressed_color", "font_hover_color", "font_hover_pressed_color"]:
+			b.add_theme_color_override(k, col)
+		b.pressed.connect(_on_variant.bind(i))
+		_variant_bar.add_child(b)
+
+## Every listed robot, page by page, variant by variant (the screenshot tools walk it).
+func shown_types() -> Array:
+	var out: Array = []
+	for p in _pages:
+		out.append_array(p)
+	return out
+
+## Turn to robot `t`'s page and variant. False when it is not listed.
+func show_type(t: String) -> bool:
+	for i in _pages.size():
+		var v := (_pages[i] as Array).find(t)
+		if v >= 0:
+			_index = i
+			_variant = v
+			_strike_accum = 0.0
+			_refresh()
+			return true
+	return false
+
+func _on_variant(i: int) -> void:
+	if i == _variant:
+		_refresh_variants(_pages[_index], _pages[_index][_variant]) # keep it pressed
+		return
+	_variant = i
+	_strike_accum = 0.0
+	_refresh()
 
 ## Swap in the selected hostile as a live, idle-animating model on the turntable.
 func _spawn_model(entry: Dictionary) -> void:
@@ -395,18 +466,26 @@ func _process(delta: float) -> void:
 # ---------- input / nav ----------
 
 func _on_prev() -> void:
-	if _types.size() <= 1:
+	if _pages.size() <= 1:
 		return
-	_index = wrapi(_index - 1, 0, _types.size())
+	_index = wrapi(_index - 1, 0, _pages.size())
+	_variant = 0
 	_strike_accum = 0.0
 	_refresh()
 
 func _on_next() -> void:
-	if _types.size() <= 1:
+	if _pages.size() <= 1:
 		return
-	_index = wrapi(_index + 1, 0, _types.size())
+	_index = wrapi(_index + 1, 0, _pages.size())
+	_variant = 0
 	_strike_accum = 0.0
 	_refresh()
+
+## Up/down step through the variants on a shared-model page.
+func _step_variant(d: int) -> void:
+	if _pages.is_empty() or (_pages[_index] as Array).size() <= 1:
+		return
+	_on_variant(wrapi(_variant + d, 0, (_pages[_index] as Array).size()))
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
@@ -418,3 +497,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_next()
 	elif event.is_action_pressed("ui_left"):
 		_on_prev()
+	elif event.is_action_pressed("ui_down"):
+		_step_variant(1)
+	elif event.is_action_pressed("ui_up"):
+		_step_variant(-1)

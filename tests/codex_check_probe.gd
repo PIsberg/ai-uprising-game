@@ -10,11 +10,8 @@ func _run() -> void:
 	get_tree().root.add_child(enc)
 	await get_tree().create_timer(0.4).timeout
 	for t in TARGETS:
-		var idx: int = enc._types.find(t)
-		if idx < 0:
+		if not enc.show_type(t):
 			continue
-		enc._index = idx
-		enc._refresh()
 		await get_tree().create_timer(0.5).timeout
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()

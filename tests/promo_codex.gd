@@ -2,7 +2,7 @@ extends Node
 ## Promo: enemy codex / bestiary entries -> docs/screenshots/promo/codex_*.png
 ## (PromoOut); the README shows codex_ravager.png.
 const PromoOut := preload("res://tests/promo_out.gd")
-const SHOTS := {17: "codex_ravager", 18: "codex_warmech", 23: "codex_titan"}
+const SHOTS := {"ravager": "codex_ravager", "warmech": "codex_warmech", "titan": "codex_titan"}
 
 func _ready() -> void:
 	for t in EnemyCodex.ORDER:
@@ -13,13 +13,10 @@ func _run() -> void:
 	var enc: Node = (load("res://scenes/ui/encyclopedia.tscn") as PackedScene).instantiate()
 	get_tree().root.add_child(enc)
 	await get_tree().create_timer(0.8).timeout
-	var idxs := SHOTS.keys()
-	idxs.sort()
-	for i in idxs:
-		enc._index = i
-		enc._refresh()
+	for t in SHOTS:
+		enc.show_type(t)
 		await get_tree().create_timer(1.0).timeout   # let the model load + camera reframe
-		await _save(SHOTS[i])
+		await _save(SHOTS[t])
 	enc.queue_free()
 	get_tree().quit()
 

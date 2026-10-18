@@ -22,6 +22,50 @@ const ORDER: Array = [
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
 ]
 
+## Robots built on the same model share one codex page, one variant per
+## member (in ORDER), so the codex reads as chassis families instead of the same
+## body on six pages. Keyed by family id; a type in no family is its own page,
+## and so is every boss (a set piece, even on a shared body: the OVERSEER is an
+## eye-drone hull). tests/codex_family_probe derives the families from the model
+## files the enemy scenes load and fails when this table disagrees.
+const FAMILIES := {
+	"eyedrone": {"name": "EYE-DRONE CHASSIS", "members": ["drone", "seeker", "leech", "mender", "aegis", "attention"]},
+	"trilobite": {"name": "TRILOBITE CRAWLER", "members": ["spider", "skitter", "forkbomb"]},
+	"brawler": {"name": "BRAWLER FRAME", "members": ["brute", "bowler"]},
+	"finflyer": {"name": "FIN-FLYER HULL", "members": ["alien", "fishbot"]},
+	"gunframe": {"name": "GUNNER CHASSIS", "members": ["hunter", "gunner", "overfitter", "diffusion"]},
+	"bot": {"name": "BIPED BOT CHASSIS", "members": ["ravager", "deepfake", "moe"]},
+	"flyergun": {"name": "STRIKE-FLYER AIRFRAME", "members": ["raptor", "reward", "quantizer"]},
+	"walker": {"name": "WALKER MECH CHASSIS", "members": ["warmech", "rollback"]},
+}
+
+## The page a type belongs to: its family id, or the type itself.
+static func family_of(type: String) -> String:
+	for f in FAMILIES:
+		if (FAMILIES[f]["members"] as Array).has(type):
+			return f
+	return type
+
+## Display name of a family page ("" for a single-robot page).
+static func family_name(family: String) -> String:
+	return String(FAMILIES[family]["name"]) if FAMILIES.has(family) else ""
+
+## Codex pages for the `discovered` types: one Array of types per family, the
+## pages and their variants in ORDER, each page where its first member falls.
+## Types with no entry are dropped.
+static func pages(discovered: Array) -> Array:
+	var out: Array = []
+	var at := {}
+	for t in ORDER:
+		if not discovered.has(t) or not ENTRIES.has(t):
+			continue
+		var f := family_of(t)
+		if not at.has(f):
+			at[f] = out.size()
+			out.append([])
+		(out[at[f]] as Array).append(t)
+	return out
+
 const ENTRIES := {
 	"drone": {
 		"scene": "res://scenes/enemies/drone.tscn", "name": "RECON DRONE", "scale": 1.0, "y": 1.6,
