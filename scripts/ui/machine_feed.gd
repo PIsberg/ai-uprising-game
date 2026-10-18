@@ -13,8 +13,13 @@ extends VBoxContainer
 ## event line: a cascade right after the stream's opening line still posts. At most MAX_LINES show, each fading after
 ## LINE_LIFE. Off with the combat callouts setting (GraphicsSettings).
 ## Covered by tests/machine_feed_probe.
+##
+## CHAT POLL: while GameState runs a poll between two surprise events, a tally
+## block sits under the header (bars of POLL_BAR cells); when it closes the feed
+## posts the winner as a "poll" line. tests/chat_poll_probe.
 
 const MIN_GAP := 1.2      ## seconds between posts
+const POLL_BAR := 12      ## cells in a poll option's bar
 const MAX_LINES := 5
 const LINE_LIFE := 7.0    ## seconds a line stays before it fades
 const IDLE_GAP := 22.0    ## a quiet stretch this long gets an idle line
@@ -32,6 +37,8 @@ var last_text: String = ""
 var idle_gap: float = IDLE_GAP
 
 var _header: Label
+var _poll_box: Label
+var _poll_opts: Array = []
 var _since_post: float = 99.0
 var _quiet: float = 0.0
 var _decay_t: float = 0.0
@@ -51,6 +58,16 @@ func _ready() -> void:
 	_header.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	add_child(_header)
 	_refresh_header()
+	_poll_box = Label.new()
+	_poll_box.add_theme_font_size_override("font_size", 14)
+	_poll_box.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	_poll_box.add_theme_constant_override("outline_size", 4)
+	_poll_box.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_poll_box.visible = false
+	add_child(_poll_box)
+	GameState.chat_poll_started.connect(_on_poll_started)
+	GameState.chat_poll_votes.connect(_draw_poll)
+	GameState.chat_poll_ended.connect(_on_poll_ended)
 	GameState.cascade_chain.connect(func(pops: int, _p: Vector3) -> void:
 		if pops >= GameState.CASCADE_CALLOUT:
 			_event("cascade", MachineChat.HYPE["cascade"] * pops))
@@ -65,6 +82,37 @@ func _ready() -> void:
 	GameState.boss_spawned.connect(func(_b: Node) -> void: _event("boss"))
 	GameState.player_died.connect(_on_player_died)
 	_event.call_deferred("intro")
+
+func _on_poll_started(options: Array) -> void:
+	_poll_opts = options
+	_draw_poll([0, 0])
+
+## "CHAT POLL" and one bar per option, its share of the votes so far.
+func _draw_poll(votes: Array) -> void:
+	if _poll_opts.size() < 2:
+		return
+	var total := maxi(1, int(votes[0]) + int(votes[1]))
+	var rows: Array = ["▶ " + tr("CHAT POLL")]
+	for i in 2:
+		var share := float(votes[i]) / total
+		var cells := int(round(share * POLL_BAR))
+		rows.append("%d  %s  %s %d%%" % [i + 1, tr(String(GameState.EVENT_TITLES.get(_poll_opts[i], ""))),
+				"█".repeat(cells) + "░".repeat(POLL_BAR - cells), int(round(share * 100.0))])
+	_poll_box.text = "\n".join(rows)
+	_poll_box.visible = GraphicsSettings.combat_callouts_enabled
+
+func _on_poll_ended(winner: String) -> void:
+	_poll_box.visible = false
+	_poll_opts = []
+	if GraphicsSettings.combat_callouts_enabled:
+		visible = true
+		_post("poll", "%s: %s" % [tr("CHAT VOTED"), tr(String(GameState.EVENT_TITLES.get(winner, winner)))])
+
+func poll_visible() -> bool:
+	return _poll_box.visible
+
+func poll_text() -> String:
+	return _poll_box.text
 
 ## The HUD calls this when a salvage gun lands in your hands.
 func on_salvage() -> void:
@@ -127,7 +175,7 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2(-8, -4), size + Vector2(16, 8)), Color(0, 0, 0, 0.32))
 
 func _lines() -> Array:
-	return get_children().filter(func(c) -> bool: return c != _header)
+	return get_children().filter(func(c) -> bool: return c != _header and c != _poll_box)
 
 func shown_lines() -> int:
 	return _lines().size()

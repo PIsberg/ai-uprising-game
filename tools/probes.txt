@@ -304,6 +304,7 @@ res://tests/cascade_probe.tscn
 res://tests/codex_family_probe.tscn
 res://tests/salvage_probe.tscn
 res://tests/machine_feed_probe.tscn
+res://tests/chat_poll_probe.tscn
 res://tests/smasher_gait_probe.tscn
 res://tests/terminator_rig_probe.tscn
 res://tests/boss_presence_probe.tscn
