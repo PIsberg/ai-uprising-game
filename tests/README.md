@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-470 probes total: **181** wired into the headless suite (`suite`), **85**
+474 probes total: **184** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **204** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **205** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -196,7 +196,11 @@ or GPU-timing probes; `--headless` renders these black).
 | weapon_feel_probe | Every gun's feel in the hands: each of the 13 guns resolves its own fire stream with real signal and no two share one, the fire_thump / action_clack layers carry signal; one shot per gun through the real WeaponManager spring at 60 fps punches and settles within 1 s, the heavy guns (Breacher, Longshot, Gauss, Devastator, OMEGA) climb harder and settle slower than every light one (rifle, Tesla, Arc Coil; red-checked: with the shared spring every settle read 0.27 s), every gun has its own kick signature, the .50 Maelstrom rolls the same way 20 shots of 20; OMEGA's soft spring stays finite through 10 fps frames; an OMEGA shot widens the view by its fov_punch and a pistol shot does not | suite |
 | muzzle_ring_probe | The heavy guns' muzzle pressure ring stays a ring in the world: for each of the 9 guns that throw one (fired from the player's real camera) its angular radius from the eye stays under 14 deg every frame, it travels away from the eye and is gone within 0.4 s; the 4 light guns throw none (red-checked: the old ring spanned 27-39 deg and never moved) | suite |
 | hit_reaction_probe | A robot reacts to what hit it: the hit flash takes the gun's damage-class colour (white untagged), an ARC flash dips and flares again before it fades, a THERMAL glow outlasts a KINETIC flash; on a HEAVY PLATE gunner equal hits stagger it in 3 from a counter gun (Longshot), 5 untagged, 9 from a resisted one (AR-7), beyond what the damage multiplier alone would do (red-checked: without the change every flash was white and the hits matched damage alone, 4 and 7) | suite |
-| viewmodel_shot | Every gun in the player's hands in a real level: at rest and at the kick's peak with its flash, plus a contact sheet; `-- --out=<dir> [--level=res://...] [--only=rifle,omega]` | windowed |
+| impact_class_probe | Wall impacts by damage class through each gun's real hitscan: rail slugs (Longshot, Gauss) splash cyan sparks under a cyan light and leave a hole that glows hot (emission 6) and is dark by 2.5 s; Arc Coil rounds crackle blue-white under a blue light and scorch with a blue glow; M9 and AR-7 keep the surface's sparks and a cold hole; each Breacher pellet throws half a rifle round's sparks; the energy bolts' impact ring is a thin band, not a disc (red-checked: every class looked like a rifle and the old ring was a 0.05-0.12 tube) | suite |
+| ammo_readout_probe | Every gun's holographic round counter: on the viewmodel's left flank, above the fitted box's top, within READOUT_REACH of the stock; shows the full mag, counts down on a shot (the Tesla's beam tick too) in the gun's colour, turns red and pulses at READOUT_LOW (rounded up, so the 3-round OMEGA warns on its last shot), shows "--" while reloading and the full mag after (red-checked: without the readout all 13 guns fail) | suite |
+| reload_anim_probe | Every gun's reload choreography (WeaponData.reload_style): the style's beats in order and all before the reload ends (MAG mag_out/mag_in/rack, SHELLS one shell per round loaded then pump, CELL vent/charge, TUBE breech/load), the gun turns >= 0.2 rad off its pose and is back home within 1 mm / 0.01 rad, a CELL reload drains the glow strips to under a fifth and refills them, all four styles in use with four distinct poses | suite |
+| impact_class_shot | AR-7, Arc Coil, Longshot and Gauss fired into a lit wall 5 m away, 0.12 s after (sparks, light, glow) and 1.2 s after (rail holes cooling); `-- --out=<dir>` | windowed |
+| viewmodel_shot | Every gun in the player's hands in a real level: at rest, at the kick's peak with its flash and 40% into a reload, plus a contact sheet; `-- --out=<dir> [--level=res://...] [--only=rifle,omega]` | windowed |
 | overfitter_shot | Three OVERFITTERs: training on the rifle, overfit to the shotgun (orange shell), overfit to the rifle then hit by the pistol (out of distribution); `-- --out=<dir>` | windowed |
 | deepfake_shot | DEEPFAKE and its two copies facing the camera over 2 s, so a copy's glitch lands in a frame; `-- --out=<dir>` | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |

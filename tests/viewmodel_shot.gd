@@ -1,8 +1,9 @@
 extends Node3D
 ## Windowed look-check of every gun in the player's hands, in a real level: for
-## each gun in GameState.WEAPON_ORDER one frame at rest (<id>_idle.png) and one
-## at the kick's peak with its muzzle flash (<id>_fire.png), plus a contact
-## sheet of all of them (viewmodels.png). Headless renders black.
+## each gun in GameState.WEAPON_ORDER one frame at rest (<id>_idle.png), one
+## at the kick's peak with its muzzle flash (<id>_fire.png) and one 40% into a
+## reload (<id>_reload.png), plus a contact sheet of the fire frames
+## (viewmodels.png). Headless renders black.
 ##   godot --path . res://tests/viewmodel_shot.tscn -- --out=<abs dir> [--level=res://scenes/levels/level_gpt.tscn] [--only=rifle,omega]
 
 func _ready() -> void:
@@ -20,7 +21,6 @@ func _run() -> void:
 		elif a.begins_with("--only="):
 			only = a.substr(7).split(",")
 	DirAccess.make_dir_recursive_absolute(out_dir)
-	get_window().size = Vector2i(1280, 720)
 	add_child((load(level) as PackedScene).instantiate())
 	for i in 60:
 		await get_tree().physics_frame
@@ -57,6 +57,13 @@ func _run() -> void:
 		tile.resize(426, 240)
 		tiles.append(tile)
 		await get_tree().create_timer(0.8).timeout
+		# Mid-reload, 40% in: the style's pose with its first beats played.
+		w.mag = 0
+		w.reserve = maxi(w.reserve, w.eff_mag_size())
+		w.start_reload()
+		await get_tree().create_timer(maxf(0.6, w.eff_reload_time()) * 0.4).timeout
+		(await _grab()).save_png(out_dir.path_join(id + "_reload.png"))
+		await get_tree().create_timer(maxf(0.6, w.eff_reload_time()) * 0.7).timeout
 		print("captured ", id)
 	if not tiles.is_empty():
 		var cols := 4

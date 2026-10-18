@@ -79,6 +79,7 @@ func _register_jobs() -> void:
 	_job("devastator_fire", _devastator_fire.bind(0.7))
 	_job("fire_thump", _fire_thump.bind(0.3))
 	_job("action_clack", _action_clack.bind(0.08))
+	_job("vent_hiss", _vent_hiss.bind(0.55))
 	_job("empty_click", _click.bind(0.12, 1800.0))
 	_job("reload", _reload_chunk.bind(0.45))
 	_job("pump_action", _pump.bind(0.35))
@@ -593,6 +594,25 @@ func _action_clack(duration: float) -> AudioStreamWAV:
 				continue
 			var env := exp(-u * 170.0)
 			s += ((randf() * 2.0 - 1.0) * 0.8 + sin(TAU * (2200.0 + 1200.0 * k) * u) * 0.5) * env
+		buf[i] = s
+	return _from_floats(buf)
+
+## An energy cell venting on reload (Weapon CELL style): a pressurised hiss
+## that bursts, then sighs off as the cell empties.
+func _vent_hiss(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var lp := 0.0
+	var prev := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var white := randf() * 2.0 - 1.0
+		lp = lerpf(lp, white, 0.35)
+		var hp := white - lp # keep the top: steam, not rumble
+		var env := (1.0 - exp(-t * 60.0)) * exp(-t * 5.5)
+		var s := lerpf(prev, hp, 0.6) * env * 0.9
+		prev = s
 		buf[i] = s
 	return _from_floats(buf)
 

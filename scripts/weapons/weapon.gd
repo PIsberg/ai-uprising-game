@@ -62,10 +62,8 @@ var _trigger_held_last: bool = false
 var _viewmodel_home: Vector3
 var _slide_home: Vector3
 var _pump_home: Vector3
-var _mag_home: Vector3
 var _slide_node: Node3D
 var _pump_node: Node3D
-var _mag_node: Node3D
 
 # Continuous-beam (FireMode.BEAM) state: the visual updates every frame while
 # the trigger is held; damage/ammo tick at data.fire_rate.
@@ -110,13 +108,10 @@ func _ready() -> void:
 		_viewmodel_home = viewmodel.position
 		_slide_node = viewmodel.get_node_or_null("Slide") as Node3D
 		_pump_node = viewmodel.get_node_or_null("Pump") as Node3D
-		_mag_node = viewmodel.get_node_or_null("Magazine") as Node3D
 		if _slide_node:
 			_slide_home = _slide_node.position
 		if _pump_node:
 			_pump_home = _pump_node.position
-		if _mag_node:
-			_mag_home = _mag_node.position
 	if data:
 		mag = eff_mag_size()
 		reserve = data.reserve_max
@@ -124,6 +119,8 @@ func _ready() -> void:
 	if not _apply_real_model():
 		_bevel_viewmodel()
 	_build_heat_glow()
+	_build_ammo_readout()
+	_build_energy_cell()
 	GameState.rampage_changed.connect(_on_rampage_changed)
 	_on_rampage_changed(GameState.rampage_tier, "")
 
@@ -208,6 +205,7 @@ func _apply_real_model() -> bool:
 		-(aabb.position.x + aabb.size.x * 0.5) * s,
 		0.02 - (aabb.position.y + aabb.size.y * 0.8) * s,
 		0.18 - aabb.end.z * s)
+	_fit_box = AABB(model.position + aabb.position * s, aabb.size * s)
 	# Barrel tip = front face of the fitted model, slightly proud of it.
 	if muzzle:
 		muzzle.position.z = 0.18 - cfg["len"] - 0.03
@@ -224,7 +222,9 @@ func _apply_real_model() -> bool:
 		for i in mi.mesh.get_surface_count():
 			var m := mi.mesh.surface_get_material(i) as BaseMaterial3D
 			if m and m.albedo_color.s > 0.35 and m.albedo_color.v > 0.25:
-				mi.set_surface_override_material(i, _energy_accent_material(accent))
+				var am := _energy_accent_material(accent)
+				_accent_mats.append(am)
+				mi.set_surface_override_material(i, am)
 			else:
 				mi.set_surface_override_material(i, _gunmetal_material(m, tint))
 	return true
@@ -239,7 +239,7 @@ func _energy_accent_material(col: Color) -> StandardMaterial3D:
 	mat.roughness = 0.35
 	mat.emission_enabled = true
 	mat.emission = col
-	mat.emission_energy_multiplier = 1.4
+	mat.emission_energy_multiplier = ACCENT_ENERGY
 	return mat
 
 ## A procedural worn-gunmetal PBR material. The Kenney kit ships flat white plastic
@@ -323,6 +323,84 @@ func _bevel_viewmodel() -> void:
 		bev.material = box.material
 		mi.mesh = bev
 
+## The fitted gun's box in viewmodel space (set by _apply_real_model; the
+## primitive viewmodel's own box otherwise). The ammo readout hangs off it.
+var _fit_box := AABB()
+var _ammo_label: Label3D = null
+const READOUT_LOW := 0.25 ## mag fraction at which the readout turns red and pulses
+const READOUT_LOW_COLOR := Color(1.0, 0.22, 0.15)
+const READOUT_REACH := 0.2 ## metres forward of the stock the readout sits, at most
+
+## A holographic round counter on the gun's left flank, above its rear third,
+## the side you see in your hands: rounds in the mag in the gun's own glow
+## colour, red and pulsing at READOUT_LOW, "--" while reloading. The HUD's
+## corner counter stays; this one is where your eyes already are.
+func _build_ammo_readout() -> void:
+	if viewmodel == null or data == null:
+		return
+	var box := _fit_box
+	if box.size == Vector3.ZERO:
+		box = _merged_aabb(viewmodel)
+	_ammo_label = Label3D.new()
+	_ammo_label.name = "AmmoReadout"
+	_ammo_label.font_size = 64
+	_ammo_label.pixel_size = 0.0005
+	_ammo_label.outline_size = 10
+	_ammo_label.outline_modulate = Color(0, 0, 0, 0.6)
+	_ammo_label.shaded = false
+	_ammo_label.double_sided = false
+	_ammo_label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Left flank, just proud of the top edge, a third of the way up from the
+	# rear but never more than READOUT_REACH (on the 1.22 m Longshot a third
+	# floated it out by the barrel); turned a little toward the eye, which sits
+	# behind and to the left.
+	_ammo_label.position = Vector3(box.position.x - 0.006, box.end.y + 0.012,
+		box.end.z - minf(box.size.z * 0.32, READOUT_REACH))
+	_ammo_label.rotation_degrees = Vector3(-12.0, -28.0, 0.0)
+	viewmodel.add_child(_ammo_label)
+	ammo_changed.connect(func(_m: int, _r: int) -> void: _refresh_readout())
+	reload_started.connect(func(_w: Weapon) -> void: _refresh_readout())
+	_refresh_readout()
+
+func _refresh_readout() -> void:
+	if _ammo_label == null:
+		return
+	var size := maxi(1, eff_mag_size())
+	if _reloading or mag <= 0:
+		_ammo_label.text = "--"
+	else:
+		_ammo_label.text = "%02d" % mag if size >= 10 else str(mag)
+	_ammo_label.modulate = READOUT_LOW_COLOR if readout_low() else data.tracer_color.lerp(Color.WHITE, 0.25)
+
+## True while the readout warns: the mag is at or under READOUT_LOW, or dry.
+## Rounded up like the low-mag click in _fire_once, so a 3-round OMEGA warns
+## on its last shot.
+func readout_low() -> bool:
+	return not _reloading and mag <= ceili(maxi(1, eff_mag_size()) * READOUT_LOW)
+
+## Energy guns (reload_style CELL) carry their cell on the outside: a glowing
+## strip in the gun's colour along the left flank, under the readout. None of
+## the five energy models has a saturated surface for _apply_real_model to
+## light, so without it a cell reload had nothing to drain.
+func _build_energy_cell() -> void:
+	if viewmodel == null or data == null or data.reload_style != WeaponData.ReloadStyle.CELL:
+		return
+	var box := _fit_box if _fit_box.size != Vector3.ZERO else _merged_aabb(viewmodel)
+	var strip := MeshInstance3D.new()
+	strip.name = "EnergyCell"
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.008, 0.014, clampf(box.size.z * 0.4, 0.12, 0.3))
+	var mat := _energy_accent_material(data.tracer_color)
+	mat.emission_energy_multiplier = ACCENT_ENERGY
+	bm.material = mat
+	strip.mesh = bm
+	strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	strip.position = Vector3(box.position.x - 0.003, box.position.y + box.size.y * 0.62,
+		box.end.z - 0.05 - bm.size.z * 0.5)
+	viewmodel.add_child(strip)
+	_accent_mats.append(mat)
+
 ## A small emissive element pinned at the muzzle tip; alpha/energy ride _heat so
 ## the barrel visibly glows hotter the longer you hold the trigger.
 func _build_heat_glow() -> void:
@@ -353,6 +431,9 @@ func _build_heat_glow() -> void:
 
 func _process(delta: float) -> void:
 	_update_heat(delta)
+	if _ammo_label and readout_low():
+		# Low-mag pulse: the warning breathes at 3 Hz instead of sitting still.
+		_ammo_label.modulate.a = 0.55 + 0.45 * absf(sin(Time.get_ticks_msec() * 0.0094))
 	_update_beam(delta)
 	_since_shot += delta
 	if _bloom > 0.0 and data and _since_shot > 0.1:
@@ -818,7 +899,7 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 ## BulletMark utility (scripts/fx/bullet_mark.gd) so hitscan AND projectile
 ## impacts (projectile.gd) draw from ONE capped pool instead of two.
 func _spawn_bullet_hole(pos: Vector3, normal: Vector3) -> void:
-	BulletMark.spawn(get_tree().current_scene, pos, normal)
+	BulletMark.spawn(get_tree().current_scene, pos, normal, data.damage_class if data else 0)
 
 func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") -> void:
 	if data.impact_scene == null:
@@ -830,6 +911,8 @@ func _spawn_impact(pos: Vector3, normal: Vector3, surface: String = "concrete") 
 		i.orient(normal)
 	if i.has_method("set_surface"):
 		i.set_surface(surface)
+	if i.has_method("set_damage_class"):
+		i.set_damage_class(data.damage_class)
 
 ## Continuous beam: raycast + redraw the lightning every frame while firing;
 ## damage and ammo tick at data.fire_rate (1 cell per tick).
@@ -1112,16 +1195,18 @@ func _spawn_arc_overlay(root: Node3D, from: Vector3, to: Vector3, col: Color) ->
 		prev = p
 
 ## An additive ring that snaps out flat against the impact surface and fades — the
-## shockwave of an energy bolt biting in. Detached so it outlives the flash.
+## shockwave of an energy bolt biting in. Detached so it outlives the flash. A
+## thin band: the old 0.05-0.12 tube grown 6x read as a solid hexagon 0.7 m
+## across on the wall, not a ring (tests/impact_class_probe).
 func _spawn_impact_ring(at: Vector3, dir: Vector3, col: Color) -> void:
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
 	var tm := TorusMesh.new()
-	tm.inner_radius = 0.05
+	tm.inner_radius = 0.1
 	tm.outer_radius = 0.12
-	tm.rings = 6
-	tm.ring_segments = 16
+	tm.rings = 32
+	tm.ring_segments = 6
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1135,12 +1220,13 @@ func _spawn_impact_ring(at: Vector3, dir: Vector3, col: Color) -> void:
 	mi.mesh = tm
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Torus lies in its local XZ plane (axis +Y); face it along the bolt so the ring
-	# sits flat on the struck surface, lifted slightly off to avoid z-fighting.
+	# sits flat on the struck surface, lifted clear of it: the tube grows to 0.08 m
+	# thick, so at 0.03 m half of it sank into the wall and only arcs showed.
 	var up := Vector3.UP if absf(dir.y) < 0.99 else Vector3.RIGHT
-	mi.transform = Transform3D(Basis.looking_at(dir, up) * Basis(Vector3.RIGHT, PI * 0.5), at - dir * 0.03)
+	mi.transform = Transform3D(Basis.looking_at(dir, up) * Basis(Vector3.RIGHT, PI * 0.5), at - dir * 0.1)
 	scene.add_child(mi)
 	var tw := mi.create_tween().set_parallel(true)
-	tw.tween_property(mi, "scale", Vector3.ONE * 6.0, 0.22).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mi, "scale", Vector3.ONE * 4.0, 0.22).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.22)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.22)
 	tw.chain().tween_callback(mi.queue_free)
@@ -1374,37 +1460,150 @@ func start_reload() -> void:
 		return
 	_reloading = true
 	_reload_timer = eff_reload_time()
-	if muzzle:
-		var s := _resolve_sound(data.reload_sound, "reload")
-		if s:
-			AudioBus.play_at(s, muzzle.global_position)
+	# The reload's beats carry its sounds (_reload_beat); an authored
+	# reload_sound still plays over the top.
+	if muzzle and data.reload_sound:
+		AudioBus.play_at(data.reload_sound, muzzle.global_position)
 	_play_reload_anim()
 	reload_started.emit(self)
 
-## Visual reload: the gun tilts down toward the chest, the magazine drops out,
-## a fresh one seats with a snap, and the gun levels back out — the whole
-## timeline spans exactly data.reload_time so it never outlives the timer.
-func _play_reload_anim() -> void:
-	if viewmodel == null:
-		return
-	var t: float = maxf(0.6, eff_reload_time())
-	var tw := create_tween()
-	tw.tween_property(viewmodel, "rotation:x", -0.45, t * 0.18) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	if _mag_node:
-		tw.tween_property(_mag_node, "position", _mag_home + Vector3(0, -0.24, 0.03), t * 0.22) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tw.tween_interval(t * 0.18)
-		tw.tween_callback(_play_mag_seat_sound)
-		tw.tween_property(_mag_node, "position", _mag_home, t * 0.2) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	else:
-		tw.tween_interval(t * 0.6)
-	tw.tween_property(viewmodel, "rotation:x", 0.0, t * 0.22) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+## Visual reload, one choreography per WeaponData.reload_style: the gun drops
+## into a style pose, the beats play out (each a jolt of the gun, a sound and
+## a reload_beat), then it comes back up. The whole timeline spans the reload
+## time so it never outlives the timer.
+##   MAG    unlatch and tug the mag out, slam a fresh one home, rack the action
+##   SHELLS one thumbed-in shell per round actually loaded, then the pump
+##   CELL   vent (steam, the glow strips drain dark), then recharge (whine, they refill)
+##   TUBE   shoulder it, open the breech, shove the round in
+## (Every real gun model hides the primitive Magazine node, so the old mag-drop
+## animated nothing you could see: every reload was the same tilt.)
+signal reload_beat(kind: String)
+const RELOAD_POSES := [
+	[Vector3(0.0, -0.03, 0.02), Vector3(-0.35, 0.1, 0.4)],     # MAG: tipped toward you
+	[Vector3(0.01, -0.02, 0.03), Vector3(-0.2, -0.15, -0.55)],  # SHELLS: rolled, port up
+	[Vector3(0.0, -0.04, 0.02), Vector3(-0.5, 0.0, 0.15)],      # CELL: nose down
+	[Vector3(0.0, 0.03, 0.04), Vector3(0.15, -0.1, -0.3)],      # TUBE: shouldered
+]
+var _reload_tw: Tween = null
+var _beat_tw: Tween = null
+## The real model's emissive accent strips (built in _apply_real_model); a CELL
+## reload drains and refills them.
+var _accent_mats: Array[StandardMaterial3D] = []
+const ACCENT_ENERGY := 1.4
 
-func _play_mag_seat_sound() -> void:
-	AudioBus.play_synth_at("empty_click", global_position, -4.0, 0.7)
+## [time fraction, beat, jolt] for this reload: when each beat lands in the
+## timeline and how hard it jerks the gun.
+func reload_beats() -> Array:
+	match data.reload_style:
+		WeaponData.ReloadStyle.SHELLS:
+			var n := clampi(mini(eff_mag_size() - mag, reserve), 1, 8)
+			var out: Array = []
+			for i in n:
+				out.append([lerpf(0.22, 0.64, float(i) / maxf(1.0, float(n - 1))) if n > 1 else 0.4,
+					"shell", Vector3(0.0, 0.015, -0.02)])
+			out.append([0.74, "pump", Vector3(0.0, 0.0, 0.06)])
+			return out
+		WeaponData.ReloadStyle.CELL:
+			return [[0.22, "vent", Vector3(0.0, 0.01, 0.015)], [0.58, "charge", Vector3(0.0, 0.012, -0.01)]]
+		WeaponData.ReloadStyle.TUBE:
+			return [[0.3, "breech", Vector3(0.0, 0.02, 0.03)], [0.6, "load", Vector3(0.0, 0.0, -0.05)]]
+		_:
+			return [[0.24, "mag_out", Vector3(0.0, -0.03, 0.0)], [0.55, "mag_in", Vector3(0.0, 0.035, 0.0)],
+				[0.72, "rack", Vector3(0.0, 0.0, 0.045)]]
+
+func _play_reload_anim() -> void:
+	if viewmodel == null or data == null:
+		return
+	for tw in [_reload_tw, _beat_tw]:
+		if tw and tw.is_valid():
+			tw.kill()
+	var t: float = maxf(0.6, eff_reload_time())
+	var pose: Array = RELOAD_POSES[clampi(data.reload_style, 0, RELOAD_POSES.size() - 1)]
+	var pos: Vector3 = _viewmodel_home + pose[0]
+	_reload_tw = create_tween()
+	_reload_tw.tween_property(viewmodel, "rotation", pose[1], t * 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_reload_tw.parallel().tween_property(viewmodel, "position", pos, t * 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_reload_tw.tween_interval(t * 0.66)
+	_reload_tw.tween_property(viewmodel, "rotation", Vector3.ZERO, t * 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_reload_tw.parallel().tween_property(viewmodel, "position", _viewmodel_home, t * 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_beat_tw = create_tween()
+	var at := 0.0
+	for b: Array in reload_beats():
+		_beat_tw.tween_interval(maxf(0.0, t * float(b[0]) - at))
+		at = t * float(b[0])
+		_beat_tw.tween_callback(_reload_beat.bind(String(b[1]), pos, b[2] as Vector3, t))
+
+## One beat: jolt the gun off its reload pose and back, play its sound, tell
+## anyone listening.
+func _reload_beat(kind: String, pose_pos: Vector3, jolt: Vector3, t: float) -> void:
+	if viewmodel and jolt != Vector3.ZERO:
+		var jt := create_tween()
+		jt.tween_property(viewmodel, "position", pose_pos + jolt, 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		jt.tween_property(viewmodel, "position", pose_pos, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	var at := muzzle.global_position if muzzle else global_position
+	match kind:
+		"mag_out":
+			AudioBus.play_synth_at("empty_click", at, -5.0, 0.6)
+		"mag_in":
+			AudioBus.play_synth_at("reload", at, -2.0, randf_range(0.95, 1.05))
+		"rack":
+			AudioBus.play_synth_at("action_clack", at, -6.0, 0.85)
+		"shell":
+			AudioBus.play_synth_at("empty_click", at, -8.0, randf_range(1.35, 1.6))
+		"pump":
+			AudioBus.play_synth_at("pump_action", at, -3.0)
+		"vent":
+			AudioBus.play_synth_at("vent_hiss", at, -6.0, randf_range(0.95, 1.05))
+			_vent_steam()
+			_tween_accents(0.08, t * 0.3)
+		"charge":
+			AudioBus.play_synth_at("charge", at, -6.0, 1.0)
+			_tween_accents(ACCENT_ENERGY, t * 0.3)
+		"breech":
+			AudioBus.play_synth_at("impact_metal", at, -4.0, 0.55)
+		"load":
+			AudioBus.play_synth_at("reload", at, -2.0, 0.7)
+	reload_beat.emit(kind)
+
+## Drain (or refill) the gun's glow strips to `energy` over `secs`.
+func _tween_accents(energy: float, secs: float) -> void:
+	if _accent_mats.is_empty():
+		return
+	var tw := create_tween().set_parallel(true)
+	for m in _accent_mats:
+		tw.tween_property(m, "emission_energy_multiplier", energy, secs)
+
+## A puff of white vapour off the muzzle as a cell vents.
+func _vent_steam() -> void:
+	if muzzle == null or get_tree().current_scene == null:
+		return
+	# Soft: a faint, many-sided puff whose alpha ramps in and out (the same
+	# vertex-colour ramp as _muzzle_smoke). Opaque 6-sided spheres read as
+	# white hexagons in front of the gun.
+	var sm := SphereMesh.new()
+	sm.radius = 0.025; sm.height = 0.05; sm.radial_segments = 12; sm.rings = 6
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = Color(1, 1, 1, 1)
+	sm.material = mat
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.2, 1.0])
+	ramp.colors = PackedColorArray([Color(0.92, 0.95, 1.0, 0.0), Color(0.9, 0.93, 1.0, 0.16), Color(0.85, 0.88, 0.95, 0.0)])
+	var p := CPUParticles3D.new()
+	p.one_shot = true; p.emitting = true; p.amount = 18; p.lifetime = 0.9; p.explosiveness = 0.5
+	p.local_coords = false
+	p.mesh = sm
+	p.color_ramp = ramp
+	p.direction = Vector3(0, 1, 0)
+	p.spread = 35.0
+	p.gravity = Vector3(0, 0.6, 0)
+	p.initial_velocity_min = 0.3; p.initial_velocity_max = 0.8
+	p.scale_amount_min = 0.8; p.scale_amount_max = 2.2
+	get_tree().current_scene.add_child(p)
+	p.global_position = muzzle.global_position
+	get_tree().create_timer(1.2).timeout.connect(p.queue_free)
 
 func _play_fire_anim() -> void:
 	if viewmodel == null or data == null:
@@ -1440,6 +1639,7 @@ func _finish_reload() -> void:
 	_reloading = false
 	ammo_changed.emit(mag, reserve)
 	reload_finished.emit(self)
+	_refresh_readout()
 
 func add_ammo(amount: int) -> void:
 	reserve = mini(data.reserve_max, reserve + amount)
