@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-475 probes total: **185** wired into the headless suite (`suite`), **85**
+477 probes total: **186** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **205** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **206** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -452,6 +452,8 @@ or GPU-timing probes; `--headless` renders these black).
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
 | sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
+| smasher_gait_probe | BEHEMOTH-X faces where it walks and fights with its limbs (the rig-less GLB cut offline into Body/ArmP/ArmN/LegP/LegN): shoulders span body X (6.72 m vs 4.87 m; 4.87 vs 6.72 with the old 180 deg yaw, when it walked side-on) and the head juts to -Z; walking, toes swing 2.5 m and claws 4.8 m fore and aft (0.00 before), legs in opposition (r -1.00), each arm with the opposite leg (r 1.00); smash windup rears the right claw to 11.8 m and the strike drops it to 4.6 m, 3.9 m ahead; slam raises both to 11.6 m and pounds both to 3.0 m; rake cocks both 4.3 m behind then sweeps them 7 m ahead; stopped, every claw and toe back at rest | suite |
+| smasher_pose_shot | Look-check of BEHEMOTH-X's limbs: four points of its stride side-on, then each attack beat (smash, slam, rake: windup and strike) from the front; `-- --out=<dir>` | windowed |
 | smasher_probe | BEHEMOTH-X with a player stand-in, real AI: wake/charge/smash | windowed |
 | smasher_view_probe | BEHEMOTH-X in preview mode: the cover-art look | windowed |
 | sound_id_probe | Every sound id referenced by literal in scripts/ (play_synth_at/ui, synth, play_music, play_ambience_layer, play_lore, level `music` keys) and every weapon .tres sound_id (+_fire) resolves through AudioBus.synth; a never-registered id is a silent event (caught the Armory's silent purchase clink) | suite |

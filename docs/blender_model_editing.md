@@ -175,5 +175,6 @@ unit is jammed), mount a node on the bone the part is skinned to, as
 - `tools/blender/bones.py` — bone world positions + base render
 - `tools/blender/meshbounds.py` — per-mesh world bounds (for bone-parented models)
 - `tools/blender/fierce2.py` — the config-driven build/export/render engine
+- `tools/blender/split_regions.py` — cuts a rig-less GLB into named limb parts by world-space boxes (`cfg_rusty_claws_limbs.json` for BEHEMOTH-X), so a script can swing each part with `PartRig` without splitting a big mesh at spawn (`PartRig.split_groups` took about 1.3 s on its 337k triangles)
 - `tools/blender/cfg_*.json` — example part configs (one per enemy flavor)
 - `tests/fierce_probe.tscn` / `.gd` — in-engine screenshot of the fierce models
