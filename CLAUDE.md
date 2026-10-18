@@ -39,6 +39,9 @@ pwsh tools/load_race_check.ps1
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
 godot --path . tools/perf_tiers.tscn -- levels=neon tiers=2 burn=30   # GPU ms per tier; ONE config per process, median of repeats (docs/PERF_NOTES.md)
+# Before/after recording of a change for an interactive changelog (windowed, needs ffmpeg; the
+# changelog-clip skill): films tools/changelog_clip.tscn on <ref> under Movie Maker, frame-locked
+tools/changelog_record.sh <ref> build/changelog/<slug>/clips/after_shotgun.mp4 gun=shotgun enemy=drone
 # Headless editor profiler: runs a scene under --remote-debug and prints per-tick physics
 # percentiles, the physics server's step breakdown and the top script functions (native calls included)
 godot --headless --path . --script res://tools/remote_profile.gd -- scene=res://tests/enemy_cost_probe.tscn warmup=1 capture=30 "args=types=android"

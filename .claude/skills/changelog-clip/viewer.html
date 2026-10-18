@@ -1,0 +1,360 @@
+<title>Changelog Clips</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Changelog viewer (changelog-clip skill). Content comes from changelog.json beside this file.
+   Layout: one viewer bench (stage + transport) above a list of PRs; each PR is a seek target on the timeline.
+   Single dark look on purpose: the footage is a dark arena and a light frame around it would glare. */
+:root {
+  --bg: #0d1116;
+  --panel: #151b22;
+  --line: #26303b;
+  --fg: #dbe3ea;
+  --muted: #8796a5;
+  --amber: #f0a43a;      /* HUD round-count orange */
+  --teal: #4fd6c4;       /* class-coloured damage number */
+  --before: #b98fff;
+  --after: #4fd6c4;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+a { color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+header { display: grid; gap: 6px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+h1 { font: 700 clamp(26px, 4vw, 40px)/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: .01em; }
+.lede { color: var(--muted); max-width: 70ch; margin: 0; }
+.range { font: 13px var(--mono); color: var(--muted); }
+.range b { font-weight: 500; }
+.range .b { color: var(--before); } .range .a { color: var(--after); }
+
+.bench { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 12px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row.spread { justify-content: space-between; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg button, .btn {
+  font: 500 13px/1 var(--body); color: var(--fg); background: transparent; border: 0;
+  padding: 8px 12px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: #222c37; color: var(--amber); }
+.btn { border: 1px solid var(--line); border-radius: 4px; }
+.btn:hover, .seg button:hover { background: #1c242d; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.clipnote { color: var(--muted); font-size: 13px; }
+
+.stage { display: grid; gap: 8px; position: relative; user-select: none; }
+.stage.side { grid-template-columns: 1fr 1fr; }
+.stage.wipe, .stage.flip { grid-template-columns: 1fr; }
+.stage.wipe .pane, .stage.flip .pane { grid-area: 1 / 1; }
+.pane { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 3px; overflow: hidden; max-width: 100%; }
+.pane video { width: 100%; height: 100%; display: block; object-fit: cover; }
+.tag {
+  position: absolute; top: 8px; font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 5px 7px; border-radius: 3px; background: rgba(8, 11, 15, .78); pointer-events: none;
+}
+.pane.b .tag { left: 8px; color: var(--before); }
+.pane.a .tag { right: 8px; color: var(--after); }
+.stage.wipe .pane.b { z-index: 2; clip-path: inset(0 calc(100% - var(--cut, 50%)) 0 0); }
+.divider { display: none; position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); width: 2px; margin-left: -1px; background: var(--amber); z-index: 3; cursor: ew-resize; }
+.divider::after { content: ""; position: absolute; top: 50%; left: -9px; width: 20px; height: 34px; margin-top: -17px; border-radius: 3px; background: var(--amber); }
+.stage.wipe .divider { display: block; }
+.stage.wipe { cursor: ew-resize; touch-action: pan-y; }
+.stage.flip .pane.b { z-index: 2; visibility: hidden; }
+.stage.flip.showb .pane.b { visibility: visible; }
+
+.transport { display: grid; gap: 8px; }
+.timeline { position: relative; height: 34px; }
+.timeline input { position: absolute; inset: 14px 0 auto; width: 100%; margin: 0; accent-color: var(--amber); }
+.mark {
+  position: absolute; top: 0; transform: translateX(-50%); font: 500 11px/1 var(--mono); color: var(--bg);
+  background: var(--amber); border: 0; border-radius: 3px; padding: 3px 5px; cursor: pointer; z-index: 2;
+}
+.mark.on { background: var(--teal); }
+.time { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; min-width: 17ch; }
+
+.prs { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.pr { display: grid; grid-template-columns: 64px 1fr auto; gap: 4px 14px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.pr .num { font: 700 18px/1.2 var(--display); color: var(--amber); text-decoration: none; }
+.pr .num:hover { text-decoration: underline; }
+.pr h3 { font: 600 15px/1.35 var(--body); margin: 0; text-wrap: balance; }
+.pr p { margin: 4px 0 0; color: var(--muted); font-size: 14px; max-width: 72ch; }
+.pr .go { white-space: nowrap; }
+.pr.off .num, .pr.off h3 { color: var(--muted); }
+.pr.active { background: linear-gradient(90deg, rgba(79, 214, 196, .08), transparent 60%); }
+.pr .absent { font: 12px var(--mono); color: var(--muted); padding-top: 4px; }
+.pr > div { min-width: 0; }
+h2 { font: 700 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 8px 0 0; }
+footer { color: var(--muted); font-size: 13px; max-width: 80ch; }
+footer code { font: 12px var(--mono); color: var(--fg); }
+kbd { font: 11px var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 1px 5px; }
+.error { color: var(--amber); }
+
+@media (max-width: 720px) {
+  .stage.side { grid-template-columns: 1fr; }
+  .pr { grid-template-columns: 48px 1fr; }
+  .pr .go, .pr .absent { grid-column: 2; justify-self: start; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Patch notes you can play</div>
+    <h1 id="title">Before and after</h1>
+    <p class="lede" id="lede">Loading the clips…</p>
+    <div class="range" id="range"></div>
+  </header>
+
+  <section class="bench" aria-label="Clip viewer">
+    <div class="row spread">
+      <div class="row">
+        <div class="seg" id="clipSeg" role="group" aria-label="Clip"></div>
+        <span class="clipnote" id="clipNote"></span>
+      </div>
+      <div class="seg" id="modeSeg" role="group" aria-label="Compare mode">
+        <button id="m-side" data-mode="side">Side by side</button>
+        <button id="m-wipe" data-mode="wipe">Wipe</button>
+        <button id="m-flip" data-mode="flip">Flip</button>
+      </div>
+    </div>
+
+    <div class="stage side" id="stage">
+      <div class="pane b"><video id="vb" muted playsinline preload="auto"></video><span class="tag" id="tagB">Before</span></div>
+      <div class="pane a"><video id="va" muted playsinline preload="auto"></video><span class="tag" id="tagA">After</span></div>
+      <div class="divider"></div>
+    </div>
+
+    <div class="transport">
+      <div class="timeline" id="timeline">
+        <input type="range" id="scrub" min="0" max="1" step="0.0166667" value="0" aria-label="Timeline">
+      </div>
+      <div class="row spread">
+        <div class="row">
+          <button class="btn" id="play">Play</button>
+          <button class="btn" id="back" aria-label="Back one frame">◀ 1f</button>
+          <button class="btn" id="fwd" aria-label="Forward one frame">1f ▶</button>
+          <span class="time" id="time">0.00 s · frame 0</span>
+        </div>
+        <div class="row">
+          <div class="seg" id="speedSeg" role="group" aria-label="Speed">
+            <button data-speed="1">1×</button><button data-speed="0.5">½×</button><button data-speed="0.25">¼×</button>
+          </div>
+          <div class="seg" id="soundSeg" role="group" aria-label="Sound">
+            <button data-sound="off">Mute</button><button data-sound="b">Hear before</button><button data-sound="a">Hear after</button>
+          </div>
+          <button class="btn" id="flipBtn" hidden>Show before</button>
+        </div>
+      </div>
+      <div class="clipnote"><kbd>Space</kbd> play · <kbd>,</kbd> <kbd>.</kbd> step a frame · hold <kbd>B</kbd> to see before · <kbd>1</kbd>–<kbd>3</kbd> modes</div>
+    </div>
+  </section>
+
+  <h2>What changed</h2>
+  <section class="prs" id="prs"></section>
+
+  <footer><p id="method"></p></footer>
+</div>
+
+<script>
+const FPS = 60;
+const $ = (id) => document.getElementById(id);
+const va = $("va"), vb = $("vb"), stage = $("stage"), scrub = $("scrub");
+let DATA = null, clip = null, dur = 1, playing = false, mode = "side";
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const prOf = (n) => DATA.prs.find((p) => p.n === +n);
+
+function fmt(t) { return `${t.toFixed(2)} s · frame ${Math.round(t * FPS)}`; }
+function seek(t) {
+  t = Math.max(0, Math.min(dur, t));
+  va.currentTime = t; vb.currentTime = t;
+  scrub.value = t; $("time").textContent = fmt(t);
+  highlight(t);
+}
+function setPlaying(p) {
+  playing = p;
+  $("play").textContent = p ? "Pause" : "Play";
+  if (p) {
+    if (va.currentTime >= dur - 0.02) seek(0);
+    vb.currentTime = va.currentTime;
+    va.play().catch(() => {}); vb.play().catch(() => {});
+  } else { va.pause(); vb.pause(); vb.currentTime = va.currentTime; }
+}
+function tick() {
+  if (playing) {
+    const t = va.currentTime;
+    if (Math.abs(vb.currentTime - t) > 1.5 / FPS) vb.currentTime = t;
+    scrub.value = t; $("time").textContent = fmt(t); highlight(t);
+  }
+  requestAnimationFrame(tick);
+}
+va.addEventListener("ended", () => setPlaying(false));
+
+function highlight(t) {
+  let best = null, bd = 0.35;
+  for (const [n, mt] of Object.entries(clip.marks)) {
+    const d = Math.abs(mt - t);
+    if (d < bd) { bd = d; best = +n; }
+  }
+  document.querySelectorAll(".pr").forEach((el) => el.classList.toggle("active", +el.dataset.n === best));
+  document.querySelectorAll(".mark").forEach((el) => el.classList.toggle("on", +el.dataset.n === best));
+}
+
+function loadClip(c) {
+  clip = c;
+  setPlaying(false);
+  dur = c.frames ? c.frames / FPS : 1;
+  va.src = c.after; vb.src = c.before;
+  scrub.max = dur;
+  $("clipNote").textContent = c.note || "";
+  document.querySelectorAll("#clipSeg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.id === c.id));
+  drawMarks();
+  renderPrs();
+  store.set("clip:" + DATA.title, c.id);
+  va.addEventListener("loadedmetadata", () => {
+    if (isFinite(va.duration)) { dur = va.duration; scrub.max = dur; drawMarks(); }
+    seek(0);
+  }, { once: true });
+}
+// Markers that land within a few percent of each other stack upward instead of overlapping.
+function drawMarks() {
+  document.querySelectorAll(".mark").forEach((m) => m.remove());
+  const ms = Object.entries(clip.marks).sort((a, b) => a[1] - b[1]);
+  let lastLeft = -99, level = 0, maxLevel = 0;
+  for (const [n, t] of ms) {
+    const left = t / dur * 100;
+    level = (left - lastLeft < 7) ? level + 1 : 0;
+    maxLevel = Math.max(maxLevel, level);
+    lastLeft = left;
+    const m = document.createElement("button");
+    m.className = "mark"; m.dataset.n = n; m.textContent = "#" + n;
+    m.style.left = left + "%"; m.style.top = (-level * 20) + "px";
+    m.title = prOf(n) ? prOf(n).title : "";
+    m.onclick = () => showPr(+n);
+    $("timeline").appendChild(m);
+  }
+  $("timeline").style.marginTop = (maxLevel * 20) + "px";
+}
+
+function renderPrs() {
+  const box = $("prs"); box.textContent = "";
+  for (const p of DATA.prs) {
+    const t = clip.marks[p.n];
+    const el = document.createElement("article");
+    el.className = "pr" + (t === undefined ? " off" : ""); el.dataset.n = p.n;
+    const num = document.createElement(DATA.repo ? "a" : "div");
+    num.className = "num"; num.textContent = "#" + p.n;
+    if (DATA.repo) { num.href = `https://github.com/${DATA.repo}/pull/${p.n}`; num.target = "_blank"; num.rel = "noopener"; }
+    const body = document.createElement("div");
+    const h = document.createElement("h3"); h.textContent = p.title;
+    const why = document.createElement("p"); why.textContent = p.why;
+    body.append(h, why);
+    el.append(num, body);
+    if (t === undefined) {
+      const s = document.createElement("div"); s.className = "absent";
+      const other = DATA.clips.find((c) => c.marks[p.n] !== undefined);
+      s.textContent = other ? `see ${other.label}` : (p.absent || "not filmed");
+      el.appendChild(s);
+    } else {
+      const b = document.createElement("button"); b.className = "btn go";
+      b.textContent = `Show at ${t.toFixed(2)} s`; b.onclick = () => showPr(p.n);
+      el.appendChild(b);
+    }
+    box.appendChild(el);
+  }
+}
+function showPr(n) {
+  setPlaying(false); seek(clip.marks[n]);
+  stage.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function setMode(m) {
+  mode = m;
+  stage.className = "stage " + m;
+  document.querySelectorAll("#modeSeg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  $("flipBtn").hidden = m !== "flip";
+  store.set("mode", m);
+}
+function setSpeed(s) {
+  va.playbackRate = s; vb.playbackRate = s;
+  document.querySelectorAll("#speedSeg button").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.speed === s));
+}
+function setSound(s) {
+  va.muted = s !== "a"; vb.muted = s !== "b";
+  document.querySelectorAll("#soundSeg button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sound === s));
+}
+function showBefore(on) { stage.classList.toggle("showb", on); $("flipBtn").textContent = on ? "Showing before" : "Show before"; }
+
+// Wipe: drag anywhere on the stage to move the cut.
+let dragging = false;
+function cutAt(e) {
+  const r = stage.getBoundingClientRect();
+  stage.style.setProperty("--cut", Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)) + "%");
+}
+stage.addEventListener("pointerdown", (e) => { if (mode !== "wipe") return; dragging = true; stage.setPointerCapture(e.pointerId); cutAt(e); });
+stage.addEventListener("pointermove", (e) => { if (dragging) cutAt(e); });
+stage.addEventListener("pointerup", () => { dragging = false; });
+
+document.querySelectorAll("#modeSeg button").forEach((b) => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll("#speedSeg button").forEach((b) => b.onclick = () => setSpeed(+b.dataset.speed));
+document.querySelectorAll("#soundSeg button").forEach((b) => b.onclick = () => setSound(b.dataset.sound));
+$("play").onclick = () => setPlaying(!playing);
+$("back").onclick = () => { setPlaying(false); seek(va.currentTime - 1 / FPS); };
+$("fwd").onclick = () => { setPlaying(false); seek(va.currentTime + 1 / FPS); };
+scrub.oninput = () => { setPlaying(false); seek(+scrub.value); };
+const fb = $("flipBtn");
+fb.addEventListener("pointerdown", () => showBefore(true));
+fb.addEventListener("pointerup", () => showBefore(false));
+fb.addEventListener("pointerleave", () => showBefore(false));
+
+document.addEventListener("keydown", (e) => {
+  if (!clip || (e.target.tagName === "INPUT" && e.key !== " ")) return;
+  if (e.key === " ") { e.preventDefault(); setPlaying(!playing); }
+  else if (e.key === ",") { setPlaying(false); seek(va.currentTime - 1 / FPS); }
+  else if (e.key === ".") { setPlaying(false); seek(va.currentTime + 1 / FPS); }
+  else if (e.key === "b" || e.key === "B") { if (mode !== "flip") setMode("flip"); showBefore(true); }
+  else if (["1", "2", "3"].includes(e.key)) setMode(["side", "wipe", "flip"][+e.key - 1]);
+});
+document.addEventListener("keyup", (e) => { if (e.key === "b" || e.key === "B") showBefore(false); });
+
+function boot(data) {
+  DATA = data;
+  document.title = data.title;
+  $("title").textContent = data.title;
+  if (data.eyebrow) $("eyebrow").textContent = data.eyebrow;
+  $("lede").textContent = data.lede || "";
+  $("method").textContent = data.method || "";
+  const r = $("range"); r.textContent = "";
+  const b = document.createElement("b"); b.className = "b"; b.textContent = "before " + data.before;
+  const a = document.createElement("b"); a.className = "a"; a.textContent = "after " + data.after;
+  r.append(b, " → ", a, " · " + (data.engine || "Godot Movie Maker") + " · 60 fps fixed step");
+  $("tagB").textContent = "Before · " + data.before;
+  $("tagA").textContent = "After · " + data.after;
+  for (const c of data.clips) {
+    const btn = document.createElement("button"); btn.dataset.id = c.id; btn.textContent = c.label;
+    btn.onclick = () => loadClip(c); $("clipSeg").appendChild(btn);
+  }
+  setMode(["side", "wipe", "flip"].includes(store.get("mode")) ? store.get("mode") : "side");
+  setSpeed(1); setSound("off");
+  const remembered = store.get("clip:" + data.title);
+  loadClip(data.clips.find((c) => c.id === remembered) || data.clips[0]);
+  requestAnimationFrame(tick);
+}
+fetch("changelog.json").then((r) => r.json()).then(boot).catch((e) => {
+  $("lede").textContent = "Could not load changelog.json next to this page (" + e.message + ").";
+  $("lede").className = "lede error";
+});
+</script>
