@@ -143,6 +143,12 @@ var _hit_kick_roll: float = 0.0 ## Signed camera roll from the same hit; eases t
 func shake(amount: float) -> void:
 	_shake_amount = maxf(_shake_amount, amount)
 
+## A heavy round's blast widening the view for a beat (WeaponData.fov_punch,
+## from WeaponManager._on_fired). Rides the same _fov_kick impulse dash and
+## landings use, scaled by the Screen Shake setting so it can be turned off.
+func fov_punch(degrees: float) -> void:
+	_fov_kick = maxf(_fov_kick, degrees * GraphicsSettings.screen_shake)
+
 ## Live look-sensitivity update (e.g. the pause-menu slider) so it takes effect
 ## immediately, not just on the next spawn.
 func set_look_sensitivity(mult: float) -> void:

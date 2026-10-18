@@ -68,6 +68,28 @@ const BOSS_DAMP := 0.5
 const WEAK_AT := 1.1
 const RESIST_AT := 0.95
 
+## The robot's hit flash takes the colour of what hit it (EnemyBase._on_damaged),
+## so you can see which gun is landing: columns follow WeaponData.DamageClass.
+const CLASS_COLORS := [
+	Color(1.0, 1.0, 1.0),     # KINETIC: white
+	Color(1.0, 0.8, 0.5),     # SHRED: hot scrap
+	Color(1.0, 0.42, 0.1),    # THERMAL: molten
+	Color(0.35, 0.7, 1.0),    # ARC: electric
+	Color(1.0, 0.65, 0.2),    # EXPLOSIVE: fireball
+	Color(0.45, 1.0, 0.95),   # RAIL: ionised
+]
+## How much poise a hit adds by its matchup: the right gun rocks a robot into a
+## stagger sooner, the wrong one barely moves it.
+const POISE_WEAK := 1.35
+const POISE_RESIST := 0.7
+
+static func poise_mult(matchup: float) -> float:
+	if matchup >= WEAK_AT:
+		return POISE_WEAK
+	if matchup <= RESIST_AT:
+		return POISE_RESIST
+	return 1.0
+
 static func armour_of(key: String) -> int:
 	return int(ARMOUR.get(key, Armour.CHASSIS))
 

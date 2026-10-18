@@ -567,7 +567,9 @@ func _do_shot() -> void:
 	# Gamepad rumble: every trigger pull snaps the buzz motor; the thump motor
 	# grows with the round's total heft, so a shotgun blast kicks the pad the
 	# way a pistol tap doesn't.
-	Haptics.pulse(0.35, clampf(eff_damage() * float(data.pellets) / 140.0, 0.0, 0.85), 0.09)
+	# A gun with a chest thump (fire_thump) thumps the pad too, and longer.
+	Haptics.pulse(0.35, maxf(clampf(eff_damage() * float(data.pellets) / 140.0, 0.0, 0.85), data.fire_thump * 0.9),
+		0.09 + 0.08 * data.fire_thump)
 	fired.emit(self)
 
 ## The live cone half-angle in degrees: base spread opened by bloom and
@@ -864,7 +866,8 @@ func _update_beam(delta: float) -> void:
 	ammo_changed.emit(mag, reserve)
 	GameState.register_shot()
 	_heat = minf(1.0, _heat + 0.06)
-	AudioBus.play_synth_at("drone_shot", from, -12.0, randf_range(1.5, 2.1))
+	# The beam's own voice per tick (tesla_fire), the old shared zap if it has none.
+	AudioBus.play_synth_at(data.sound_id + "_fire" if data.sound_id != "" else "drone_shot", from, -9.0, randf_range(0.9, 1.15))
 	if not hit.is_empty():
 		var col := hit.collider as Node
 		var dmg_node: Node = _find_damageable(col) if col else null
@@ -1289,38 +1292,51 @@ func _muzzle_sparks() -> void:
 	p.global_position = muzzle.global_position
 	get_tree().create_timer(0.6).timeout.connect(p.queue_free)
 
-## A flat air-pressure ring snapping off the muzzle — only the heavy hitters
-## (high recoil or splash rounds) earn it, so it reads as real blast force.
+## A thin air-pressure ring blown off the muzzle down the line of fire — only
+## the heavy hitters (high recoil or splash rounds) earn it, so it reads as
+## real blast force. It lives in the world and travels AWAY from the eye while
+## it widens: it used to grow 6x where it spawned, 0.1 m off the muzzle, and
+## covered half the view as an opaque donut (tests/muzzle_ring_probe).
+const RING_START := 0.5 ## metres past the muzzle the ring forms
+const RING_TRAVEL := 3.0 ## metres it flies down the line of fire
+const RING_GROW := 3.0 ## final scale
+const RING_TIME := 0.2
+
 func _muzzle_shockwave() -> void:
 	if muzzle == null:
 		return
 	if data.recoil_pitch < 1.8 and data.splash_radius <= 0.0:
 		return
+	var scene := get_tree().current_scene
+	if scene == null:
+		return
 	var col := data.tracer_color
 	var ring := MeshInstance3D.new()
 	var tm := TorusMesh.new()
-	tm.inner_radius = 0.05
+	tm.inner_radius = 0.1
 	tm.outer_radius = 0.12
-	tm.rings = 20
-	tm.ring_segments = 8
+	tm.rings = 24
+	tm.ring_segments = 6
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(col.r, col.g, col.b, 0.6)
+	mat.albedo_color = Color(col.r, col.g, col.b, 0.45)
 	mat.emission_enabled = true
 	mat.emission = col
 	mat.emission_energy_multiplier = 3.0
 	tm.material = mat
 	ring.mesh = tm
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# Stand the ring up facing down the barrel (TorusMesh axis is +Y).
-	ring.rotation_degrees = Vector3(90, 0, 0)
-	muzzle.add_child(ring)
-	ring.position = Vector3(0, 0, -0.1)
+	scene.add_child(ring)
+	# Face it down the barrel: the torus axis (+Y) turned onto the shot line.
+	var fwd := -muzzle.global_basis.z.normalized()
+	var start := muzzle.global_position + fwd * RING_START
+	ring.global_transform = Transform3D(Basis.looking_at(fwd) * Basis(Vector3.RIGHT, -PI * 0.5), start)
 	var tw := ring.create_tween().set_parallel(true)
-	tw.tween_property(ring, "scale", Vector3.ONE * 6.0, 0.18).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tw.tween_property(mat, "albedo_color:a", 0.0, 0.18)
+	tw.tween_property(ring, "scale", Vector3.ONE * RING_GROW, RING_TIME).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ring, "global_position", start + fwd * RING_TRAVEL, RING_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, RING_TIME)
 	tw.chain().tween_callback(ring.queue_free)
 
 func _resolve_sound(explicit: AudioStream, fallback_id: String) -> AudioStream:
@@ -1336,6 +1352,15 @@ func _play_fire_sound() -> void:
 	var s := _resolve_sound(data.fire_sound, data.sound_id + "_fire" if data.sound_id != "" else "")
 	if s:
 		AudioBus.play_at(s, muzzle.global_position, -2.0, randf_range(0.97, 1.03))
+	# Layers that make a shot felt, not just heard: a sub-bass chest thump under
+	# the heavy reports, and the action cycling a beat behind a cartridge gun's.
+	if data.fire_thump > 0.0:
+		AudioBus.play_synth_at("fire_thump", muzzle.global_position, lerpf(-16.0, -1.0, clampf(data.fire_thump, 0.0, 1.0)),
+			randf_range(0.94, 1.04))
+	if data.action_clack:
+		var at := muzzle.global_position
+		get_tree().create_timer(randf_range(0.045, 0.06)).timeout.connect(
+			func() -> void: AudioBus.play_synth_at("action_clack", at, -13.0, randf_range(0.92, 1.08)))
 
 func _play_empty() -> void:
 	if muzzle == null:

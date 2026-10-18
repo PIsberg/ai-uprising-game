@@ -133,6 +133,8 @@ var _step_cd: float = 0.0 ## seconds until this enemy's next locomotion tick is 
 # Hit-flash: a per-instance overlay so we never mutate the shared .tres materials.
 var _mesh_instances: Array[MeshInstance3D] = []
 var _flash_mat: StandardMaterial3D
+## WeaponData.DamageClass of the hit being reacted to (-1: untagged, white).
+var _hit_class: int = -1
 var _flash_tween: Tween
 
 func _ready() -> void:
@@ -1735,11 +1737,22 @@ func _play_hit_flash() -> void:
 		return
 	if _flash_tween and _flash_tween.is_valid():
 		_flash_tween.kill()
-	_flash_mat.albedo_color.a = 0.85
+	var tint: Color = DamageMatrix.CLASS_COLORS[_hit_class] if _hit_class >= 0 else Color.WHITE
+	_flash_mat.albedo_color = Color(tint.r, tint.g, tint.b, 0.85)
 	for m in _mesh_instances:
 		m.material_overlay = _flash_mat
 	_flash_tween = create_tween()
-	_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.0, 0.14)
+	match _hit_class:
+		WeaponData.DamageClass.ARC:
+			# Current crawling through it: the flash stutters twice.
+			_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.1, 0.05)
+			_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.75, 0.03)
+			_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.0, 0.12)
+		WeaponData.DamageClass.THERMAL:
+			# Heat soaks in and glows off slowly.
+			_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.0, 0.34).set_ease(Tween.EASE_IN)
+		_:
+			_flash_tween.tween_property(_flash_mat, "albedo_color:a", 0.0, 0.14)
 	_flash_tween.tween_callback(_clear_hit_flash)
 
 func _clear_hit_flash() -> void:
@@ -1761,9 +1774,14 @@ func _on_damaged(_amount: float, source: Node) -> void:
 	# Taking fire from off-screen rallies nearby allies to the shooter too.
 	if source and source.is_in_group("player") and source is Node3D:
 		_alert_allies(16.0, source as Node3D)
-	# Hit reaction: white flash + a backward shove away from the damage source.
+	# Hit reaction: a flash in the colour of what hit it + a backward shove away
+	# from the damage source.
 	if state == State.DEAD:
 		return
+	# The flash takes the colour of the damage class that hit (DamageMatrix):
+	# hp.hit_weapon is still tagged here, inside the apply_damage that emitted.
+	var w: WeaponData = hp.hit_weapon if hp else null
+	_hit_class = w.damage_class if w else -1
 	_play_hit_flash()
 	# Matching red flare on the model's emission channel + core light.
 	var rm := _visual_root as RobotModel
@@ -1784,7 +1802,8 @@ func _on_damaged(_amount: float, source: Node) -> void:
 		_spawn_oil_spray(src_pos)
 	# Poise: enough damage in quick succession staggers it — interrupting its
 	# attack, reeling the body back, and briefly stunning it.
-	_poise += _amount
+	# The right gun rocks it sooner, the wrong one barely moves it.
+	_poise += _amount * DamageMatrix.poise_mult(hp.matchup if hp else 1.0)
 	if _poise >= stagger_threshold and state != State.STAGGER:
 		_poise = 0.0
 		_stagger = 1.0

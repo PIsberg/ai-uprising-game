@@ -33,6 +33,10 @@ the CC0 packs used do not cover; music also needs import-budget room (#56).
 ### Weapon-feel distinctness 🎮🎨
 Make each gun *feel* different (sound, recoil curve, screen impact), not just stat-different.
 Tune `WeaponData` `.tres` + `weapon.gd` recoil/FX; needs playtest to judge.
+✅ **Per-gun kick, report and impact shipped (2026-10-17)**: each gun's "Kick Feel" group
+(impulse + spring), FOV punch, sub-bass thump, action clack and its own synth report
+(`tests/weapon_feel_probe`). 🎮 Needs a listen and a feel in play: the reports are
+synthesised and tuned by measurement (peaks, settle times), not by ear.
 ✅ **Kill styles shipped (2026-10-10)**: energy guns disintegrate robots, arc guns electrocute
 them, the shotgun and magnum shred them (hurled back in a scrap spray), pistol/rifle headshot kills decapitate, rockets blow robots apart (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`, `tests/kill_fx_probe`). 🎮 Needs a look in
 play: whether 1 s of dissolve reads at combat range. Drones, raptor, mender and skitter

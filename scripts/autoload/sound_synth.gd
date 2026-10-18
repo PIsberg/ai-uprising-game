@@ -67,6 +67,18 @@ func _register_jobs() -> void:
 	# Heavy electromagnetic coil-gun thump for the gauss sniper (was referenced by
 	# sniper_data.tres but never registered -> the sniper fired silently).
 	_job("gauss_fire", _gun_fire.bind(0.34, 90.0, 1.1, 1.9, true))
+	# One report per gun (WeaponData.sound_id + "_fire"); guns used to share five.
+	_job("magnum_fire", _hand_cannon.bind(0.55))
+	_job("arccoil_fire", _arc_crack.bind(0.2))
+	_job("tesla_fire", _tesla_tick.bind(0.08))
+	_job("lance_fire", _lance_fire.bind(0.5))
+	_job("longshot_fire", _longshot_fire.bind(0.95))
+	_job("swarm_fire", _swarm_fire.bind(0.42))
+	_job("tempest_fire", _tempest_fire.bind(0.7))
+	_job("omega_fire", _omega_fire.bind(1.1))
+	_job("devastator_fire", _devastator_fire.bind(0.7))
+	_job("fire_thump", _fire_thump.bind(0.3))
+	_job("action_clack", _action_clack.bind(0.08))
 	_job("empty_click", _click.bind(0.12, 1800.0))
 	_job("reload", _reload_chunk.bind(0.45))
 	_job("pump_action", _pump.bind(0.35))
@@ -377,6 +389,212 @@ func _rocket_fire(duration: float) -> AudioStreamWAV:
 		var s := (lp * 0.7 + rumble * 0.6) * env
 		_write(bytes, i, tanh(s))
 	return _to_stream(bytes)
+
+# ----- per-weapon reports: one voice per gun (WeaponData.sound_id) -----
+
+## Float buffer -> 16-bit stream, soft-clipped.
+static func _from_floats(buf: PackedFloat32Array) -> AudioStreamWAV:
+	var bytes := _silence(buf.size())
+	for i in buf.size():
+		_write(bytes, i, tanh(buf[i]) * 0.92)
+	return _to_stream(bytes)
+
+## Mix a delayed, low-passed, quieter copy of `buf` back into itself: the slap
+## of a report off the nearest wall, which is what makes a gun sound big.
+static func _echo(buf: PackedFloat32Array, delay: float, gain: float, lp_k: float) -> void:
+	var d := int(delay * SR)
+	var lp := 0.0
+	var src := buf.duplicate()
+	for i in range(d, buf.size()):
+		lp = lerpf(lp, src[i - d], lp_k)
+		buf[i] += lp * gain
+
+## .50 Maelstrom: a deep hand-cannon crack with two slap-back echoes rolling off.
+func _hand_cannon(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		ph += TAU * (110.0 - 45.0 * (1.0 - exp(-t * 20.0))) / SR
+		var body := sin(ph) * 1.3 * exp(-t * 16.0)
+		var crack := (randf() * 2.0 - 1.0) * (2.2 * exp(-t * 260.0) + 0.5 * exp(-t * 40.0))
+		buf[i] = body + crack
+	_echo(buf, 0.11, 0.45, 0.2)
+	_echo(buf, 0.24, 0.25, 0.12)
+	return _from_floats(buf)
+
+## CL-3 Arc Coil: a capacitor dump. Mains-hum buzz under a sizzle of sparks.
+func _arc_crack(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		ph += TAU * 120.0 / SR
+		var buzz := signf(sin(ph)) * 0.35 * exp(-t * 14.0)
+		var spark := (randf() * 2.0 - 1.0) * (1.0 if randf() < 0.18 else 0.25) * exp(-t * 22.0)
+		var zap := sin(TAU * lerpf(2600.0, 900.0, t / duration) * t) * 0.4 * exp(-t * 30.0)
+		buf[i] = buzz + spark + zap + (randf() * 2.0 - 1.0) * 1.4 * exp(-t * 300.0)
+	return _from_floats(buf)
+
+## VK-7 Tesla: one tick of the beam (13 a second) - a short wet crackle.
+func _tesla_tick(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	for i in n:
+		var t := float(i) / SR
+		var env := exp(-t * 55.0)
+		var crackle := (randf() * 2.0 - 1.0) * (0.9 if randf() < 0.3 else 0.2)
+		buf[i] = (crackle + signf(sin(TAU * 240.0 * t)) * 0.25) * env
+	return _from_floats(buf)
+
+## ARC-9 Gauss Lance: the coil whines up for 60 ms, then the slug cracks out
+## and the rails ring.
+func _lance_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	const PRE := 0.06
+	for i in n:
+		var t := float(i) / SR
+		if t < PRE:
+			ph += TAU * lerpf(900.0, 3800.0, t / PRE) / SR
+			buf[i] = sin(ph) * 0.35 * (t / PRE)
+			continue
+		var u := t - PRE
+		var crack := (randf() * 2.0 - 1.0) * 2.0 * exp(-u * 200.0)
+		var ring := (sin(TAU * 1250.0 * u) * 0.35 + sin(TAU * 1870.0 * u) * 0.22) * exp(-u * 9.0)
+		var thump := sin(TAU * 70.0 * u) * 1.1 * exp(-u * 14.0)
+		buf[i] = crack + ring + thump
+	return _from_floats(buf)
+
+## MK-VII Longshot: the supersonic crack, a heavy boom, and a long rolling tail.
+func _longshot_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		ph += TAU * (80.0 - 30.0 * (1.0 - exp(-t * 12.0))) / SR
+		var boom := sin(ph) * 1.4 * exp(-t * 11.0)
+		var crack := (randf() * 2.0 - 1.0) * 2.6 * exp(-t * 420.0)
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.06)
+		var roll := lp * 1.6 * exp(-t * 3.2) * (1.0 - exp(-t * 30.0))
+		buf[i] = boom + crack + roll
+	_echo(buf, 0.18, 0.35, 0.1)
+	return _from_floats(buf)
+
+## SW-7 Swarm: three micro-rockets leave the tubes 60 ms apart.
+func _swarm_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var s := 0.0
+		for k in 3:
+			var u := t - 0.06 * k
+			if u < 0.0:
+				continue
+			s += sin(TAU * (150.0 - 20.0 * k) * u) * 0.8 * exp(-u * 30.0)
+			s += (randf() * 2.0 - 1.0) * 0.9 * exp(-u * 120.0)
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.2)
+		buf[i] = s + lp * 0.5 * sin(PI * minf(1.0, t / duration))
+	return _from_floats(buf)
+
+## TPX-9 Tempest: a thunderclap - a split-second crack, a falling zap and the
+## rumble rolling after it.
+func _tempest_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		ph += TAU * lerpf(700.0, 160.0, minf(1.0, t / 0.25)) / SR
+		var zap := sin(ph) * 0.45 * exp(-t * 10.0)
+		var crack := (randf() * 2.0 - 1.0) * (2.0 * exp(-t * 90.0)) * (1.0 if randf() < 0.5 else 0.3)
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.04)
+		buf[i] = zap + crack + lp * 2.2 * exp(-t * 4.0) * (1.0 - exp(-t * 18.0))
+	return _from_floats(buf)
+
+## OMEGA-X: a 100 ms charge scream, then the core lets go - a sub-drop, a wall
+## of noise and a ringing hull.
+func _omega_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	var sub := 0.0
+	var lp := 0.0
+	const PRE := 0.1
+	for i in n:
+		var t := float(i) / SR
+		if t < PRE:
+			ph += TAU * lerpf(300.0, 2400.0, pow(t / PRE, 2.0)) / SR
+			buf[i] = sin(ph) * 0.5 * (t / PRE) + sin(ph * 1.01) * 0.25
+			continue
+		var u := t - PRE
+		sub += TAU * (60.0 - 26.0 * (1.0 - exp(-u * 6.0))) / SR
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.12)
+		var blast := lp * 2.4 * exp(-u * 5.0) + (randf() * 2.0 - 1.0) * 1.5 * exp(-u * 80.0)
+		var ring := sin(TAU * 220.0 * u) * 0.3 * exp(-u * 4.0) + sin(TAU * 331.0 * u) * 0.18 * exp(-u * 5.0)
+		buf[i] = sin(sub) * 1.6 * exp(-u * 3.5) + blast + ring
+	return _from_floats(buf)
+
+## GRK-X Devastator: the launch charge punches before the rocket motor roars off.
+func _devastator_fire(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var thump := sin(TAU * (64.0 - 20.0 * t) * t) * 1.5 * exp(-t * 14.0)
+		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.16)
+		var motor := lp * 1.1 * pow(sin(PI * clampf(t / duration, 0.0, 1.0)), 0.5) * (1.0 - exp(-t * 25.0))
+		var pop := (randf() * 2.0 - 1.0) * 1.8 * exp(-t * 180.0)
+		buf[i] = thump + motor + pop
+	return _from_floats(buf)
+
+## Sub-bass chest thump layered under heavy reports (WeaponData.fire_thump).
+func _fire_thump(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / SR
+		ph += TAU * lerpf(56.0, 34.0, t / duration) / SR
+		buf[i] = sin(ph) * 1.6 * exp(-t * 13.0) * (1.0 - exp(-t * 400.0))
+	return _from_floats(buf)
+
+## The action cycling behind a cartridge report (WeaponData.action_clack): two
+## steel clicks 18 ms apart, the bolt going back and slamming home.
+func _action_clack(duration: float) -> AudioStreamWAV:
+	var n := int(duration * SR)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	for i in n:
+		var t := float(i) / SR
+		var s := 0.0
+		for k in 2:
+			var u := t - 0.018 * k
+			if u < 0.0:
+				continue
+			var env := exp(-u * 170.0)
+			s += ((randf() * 2.0 - 1.0) * 0.8 + sin(TAU * (2200.0 + 1200.0 * k) * u) * 0.5) * env
+		buf[i] = s
+	return _from_floats(buf)
 
 func _click(duration: float, hz: float) -> AudioStreamWAV:
 	var n := int(duration * SR)

@@ -68,6 +68,24 @@ enum DamageClass { KINETIC, SHRED, THERMAL, ARC, EXPLOSIVE, RAIL }
 ## recoil_recovery.
 @export var recoil_return: float = 0.85
 
+@export_group("Kick Feel")
+## The gun's own recoil signature in your hands: a velocity impulse per shot that
+## WeaponManager's spring settles (the camera kick above is separate). A pistol
+## flicks and snaps back, the Breacher shoves into the shoulder and rolls, the
+## Longshot lifts and drifts home, the Devastator dips. tests/weapon_feel_probe
+## pins that heavy guns kick harder and settle slower than light ones.
+@export var kick_back: float = 1.3 ## m/s the gun is shoved back toward you
+@export var kick_lift: float = 0.14 ## m/s the gun rises (negative: a shoulder launcher dips)
+@export var kick_climb: float = 2.2 ## rad/s the muzzle flips up
+@export var kick_roll: float = 0.45 ## rad/s of random roll, either way
+@export var kick_roll_bias: float = 0.0 ## rad/s of roll always one way (a torquey round twists the gun)
+@export var kick_side: float = 0.22 ## rad/s of random yaw, either way
+@export var kick_stiffness: float = 220.0 ## spring snap-back; low reads heavy, the gun drifts home
+@export var kick_damping: float = 22.0 ## below 2*sqrt(stiffness) the gun overshoots and wobbles
+@export var fov_punch: float = 0.0 ## degrees the view widens for a beat (the blast pushing on you)
+@export var fire_thump: float = 0.0 ## 0..1 sub-bass chest thump layered under the report
+@export var action_clack: bool = false ## the bolt/slide clacks a beat after the report (cartridge guns)
+
 @export_group("Ammo")
 @export var mag_size: int = 18
 @export var reserve_max: int = 180
