@@ -316,6 +316,7 @@ func _ready() -> void:
 	_build_laser_gates(def)
 	_build_ziplines(def)
 	_build_injectors(def)
+	_build_rewriters(def)
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_place_light_pylons() # after every solid exists, before the bake routes round them
@@ -2533,6 +2534,15 @@ func _build_injectors(def: Dictionary) -> void:
 		add_child(inj)
 		inj.position = e.get("pos", Vector3.ZERO)
 		inj.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
+
+## REWARD REWRITE consoles (def "rewriters": [{pos, yaw?}]): pick a reward line
+## and the robots near it optimise it literally, once (RewardRewriter).
+func _build_rewriters(def: Dictionary) -> void:
+	for e in def.get("rewriters", []):
+		var rw := RewardRewriter.new()
+		add_child(rw)
+		rw.position = e.get("pos", Vector3.ZERO)
+		rw.rotation.y = deg_to_rad(float(e.get("yaw", 0.0)))
 
 func _build_scanners(def: Dictionary) -> void:
 	for e in def.get("scanners", []):

@@ -319,6 +319,13 @@ The `injectors` def key places one-use consoles that jailbreak the robots around
 * `jailbreak` rides the EMP path (`_emp_t`: no perception, AI or attacks) plus `_jailbreak_t`, which spins the body and floats a `jailbreak` reasoning trace. Chassis that resist a hijack (`HIJACK_BOSS_HP`) only take `BOSS_STUN`.
 * `pos` scales with the arena. `tests/injector_probe` builds each authored level and checks the terminal stands on clear floor.
 
+## Reward Rewrite Consoles
+<!-- lat: { "require-code-mention": true } -->
+The `rewriters` def key places one-use consoles that rewrite the nearby robots' reward function, which they then optimise literally.
+
+* Standing in its zone shows the current line (`RewardRewriter.LINES`); interact cycles `shots`, `huddle` and `kills` and restarts the upload. `UPLOAD_TIME` (2.5 s) on one line uploads it to every non-boss robot within `RADIUS` (26 m) for `REWRITE_TIME` (12 s), then the console reads PATCHED.
+* `shots` and `huddle` set `EnemyBase.reward_hack`, which `_physics_process` routes to `_reward_process`: stand and fire harmless tracers into the sky, or walk to `reward_goal`, the squad's centroid the console refreshes every 0.5 s. `kills` calls `EnemyBase.mislabel` on the squad ([[enemies#Collisions and Hijacking]]), so they target and damage each other.
+* The console owns the clock and calls `reward_hack_clear` / `clear_mislabel` at the end. `pos` scales with the arena. `tests/reward_rewrite_probe` builds SUBLEVEL and WATER WORLD and checks each console stands on clear floor.
 ## Escape Countdown
 <!-- lat: { "require-code-mention": true } -->
 An `escape` task turns a level's last stage into a timed run: the purge clock starts when the stage goes live.
