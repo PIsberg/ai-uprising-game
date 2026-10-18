@@ -7,9 +7,14 @@ extends EnemyBase
 ## ground-slams a shockwave when you crowd it. Bring the boss bar + an entrance.
 ##
 ## Visuals: the high-detail "rusty_claws_robot" — a battered, clawed humanoid
-## hulk (RobotModel auto-fits it to 10 m on $Model; the model is rig-less, so it
-## leans rather than playing clips). The pulsing Reactor weak-point and the red
-## visor spotlight are scene markers layered on top.
+## hulk (RobotModel auto-fits it to 10 m on $Model). It has no rig: the GLB is
+## cut offline into Body / ArmP / ArmN / LegP / LegN
+## (tools/blender/split_regions.py, cfg_rusty_claws_limbs.json) and
+## `_tick_limbs` swings each limb about its joint: a heavy stride with the claws
+## counter-swinging, and a pose per attack beat (a claw reared overhead for the
+## smash, both overhead for the slam, cocked back then swept for the rake). The
+## pulsing Reactor weak-point and the red visor spotlight are scene markers
+## layered on top.
 
 @export var boss_name: String = "BEHEMOTH-X"   ## Shown on the HUD boss bar.
 @export var preview: bool = false ## Codex/briefing showcase: idle on the spot, skip the wake-roar entrance, boss bar + AI.
@@ -70,6 +75,31 @@ var _rake_hit: bool = false
 # Brief invulnerable "wake" roar before it engages.
 var _wake: float = 1.4
 
+# ---- limbs (see _tick_limbs) ----
+const STRIDE := 6.0      ## Ground covered per full gait cycle (m).
+const LEG_SWING := 0.34  ## Hip swing at full stride (rad).
+const ARM_SWING := 0.5   ## Shoulder counter-swing at full stride (rad).
+const STANCE := 0.07     ## Legs planted wide while it winds up a blow (rad).
+## Shoulder poses per attack beat, (pitch, splay): pitch turns the arm about
+## the body X axis (+ swings the claw forward and up, PI is straight overhead),
+## splay rolls it outward.
+const POSE_BRACE := Vector2(0.55, 0.2)        ## the off claw braced forward
+const POSE_SMASH_UP := Vector2(3.4, 0.25)     ## right claw reared back over the head
+const POSE_SMASH_DOWN := Vector2(0.95, 0.05)  ## ...hammered down in front
+const POSE_SLAM_UP := Vector2(3.3, 0.35)      ## both claws overhead
+const POSE_SLAM_DOWN := Vector2(0.45, 0.25)   ## ...pounded into the deck
+const POSE_RAKE_BACK := Vector2(-0.9, 0.7)    ## cocked back and spread wide
+const POSE_RAKE_SWEEP := Vector2(1.45, -0.3)  ## swept forward, talons crossing
+const STRIKE_HOLD := 0.45 ## Seconds a strike pose holds before the stride takes over.
+var _limbs: Array = [] ## {"entry", "pivot", "side" (-1 left, +1 right), "arm"}
+var _limbs_tried := false
+var _gait_phase := 0.0
+var _gait_amp := 0.0
+var _arm_pose: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO] ## held attack pose, [left, right]
+var _pose_w := 0.0 ## 0 = the stride drives the arms, 1 = the attack pose does
+var _strike_t := 0.0
+var _strike_kind := ""
+
 func _ready() -> void:
 	super._ready()
 	max_health = 3600.0
@@ -92,7 +122,6 @@ func _ready() -> void:
 	_glow_mat = preload("res://assets/materials/glow_red.tres").duplicate() as StandardMaterial3D
 	if _reactor:
 		_reactor.material_override = _glow_mat
-	_relax_arms()
 	# Codex/briefing: idle on the dais — skip the wake-roar entrance + AI.
 	if preview:
 		_wake = 0.0
@@ -101,19 +130,6 @@ func _ready() -> void:
 		return
 	hp.invulnerable = true
 	_do_entrance.call_deferred()
-
-## Drop the George rig's baked "guard" arms to a natural heavy carry (same nudge
-## the colossus uses) so the fists hang ready to swing.
-func _relax_arms() -> void:
-	var model := get_node_or_null("Model/Mesh")
-	if model == null:
-		return
-	ModelPoser.relax_skeleton_arms(model, [
-		{"bone": "UpperArm.L", "euler": Vector3(0, 0, -78)},
-		{"bone": "UpperArm.R", "euler": Vector3(0, 0, 78)},
-		{"bone": "LowerArm.L", "euler": Vector3(0, 0, 30)},
-		{"bone": "LowerArm.R", "euler": Vector3(0, 0, -30)},
-	])
 
 ## WAKE-SLAM entrance: BEHEMOTH-X boots up — reactor flares, a warning ring
 ## blooms on the foundry deck — then it rears and HAMMERS the floor, a molten
@@ -167,11 +183,88 @@ func _process(delta: float) -> void:
 		_glow_mat.emission_energy_multiplier = (4.0 + sin(_walk_phase * 2.0) * 1.5 + recoil * 7.0 + damage_heat * 6.0 + (5.0 if is_enraged() else 0.0)) * rage
 	if _eye_light:
 		_eye_light.light_energy = (3.0 + sin(_walk_phase * 2.5) * 1.0 + _wake * 4.0) * rage
-	if speed > 0.1 and is_on_floor():
-		var fs := sin(_walk_phase)
-		var last := sin(_walk_phase - delta * (2.0 + speed))
-		if (fs > 0.0) != (last > 0.0):
-			AudioBus.play_synth_at("mech_step", global_position, 1.0, randf_range(0.55, 0.7))
+	_tick_limbs(delta)
+
+# ---------- limbs: stride + claw choreography ----------
+
+## Find the limb parts and their joints once RobotModel's fit has landed (it
+## hides the mesh until then). The offline cut runs through the shoulders and
+## hips, so the top of each part's bounds is its joint.
+func _setup_limbs() -> void:
+	var model := get_node_or_null("Model")
+	var body := model.find_child("Body", true, false) as MeshInstance3D if model else null
+	if body == null or not body.is_visible_in_tree():
+		return
+	_limbs_tried = true
+	var inv := global_transform.affine_inverse()
+	for n in ["ArmP", "ArmN", "LegP", "LegN"]:
+		var mi := model.find_child(n, true, false) as MeshInstance3D
+		if mi == null:
+			continue
+		var box: AABB = inv * (mi.global_transform * mi.mesh.get_aabb())
+		var c := box.get_center()
+		_limbs.append({"entry": PartRig.entry(self, mi), "side": signf(c.x), "arm": n.begins_with("Arm"),
+			"pivot": Vector3(c.x, box.end.y - 0.3, c.z)})
+
+## Each frame: the stride (cadence from ground speed, legs in opposition, each
+## arm with the opposite leg, a footfall boom per planted foot) and, while an
+## attack beat is under way, the claws eased into that beat's pose.
+func _tick_limbs(delta: float) -> void:
+	if not _limbs_tried:
+		_setup_limbs()
+	if _limbs.is_empty():
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var prev := _gait_phase
+	_gait_phase = fposmod(_gait_phase + delta * speed / STRIDE * TAU, TAU)
+	_gait_amp = move_toward(_gait_amp, clampf(speed / 2.5, 0.0, 1.0), delta * 3.0)
+	if _gait_amp > 0.2 and is_on_floor() and (sin(_gait_phase) > 0.0) != (sin(prev) > 0.0):
+		AudioBus.play_synth_at("mech_step", global_position, 1.0, randf_range(0.55, 0.7))
+	_strike_t = maxf(0.0, _strike_t - delta)
+	var beat := _attack_beat()
+	# +swing carries the right leg and the left arm forward.
+	var swing := sin(_gait_phase) * _gait_amp
+	var stride: Array[Vector2] = [Vector2(swing * ARM_SWING, 0.0), Vector2(-swing * ARM_SWING, 0.0)]
+	if beat.is_empty():
+		_pose_w = move_toward(_pose_w, 0.0, delta * 3.0)
+	else:
+		if _pose_w < 0.05: # ease in from wherever the stride has the arms
+			_arm_pose = stride.duplicate()
+		var k := 1.0 - exp(-float(beat[2]) * delta)
+		_arm_pose[0] = _arm_pose[0].lerp(beat[0], k)
+		_arm_pose[1] = _arm_pose[1].lerp(beat[1], k)
+		_pose_w = move_toward(_pose_w, 1.0, delta * float(beat[2]))
+	var planted := 0.0 if beat.is_empty() else STANCE
+	for limb in _limbs:
+		var side: float = limb["side"]
+		var r: Basis
+		if limb["arm"]:
+			var i := 0 if side < 0.0 else 1
+			var a: Vector2 = stride[i].lerp(_arm_pose[i], _pose_w)
+			r = Basis(Vector3.RIGHT, a.x) * Basis(Vector3.BACK, a.y * side)
+		else:
+			r = Basis(Vector3.RIGHT, swing * LEG_SWING * side) * Basis(Vector3.BACK, planted * side)
+		var pivot: Vector3 = limb["pivot"]
+		PartRig.pose(limb["entry"], Transform3D(r, pivot - r * pivot))
+
+## [left pose, right pose, ease rate] for the attack beat under way, or [] when
+## none is: windups ease in, strikes snap.
+func _attack_beat() -> Array:
+	if _smash_windup_t > 0.0:
+		return [POSE_BRACE, POSE_SMASH_UP, 9.0]
+	if _slam_windup_t > 0.0:
+		return [POSE_SLAM_UP, POSE_SLAM_UP, 9.0]
+	if _rake_windup_t > 0.0:
+		return [POSE_RAKE_BACK, POSE_RAKE_BACK, 12.0]
+	if _rake_lunge_t > 0.0:
+		return [POSE_RAKE_SWEEP, POSE_RAKE_SWEEP, 22.0]
+	if _strike_t > 0.0:
+		match _strike_kind:
+			"smash":
+				return [POSE_BRACE, POSE_SMASH_DOWN, 30.0]
+			"slam":
+				return [POSE_SLAM_DOWN, POSE_SLAM_DOWN, 30.0]
+	return []
 
 func _physics_process(delta: float) -> void:
 	if _wake > 0.0:
@@ -359,10 +452,12 @@ func _claw_slash_fx() -> void:
 func _begin_smash() -> void:
 	_smash_windup_t = smash_windup
 	_smash_cd = smash_cooldown * _cd_mult()
-	recoil = 1.0  # fires the Punch clip via RobotModel
+	recoil = 1.0  # flares the reactor
 	AudioBus.play_synth_at("charge", global_position, -4.0, 0.7)
 
 func _do_smash() -> void:
+	_strike_kind = "smash"
+	_strike_t = STRIKE_HOLD
 	AudioBus.play_synth_at("explosion", global_position, 2.0, 0.7)
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.5)
 	var fx := EXPLOSION.instantiate()
@@ -394,6 +489,8 @@ func _begin_slam() -> void:
 	spawn_ground_warning(global_position, slam_radius, _slam_windup_t)
 
 func _do_slam() -> void:
+	_strike_kind = "slam"
+	_strike_t = STRIKE_HOLD
 	AudioBus.play_synth_at("explosion", global_position, 4.0, 0.5)
 	var fx := EXPLOSION.instantiate()
 	get_tree().current_scene.add_child(fx)

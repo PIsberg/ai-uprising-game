@@ -1,0 +1,10 @@
+{
+  "_doc": "BEHEMOTH-X limbs (rusty_claws_robot.glb). World after import: Z up (-0.5..0.5), Y = arm span (symmetric), X = front/back. Arms hang outboard of |Y| 0.245 from the claw tips up to the shoulder; legs are everything below Z -0.10 inboard of that. tools/blender/split_regions.py",
+  "rest": "Body",
+  "regions": [
+    {"name": "ArmP", "min": [-9, 0.245, -0.36], "max": [9, 9, 0.22]},
+    {"name": "ArmN", "min": [-9, -9, -0.36], "max": [9, -0.245, 0.22]},
+    {"name": "LegP", "min": [-9, 0.0, -9], "max": [9, 0.245, -0.10]},
+    {"name": "LegN", "min": [-9, -0.245, -9], "max": [9, 0.0, -0.10]}
+  ]
+}
