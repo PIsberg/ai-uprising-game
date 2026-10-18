@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-485 probes total: **190** wired into the headless suite (`suite`), **85**
+486 probes total: **191** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -491,6 +491,7 @@ or GPU-timing probes; `--headless` renders these black).
 | teach_probe | Each first-encounter teaching hint fires once, repeats suppressed, a new run re-arms them | suite |
 | terminator_beam_probe | TERMINATOR's Optic Lance charges/fires/tracks/renders/burns the player | windowed |
 | terminator_entrance_probe | TERMINATOR's eruption entrance (buried rumble→breach→rise→settle) | windowed |
+| terminator_overclock_probe | APEX ENDOFRAME's one phase: a single mark at 50 % that `_phase()` follows; nothing changes at 60 %; crossing 50 % stages the final-phase beat and OVERCLOCKS it once, from its live elite-scaled stats (8.84 -> 11.05 m/s with a x1.3 elite mult, burst gap 2.1 -> 1.47 s, 6 -> 8 rounds, lance cooldown 7.5 -> 4.5 s, barrels 30 -> 45 rad/s); healed and wounded past 50 % again, it does not overclock twice | suite |
 | terminator_rig_probe | APEX ENDOFRAME walks and fights with its limbs (rig-less GLB cut offline into gun arms, barrels, thighs, shins): the muzzles sit on the barrel tips (1.18 m off before, mid-chest), chasing the toes swing 1.19 m along the run (0.03 m before) and lift 0.16 m, legs in opposition (r -0.94), strafing they step 0.9-1.1 m sideways; the cannons pitch to dir.y +0.56 onto a target 39 deg up and -0.56 below with the muzzles still on the tips; a burst spins the barrels 14 rad in 0.5 s, 3 s later they are still; stopped, toes and tips back at rest | suite |
 | terminator_rig_shot | Look-check of APEX ENDOFRAME's rig: four points of its stride side-on, a strafe from the front, cannons aimed up and down; `-- --out=<dir>` | windowed |
 | tesla_beam_probe | Holding the trigger, the Tesla's ElectricBeam activates | suite |
