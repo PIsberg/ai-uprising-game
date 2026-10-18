@@ -215,8 +215,8 @@ func _build_extra_settings() -> void:
 	brightness_slider.value_changed.connect(func(v: float): GraphicsSettings.set_brightness(v))
 
 	# Accessibility: overlord taunt subtitles + arcade kill callouts (HEADSHOT,
-	# streak words) — the HUD reads GraphicsSettings.combat_callouts_enabled
-	# before popping them.
+	# streak words) + the MACHINE FEED chat — the HUD reads
+	# GraphicsSettings.combat_callouts_enabled before popping them.
 	var callouts := CheckButton.new()
 	callouts.text = tr("Combat Callouts")
 	callouts.custom_minimum_size = Vector2(360, 44)

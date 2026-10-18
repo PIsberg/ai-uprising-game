@@ -266,6 +266,7 @@ func _ready() -> void:
 	_build_dodge_label()
 	_build_exec_label()
 	_build_cascade_label()
+	_build_machine_feed()
 	_build_ult_meter()
 	# The directive was rolled in load_level before this HUD existed — announce the
 	# active one now (a beat later so the toast lands after the level settles in).
@@ -869,6 +870,18 @@ func _build_exec_label() -> void:
 	_exec_label.modulate.a = 0.0
 	_exec_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_exec_label)
+
+## MACHINE FEED: the robot audience's chat, down the left edge between the
+## objective list and the health bar (MachineFeed).
+var machine_feed: MachineFeed = null
+
+func _build_machine_feed() -> void:
+	machine_feed = MachineFeed.new()
+	machine_feed.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	machine_feed.anchor_top = 0.38
+	machine_feed.anchor_bottom = 0.38
+	machine_feed.position = Vector2(24, 0)
+	add_child(machine_feed)
 
 ## Cyan chain stamp, just above the EXECUTED! one: a CX-4 chain of
 ## GameState.CASCADE_CALLOUT robots or more reads "CASCADE xN", a long one
@@ -2016,6 +2029,8 @@ func _reticle_hue(name: String) -> Color:
 func _on_weapon_added(w: Weapon) -> void:
 	if w and w.data and not w.salvage: # a salvage grab has its own pickup line
 		_show_toast(tr("WEAPON ACQUIRED — ") + w.data.display_name)
+	elif w and w.salvage and machine_feed:
+		machine_feed.on_salvage()
 	_refresh_carousel() # a new slot joined the rack — rebuild the strip
 	_flash_carousel()
 

@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-489 probes total: **194** wired into the headless suite (`suite`), **85**
+490 probes total: **195** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -358,6 +358,7 @@ or GPU-timing probes; `--headless` renders these black).
 | look_capture | Eye-level screenshot of each campaign level for visual audit: stands at the spawn, sweeps yaw for the clearest sightline (world raycast), parks the player so no blast screen-warp smears the frame; `-- --out=<dir> --levels=a,b`; score the frames with `python tools/look_metrics.py <dir> [<baseline dir>]` | windowed |
 | loot_probe | Flyer supply drops over open sea relocate onto a walkway, never stranded in the hazard | suite |
 | lowhealth_screenshot | Post-process shader with `low_health` forced high | windowed |
+| machine_feed_probe | MACHINE FEED: every MachineChat pool has 4+ lines and every line a full strings.csv row (5 languages), 12+ handles; a CASCADE x6 posts a cascade line (right after the opening line: chatter never blocks an event) and lifts viewers; execution, dodge and salvage post their own pools; ten events in a frame post one line; at most MAX_LINES show; no line twice in a row over 8 posts; death posts a death line and drops viewers; idle chatter after idle_gap; Combat Callouts off posts nothing and hides the feed (red-checked: before the chatter rule the opening line swallowed the cascade) | suite |
 | mantle_kick_probe | A successful mantle fires the new viewmodel kick (not just that mantling still works) | headless |
 | manus_phase_probe | MANUS three health-keyed phases: cooldown multipliers x1/0.8/0.62, one phase-change punch, phase-3 double finger eruption | suite |
 | manus_rooted_probe | ROOTED MANUS: holds spawn position at range, finger-eruption telegraph damage, grab is now a yank within grab_reach | headless |
