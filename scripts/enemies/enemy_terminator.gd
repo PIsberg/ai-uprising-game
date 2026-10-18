@@ -11,6 +11,9 @@ extends EnemyBase
 ## travels, pitches the cannons onto the target, spins the barrels through a
 ## burst and keeps the muzzles on the barrel tips. The script layers a heavy
 ## whole-body stomp bob + lean + recoil on the wrapper and a pulsing red eye light.
+## At half health it OVERCLOCKS (its one phase, `boss_phase_marks`): faster on
+## its feet, shorter gaps between longer bursts, the lance back sooner, the
+## barrels spinning harder and the optic burning hot.
 
 @export var hitscan_damage: float = 9.0
 @export var burst_count: int = 6
@@ -87,6 +90,15 @@ var _beam: ElectricBeam = null
 var _beam_windup: float = 0.0
 var _beam_time: float = 0.0
 var _beam_cd: float = BEAM_COOLDOWN * 0.5   ## first lance comes a few seconds in
+var beam_cooldown: float = BEAM_COOLDOWN    ## the lance's live cooldown (OVERCLOCK shortens it)
+var spin_max: float = SPIN_MAX              ## live barrel spin while bursting (OVERCLOCK raises it)
+# OVERCLOCK: scales the live, already elite/difficulty-scaled stats once.
+const OVERCLOCK_SPEED := 1.25
+const OVERCLOCK_COOLDOWN := 0.7
+const OVERCLOCK_BURST := 2
+const OVERCLOCK_BEAM := 0.6
+const OVERCLOCK_SPIN := 1.5
+var _overclocked := false
 var _beam_dir: Vector3 = Vector3.FORWARD
 var _beam_tick_t: float = 0.0
 var _beam_charge: float = 0.0               ## 0..1, drives the eye turning green
@@ -110,6 +122,8 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 6.0
+	# Off the signal, not an override, like the base's phase beat.
+	hp.health_changed.connect(_check_overclock.unbind(2))
 	flinch_knockback = 0.4 # near-immune to stagger
 	# Deferred so the rig's bones have posed — the model is many bone-driven parts,
 	# so the fit needs their posed world bounds, not rest-frame node transforms.
@@ -314,7 +328,7 @@ func _process(delta: float) -> void:
 	_tick_rig(delta)
 	if _eye_glow:
 		var flare := _entrance * 6.0 # eyes blaze brighter while powering up
-		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare + _beam_charge * 10.0
+		_eye_glow.light_energy = 4.0 + sin(_walk_phase * 2.5) * 1.5 + recoil * 6.0 + flare + _beam_charge * 10.0 + (4.0 if _overclocked else 0.0)
 		# The optic shifts from its combat red to a hot green as the lance charges.
 		_eye_glow.light_color = Color(1, 0.1, 0.1).lerp(BEAM_COLOR, _beam_charge)
 	# A footfall boom as each foot plants (the stride's extremes).
@@ -398,7 +412,7 @@ func _tick_rig(delta: float) -> void:
 	_aim_pitch = move_toward(_aim_pitch, want, AIM_RATE * delta)
 	# Barrels: spin up while a burst is live, wind down after.
 	if _burst_remaining > 0:
-		_spin = move_toward(_spin, SPIN_MAX, SPIN_UP * delta)
+		_spin = move_toward(_spin, spin_max, SPIN_UP * delta)
 	else:
 		_spin = move_toward(_spin, 0.0, SPIN_DOWN * delta)
 	_spin_angle = fposmod(_spin_angle + _spin * delta, TAU)
@@ -538,7 +552,7 @@ func _end_beam() -> void:
 	_beam_windup = 0.0
 	_beam_time = 0.0
 	_beam_charge = 0.0
-	_beam_cd = BEAM_COOLDOWN
+	_beam_cd = beam_cooldown
 	if _beam:
 		_beam.deactivate()
 
@@ -582,6 +596,28 @@ func _fire_one_shot() -> void:
 
 func _perform_attack() -> void:
 	_start_burst()
+
+func _phase() -> int:
+	return boss_phase()
+
+func boss_phase_marks() -> Array:
+	return [0.5]
+
+## Crossing half health: OVERCLOCK, once. Scales the live stats (move_speed and
+## attack_cooldown already carry elite/difficulty mults from _sync_stats), so a
+## tougher APEX overclocks from where it stands. The roar, quake and banner are
+## EnemyBase._boss_phase_beat's.
+func _check_overclock() -> void:
+	if _overclocked or boss_phase() < 2 or state == State.DEAD or hp.current_health <= 0.0:
+		return
+	_overclocked = true
+	move_speed *= OVERCLOCK_SPEED
+	attack_cooldown *= OVERCLOCK_COOLDOWN
+	burst_count += OVERCLOCK_BURST
+	beam_cooldown *= OVERCLOCK_BEAM
+	_beam_cd = minf(_beam_cd, beam_cooldown * 0.5)
+	spin_max *= OVERCLOCK_SPIN
+	AudioBus.play_synth_at("charge", global_position, 2.0, 1.6) # a rising overclock whine
 
 func _on_died(source: Node) -> void:
 	# Boss kill payoff: a camera kick + brief slow-mo before the base death.
