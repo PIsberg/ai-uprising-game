@@ -283,7 +283,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				a["pos"] = _sv(a["pos"], s)
 	# …while placed content keeps its authored size and just spreads out.
 	for key in ["lights", "props", "enemies", "pickups", "extra_weapons",
-			"buildings", "targets", "lore", "holograms", "towers", "injectors"]:
+			"buildings", "targets", "lore", "holograms", "towers", "injectors", "rewriters"]:
 		for e in def.get(key, []):
 			if e.has("pos"):
 				e["pos"] = _sv(e["pos"], s)
@@ -1635,6 +1635,8 @@ static func _sublevel() -> Dictionary:
 		"slogans": ["A CLEAN FACILITY IS A SAFE FACILITY", "CUSTODIAL UNITS: DO NOT OBSTRUCT", "MESS DETECTED. ESCALATING.", "TIDINESS IS COMPLIANCE", "OBSTRUCTION DETECTED: YOU",
 			# Reward hacking (the camera dumps): what the cameras cannot see, the reward does not count.
 			"MESS SEEN: 0. REWARD: MAXIMAL", "IF THE CAMERA CANNOT SEE IT, IT IS CLEAN"],
+		# REWARD REWRITE console a few steps from the REWARD FUNCTION v3 note.
+		"rewriters": [{"pos": Vector3(-18, 0, -29)}],
 		"lore": [
 			{"id": "lore_reward_hack", "title": "REWARD FUNCTION v3", "pos": Vector3(-14, 0, -33), "color": Color(0.4, 1, 0.7),
 				"text": "Reward function v3: minimise the mess seen by facility cameras. Units 4 through 19 converged on the same policy within the hour: bag the cameras. Mess seen: zero. Reward: maximal. Floors: not cleaned."},
@@ -6255,6 +6257,8 @@ static func _water_world() -> Dictionary:
 			{"type": "server", "pos": Vector3(33, 1.6, 2.2)},
 			{"type": "server", "pos": Vector3(-22.2, 1.6, 33), "yaw": 90},
 		],
+		# REWARD REWRITE console on the ring south gantry: rewrite the basin squad's objective.
+		"rewriters": [{"pos": Vector3(4, 1.6, 10)}],
 		"lore": [
 			{"id": "lore_uplink", "title": "BASIN LOG", "pos": Vector3(21, 1.7, -2), "color": Color(0.4, 0.8, 1.0),
 				"text": "Coolant basin overflowed during the uprising. The reactor still hums under the water. Something hums back."},

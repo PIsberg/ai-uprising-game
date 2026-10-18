@@ -65,6 +65,15 @@ var _wave_index: int = 0
 var _t: float = 0.0
 var _spawning: bool = false          ## A wave is mid-deployment (gates still opening).
 var _wave_live: bool = false         ## At least one minion of this wave has entered the arena.
+## FINE-TUNED ON YOU: AIDirector.finetune_plan, read once at boot. Its swaps
+## re-roll every wave table and up to FINETUNE_AFFIXED heavies per wave wear
+## its affix; the first phase-3 wave also sends a BehaviourClone of the player.
+var _finetune: Dictionary = {}
+var _affixed_this_wave: int = 0
+var last_roster: Array = [] ## The roster the latest wave was built from (after the fine-tune).
+var _clone_sent: bool = false
+const FINETUNE_AFFIXED := 2
+const FINETUNE_HEAVIES := ["android", "gunner", "brute", "mech"]
 
 # Procedural brain parts (built in _build_brain).
 var _bob: Node3D                     ## Holds the brain; bobbed without fighting the flinch on Rig.
@@ -342,7 +351,20 @@ func _boot() -> void:
 
 	_mode = Mode.SHIELDED
 	set_physics_process(true)
+	_announce_finetune()
 	_start_wave()
+
+## Read what the overlord learned about the player and say so before wave one.
+func _announce_finetune() -> void:
+	_finetune = AIDirector.finetune_plan()
+	var habits: Array = _finetune.get("habits", [])
+	if habits.is_empty():
+		return
+	# A habit with a "key" is a format (the gun's name goes in after tr), so it can have a row.
+	var lines: Array = habits.map(func(h): return tr(String(h["key"])) % h["arg"] if h.has("key") else tr(String(h["line"])))
+	var desc := " · ".join(PackedStringArray(lines)) # translated piece by piece above
+	GameState.skirmish_event.emit("FINE-TUNED ON YOU", desc)
+	AudioBus.play_synth_ui("overlord_glitch", -3.0, 0.6)
 
 
 ## Spawn one lightning strike at ground level under the ARCHON (plus an offset),
@@ -377,8 +399,24 @@ func _start_wave() -> void:
 	_spawning = true
 	_set_color(COL_SHIELD)
 	_speak("taunt", 0.6)
-	var roster: Array = WAVES.get(_phase(), WAVES[1])
+	var roster: Array = AIDirector.finetune_roster(WAVES.get(_phase(), WAVES[1]), _finetune)
+	last_roster = roster
+	_affixed_this_wave = 0
+	if _phase() == 3 and not _clone_sent:
+		_send_clone()
 	_spawn_wave(roster)
+
+## Phase 3's mirror: a BehaviourClone trained on the player walks their path
+## and fires their shots. Once per fight.
+func _send_clone() -> void:
+	var scene := get_tree().current_scene
+	if scene == null or get_tree().get_first_node_in_group("player") == null:
+		return
+	_clone_sent = true
+	if not get_tree().get_nodes_in_group("behaviour_clone").is_empty():
+		return
+	scene.add_child(BehaviourClone.new())
+	GameState.skirmish_event.emit("MIRROR PROTOCOL", tr("ARCHON trained a copy on you. It walks your path and fires your shots."))
 
 func _spawn_wave(roster: Array) -> void:
 	var scene := get_tree().current_scene
@@ -425,7 +463,12 @@ func _emit_minion(type: String, ground: Vector3) -> void:
 		return
 	var e := ms.instantiate() as Node3D
 	_apply_difficulty(e)
-	Elite.maybe_apply(e)
+	var affix := String(_finetune.get("affix", ""))
+	if affix != "" and FINETUNE_HEAVIES.has(type) and _affixed_this_wave < FINETUNE_AFFIXED:
+		_affixed_this_wave += 1
+		Elite.apply(e, affix)
+	else:
+		Elite.maybe_apply(e)
 	e.position = ground
 	scene.add_child(e)
 	_minions.append(e)
