@@ -41,6 +41,16 @@ Look at a robot you have hijacked ([[enemies#Collisions and Hijacking]]) and pre
 * Fire calls `EnemyBase.pilot_fire`: 34 damage per second at the chassis's own cadence (`pilot_cooldown`, from `attack_cooldown`), a hitscan from the muzzle for gunners and a 4.5 m frontal slam at x1.6 for brawlers (`attack_range` <= 4.5). Shots snap to a hostile within 6 deg of the crosshair. Flyers (`pilot_flies`) climb on jump and dive on crouch.
 * Every ending (interact again, the clock, body damage, the chassis dying, a chassis whose own loop never reaches the hijack path) calls `release_pilot`, which burns the chassis out credited to the player. Escort allies refuse the link. `tests/neural_uplink_probe`.
 
+## Adversarial Patch
+<!-- lat: { "require-code-mention": true } -->
+Press the patch key (`adversarial_patch`: T / D-pad left, rebindable) and robot vision misreads the player as a household object for 15 s, 2 charges per level.
+
+`AdversarialPatch` (`scripts/systems/adversarial_patch.gd`) is the player's `AdversarialPatch` child.
+
+* `EnemyBase._compute_can_see` hands a confirmed sighting of a patched player to `AdversarialPatch.classify`, which raises the robot's `patch_confidence` by eyes-on time over 1.2 s (at 3 m) to 8 s (at 25 m); it sees the player only at 1.0. Out of sight it decays 0.15/s. Robots already hunting start at 0.6; bosses (score 1000+) see through.
+* A tag over each robot that has looked shows its read: a decoy class and a falling percentage, then HUMAN in red.
+* A shot (`GameState.shot_registered`) breaks the patch. A vision scanner ignores a patched player beyond 4 m ([[level-system#Vision Scanners]]).
+* Melee while patched calls `tag_robot`: the robot is mislabeled for 8 s ([[enemies#Collisions and Hijacking]]) and the patch is spent. `tests/adversarial_patch_probe`.
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:

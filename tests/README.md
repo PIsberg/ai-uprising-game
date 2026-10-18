@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-462 probes total: **174** wired into the headless suite (`suite`), **85**
+463 probes total: **175** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -509,6 +509,7 @@ or GPU-timing probes; `--headless` renders these black).
 | zipline_shot | TITAN's zipline: the cable from the south-west deck, the tower-top station, and the view down the cable; `-- --out=<dir>` | windowed |
 | neural_uplink_probe | NEURAL UPLINK on a bare floor with the real player: a hijacked robot in the crosshair is the candidate, an unhijacked one is not; interact links (body flagged `linked_out`, chassis camera current, weapon rack disabled); move input walks the chassis 4 m along its facing while the body stays put; fire input damages a hostile through the chassis; interact again unlinks, hands the camera and weapons back and burns the chassis out (reason exit); 21 damage to the body snaps the link (body); the ride clock ends it (time); an unhijacked robot and an escort ally refuse; a hijacked drone climbs on jump (red-checked: with pilot speed and damage zeroed, walk, fire and climb all fail) | suite |
 | neural_uplink_shot | NEURAL UPLINK chase camera on Level 01: a hijacked android near the spawn ridden from the uplink camera (green tint, ride HUD, the chassis ahead of the crosshair), then after walking it forward | windowed |
+| adversarial_patch_probe | ADVERSARIAL PATCH on a bare floor with the real player: an unpatched player at 20 m is seen; the patch action spends one of two charges; patched, a robot facing the player at 20 m still does not see them after 2 s and carries a partial confidence with a decoy tag ("FLOOR LAMP 82%"), while one 3 m away sees through in about 1.2 s and its tag reads HUMAN; a shot breaks the patch; a robot already hunting starts at the 0.6 head start; the clock ends it and with no charges the action does nothing; melee while patched tags a robot (player layer, squad fire lands, the squad retargets it) and the tag wears off; a vision scanner ignores a patched player at 12 m (red-checked: without the classify hook the 20 m robot sees the player, without the Damageable exception the tagged robot takes 0) | suite |
 
 ### Candidates to add to the suite
 

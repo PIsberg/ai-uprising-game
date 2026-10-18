@@ -311,6 +311,9 @@ func _ready() -> void:
 	var uplink := NeuralUplink.new()
 	uplink.name = "NeuralUplink"
 	add_child(uplink)
+	var patch := AdversarialPatch.new()
+	patch.name = "AdversarialPatch"
+	add_child(patch)
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only
@@ -984,6 +987,11 @@ func _do_melee() -> void:
 		# Frontal cone only — it's a shove, not an aura.
 		var flat := to; flat.y = 0.0
 		if flat.length() > 0.1 and rad_to_deg(fwd.angle_to(flat.normalized())) > melee_arc_deg * 0.5:
+			continue
+		# Wearing an ADVERSARIAL PATCH: the shove slaps it onto the robot instead.
+		var patch := AdversarialPatch.active_on(self)
+		if patch and col is EnemyBase and patch.tag_robot(col as EnemyBase):
+			struck = true
 			continue
 		var d := col.get_node_or_null("Damageable")
 		if d and d.has_method("apply_damage"):
