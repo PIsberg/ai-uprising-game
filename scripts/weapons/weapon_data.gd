@@ -37,6 +37,13 @@ enum ReloadStyle { MAG, SHELLS, CELL, TUBE }
 @export var headshot_mult: float = 2.0
 @export var pierce: int = 0 ## Hitscan only: extra enemies the shot punches through (0 = stops at first).
 
+@export_group("Cascade")
+## A hit PRIMES the robot (Cascade.prime); if it dies inside Cascade.PRIME_TIME it
+## detonates for this much damage over cascade_radius, and every hostile the blast
+## kills detonates in turn. 0 = the gun does not cascade.
+@export var cascade_damage: float = 0.0
+@export var cascade_radius: float = 0.0
+
 @export_group("Effective Range")
 ## Per-weapon range identity — the heart of "use the right tool for the range".
 ## Inside [opt_min, opt_max] the weapon does full damage; closer than opt_min it

@@ -14,7 +14,7 @@ extends Node3D
 ## bug, and this probe is what catches it.
 ##   godot --headless --path . res://tests/ttk_probe.tscn
 
-const WEAPONS := ["pistol", "rifle", "shotgun", "magnum", "tesla", "arccoil",
+const WEAPONS := ["pistol", "rifle", "shotgun", "cascade", "magnum", "tesla", "arccoil",
 	"sniper", "plasma", "gauss", "swarm", "tempest", "devastator", "omega"]
 const WINDOW := 6.0    ## seconds of held trigger
 const DIST := 10.0     ## inside EVERY weapon's reach — the VK-7 Tesla only has 13 m

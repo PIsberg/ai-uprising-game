@@ -39,7 +39,7 @@ func _run() -> void:
 	_hip0 = _wm.position
 
 	# Weapons the player can find on the floor mid-fight.
-	var PICKUPS := ["shotgun", "magnum", "tesla", "arccoil", "sniper", "plasma",
+	var PICKUPS := ["shotgun", "cascade", "magnum", "tesla", "arccoil", "sniper", "plasma",
 		"gauss", "swarm", "tempest", "devastator", "omega"]
 	var pick := 0
 	var prev_name := ""
