@@ -87,6 +87,7 @@ var _heat_light: OmniLight3D = null
 
 # Shared worn-metal roughness map for every real gun model — built once, reused.
 static var _metal_rough_tex: NoiseTexture2D = null
+static var _metal_grain_tex: NoiseTexture2D = null
 
 ## Fitted weapon mod (GameState.weapon_mods, keyed by this gun's scene path), read
 ## once when the gun is built for a level; WeaponMods runs it on every hit.
@@ -277,13 +278,21 @@ func _gunmetal_material(src: BaseMaterial3D, tint: Color) -> StandardMaterial3D:
 	mat.albedo_color = (base * tint).darkened(0.25)
 	mat.metallic = 0.88
 	mat.metallic_specular = 0.6
-	mat.roughness = 0.5                                   # noise scales this down -> worn 0..0.5
+	# The noise map is ramped to 0.7..1, so this gives 0.36..0.52: worn, never a
+	# mirror. A full 0..1 map put mirror-smooth spots beside matte ones and the
+	# smooth ones reflected the level (green in the foundry): every gun read as
+	# camouflage. tests/gun_finish_probe.
+	mat.roughness = 0.52
 	mat.roughness_texture = _gunmetal_rough()
 	mat.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	mat.uv1_triplanar = true                              # map noise without relying on kit UVs
 	# Fine grain: big patches read as camo blotches up close on the viewmodel;
 	# a tight scale reads as brushed/worn machining instead.
 	mat.uv1_scale = Vector3(5.5, 5.5, 5.5)
+	# Fine machining grain in the normals instead of the roughness.
+	mat.normal_enabled = true
+	mat.normal_texture = _gunmetal_grain()
+	mat.normal_scale = 0.15
 	mat.clearcoat_enabled = true
 	mat.clearcoat = 0.4
 	mat.clearcoat_roughness = 0.2
@@ -304,8 +313,30 @@ func _gunmetal_rough() -> NoiseTexture2D:
 		tex.height = 256
 		tex.seamless = true
 		tex.noise = noise
+		var ramp := Gradient.new()
+		ramp.set_color(0, Color(0.7, 0.7, 0.7))
+		ramp.set_color(1, Color(1.0, 1.0, 1.0))
+		tex.color_ramp = ramp
 		_metal_rough_tex = tex
 	return _metal_rough_tex
+
+## Lazily build (once) the shared fine-grain normal map for gun metal: tight,
+## low-amplitude noise that breaks up highlights like machining marks.
+func _gunmetal_grain() -> NoiseTexture2D:
+	if _metal_grain_tex == null:
+		var noise := FastNoiseLite.new()
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.frequency = 0.4
+		noise.fractal_octaves = 2
+		var tex := NoiseTexture2D.new()
+		tex.width = 256
+		tex.height = 256
+		tex.seamless = true
+		tex.as_normal_map = true
+		tex.bump_strength = 2.0
+		tex.noise = noise
+		_metal_grain_tex = tex
+	return _metal_grain_tex
 
 func _merged_aabb(root: Node3D) -> AABB:
 	var merged := AABB()

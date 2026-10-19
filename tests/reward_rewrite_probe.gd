@@ -164,12 +164,23 @@ func _run() -> void:
 	await _frames(6)
 	await _upload(c3, player, "kills")
 	_check(k1.mislabeled_t > 0.0 and k2.mislabeled_t > 0.0, "kill-count rewrite mislabels the squad")
-	await _wait(5.0)
+	# Sample k1's target through the fight rather than once at its end: robots
+	# re-pick targets all the time (an ally alert, the idle state, the nearer-
+	# than-the-player rule), so a single read 5 s in caught k1 aimed at the
+	# player on CI while the pair had traded 191 damage (#385).
+	var on_robot := 0
+	var samples := 0
+	for i in 20:
+		await get_tree().create_timer(0.25, true, true).timeout
+		if is_instance_valid(k1):
+			samples += 1
+			if k1.target is EnemyBase:
+				on_robot += 1
 	var dmg1: float = k1.hp.max_health - k1.hp.current_health
 	var dmg2: float = k2.hp.max_health - k2.hp.current_health
-	print("kills: k1 took %.0f, k2 took %.0f, k1 target %s" % [dmg1, dmg2, k1.target])
+	print("kills: k1 took %.0f, k2 took %.0f, k1 on a robot %d of %d samples" % [dmg1, dmg2, on_robot, samples])
 	_check(dmg1 + dmg2 > 0.0 or not is_instance_valid(k1) or not is_instance_valid(k2), "robots damage each other")
-	_check(is_instance_valid(k1) and k1.target is EnemyBase or not is_instance_valid(k1), "a rewritten robot targets a robot")
+	_check(on_robot * 2 >= samples, "a rewritten robot targets a robot (%d of %d samples)" % [on_robot, samples])
 	await _wait(float(c3.REWRITE_TIME))
 	if is_instance_valid(k1) and k1.hp.is_alive():
 		_check(k1.mislabeled_t <= 0.0 and k1.collision_layer == 4, "kill-count rewrite wears off")
