@@ -54,6 +54,26 @@ var _fall_time: float = 0.0
 @onready var _eye_light: OmniLight3D = $EyeLight
 @onready var _belly_muzzle: Node3D = get_node_or_null("BellyMuzzle")
 
+## Ridden (#343): the belly gun strafes PILOT_BURST rounds per pull, walked a little
+## across the aim point, each half a generic shot: 1.5x the generic DPS.
+const PILOT_BURST := 3
+const PILOT_BURST_GAP := 0.07
+var _pilot_bursting := false
+func pilot_cooldown() -> float:
+	return 0.9
+
+func pilot_signature(aim: Vector3) -> void:
+	if _pilot_bursting:
+		return
+	_pilot_bursting = true
+	var side := -global_transform.basis.x
+	for i in PILOT_BURST:
+		if not is_instance_valid(self) or state == State.DEAD:
+			break
+		pilot_fire(aim + side * (float(i) - 1.0) * 0.12, 0.5)
+		await get_tree().create_timer(PILOT_BURST_GAP).timeout
+	_pilot_bursting = false
+
 func _ready() -> void:
 	super._ready()
 	max_health = 95.0

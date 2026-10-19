@@ -144,8 +144,24 @@ func _check_detonate() -> void:
 	if global_position.distance_to(target.global_position) <= detonate_radius:
 		_detonate(true)
 
+## Ridden (#343): it dives at the aim point (up to PILOT_DIVE m) and goes off there,
+## full payload, credited to the pilot. The chassis is spent, which ends the ride.
+const PILOT_DIVE := 14.0
+var _pilot_diving := false
+func pilot_signature(aim: Vector3) -> void:
+	if _pilot_diving or _detonated:
+		return
+	_pilot_diving = true
+	var to := aim - global_position
+	var dest := global_position + to.limit_length(PILOT_DIVE)
+	AudioBus.play_synth_at("rocket_fire", global_position, -2.0, 1.3)
+	var tw := create_tween()
+	tw.tween_property(self, "global_position", dest, clampf(to.length() / 40.0, 0.12, 0.35))
+	tw.tween_callback(func() -> void: _detonate(true, pilot_credit()))
+
 ## Boom. `hit_player` true on a kamikaze run (full damage); false when shot down.
-func _detonate(hit_player: bool) -> void:
+## `credit` is who the blast is credited to (a ridden dive: the pilot).
+func _detonate(hit_player: bool, credit: Node = null) -> void:
 	if _detonated:
 		return
 	_detonated = true
@@ -182,7 +198,7 @@ func _detonate(hit_player: bool) -> void:
 		seen[d] = true
 		var dist: float = (col as Node3D).global_position.distance_to(global_position) if col is Node3D else 0.0
 		var falloff := clampf(1.0 - dist / radius, 0.0, 1.0)
-		d.apply_damage(damage * falloff, self)
+		d.apply_damage(damage * falloff, credit if credit != null else self)
 	for p in GameState.players():
 		if p and p.has_method("shake"):
 			var pd: float = (p as Node3D).global_position.distance_to(global_position)

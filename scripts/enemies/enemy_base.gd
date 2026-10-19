@@ -560,12 +560,33 @@ func _pilot_process(delta: float) -> void:
 	_update_hit_react(delta)
 	_update_locomotion_audio(delta)
 
-## One ridden attack toward `aim` (world point). Damage is credited to the
-## pilot, like the hijack zap, so score and kill quotas count it.
-func pilot_fire(aim: Vector3) -> void:
+## The ridden attack the uplink fires (#343): a chassis whose own attack is the
+## point overrides this (seeker dive, gunner spin-up, raptor strafe, brute pound);
+## everything else uses the generic pilot_fire.
+func pilot_signature(aim: Vector3) -> void:
+	pilot_fire(aim)
+
+## Who a ridden attack's damage is credited to: the pilot, so score and quotas count it.
+func pilot_credit() -> Node:
+	return pilot if (pilot != null and is_instance_valid(pilot)) else self
+
+## Every loyal (not hijacked, alive) robot other than this one.
+func pilot_foes() -> Array[EnemyBase]:
+	var out: Array[EnemyBase] = []
+	for e in get_tree().get_nodes_in_group("enemy"):
+		var eb := e as EnemyBase
+		if eb == null or eb == self or not is_instance_valid(eb) or eb.hijacked \
+				or eb.state == State.DEAD or eb.hp == null or not eb.hp.is_alive():
+			continue
+		out.append(eb)
+	return out
+
+## One ridden attack toward `aim` (world point), `dmg_mult` times a generic shot.
+## Damage is credited to the pilot, like the hijack zap, so score and kill quotas count it.
+func pilot_fire(aim: Vector3, dmg_mult: float = 1.0) -> void:
 	recoil = 1.0
 	var src: Node = pilot if (pilot != null and is_instance_valid(pilot)) else self
-	var dmg := PILOT_DPS * pilot_cooldown()
+	var dmg := PILOT_DPS * pilot_cooldown() * dmg_mult
 	if pilot_is_brawler():
 		var fwd := -global_transform.basis.z
 		for e in get_tree().get_nodes_in_group("enemy"):
