@@ -65,7 +65,12 @@ func _run() -> void:
 	_check("roster swap shifts the mix", swapped.count("drone") == w1.count("drone") - 1 and swapped.has("seeker")
 			and swapped.has("android"), str(swapped))
 
-	# 3. ARCHON booted on it.
+	# 3. ARCHON booted on it. Pinned to the opening level, where campaign_elite_mult()
+	# is 0: off-campaign the non-heavy minions roll random elites at full odds, steered
+	# to shielded by this very profile, and about 1 run in 3 counted a third shielded
+	# robot the fine-tune never placed (CI on #394).
+	var level_before := GameState.current_level_path
+	GameState.current_level_path = GameState.campaign()[0]
 	var body := StaticBody3D.new()
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
@@ -116,5 +121,6 @@ func _run() -> void:
 	_check("only one clone per fight", get_tree().get_nodes_in_group("behaviour_clone").size() == 1)
 
 	AIDirector.forget_dossier(false)
+	GameState.current_level_path = level_before
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
