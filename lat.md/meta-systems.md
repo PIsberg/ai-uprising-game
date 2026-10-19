@@ -39,7 +39,8 @@ One seeded level a day, outside the campaign (main menu, under Last Stand):
 <!-- lat: { "require-code-mention": true } -->
 The roster data lives in `scripts/systems/enemy_codex.gd` (`EnemyCodex.ENTRIES`, ordered by
 `EnemyCodex.ORDER`); the bestiary screen that renders it is `scripts/ui/encyclopedia.gd`:
-* **Discovery Unlocks:** Entries unlock as the player meets each hostile unit; `EnemyBase` calls `GameState.mark_enemy_seen`, and `GameState.has_seen_enemy` gates the entry. Undiscovered robots stay classified.
+* **Discovery Unlocks:** Entries unlock as the player meets each hostile unit; `EnemyBase` calls `GameState.discover_enemy` (kept across runs in `user://bestiary.cfg`), and `GameState.discovered_enemies` gates the entry. Undiscovered robots stay classified.
+* **Family Pages:** Robots built on the same model share a page (`EnemyCodex.FAMILIES`: 53 robots on 36 pages). `EnemyCodex.pages()` groups the discovered types, pages and variants in `ORDER`; the screen's Prev/Next walk pages, and a variant bar of one button per discovered robot (or up/down) picks the robot on show. Bosses keep their own page even on a shared body (the OVERSEER is an eye-drone hull). A family id must never equal a type id, or `family_of` pulls that robot in. `tests/codex_family_probe` reads each entry's model file out of its enemy scene, folds Blender forks (`_armed`, `_bladed`, `_siege`, `_fierce`, `_strike`) onto their base, and fails when the table disagrees. Screenshot tools select a robot with `show_type(t)`.
 * **Live 3D Model:** Each entry instantiates the robot's real scene on a turntable that spins slowly on its own (`_turntable`, 0.5 rad/s). There is no zoom, wireframe or animation-playback control.
 * **Entry Fields:** An entry carries only what the screen shows: `scene`, display `name`, `desc` dossier line, and the `scale`/`y`/`yaw` framing values that pose the model.
 

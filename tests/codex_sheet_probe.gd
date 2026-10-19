@@ -24,9 +24,9 @@ func _run() -> void:
 	var sheet: Image = null
 	var sheet_idx := 0
 	var cell := 0
-	for i in enc._types.size():
-		enc._index = i
-		enc._refresh()
+	var types: Array = enc.shown_types()
+	for i in types.size():
+		enc.show_type(types[i])
 		await get_tree().create_timer(0.45).timeout
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()
@@ -38,9 +38,9 @@ func _run() -> void:
 		var cy := (cell / COLS) * TH_H
 		sheet.blit_rect(img, Rect2i(0, 0, TH_W, TH_H), Vector2i(cx, cy))
 		cell += 1
-		if cell == per_sheet or i == enc._types.size() - 1:
+		if cell == per_sheet or i == types.size() - 1:
 			sheet.save_png(OS.get_user_data_dir() + "/codex_sheet_%d.png" % sheet_idx)
-			print("SAVED sheet ", sheet_idx, " ending at ", enc._types[i])
+			print("SAVED sheet ", sheet_idx, " ending at ", types[i])
 			sheet_idx += 1
 			cell = 0
 			sheet = null

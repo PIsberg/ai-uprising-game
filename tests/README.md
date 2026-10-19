@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-487 probes total: **192** wired into the headless suite (`suite`), **85**
+488 probes total: **193** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -106,6 +106,7 @@ or GPU-timing probes; `--headless` renders these black).
 | codex_audit_probe | Encyclopedia stage audit: boss FX + a switch test (boss→drone) for FX sticking to the next entry | windowed |
 | codex_check_probe | Specific codex entries (drone/raptor/gunner/overseer) render once discovered | windowed |
 | codex_count_probe | Warp cheat's `discover_all_enemies()` count of enemies the Codex would show | suite |
+| codex_family_probe | Enemy Codex family pages: two non-boss entries share a page exactly when their enemy scenes load the same base model (Blender forks folded onto their base); bosses and procedural robots get their own page; no family id is also a type id; `EnemyCodex.pages()` keeps roster order and lists only discovered robots; the Encyclopedia with drone, mender and spider discovered shows 2 pages, a two-button variant bar that switches to the MENDER, and no bar on the spider page (red-checked: with the mender dropped from its family 6 checks fail) | suite |
 | codex_frame_probe | Blender-edited/re-exported models (smasher, reaper, gunner, hive) still frame correctly in the codex viewer's bone-AABB framing; the HIVE's 2.18 m uplink mast sits whole inside the frame | windowed |
 | codex_probe | Comic intro's three panels + a few Encyclopedia entries captured | windowed |
 | codex_sheet_probe | Contact-sheet grids of every codex entry, for eyeballing stray FX / misoriented models | windowed |
