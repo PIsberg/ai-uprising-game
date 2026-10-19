@@ -71,7 +71,7 @@ func _ready() -> void:
 		if not open:
 			text += "\n" + _need_text(String(e.get("need", "")))
 		elif seen.has(id):
-			text += "   ✔ " + tr("SEEN")
+			text += "   ◆ " + tr("SEEN")
 		b.text = text
 		_texts[id] = text
 		b.disabled = not open

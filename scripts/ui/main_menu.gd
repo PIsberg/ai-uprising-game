@@ -20,6 +20,7 @@ func _ready() -> void:
 	GameState.set_state(GameState.State.MENU)
 	_refresh_daily_button()
 	_refresh_uprising_button()
+	($Center/VBox/MainButtons/Achievements as Button).text = "%s  %d/%d" % [tr("Achievements"), Achievements.unlocked_count(), Achievements.DEFS.size()]
 	# Continue is only offered when a checkpoint exists, and says WHERE the run
 	# resumes (level title, campaign position, difficulty) so a returning player
 	# knows what they are stepping back into before they commit.
@@ -674,6 +675,10 @@ func _refresh_daily_button() -> void:
 		text += "  ·  " + (tr("%d-day streak") % int(rec["streak"]))
 	_daily.text = text
 	_daily.tooltip_text = tr(String(op["directive_desc"]))
+
+## The ACHIEVEMENTS list, as an overlay over the menu (Back closes it).
+func _on_achievements_pressed() -> void:
+	add_child(Achievements.list_overlay())
 
 ## UPRISING MODE: a fresh seeded five-sector run with drafted patches.
 func _on_uprising_pressed() -> void:

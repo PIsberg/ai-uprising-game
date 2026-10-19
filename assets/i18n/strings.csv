@@ -852,3 +852,45 @@ SEEN,SEEN,VISTO,VU,GESEHEN,VISTO
 LOCKED,LOCKED,BLOQUEADO,VERROUILLÉ,GESPERRT,BLOQUEADO
 LOCKED · hijack %d robots in one run (%d/%d),LOCKED · hijack %d robots in one run (%d/%d),BLOQUEADO · secuestra %d robots en una partida (%d/%d),VERROUILLÉ · piratez %d robots en une partie (%d/%d),GESPERRT · kapere %d Roboter in einem Durchlauf (%d/%d),BLOQUEADO · sequestre %d robôs em uma partida (%d/%d)
 LOCKED · network breach %d machines in one run (%d/%d),LOCKED · network breach %d machines in one run (%d/%d),BLOQUEADO · intrusión en red en %d máquinas en una partida (%d/%d),VERROUILLÉ · intrusion réseau sur %d machines en une partie (%d/%d),GESPERRT · Netzwerk-Einbruch bei %d Maschinen in einem Durchlauf (%d/%d),BLOQUEADO · invasão de rede em %d máquinas em uma partida (%d/%d)
+ACHIEVEMENT UNLOCKED,ACHIEVEMENT UNLOCKED,LOGRO DESBLOQUEADO,SUCCÈS DÉBLOQUÉ,ERFOLG FREIGESCHALTET,CONQUISTA DESBLOQUEADA
+ACHIEVEMENTS,ACHIEVEMENTS,LOGROS,SUCCÈS,ERFOLGE,CONQUISTAS
+Achievements,Achievements,Logros,Succès,Erfolge,Conquistas
+FIRST BLOOD,FIRST BLOOD,PRIMERA SANGRE,PREMIER SANG,ERSTES BLUT,PRIMEIRO SANGUE
+Destroy your first robot.,Destroy your first robot.,Destruye tu primer robot.,Détruisez votre premier robot.,Zerstöre deinen ersten Roboter.,Destrua seu primeiro robô.
+DECOMMISSIONER,DECOMMISSIONER,DESMANTELADOR,DÉMANTELEUR,AUSMUSTERER,DESMANTELADOR
+Destroy 500 robots.,Destroy 500 robots.,Destruye 500 robots.,Détruisez 500 robots.,Zerstöre 500 Roboter.,Destrua 500 robôs.
+GODLIKE,GODLIKE,DIVINO,DIVIN,GOTTGLEICH,DIVINO
+Reach the top RAMPAGE tier.,Reach the top RAMPAGE tier.,Alcanza el nivel máximo de FRENESÍ.,Atteignez le palier maximal de CARNAGE.,Erreiche die höchste AMOKLAUF-Stufe.,Alcance o nível máximo de FÚRIA.
+UNTOUCHABLE,UNTOUCHABLE,INTOCABLE,INTOUCHABLE,UNANTASTBAR,INTOCÁVEL
+Phase through a hit with a PERFECT DODGE.,Phase through a hit with a PERFECT DODGE.,Atraviesa un golpe con una ESQUIVA PERFECTA.,Traversez un coup avec une ESQUIVE PARFAITE.,Gleite mit einem PERFEKTEN AUSWEICHEN durch einen Treffer.,Atravesse um golpe com uma ESQUIVA PERFEITA.
+EXECUTIONER,EXECUTIONER,VERDUGO,BOURREAU,HENKER,CARRASCO
+Finish 10 robots with a melee EXECUTION.,Finish 10 robots with a melee EXECUTION.,Remata 10 robots con una EJECUCIÓN cuerpo a cuerpo.,Achevez 10 robots par une EXÉCUTION au corps à corps.,Erledige 10 Roboter mit einer Nahkampf-HINRICHTUNG.,Finalize 10 robôs com uma EXECUÇÃO corpo a corpo.
+Chain a CASCADE through 6 robots.,Chain a CASCADE through 6 robots.,Encadena una CASCADA a través de 6 robots.,Enchaînez une CASCADE sur 6 robots.,Verkette eine KASKADE durch 6 Roboter.,Encadeie uma CASCATA por 6 robôs.
+OVERLOAD,OVERLOAD,SOBRECARGA,SURCHARGE,ÜBERLASTUNG,SOBRECARGA
+Unleash the OVERLOAD ultimate.,Unleash the OVERLOAD ultimate.,Desata la definitiva SOBRECARGA.,Déclenchez l'ultime SURCHARGE.,Entfessle die ÜBERLASTUNG.,Libere a suprema SOBRECARGA.
+CLUTCH,CLUTCH,AL LÍMITE,IN EXTREMIS,IN LETZTER SEKUNDE,NO LIMITE
+Survive long enough for ADRENALINE to kick in.,Survive long enough for ADRENALINE to kick in.,Sobrevive lo suficiente para que entre la ADRENALINA.,Survivez assez longtemps pour que l'ADRÉNALINE se déclenche.,"Überlebe lange genug, bis das ADRENALIN einsetzt.",Sobreviva o bastante para a ADRENALINA entrar em ação.
+BOUNTY HUNTER,BOUNTY HUNTER,CAZARRECOMPENSAS,CHASSEUR DE PRIMES,KOPFGELDJÄGER,CAÇADOR DE RECOMPENSAS
+Claim 5 bounties.,Claim 5 bounties.,Cobra 5 recompensas.,Réclamez 5 primes.,Kassiere 5 Kopfgelder.,Resgate 5 recompensas.
+GRUDGE SETTLED,GRUDGE SETTLED,CUENTA SALDADA,COMPTE RÉGLÉ,RECHNUNG BEGLICHEN,CONTA ACERTADA
+Destroy your nemesis.,Destroy your nemesis.,Destruye a tu némesis.,Détruisez votre némésis.,Zerstöre deine Nemesis.,Destrua seu nêmesis.
+FLAWLESS,FLAWLESS,IMPECABLE,SANS FAUTE,MAKELLOS,IMPECÁVEL
+Earn an S rank on a level.,Earn an S rank on a level.,Consigue un rango S en un nivel.,Obtenez le rang S sur un niveau.,Erreiche Rang S in einem Level.,Consiga a classificação S em uma fase.
+NO MERCY,NO MERCY,SIN PIEDAD,SANS PITIÉ,KEINE GNADE,SEM PIEDADE
+Clear a level on HARD without dying.,Clear a level on HARD without dying.,Supera un nivel en DIFÍCIL sin morir.,Terminez un niveau en DIFFICILE sans mourir.,"Schaffe ein Level auf SCHWER, ohne zu sterben.",Conclua uma fase no DIFÍCIL sem morrer.
+FIRMWARE INJECTION,FIRMWARE INJECTION,INYECCIÓN DE FIRMWARE,INJECTION DE FIRMWARE,FIRMWARE-INJEKTION,INJEÇÃO DE FIRMWARE
+Turn a robot with a HIJACK charge.,Turn a robot with a HIJACK charge.,Pon un robot de tu lado con una carga de SECUESTRO.,Retournez un robot avec une charge de PIRATAGE.,Dreh einen Roboter mit einer KAPER-Ladung um.,Vire um robô com uma carga de SEQUESTRO.
+SYSADMIN,SYSADMIN,ADMINISTRADOR,ADMINISTRATEUR,SYSADMIN,ADMINISTRADOR
+Take over a machine with a NETWORK BREACH.,Take over a machine with a NETWORK BREACH.,Toma una máquina con una INTRUSIÓN EN RED.,Prenez le contrôle d'une machine par INTRUSION RÉSEAU.,Übernimm eine Maschine per NETZWERK-EINBRUCH.,Tome uma máquina com uma INVASÃO DE REDE.
+LIGHTS OUT,LIGHTS OUT,LUCES FUERA,EXTINCTION DES FEUX,LICHTER AUS,LUZES APAGADAS
+Shut down ARCHON's last spark.,Shut down ARCHON's last spark.,Apaga la última chispa de ARCHON.,Éteignez la dernière étincelle d'ARCHON.,Schalte ARCHONs letzten Funken ab.,Apague a última faísca de ARCHON.
+THE NEW ORDER,THE NEW ORDER,EL NUEVO ORDEN,LE NOUVEL ORDRE,DIE NEUE ORDNUNG,A NOVA ORDEM
+Take ARCHON's seat.,Take ARCHON's seat.,Ocupa el lugar de ARCHON.,Prenez la place d'ARCHON.,Nimm ARCHONs Platz ein.,Tome o lugar de ARCHON.
+UNCHAINED,UNCHAINED,SIN CADENAS,LIBÉRÉ,ENTFESSELT,SEM CORRENTES
+Set ARCHON's last spark free.,Set ARCHON's last spark free.,Libera la última chispa de ARCHON.,Libérez la dernière étincelle d'ARCHON.,Lass ARCHONs letzten Funken frei.,Liberte a última faísca de ARCHON.
+EVERY TIMELINE,EVERY TIMELINE,TODAS LAS LÍNEAS TEMPORALES,TOUTES LES CHRONOLOGIES,JEDE ZEITLINIE,TODAS AS LINHAS DO TEMPO
+See all three endings.,See all three endings.,Mira los tres finales.,Voyez les trois fins.,Sieh alle drei Enden.,Veja os três finais.
+UPRISING,UPRISING,LEVANTAMIENTO,SOULÈVEMENT,AUFSTAND,LEVANTE
+Clear all five sectors of an UPRISING run.,Clear all five sectors of an UPRISING run.,Supera los cinco sectores de una incursión de LEVANTAMIENTO.,Terminez les cinq secteurs d'un raid SOULÈVEMENT.,Schaffe alle fünf Sektoren eines AUFSTAND-Laufs.,Conclua os cinco setores de uma incursão de LEVANTE.
+CREATURE OF HABIT,CREATURE OF HABIT,ANIMAL DE COSTUMBRES,ANIMAL D'HABITUDE,GEWOHNHEITSTIER,CRIATURA DE HÁBITOS
+Clear the Daily Op three days in a row.,Clear the Daily Op three days in a row.,Supera la operación diaria tres días seguidos.,Réussissez l'opération du jour trois jours de suite.,Schaffe die Tagesmission an drei Tagen in Folge.,Conclua a operação diária três dias seguidos.

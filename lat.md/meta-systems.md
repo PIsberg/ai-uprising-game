@@ -53,6 +53,15 @@ A local playtest recorder (`scripts/autoload/telemetry.gd`, autoload `Telemetry`
 * **Names:** damage sources are named by `Damageable.source_label`, the same function the death screen uses, so the report and the recap agree.
 * **Report:** `tools/telemetry_report.py` (newest session, a given file, or `--all`) prints per level the attempts, clears, time, deaths by killer, top damage sources, weapon accuracy and kills, and stuck spots. `tests/telemetry_probe` (suite).
 
+## Achievements
+<!-- lat: { "require-code-mention": true } -->
+Twenty local unlocks for the game's signature moments (`scripts/autoload/achievements.gd`, autoload `Achievements`), listening to GameState signals only.
+
+* **Defs:** `Achievements.DEFS` (id, title, desc, optional `count`); lifetime counters (`COUNTERS`: kills 500, executions 10, bounties 5) unlock at their target.
+* **Signals:** besides the existing combat ones, GameState emits `robot_hijacked`, `network_breached`, `ending_recorded`, `uprising_closed` and `daily_completed` for them.
+* **Store:** `user://achievements.cfg`; a run booted from `res://tests/` or `res://tools/` never reads or writes it (AIDirector's rule). An unlock pops a gold toast once and is mirrored to Steam if a `Steam` singleton exists (none today).
+* **Menu:** the main menu's Achievements button shows the count and opens `list_overlay()`. `tests/achievements_probe` (suite), `tests/achievements_shot` (windowed).
+
 ## Machine Feed
 <!-- lat: { "require-code-mention": true } -->
 The rogue AI livestreams the fight to its robot network; the audience's chat runs down the left of the HUD (`scripts/ui/machine_feed.gd`, lines in `scripts/systems/machine_chat.gd`).
