@@ -87,15 +87,15 @@ func _process(delta: float) -> void:
 
 func _intro() -> void:
 	await get_tree().create_timer(0.6).timeout
-	var p := get_tree().get_first_node_in_group("player")
 	AudioBus.play_synth_ui("eas_alert", -12.0)
-	if p and p.has_method("notify_pickup"):
-		p.notify_pickup("⚠ COLOSSUS DETECTED — MAPLE GROVE")
+	for p in GameState.players():
+		if p.has_method("notify_pickup"):
+			p.notify_pickup("⚠ COLOSSUS DETECTED — MAPLE GROVE")
 	for i in 3:
 		await get_tree().create_timer(1.5).timeout
 		if not is_inside_tree() or _figure == null:
 			return
 		AudioBus.play_synth_at("explosion", _figure.global_position, -4.0, 0.4)
-		var pl := get_tree().get_first_node_in_group("player")
-		if pl and pl.has_method("shake"):
-			pl.shake(0.22)
+		for pl in GameState.players():
+			if pl.has_method("shake"):
+				pl.shake(0.22)

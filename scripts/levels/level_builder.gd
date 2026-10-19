@@ -5454,9 +5454,11 @@ func _spawn_enemies(def: Dictionary) -> void:
 			add_child(sp)
 
 func _place_player(def: Dictionary) -> void:
-	var p := get_tree().get_first_node_in_group("player") as Node3D
-	if p == null:
-		return
+	for p in GameState.players():
+		_place_one(def, p)
+
+## Player two stands 1.6 m to player one's right, facing the same way.
+func _place_one(def: Dictionary, p: Node3D) -> void:
 	var spawn: Vector3 = def.get("spawn", Vector3(0, 0.5, 0))
 	p.global_position = spawn
 	# Face the open arena, not whatever wall the spawn corner backs onto: aim
@@ -5467,6 +5469,9 @@ func _place_player(def: Dictionary) -> void:
 	dir.y = 0.0
 	if dir.length() > 0.5:
 		p.rotation.y = atan2(-dir.x, -dir.z)
+	var idx := int(p.get("player_index")) if p.get("player_index") != null else 0
+	if idx > 0:
+		p.global_position += p.global_transform.basis.x * 1.6 * idx
 
 func _apply_objective_text(def: Dictionary) -> void:
 	var hud := get_node_or_null("HUD")

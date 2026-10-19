@@ -226,24 +226,30 @@ func _physics_process(delta: float) -> void:
 	var now := angle_at(_t)
 	if signf(prev) != signf(now):
 		AudioBus.play_synth_at("rotor_whir", global_position + Vector3.UP * (pivot_h - arm), -2.0, 0.5)
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	# The go-light reads the nearest player; every player under the blade is cut.
 	var across_m := 0.0
-	if pl != null:
+	var nearest := GameState.nearest_player(global_position)
+	var hit_any := false
+	for pl in GameState.players():
 		var rel := pl.global_position - global_position
-		across_m = rel.dot(_across())
+		var across := rel.dot(_across())
+		if pl == nearest:
+			across_m = across
 		var along := rel.dot(_path())
-		if absf(along) <= TEACH_REACH and absf(across_m) <= width * 0.5 + TEACH_REACH:
+		if absf(along) <= TEACH_REACH and absf(across) <= width * 0.5 + TEACH_REACH:
 			GameState.teach_once("pendulum", TEACH_TEXT)
 		var tall := 1.0 if pl.get("_is_crouching") == true else 1.8
-		if _cool <= 0.0 and absf(along) <= SLICE and reaches(now, across_m, rel.y, tall):
-			_cool = HIT_GAP
+		if _cool <= 0.0 and absf(along) <= SLICE and reaches(now, across, rel.y, tall):
+			hit_any = true
 			var php: Node = pl.get_node_or_null("Damageable")
 			if php:
 				php.apply_damage(damage, self, false, global_position + Vector3.UP * (pivot_h - arm), true)
 			if "velocity" in pl:
 				pl.velocity = _path() * (signf(along) if along != 0.0 else 1.0) * SHOVE + Vector3.UP * 3.0
 			AudioBus.play_synth_at("impact_metal", pl.global_position, 2.0, 1.2)
-		across_m = clampf(across_m, -width * 0.5, width * 0.5)
+	if hit_any:
+		_cool = HIT_GAP
+	across_m = clampf(across_m, -width * 0.5, width * 0.5)
 	var go := clear_for(across_m, _t)
 	if go != _go:
 		_set_go(go)

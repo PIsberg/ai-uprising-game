@@ -56,19 +56,19 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		# Enemies don't hard-collide with the player (soft separation), so a
 		# bowled orb crushes by proximity: sail close enough and it connects.
-		var p := get_tree().get_first_node_in_group("player")
-		if p is Node3D and (p as Node3D).global_position.distance_to(global_position) <= 1.8:
-			var d = p.get_node_or_null("Damageable")
-			if d:
-				d.apply_damage(crush_damage, self)
-			if "velocity" in p:
-				var away: Vector3 = (p as Node3D).global_position - global_position
-				away.y = 0.0
-				p.velocity += away.normalized() * 10.0 + Vector3.UP * 4.0
-			if p.has_method("shake"):
-				p.shake(0.8)
-			AudioBus.play_synth_at("impact_metal", global_position, -2.0, 0.7)
-			_thrown_air = false
+		for p in GameState.players():
+			if p is Node3D and (p as Node3D).global_position.distance_to(global_position) <= 1.8:
+				var d = p.get_node_or_null("Damageable")
+				if d:
+					d.apply_damage(crush_damage, self)
+				if "velocity" in p:
+					var away: Vector3 = (p as Node3D).global_position - global_position
+					away.y = 0.0
+					p.velocity += away.normalized() * 10.0 + Vector3.UP * 4.0
+				if p.has_method("shake"):
+					p.shake(0.8)
+				AudioBus.play_synth_at("impact_metal", global_position, -2.0, 0.7)
+				_thrown_air = false
 		# Touched down and bled off speed — resume hunting under its own power.
 		if (is_on_floor() and _thrown_t > 0.3 \
 				and Vector2(velocity.x, velocity.z).length() < 7.0) or _thrown_t > 4.0:
@@ -96,9 +96,9 @@ func _on_died(src: Node) -> void:
 	get_tree().current_scene.add_child(fx)
 	(fx as Node3D).global_position = global_position + Vector3.UP * 0.6
 	AudioBus.play_synth_at("explosion", global_position, -3.0, 1.2)
-	var p := get_tree().get_first_node_in_group("player")
-	if p is Node3D and (p as Node3D).global_position.distance_to(global_position) <= core_burst_radius:
-		var d = p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(core_burst_damage, self)
+	for p in GameState.players():
+		if p is Node3D and (p as Node3D).global_position.distance_to(global_position) <= core_burst_radius:
+			var d = p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(core_burst_damage, self)
 	super._on_died(src)

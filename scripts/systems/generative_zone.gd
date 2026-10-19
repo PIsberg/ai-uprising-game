@@ -397,7 +397,7 @@ func _clear_pillar(c: int, r: int) -> void:
 func _process(delta: float) -> void:
 	_clock += delta
 	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Node3D
+		_player = GameState.primary_player() # the anchor tool aims from player one's view
 		if _player:
 			_cam = _player.find_child("Camera3D", true, false) as Camera3D
 		return

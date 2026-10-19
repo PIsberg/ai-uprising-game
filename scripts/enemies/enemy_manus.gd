@@ -111,7 +111,6 @@ func _ready() -> void:
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	var p := get_tree().get_first_node_in_group("player")
 	# Knuckles rap the deck one by one — each strike a shock ring at a fingertip,
 	# the core throbbing louder with every rap.
 	var knuckles := [Vector3(2.4, 0, 1.4), Vector3(1.0, 0, 2.7), Vector3(-1.1, 0, 2.5), Vector3(-2.5, 0, 1.1)]
@@ -119,8 +118,9 @@ func _do_entrance() -> void:
 		AudioBus.play_synth_at("servo_step_heavy", global_position, 4.0, 0.5 + i * 0.12)
 		spawn_shockwave_ring(2.2 + i * 0.5, Color(0.72, 0.95, 1.0), global_position + knuckles[i])
 		recoil = 0.85 # pulse the core glow with each rap (see _process driver)
-		if p and p.has_method("shake"):
-			p.shake(0.35)
+		for p in GameState.players():
+			if p.has_method("shake"):
+				p.shake(0.35)
 		await get_tree().create_timer(0.16).timeout
 		if state == State.DEAD:
 			return
@@ -130,8 +130,9 @@ func _do_entrance() -> void:
 	spawn_shockwave_ring(8.5, Color(0.6, 0.9, 1.0))
 	recoil = 1.0
 	GameState.hit_stop(0.09, 0.5)
-	if p and p.has_method("shake"):
-		p.shake(1.4)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(1.4)
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
@@ -284,17 +285,15 @@ func _erupt_at(at: Vector3, delay: float) -> void:
 	AudioBus.play_synth_at("mech_step", at, 2.0, 0.4)
 	spawn_shockwave_ring(spike_radius, Color(0.72, 0.95, 1.0), at)
 	_spawn_spike_fingers(at)
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	if (p as Node3D).global_position.distance_to(at) <= spike_radius:
-		var d = p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(spike_damage, self)
-		if "velocity" in p:
-			p.velocity += Vector3.UP * 6.0 # knocked off your feet, not just ticked
-		if p.has_method("shake"):
-			p.shake(0.9)
+	for p in GameState.players():
+		if (p as Node3D).global_position.distance_to(at) <= spike_radius:
+			var d = p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(spike_damage, self)
+			if "velocity" in p:
+				p.velocity += Vector3.UP * 6.0 # knocked off your feet, not just ticked
+			if p.has_method("shake"):
+				p.shake(0.9)
 
 ## The eruption made visible: dark servo-finger spears punch up out of the deck
 ## in a ring, hold a beat, then withdraw back into the floor.
@@ -339,20 +338,18 @@ func _do_sweep() -> void:
 	if _visual_root:
 		_visual_root.rotation.x = _visual_base_rot.x
 	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.5)
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	var to: Vector3 = (p as Node3D).global_position - global_position
-	to.y = 0.0
-	var fwd := -global_transform.basis.z
-	if to.length() <= sweep_range and rad_to_deg(fwd.angle_to(to)) <= sweep_arc_deg * 0.5:
-		var d = p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(sweep_damage, self)
-		if "velocity" in p and to.length() > 0.1:
-			p.velocity += to.normalized() * 11.0 + Vector3.UP * 4.0  # backhanded across the floor
-		if p.has_method("shake"):
-			p.shake(0.8)
+	for p in GameState.players():
+		var to: Vector3 = (p as Node3D).global_position - global_position
+		to.y = 0.0
+		var fwd := -global_transform.basis.z
+		if to.length() <= sweep_range and rad_to_deg(fwd.angle_to(to)) <= sweep_arc_deg * 0.5:
+			var d = p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(sweep_damage, self)
+			if "velocity" in p and to.length() > 0.1:
+				p.velocity += to.normalized() * 11.0 + Vector3.UP * 4.0  # backhanded across the floor
+			if p.has_method("shake"):
+				p.shake(0.8)
 
 func _begin_slam() -> void:
 	_slam_windup_t = slam_windup
@@ -369,15 +366,13 @@ func _do_slam() -> void:
 	var fx := EXPLOSION.instantiate()
 	get_tree().current_scene.add_child(fx)
 	(fx as Node3D).global_position = _slam_point
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	if (p as Node3D).global_position.distance_to(_slam_point) <= slam_radius:
-		var d = p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(slam_damage, self)
-		if p.has_method("shake"):
-			p.shake(1.0)
+	for p in GameState.players():
+		if (p as Node3D).global_position.distance_to(_slam_point) <= slam_radius:
+			var d = p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(slam_damage, self)
+			if p.has_method("shake"):
+				p.shake(1.0)
 
 func _begin_grab() -> void:
 	_grab_cd = grab_cooldown * _cd_mult()
@@ -462,9 +457,9 @@ func modify_incoming_damage(amount: float, src, _origin = null) -> float:
 func _on_died(src: Node) -> void:
 	if _grabbed != null:
 		_hurl()  # never take the player down with the wreck
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(1.5)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(1.5)
 	GameState.hit_stop(0.25, 0.5)
 	_spawn_death_explosions.call_deferred()
 	super._on_died(src)

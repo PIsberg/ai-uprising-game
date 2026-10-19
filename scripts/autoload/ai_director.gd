@@ -238,7 +238,7 @@ func _process(delta: float) -> void:
 	_sample_t = 0.25
 	# Refresh cached refs (cheap, every 0.25s) and sample mobility from ground speed.
 	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Node3D
+		_player = GameState.primary_player() # profiles player one (co-op: the shared dossier follows P1)
 		_wm = _player.get_node_or_null("Head/Camera3D/WeaponHolder") if _player else null
 	if _player and _player is CharacterBody3D:
 		var spd: float = Vector2(_player.velocity.x, _player.velocity.z).length()

@@ -198,7 +198,7 @@ func _on_destroyed(_source: Node) -> void:
 		var ab: Node = get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
 			ab.play_synth_at("explosion", global_position, 4.0, 0.55)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.8)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(0.8)
 	queue_free()

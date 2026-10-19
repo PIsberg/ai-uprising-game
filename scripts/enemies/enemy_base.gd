@@ -164,7 +164,7 @@ func _ready() -> void:
 	# Mark this type as encountered when it spawns in an actual level (fixes
 	# hand-authored level_01, whose roster has no def for the briefing to
 	# mark). Gated on a live player so cutscene/briefing actors don't count.
-	if get_tree().get_first_node_in_group("player") != null:
+	if not GameState.players().is_empty():
 		GameState.mark_enemy_seen(_kill_label().to_lower())
 	if eye == null:
 		eye = get_node_or_null("Eye")
@@ -840,10 +840,9 @@ func _maybe_refresh_locomotion_budget() -> void:
 		return
 	_locomotion_next_refresh_ms = now + LOCOMOTION_REFRESH_MS
 	_locomotion_allowed_ids.clear()
-	var player := get_tree().get_first_node_in_group("player")
-	if player == null or not (player is Node3D):
+	var pps := GameState.players()
+	if pps.is_empty():
 		return
-	var ppos: Vector3 = (player as Node3D).global_position
 	var near: Array = []
 	for e in get_tree().get_nodes_in_group("enemy"):
 		var eb := e as EnemyBase
@@ -851,7 +850,9 @@ func _maybe_refresh_locomotion_budget() -> void:
 			continue
 		if Vector2(eb.velocity.x, eb.velocity.z).length() < 0.4:
 			continue
-		var d := ppos.distance_to(eb.global_position)
+		var d := INF # distance to the nearest player (co-op: the budget serves both)
+		for pp in pps:
+			d = minf(d, pp.global_position.distance_to(eb.global_position))
 		if d <= LOCOMOTION_TICK_RANGE:
 			near.append([d, eb.get_instance_id()])
 	near.sort_custom(func(a, b): return a[0] < b[0])
@@ -913,11 +914,9 @@ func _perceive() -> void:
 		_last_known_target_pos = target.global_position
 		_has_last_known = true
 
+## The player this robot goes after: the nearest one still standing (co-op).
 func _find_player() -> Node3D:
-	var players := get_tree().get_nodes_in_group("player")
-	if players.is_empty():
-		return null
-	return players[0]
+	return GameState.nearest_player(global_position)
 
 ## True if a shot hitting at world-Y `world_y` lands on the head (around the eye).
 func is_headshot(world_y: float) -> bool:
@@ -1974,12 +1973,12 @@ func spawn_shockwave_ring(radius: float, color: Color = Color(1.0, 0.5, 0.2), or
 		var reach_c := radius * 1.6 + 1.0
 		if cd < reach_c and c.get("hp"):
 			c.hp.apply_damage(SLAM_COVER_DAMAGE * clampf(1.0 - cd / reach_c, 0.25, 1.0), self, false, at)
-	var pl := get_tree().get_first_node_in_group("player")
-	if pl is Node3D and pl.has_method("add_screen_shock"):
-		var reach := maxf(radius * 2.4, 6.0)
-		var pd := (pl as Node3D).global_position.distance_to(at)
-		if pd < reach:
-			pl.add_screen_shock(at, clampf(1.0 - pd / reach, 0.0, 1.0) * 0.85)
+	for pl in GameState.players():
+		if pl.has_method("add_screen_shock"):
+			var reach := maxf(radius * 2.4, 6.0)
+			var pd := pl.global_position.distance_to(at)
+			if pd < reach:
+				pl.add_screen_shock(at, clampf(1.0 - pd / reach, 0.0, 1.0) * 0.85)
 
 ## Called the instant a hit staggers the enemy. Subclasses override to cancel
 ## in-progress actions (a charging shot, a slam wind-up, …).
@@ -2021,9 +2020,9 @@ func _boss_phase_beat(_cur: float, _max: float) -> void:
 	spawn_shockwave_ring(9.0 if final else 6.5, Color(1.0, 0.22, 0.12) if final else Color(1.0, 0.55, 0.2), global_position, false)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
 	AudioBus.play_synth_at("explosion", global_position, 2.0, 0.4)
-	var pl := get_tree().get_first_node_in_group("player")
-	if pl and pl.has_method("shake"):
-		pl.shake(0.9 if final else 0.7)
+	for pl in GameState.players():
+		if pl.has_method("shake"):
+			pl.shake(0.9 if final else 0.7)
 	GameState.hit_stop(0.25, 0.35)
 	GameState.boss_phase_changed.emit(self, ph, final)
 
@@ -2872,7 +2871,7 @@ func _drop_loot() -> void:
 	# so low-kill objective levels can't spiral into an unrecoverable starve) and
 	# biases the loot toward health when you're hurt.
 	var hp_frac := 1.0
-	var player := get_tree().get_first_node_in_group("player")
+	var player := GameState.nearest_player(global_position) # co-op: the nearest player's need
 	if player:
 		var pd := player.get_node_or_null("Damageable")
 		if pd and pd.max_health > 0.0:
@@ -2903,7 +2902,7 @@ func _drop_loot() -> void:
 	# only relocate a floor-level landing that sits in a hazard footprint — snug it up
 	# beside the player, who is always on a safe gantry.
 	if pos.y < 1.0 and _pos_in_hazard(pos):
-		var pl := get_tree().get_first_node_in_group("player") as Node3D
+		var pl := GameState.nearest_player(global_position)
 		if pl:
 			var toward: Vector3 = global_position - pl.global_position
 			toward.y = 0.0

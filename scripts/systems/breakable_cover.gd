@@ -234,11 +234,7 @@ func _on_destroyed(source: Node) -> void:
 	_shrapnel(source, at)
 	AudioBus.play_synth_at("explosion", at, 0.0, randf_range(0.45, 0.55))
 	AudioBus.play_synth_at("impact_metal", at, 3.0, randf_range(0.5, 0.6))
-	var p := get_tree().get_first_node_in_group("player")
-	if p is Node3D and p.has_method("shake"):
-		var pd := (p as Node3D).global_position.distance_to(at)
-		if pd < 12.0:
-			p.shake(clampf(1.0 - pd / 12.0, 0.0, 1.0) * 0.5)
+	GameState.shake_players(at, 12.0, 0.5)
 	shattered.emit(self)
 	queue_free()
 	# Robots path through the gap once the block is gone (debounced, threaded).

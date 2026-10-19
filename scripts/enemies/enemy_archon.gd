@@ -310,9 +310,10 @@ func notify_shield_hit(source: Node) -> void:
 func _boot() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.7)
+	for q in GameState.players():
+		if q.has_method("shake"):
+			q.shake(0.7)
+	var p := GameState.nearest_player(global_position) # the boot pillar faces the nearest player
 
 	# Boot column at the brain's position.
 	AudioBus.play_synth_at("explosion", global_position, 4.0, 0.6)
@@ -407,7 +408,7 @@ func _start_wave() -> void:
 ## and fires their shots. Once per fight.
 func _send_clone() -> void:
 	var scene := get_tree().current_scene
-	if scene == null or get_tree().get_first_node_in_group("player") == null:
+	if scene == null or GameState.players().is_empty():
 		return
 	_clone_sent = true
 	if not get_tree().get_nodes_in_group("behaviour_clone").is_empty():
@@ -442,7 +443,7 @@ func _emit_minion(type: String, ground: Vector3) -> void:
 	var ms: PackedScene = MINION_SCENES.get(type)
 	if ms == null:
 		return
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var p := GameState.nearest_player(ground)
 
 	var gate := BossPortal.new()
 	gate.radius = 2.0
@@ -499,9 +500,9 @@ func _expose() -> void:
 	_set_color(COL_EXPOSED)
 	_speak("hurt", 0.8)
 	AudioBus.play_synth_at("explosion", global_position, 2.0, 0.5)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.5)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(0.5)
 	# Shield shatters outward and vanishes.
 	if _shield:
 		var tw := create_tween()
@@ -629,9 +630,9 @@ func _on_died(source: Node) -> void:
 	if _shield:
 		_shield.visible = false
 	_speak("die", 0.6)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(2.0)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(2.0)
 	_death_cascade.call_deferred()
 
 ## The brain dies loud: a rolling storm of explosions, then it collapses inward.

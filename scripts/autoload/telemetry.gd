@@ -124,7 +124,7 @@ func _process(delta: float) -> void:
 		return
 	if GameState.current_state == GameState.State.PLAYING:
 		_t += delta
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var p := GameState.primary_player() # records player one
 	# is_instance_valid, not ==: a freed player compares EQUAL to null, so `p != _player`
 	# never saw the old one go and its level stayed open until the session closed.
 	if p != null and (not is_instance_valid(_player) or p != _player):

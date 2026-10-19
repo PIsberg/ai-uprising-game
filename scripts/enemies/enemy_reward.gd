@@ -44,14 +44,15 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(_player_hp):
 		_hook_player()
 
+## Listen to every player's hurt (co-op: a robot that hurts either is rewarded).
 func _hook_player() -> void:
-	var p := get_tree().get_first_node_in_group("player") if is_inside_tree() else null
-	if p == null:
+	if not is_inside_tree():
 		return
-	var d := p.get_node_or_null("Damageable") as Damageable
-	if d and not d.damaged.is_connected(_on_player_hurt):
-		d.damaged.connect(_on_player_hurt)
-	_player_hp = d
+	for p in GameState.players():
+		var d := p.get_node_or_null("Damageable") as Damageable
+		if d and not d.damaged.is_connected(_on_player_hurt):
+			d.damaged.connect(_on_player_hurt)
+			_player_hp = d
 
 func _on_player_hurt(_amount: float, source: Node) -> void:
 	if hp == null or not hp.is_alive() or state == State.DEAD or _emp_t > 0.0 or hijacked:

@@ -100,13 +100,20 @@ const MAGNET_KINDS: Array[Kind] = [Kind.HEALTH, Kind.AMMO]
 func _magnet(delta: float) -> void:
 	if _taken or kind not in MAGNET_KINDS:
 		return
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	# The nearest player who can use it (health skips a player at full health).
+	var p: Node3D = null
+	var best := INF
+	for c in GameState.living_players():
+		if kind == Kind.HEALTH:
+			var d = c.get_node_or_null("Damageable")
+			if d == null or d.current_health >= d.max_health:
+				continue
+		var dd := (c as Node3D).global_position.distance_to(global_position)
+		if dd < best:
+			best = dd
+			p = c
 	if p == null:
 		return
-	if kind == Kind.HEALTH:
-		var d = p.get_node_or_null("Damageable")
-		if d == null or d.current_health >= d.max_health:
-			return
 	var to: Vector3 = p.global_position + Vector3.UP * 0.8 - global_position
 	var dist := to.length()
 	if dist > MAGNET_RANGE or dist < 0.05:

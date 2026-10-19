@@ -194,18 +194,18 @@ func _spike_landing() -> void:
 	AudioBus.play_synth_at("impact_metal", global_position, 2.0, 0.7)
 	if _dust:
 		_dust.restart()
-	var p := get_tree().get_first_node_in_group("player")
-	if p is CharacterBody3D and (p as Node3D).global_position.distance_to(global_position) <= KICK_RADIUS:
-		var d := p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(stomp_damage, self)
-		if p.has_method("shake"):
-			p.shake(0.8)
-		var away: Vector3 = (p as Node3D).global_position - global_position
-		away.y = 0.0
-		if away.length() < 0.1:
-			away = -global_transform.basis.z
-		p.velocity += away.normalized() * 12.0 + Vector3.UP * 4.0
+	for p in GameState.players():
+		if p is CharacterBody3D and (p as Node3D).global_position.distance_to(global_position) <= KICK_RADIUS:
+			var d := p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(stomp_damage, self)
+			if p.has_method("shake"):
+				p.shake(0.8)
+			var away: Vector3 = (p as Node3D).global_position - global_position
+			away.y = 0.0
+			if away.length() < 0.1:
+				away = -global_transform.basis.z
+			p.velocity += away.normalized() * 12.0 + Vector3.UP * 4.0
 	spawn_shockwave_ring(KICK_RADIUS, Color(1.0, 0.5, 0.2))
 
 

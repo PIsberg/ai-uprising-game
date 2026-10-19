@@ -302,9 +302,11 @@ static func _light_pop(root: Node3D) -> void:
 
 ## Distance-scaled camera kick so nearby blasts physically land.
 static func _kick_player(root: Node3D, size: float) -> void:
-	var p := root.get_tree().get_first_node_in_group("player")
-	if p == null or not p.has_method("shake"):
-		return
+	for p in GameState.players():
+		if p.has_method("shake"):
+			_kick_one(root, size, p)
+
+static func _kick_one(root: Node3D, size: float, p: Node3D) -> void:
 	var reach := size * 6.0
 	var d := (p as Node3D).global_position.distance_to(root.global_position)
 	if d >= reach:

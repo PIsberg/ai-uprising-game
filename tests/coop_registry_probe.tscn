@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/coop_registry_probe.gd" id="1_p"]
+
+[node name="CoopRegistryProbe" type="Node3D"]
+script = ExtResource("1_p")

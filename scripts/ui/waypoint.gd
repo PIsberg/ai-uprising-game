@@ -18,7 +18,7 @@ func _draw() -> void:
 	var objs := get_tree().get_nodes_in_group("objective")
 	if objs.is_empty():
 		return
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.primary_player() # stage 3 gives each HUD its own player
 	# Point at the NEAREST objective, not objs[0]: with several live goals (two
 	# pumps, a task plus the exit portal) first-in-group is whichever happened
 	# to register first, so the marker could send you across the map while the

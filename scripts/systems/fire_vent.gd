@@ -194,17 +194,18 @@ func _physics_process(delta: float) -> void:
 			AudioBus.play_synth_at("rocket_fire", global_position, -2.0, 0.6)
 			erupted.emit()
 	_apply(u, delta)
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if state == Phase.WARN and pl != null and _flat_dist(pl) <= radius + RING + TEACH_REACH:
-		if cryo:
-			GameState.teach_once("cryo_vent", CRYO_TEXT)
-		else:
-			GameState.teach_once("fire_vent", TEACH_TEXT)
+	for pl in GameState.players():
+		if state == Phase.WARN and _flat_dist(pl) <= radius + RING + TEACH_REACH:
+			if cryo:
+				GameState.teach_once("cryo_vent", CRYO_TEXT)
+			else:
+				GameState.teach_once("fire_vent", TEACH_TEXT)
 	if state == Phase.ERUPT:
 		_tick -= delta
 		if _tick <= 0.0:
 			_tick = TICK
-			_burn(pl)
+			for pl in GameState.players():
+				_burn(pl)
 
 ## Look of the vent at cycle time `u`.
 func _apply(u: float, _delta: float) -> void:

@@ -106,15 +106,15 @@ func _launch_ram() -> void:
 
 ## Bite + shove on landing a ram — the knockback is what sells "rammed", not just bitten.
 func _ram_impact() -> void:
-	var player := get_tree().get_first_node_in_group("player")
-	if player and player is Node3D \
-			and global_position.distance_to((player as Node3D).global_position) <= RAM_IMPACT_RANGE + 0.2:
-		var d = player.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(bite_damage, self)
-		var away: Vector3 = (player as Node3D).global_position - global_position
-		away.y = 0.0
-		away = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
-		if player is CharacterBody3D and "velocity" in player:
-			(player as CharacterBody3D).velocity += away * RAM_KNOCK + Vector3.UP * 2.5
+	for player in GameState.players():
+		if player and player is Node3D \
+				and global_position.distance_to((player as Node3D).global_position) <= RAM_IMPACT_RANGE + 0.2:
+			var d = player.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(bite_damage, self)
+			var away: Vector3 = (player as Node3D).global_position - global_position
+			away.y = 0.0
+			away = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
+			if player is CharacterBody3D and "velocity" in player:
+				(player as CharacterBody3D).velocity += away * RAM_KNOCK + Vector3.UP * 2.5
 	AudioBus.play_synth_at("impact_metal", global_position, -5.0, 1.6)

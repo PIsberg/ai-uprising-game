@@ -71,6 +71,14 @@ From the pause menu (or P while paused): the game stays frozen and a free camera
 * WASD flies (sprint x3, jump/crouch up/down), the mouse looks, the wheel zooms between `FOV_MIN` 20 and `FOV_MAX` 100; the camera stays within `RADIUS` (12 m) of where it started.
 * TAB cycles `FILTERS` (none, noir, sepia, punch, vignette) on `shaders/photo_filter.gdshader`; ENTER saves a PNG to `user://screenshots/` (`capture`, the help line hidden for the frame); ESC restores the camera and every hidden node's visibility and lands on the pause menu. `tests/photo_mode_probe`, `tests/photo_mode_shot` (windowed).
 
+## Co-op
+<!-- lat: { "require-code-mention": true } -->
+Local split-screen co-op is being built in stages; stage 1 is the player registry that lets the game hold two players.
+
+* **Registry:** `GameState.players()` (every player, by `player_index`), `living_players()`, `primary_player()` (player one) and `nearest_player(pos)` (the nearest one still standing). `Player.player_index` is 0 or 1; `Player.is_down()` marks a player robots and hazards look past.
+* **Rules for callers:** a robot's target and a hazard's range check ask for the nearest player (`EnemyBase._find_player`); damage zones, area attacks and screen shake loop over every player (`GameState.shake_players`), with a hazard's shared cooldown started after every player in it has been tested; things that follow one view (the anchor and jammer aim tools, the AI Director's profile, telemetry, the behaviour clone) use player one.
+* **Guard:** `tests/coop_registry_probe` fails on any `get_first_node_in_group("player")` outside `game_state.gd` and `hud.gd` (the HUD binds to its own player in a later stage).
+
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:

@@ -280,7 +280,7 @@ func _swallow(p: Node3D) -> void:
 		var k := 1.0 + 0.07 * float(mini(swallowed.size(), 4))
 		_chassis.scale = Vector3(k, 1.0 + 0.04 * float(mini(swallowed.size(), 4)), k)
 	AudioBus.play_synth_at("pickup_clink", global_position, -4.0, 0.6)
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	var pl := GameState.nearest_player(global_position)
 	if pl and pl.global_position.distance_to(global_position) <= 35.0:
 		GameState.teach_once("custodian_loot", LOOT_TEACH)
 

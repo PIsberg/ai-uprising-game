@@ -123,7 +123,7 @@ func _limb(r: float, h: float, at: Vector3, roll: float) -> MeshInstance3D:
 	return mi
 
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.primary_player() # the clone trains on player one
 
 ## One frame of the player: feet, eye, aim, and whether they fired.
 func _record(p: Node3D) -> void:

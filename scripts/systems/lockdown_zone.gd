@@ -93,15 +93,15 @@ func _build_safe() -> void:
 	add_child(_safe_tag)
 
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(global_position)
 
-## Player feet inside the interior box (the doorway itself does not count).
+## A player's feet inside the interior box (the doorway itself does not count): any player, in co-op.
 func player_inside() -> bool:
-	var p := _player()
-	if p == null:
-		return false
-	var l := p.global_position - global_position
-	return absf(l.x) < half.x and absf(l.z) < half.z and l.y > -0.5 and l.y < half.y * 2.0
+	for p in GameState.players():
+		var l := (p as Node3D).global_position - global_position
+		if absf(l.x) < half.x and absf(l.z) < half.z and l.y > -0.5 and l.y < half.y * 2.0:
+			return true
+	return false
 
 func _physics_process(delta: float) -> void:
 	match phase:

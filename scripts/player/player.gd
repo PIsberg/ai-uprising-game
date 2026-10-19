@@ -127,6 +127,13 @@ var _glitch: float = 0.0
 var _glitch_decay: float = 2.5
 
 var _dead: bool = false
+## Which co-op player this is: 0 is player one (keyboard and the first pad), 1 is
+## player two. GameState.players() lists players in this order.
+@export var player_index: int = 0
+
+## Down (dead, or bleeding out in co-op): robots and hazards look past a downed player.
+func is_down() -> bool:
+	return _dead
 ## NeuralUplink: the mind is out riding a hijacked robot. The body stands where
 ## it was left, takes no input and can still be shot (which snaps the link).
 var linked_out: bool = false

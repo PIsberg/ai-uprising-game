@@ -460,7 +460,7 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 	fx.global_position = pos
 	fx.scale = Vector3.ONE * clampf(radius / 8.0, 1.0, 4.0)
 	ScorchDecal.spawn(get_tree().current_scene, pos, clampf(radius * 0.25, 2.0, 6.0))
-	var player := get_tree().get_first_node_in_group("player")
+	var player := GameState.primary_player() # the blast is credited to player one
 	var q := PhysicsShapeQueryParameters3D.new()
 	var s := SphereShape3D.new()
 	s.radius = radius
@@ -513,9 +513,9 @@ func _explode_at(pos: Vector3, radius: float, damage: float) -> void:
 				return
 
 func _toast(text: String) -> void:
-	var pl := get_tree().get_first_node_in_group("player")
-	if pl and pl.has_method("notify_pickup"):
-		pl.notify_pickup(text)
+	for pl in GameState.players():
+		if pl.has_method("notify_pickup"):
+			pl.notify_pickup(text)
 
 # --- chase swarm ---
 
@@ -576,7 +576,7 @@ func _disperse_swarms(delta: float) -> void:
 	if _disperse_t > 0.0:
 		return
 	_disperse_t = 2.0
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.primary_player()
 	if player == null:
 		return
 	for p in _platforms:
@@ -724,9 +724,9 @@ func _cull_stragglers(delta: float) -> void:
 
 func _board_player() -> void:
 	await get_tree().create_timer(0.6).timeout
-	var p := get_tree().get_first_node_in_group("player") as Node3D
-	if p:
-		p.global_position = _truck.global_position + Vector3(0, 1.8, 1.0)
+	for p in GameState.players(): # every player boards, side by side
+		var idx := int(p.get("player_index")) if p.get("player_index") != null else 0
+		p.global_position = _truck.global_position + Vector3(1.4 * idx, 1.8, 1.0)
 		var dmg := p.get_node_or_null("Damageable")
 		if dmg and dmg.has_signal("died"):
 			dmg.died.connect(_on_player_died)
@@ -745,7 +745,7 @@ func _board_player() -> void:
 ## trail while the screen is dark is the fair version: on death, thin pursuit
 ## down to the four nearest so the comeback is a fight, not a grinder.
 func _on_player_died(_source: Node) -> void:
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.primary_player()
 	if player == null:
 		return
 	var live: Array = []
@@ -837,7 +837,7 @@ func _wind_down_pursuit(delta: float) -> void:
 	if _wind_t > 0.0:
 		return
 	_wind_t = 0.4
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.primary_player()
 	if player == null:
 		return
 	var furthest: Node3D = null

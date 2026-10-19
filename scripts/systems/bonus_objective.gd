@@ -35,8 +35,7 @@ func _hook() -> void:
 		"deathless":
 			GameState.player_died.connect(_on_broken)
 		"dry":
-			var p := get_tree().get_first_node_in_group("player")
-			if p:
+			for p in GameState.players(): # a hazard hitting either player breaks it
 				_player_hp = p.get_node_or_null("Damageable") as Damageable
 				if _player_hp:
 					_player_hp.damaged.connect(_on_player_damaged)

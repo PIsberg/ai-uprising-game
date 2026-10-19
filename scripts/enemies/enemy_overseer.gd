@@ -89,7 +89,7 @@ func _arrive() -> void:
 	if scene == null:
 		_finish_arrival()
 		return
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var p := GameState.nearest_player(global_position)
 	var entry := Vector3(global_position.x, global_position.y + fly_height, global_position.z)
 
 	var portal := BossPortal.new()
@@ -100,8 +100,9 @@ func _arrive() -> void:
 	if p:
 		portal.face(p.global_position)
 	AudioBus.play_synth_at("explosion", entry, 4.0, 0.75) # gate whoomp
-	if p and p.has_method("shake"):
-		p.shake(0.9)
+	for q in GameState.players():
+		if q.has_method("shake"):
+			q.shake(0.9)
 	portal.open(0.55)
 
 	# Park the (hidden) gunship just inside the gate, then slide it out toward
@@ -288,9 +289,9 @@ func _on_died(source: Node) -> void:
 			var fx := EXPLOSION.instantiate()
 			scene.add_child(fx)
 			(fx as Node3D).global_position = global_position + Vector3(randf_range(-2, 2), fly_height + randf_range(-1, 2), randf_range(-2, 2))
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(1.0)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(1.0)
 	_play_clip("Hit")
 	# Crash: find the deck under the craft, then fall to it (_tick_crash).
 	var craft := global_position + Vector3.UP * fly_height
@@ -328,7 +329,7 @@ func _tick_crash(delta: float) -> void:
 			(fx as Node3D).global_position = Vector3(craft.x, _crash_floor + 0.5, craft.z) + Vector3(randf_range(-3, 3), randf_range(0, 2), randf_range(-3, 3))
 	spawn_shockwave_ring(9.0, Color(1.0, 0.5, 0.2), Vector3(craft.x, _crash_floor, craft.z))
 	AudioBus.play_synth_at("explosion", craft, 6.0, 0.45)
-	var p2 := get_tree().get_first_node_in_group("player")
-	if p2 and p2.has_method("shake") and (p2 as Node3D).global_position.distance_to(craft) < 40.0:
-		p2.shake(1.5)
+	for p2 in GameState.players():
+		if p2 and p2.has_method("shake") and (p2 as Node3D).global_position.distance_to(craft) < 40.0:
+			p2.shake(1.5)
 	queue_free()

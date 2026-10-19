@@ -59,7 +59,7 @@ func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
 	var here := global_position
-	var p := get_tree().get_first_node_in_group("player")
+	var p := GameState.nearest_player(global_position)
 	var scene := get_tree().current_scene
 	if scene == null:
 		_finish_fold_in()
