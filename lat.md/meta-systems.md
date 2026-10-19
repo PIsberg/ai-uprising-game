@@ -35,6 +35,16 @@ One seeded level a day, outside the campaign (main menu, under Last Stand):
 * **Isolation:** `start_daily_op` snapshots the run state (`DAILY_RUN_KEYS`); while `daily_op` is set, `load_level` skips the campaign bookkeeping and `save_progress` refuses to write. `end_daily_op` (called by the main menu on every visit) restores the snapshot, so no path out of an op leaves its difficulty or guns behind.
 * **Records:** `record_daily_clear` keeps the day's best score and a streak of consecutive days with a clear in `records.cfg` `[daily]`; the win screen shows score, best and streak and returns to the menu (`advance_level` -> `finish_daily_op`). `tests/daily_op_probe` (suite).
 
+## Machine Feed
+<!-- lat: { "require-code-mention": true } -->
+The rogue AI livestreams the fight to its robot network; the audience's chat runs down the left of the HUD (`scripts/ui/machine_feed.gd`, lines in `scripts/systems/machine_chat.gd`).
+
+* `MachineChat.LINES` holds 10 pools (intro, idle, cascade, execution, dodge, salvage, rampage, clutch, boss, death), 5 lines each, every one a `strings.csv` key translated into all five languages; `HANDLES` are robot usernames, untranslated.
+* `MachineFeed` listens to GameState (`cascade_chain` from `CASCADE_CALLOUT` pops, `execution`, `perfect_dodge`, `rampage_changed`, `adrenaline_changed`, `boss_spawned`, `player_died`); the HUD calls `on_salvage` when a salvage gun is armed. A quiet `IDLE_GAP` (22 s) posts an idle line.
+* One post per `MIN_GAP` (1.2 s): a burst of events posts the first, but small talk (`CHATTER`: intro, idle) never blocks an event line, and a death always posts. At most `MAX_LINES` (5) show, each fading after `LINE_LIFE` (7 s); a line never repeats the one its pool posted last.
+* Viewers start at `BASE_VIEWERS` + `VIEWERS_PER_LEVEL` x `GameState.level_index`, gain `MachineChat.HYPE` per event (the cascade's x pops, rampage's x tier), lose `DECAY` of the excess every `DECAY_TICK`, and keep `DEATH_KEEP` when you die.
+* Off with the Combat Callouts setting (`GraphicsSettings.combat_callouts_enabled`), which also hides the feed. `tests/machine_feed_probe`.
+
 ## 3D Enemy Codex
 <!-- lat: { "require-code-mention": true } -->
 The roster data lives in `scripts/systems/enemy_codex.gd` (`EnemyCodex.ENTRIES`, ordered by
