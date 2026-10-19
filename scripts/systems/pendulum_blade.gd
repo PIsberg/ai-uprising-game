@@ -247,3 +247,8 @@ func _physics_process(delta: float) -> void:
 	var go := clear_for(across_m, _t)
 	if go != _go:
 		_set_go(go)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "PENDULUM BLADE"

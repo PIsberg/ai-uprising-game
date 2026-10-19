@@ -290,3 +290,8 @@ func _player_tick(pl: Node3D, off: float, head: float) -> void:
 		_flash = 0.6
 		AudioBus.play_synth_at("broadcast_blip", pl.global_position, -3.0, 1.2)
 		warned.emit()
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "FLOOR SAW"

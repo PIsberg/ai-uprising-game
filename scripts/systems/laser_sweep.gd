@@ -243,3 +243,8 @@ func _teach(pl: Node3D) -> void:
 	rel.y = 0.0
 	if rel.length() <= radius + TEACH_REACH:
 		GameState.teach_once("laser_sweep", TEACH_TEXT)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "LASER SWEEP"

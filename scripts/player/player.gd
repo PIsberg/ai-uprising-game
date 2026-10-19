@@ -1996,6 +1996,8 @@ func _on_died(source: Node) -> void:
 		killer = "THE FLOOD" if (source as LavaHazard).water else "MOLTEN GROUND"
 	elif source != null and source.has_method("_kill_label"):
 		killer = source.call("_kill_label")
+	elif source == self:
+		killer = "YOUR OWN BLAST" # grenades and splash credit their shooter
 	if _grappling:
 		_end_grapple() # the tether visual must not outlive you
 	died.emit()

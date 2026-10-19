@@ -220,3 +220,8 @@ func _pop(col: Color) -> void:
 	var tw := l.create_tween()
 	tw.tween_property(l, "light_energy", 0.0, 0.4)
 	tw.tween_callback(l.queue_free)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "HONEYPOT TRAP"

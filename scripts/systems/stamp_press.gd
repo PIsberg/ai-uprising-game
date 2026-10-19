@@ -309,3 +309,8 @@ func _slam_fx() -> void:
 	tw.tween_property(ring, "scale", Vector3(size.x * 1.1, 0.4, size.y * 1.1), 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.5)
 	tw.chain().tween_callback(ring.queue_free)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "STAMP PRESS"

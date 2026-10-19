@@ -263,3 +263,8 @@ func _process(delta: float) -> void:
 			"FIREWALL: it only stops you. Shoot its relay node (follow the light column) or finish the linked objective to drop it.")
 		_zap_t = 0.5
 		break
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "FIREWALL"

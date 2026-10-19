@@ -158,3 +158,8 @@ func _physics_process(delta: float) -> void:
 		php.apply_damage(damage, self, false, pl.global_position + Vector3.UP * (beam_y - pl.global_position.y), true)
 	_cool = HIT_GAP
 	AudioBus.play_synth_at("hit_tick", pl.global_position, -2.0, 0.6)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "LASER GATE"

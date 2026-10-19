@@ -129,3 +129,8 @@ func _fire(p: Node3D) -> void:
 		hp.apply_damage(DAMAGE, self)
 	if p.has_method("shake"):
 		p.shake(0.6)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "ORBITAL STRIKE"
