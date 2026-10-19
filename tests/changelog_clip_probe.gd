@@ -9,7 +9,11 @@ extends Node3D
 ## (4) the player and weapon manager take no live input during the clip (a stray OS
 ##     mouse event once turned a recording to the ceiling mid-reload);
 ## (5) enemy=none parks a plain wall slab in the line of fire instead (impacts
-##     on the range floor hide in its glitter), and still fires and reloads.
+##     on the range floor hide in its glitter), and still fires and reloads;
+## (6) mode=robot films a robot's own AI against the invulnerable player, who
+##     never fires, with the camera keeping it in frame (#359);
+## (7) mode=level loads a campaign level and dollies a free camera from `at`
+##     toward `look` by `dolly` m (#359).
 ##   godot --headless --path . --audio-driver Dummy res://tests/changelog_clip_probe.tscn
 
 const CLIP := "res://tools/changelog_clip.tscn"
@@ -32,6 +36,8 @@ func _run() -> void:
 		return
 	await _drone_run()
 	await _lane_run()
+	await _robot_run()
+	await _level_run()
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
 
@@ -94,3 +100,73 @@ func _lane_run() -> void:
 	_check("enemy=none still fires and reloads", clip.shots >= 2 and clip.reloads >= 1,
 			"shots=%d reloads=%d" % [clip.shots, clip.reloads])
 	clip.queue_free()
+
+## mode=robot (#359): the robot's own AI runs against the invulnerable player,
+## who never fires, and the camera keeps the robot in frame.
+func _robot_run() -> void:
+	var clip: Node = (load(CLIP) as PackedScene).instantiate()
+	clip.set("mode", "robot")
+	clip.enemy = "android"
+	clip.set("dur", 4.0)
+	clip.quit_when_done = false
+	add_child(clip)
+	await clip.marked
+	var robot: Node3D = clip.target
+	_check("mode=robot spawns the robot", robot != null and is_instance_valid(robot))
+	if robot == null or not is_instance_valid(robot):
+		clip.queue_free()
+		await clip.tree_exited
+		return
+	_check("mode=robot leaves the robot's AI on", robot.is_physics_processing())
+	var cam: Camera3D = clip.player.get("camera")
+	_check("mode=robot frames the robot at the mark", _off_deg(cam, robot) < 6.0, "%.1f deg off" % _off_deg(cam, robot))
+	_check("mode=robot locks live input", not clip.player.is_processing_input())
+	var start_pos := robot.global_position
+	var php: Node = clip.player.get("hp")
+	var hp0: float = php.current_health if php else 0.0
+	await clip.finished
+	_check("mode=robot: the robot acts on its own (moves or leaves IDLE)",
+			robot.global_position.distance_to(start_pos) > 1.0 or robot.state != EnemyBase.State.IDLE,
+			"moved %.2f m, state %d" % [robot.global_position.distance_to(start_pos), robot.state])
+	_check("mode=robot still frames the robot at the end", _off_deg(cam, robot) < 10.0, "%.1f deg off" % _off_deg(cam, robot))
+	_check("mode=robot: the player never fires", clip.shots == 0, "shots=%d" % clip.shots)
+	_check("mode=robot: the player takes no damage", php != null and php.current_health >= hp0,
+			"%.0f -> %.0f" % [hp0, php.current_health if php else -1.0])
+	clip.queue_free()
+	await clip.tree_exited
+
+## mode=level (#359): a campaign level loads and a free camera dollies from
+## `at` toward `look`; the player is parked out of the way.
+func _level_run() -> void:
+	var clip: Node = (load(CLIP) as PackedScene).instantiate()
+	clip.set("mode", "level")
+	clip.set("level", "gpt")
+	clip.set("dur", 2.0)
+	clip.set("dolly", 4.0)
+	clip.quit_when_done = false
+	add_child(clip)
+	await clip.marked
+	var lvl: Node = clip.get("level_node")
+	_check("mode=level loads the requested level", lvl != null and lvl.scene_file_path.ends_with("level_gpt.tscn"),
+			lvl.scene_file_path if lvl else "none")
+	var cam: Camera3D = clip.get("fly_cam")
+	_check("mode=level films through its own current camera", cam != null and cam.is_current())
+	if cam == null:
+		clip.queue_free()
+		await clip.tree_exited
+		return
+	var look: Vector3 = clip.get("look")
+	var at0 := cam.global_position
+	var aim_off := rad_to_deg((-cam.global_basis.z).angle_to((look - at0).normalized()))
+	_check("mode=level looks at `look` at the mark", aim_off < 3.0, "%.1f deg off" % aim_off)
+	_check("mode=level starts at `at`", at0.distance_to(clip.get("at")) < 0.05, "%.2f m off" % at0.distance_to(clip.get("at")))
+	await clip.finished
+	var moved := cam.global_position.distance_to(at0)
+	_check("mode=level dollies `dolly` m toward `look`", absf(moved - 4.0) < 0.3, "moved %.2f m" % moved)
+	_check("mode=level: the camera is still current at the end", cam.is_current())
+	clip.queue_free()
+	await clip.tree_exited
+
+func _off_deg(cam: Camera3D, n: Node3D) -> float:
+	var to := (n.global_position + Vector3.UP * 0.8 - cam.global_position).normalized()
+	return rad_to_deg((-cam.global_basis.z).angle_to(to))

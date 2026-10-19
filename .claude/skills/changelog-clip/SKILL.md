@@ -27,14 +27,25 @@ Work in `build/changelog/<slug>/` (gitignored). Needs a window, ffmpeg, and `GOD
    you hold two SHAs and, per PR, a title plus a one-to-two sentence *why* in player terms, with
    numbers from the PR body.
 
-2. **Plan the shots.** The clip scene parks a target robot 9 m down the Armory range lane with its
-   AI off, aims at it, fires a burst and reloads. Args: `gun=<scenes/weapons id>`,
-   `enemy=<LevelBuilder.ENEMY_SCENES id | none>` (`none` fires into a plain wall slab instead,
-   for impact changes), `burst=<seconds>`. Pick the gun and robot that make each PR's change largest
-   on screen (a matchup PR wants a robot the gun counters). Done when every PR maps to a clip that
-   shows it, or carries an `absent` reason the viewer prints instead. A change the scene cannot
-   show (a menu, a level, a robot's AI) needs a new mode in `tools/changelog_clip.gd` and a check
-   in `tests/changelog_clip_probe.gd` first.
+2. **Plan the shots.** The clip scene has three modes (`mode=`, default `weapon`):
+   - `weapon`: parks a target robot 9 m down the Armory range lane with its AI off, aims at it,
+     fires a burst and reloads. Args: `gun=<scenes/weapons id>`,
+     `enemy=<LevelBuilder.ENEMY_SCENES id | none>` (`none` fires into a plain wall slab instead,
+     for impact changes), `burst=<seconds>`. Pick the gun and robot that make the change largest
+     on screen (a matchup PR wants a robot the gun counters).
+   - `robot`: `enemy=<id> dur=<seconds>`. The robot spawns 12 m down the range with its AI on and
+     plays against the invulnerable player, who never fires; the camera tracks it. For robot AI,
+     movement and attack changes.
+   - `level`: `level=<id> dur=<seconds> dolly=<m>`, optional `at=x,y,z look=x,y,z` in world
+     coordinates (already scaled by `WORLD_SCALE`). Loads `scenes/levels/level_<id>.tscn` and
+     dollies a free camera from `at` toward `look`. The defaults (8 m over the spawn, onto the
+     level centre) give an overview; the `CLIP LEVEL` line prints the values used, so start
+     there and move in on the change. For level, hazard and lighting changes.
+
+   Done when every PR maps to a clip that shows it, or carries an `absent` reason the viewer
+   prints instead. A change no mode can show (a menu, the HUD: every mode frees the level's
+   HUD) needs a new mode in `tools/changelog_clip.gd` and a check in
+   `tests/changelog_clip_probe.gd` first.
 
 3. **Record each pair.**
    ```sh
