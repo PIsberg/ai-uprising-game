@@ -32,6 +32,9 @@ func _run() -> void:
 	await get_tree().create_timer(4.0).timeout
 	var player := get_tree().get_first_node_in_group("player") as Node3D
 	player.set_physics_process(false)
+	# Splash guns (Devastator, OMEGA) fired at the floor would otherwise kill the
+	# camera, and every later gun was shot on the red, rolled death view.
+	(player.get_node("Damageable") as Damageable).invulnerable = true
 	var cam := player.get_node("Head/Camera3D") as Camera3D
 	var wm: Node = player.get_node("Head/Camera3D/WeaponHolder")
 	var tiles: Array[Image] = []

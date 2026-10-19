@@ -96,6 +96,8 @@ var mod_override_ms: int = -100000
 ## A SALVAGE gun (WeaponManager.take_salvage): one magazine, no reserve, tossed
 ## when dry; ammo pickups skip it.
 var salvage: bool = false
+## The gloved hands holding this gun (ViewmodelHands), on every imported model.
+var hands: ViewmodelHands = null
 var mod_bank: float = 0.0 ## hit damage since the last ARC/RICOCHET proc (WeaponMods._bank)
 
 func get_active_shooter() -> Node:
@@ -149,12 +151,13 @@ func _on_rampage_changed(tier: int, _name: String) -> void:
 	for mi in rim_meshes():
 		(mi as MeshInstance3D).material_overlay = RAMPAGE_RIM if tier > 0 else null
 
-## The viewmodel's own meshes: everything but the muzzle's (flashes, heat glow).
+## The viewmodel's own meshes: everything but the muzzle's (flashes, heat glow)
+## and the hands holding it (gloves don't glow with the streak).
 func rim_meshes() -> Array:
 	if viewmodel == null:
 		return []
 	return viewmodel.find_children("*", "MeshInstance3D", true, false).filter(
-			func(m: Node) -> bool: return muzzle == null or not (muzzle == m or muzzle.is_ancestor_of(m)))
+			func(m: Node) -> bool: return (muzzle == null or not (muzzle == m or muzzle.is_ancestor_of(m))) 					and (hands == null or not hands.is_ancestor_of(m)))
 
 ## Imported gun models (Kenney "Blaster Kit", CC0) keyed by weapon scene name.
 ## `len` is the wanted barrel-to-stock length in metres (the GLB is uniformly
@@ -181,8 +184,9 @@ const REAL_MODELS := {
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
-## scaled to the configured length, grip parked at the viewmodel origin, the
-## Muzzle node moved to the new barrel tip. The primitive parts are hidden (not
+## scaled to the configured length, pushed forward until its grip sits at
+## ViewmodelHands.GRIP_Z, the Muzzle node moved to the new barrel tip, and
+## gloved hands (`hands`) built on its grip and fore-end. The primitive parts are hidden (not
 ## freed) so the Slide/Pump/Magazine animation lookups stay valid. Returns
 ## false when this weapon has no model mapped (grenade etc. keep primitives).
 func _apply_real_model() -> bool:
@@ -213,9 +217,18 @@ func _apply_real_model() -> bool:
 		0.02 - (aabb.position.y + aabb.size.y * 0.8) * s,
 		0.18 - aabb.end.z * s)
 	_fit_box = AABB(model.position + aabb.position * s, aabb.size * s)
+	# Hold it where the hands show: a grip parked right under the eye sits below
+	# the bottom of the screen with the stock filling the corner, so push the gun
+	# forward until its grip is ViewmodelHands.GRIP_Z ahead of the origin.
+	var grip := ViewmodelHands.grip_points(ViewmodelHands.vertices(viewmodel, model), _fit_box)
+	var push := minf(0.0, ViewmodelHands.GRIP_Z - (grip["grip"] as Vector3).z)
+	model.position.z += push
+	_fit_box.position.z += push
+	grip["grip"] += Vector3(0, 0, push)
+	grip["fore"] += Vector3(0, 0, push)
 	# Barrel tip = front face of the fitted model, slightly proud of it.
 	if muzzle:
-		muzzle.position.z = 0.18 - cfg["len"] - 0.03
+		muzzle.position.z = _fit_box.position.z - 0.03
 	# Realistic worn-gunmetal skin over the kit's flat plastic albedo. Surfaces
 	# the kit painted saturated (grips, vents, sight dots) become emissive
 	# accents in the weapon's energy colour instead — every gun carries its own
@@ -234,6 +247,7 @@ func _apply_real_model() -> bool:
 				mi.set_surface_override_material(i, am)
 			else:
 				mi.set_surface_override_material(i, _gunmetal_material(m, tint))
+	hands = ViewmodelHands.fit(viewmodel, grip, _fit_box, accent)
 	return true
 
 ## Emissive accent for the kit's saturated detail surfaces: lit from within in
