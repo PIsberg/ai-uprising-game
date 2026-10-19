@@ -13,7 +13,9 @@ extends Node
 ##     but once the prime has expired it does not;
 ## (5) the chain is bounded: each generation's blast is weaker, so a long line
 ##     of robots does not all pop off one kill;
-## (6) bosses are never primed.
+## (6) bosses are never primed;
+## (7) a cascade blast sets off an explosive barrel in range, leaves a plain
+##     crate standing, and leaves a barrel out of range alone.
 ##   godot --headless --path . --audio-driver Dummy res://tests/cascade_probe.tscn
 
 const ANDROID := "res://scenes/enemies/android.tscn"
@@ -175,7 +177,28 @@ func _run() -> void:
 	_set_hp(boss, 5000.0)
 	gun._do_hitscan(boss.global_position + Vector3(0, 1.2, 10), Vector3(0, 0, -1))
 	_check("boss-sized robot not primed", not Cascade.is_primed(boss))
+
+	# 7. Props: the blast sets off explosive ones in range only.
+	var c7 := Vector3(-120, 0, -120)
+	var lone := _robot(c7)
+	var barrel := _prop("res://scenes/props/barrel.tscn", c7 + Vector3(d.cascade_radius * 0.6, 0, 0))
+	var crate := _prop("res://scenes/props/crate.tscn", c7 + Vector3(-d.cascade_radius * 0.6, 0, 0)) # in the cascade, out of the line of fire and the barrel's splash
+	var far_barrel := _prop("res://scenes/props/barrel.tscn", c7 + Vector3(-d.cascade_radius * 2.5, 0, 0))
+	await _frames(3)
+	var crate_hp: float = crate.hp.current_health
+	lone.hp.current_health = 1.0
+	gun._do_hitscan(lone.global_position + Vector3(0, 1.2, 10), Vector3(0, 0, -1))
+	await _settle()
+	_check("cascade sets off a barrel in range", not is_instance_valid(barrel))
+	_check("a plain crate is left alone", is_instance_valid(crate) and crate.hp.current_health == crate_hp, "valid=%s hp %.0f -> %.0f" % [is_instance_valid(crate), crate_hp, crate.hp.current_health if is_instance_valid(crate) else -1.0])
+	_check("a barrel out of range is left alone", is_instance_valid(far_barrel))
 	_finish()
+
+func _prop(scene: String, pos: Vector3) -> Node3D:
+	var p: Node3D = (load(scene) as PackedScene).instantiate()
+	add_child(p)
+	p.global_position = pos
+	return p
 
 func _finish() -> void:
 	print("RESULT ", "PASS" if ok else "FAIL")
