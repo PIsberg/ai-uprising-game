@@ -4063,7 +4063,10 @@ static func _gpt() -> Dictionary:
 		"floor_size": Vector2(76, 76),
 		"spawn": Vector3(-32, 0.6, -32),
 		"exit": Vector3(32, 1.5, 32),
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-26, 0, -28), "color": Color(0.45, 0.65, 1)},
+		# The CX-4 Cascade (rank 4), by the spawn: level 1's rifle and Breacher can't
+		# thin a pack, so the horde-clearer comes first thing on level 2. Was the
+		# rifle, which level 1 already hands out.
+		"weapon": {"scene": "res://scenes/weapons/cascade.tscn", "pos": Vector3(-26, 0, -28), "color": Color(0.55, 0.95, 1.0)},
 		# Optional reward for raiding the vault: an early shotgun. Not a task — pure
 		# exploration payoff (the exit doesn't wait on it).
 		"extra_weapons": [

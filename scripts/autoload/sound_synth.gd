@@ -70,6 +70,7 @@ func _register_jobs() -> void:
 	# One report per gun (WeaponData.sound_id + "_fire"); guns used to share five.
 	_job("magnum_fire", _hand_cannon.bind(0.55))
 	_job("arccoil_fire", _arc_crack.bind(0.2))
+	_job("cascade_fire", _gun_fire.bind(0.26, 150.0, 0.95, 1.7, true))
 	_job("tesla_fire", _tesla_tick.bind(0.08))
 	_job("lance_fire", _lance_fire.bind(0.5))
 	_job("longshot_fire", _longshot_fire.bind(0.95))

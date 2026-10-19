@@ -264,6 +264,7 @@ func _ready() -> void:
 	_build_adrenaline()
 	_build_dodge_label()
 	_build_exec_label()
+	_build_cascade_label()
 	_build_ult_meter()
 	# The directive was rolled in load_level before this HUD existed — announce the
 	# active one now (a beat later so the toast lands after the level settles in).
@@ -746,6 +747,11 @@ var _dodge_pop: float = 0.0
 var _exec_label: Label = null    ## Orange "EXECUTED!" flash on a melee finisher.
 var _exec_alpha: float = 0.0
 var _exec_pop: float = 0.0
+var _cascade_label: Label = null ## Cyan "CASCADE xN" stamp when a CX-4 chain settles.
+var _cascade_alpha: float = 0.0
+var _cascade_pop: float = 0.0
+## Chains this long read as "STACK OVERFLOW" instead of "CASCADE".
+const CASCADE_OVERFLOW := 6
 
 var _ult_root: Control = null    ## OVERLOAD ultimate gauge (bottom-centre).
 var _ult_fill: ColorRect = null
@@ -862,6 +868,33 @@ func _build_exec_label() -> void:
 	_exec_label.modulate.a = 0.0
 	_exec_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_exec_label)
+
+## Cyan chain stamp, just above the EXECUTED! one: a CX-4 chain of
+## GameState.CASCADE_CALLOUT robots or more reads "CASCADE xN", a long one
+## "STACK OVERFLOW xN".
+func _build_cascade_label() -> void:
+	_cascade_label = Label.new()
+	_cascade_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_cascade_label.anchor_left = 0.5
+	_cascade_label.anchor_right = 0.5
+	_cascade_label.position = Vector2(0, 372)
+	_cascade_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_cascade_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_cascade_label.add_theme_font_size_override("font_size", 42)
+	_cascade_label.add_theme_constant_override("outline_size", 10)
+	_cascade_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_cascade_label.add_theme_color_override("font_color", Cascade.COLOR)
+	_cascade_label.modulate.a = 0.0
+	_cascade_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_cascade_label)
+	GameState.cascade_chain.connect(_on_cascade_chain)
+
+func _on_cascade_chain(pops: int, _world_pos: Vector3) -> void:
+	if _cascade_label == null or pops < GameState.CASCADE_CALLOUT:
+		return
+	_cascade_label.text = "%s ×%d" % [tr("STACK OVERFLOW") if pops >= CASCADE_OVERFLOW else tr("CASCADE"), pops]
+	_cascade_alpha = 1.0
+	_cascade_pop = 1.3
 
 func _on_execution(_world_pos: Vector3) -> void:
 	if _exec_label:
@@ -1239,12 +1272,15 @@ func _update_highlights_block() -> void:
 	var bounties := int(_last_stats.get("bounties", 0))
 	var dodges := int(_last_stats.get("dodges", 0))
 	var streak := int(_last_stats.get("best_rampage", 0))
+	var chain := int(_last_stats.get("best_cascade", 0))
 	if execs > 0:
 		bits.append("%d %s" % [execs, tr("EXECUTED") if execs == 1 else tr("EXECUTIONS")])
 	if bounties > 0:
 		bits.append("%d %s" % [bounties, tr("BOUNTY") if bounties == 1 else tr("BOUNTIES")])
 	if dodges > 0:
 		bits.append("%d %s" % [dodges, tr("PERFECT DODGE") if dodges == 1 else tr("PERFECT DODGES")])
+	if chain >= GameState.CASCADE_CALLOUT:
+		bits.append("%s ×%d" % [tr("BEST CASCADE"), chain])
 	if streak > 0 and streak <= GameState.RAMPAGE_NAMES.size():
 		bits.append(tr(GameState.RAMPAGE_NAMES[streak - 1]) + " " + tr("STREAK"))
 	# The level's optional bonus, settled by now (still live = never resolved:
@@ -1324,6 +1360,12 @@ func _process(delta: float) -> void:
 		_dodge_label.modulate.a = clampf(_dodge_alpha, 0.0, 1.0)
 		_dodge_label.scale = Vector2.ONE * (1.0 + _dodge_pop * 0.4)
 		_dodge_label.pivot_offset = _dodge_label.size * 0.5
+	if _cascade_label:
+		_cascade_alpha = move_toward(_cascade_alpha, 0.0, delta * 1.4)
+		_cascade_pop = move_toward(_cascade_pop, 0.0, delta * 5.5)
+		_cascade_label.modulate.a = clampf(_cascade_alpha, 0.0, 1.0)
+		_cascade_label.scale = Vector2.ONE * (1.0 + _cascade_pop * 0.4)
+		_cascade_label.pivot_offset = _cascade_label.size * 0.5
 	if _exec_label:
 		_exec_alpha = move_toward(_exec_alpha, 0.0, delta * 1.6)
 		_exec_pop = move_toward(_exec_pop, 0.0, delta * 5.5)

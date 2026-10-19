@@ -51,7 +51,7 @@ func _run() -> void:
 	# 1. Data.
 	var want := {"gauss": 1, "sniper": 1, "plasma": 1, "omega": 1,
 			"tesla": 2, "arccoil": 2, "tempest": 2, "pistol": 0, "rifle": 0,
-			"shotgun": 3, "magnum": 3, "devastator": 5, "swarm": 5}
+			"shotgun": 3, "magnum": 3, "devastator": 5, "swarm": 5, "cascade": 5}
 	for k in want:
 		var d: WeaponData = load("res://assets/weapons/%s_data.tres" % k)
 		_check("%s kill_fx" % k, d.kill_fx == want[k], "got %d want %d" % [d.kill_fx, want[k]])

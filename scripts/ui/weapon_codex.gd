@@ -11,6 +11,7 @@ const DOSSIER := {
 	"pistol": "Reliable M9 sidearm — deep reserve and clean headshots. Your fallback when everything else runs dry.",
 	"rifle": "AR-7 Pulse Rifle — the do-everything full-auto: accurate, controllable, effective at every range.",
 	"shotgun": "SG-12 Breacher. A wall of pellets that deletes anything point-blank. SLUG alt collapses it into one heavy round.",
+	"cascade": "CX-4 Cascade — every robot it kills detonates, and every robot that blast kills goes off too. Soften a pack, drop one, watch the chain run.",
 	"magnum": ".50 Maelstrom hand cannon — enormous per-shot damage and headshots, slow and unforgiving.",
 	"tesla": "VK-7 Tesla Projector. A vicious close-range arc that shreds armour — but almost no reach, so it leaves you wide open to melee. Get in, zap, get out.",
 	"arccoil": "CL-3 Arc Coil — a short-range electric burst that chains between bunched-up machines.",

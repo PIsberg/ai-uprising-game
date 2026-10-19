@@ -224,6 +224,7 @@ const WEAPON_ORDER: Array[String] = [
 	"res://scenes/weapons/pistol.tscn",      # M9 Sidearm — starter
 	"res://scenes/weapons/rifle.tscn",       # AR-7 Pulse Rifle — the full-auto
 	"res://scenes/weapons/shotgun.tscn",     # SG-12 Breacher
+	"res://scenes/weapons/cascade.tscn",     # CX-4 Cascade (kills chain-detonate: the early horde-clearer)
 	"res://scenes/weapons/magnum.tscn",      # .50 Maelstrom
 	"res://scenes/weapons/tesla.tscn",       # VK-7 Tesla Projector (close-range arc)
 	"res://scenes/weapons/arccoil.tscn",     # CL-3 Arc Coil (electric burst)
@@ -249,6 +250,7 @@ const ALL_WEAPONS: Array[String] = [
 	"res://scenes/weapons/pistol.tscn",
 	"res://scenes/weapons/rifle.tscn",
 	"res://scenes/weapons/shotgun.tscn",
+	"res://scenes/weapons/cascade.tscn",
 	"res://scenes/weapons/tesla.tscn",
 	"res://scenes/weapons/arccoil.tscn",
 	"res://scenes/weapons/plasma.tscn",
@@ -709,6 +711,21 @@ func reward_execution(world_pos: Vector3) -> void:
 	combat_hitstop(0.35, 0.11) # a beefier crunch than a normal kill
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
+
+# ---------- CASCADE: chain-detonation kills (CX-4 Cascade) ----------
+## A Cascade chain of `pops` robots just settled (Cascade._detonate). Long chains
+## pay a bonus per robot past the second and get a HUD callout; the robots' own
+## kills already scored through add_kill. stat_best_cascade feeds the debrief.
+const CASCADE_BONUS := 40 ## per robot past the second in one chain
+const CASCADE_CALLOUT := 3 ## chains this long or longer get the HUD callout
+signal cascade_chain(pops: int, world_pos: Vector3)
+
+func note_cascade(pops: int, world_pos: Vector3) -> void:
+	if pops >= CASCADE_CALLOUT:
+		add_score(CASCADE_BONUS * (pops - 2))
+		teach_once("cascade", MECHANIC_HINTS["cascade"])
+	stat_best_cascade = maxi(stat_best_cascade, pops)
+	cascade_chain.emit(pops, world_pos)
 
 # ---------- OVERLOAD: charge-and-unleash ultimate ----------
 ## A meter the player builds by fighting (kills + damage dealt) and unleashes as a
@@ -1239,6 +1256,7 @@ var stat_executions: int = 0
 var stat_bounties: int = 0
 var stat_dodges: int = 0
 var stat_best_rampage: int = 0
+var stat_best_cascade: int = 0 ## longest CX-4 Cascade chain this level (note_cascade)
 ## Timestamp the current level attempt started. NOTE: this is reset on every
 ## load_level() call, including a TRY-AGAIN full reload — so the debrief's TIME
 ## reads "time since the last retry", not a cumulative clock across deaths.
@@ -1269,6 +1287,7 @@ func reset_level_stats() -> void:
 	stat_bounties = 0
 	stat_dodges = 0
 	stat_best_rampage = 0
+	stat_best_cascade = 0
 	ultimate_charge = 0.0
 	ultimate_changed.emit(0.0)
 	max_combo = 0
@@ -1358,6 +1377,7 @@ func grade_level() -> Dictionary:
 		"deaths": level_deaths,
 		"executions": stat_executions, "bounties": stat_bounties,
 		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
+		"best_cascade": stat_best_cascade,
 		"par": par, "speed_bonus": speed_bonus,
 		"assist": _damage_taken_setting(), "assist_mult": assist,
 	}
@@ -1472,6 +1492,7 @@ const MECHANIC_HINTS := {
 	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
 	"patch_key": "◇ ADVERSARIAL PATCH ready — press [T] and robot vision reads you as furniture for 15 s. Two per level.",
 	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",
+	"cascade": "✸ CASCADE — robots the CX-4 kills detonate and set off their neighbours. Shoot into the thick of a pack.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 }
 

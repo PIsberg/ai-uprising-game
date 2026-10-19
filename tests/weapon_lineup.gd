@@ -3,7 +3,7 @@ extends Node3D
 ## weapon.gd) in a grid, saves user://weapon_lineup.png, then quits. Run:
 ##   godot --path . res://tests/weapon_lineup.tscn
 
-const WEAPONS := ["pistol", "smg", "rifle", "shotgun", "tesla",
+const WEAPONS := ["pistol", "smg", "rifle", "shotgun", "cascade", "tesla",
 	"arccoil", "plasma", "nova", "gauss", "twinrail",
 	"swarm", "devastator", "singularity", "omega"]
 

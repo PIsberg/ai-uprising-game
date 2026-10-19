@@ -12,7 +12,7 @@ The `WeaponManager` resides under the player's camera:
 ## Weapon Resources
 Defines the custom resource configuration files that govern weapon attributes.
 
-* Individual weapon stats are defined via `WeaponData` resource files (`.tres` and `scripts/weapons/weapon_data.gd`) located under `assets/weapons/` across 13 distinct weapons (`GameState.WEAPON_ORDER`).
+* Individual weapon stats are defined via `WeaponData` resource files (`.tres` and `scripts/weapons/weapon_data.gd`) located under `assets/weapons/` across 14 distinct weapons (`GameState.WEAPON_ORDER`).
 * Modifications to ammo capacity, reload speed, damage, and projectile patterns should be edited in these resource files.
 * Every gun builds a holographic round counter (`Weapon._build_ammo_readout`, node `AmmoReadout` under the viewmodel) off `_fit_box`, the fitted model's bounds from `_apply_real_model`: left flank, above the top, at most `READOUT_REACH` forward of the stock. It refreshes on `ammo_changed` / `reload_started` / `_finish_reload` and turns `READOUT_LOW_COLOR` with a pulse while `readout_low()`. `tests/ammo_readout_probe`.
 * Reloads follow `WeaponData.reload_style` (MAG, SHELLS, CELL, TUBE): `Weapon._play_reload_anim` tweens the viewmodel into the style's `RELOAD_POSES` entry and back across the reload time, and `reload_beats()` schedules the beats (jolt + sound + the `reload_beat` signal) in between. CELL guns get a glowing `EnergyCell` strip (`_build_energy_cell`), whose material joins `_accent_mats`; the vent beat drains those to near dark and the charge beat refills them to `ACCENT_ENERGY`. `tests/reload_anim_probe`.
@@ -33,12 +33,20 @@ Bought in the Armory, a mod changes what a gun's hit does, not how hard it lands
 <!-- lat: { "require-code-mention": true } -->
 Every gun deals a damage class and every robot wears an armour class; the pair scales each player weapon hit (`scripts/weapons/damage_matrix.gd`).
 
-* `WeaponData.damage_class`: KINETIC (pistol, rifle, .50), SHRED (Breacher), THERMAL (plasma, OMEGA), ARC (Tesla, Arc Coil, Tempest), EXPLOSIVE (Devastator, Swarm), RAIL (Longshot, Gauss). `DamageMatrix.ARMOUR` maps every `EnemyBase.codex_key` to CHASSIS (neutral), PLATED, LIGHT or NETWORKED; `TABLE` holds the multipliers (0.75 to 1.6). Bosses in `BOSSES` take the swing at `BOSS_DAMP` (half).
+* `WeaponData.damage_class`: KINETIC (pistol, rifle, .50), SHRED (Breacher, CX-4 Cascade), THERMAL (plasma, OMEGA), ARC (Tesla, Arc Coil, Tempest), EXPLOSIVE (Devastator, Swarm), RAIL (Longshot, Gauss). `DamageMatrix.ARMOUR` maps every `EnemyBase.codex_key` to CHASSIS (neutral), PLATED, LIGHT or NETWORKED; `TABLE` holds the multipliers (0.75 to 1.6). Bosses in `BOSSES` take the swing at `BOSS_DAMP` (half).
 * Applied once in `Damageable.apply_damage`, before the owner's `modify_incoming_damage` and flat armour, from `hit_weapon` (set by `KillFx.tag`), so hitscan, beam ticks, projectile hits and splash all pass through it and untagged damage (grenades, melee, hazards, mod procs) never does. The multiplier the last hit took is kept on `Damageable.matchup`.
 * Feedback: a counter hit (>= `WEAK_AT`) draws a cyan damage number, a resisted one (<= `RESIST_AT`) a small steel one; both reach `GameState.report_matchup`, which emits `weapon_matchup`, plays `hit_weak` / `hit_resist` (one per `MATCHUP_CUE_GAP_MS`) and teaches each armour class's `MATCHUP_HINTS` line once per run.
 * The robot reacts to what hit it: `EnemyBase._on_damaged` reads `hp.hit_weapon` (still tagged inside the emitting `apply_damage`) into `_hit_class`, and `_play_hit_flash` tints the overlay `CLASS_COLORS[class]` (ARC stutters twice, THERMAL fades over 0.34 s, the rest 0.14 s; untagged white). Poise is scaled by `poise_mult(hp.matchup)` (`POISE_WEAK` 1.35, `POISE_RESIST` 0.7), so the right gun staggers a robot sooner than its damage alone would. `tests/hit_reaction_probe`.
 * Walls too: `Weapon._spawn_impact` calls `Impact.set_damage_class` after `set_surface` (RAIL cyan sparks and light, ARC blue-white, SHRED half the sparks per pellet; KINETIC keeps the surface colours) and `BulletMark.spawn` takes the class (RAIL: a 1.4x hole with a glowing rim that cools over `RAIL_COOL`; ARC: a blue scorch glow over `ARC_COOL`). `tests/impact_class_probe`, `tests/impact_class_shot`.
 * The enemy codex and the HUD field manual compute "effective weapons" from the table (`DamageMatrix.codex_lines`, `counters_text`); `EnemyCodex` entries no longer author a weapons list. The weapon codex shows each gun's `describe_class`. `tests/weapon_matchup_probe`.
+
+## Cascade
+<!-- lat: { "require-code-mention": true } -->
+The CX-4 Cascade's kills chain-detonate through a pack (`scripts/weapons/cascade.gd`): the early horde-clearer, ranked between the Breacher and the .50 and first offered by level 2's spawn.
+
+* A gun with `WeaponData.cascade_damage` > 0 primes every robot its hitscan hits (`Cascade.prime`, before the hit lands so the killing round counts): a `CascadeCharge` child with a cyan pilot light, live for `PRIME_TIME` (2.5 s) and refreshed by each hit. The blast scales with the Armory damage track (`eff_damage() / damage`).
+* A primed robot that dies to anything (grenade, mod proc, hazard) detonates `POP_DELAY` later via its `Damageable.died`: everything hostile within `cascade_radius` is primed one generation deeper at `DECAY` (0.8x) and then takes the blast through `GameState.apply_secondary_damage`. Victims it kills detonate in turn; `MAX_GEN` caps the depth. Only the `enemy` group is hit, so the player never is; bosses (`BOSS_HP`) are never primed.
+* A chain of 2+ pops reports through `GameState.note_cascade` once `SETTLE` passes with no new pop: `cascade_chain(pops, pos)` drives the HUD stamp (`CASCADE xN`, `STACK OVERFLOW xN` from 6), chains of `CASCADE_CALLOUT` (3) or more pay `CASCADE_BONUS` per robot past the second and teach the `cascade` hint, and `stat_best_cascade` lands in the debrief highlights. `tests/cascade_probe`.
 
 ## Kill Styles
 <!-- lat: { "require-code-mention": true } -->

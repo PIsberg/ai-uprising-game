@@ -171,6 +171,7 @@ const REAL_MODELS := {
 	"omega":       {"glb": "res://assets/models/weapons/blaster-g.glb", "len": 1.0, "tint": Color(0.74, 0.58, 0.32)},
 	"sniper":      {"glb": "res://assets/models/weapons/blaster-h.glb", "len": 1.22, "tint": Color(0.4, 0.48, 0.62)},
 	"magnum":      {"glb": "res://assets/models/weapons/blaster-j.glb", "len": 0.42, "tint": Color(0.62, 0.5, 0.36)},
+	"cascade":     {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.7, "tint": Color(0.4, 0.56, 0.6)},
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
@@ -739,6 +740,11 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			# A killing headshot from a gun with no kill style of its own takes the head.
 			var style := KillFx.DECAPITATE if is_head and data.kill_fx == KillFx.NONE else data.kill_fx
 			KillFx.tag(dmg_node, style, data)
+			# Prime before the hit lands, so the killing round detonates too. The
+			# blast scales with the Armory damage track like the round does.
+			if data.cascade_damage > 0.0:
+				Cascade.prime(dmg_node.get_parent(), data.cascade_damage * eff_damage() / data.damage,
+						data.cascade_radius, _active_shooter)
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
 			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)

@@ -46,7 +46,7 @@ The roster data lives in `scripts/systems/enemy_codex.gd` (`EnemyCodex.ENTRIES`,
 ## Weapon Codex
 <!-- lat: { "require-code-mention": true } -->
 The weapon codex (`scripts/ui/weapon_codex.gd`) documents the full arsenal available to the human resistance:
-* **Arsenal Roster:** Covers the 13 wieldable weapons in `GameState.WEAPON_ORDER` (weakest to strongest, pistol through OMEGA-X), spanning kinetic firearms, energy beam platforms, and heavy ordnance. Only weapons the player has held appear, plus the `STANDARD_ISSUE` trio.
+* **Arsenal Roster:** Covers the 14 wieldable weapons in `GameState.WEAPON_ORDER` (weakest to strongest, pistol through OMEGA-X), spanning kinetic firearms, energy beam platforms, and heavy ordnance. Only weapons the player has held appear, plus the `STANDARD_ISSUE` trio.
 * **Comparative Statistics:** Normalized comparative bar graphs for raw DPS, effective range, fire rate, recoil severity, and handling.
 * **Firing Profiles:** Explains primary hitscan/projectile dynamics, alt-fire charge cycles, and special mechanics (piercing, splash, chain lightning, homing).
 
