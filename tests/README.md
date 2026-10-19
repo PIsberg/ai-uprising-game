@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-515 probes total: **215** wired into the headless suite (`suite`), **85**
+516 probes total: **216** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -115,6 +115,7 @@ or GPU-timing probes; `--headless` renders these black).
 | colossus_clip_probe | GOLIATH-IX acts out each attack on its George rig: walking, every seismic footfall ring lands under a planted foot (8 in 4 s; 1.8-4.0 m off before, at the body centre on a timer) and the reactor rides the Body bone (gap varies 0.01 m; 1.89 m before, as the bone bobs through the walk); the slam plays Jump, leaping +4.3 m in the windup and down (-0.4 m) as the slam lands; artillery plays Shoot (fell straight back to Idle before); the beam holds Shoot through its sweep | suite |
 | colossus_clip_shot | Look-check of GOLIATH-IX's clips: idle, the slam's crouch, leap and landing, the artillery Shoot; `-- --out=<dir>` | windowed |
 | coop_input_probe | Co-op input with player one on keyboard + pad 0 and player two on pad 1: pad 1's stick walks player two only, W and pad 0 walk player one only; pad 1's A jumps player two only; pad 1's right stick turns player two only; player one's flashlight does not answer pad 1 but still answers pad 0; `reset_coop` leaves no `p2_` action and pad 1 drives player one again | suite |
+| coop_revive_probe | Co-op stage 4 (#402), two real players: one at 0 HP while the partner stands goes down (`is_down`, level still PLAYING, a robot turns to the partner); the partner holding interact within 2.5 m for 3 s stands them up at 50% HP with weapons live, out of range does nothing and letting go starts over; both down is GAME_OVER; the checkpoint respawn stands both up 1.6 m apart; solo 0 HP is still game over (red with the down branch and the all-players respawn disabled: 10 checks) | suite |
 | coop_registry_probe | Co-op player registry with two real players: `players()` in index order, `nearest_player` by distance and past a downed player; a robot targets the nearer player and turns to the one still standing; a laser gate hurts both players in its beam; a barrel blast shakes both; no script outside `game_state.gd`/`hud.gd` calls `get_first_node_in_group("player")` | suite |
 | cull_aabb_probe | Every enemy scene's effective culling box (custom_aabb, else the mesh AABB) tops out within 4x its collision top (6 m floor) and spans at most twice that, so skinned robots frustum-cull (#207: the clamp has held since ff8eda5; red with `_clamp_cull_aabbs` disabled, 10 robots at 18-298 m) | suite |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |

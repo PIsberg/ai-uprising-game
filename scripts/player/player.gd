@@ -137,6 +137,16 @@ var input: PlayerInput = PlayerInput.new()
 ## Down (dead, or bleeding out in co-op): robots and hazards look past a downed player.
 func is_down() -> bool:
 	return _dead
+
+## Co-op (#402): at 0 HP while a partner still stands, a player goes DOWN instead of
+## ending the level. The partner revives them by holding interact within
+## REVIVE_RANGE for REVIVE_TIME (letting go starts the hold over); they stand back
+## up at REVIVE_HEALTH_FRAC. The last one standing going down is game over.
+const REVIVE_RANGE := 2.5
+const REVIVE_TIME := 3.0
+const REVIVE_HEALTH_FRAC := 0.5
+var downed: bool = false
+var revive_progress: float = 0.0 ## 0..1, on the downed player
 ## NeuralUplink: the mind is out riding a hijacked robot. The body stands where
 ## it was left, takes no input and can still be shot (which snaps the link).
 var linked_out: bool = false
@@ -783,6 +793,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	_apply_gravity(delta)
+	_tick_revive(delta)
 	_tick_launch(delta)
 	_handle_stamina(delta)
 	_handle_gamepad_look(delta)
@@ -2027,6 +2038,12 @@ func _on_died(source: Node) -> void:
 	_death_tween.tween_property(head, "rotation:z", deg_to_rad(82.0), 0.9).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_death_tween.tween_property(head, "rotation:x", deg_to_rad(-16.0), 0.9).set_ease(Tween.EASE_OUT)
 	_death_tween.tween_property(head, "position:y", 0.32, 1.0).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	# Co-op: a partner still standing keeps the level going (they can revive you).
+	if not GameState.living_players().is_empty():
+		downed = true
+		revive_progress = 0.0
+		GameState.on_player_downed(self)
+		return
 	GameState.on_player_died(killer)
 
 # ---------------------------------------------------------------------
@@ -2065,11 +2082,51 @@ func checkpoint_snapshot() -> Dictionary:
 ## Come back at the checkpoint IN PLACE — same player instance, same world;
 ## nothing else about the level is touched (see GameState.respawn_at_checkpoint
 ## for why: undoing kills on a death would make bosses/arenas farmable).
-func respawn_from_checkpoint(data: Dictionary) -> void:
+## Holding interact beside a downed partner revives them (see REVIVE_TIME).
+func _tick_revive(delta: float) -> void:
+	var holding := input.pressed("interact")
+	for p in GameState.players():
+		if p == self or p.get("downed") != true:
+			continue
+		if holding and global_position.distance_to(p.global_position) <= REVIVE_RANGE:
+			p.revive_progress = minf(1.0, p.revive_progress + delta / REVIVE_TIME)
+			if p.revive_progress >= 1.0:
+				p.revive()
+		else:
+			p.revive_progress = 0.0
+
+## Back up from DOWN at REVIVE_HEALTH_FRAC, where you fell.
+func revive() -> void:
+	if not downed:
+		return
+	_stand_up(REVIVE_HEALTH_FRAC)
+	GameState.on_player_revived(self)
+
+## Undo the fall-over and come back with `health_frac` of max health, weapons
+## live and a short spawn grace. Shared by revive and the checkpoint respawn.
+func _stand_up(health_frac: float) -> void:
 	if _death_tween and _death_tween.is_valid():
-		_death_tween.kill() # stop the fall-over mid-flight — respawn snaps the head back
+		_death_tween.kill() # stop the fall-over mid-flight; standing up snaps the head back
 	_dead = false
+	downed = false
+	revive_progress = 0.0
 	velocity = Vector3.ZERO
+	if head:
+		head.rotation = Vector3.ZERO
+		head.position.y = stand_height - 0.2
+	if weapon_holder:
+		weapon_holder.process_mode = Node.PROCESS_MODE_INHERIT
+	if hp:
+		hp.current_health = clampf(health_frac * hp.max_health, 1.0, hp.max_health)
+		hp.health_changed.emit(hp.current_health, hp.max_health) # heal() no-ops at 0 HP, so set + emit directly
+		hp.invulnerable = true # brief spawn grace, see RESPAWN_GRACE_TIME
+		var grace := get_tree().create_timer(RESPAWN_GRACE_TIME)
+		grace.timeout.connect(func():
+			if is_instance_valid(self):
+				hp.invulnerable = _god) # respect god-mode if it was toggled independently
+
+func respawn_from_checkpoint(data: Dictionary) -> void:
+	_stand_up(maxf(float(data.get("health_frac", 1.0)), RESPAWN_MIN_HEALTH_FRAC))
 	# Come back with a full tank — don't respawn locked out from an exhausted death.
 	_stamina = max_stamina
 	_stamina_exhausted = false
@@ -2083,17 +2140,6 @@ func respawn_from_checkpoint(data: Dictionary) -> void:
 		# frame; snap it back to a sane value now so there's no one-frame pop from
 		# the death sink (0.32) before that catches up.
 		head.position.y = stand_height - 0.2
-	if weapon_holder:
-		weapon_holder.process_mode = Node.PROCESS_MODE_INHERIT
-	if hp:
-		var frac: float = maxf(float(data.get("health_frac", 1.0)), RESPAWN_MIN_HEALTH_FRAC)
-		hp.current_health = clampf(frac * hp.max_health, 1.0, hp.max_health)
-		hp.health_changed.emit(hp.current_health, hp.max_health) # heal() no-ops at 0 HP, so set + emit directly
-		hp.invulnerable = true # brief spawn grace — see RESPAWN_GRACE_TIME
-		var grace := get_tree().create_timer(RESPAWN_GRACE_TIME)
-		grace.timeout.connect(func():
-			if is_instance_valid(self):
-				hp.invulnerable = _god) # respect god-mode if it was toggled independently
 	if weapon_holder and "weapons" in weapon_holder:
 		var ammo: Dictionary = data.get("ammo", {})
 		for w in weapon_holder.weapons:

@@ -74,11 +74,12 @@ From the pause menu (or P while paused): the game stays frozen and a free camera
 
 ## Co-op
 <!-- lat: { "require-code-mention": true } -->
-Local split-screen co-op is being built in stages; stage 1 is the player registry that lets the game hold two players.
+Local split-screen co-op is being built in stages: the player registry (1), per-player input (2) and the down and revive rules (4) are in; the split render and the menu entry are #402.
 
 * **Registry:** `GameState.players()` (every player, by `player_index`), `living_players()`, `primary_player()` (player one) and `nearest_player(pos)` (the nearest one still standing). `Player.player_index` is 0 or 1; `Player.is_down()` marks a player robots and hazards look past.
 * **Rules for callers:** a robot's target and a hazard's range check ask for the nearest player (`EnemyBase._find_player`); damage zones, area attacks and screen shake loop over every player (`GameState.shake_players`), with a hazard's shared cooldown started after every player in it has been tested; things that follow one view (the anchor and jammer aim tools, the AI Director's profile, telemetry, the behaviour clone) use player one.
 * **Input:** each player reads its own `PlayerInput` (`scripts/player/player_input.gd`, `Player.input`). `PlayerInput.setup_coop(p1_pad, p2_pad)` turns co-op input on: player two reads `p2_` copies of every action, made on first use from its pad bindings with the device set to player two's pad, and player one's pad bindings narrow to player one's pad on every lookup. Keyboard and mouse (and the cheat words) stay with player one. Right-stick look is the `look_*` actions (`register_look_actions`), so each copy answers only its own pad. The weapon rack, Neural Uplink, NETWORK BREACH and the adversarial patch read their player's input; world consoles (the reward rewriter, the jammer and anchor tools) still read player one's. `reset_coop` drops every `p2_` action. `tests/coop_input_probe`.
+* **Down and revive:** a player at 0 HP while a partner still stands goes DOWN (`Player.downed`, `is_down()`) instead of ending the level, and `GameState.on_player_downed` toasts it. The partner holds interact within `Player.REVIVE_RANGE` (2.5 m) for `REVIVE_TIME` (3 s; letting go starts over) and they stand back up at `REVIVE_HEALTH_FRAC` (50%) where they fell. The last one standing going down is game over. `GameState.respawn_at_checkpoint` brings every player back, partners 1.6 m to player one's right. Score is GameState's, so it is already shared. `tests/coop_revive_probe`.
 * **Guard:** `tests/coop_registry_probe` fails on any `get_first_node_in_group("player")` outside `game_state.gd` and `hud.gd` (the HUD binds to its own player in a later stage).
 
 ## Camera Feel and Combat Feedback
