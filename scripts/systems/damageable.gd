@@ -40,6 +40,20 @@ func _ready() -> void:
 ## Null for hitscan and contact damage, where source's own position is the answer.
 ## `ignore_armor`: damage that burns through plating (THERMITE ticks). Flat armour
 ## would otherwise swallow every small tick whole.
+## What to call `source` when it hurts `victim`: the death screen's "Taken down by"
+## name (player.gd) and Telemetry's damage-by-source key. Robots and hazards name
+## themselves through _kill_label(); "" when nothing names it.
+static func source_label(source: Node, victim: Node = null) -> String:
+	if not is_instance_valid(source):
+		return ""
+	if source is LavaHazard:
+		return "THE FLOOD" if (source as LavaHazard).water else "MOLTEN GROUND"
+	if source.has_method("_kill_label"):
+		return String(source.call("_kill_label"))
+	if victim != null and source == victim:
+		return "YOUR OWN BLAST" # grenades and splash credit their shooter
+	return ""
+
 func apply_damage(amount: float, source = null, crit: bool = false, origin = null, ignore_armor: bool = false) -> void:
 	# A stored shooter (a projectile/explosion's source) can be freed before its
 	# hit lands. Passing a freed OR non-Node object to a typed `Node` param crashes

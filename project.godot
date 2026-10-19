@@ -29,6 +29,7 @@ AudioBus="*res://scripts/autoload/audio_bus.gd"
 SoundSynth="*res://scripts/autoload/sound_synth.gd"
 GraphicsSettings="*res://scripts/autoload/graphics_settings.gd"
 AIDirector="*res://scripts/autoload/ai_director.gd"
+Telemetry="*res://scripts/autoload/telemetry.gd"
 
 [debug]
 

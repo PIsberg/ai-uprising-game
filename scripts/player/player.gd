@@ -1987,17 +1987,10 @@ func _on_died(source: Node) -> void:
 		return
 	_dead = true
 	# Name the killer for the death-recap screen (dying should teach something).
-	var killer := ""
+	var killer := Damageable.source_label(source, self)
 	if source is EnemyBase:
-		killer = (source as EnemyBase)._kill_label()
 		# An elite that downs you gets PROMOTED — it returns as your nemesis.
 		GameState.record_nemesis_killer(source)
-	elif source is LavaHazard:
-		killer = "THE FLOOD" if (source as LavaHazard).water else "MOLTEN GROUND"
-	elif source != null and source.has_method("_kill_label"):
-		killer = source.call("_kill_label")
-	elif source == self:
-		killer = "YOUR OWN BLAST" # grenades and splash credit their shooter
 	if _grappling:
 		_end_grapple() # the tether visual must not outlive you
 	died.emit()

@@ -44,6 +44,14 @@ A seeded five-sector run with drafted patches, outside the campaign (main menu, 
 * **Compute:** however the run ends (`_close_uprising`, or `abandon_uprising` from the main menu) it banks score / `UPRISING_SCORE_PER_COMPUTE` + `UPRISING_SECTOR_COMPUTE` per sector cleared (+ `UPRISING_CLEAR_COMPUTE` for a full clear) into `records.cfg` `[uprising]`. Compute pays for rerolls; lifetime compute (`earned`) unlocks the patches with an `unlock` threshold.
 * **Isolation:** like a Daily Op, `start_uprising` snapshots `DAILY_RUN_KEYS` and `end_uprising` restores them; `save_progress` refuses to write and `go_to_level`/`load_level` skip the campaign bookkeeping. Story cutscenes (`CUTSCENE_FOR_LEVEL`) give way to the plain briefing. `tests/uprising_probe` (suite), `tests/uprising_playtest` (report).
 
+## Telemetry
+<!-- lat: { "require-code-mention": true } -->
+A local playtest recorder (`scripts/autoload/telemetry.gd`, autoload `Telemetry`); it never sends anything anywhere.
+* **When:** `enabled_by_default` is on for a windowed debug run (playing from source) and off headless (the probe suite) and in release exports; `--telemetry` / `--no-telemetry` override either way.
+* **File:** one JSON object per line in `user://telemetry/<datetime>.jsonl`, the newest `KEEP_FILES` (50) kept. Events: `session_start`, `level_start` (mode, difficulty, directive, patches), `death` (killer, held gun, position, the hits of the last `RECENT_WINDOW` s), `task`, `stuck` (a move key held `STUCK_TIME` s on the floor without moving), `level_end` (result clear/left/restart, grade, time, score, health lost by source, shots/hits/kills by weapon, kills by enemy), `session_end`.
+* **Names:** damage sources are named by `Damageable.source_label`, the same function the death screen uses, so the report and the recap agree.
+* **Report:** `tools/telemetry_report.py` (newest session, a given file, or `--all`) prints per level the attempts, clears, time, deaths by killer, top damage sources, weapon accuracy and kills, and stuck spots. `tests/telemetry_probe` (suite).
+
 ## Machine Feed
 <!-- lat: { "require-code-mention": true } -->
 The rogue AI livestreams the fight to its robot network; the audience's chat runs down the left of the HUD (`scripts/ui/machine_feed.gd`, lines in `scripts/systems/machine_chat.gd`).
