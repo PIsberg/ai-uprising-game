@@ -42,6 +42,14 @@ func _drone_run() -> void:
 	clip.quit_when_done = false
 	add_child(clip)
 	await clip.marked
+	# The rolls (pellet scatter, damage numbers, sparks) start from one seed at the
+	# mark, so a before/after pair matches wherever both commits draw in the same
+	# order (#360): the first draw after the mark is the seed's first draw.
+	var got := randi()
+	var clip_seed = (clip.get_script() as Script).get_script_constant_map().get("CLIP_SEED")
+	seed(int(clip_seed) if clip_seed != null else -1)
+	var want := randi()
+	_check("the global RNG is seeded at the mark", clip_seed != null and got == want, str(got))
 	var cam: Camera3D = clip.player.get("camera")
 	var target: Node3D = clip.target
 	var aim_to := (target.global_position + Vector3.UP * 0.6 - cam.global_position).normalized()

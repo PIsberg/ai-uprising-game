@@ -98,7 +98,10 @@ viewer at another clip that has it, else prints its `absent`. Gun display names 
   Keep that in any new mode.
 - **Leave the window alone while it records.** Resizing it streaks the readback, and
   `--resolution` is ignored (the project's 1920x1080 wins); the recorder scales to 1280.
-- **RNG still runs.** Damage numbers, pellet scatter and sparks use the game's RNG, so they can
-  differ slightly between the two runs. Say so in `method`.
+- **RNG is seeded at the mark, not locked.** The clip waits for SoundSynth's background pass,
+  then calls `seed(CLIP_SEED)` at the trim mark, so damage numbers, pellet scatter and sparks
+  roll the same in both runs while both commits draw in the same order. A change that adds or
+  removes a draw (a new pellet, a new roll) diverges from that point on. Say in `method` which
+  values are rolled and whether the change touches the draw order.
 - **The AVI is huge.** Quality 1.0 MJPEG is about 590 MB for 7 s; the recorder deletes it after
   encoding.

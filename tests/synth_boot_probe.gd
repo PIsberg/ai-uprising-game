@@ -7,7 +7,10 @@ extends Node
 ##
 ## Checks: re-running SoundSynth._ready() returns within READY_BUDGET_MS; right
 ## after it, every stream id resolves to non-empty PCM; the background pass
-## finishes; and the menu theme AudioBus starts at boot is playing.
+## finishes; the menu theme AudioBus starts at boot is playing; and a full
+## background pass leaves the global RNG where it was. The generators drew
+## their noise from it on the worker thread, so any seed() a caller set (the
+## changelog clip seeds at its mark, #360) was spent in the background.
 ##   godot --headless --path . --audio-driver Dummy res://tests/synth_boot_probe.tscn
 
 const READY_BUDGET_MS := 1000.0
@@ -71,6 +74,21 @@ func _run() -> void:
 	print("menu music: id=%s playing=%s" % [AudioBus.get("_current_music_id"), playing])
 	if not playing:
 		_bad("the boot theme is not playing")
+
+	# A whole background pass with nothing else running: the global stream must
+	# be untouched, so the next draw is the seed's first draw.
+	seed(360)
+	var want := randi()
+	seed(360)
+	SoundSynth._ready()
+	waited = 0.0
+	while not _all_ready() and waited < FINISH_TIMEOUT_S:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	var got := randi()
+	print("global RNG after a synth pass: got=%d want=%d" % [got, want])
+	if got != want:
+		_bad("synthesis drew from the global RNG (a caller's seed() is spent in the background)")
 
 	print("RESULT %s" % ("PASS" if _ok else "FAIL"))
 	get_tree().quit(0 if _ok else 1)
