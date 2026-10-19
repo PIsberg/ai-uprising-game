@@ -411,24 +411,24 @@ func _process(delta: float) -> void:
 	# Number-key weapon selection (1-9) is handled in _input(). Wheel cycling is
 	# locked out during the draw so you can't swap-spam through the rack.
 	if _equip_timer <= 0.0:
-		if Input.is_action_just_pressed("weapon_next"):
+		if _pin().just_pressed("weapon_next"):
 			_equip((current_index + 1) % maxi(1, weapons.size()))
-		if Input.is_action_just_pressed("weapon_prev"):
+		if _pin().just_pressed("weapon_prev"):
 			_equip((current_index - 1 + weapons.size()) % maxi(1, weapons.size()))
-	if Input.is_action_just_pressed("reload") and current:
+	if _pin().just_pressed("reload") and current:
 		current.start_reload()
 
 	# Out of ammo entirely → quick-draw the best loaded backup instead of dry-firing.
 	if current and camera and _equip_timer <= 0.0 \
-			and Input.is_action_just_pressed("fire") and current.is_fully_dry():
+			and _pin().just_pressed("fire") and current.is_fully_dry():
 		_auto_switch_dry()
 
 	# Fire (suppressed for the brief draw while a freshly equipped weapon is raised).
 	if current and camera and _equip_timer <= 0.0:
-		var trigger := Input.is_action_pressed("fire")
-		var aiming := Input.is_action_pressed("aim")
+		var trigger := _pin().pressed("fire")
+		var aiming := _pin().pressed("aim")
 		current.try_fire(trigger, aiming, camera, shooter)
-		current.try_alt_fire(Input.is_action_pressed("alt_fire"), delta, camera, shooter)
+		current.try_alt_fire(_pin().pressed("alt_fire"), delta, camera, shooter)
 
 	# Recoil recovery: _recoil_pitch/_recoil_yaw hold the portion of applied
 	# kick that still owes the camera a settle-back. Bleed it off and counter-
@@ -447,7 +447,7 @@ func _process(delta: float) -> void:
 	# is the single fov writer and pulls ads_blend()/ads_target_fov() from us.
 	# (Two competing writers used to reset each other every frame, which capped
 	# the RMB zoom at a sliver of the intended ads_fov.)
-	var aiming := Input.is_action_pressed("aim") and current != null and not block_ads
+	var aiming := _pin().pressed("aim") and current != null and not block_ads
 	_current_ads_lerp = lerpf(_current_ads_lerp, 1.0 if aiming else 0.0, clampf(10.0 * delta, 0.0, 1.0))
 	
 	var ads_offset := Vector3.ZERO
@@ -502,8 +502,8 @@ func _process(delta: float) -> void:
 	# grounded sprint, and drop it the instant the player aims or squeezes the
 	# trigger so the raise never fights the shot.
 	var sprint_now := is_moving_on_floor and movement_speed > SPRINT_POSE_MIN_SPEED \
-		and Input.is_action_pressed("sprint") \
-		and not aiming and not Input.is_action_pressed("fire")
+		and _pin().pressed("sprint") \
+		and not aiming and not _pin().pressed("fire")
 	_sprint_lerp = move_toward(_sprint_lerp, 1.0 if sprint_now else 0.0, delta * (4.5 if sprint_now else 14.0))
 	# Ease the blend (smoothstep) so the gun settles into and out of the pose
 	# instead of hitting it linearly.
@@ -628,3 +628,14 @@ func _auto_switch_dry() -> void:
 	if best:
 		AudioBus.play_synth_ui("empty_click", -8.0, 0.8) # the dry click that kicks the draw
 		_equip(weapons.find(best))
+
+## The input of the player holding this rack (co-op: player two's pad for player
+## two). A rack with no player (a codex preview) reads player one's.
+var _pin_cache: PlayerInput = null
+func _pin() -> PlayerInput:
+	if _pin_cache == null:
+		var n := get_parent()
+		while n != null and not (n.get("input") is PlayerInput):
+			n = n.get_parent()
+		_pin_cache = n.get("input") if n != null else PlayerInput.new()
+	return _pin_cache

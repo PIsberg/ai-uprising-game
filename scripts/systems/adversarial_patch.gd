@@ -80,7 +80,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_tick_tagged(delta)
 	if not active:
-		if Input.is_action_just_pressed(ACTION) and not bool(player.get("_dead")) \
+		if _pin().just_pressed(ACTION) and not bool(player.get("_dead")) \
 				and not bool(player.get("linked_out")):
 			activate()
 		return
@@ -199,3 +199,8 @@ func _refresh_tags() -> void:
 		l.text = tag_text(r)
 		l.modulate = Color(1.0, 0.25, 0.2) if r.patch_confidence >= 1.0 \
 			else Color(0.6, 1.0, 0.6).lerp(Color(1.0, 0.8, 0.2), r.patch_confidence)
+
+## The owning player's input (co-op: player two's pad for player two).
+func _pin() -> PlayerInput:
+	var pi = player.get("input") if player else null
+	return pi if pi is PlayerInput else PlayerInput.new()

@@ -130,6 +130,9 @@ var _dead: bool = false
 ## Which co-op player this is: 0 is player one (keyboard and the first pad), 1 is
 ## player two. GameState.players() lists players in this order.
 @export var player_index: int = 0
+## This player's input (co-op: player two reads its own pad). Set in _ready from
+## player_index; a default here so nothing reads a null before then.
+var input: PlayerInput = PlayerInput.new()
 
 ## Down (dead, or bleeding out in co-op): robots and hazards look past a downed player.
 func is_down() -> bool:
@@ -310,6 +313,8 @@ func _update_enemy_separation() -> void:
 		_separation_push = (push / strength) * minf(strength, 1.0) * separation_max_speed
 
 func _ready() -> void:
+	input = PlayerInput.for_player(player_index)
+	PlayerInput.register_look_actions()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_camera_base_y = camera.position.y
 	_apply_user_settings()
@@ -441,7 +446,7 @@ func _handle_speed_warp(delta: float) -> void:
 	# Grapple pulls are often mostly vertical, so measure full 3D speed there;
 	# ground states keep the horizontal read (falling shouldn't streak).
 	var speed := velocity.length() if _grappling else Vector2(velocity.x, velocity.z).length()
-	var sprinting := Input.is_action_pressed("sprint") and is_on_floor() and not _is_crouching
+	var sprinting := input.pressed("sprint") and is_on_floor() and not _is_crouching
 	# Dashing (20 m/s), wall-running (8.5 m/s, near sprint speed) and the grapple
 	# winch (24 m/s) are at least as fast as a sprint, but previously never
 	# triggered the radial streak — only grounded sprinting did, so the fastest
@@ -682,7 +687,8 @@ var _cheat_buf := ""
 
 func _input(event: InputEvent) -> void:
 	# Cheat keyword buffer runs even while dead, so you can flip it on at any time.
-	if event is InputEventKey and event.pressed and not event.echo:
+	# Typed on the keyboard, so player one's (player two would toggle it too).
+	if input.keyboard and event is InputEventKey and event.pressed and not event.echo:
 		var u := (event as InputEventKey).unicode
 		if u != 0:
 			_cheat_buf = (_cheat_buf + char(u).to_lower()).right(8) # holds the longest keyword
@@ -692,13 +698,13 @@ func _input(event: InputEvent) -> void:
 			elif _cheat_buf.ends_with(IMBA_WORD):
 				_cheat_buf = ""
 				_cheat_imba()
-	if event.is_action_pressed("flashlight"):
+	if input.event_pressed(event, "flashlight"):
 		_toggle_flashlight()
-	if InputMap.has_action("night_vision") and event.is_action_pressed("night_vision"):
+	if InputMap.has_action("night_vision") and input.event_pressed(event, "night_vision"):
 		toggle_night_vision()
 	if _dead or linked_out:
 		return  # no looking around once you're down (or riding a robot: NeuralUplink looks)
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if input.keyboard and event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var m := event as InputEventMouseMotion
 		rotate_y(-m.relative.x * mouse_sensitivity * _look_sens_mult)
 		head.rotate_x(-m.relative.y * mouse_sensitivity * _look_sens_mult * _look_y_sign)
@@ -861,7 +867,7 @@ func _register_ultimate_action() -> void:
 ## shockwave — heavy damage + an EMP stun + knockback to every hostile in range,
 ## sold with a nova ring, slow-mo and a camera slam. The arsenal's panic button.
 func _handle_ultimate(_delta: float) -> void:
-	if not Input.is_action_just_pressed("ultimate"):
+	if not input.just_pressed("ultimate"):
 		return
 	if not GameState.ultimate_ready_state():
 		AudioBus.play_synth_ui("empty_click", -6.0, 0.7) # not charged yet
@@ -960,7 +966,7 @@ func _kick_weapon_holder(offset: Vector3, out_time: float, back_time: float) -> 
 ## hostile right in front of you, on a short cooldown. Your get-off-me button.
 func _handle_melee(delta: float) -> void:
 	_melee_cd = maxf(0.0, _melee_cd - delta)
-	if _melee_cd > 0.0 or not Input.is_action_just_pressed("melee"):
+	if _melee_cd > 0.0 or not input.just_pressed("melee"):
 		return
 	_melee_cd = melee_cooldown
 	_spend_stamina(melee_stamina_cost) # a swing is heavy fighting — it costs wind
@@ -1049,10 +1055,10 @@ func _handle_dash(delta: float) -> void:
 	var tap_dir := _double_tap_dir()
 	if _dash_cd > 0.0 or _sliding or GameState.carrying:
 		return
-	if Input.is_action_just_pressed("dash") or tap_dir != Vector3.ZERO:
+	if input.just_pressed("dash") or tap_dir != Vector3.ZERO:
 		var dir := tap_dir
 		if dir == Vector3.ZERO:
-			var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+			var input_dir := input.vector("move_left", "move_right", "move_forward", "move_back")
 			dir = transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)
 			if dir.length() < 0.1:
 				dir = -transform.basis.z # dash forward when no stick/key input
@@ -1112,7 +1118,7 @@ var _dtap_t: float = 0.0
 func _double_tap_dir() -> Vector3:
 	for p in [["move_forward", Vector3.FORWARD], ["move_back", Vector3.BACK],
 			["move_left", Vector3.LEFT], ["move_right", Vector3.RIGHT]]:
-		if Input.is_action_just_pressed(p[0]):
+		if input.just_pressed(p[0]):
 			var now := float(Time.get_ticks_msec()) / 1000.0
 			if p[0] == _dtap_act and now - _dtap_t <= _DTAP_WINDOW:
 				_dtap_act = ""
@@ -1133,13 +1139,13 @@ func _handle_slide(delta: float) -> void:
 			var d := flat.normalized()
 			velocity.x = d.x * sp
 			velocity.z = d.y * sp
-		var hopped := Input.is_action_just_pressed("jump") and is_on_floor()
+		var hopped := input.just_pressed("jump") and is_on_floor()
 		if _slide_time <= 0.0 or sp < crouch_speed * 1.1 or not is_on_floor() or hopped:
 			_sliding = false
 			if hopped:
 				velocity.y = jump_velocity * 1.05
 		return
-	if Input.is_action_just_pressed("crouch") and is_on_floor() and Input.is_action_pressed("sprint"):
+	if input.just_pressed("crouch") and is_on_floor() and input.pressed("sprint"):
 		if Vector2(velocity.x, velocity.z).length() > walk_speed * 0.8:
 			_sliding = true
 			_slide_time = slide_duration
@@ -1153,10 +1159,15 @@ func _handle_slide(delta: float) -> void:
 ## Right analog stick aims (mouse look is handled in _input). Deadzoned, with
 ## a mild response curve so fine aim is easy and big flicks are still fast.
 func _handle_gamepad_look(delta: float) -> void:
-	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	# Player one looks while the mouse is captured (the game has focus); player two
+	# has no mouse, so it looks whenever the game is being played.
+	if input.keyboard and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		return
-	var lx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
-	var ly := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
+	if not input.keyboard and GameState.current_state != GameState.State.PLAYING:
+		return
+	var stick := input.look()
+	var lx := stick.x
+	var ly := stick.y
 	if absf(lx) < pad_look_deadzone:
 		lx = 0.0
 	if absf(ly) < pad_look_deadzone:
@@ -1199,9 +1210,9 @@ func _aim_friction() -> float:
 
 func _handle_grenade(delta: float) -> void:
 	_grenade_cd = maxf(0.0, _grenade_cd - delta)
-	if Input.is_action_just_pressed("grenade_cycle"):
+	if input.just_pressed("grenade_cycle"):
 		_cycle_grenade()
-	if Input.is_action_just_pressed("grenade"):
+	if input.just_pressed("grenade"):
 		_throw_grenade()
 
 ## Switch the armed grenade type (FRAG ⇄ VORTEX). Toggles unconditionally so an
@@ -1304,11 +1315,11 @@ func _handle_jump(delta: float) -> void:
 	# next jump launch higher (a running jump). Reset the instant you stop
 	# sprinting on the ground; held through the air so the launch keeps the boost.
 	var hspeed := Vector2(velocity.x, velocity.z).length()
-	if is_on_floor() and Input.is_action_pressed("sprint") and not _is_crouching and hspeed > walk_speed:
+	if is_on_floor() and input.pressed("sprint") and not _is_crouching and hspeed > walk_speed:
 		_sprint_charge = minf(sprint_jump_charge, _sprint_charge + delta)
 	elif is_on_floor():
 		_sprint_charge = 0.0
-	if Input.is_action_just_pressed("jump"):
+	if input.just_pressed("jump"):
 		_jump_buffer = jump_buffer_time
 	else:
 		_jump_buffer = maxf(0.0, _jump_buffer - delta)
@@ -1338,7 +1349,7 @@ func _handle_mantle(delta: float) -> void:
 	fwd = fwd.normalized()
 	# Only when actually heading into the wall: pressing forward, or carrying into it.
 	var into := Vector2(velocity.x, velocity.z).dot(Vector2(fwd.x, fwd.z))
-	if not Input.is_action_pressed("move_forward") and into < 1.0:
+	if not input.pressed("move_forward") and into < 1.0:
 		return
 	var space := get_world_3d().direct_space_state
 	# 1) A wall face right in front, around chest height.
@@ -1446,7 +1457,7 @@ func _start_wall_run(normal: Vector3) -> void:
 
 func _update_wall_run(delta: float) -> void:
 	_wall_run_time -= delta
-	var jump_pressed := Input.is_action_just_pressed("jump")
+	var jump_pressed := input.just_pressed("jump")
 	# Re-probe the wall each frame: running off the end of it (or it curving
 	# away) drops you rather than leaving you glued in mid-air.
 	var origin := global_position + Vector3.UP * 0.9
@@ -1508,7 +1519,7 @@ func _handle_grapple(delta: float) -> void:
 	if _gv_t <= 0.0:
 		_gv_t = 0.12
 		_grapple_valid = _grapple_cd <= 0.0 and not _stamina_exhausted and not GameState.carrying and not _grapple_ray().is_empty()
-	if _grapple_cd > 0.0 or not Input.is_action_just_pressed("grapple"):
+	if _grapple_cd > 0.0 or not input.just_pressed("grapple"):
 		return
 	# No tether while exhausted — you don't have the arm strength to rappel —
 	# or while both arms are round a haul payload.
@@ -1571,11 +1582,11 @@ func _update_grapple(delta: float) -> void:
 			_zip_anchor = null
 	var to := _grapple_point - global_position
 	var dist := to.length()
-	var jump_pressed := Input.is_action_just_pressed("jump")
+	var jump_pressed := input.just_pressed("jump")
 	# Ziplines ride all the way in (the anchor may be fleeing on the truck);
 	# the free-form grapple keeps its early let-go for fling jumps.
 	var min_d := 1.2 if _zip_anchor != null else grapple_min_dist
-	if dist <= min_d or Input.is_action_just_pressed("grapple") or jump_pressed:
+	if dist <= min_d or input.just_pressed("grapple") or jump_pressed:
 		if jump_pressed:
 			velocity.y = maxf(velocity.y, jump_velocity * 0.9) # release pop off the arc
 			_fov_kick = maxf(_fov_kick, 6.0)
@@ -1688,7 +1699,7 @@ func _update_tether() -> void:
 	_tether_orb.global_position = _grapple_point
 
 func _handle_stance(delta: float) -> void:
-	var wants_crouch := Input.is_action_pressed("crouch") or _sliding
+	var wants_crouch := input.pressed("crouch") or _sliding
 	# Block uncrouch if something overhead
 	if not wants_crouch and _is_crouching and ceiling_check.is_colliding():
 		wants_crouch = true
@@ -1709,7 +1720,7 @@ func _handle_stamina(delta: float) -> void:
 	if _dead:
 		return
 	var hspeed := Vector2(velocity.x, velocity.z).length()
-	var running := Input.is_action_pressed("sprint") and is_on_floor() \
+	var running := input.pressed("sprint") and is_on_floor() \
 		and not _is_crouching and not _stamina_exhausted and hspeed > walk_speed + 0.3
 	var rappelling := _grappling and _zip_anchor == null
 	var prev := _stamina
@@ -1768,7 +1779,7 @@ func _current_speed() -> float:
 	if GameState.carrying:
 		return walk_speed * GameState.CARRY_SPEED_MULT * mult
 	# Exhausted (stamina bottomed out) drops you to a walk until it recovers.
-	if Input.is_action_pressed("sprint") and not _is_crouching and not _stamina_exhausted:
+	if input.pressed("sprint") and not _is_crouching and not _stamina_exhausted:
 		return sprint_speed * mult
 	return walk_speed * mult
 
@@ -1777,7 +1788,7 @@ func _handle_movement(delta: float) -> void:
 	# velocity while active.
 	if _dash_time > 0.0 or _sliding or _wall_running or _grappling or _launch_t > 0.0:
 		return
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := input.vector("move_left", "move_right", "move_forward", "move_back")
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var target_speed := _current_speed()
 	var accel := acceleration if is_on_floor() else air_acceleration
@@ -1805,7 +1816,7 @@ func _try_step_up() -> void:
 		return
 	if velocity.y > 0.1:
 		return  # rising — a jump/launch, not a walk into a lip
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input_dir := input.vector("move_left", "move_right", "move_forward", "move_back")
 	if input_dir.length() < 0.1:
 		return  # no horizontal intent to climb toward
 	var move_dir := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -1871,7 +1882,7 @@ func _handle_camera_feel(delta: float) -> void:
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
 	# Speed-of-motion widen (suppressed while aiming so the zoom holds steady).
 	var widen := clampf(horizontal_speed / 9.0, 0.0, 1.0) \
-		* (8.0 if Input.is_action_pressed("sprint") else 3.0)
+		* (8.0 if input.pressed("sprint") else 3.0)
 	camera.fov = fov + (widen * (1.0 - ads)) + _fov_kick
 	if is_on_floor() and horizontal_speed > 0.5:
 		_bob_phase += delta * bob_frequency * (horizontal_speed / walk_speed)
@@ -1944,7 +1955,7 @@ func _handle_footsteps(delta: float) -> void:
 	var threshold := STEP_INTERVAL_WALK
 	if _is_crouching:
 		threshold = STEP_INTERVAL_CROUCH
-	elif Input.is_action_pressed("sprint"):
+	elif input.pressed("sprint"):
 		threshold = STEP_INTERVAL_SPRINT
 	if _step_accum >= threshold:
 		_step_accum = 0.0

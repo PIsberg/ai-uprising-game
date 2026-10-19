@@ -82,7 +82,7 @@ func _physics_process(delta: float) -> void:
 	if robot == null:
 		_scan(delta)
 		# Read every frame (the scan is throttled): a tap lasts one frame.
-		if candidate != null and Input.is_action_just_pressed("interact"):
+		if candidate != null and _pin().just_pressed("interact"):
 			begin(candidate)
 		return
 	if not is_instance_valid(robot) or robot.state == EnemyBase.State.DEAD or not robot.hp.is_alive():
@@ -96,17 +96,17 @@ func _physics_process(delta: float) -> void:
 	if time_left <= 0.0:
 		end("time")
 		return
-	if Input.is_action_just_pressed("interact"):
+	if _pin().just_pressed("interact"):
 		end("exit")
 		return
 	_pad_look(delta)
-	var iv := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var iv := _pin().vector("move_left", "move_right", "move_forward", "move_back")
 	robot.pilot_move = Basis(Vector3.UP, _yaw) * Vector3(iv.x, 0.0, iv.y)
 	robot.pilot_yaw = _yaw
-	robot.pilot_lift = (1.0 if Input.is_action_pressed("jump") else 0.0) - (1.0 if Input.is_action_pressed("crouch") else 0.0)
+	robot.pilot_lift = (1.0 if _pin().pressed("jump") else 0.0) - (1.0 if _pin().pressed("crouch") else 0.0)
 	_place_camera()
 	_fire_cd = maxf(0.0, _fire_cd - delta)
-	if _fire_cd <= 0.0 and Input.is_action_pressed("fire"):
+	if _fire_cd <= 0.0 and _pin().pressed("fire"):
 		_fire_cd = robot.pilot_cooldown()
 		robot.pilot_fire(_aim_point())
 	_label.text = "%s · %s\n%.1f s  ·  CHASSIS %d%%" % [tr("NEURAL UPLINK"), robot.codex_key().to_upper(),
@@ -192,8 +192,9 @@ func _scan(delta: float) -> void:
 
 func _pad_look(delta: float) -> void:
 	var dz: float = float(player.get("pad_look_deadzone"))
-	var lx := Input.get_joy_axis(0, JOY_AXIS_RIGHT_X)
-	var ly := Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y)
+	var stick := _pin().look()
+	var lx := stick.x
+	var ly := stick.y
 	lx = 0.0 if absf(lx) < dz else signf(lx) * pow(absf(lx), 1.5)
 	ly = 0.0 if absf(ly) < dz else signf(ly) * pow(absf(ly), 1.5)
 	var spd: float = float(player.get("pad_look_speed")) * float(player.get("_look_sens_mult")) * delta
@@ -245,3 +246,8 @@ func _set_weapons(on: bool) -> void:
 	var wm: Node = player.get_node_or_null("Head/Camera3D/WeaponHolder")
 	if wm:
 		wm.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
+
+## The owning player's input (co-op: player two's pad for player two).
+func _pin() -> PlayerInput:
+	var pi = player.get("input") if player else null
+	return pi if pi is PlayerInput else PlayerInput.new()
