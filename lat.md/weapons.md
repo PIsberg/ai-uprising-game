@@ -48,6 +48,14 @@ The CX-4 Cascade's kills chain-detonate through a pack (`scripts/weapons/cascade
 * A primed robot that dies to anything (grenade, mod proc, hazard) detonates `POP_DELAY` later via its `Damageable.died`: everything hostile within `cascade_radius` is primed one generation deeper at `DECAY` (0.8x) and then takes the blast through `GameState.apply_secondary_damage`. Victims it kills detonate in turn; `MAX_GEN` caps the depth. Only the `enemy` group is hit, so the player never is; bosses (`BOSS_HP`) are never primed.
 * A chain of 2+ pops reports through `GameState.note_cascade` once `SETTLE` passes with no new pop: `cascade_chain(pops, pos)` drives the HUD stamp (`CASCADE xN`, `STACK OVERFLOW xN` from 6), chains of `CASCADE_CALLOUT` (3) or more pay `CASCADE_BONUS` per robot past the second and teach the `cascade` hint, and `stat_best_cascade` lands in the debrief highlights. `tests/cascade_probe`.
 
+## Salvage
+<!-- lat: { "require-code-mention": true } -->
+Heavy robots drop their own gun for the player to spend (`scripts/weapons/salvage.gd`).
+
+* `Salvage.TABLE` maps a `codex_key` to a salvage weapon scene: GUNNER -> SIEGE Chaingun (120 rounds, 14/s, pierce 1), MECH -> PALM Cannon (16 plasma bolts with splash). Neither is in `GameState.WEAPON_ORDER`: no codex page, no pickup pacing, never carried into the next level.
+* `EnemyBase._ready` connects `hp.died` to `Salvage.drop_from` (override-proof). `drop_at` spawns `weapon_pickup.tscn` as `Pickup.Kind.SALVAGE` (set through `SALVAGE_KIND`, duck-typed: naming `Pickup` from robot code closes the pickup load cycle); untaken, it blinks for `BLINK_AT` s and is gone after `LIFETIME` (25 s).
+* `WeaponManager.take_salvage` arms it at once with a full magazine and 0 reserve; one at a time (a new one tosses the old). `Weapon.salvage` makes `add_ammo` a no-op and keeps `_equip` from writing `GameState.equipped_weapon`. When a shot leaves it empty, `_toss_salvage` removes it, re-arms the gun held before (`_pre_salvage`), emits `weapon_removed` (the HUD rebuilds its carousel) and resets the watchdog's rack count so the removal is not reported as a lost weapon. `tests/salvage_probe`.
+
 ## Kill Styles
 <!-- lat: { "require-code-mention": true } -->
 The weapon that lands the killing blow picks how a robot dies (`WeaponData.kill_fx`, `scripts/fx/kill_fx.gd`).

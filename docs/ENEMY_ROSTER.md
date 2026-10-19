@@ -30,6 +30,11 @@ LIGHTWEIGHT, NETWORKED) that scales player weapon hits by the gun's damage class
 source of truth is `DamageMatrix.ARMOUR` in `scripts/weapons/damage_matrix.gd`, keyed by
 `codex_key()`; a new enemy needs a row there or `tests/weapon_matchup_probe` fails.
 
+Salvage drops: the GUNNER drops its SIEGE Chaingun and the MECH its PALM Cannon when it
+dies (`Salvage.TABLE` in `scripts/weapons/salvage.gd`, keyed by `codex_key()`), one magazine
+for the player to pick up. The drop hangs off `hp.died` in `EnemyBase._ready`, so an
+override of `_on_died` cannot lose it. A new heavy with a gun worth taking: add a row there.
+
 Column notes: "Overrides w/o super" lists only overrides that do **not** call
 `super._on_died(...)` / `super._state_attack(...)` / `super(...)` — an override that calls
 super is safe and not listed. A `†` on the script means its `_ready` sets stats **before**

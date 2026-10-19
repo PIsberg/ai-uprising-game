@@ -1,11 +1,12 @@
 class_name Pickup
 extends Area3D
 
-enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK, OVERDRIVE, NIGHT_VISION }
+## SALVAGE: a gun a heavy robot dropped (Salvage.drop_at), armed for one magazine.
+enum Kind { HEALTH, AMMO, WEAPON, OVERCLOCK, OVERDRIVE, NIGHT_VISION, SALVAGE }
 
 @export var kind: Kind = Kind.HEALTH
 @export var amount: int = 25
-@export var weapon_scene: PackedScene ## Used when kind == WEAPON.
+@export var weapon_scene: PackedScene ## Used when kind == WEAPON or SALVAGE.
 
 var _taken: bool = false
 var _bob_phase: float = 0.0
@@ -28,7 +29,7 @@ func _ready() -> void:
 		_mesh_home_y = _mesh.position.y
 	if _light:
 		_light_base = _light.light_energy
-	if kind == Kind.WEAPON and weapon_scene:
+	if (kind == Kind.WEAPON or kind == Kind.SALVAGE) and weapon_scene:
 		_show_weapon_model()
 	_add_blob_shadow()
 
@@ -163,6 +164,15 @@ func _on_body_entered(body: Node) -> void:
 				wm.add_weapon(weapon_scene, true) # equip the shiny new gun
 				GameState.unlock_weapon(weapon_scene.resource_path)
 			AudioBus.play_synth_at("pickup_health", global_position, 0.0, 0.7)
+		Kind.SALVAGE:
+			var wm := body.get_node_or_null("Head/Camera3D/WeaponHolder")
+			if weapon_scene == null or wm == null or not wm.has_method("take_salvage"):
+				return
+			var sw: Weapon = wm.take_salvage(weapon_scene)
+			if sw and body.has_method("notify_pickup"):
+				body.notify_pickup("%s %s · %d" % [tr("SALVAGED"), sw.data.display_name, sw.mag])
+			AudioBus.play_synth_at("reload", global_position, 0.0, 0.8)
+			GameState.teach_once("salvage", GameState.MECHANIC_HINTS["salvage"])
 		Kind.OVERCLOCK:
 			GameState.activate_overclock()
 			if body.has_method("notify_pickup"):

@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
+[ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
+[ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "SIEGE Chaingun"
+damage_class = 0
+kill_fx = 3
+alt_mode = 0
+fire_mode = 1
+damage_type = 0
+damage = 16.0
+fire_rate = 14.0
+range_m = 42.0
+range_falloff = true
+opt_max = 26.0
+far_mult = 0.6
+spread_deg = 2.4
+aim_spread_mult = 0.6
+pellets = 1
+pierce = 1
+headshot_mult = 1.4
+recoil_pitch = 0.7
+recoil_yaw = 0.5
+recoil_recovery = 10.0
+mag_size = 120
+reserve_max = 0
+reload_time = 1.0
+muzzle_flash_scene = ExtResource("3_mf")
+muzzle_scale = 1.3
+impact_scene = ExtResource("4_imp")
+tracer_scene = ExtResource("2_tracer")
+tracer_color = Color(1, 0.5, 0.25, 1)
+sound_id = "chaingun"
+slide_kick = 0.0
+viewmodel_color = Color(0.5, 0.3, 0.2, 1)
+bloom_per_shot = 0.03
+bloom_max_mult = 1.8
+move_spread_mult = 1.6
+kick_back = 1.1
+kick_lift = 0.05
+kick_climb = 1.2
+kick_roll = 0.9
+kick_roll_bias = 0.3
+kick_side = 0.5
+kick_stiffness = 260.0
+kick_damping = 24.0
+fov_punch = 0.3
+fire_thump = 0.4
+action_clack = false
+reload_style = 0

@@ -93,6 +93,9 @@ static var _metal_rough_tex: NoiseTexture2D = null
 var mod_id: String = ""
 var mod_last_proc_ms: int = -100000
 var mod_override_ms: int = -100000
+## A SALVAGE gun (WeaponManager.take_salvage): one magazine, no reserve, tossed
+## when dry; ammo pickups skip it.
+var salvage: bool = false
 var mod_bank: float = 0.0 ## hit damage since the last ARC/RICOCHET proc (WeaponMods._bank)
 
 func get_active_shooter() -> Node:
@@ -172,6 +175,9 @@ const REAL_MODELS := {
 	"sniper":      {"glb": "res://assets/models/weapons/blaster-h.glb", "len": 1.22, "tint": Color(0.4, 0.48, 0.62)},
 	"magnum":      {"glb": "res://assets/models/weapons/blaster-j.glb", "len": 0.42, "tint": Color(0.62, 0.5, 0.36)},
 	"cascade":     {"glb": "res://assets/models/weapons/blaster-f.glb", "len": 0.7, "tint": Color(0.4, 0.56, 0.6)},
+	# SALVAGE guns (Salvage.TABLE): torn off a robot, so dirtier, robot-coloured tints.
+	"salvage_chaingun": {"glb": "res://assets/models/weapons/blaster-r.glb", "len": 0.86, "tint": Color(0.5, 0.36, 0.3)},
+	"salvage_palm":     {"glb": "res://assets/models/weapons/blaster-m.glb", "len": 0.62, "tint": Color(0.36, 0.46, 0.56)},
 }
 
 ## Swap the primitive viewmodel for the real imported gun model, auto-fitted:
@@ -1648,6 +1654,8 @@ func _finish_reload() -> void:
 	_refresh_readout()
 
 func add_ammo(amount: int) -> void:
+	if salvage:
+		return
 	reserve = mini(data.reserve_max, reserve + amount)
 	ammo_changed.emit(mag, reserve)
 

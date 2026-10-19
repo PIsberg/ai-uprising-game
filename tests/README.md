@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-488 probes total: **193** wired into the headless suite (`suite`), **85**
+489 probes total: **194** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -441,6 +441,7 @@ or GPU-timing probes; `--headless` renders these black).
 | roster_audit_probe | Every enemy spawned in labelled groups, screenshotted so model look can be compared against stats | windowed |
 | roster_variety_probe | Every enemy scene is placed somewhere in the campaign; ordinary robots appear in more than one level (no cameo-only chassis) | headless |
 | route_probe | spawn→exit navmesh path length + detour ratio for gated/led-route levels; fails loudly if a gate ever closes the route | headless |
+| salvage_probe | SALVAGE guns: every Salvage.TABLE scene is a Weapon outside WEAPON_ORDER and SALVAGE_KIND matches Pickup.Kind.SALVAGE; a killed GUNNER drops one SALVAGE pickup carrying the chaingun where it fell and an android drops nothing; walking over it arms it at once (rack +1, full magazine, 0 reserve) while GameState.equipped_weapon keeps your own gun; ammo pickups never top it up; firing all 120 rounds tosses it (rack back, your own gun re-armed, weapon_removed fired, watchdog rack count in step); a second salvage replaces the first; an untaken drop despawns after LIFETIME (red-checked: without the death hook "one salvage drop" fails, without the toss 3 checks fail) | suite |
 | sample_override_probe | Sampled-audio overrides: every file in `assets/audio/samples/` is named after a real `SoundSynth` id, numbered takes have no gaps, an id with several takes resolves to a no-repeat `AudioStreamRandomizer` of all of them, and an id without a file keeps the synth | suite |
 | save_probe | save_progress/load_progress round-trip of every run-scoped field Continue depends on, including the Armory supplies (caught them being lost on Continue) | suite |
 | scanner_probe | Vision scanners: a player held in the cone raises the alarm after detect_time and hands the reinforcement hook the authored squad, a wall in the sightline blocks it, max_alarms caps it, a shot-out head stays blind; then on every campaign level that authors scanners, all of them build and each alarm squad spawns on walkable ground with a route to the spawn | suite |

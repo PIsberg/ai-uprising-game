@@ -7,6 +7,7 @@ extends Node3D
 signal weapon_changed(weapon: Weapon)
 signal ammo_changed(mag: int, reserve: int)
 signal weapon_added(weapon: Weapon) ## A new weapon was picked up at runtime.
+signal weapon_removed(weapon: Weapon) ## A salvage gun ran dry and was tossed out of the rack.
 
 @export var weapon_scenes: Array[PackedScene] = []
 @export var start_index: int = 0
@@ -213,6 +214,62 @@ func add_weapon(scene: PackedScene, equip: bool = true) -> bool:
 	if equip or current == null:
 		_equip(weapons.find(nw))
 	return true
+
+# ---------- SALVAGE: a heavy robot's own gun, for one magazine (Salvage) ----------
+var _pre_salvage: Weapon = null ## what you held before the salvage, re-armed when it's tossed
+
+## Arm a salvage gun at once: a full magazine, no reserve. One at a time: a new
+## one tosses the old. It joins the rack (after your arsenal: it has no power
+## rank) but never GameState.equipped_weapon, so it can't follow you out of the level.
+func take_salvage(scene: PackedScene) -> Weapon:
+	if scene == null:
+		return null
+	for w in weapons:
+		if w.salvage:
+			_toss_salvage(w, false)
+	var keep := current
+	var w := scene.instantiate() as Weapon
+	w.salvage = true
+	add_child(w)
+	w.visible = false
+	w.fired.connect(_on_fired)
+	w.ammo_changed.connect(func(m, r): ammo_changed.emit(m, r))
+	w.reserve = 0
+	w.mag = w.data.mag_size
+	weapons.append(w)
+	_sort_by_power()
+	_watch_rack = weapons.size()
+	if keep and not keep.salvage:
+		_pre_salvage = keep
+	weapon_added.emit(w)
+	_equip(weapons.find(w))
+	w.ammo_changed.emit(w.mag, w.reserve)
+	w.fired.connect(func(_x) -> void:
+		if w.mag <= 0:
+			_toss_salvage.call_deferred(w, true))
+	return w
+
+## Out of the rack and freed. `rearm` puts the gun you held before it back.
+func _toss_salvage(w: Weapon, rearm: bool) -> void:
+	if not is_instance_valid(w) or not weapons.has(w):
+		return
+	var was_current := w == current
+	if was_current:
+		w.on_unequip()
+	weapons.erase(w)
+	_watch_rack = weapons.size() # an intended removal, not a lost weapon
+	current_index = -1
+	weapon_removed.emit(w)
+	w.queue_free()
+	if weapons.is_empty():
+		return
+	var back := _pre_salvage if is_instance_valid(_pre_salvage) and weapons.has(_pre_salvage) else weapons[0]
+	if rearm or was_current:
+		_equip(weapons.find(back))
+		if rearm:
+			AudioBus.play_synth_ui("empty_click", -6.0, 0.7)
+	else:
+		current_index = weapons.find(back)
 
 ## Registers the alt-fire action (V + mouse thumb button) at runtime, same
 ## pattern as the player's dash — no project input-map edit needed.
@@ -507,8 +564,10 @@ func _equip(index: int) -> void:
 	current_index = index
 	current.on_equip()
 	_equip_timer = equip_time # draw time: blocks firing + re-switching for a beat
-	# Remember the armed weapon so it persists into the next level.
-	GameState.equipped_weapon = current.scene_file_path
+	# Remember the armed weapon so it persists into the next level (never a
+	# salvage gun: it stays behind).
+	if not current.salvage:
+		GameState.equipped_weapon = current.scene_file_path
 	weapon_changed.emit(current)
 	ammo_changed.emit(current.mag, current.reserve)
 

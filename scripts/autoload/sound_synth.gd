@@ -71,6 +71,8 @@ func _register_jobs() -> void:
 	_job("magnum_fire", _hand_cannon.bind(0.55))
 	_job("arccoil_fire", _arc_crack.bind(0.2))
 	_job("cascade_fire", _gun_fire.bind(0.26, 150.0, 0.95, 1.7, true))
+	_job("chaingun_fire", _gun_fire.bind(0.12, 210.0, 0.6, 1.3, false))
+	_job("palm_fire", _plasma_fire.bind(0.32))
 	_job("tesla_fire", _tesla_tick.bind(0.08))
 	_job("lance_fire", _lance_fire.bind(0.5))
 	_job("longshot_fire", _longshot_fire.bind(0.95))

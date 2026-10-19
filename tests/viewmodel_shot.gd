@@ -1,6 +1,6 @@
 extends Node3D
 ## Windowed look-check of every gun in the player's hands, in a real level: for
-## each gun in GameState.WEAPON_ORDER one frame at rest (<id>_idle.png), one
+## each gun in GameState.WEAPON_ORDER, then each Salvage.TABLE gun, one frame at rest (<id>_idle.png), one
 ## at the kick's peak with its muzzle flash (<id>_fire.png) and one 40% into a
 ## reload (<id>_reload.png), plus a contact sheet of the fire frames
 ## (viewmodels.png). Headless renders black.
@@ -35,7 +35,10 @@ func _run() -> void:
 	var cam := player.get_node("Head/Camera3D") as Camera3D
 	var wm: Node = player.get_node("Head/Camera3D/WeaponHolder")
 	var tiles: Array[Image] = []
-	for p: String in GameState.WEAPON_ORDER:
+	var guns: Array = GameState.WEAPON_ORDER.duplicate()
+	for k in Salvage.TABLE:
+		guns.append(String(Salvage.TABLE[k]["scene"]))
+	for p: String in guns:
 		var id := p.get_file().get_basename()
 		if not only.is_empty() and not id in only:
 			continue

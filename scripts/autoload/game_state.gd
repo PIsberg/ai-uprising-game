@@ -1492,6 +1492,7 @@ const MECHANIC_HINTS := {
 	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
 	"patch_key": "◇ ADVERSARIAL PATCH ready — press [T] and robot vision reads you as furniture for 15 s. Two per level.",
 	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",
+	"salvage": "⚙ SALVAGE — heavy robots drop their own gun. One magazine, no reload: spend it, then it's gone.",
 	"cascade": "✸ CASCADE — robots the CX-4 kills detonate and set off their neighbours. Shoot into the thick of a pack.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 }
