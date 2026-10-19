@@ -3980,7 +3980,7 @@ static func _gpt() -> Dictionary:
 		# drives kill_all off the LIVE enemy count, but 14 of the 19 authored
 		# hostiles (the MECH core guardian and every vault guard among them) are
 		# trigger-gated and haven't spawned yet — so downing the 5 opening enemies
-		# ticked "Eliminate all hostiles ✔" with a mini-boss still asleep. Dropping
+		# ticked "Eliminate all hostiles ✓" with a mini-boss still asleep. Dropping
 		# it also kills the post-climax chore of hunting the last skitter: once the
 		# purge is survived the beacon opens and you RUN, under a red-alert core.
 		"tasks": [

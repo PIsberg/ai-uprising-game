@@ -180,7 +180,7 @@ func _flow_checks() -> void:
 		and GameState.level_index == 3 and GameState.max_level_reached == 4,
 		"%s %s %d %d" % [GameState.difficulty, GameState.unlocked_weapons, GameState.level_index, GameState.max_level_reached])
 	var btn: Button = menu.get_node_or_null("Center/VBox/MainButtons/Daily") if menu else null
-	_check("menu button shows today's clear", btn != null and btn.text.begins_with("✔") and btn.text.contains("4321"), btn.text if btn else "no button")
+	_check("menu button shows today's clear", btn != null and btn.text.begins_with("✓") and btn.text.contains("4321"), btn.text if btn else "no button")
 	_check("savegame.cfg still byte-identical", _save_bytes() == save_before)
 
 func _wait_scene(path: String, timeout_s: float) -> Node:

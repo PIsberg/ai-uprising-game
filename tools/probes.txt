@@ -143,6 +143,8 @@ res://tests/photo_mode_probe.tscn
 res://tests/coop_registry_probe.tscn
 # Co-op stage 2: player two on its own pad; player one's pad bindings narrowed; reset.
 res://tests/coop_input_probe.tscn
+# No emoji-presentation check marks in shown text (#398).
+res://tests/glyph_probe.tscn
 # UPRISING MODE: seeded run plan, draft/reroll, patch mults, reboots, banking, menu button.
 res://tests/uprising_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.
