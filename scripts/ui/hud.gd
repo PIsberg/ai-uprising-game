@@ -36,6 +36,7 @@ var _cross_time: float = 0.0
 # an in-run peek at the enemy/weapon codex reached from the pause menu, above
 # the pause panel in child order so it paints on top.
 var field_manual_overlay: Panel
+var photo_mode: PhotoMode ## built on first use from the pause menu (or P while paused)
 var _fm_title: Label
 var _fm_subtitle: Label
 var _fm_content: VBoxContainer
@@ -440,6 +441,11 @@ func _build_field_manual() -> void:
 	btn.text = tr("Field Manual")
 	btn.pressed.connect(func(): open_field_manual())
 	vbox.add_child(btn)
+	var photo := Button.new()
+	photo.name = "PhotoMode"
+	photo.text = tr("Photo Mode")
+	photo.pressed.connect(open_photo_mode)
+	vbox.add_child(photo)
 	var quit := vbox.get_node_or_null("Quit") as Control
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
@@ -510,6 +516,21 @@ func open_field_manual() -> void:
 
 ## Close the overlay and return to the pause panel (still PAUSED). Safe to call
 ## when the overlay is already closed or was never built.
+## PHOTO MODE over the frozen game (PhotoMode); leaving it lands back on the pause menu.
+func open_photo_mode() -> void:
+	if GameState.current_state != GameState.State.PAUSED:
+		return
+	var p := get_tree().get_first_node_in_group("player")
+	var cam: Camera3D = p.get("camera") if p else get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	if photo_mode == null:
+		photo_mode = PhotoMode.new()
+		photo_mode.hud = self
+		add_child(photo_mode)
+	close_field_manual()
+	photo_mode.enter(cam)
+
 func close_field_manual() -> void:
 	if field_manual_overlay == null or not field_manual_overlay.visible:
 		return
@@ -1465,7 +1486,8 @@ func _process(delta: float) -> void:
 			_kill_x.scale = Vector2.ONE * kpop
 	if field_manual_overlay and field_manual_overlay.visible and GameState.current_state != GameState.State.PAUSED:
 		field_manual_overlay.visible = false # e.g. a checkpoint respawn or death while it was open
-	pause_menu.visible = GameState.current_state == GameState.State.PAUSED and not (field_manual_overlay and field_manual_overlay.visible)
+	pause_menu.visible = GameState.current_state == GameState.State.PAUSED and not (field_manual_overlay and field_manual_overlay.visible) \
+		and not (photo_mode and photo_mode.active)
 	_update_crosshair(delta)
 	# Low-health danger vignette: red edges pulse harder the closer to death.
 	if _low_vig:
@@ -1539,6 +1561,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2 \
 			and GameState.from_editor:
 		GameState.return_to_editor() # quick exit from a playtest
+		return
+	if photo_mode and photo_mode.active:
+		return # PhotoMode handles its own keys (ESC goes back to this menu)
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).keycode == KEY_P \
+			and GameState.current_state == GameState.State.PAUSED:
+		open_photo_mode()
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("pause"):
 		if GameState.current_state == GameState.State.PLAYING:

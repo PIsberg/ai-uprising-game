@@ -62,6 +62,15 @@ The scan runs at `SCAN_SCALE` (0.3) for up to `SCAN_MAX` (3 real s) and marks wh
 * Targets are the `breachable` group (each with `breach_ready`, `breach_cost`, `breach_label`, `breach`) plus live robots: `SentryTurret` turns ALLIED (50), an exploding `Destructible` detonates (30), `LaserGate` goes dark for `BREACH_TIME` 6 s (35), a route `FirewallBarrier` opens for good (80; a lockdown door, `quiet`, is never offered); a robot is EMP-jammed for `JAM_TIME` 3 s (25).
 * Bosses (the hijack line, `HIJACK_BOSS_HP`) are never offered. `tests/network_breach_probe`, `tests/network_breach_shot` (windowed).
 
+## Photo Mode
+<!-- lat: { "require-code-mention": true } -->
+From the pause menu (or P while paused): the game stays frozen and a free camera starts at the eye, with the HUD, every overlay and the gun hidden.
+
+`PhotoMode` (`scripts/ui/photo_mode.gd`) is built by the HUD (`hud.gd` `open_photo_mode`) and runs while the tree is paused.
+
+* WASD flies (sprint x3, jump/crouch up/down), the mouse looks, the wheel zooms between `FOV_MIN` 20 and `FOV_MAX` 100; the camera stays within `RADIUS` (12 m) of where it started.
+* TAB cycles `FILTERS` (none, noir, sepia, punch, vignette) on `shaders/photo_filter.gdshader`; ENTER saves a PNG to `user://screenshots/` (`capture`, the help line hidden for the frame); ESC restores the camera and every hidden node's visibility and lands on the pause menu. `tests/photo_mode_probe`, `tests/photo_mode_shot` (windowed).
+
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:

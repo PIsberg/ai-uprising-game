@@ -137,6 +137,8 @@ res://tests/network_breach_probe.tscn
 res://tests/ending_choice_probe.tscn
 # Achievements: every trigger through its real signal, counters, toasts, persistence, menu.
 res://tests/achievements_probe.tscn
+# Photo mode: pause-menu entry, frozen world, free camera bounds, zoom, filters, clean exit.
+res://tests/photo_mode_probe.tscn
 # UPRISING MODE: seeded run plan, draft/reroll, patch mults, reboots, banking, menu button.
 res://tests/uprising_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.
