@@ -125,6 +125,8 @@ res://tests/headshot_callout_probe.tscn
 res://tests/colorblind_probe.tscn
 # Daily Op: seeded per date, campaign untouched, best + streak recorded (#172).
 res://tests/daily_op_probe.tscn
+# UPRISING MODE: seeded run plan, draft/reroll, patch mults, reboots, banking, menu button.
+res://tests/uprising_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.
 res://tests/kill_fx_probe.tscn
 # Physics wrecks: a killed robot falls away from the shot, off a catwalk edge, and is freed.

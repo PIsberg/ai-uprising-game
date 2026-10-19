@@ -6,6 +6,7 @@ extends Control
 @onready var _controls: VBoxContainer = $Center/VBox/ControlsPanel
 @onready var _continue: Button = $Center/VBox/MainButtons/Continue
 @onready var _daily: Button = $Center/VBox/MainButtons/Daily
+@onready var _uprising: Button = $Center/VBox/MainButtons/Uprising
 @onready var _grid: GridContainer = $Center/VBox/SettingsPanel/Grid
 @onready var _graphics_label: Label = $Center/VBox/SettingsPanel/Grid/GraphicsRow/Graphics
 @onready var _gfx_down: Button = $Center/VBox/SettingsPanel/Grid/GraphicsRow/GfxDown
@@ -15,8 +16,10 @@ extends Control
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	GameState.end_daily_op() # back in the menu means no op is running, however it was left
+	GameState.abandon_uprising() # ...and no run: one left through Quit to Menu banks as lost
 	GameState.set_state(GameState.State.MENU)
 	_refresh_daily_button()
+	_refresh_uprising_button()
 	# Continue is only offered when a checkpoint exists, and says WHERE the run
 	# resumes (level title, campaign position, difficulty) so a returning player
 	# knows what they are stepping back into before they commit.
@@ -671,6 +674,27 @@ func _refresh_daily_button() -> void:
 		text += "  ·  " + (tr("%d-day streak") % int(rec["streak"]))
 	_daily.text = text
 	_daily.tooltip_text = tr(String(op["directive_desc"]))
+
+## UPRISING MODE: a fresh seeded five-sector run with drafted patches.
+func _on_uprising_pressed() -> void:
+	GameState.start_uprising(randi())
+
+## The button carries the standing (best sector, banked compute) and, right after a
+## run, how that run went, since the run-over screen hands straight back to the menu.
+func _refresh_uprising_button() -> void:
+	var rec: Dictionary = GameState.uprising_record()
+	var text := tr("Uprising")
+	if int(rec["runs"]) > 0:
+		text += "  ·  " + (tr("Best sector %d/%d") % [int(rec["best"]), GameState.UPRISING_SECTORS])
+		text += "  ·  " + (tr("%d compute") % int(rec["compute"]))
+	var r: Dictionary = GameState.uprising_result
+	if not r.is_empty():
+		var head := tr("RUN CLEARED") if bool(r["won"]) else (tr("Run ended in sector %d") % (int(r["sectors"]) + 1))
+		text += "\n" + head + "  ·  " + (tr("+%d compute") % int(r["compute"]))
+		if bool(r["new_best"]):
+			text += "  ·  ★ " + tr("NEW BEST")
+	_uprising.text = text
+	_uprising.tooltip_text = tr("Five seeded sectors, a boss at the end. Draft a patch between sectors; two reboots.")
 
 func _on_settings_pressed() -> void:
 	_show_panel(_settings)
