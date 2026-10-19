@@ -215,6 +215,10 @@ static func _world_box(meshes: Array[MeshInstance3D], fallback: Vector3) -> AABB
 	var box := AABB()
 	var first := true
 	for mi in meshes:
+		# The electrocute spasm re-measures its cached meshes every tick, and a limb
+		# torn off or a plate shed mid-spasm frees one (tests/kill_fx_probe 4b).
+		if not is_instance_valid(mi) or mi.mesh == null:
+			continue
 		var b: AABB = mi.global_transform * mi.mesh.get_aabb()
 		if first:
 			box = b

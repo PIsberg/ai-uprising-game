@@ -592,8 +592,10 @@ const BLOAT_LIMIT := 3.0
 static func body_top(body: Node3D, meshes: Array) -> float:
 	var top := 0.0
 	for m in meshes:
+		if not is_instance_valid(m):
+			continue # casting a freed mesh raises before any later validity check could run
 		var mi := m as MeshInstance3D
-		if is_instance_valid(mi) and mi.mesh:
+		if mi and mi.mesh:
 			var box: AABB = mi.global_transform * mi.mesh.get_aabb()
 			top = maxf(top, box.end.y - body.global_position.y)
 	var col := 0.0

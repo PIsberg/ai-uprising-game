@@ -4,7 +4,7 @@ extends Node
 ## (2) a gauss hitscan kill DISINTEGRATES: dissolve materials, no wreck debris,
 ##     the robot is gone within the dissolve time and leaves an ash scorch;
 ## (3) a plasma projectile kill disintegrates too (projectile + splash path);
-## (4) an arc-coil kill ELECTROCUTES: convulsing under the shock skin with no
+## (4) an arc-coil kill ELECTROCUTES (4b: still cleanly when a mesh is freed mid-spasm): convulsing under the shock skin with no
 ##     debris yet, then the classic blast and topple once the spasms end;
 ## (5) a non-tagged kill (a grenade or hazard) after an energy hit stays classic,
 ##     and the tag never outlives the hit that set it;
@@ -122,6 +122,27 @@ func _run() -> void:
 	_check("electrocute: classic blast after the spasms", _blasts == blasts0 + 1, "%d -> %d" % [blasts0, _blasts])
 	_check("electrocute: shock skin removed", is_instance_valid(z) and _shocked(z) == 0)
 
+	# 4b. A mesh freed mid-spasm (a limb torn off, a plate shed) must not break the
+	#     spasm: every tick re-measures the chassis from its cached meshes, and a
+	#     freed one logged a SCRIPT ERROR per tick (seen in tests/uprising_playtest).
+	var z2 := _robot(Vector3(-45, 0, 0))
+	await _frames(3)
+	blasts0 = _blasts
+	_wake(z2)
+	z2.hp.current_health = 1.0
+	arc._do_hitscan(Vector3(-45, 1.2, 10), Vector3(0, 0, -1))
+	await _frames(6)
+	var torn: MeshInstance3D = null
+	for n in z2.find_children("*", "MeshInstance3D", true, false):
+		if (n as MeshInstance3D).material_overlay != null:
+			torn = n
+			break
+	_check("electrocute: a shocked mesh to tear off", torn != null)
+	if torn:
+		torn.free()
+	await _frames(int(KillFx.SHOCK_TIME * 60.0) + 10)
+	_check("electrocute: a mesh freed mid-spasm still ends in the blast", _blasts == blasts0 + 1, "%d -> %d" % [blasts0, _blasts])
+
 	# 5. Energy hit, then an untagged kill.
 	var g := _robot(Vector3(60, 0, 0))
 	g.hp.max_health = 100000.0
@@ -161,7 +182,12 @@ func _run() -> void:
 		gauss._do_hitscan(at + Vector3(0, 0, 10), Vector3(0, 0, -1))
 		_check("%s: gauss killed it" % scene, not is_instance_valid(r) or not r.hp.is_alive())
 		_check("%s: disintegrates" % scene, is_instance_valid(r) and _dissolving(r) > 0)
-		await _frames(int(KillFx.DISSOLVE_TIME * 60.0) + 20)
+		# Wait on the dissolve itself (a process-frame tween), capped at twice its time:
+		# a fixed physics-frame count fell short (0.96 done) once the run carried more load.
+		var waited := 0.0
+		while is_instance_valid(r) and waited < KillFx.DISSOLVE_TIME * 2.0 + 0.5:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
 		_check("%s: no death blast, gone after the dissolve" % scene,
 				_blasts == blasts0 and not is_instance_valid(r), "%d -> %d" % [blasts0, _blasts])
 		x += 12.0
