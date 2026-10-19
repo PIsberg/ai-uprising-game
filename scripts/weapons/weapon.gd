@@ -1585,6 +1585,8 @@ func _play_reload_anim() -> void:
 	_reload_tw.tween_interval(t * 0.66)
 	_reload_tw.tween_property(viewmodel, "rotation", Vector3.ZERO, t * 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_reload_tw.parallel().tween_property(viewmodel, "position", _viewmodel_home, t * 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	if hands:
+		hands.support_on(0.0) # a restarted reload starts with the hand on the gun
 	_beat_tw = create_tween()
 	var at := 0.0
 	for b: Array in reload_beats():
@@ -1599,6 +1601,15 @@ func _reload_beat(kind: String, pose_pos: Vector3, jolt: Vector3, t: float) -> v
 		var jt := create_tween()
 		jt.tween_property(viewmodel, "position", pose_pos + jolt, 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		jt.tween_property(viewmodel, "position", pose_pos, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	# The support hand goes for the new magazine, cell or round and brings it back.
+	if hands:
+		match kind:
+			"mag_out", "vent", "breech":
+				hands.support_off(0.14)
+			"mag_in", "charge", "load":
+				hands.support_on(0.16)
+			"shell":
+				hands.support_dip(0.2)
 	var at := muzzle.global_position if muzzle else global_position
 	match kind:
 		"mag_out":
@@ -1696,6 +1707,8 @@ func _finish_reload() -> void:
 	mag += take
 	reserve -= take
 	_reloading = false
+	if hands:
+		hands.support_on(0.12) # however the beats fell, end on the gun
 	ammo_changed.emit(mag, reserve)
 	reload_finished.emit(self)
 	_refresh_readout()
