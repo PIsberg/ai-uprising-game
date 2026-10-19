@@ -112,3 +112,8 @@ static func burst_debris(parent: Node, at: Vector3, debris_color: Color, count: 
 	if tree:
 		var t := tree.create_timer(1.6)
 		t.timeout.connect(p.queue_free)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "EXPLOSION"

@@ -127,6 +127,8 @@ res://tests/colorblind_probe.tscn
 res://tests/daily_op_probe.tscn
 # Combat directives roll on a genuine level entry and survive a TRY AGAIN.
 res://tests/directive_roll_probe.tscn
+# Every hazard names itself (and gets a translated tip) on the death screen.
+res://tests/hazard_kill_label_probe.tscn
 # UPRISING MODE: seeded run plan, draft/reroll, patch mults, reboots, banking, menu button.
 res://tests/uprising_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.

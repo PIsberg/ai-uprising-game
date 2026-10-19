@@ -499,3 +499,8 @@ func _complete() -> void:
 		var ab := get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
 			ab.play_synth_at("victory", _gate_pos, -2.0, 1.1)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "GENERATED HAZARD"

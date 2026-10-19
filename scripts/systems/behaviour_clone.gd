@@ -232,3 +232,8 @@ func _end(killed: bool) -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "scale", Vector3(1.6, 0.05, 1.6), 0.15).set_trans(Tween.TRANS_EXPO)
 	tw.tween_callback(queue_free)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "BEHAVIOUR CLONE"

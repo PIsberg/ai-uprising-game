@@ -316,3 +316,8 @@ func _on_died(_source: Node) -> void:
 	_ring_mat.albedo_color = Color(0, 0, 0, 0)
 	_head.rotation.x = -0.35
 	AudioBus.play_synth_at("explosion", global_position, -4.0, 1.1)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "SENTRY TURRET"

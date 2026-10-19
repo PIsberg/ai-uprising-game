@@ -87,3 +87,8 @@ func _extract() -> void:
 	GameState.relabel_task(task_id, base_label)
 	GameState.complete_task(task_id)
 	_on_complete()
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "PURGE"

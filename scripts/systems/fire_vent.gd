@@ -253,3 +253,8 @@ func _burn(pl: Node3D) -> void:
 		var php: Node = pl.get_node_or_null("Damageable")
 		if php:
 			php.apply_damage(damage, self, false, at, true)
+
+## The death screen's "Taken down by" name and its tip key (player.gd reads it
+## off any damage source that has it; hud.gd DEATH_TIPS).
+func _kill_label() -> String:
+	return "FIRE VENT"

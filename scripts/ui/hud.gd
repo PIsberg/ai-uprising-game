@@ -1658,6 +1658,23 @@ const DEATH_TIPS := {
 	"GUNNER": "Gunners spin up before the stream — use the wind-up to reposition.",
 	"SEEKER": "Seekers detonate on contact — shoot them at range, never backpedal.",
 	"RAPTOR": "Raptors pounce off walls — fight them in the open, not in alleys.",
+	# Hazards: each names itself through _kill_label() (the substring is the key).
+	"FIRE VENT": "Fire vents breathe on a beat — count the pause, then cross.",
+	"FLOOR SAW": "Floor saws run a fixed track — watch where the slot goes and step off it.",
+	"LASER GATE": "Laser gates are high or low — read the cue, then jump or slide.",
+	"LASER SWEEP": "Sweeps turn at a steady rate — move with the beam, not against it.",
+	"PENDULUM": "Pendulums are fastest at the bottom — cross as one reaches the top of its swing.",
+	"SENTRY": "Sentries need line of sight — break it, or hack one to fight for you.",
+	"SHOCK FLOOR": "Shock floors pulse — the dark tiles are safe between pulses.",
+	"STAMP PRESS": "Presses slam on a timer — wait under the edge for it to rise.",
+	"FIREWALL": "A firewall burns while its node lives — shoot the node, then walk through.",
+	"GENERATED": "The AI paints hazards before it spawns them — tag an anchor to stop the next one.",
+	"ORBITAL": "The strike circle locks red before it fires — step out, or get under a roof.",
+	"PURGE": "The purge closes in from behind — move to the exit first, fight on the way.",
+	"CLONE": "The clone replays your last moves — change your line and it shoots at nothing.",
+	"HONEYPOT": "A cache that looks too good is bait — shoot it from range first.",
+	"EXPLOSION": "Barrels and canisters go up in a ring — shoot them when robots, not you, stand close.",
+	"YOUR OWN": "Your own blast hurts you — throw past the robot, not at your feet.",
 }
 const DEATH_TIPS_GENERIC := [
 	"An empty trigger reloads by itself — but a weapon swap is even faster.",
