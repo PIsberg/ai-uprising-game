@@ -21,6 +21,9 @@ const TWO_HAND_LEN := 0.5
 ## instead of pointing at the eye and hiding the hand behind its own sleeve.
 const ELBOW_RIGHT := Vector3(0.2, -0.48, 0.3)
 const ELBOW_LEFT := Vector3(-0.74, -0.5, 0.12)
+## How far (radians) a reload swings the support arm down about its elbow: the
+## hand drops off the gun, out to the belt for a fresh magazine.
+const SUPPORT_DROP := 0.6
 ## The grip's rake: a hand closes round it tilted top-forward.
 const GRIP_RAKE := -0.2
 ## How far ahead of the viewmodel origin (z, metres) Weapon parks a gun's grip:
@@ -30,6 +33,11 @@ const GRIP_Z := -0.1
 
 var trigger_hand: Node3D = null
 var support_hand: Node3D = null
+## The support hand and its forearm hang off this pivot at ELBOW_LEFT, so a
+## reload can swing the whole arm off the gun about the elbow (support_off).
+var support_arm: Node3D = null
+var _support_wrist: Node3D = null
+var _swing_tw: Tween = null
 var _ends: Array[Node3D] = []
 
 static var _glove_mat: StandardMaterial3D
@@ -57,6 +65,42 @@ static func hand_scale(box: AABB) -> float:
 ## The far end of every forearm (one per hand), for the off-screen check.
 func forearm_ends() -> Array[Node3D]:
 	return _ends
+
+## Where the support forearm meets its hand.
+func support_wrist() -> Node3D:
+	return _support_wrist
+
+## Swing the support arm down off the gun about the elbow over `secs` (the
+## reload's mag-out beat), or back onto it (support_on). The hand and forearm
+## move as one piece, so the wrist never comes apart. No-op one-handed.
+func support_off(secs: float) -> void:
+	if support_arm == null:
+		return
+	# Rotating elbow->hand about (elbow->hand x up) by a negative angle tips it
+	# down, away from the gun.
+	var d := support_hand.position.normalized()
+	_swing(Quaternion(d.cross(Vector3.UP).normalized(), -SUPPORT_DROP), secs)
+
+func support_on(secs: float) -> void:
+	_swing(Quaternion.IDENTITY, secs)
+
+## A quick dip off the gun and back: a shell thumbed into the loading port.
+func support_dip(secs: float) -> void:
+	support_off(secs * 0.45)
+	if _swing_tw:
+		_swing_tw.tween_property(support_arm, "quaternion", Quaternion.IDENTITY, secs * 0.55) 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+
+func _swing(to: Quaternion, secs: float) -> void:
+	if support_arm == null:
+		return
+	if _swing_tw and _swing_tw.is_valid():
+		_swing_tw.kill()
+	_swing_tw = null
+	if secs <= 0.0:
+		support_arm.quaternion = to
+		return
+	_swing_tw = create_tween()
+	_swing_tw.tween_property(support_arm, "quaternion", to, secs) 			.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 ## Where the hands close, from the gun's vertices in viewmodel space:
 ##   grip   the trigger hand: centred on the grip (vertices in the rear half
@@ -154,18 +198,22 @@ func _build_trigger_hand(grip: Vector3, grip_w: float, k: float, accent: Color) 
 	# Armoured knuckle plate on the near side, with a status LED in the gun's colour.
 	_box(hand, Vector3(0.008, 0.07, 0.03), Vector3(-hw - 0.021, -0.012, front + 0.018), _plate())
 	_led(hand, Vector3(-hw - 0.026, 0.016, front + 0.018), accent)
-	_forearm(hand.transform * Vector3(hw * 0.5 + 0.01, -0.04, 0.045), ELBOW_RIGHT, k, accent)
+	_forearm(self, hand.transform * Vector3(hw * 0.5 + 0.01, -0.04, 0.045), ELBOW_RIGHT, k, accent)
 
 # ---------- the support hand ----------
 ## Left hand cupping the fore-end from below: palm under the gun, fingers up the
 ## near side spread along the barrel, thumb along the far side.
 func _build_support_hand(fore: Vector3, fore_w: float, k: float, accent: Color) -> void:
 	var hw := fore_w * 0.5 / k
+	support_arm = Node3D.new()
+	support_arm.name = "SupportArm"
+	support_arm.position = ELBOW_LEFT
+	add_child(support_arm)
 	var hand := Node3D.new()
 	hand.name = "SupportHand"
-	hand.position = fore
+	hand.position = fore - ELBOW_LEFT
 	hand.scale = Vector3.ONE * k
-	add_child(hand)
+	support_arm.add_child(hand)
 	support_hand = hand
 	_box(hand, Vector3(hw * 2.0 + 0.024, 0.024, 0.09), Vector3(0.0, -0.012, 0.0), _glove())
 	for fz: float in [-0.033, -0.011, 0.011, 0.033]:
@@ -173,30 +221,36 @@ func _build_support_hand(fore: Vector3, fore_w: float, k: float, accent: Color) 
 	_capsule(hand, Vector3(hw + 0.008, -0.01, 0.03), Vector3(hw + 0.01, 0.018, -0.03), 0.0105, _glove())
 	_box(hand, Vector3(0.008, 0.026, 0.085), Vector3(-hw - 0.02, 0.0, 0.0), _plate())
 	_led(hand, Vector3(-hw - 0.025, 0.004, -0.03), accent)
-	_forearm(hand.transform * Vector3(-0.01, -0.03, 0.05), ELBOW_LEFT, k, accent)
+	_forearm(support_arm, hand.transform * Vector3(-0.01, -0.03, 0.05), Vector3.ZERO, k, accent)
 
 ## Glove cuff, then a sleeve that thickens toward the elbow: an alloy vambrace
 ## over the forearm with a thin status band in the gun's colour at its wrist
 ## end, and two fabric rucks further up so the sleeve reads as cloth, not pipe.
-func _forearm(wrist: Vector3, elbow: Vector3, k: float, accent: Color) -> void:
+## Built under `parent`, with `wrist` and `elbow` in its space.
+func _forearm(parent: Node3D, wrist: Vector3, elbow: Vector3, k: float, accent: Color) -> void:
 	var dir := (elbow - wrist).normalized()
 	var at := func(d: float) -> Vector3: return wrist + dir * d * k
-	_tube(self, at.call(-0.02), at.call(0.05), 0.031 * k, 0.034 * k, _glove())
-	_tube(self, at.call(0.04), elbow + dir * 0.08, 0.038 * k, 0.052 * k, _sleeve())
-	_tube(self, at.call(0.075), at.call(0.2), 0.042 * k, 0.046 * k, _plate())
+	_tube(parent, at.call(-0.02), at.call(0.05), 0.031 * k, 0.034 * k, _glove())
+	_tube(parent, at.call(0.04), elbow + dir * 0.08, 0.038 * k, 0.052 * k, _sleeve())
+	_tube(parent, at.call(0.075), at.call(0.2), 0.042 * k, 0.046 * k, _plate())
 	var band := StandardMaterial3D.new()
 	band.albedo_color = accent * 0.3
 	band.emission_enabled = true
 	band.emission = accent
 	band.emission_energy_multiplier = 0.8
-	_tube(self, at.call(0.085), at.call(0.093), 0.0435 * k, 0.0437 * k, band)
+	_tube(parent, at.call(0.085), at.call(0.093), 0.0435 * k, 0.0437 * k, band)
 	for d: float in [0.25, 0.31]:
-		_tube(self, at.call(d), at.call(d + 0.022), 0.048 * k, 0.05 * k, _sleeve())
+		_tube(parent, at.call(d), at.call(d + 0.022), 0.048 * k, 0.05 * k, _sleeve())
 	var end := Node3D.new()
 	end.name = "Elbow"
 	end.position = elbow
-	add_child(end)
+	parent.add_child(end)
 	_ends.append(end)
+	if parent == support_arm:
+		_support_wrist = Node3D.new()
+		_support_wrist.name = "Wrist"
+		_support_wrist.position = wrist
+		parent.add_child(_support_wrist)
 
 # ---------- primitives ----------
 func _box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> void:
