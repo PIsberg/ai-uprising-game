@@ -167,7 +167,7 @@ func capture() -> String:
 	_flash.text = tr("Saved %s") % ProjectSettings.globalize_path(path)
 	_flash.visible = true
 	_flash_t = 2.5
-	AudioBus.play_synth_ui("ui_click", -4.0, 0.6)
+	AudioBus.play_synth_ui("pickup_clink", -4.0, 0.6) # the shutter
 	return path
 
 func _unhandled_input(event: InputEvent) -> void:
