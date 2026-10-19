@@ -22,6 +22,8 @@ func _ready() -> void:
 	collision_layer = 1
 	collision_mask = 0
 	add_to_group("destructible")
+	if explode:
+		add_to_group("breachable") # barrels, canisters and cars have a detonator to reach
 	if hp:
 		hp.died.connect(_on_destroyed)
 
@@ -117,3 +119,19 @@ static func burst_debris(parent: Node, at: Vector3, debris_color: Color, count: 
 ## off any damage source that has it; hud.gd DEATH_TIPS).
 func _kill_label() -> String:
 	return "EXPLOSION"
+
+## NETWORK BREACH hooks (NetworkBreach reads the "breachable" group): whether it
+## can be breached now, its bandwidth cost, its scan label, and the takeover itself.
+func breach_ready() -> bool:
+	return explode and not _dead and hp != null
+
+func breach_cost() -> float:
+	return 30.0
+
+func breach_label() -> String:
+	return "EXPLOSIVE: DETONATE"
+
+## Set it off as if shot to pieces (the blast credits whoever breached it).
+func breach(by: Node) -> bool:
+	hp.apply_damage(hp.current_health + 1.0, by, false, null, true)
+	return true

@@ -184,6 +184,9 @@ func _attach(p: Node3D) -> void:
 		"directive": GameState.directive_id, "patches": (GameState.uprising.get("patches", []) as Array).duplicate(),
 		"pos": _v(p.global_position)})
 	_hook_weapons.call_deferred(p)
+	var nb := p.get_node_or_null("NetworkBreach") as NetworkBreach
+	if nb:
+		nb.breached.connect(_on_breach)
 
 func _hook_weapons(p: Node3D) -> void:
 	if not is_instance_valid(p):
@@ -253,6 +256,12 @@ func _on_player_died() -> void:
 		func(h): return {"source": h["source"], "amount": h["amount"], "ago": snappedf(_t - float(h["t"]), 0.01)})
 	_log("death", {"killer": GameState.last_killer, "weapon": _weapon_name(),
 		"pos": _v(_player.global_position) if is_instance_valid(_player) else [], "recent": recent})
+
+func _on_breach(_target: Node, label: String) -> void:
+	if _level == "":
+		return
+	_bump("breaches", label)
+	_log("breach", {"label": label})
 
 func _on_task(label: String) -> void:
 	if _level == "":

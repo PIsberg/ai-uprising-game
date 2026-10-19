@@ -51,6 +51,17 @@ Press the patch key (`adversarial_patch`: T / D-pad left, rebindable) and robot 
 * A tag over each robot that has looked shows its read: a decoy class and a falling percentage, then HUMAN in red.
 * A shot (`GameState.shot_registered`) breaks the patch. A vision scanner ignores a patched player beyond 4 m ([[level-system#Vision Scanners]]).
 * Melee while patched calls `tag_robot`: the robot is mislabeled for 8 s ([[enemies#Collisions and Hijacking]]) and the patch is spent. `tests/adversarial_patch_probe`.
+## Network Breach
+<!-- lat: { "require-code-mention": true } -->
+Hold the breach key (`breach`: B / D-pad right, rebindable) to slow time and mark every networked thing in view; release to take over the one under the crosshair.
+
+The scan runs at `SCAN_SCALE` (0.3) for up to `SCAN_MAX` (3 real s) and marks what is in range (35 m), in view (40 deg) and in line of sight; the pick is the nearest within 12 deg of the crosshair.
+
+`NetworkBreach` (`scripts/systems/network_breach.gd`) is the player's `NetworkBreach` child; it pays from `bandwidth` (100, `REGEN` 7/s, paused while scanning).
+
+* Targets are the `breachable` group (each with `breach_ready`, `breach_cost`, `breach_label`, `breach`) plus live robots: `SentryTurret` turns ALLIED (50), an exploding `Destructible` detonates (30), `LaserGate` goes dark for `BREACH_TIME` 6 s (35), a route `FirewallBarrier` opens for good (80; a lockdown door, `quiet`, is never offered); a robot is EMP-jammed for `JAM_TIME` 3 s (25).
+* Bosses (the hijack line, `HIJACK_BOSS_HP`) are never offered. `tests/network_breach_probe`, `tests/network_breach_shot` (windowed).
+
 ## Camera Feel and Combat Feedback
 <!-- lat: { "require-code-mention": true } -->
 Visual and kinetic camera dynamics provide visceral combat immersion:

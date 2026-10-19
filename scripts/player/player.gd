@@ -320,6 +320,9 @@ func _ready() -> void:
 	var patch := AdversarialPatch.new()
 	patch.name = "AdversarialPatch"
 	add_child(patch)
+	var breach := NetworkBreach.new()
+	breach.name = "NetworkBreach"
+	add_child(breach)
 	grenades = max_grenades
 	# Field supplies bought in the Armory are PERMANENT for the run: they re-apply
 	# on every deploy (a fresh player each level, so no compounding) and are only

@@ -91,8 +91,9 @@ func _run() -> void:
 	Input.action_release("move_forward")
 	await _wait_game(0.3)
 
-	# 5. A task.
+	# 5. A task, and a NETWORK BREACH.
 	GameState.task_completed.emit("Destroy the core")
+	(p.get_node("NetworkBreach") as NetworkBreach).breached.emit(vent, "TURRET: TURN")
 	# 6 (clear) comes after a death and its respawn would end the level, so record
 	# the death on a second life: 4. death by the vent.
 	hp.apply_damage(99999.0, vent, false, null, true)
@@ -130,6 +131,8 @@ func _run() -> void:
 	_check("the death names FIRE VENT", deaths.size() == 2 and deaths[0].get("killer") == "FIRE VENT", str(deaths))
 	if deaths.size() >= 1:
 		_check("the death lists the vent among the last 5 s of hits", (deaths[0].get("recent", []) as Array).any(func(h): return h.get("source") == "FIRE VENT"))
+	var breaches := _of(evs, "breach")
+	_check("a breach logs its label", breaches.size() == 1 and breaches[0].get("label") == "TURRET: TURN", str(breaches))
 	var tasks := _of(evs, "task")
 	_check("the task logs its label", tasks.size() == 1 and tasks[0].get("label") == "Destroy the core", str(tasks))
 	var ends := _of(evs, "level_end")

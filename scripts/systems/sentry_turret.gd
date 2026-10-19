@@ -58,6 +58,7 @@ func _ready() -> void:
 	collision_layer = 1 | 4
 	collision_mask = 0
 	add_to_group("hazard")
+	add_to_group("breachable")
 	add_to_group("sentry_turret")
 	_build()
 	hp = Damageable.new()
@@ -321,3 +322,19 @@ func _on_died(_source: Node) -> void:
 ## off any damage source that has it; hud.gd DEATH_TIPS).
 func _kill_label() -> String:
 	return "SENTRY TURRET"
+
+## NETWORK BREACH hooks (NetworkBreach reads the "breachable" group): whether it
+## can be breached now, its bandwidth cost, its scan label, and the takeover itself.
+func breach_ready() -> bool:
+	return phase == Phase.HOSTILE
+
+func breach_cost() -> float:
+	return 50.0
+
+func breach_label() -> String:
+	return "TURRET: TURN"
+
+## A breach is the stand-by-it hack done from range.
+func breach(_by: Node) -> bool:
+	_hacked()
+	return true

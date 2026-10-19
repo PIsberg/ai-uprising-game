@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-503 probes total: **206** wired into the headless suite (`suite`), **86**
+505 probes total: **207** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **211** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **212** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -387,6 +387,8 @@ or GPU-timing probes; `--headless` renders these black).
 | music_check | Generated music tracks' peak/RMS/mid-high-band RMS (a theme's stems summed) as a proxy for audibility on small speakers | headless |
 | music_layers_probe | Layered music: every synth theme is an `AudioStreamSynchronized` of four equal-length looping stems (bed, drums, lead, hot), none silent, full mix peaking 0.3-1.0; synth and mixer agree on stem order; calm: bed 0 dB, drums <= -24, lead under, hot silent; fight: drums and lead full; RAMPAGE and then a live boss bring the hot layer in, losing them takes it out; the theme wraps and keeps playing past its length. Volumes read through `AudioBus.music_layer_db` | suite |
 | muzzle_check_probe | New ranged enemy's Muzzle node marker vs the model's visible weapon | windowed |
+| network_breach_probe | NETWORK BREACH with a real player: full bandwidth and the `breach` action; the turret under the crosshair is picked over a barrel 25 deg off, a turret behind a wall is not offered; holding the key slows time to 0.3, releasing turns the turret ALLIED, restores time and costs 50; a breached barrel detonates, a breached laser gate goes dark (a player in its live beam takes nothing) and bites again after 6 s, a breached robot is EMP-jammed; a breach the bandwidth cannot pay is refused for free; a boss and a lockdown door are never offered; bandwidth refills | suite |
+| network_breach_shot | NETWORK BREACH mid-scan in a lit yard (turret, barrel, laser gate, robot): marks, picked label and cost, bandwidth bar; `-- --out=<dir>` | windowed |
 | nemesis_probe | NEMESIS grudge loop: elite kill recorded, spawner substitutes the nemesis next spawn, killing it settles the grudge | headless |
 | new_models_probe | Newly-added models individually rendered, to assign each an enemy role | windowed |
 | newenemy_probe | Dog + server enemies lit, facing camera: look/facing/glowing eyes | windowed |
