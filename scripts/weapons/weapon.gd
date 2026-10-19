@@ -1064,6 +1064,8 @@ func _play_muzzle() -> void:
 	if "tint_color" in m:
 		m.tint_color = shot_color()
 		m.size_mult = data.muzzle_scale * (1.0 + RAMPAGE_FLASH_GROW * maxi(0, GameState.rampage_tier))
+	if "along_bore" in m:
+		m.along_bore = true # the Muzzle's -Z is the barrel
 	muzzle.add_child(m)
 
 ## A bright expanding energy bloom at the muzzle for plasma/energy weapons.

@@ -2,8 +2,10 @@ extends Node3D
 ## Windowed look-check of the hands holding every gun, in a neutral studio (no
 ## level lighting or HUD in the way): per gun one tile from the player's eye
 ## (WeaponHolder offset, fov 78) and one side view from the near (left) side,
-## plus <out>/hands.png, a contact sheet of every pair. Headless renders black.
-##   godot --path . res://tools/hands_shot.tscn -- --out=<abs dir> [--only=rifle,pistol]
+## plus <out>/hands.png, a contact sheet of every pair. With --fire, a third tile
+## from the eye with the muzzle flash frozen at full burn (<id>_fire.png).
+## Headless renders black.
+##   godot --path . res://tools/hands_shot.tscn -- --out=<abs dir> [--only=rifle,pistol] [--fire]
 
 const EYE := Vector3(-0.25, 0.22, 0.45) ## the camera, in viewmodel space (player.tscn WeaponHolder)
 
@@ -13,11 +15,14 @@ func _ready() -> void:
 func _run() -> void:
 	var out_dir := ProjectSettings.globalize_path("user://hands_shots")
 	var only: PackedStringArray = []
+	var fire := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out_dir = a.substr(6)
 		elif a.begins_with("--only="):
 			only = a.substr(7).split(",")
+		elif a == "--fire":
+			fire = true
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	_studio()
 	var cam := Camera3D.new()
@@ -45,14 +50,22 @@ func _run() -> void:
 		cam.look_at_from_position(Vector3(-1.6, 0.05, -0.15), Vector3(0, -0.05, -0.15), Vector3.UP)
 		var side := await _grab()
 		side.save_png(out_dir.path_join(id + "_side.png"))
-		for im in [eye, side]:
+		var shots: Array[Image] = [eye, side]
+		if fire:
+			cam.fov = 78.0
+			cam.look_at_from_position(EYE, EYE + Vector3.FORWARD, Vector3.UP)
+			await _flash(w as Weapon)
+			var shot := await _grab()
+			shot.save_png(out_dir.path_join(id + "_fire.png"))
+			shots.append(shot)
+		for im in shots:
 			var t := (im as Image).duplicate() as Image
 			t.convert(Image.FORMAT_RGBA8)
 			t.resize(480, 300)
 			tiles.append(t)
 		w.queue_free()
 		await get_tree().process_frame
-	var cols := 4
+	var cols := 6 if fire else 4
 	var rows := ceili(tiles.size() / float(cols))
 	var sheet := Image.create(480 * cols, 300 * maxi(1, rows), false, Image.FORMAT_RGBA8)
 	for i in tiles.size():
@@ -60,6 +73,18 @@ func _run() -> void:
 	sheet.save_png(out_dir.path_join("hands.png"))
 	print("HANDS SHOTS ", out_dir)
 	get_tree().quit()
+
+## Fire the gun's flash and freeze it at full burn (its sparks too).
+func _flash(w: Weapon) -> void:
+	if w.data.muzzle_flash_scene == null:
+		return
+	w._play_muzzle()
+	await get_tree().process_frame
+	for n in w.muzzle.get_children():
+		n.process_mode = Node.PROCESS_MODE_DISABLED
+	var f: Node = w.muzzle.get_child(w.muzzle.get_child_count() - 1)
+	if f.has_method("_tick"):
+		f._tick(0.0)
 
 func _grab() -> Image:
 	await RenderingServer.frame_post_draw
