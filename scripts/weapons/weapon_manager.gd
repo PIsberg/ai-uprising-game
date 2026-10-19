@@ -83,6 +83,22 @@ const SPRINT_POSE_ROT := Vector3(-0.38, 0.24, 0.10) # pitch down, yaw in, slight
 const SPRINT_POSE_MIN_SPEED := 6.5 ## above walk (6) and below full sprint (9)
 var _sprint_lerp: float = 0.0
 
+# Idle breathing: a player standing still is still a person holding a gun, so
+# it rises and falls on a slow figure-eight with each breath instead of hanging
+# frozen in the air. It fades out while moving (the walk bob takes over), drops
+# to BREATH_ADS while aiming, and a winded player (stamina spent) breathes up to
+# BREATH_WINDED times as hard. Covered by tests/idle_breath_probe.
+const BREATH_AMP := Vector3(0.0018, 0.0026, 0.0) ## metres at the top of a breath
+const BREATH_ROT := 0.0045 ## radians of pitch at the top of a breath (roll 0.6x)
+const BREATH_RATE := 1.7 ## radians per second: one breath about every 3.7 s
+const BREATH_ADS := 0.2 ## share of the breath left while fully aimed
+const BREATH_WINDED := 2.4 ## breath size with stamina at 0 (1 when full)
+const BREATH_WINDED_RATE := 1.6 ## and it comes this much faster
+var _breath_t: float = 0.0
+var _breath_lerp: float = 0.0 ## 1 standing still, 0 moving
+var _winded: float = 0.0 ## 0 rested .. 1 stamina spent (from the shooter's stamina_changed)
+var _winded_shown: float = 0.0 ## _winded, eased so a breath never jumps
+
 ## External roll (radians), e.g. the player's wall-run lean. This node's own
 ## _process() sets rotation.z every frame (sway + kick), which would silently
 ## erase any direct rotation.z write from outside — so external callers feed
@@ -105,6 +121,8 @@ func _ready() -> void:
 		shooter = n
 	if recoil_target == null and shooter:
 		recoil_target = shooter.get_node_or_null("Head")
+	if shooter and shooter.has_signal("stamina_changed"):
+		shooter.stamina_changed.connect(_on_stamina_changed)
 	for s in weapon_scenes:
 		_instantiate_weapon(s)
 	# Bonus weapons unlocked earlier in the campaign carry across levels.
@@ -131,6 +149,9 @@ func _ready() -> void:
 	_hip_position = position
 	if camera:
 		_base_fov = camera.fov
+
+func _on_stamina_changed(current: float, max_value: float, _exhausted: bool) -> void:
+	_winded = 1.0 - clampf(current / maxf(1.0, max_value), 0.0, 1.0)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -469,6 +490,14 @@ func _process(delta: float) -> void:
 		_bob_time = 0.0
 		_bob_offset = _bob_offset.lerp(Vector3.ZERO, clampf(8.0 * delta, 0.0, 1.0))
 
+	# Idle breathing (see constants above).
+	_breath_lerp = move_toward(_breath_lerp, 0.0 if is_moving_on_floor else 1.0, delta * 2.5)
+	_winded_shown = move_toward(_winded_shown, _winded, delta * 0.6)
+	_breath_t += delta * BREATH_RATE * lerpf(1.0, BREATH_WINDED_RATE, _winded_shown)
+	var breath := _breath_lerp * lerpf(1.0, BREATH_WINDED, _winded_shown) 		* lerpf(1.0, BREATH_ADS, _current_ads_lerp)
+	var breath_pos := Vector3(sin(_breath_t * 0.5) * BREATH_AMP.x, sin(_breath_t) * BREATH_AMP.y, 0.0) * breath
+	var breath_rot := Vector3(-sin(_breath_t) * BREATH_ROT, 0.0, sin(_breath_t * 0.5) * BREATH_ROT * 0.6) * breath
+
 	# Sprint lower-ready pose (see constants above): engage only in a genuine
 	# grounded sprint, and drop it the instant the player aims or squeezes the
 	# trigger so the raise never fights the shot.
@@ -509,11 +538,11 @@ func _process(delta: float) -> void:
 		_kick_rot += _kick_rot_vel * h
 	_sanitize_kick()
 
-	# Apply final position and rotation (sway + bob + recoil kick + sprint pose + external punch)
-	position = target_pos + _sway_offset + _bob_offset + _kick_pos + SPRINT_POSE_POS * sp + external_kick_pos
-	rotation.x = _sway_rotation.x + _kick_rot.x + SPRINT_POSE_ROT.x * sp
+	# Apply final position and rotation (sway + bob + breath + recoil kick + sprint pose + external punch)
+	position = target_pos + _sway_offset + _bob_offset + breath_pos + _kick_pos + SPRINT_POSE_POS * sp + external_kick_pos
+	rotation.x = _sway_rotation.x + _kick_rot.x + breath_rot.x + SPRINT_POSE_ROT.x * sp
 	rotation.y = _sway_rotation.y + _kick_rot.y + SPRINT_POSE_ROT.y * sp
-	rotation.z = _sway_rotation.z + _kick_rot.z + external_roll + SPRINT_POSE_ROT.z * sp
+	rotation.z = _sway_rotation.z + _kick_rot.z + breath_rot.z + external_roll + SPRINT_POSE_ROT.z * sp
 
 
 ## How far into aim-down-sights we are (0 hip → 1 fully aimed). The player's
