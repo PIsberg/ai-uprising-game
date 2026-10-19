@@ -124,36 +124,37 @@ static func _ember_taper_curve() -> Curve:
 	c.add_point(Vector2(1.0, 0.0))
 	return c
 
-## A white-hot core that balloons out and burns off in a tenth of a second —
-## the single biggest "explosion, not particle puff" cue.
+## The fireball (shaders/explosion_fireball.gdshader): a boiling ball that is
+## white-hot where it faces you and cools through the blast colour to charred red
+## at the rim. It balloons out in 0.18 s while `burn` runs 0 -> 1 over
+## FIREBALL_LIFE, eating it away into tongues of fire. It used to be a sphere
+## with white-hot albedo and 18x emission, which rendered as a flat white dome.
+## Covered by tests/explosion_fireball_probe.
+const FIREBALL_SHADER: Shader = preload("res://shaders/explosion_fireball.gdshader")
+const FIREBALL_LIFE := 0.42
+
 static func _fireball(root: Node3D, size: float, color: Color) -> void:
 	var ball := MeshInstance3D.new()
+	ball.name = "Fireball"
 	var sm := SphereMesh.new()
 	sm.radius = 0.5
 	sm.height = 1.0
-	sm.radial_segments = 16
-	sm.rings = 8
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(1.0, 0.95, 0.8, 0.95) # white-hot at birth
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 18.0 # HDR-hot core: blooms hard, sears on HDR
-	sm.material = mat
+	sm.radial_segments = 28 # enough vertices for the boil to displace
+	sm.rings = 14
 	ball.mesh = sm
+	var mat := ShaderMaterial.new()
+	mat.shader = FIREBALL_SHADER
+	mat.set_shader_parameter("tint", color)
+	mat.set_shader_parameter("seed", randf() * 100.0)
+	mat.set_shader_parameter("burn", 0.0)
+	ball.material_override = mat
 	ball.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ball.scale = Vector3.ONE * 0.25
+	ball.rotation = Vector3(randf() * TAU, randf() * TAU, 0.0) # no two blasts boil alike
 	root.add_child(ball)
 	var tw := ball.create_tween().set_parallel(true)
-	tw.tween_property(ball, "scale", Vector3.ONE * size * 1.15, 0.18) \
-		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	# Cool from white-hot to the blast color as it expands, then burn off fast —
-	# a flash should be gone before the smoke takes over.
-	tw.tween_property(mat, "albedo_color", Color(color.r, color.g, color.b, 0.0), 0.24) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.24)
+	tw.tween_property(ball, "scale", Vector3.ONE * size * 1.15, 0.18) 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_method(func(b: float) -> void: mat.set_shader_parameter("burn", b), 0.0, 1.0, FIREBALL_LIFE) 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(ball.queue_free)
 
 ## A flattened ring racing outward at ankle height — sells the pressure wave.
@@ -195,33 +196,30 @@ static func _shockwave(root: Node3D, size: float, color: Color, delay: float = 0
 ## turns a flat ground pop into a real detonation column.
 static func _fire_column(root: Node3D, size: float, color: Color) -> void:
 	var col := MeshInstance3D.new()
+	col.name = "FireColumn"
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = size * 0.14
 	cyl.bottom_radius = size * 0.34
 	cyl.height = 1.0
-	cyl.radial_segments = 10
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(1.0, 0.9, 0.7, 0.9)
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 9.0
-	cyl.material = mat
+	cyl.radial_segments = 16
+	cyl.rings = 6 # vertices for the boil; the tall stretch turns it into flame streaks
 	col.mesh = cyl
+	# The fireball's shader: a flat additive cone read as a beige pillar next to it.
+	var mat := ShaderMaterial.new()
+	mat.shader = FIREBALL_SHADER
+	mat.set_shader_parameter("tint", color)
+	mat.set_shader_parameter("seed", randf() * 100.0)
+	mat.set_shader_parameter("burn", 0.05)
+	col.material_override = mat
 	col.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	col.scale = Vector3(1.0, 0.2, 1.0)
 	col.position = Vector3(0, 0.2, 0)
 	root.add_child(col)
 	var tw := col.create_tween().set_parallel(true)
 	# Shoot up and taper; the pivot rises with it so it grows FROM the ground.
-	tw.tween_property(col, "scale", Vector3(1.2, size * 1.6, 1.2), 0.22) \
-		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_property(col, "scale", Vector3(1.2, size * 1.6, 1.2), 0.22) 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tw.tween_property(col, "position:y", size * 0.9, 0.22).set_ease(Tween.EASE_OUT)
-	tw.tween_property(mat, "albedo_color", Color(color.r, color.g, color.b, 0.0), 0.3) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tw.tween_property(mat, "emission_energy_multiplier", 0.0, 0.3)
+	tw.tween_method(func(b: float) -> void: mat.set_shader_parameter("burn", b), 0.05, 1.0, 0.32) 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(col.queue_free)
 
 ## A shower of tiny, very fast, very bright sparks — the sharp high-frequency
