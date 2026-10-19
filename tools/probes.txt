@@ -139,6 +139,7 @@ res://tests/weapon_feel_probe.tscn
 res://tests/muzzle_ring_probe.tscn
 res://tests/viewmodel_hands_probe.tscn
 res://tests/muzzle_flash_probe.tscn
+res://tests/tracer_streak_probe.tscn
 res://tests/hit_reaction_probe.tscn
 res://tests/impact_class_probe.tscn
 res://tests/ammo_readout_probe.tscn
