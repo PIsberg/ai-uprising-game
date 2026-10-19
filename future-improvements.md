@@ -57,9 +57,12 @@ found SMASHER's phases were glow-only; it now shortens smash/slam/rake cooldowns
 like MANUS. 🎮 Needs playtest: whether a 1.5 s smash at low HP is too much in the crucible.
 
 ### Meta-progression / replayability 🤖🎮
-Beyond the per-run Armory there's no persistent chase. Options: unlockables, a seeded
-daily run, a local leaderboard off the existing grade/records system (`GameState.level_bests`,
-`records.cfg`), or a challenge-modifier mode.
+✅ **Daily Op** (one seeded level a day, best + streak) and **UPRISING MODE** (a seeded
+five-sector run with drafted patches, reboots and banked compute that unlocks rarer patches)
+shipped. 🎮 Needs playtest: patch numbers (four patches can stack incoming damage to 2.76x),
+the reroll cost (15), the unlock thresholds (100/250/500 lifetime compute) and whether two
+reboots plus one repaired per cleared sector is the right forgiveness for five full levels. Still open: a
+local leaderboard off `GameState.level_bests` / `records.cfg`.
 
 ### The AI Director's player counter-move 🤖
 ✅ **First cut shipped** — the **EMP grenade** (3rd grenade type) bursts in a radius and

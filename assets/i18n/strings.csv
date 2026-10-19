@@ -781,3 +781,37 @@ MACHINE FEED,MACHINE FEED,FEED DE LAS MÁQUINAS,FLUX DES MACHINES,MASCHINEN-FEED
 watching,watching,viendo,spectateurs,schauen zu,assistindo
 CHAT POLL,CHAT POLL,ENCUESTA DEL CHAT,SONDAGE DU CHAT,CHAT-UMFRAGE,ENQUETE DO CHAT
 CHAT VOTED,CHAT VOTED,EL CHAT HA VOTADO,LE CHAT A VOTÉ,DER CHAT HAT ABGESTIMMT,O CHAT VOTOU
+Uprising,Uprising,Levantamiento,Soulèvement,Aufstand,Levante
+Best sector %d/%d,Best sector %d/%d,Mejor sector %d/%d,Meilleur secteur %d/%d,Bester Sektor %d/%d,Melhor setor %d/%d
+%d compute,%d compute,%d de cómputo,%d de calcul,%d Rechenleistung,%d de computação
++%d compute,+%d compute,+%d de cómputo,+%d de calcul,+%d Rechenleistung,+%d de computação
+RUN CLEARED,RUN CLEARED,INCURSIÓN SUPERADA,RAID RÉUSSI,LAUF GESCHAFFT,INCURSÃO CONCLUÍDA
+Run ended in sector %d,Run ended in sector %d,Incursión terminada en el sector %d,Raid terminé au secteur %d,Lauf endete in Sektor %d,Incursão terminou no setor %d
+"Five seeded sectors, a boss at the end. Draft a patch between sectors; two reboots.","Five seeded sectors, a boss at the end. Draft a patch between sectors; two reboots.",Cinco sectores sembrados y un jefe al final. Elige un parche entre sectores; dos reinicios.,"Cinq secteurs générés, un boss à la fin. Choisissez un patch entre les secteurs ; deux redémarrages.","Fünf generierte Sektoren, am Ende ein Boss. Wähle zwischen den Sektoren einen Patch; zwei Neustarts.","Cinco setores gerados, um chefe no fim. Escolha um patch entre setores; dois reinícios."
+SECTOR %d/%d CLEARED,SECTOR %d/%d CLEARED,SECTOR %d/%d DESPEJADO,SECTEUR %d/%d NETTOYÉ,SEKTOR %d/%d GESÄUBERT,SETOR %d/%d LIMPO
+Draft one patch for the rest of the run.,Draft one patch for the rest of the run.,Elige un parche para el resto de la incursión.,Choisissez un patch pour le reste du raid.,Wähle einen Patch für den Rest des Laufs.,Escolha um patch para o resto da incursão.
+Patches: %s,Patches: %s,Parches: %s,Patchs : %s,Patches: %s,Patches: %s
+Reboots left: %d,Reboots left: %d,Reinicios restantes: %d,Redémarrages restants : %d,Verbleibende Neustarts: %d,Reinícios restantes: %d
+"Reroll (%d compute, you have %d)","Reroll (%d compute, you have %d)","Volver a tirar (%d de cómputo, tienes %d)","Relancer (%d de calcul, vous avez %d)","Neu würfeln (%d Rechenleistung, du hast %d)","Rolar de novo (%d de computação, você tem %d)"
+RUN TERMINATED  ·  no reboots left,RUN TERMINATED  ·  no reboots left,INCURSIÓN TERMINADA  ·  sin reinicios,RAID TERMINÉ  ·  plus de redémarrage,LAUF BEENDET  ·  keine Neustarts mehr,INCURSÃO ENCERRADA  ·  sem reinícios
+REBOOTED  ·  %d left,REBOOTED  ·  %d left,REINICIADO  ·  quedan %d,REDÉMARRÉ  ·  encore %d,NEU GESTARTET  ·  noch %d,REINICIADO  ·  restam %d
+OVERCLOCKED CORES,OVERCLOCKED CORES,NÚCLEOS OVERCLOCK,CŒURS SURCADENCÉS,ÜBERTAKTETE KERNE,NÚCLEOS EM OVERCLOCK
+"+35% damage dealt, but you take +25% more","+35% damage dealt, but you take +25% more","+35% de daño infligido, pero recibes un 25% más","+35 % de dégâts infligés, mais vous en subissez 25 % de plus","+35 % Schaden, aber du erleidest 25 % mehr","+35% de dano causado, mas você sofre 25% a mais"
+HARDENED CHASSIS,HARDENED CHASSIS,CHASIS REFORZADO,CHÂSSIS RENFORCÉ,GEHÄRTETES CHASSIS,CHASSI REFORÇADO
+"Take 35% less damage, but move 12% slower","Take 35% less damage, but move 12% slower","Recibes un 35% menos de daño, pero te mueves un 12% más lento","Subissez 35 % de dégâts en moins, mais déplacez-vous 12 % moins vite","35 % weniger Schaden, aber 12 % langsamer","Sofra 35% menos dano, mas mova-se 12% mais devagar"
+AFTERBURNER FIRMWARE,AFTERBURNER FIRMWARE,FIRMWARE POSTQUEMADOR,FIRMWARE POSTCOMBUSTION,NACHBRENNER-FIRMWARE,FIRMWARE PÓS-COMBUSTÃO
+"+22% move speed, but deal 10% less damage","+22% move speed, but deal 10% less damage","+22% de velocidad, pero infliges un 10% menos de daño","+22 % de vitesse, mais 10 % de dégâts en moins","+22 % Tempo, aber 10 % weniger Schaden","+22% de velocidade, mas causa 10% menos dano"
+SCAVENGER SUBROUTINE,SCAVENGER SUBROUTINE,SUBRUTINA CARROÑERA,SOUS-ROUTINE CHAROGNARD,PLÜNDERER-SUBROUTINE,SUB-ROTINA CARNICEIRA
+"Kills drop double loot, but you take +15% more damage","Kills drop double loot, but you take +15% more damage","Las bajas sueltan doble botín, pero recibes un 15% más de daño","Les éliminations lâchent deux fois plus de butin, mais vous subissez 15 % de dégâts en plus","Abschüsse lassen doppelte Beute fallen, aber du erleidest 15 % mehr Schaden","Abates deixam o dobro de saque, mas você sofre 15% mais dano"
+VAMPIRE PROTOCOL,VAMPIRE PROTOCOL,PROTOCOLO VAMPIRO,PROTOCOLE VAMPIRE,VAMPIR-PROTOKOLL,PROTOCOLO VAMPIRO
+"+3 LIFELEECH ranks, but you take +15% more damage","+3 LIFELEECH ranks, but you take +15% more damage","+3 rangos de ROBO DE VIDA, pero recibes un 15% más de daño","+3 rangs de VOL DE VIE, mais vous subissez 15 % de dégâts en plus","+3 Ränge LEBENSRAUB, aber du erleidest 15 % mehr Schaden","+3 níveis de ROUBO DE VIDA, mas você sofre 15% mais dano"
+DEMOLITION PACKAGE,DEMOLITION PACKAGE,PAQUETE DE DEMOLICIÓN,KIT DE DÉMOLITION,ABRISSPAKET,PACOTE DE DEMOLIÇÃO
+"+3 GRENADE POWER ranks, but guns deal 10% less damage","+3 GRENADE POWER ranks, but guns deal 10% less damage","+3 rangos de POTENCIA DE GRANADA, pero las armas infligen un 10% menos","+3 rangs de PUISSANCE DES GRENADES, mais les armes infligent 10 % de dégâts en moins","+3 Ränge GRANATENKRAFT, aber Waffen machen 10 % weniger Schaden","+3 níveis de PODER DE GRANADA, mas as armas causam 10% menos dano"
+RAPID LOADER,RAPID LOADER,CARGADOR RÁPIDO,CHARGEUR RAPIDE,SCHNELLLADER,CARREGADOR RÁPIDO
+"+3 MAGAZINE and +3 RELOAD ranks, but move 10% slower","+3 MAGAZINE and +3 RELOAD ranks, but move 10% slower","+3 rangos de CARGADOR y +3 de RECARGA, pero te mueves un 10% más lento","+3 rangs de CHARGEUR et +3 de RECHARGEMENT, mais déplacez-vous 10 % moins vite","+3 Ränge MAGAZIN und +3 NACHLADEN, aber 10 % langsamer","+3 níveis de PENTE e +3 de RECARGA, mas mova-se 10% mais devagar"
+COLD BACKUP,COLD BACKUP,COPIA EN FRÍO,SAUVEGARDE À FROID,KALT-BACKUP,BACKUP A FRIO
+"+1 reboot, but deal 15% less damage","+1 reboot, but deal 15% less damage","+1 reinicio, pero infliges un 15% menos de daño","+1 redémarrage, mais 15 % de dégâts en moins","+1 Neustart, aber 15 % weniger Schaden","+1 reinício, mas causa 15% menos dano"
+BERSERK.EXE,BERSERK.EXE,BERSERK.EXE,BERSERK.EXE,BERSERK.EXE,BERSERK.EXE
+"+60% damage dealt, but you take +60% more","+60% damage dealt, but you take +60% more","+60% de daño infligido, pero recibes un 60% más","+60 % de dégâts infligés, mais vous en subissez 60 % de plus","+60 % Schaden, aber du erleidest 60 % mehr","+60% de dano causado, mas você sofre 60% a mais"
+MARATHON KERNEL,MARATHON KERNEL,KERNEL MARATÓN,NOYAU MARATHON,MARATHON-KERNEL,KERNEL MARATONA
+"+3 STAMINA ranks and +12% move speed, but you take +20% more damage","+3 STAMINA ranks and +12% move speed, but you take +20% more damage","+3 rangos de AGUANTE y +12% de velocidad, pero recibes un 20% más de daño","+3 rangs d'ENDURANCE et +12 % de vitesse, mais vous subissez 20 % de dégâts en plus","+3 Ränge AUSDAUER und +12 % Tempo, aber du erleidest 20 % mehr Schaden","+3 níveis de VIGOR e +12% de velocidade, mas você sofre 20% mais dano"

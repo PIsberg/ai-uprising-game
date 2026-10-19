@@ -425,6 +425,8 @@ func buy_supply(k: String) -> bool:
 
 ## True if any upgrade OR supply is affordable right now (gates the armory popup).
 func can_buy_anything() -> bool:
+	if is_uprising():
+		return false # a run's build is its drafted patches; the score banks as compute
 	if can_buy_any_upgrade():
 		return true
 	for k in SUPPLY_DEFS:
@@ -801,10 +803,11 @@ func _set_directive(id: String) -> void:
 			directive_id = id
 	directive_set.emit(String(directive.get("name", "")), String(directive.get("desc", "")))
 
-func directive_damage_mult() -> float: return float(directive.get("damage", 1.0))
-func directive_incoming_mult() -> float: return float(directive.get("incoming", 1.0))
-func directive_move_mult() -> float: return float(directive.get("move", 1.0))
-func directive_pickup_mult() -> float: return float(directive.get("pickup", 1.0))
+## An UPRISING run's drafted patches multiply in (uprising_mult is 1.0 outside one).
+func directive_damage_mult() -> float: return float(directive.get("damage", 1.0)) * uprising_mult("damage")
+func directive_incoming_mult() -> float: return float(directive.get("incoming", 1.0)) * uprising_mult("incoming")
+func directive_move_mult() -> float: return float(directive.get("move", 1.0)) * uprising_mult("move")
+func directive_pickup_mult() -> float: return float(directive.get("pickup", 1.0)) * uprising_mult("pickup")
 
 # ---------- BOUNTY: a rotating hunt-the-marked-target sub-goal ----------
 ## Periodically tags one live non-boss enemy as a BOUNTY: a beacon-marked target
@@ -1673,6 +1676,8 @@ const CUTSCENE_FOR_LEVEL := {"sublevel": UPRISING_REVEAL}
 func go_to_level(path: String, reset: bool = false) -> void:
 	current_level_path = path
 	var found := campaign().find(path)
+	if is_uprising():
+		found = -1 # an UPRISING sector borrows a campaign level; it is not campaign progress
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -1686,7 +1691,7 @@ func go_to_level(path: String, reset: bool = false) -> void:
 	var lid := level_id_from_path(path)
 	if lid == "01":
 		_enter_level_scene(INTRO_CUTSCENE)
-	elif CUTSCENE_FOR_LEVEL.has(lid):
+	elif CUTSCENE_FOR_LEVEL.has(lid) and not is_uprising(): # a run's sectors skip the story reveals
 		_enter_level_scene(CUTSCENE_FOR_LEVEL[lid])
 	else:
 		_enter_level_scene(LEVEL_BRIEFING)
@@ -1776,8 +1781,14 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		_deaths_level_id = scene_path
 	current_level_path = scene_path
 	var found := campaign().find(scene_path)
-	if is_daily_op():
-		found = -1 # a Daily Op borrows a campaign level; it is not campaign progress (no save, no frontier)
+	if is_daily_op() or is_uprising():
+		found = -1 # a Daily Op or UPRISING sector borrows a campaign level; it is not campaign progress (no save, no frontier)
+	if is_uprising() and reset:
+		# A retry inside a run (TRY AGAIN / Restart) replays the sector: the score
+		# rewinds to what it was on entry, and the drafted patches stay the only mutators.
+		reset = false
+		score = int(uprising.get("sector_score", 0))
+		score_changed.emit(score)
 	if found != -1:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
@@ -1827,7 +1838,7 @@ func has_save() -> bool:
 
 ## Write a checkpoint of the current run so the player can Continue later.
 func save_progress() -> void:
-	if is_daily_op():
+	if is_daily_op() or is_uprising():
 		return # a Daily Op is a one-off run: the campaign checkpoint stays as it was (#172)
 	var cf := ConfigFile.new()
 	cf.set_value("run", "level_index", level_index)
@@ -2000,12 +2011,17 @@ func continue_campaign() -> void:
 	load_level(campaign()[level_index], false)
 
 func has_next_level() -> bool:
+	if is_uprising():
+		return int(uprising["sector"]) + 1 < (uprising["levels"] as Array).size()
 	return level_index + 1 < campaign().size()
 
 ## Called by the level-complete "Continue" button.
 func advance_level() -> void:
 	if is_daily_op():
 		finish_daily_op()
+		return
+	if is_uprising():
+		_uprising_advance()
 		return
 	if has_next_level():
 		go_to_level(campaign()[level_index + 1], false)
@@ -2159,12 +2175,296 @@ func end_daily_op() -> void:
 	daily_op = {}
 	_daily_saved = {}
 
+# ---------- UPRISING MODE: a seeded five-sector run with drafted patches ----------
+# @lat: [[meta-systems#Uprising Mode]]
+## A run borrows campaign levels the way a Daily Op does: a seed picks four non-boss
+## sectors (in campaign order) and a boss to end on. Between sectors the player
+## drafts one of three PATCHES, each a buff with a cost, folded into the directive
+## mult getters (so every system that already honours a directive honours a patch).
+## Deaths spend REBOOTS; the death after the last one ends the run. However a run
+## ends, it banks COMPUTE into records.cfg, the persistent currency that pays for
+## rerolls and that unlocks the rarer patches. Like a Daily Op it never touches the
+## campaign save, and closing it restores the run state start_uprising found.
+const UPRISING_DRAFT := "res://scenes/ui/uprising_draft.tscn"
+const UPRISING_SECTORS := 5
+## Deaths forgiven before the next one ends the run. A cleared sector repairs one
+## spent reboot (up to the run's max_lives): the bot playtest (tests/uprising_playtest)
+## spent both by sector 3 in 5 of 5 runs, and a sector is a whole campaign level.
+const UPRISING_LIVES := 2
+## Compute per reroll. A run banks ~30-120 (5 bot runs: 31, 45, 45, 65, 117), so at
+## 10 a reroll was nearly free.
+const UPRISING_REROLL_COST := 15
+const UPRISING_SECTOR_COMPUTE := 5  ## compute banked per sector cleared
+const UPRISING_CLEAR_COMPUTE := 20  ## bonus for clearing the boss sector
+const UPRISING_SCORE_PER_COMPUTE := 100
+const UPRISING_DIFFICULTY := Difficulty.NORMAL
+const UPRISING_CLOSE_DELAY := 3.0 ## seconds the run-over screen holds before the menu
+## Every patch is a buff with a cost. Multiplier keys fold into the directive getters
+## (damage dealt, damage taken, move speed, loot); "upgrade" grants Armory ranks
+## (capped at UPGRADE_MAX); "lives" adds reboots. "unlock" is lifetime compute
+## earned before the patch enters the pool (0 = always offered): with ~60 a run,
+## the three locked patches open around runs 2, 4 and 8.
+const UPRISING_PATCHES := [
+	{"id": "overclock", "name": "OVERCLOCKED CORES",
+		"desc": "+35% damage dealt, but you take +25% more", "damage": 1.35, "incoming": 1.25},
+	{"id": "hardened", "name": "HARDENED CHASSIS",
+		"desc": "Take 35% less damage, but move 12% slower", "incoming": 0.65, "move": 0.88},
+	{"id": "afterburner", "name": "AFTERBURNER FIRMWARE",
+		"desc": "+22% move speed, but deal 10% less damage", "move": 1.22, "damage": 0.9},
+	{"id": "scavenger", "name": "SCAVENGER SUBROUTINE",
+		"desc": "Kills drop double loot, but you take +15% more damage", "pickup": 2.0, "incoming": 1.15},
+	{"id": "leech", "name": "VAMPIRE PROTOCOL",
+		"desc": "+3 LIFELEECH ranks, but you take +15% more damage", "upgrade": {"leech": 3}, "incoming": 1.15},
+	{"id": "demolition", "name": "DEMOLITION PACKAGE",
+		"desc": "+3 GRENADE POWER ranks, but guns deal 10% less damage", "upgrade": {"blast": 3}, "damage": 0.9},
+	{"id": "rapid", "name": "RAPID LOADER",
+		"desc": "+3 MAGAZINE and +3 RELOAD ranks, but move 10% slower", "upgrade": {"mag": 3, "reload": 3}, "move": 0.9},
+	{"id": "backup", "name": "COLD BACKUP",
+		"desc": "+1 reboot, but deal 15% less damage", "lives": 1, "damage": 0.85, "unlock": 100},
+	{"id": "berserk", "name": "BERSERK.EXE",
+		"desc": "+60% damage dealt, but you take +60% more", "damage": 1.6, "incoming": 1.6, "unlock": 250},
+	{"id": "marathon", "name": "MARATHON KERNEL",
+		"desc": "+3 STAMINA ranks and +12% move speed, but you take +20% more damage", "upgrade": {"stamina": 3}, "move": 1.12, "incoming": 1.2, "unlock": 500},
+]
+var uprising: Dictionary = {}        ## the run being played ({} outside one)
+var uprising_result: Dictionary = {} ## the last closed run: {won, sectors, score, compute, best, new_best}
+var uprising_records_path: String = RECORDS_PATH ## where compute and bests persist (probes redirect it)
+var _uprising_saved: Dictionary = {}
+
+func is_uprising() -> bool:
+	return not uprising.is_empty()
+
+## True once the run has died past its last reboot (the close is on its way).
+func uprising_run_over() -> bool:
+	return is_uprising() and bool(uprising.get("over", false))
+
+## The patch definition for `id` ({} if unknown).
+func uprising_patch(id: String) -> Dictionary:
+	for p in UPRISING_PATCHES:
+		if String(p["id"]) == id:
+			return p
+	return {}
+
+## The sectors for `run_seed`, the same on every machine: four non-boss campaign
+## levels other than the first, in campaign order, then a boss.
+func uprising_plan(run_seed: int) -> Array:
+	var camp := campaign()
+	var pool: Array = []
+	var bosses: Array = []
+	for i in range(1, camp.size()):
+		var path := String(camp[i])
+		if LevelDefs.level_is_boss(level_id_from_path(path)):
+			bosses.append(path)
+		else:
+			pool.append(path)
+	if pool.size() < UPRISING_SECTORS - 1 or bosses.is_empty():
+		return []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("uprising:%d" % run_seed).hash()
+	var picked: Array = []
+	while picked.size() < UPRISING_SECTORS - 1:
+		var p = pool[rng.randi() % pool.size()]
+		if not picked.has(p):
+			picked.append(p)
+	picked.sort_custom(func(x, y): return camp.find(x) < camp.find(y))
+	picked.append(bosses[rng.randi() % bosses.size()])
+	return picked
+
+## Persistent standing: {compute (spendable), earned (lifetime), best (most sectors
+## cleared), runs, clears}.
+func uprising_record() -> Dictionary:
+	var cf := ConfigFile.new()
+	cf.load(uprising_records_path)
+	return {"compute": int(cf.get_value("uprising", "compute", 0)),
+		"earned": int(cf.get_value("uprising", "earned", 0)),
+		"best": int(cf.get_value("uprising", "best", 0)),
+		"runs": int(cf.get_value("uprising", "runs", 0)),
+		"clears": int(cf.get_value("uprising", "clears", 0))}
+
+func _uprising_write(fields: Dictionary) -> void:
+	var cf := ConfigFile.new()
+	cf.load(uprising_records_path) # keep the campaign, horde and daily sections
+	for k in fields:
+		cf.set_value("uprising", k, fields[k])
+	cf.save(uprising_records_path)
+
+## Add spendable compute (negative spends it).
+func _uprising_add_compute(n: int) -> void:
+	_uprising_write({"compute": maxi(int(uprising_record()["compute"]) + n, 0)})
+
+## The patches a draft may offer: unlocked by lifetime compute, not already owned.
+func _uprising_pool() -> Array:
+	var earned := int(uprising_record()["earned"])
+	var owned: Array = uprising.get("patches", [])
+	var out: Array = []
+	for p in UPRISING_PATCHES:
+		if int(p.get("unlock", 0)) <= earned and not owned.has(String(p["id"])):
+			out.append(String(p["id"]))
+	return out
+
+## Roll three distinct offers, seeded by the run, the sector and the reroll count,
+## so a seed replays the same drafts.
+func _uprising_roll_offers() -> void:
+	var pool := _uprising_pool()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("uprising-draft:%d:%d:%d" % [int(uprising["seed"]), int(uprising["sector"]), int(uprising.get("rerolls", 0))]).hash()
+	var offers: Array = []
+	while offers.size() < mini(3, pool.size()):
+		var id = pool[rng.randi() % pool.size()]
+		if not offers.has(id):
+			offers.append(id)
+	uprising["offers"] = offers
+
+## Spend compute on a fresh set of offers. False (nothing spent) when the bank is
+## short or no different set is possible.
+func uprising_reroll() -> bool:
+	if not is_uprising() or int(uprising_record()["compute"]) < UPRISING_REROLL_COST:
+		return false
+	var before: Array = uprising.get("offers", [])
+	if _uprising_pool().size() <= before.size():
+		return false
+	for i in 8: # a reroll must change the offers; the seed walks until it does
+		uprising["rerolls"] = int(uprising.get("rerolls", 0)) + 1
+		_uprising_roll_offers()
+		if uprising["offers"] != before:
+			break
+	_uprising_add_compute(-UPRISING_REROLL_COST)
+	return true
+
+## The product of `key` over the run's patches (1.0 outside a run).
+func uprising_mult(key: String) -> float:
+	var m := 1.0
+	for id in uprising.get("patches", []):
+		m *= float(uprising_patch(String(id)).get(key, 1.0))
+	return m
+
+## Set up a run for `run_seed` and deploy to sector 1.
+func start_uprising(run_seed: int) -> void:
+	var plan := uprising_plan(run_seed)
+	if plan.is_empty():
+		return
+	end_daily_op() # the two borrowed-level modes never stack
+	if not is_uprising(): # a restart from inside a run keeps the first snapshot
+		_uprising_saved = {}
+		for k in DAILY_RUN_KEYS:
+			var v = get(k)
+			_uprising_saved[k] = v.duplicate(true) if (v is Array or v is Dictionary) else v
+	uprising = {"seed": run_seed, "levels": plan, "sector": 0, "patches": [], "offers": [],
+		"lives": UPRISING_LIVES, "max_lives": UPRISING_LIVES, "rerolls": 0, "over": false, "sector_score": 0}
+	uprising_result = {}
+	difficulty = UPRISING_DIFFICULTY
+	reset_run()
+	unlocked_weapons.clear() # assigned in place: the typed array keeps its type
+	upgrades = {}
+	for k in UPGRADE_DEFS:
+		upgrades[k] = 0
+	owned_mods.clear()
+	weapon_mods = {}
+	equipped_weapon = ""
+	intro_played = true
+	controls_taught = true
+	level_deaths = 0
+	_deaths_level_id = ""
+	_uprising_write({"runs": int(uprising_record()["runs"]) + 1})
+	AIDirector.note_run_start()
+	_uprising_deploy()
+
+## Enter the current sector: hand over the guns the campaign gives out before it
+## (the run's arsenal only grows) and go through the briefing like a campaign level.
+func _uprising_deploy() -> void:
+	var path := String(uprising["levels"][int(uprising["sector"])])
+	for sc in daily_arsenal(path):
+		if not unlocked_weapons.has(sc):
+			unlocked_weapons.append(sc)
+	uprising["sector_score"] = score # a retry of this sector rewinds the score here
+	go_to_level(path, false)
+
+## A cleared sector: open the draft, or close the run won after the boss.
+func _uprising_advance() -> void:
+	uprising["sector"] = int(uprising["sector"]) + 1
+	if int(uprising["sector"]) >= (uprising["levels"] as Array).size():
+		_close_uprising(true)
+		return
+	uprising["lives"] = mini(int(uprising["lives"]) + 1, int(uprising["max_lives"])) # a clear repairs one reboot
+	uprising["rerolls"] = 0
+	_uprising_roll_offers()
+	set_state(State.MENU)
+	get_tree().change_scene_to_file(UPRISING_DRAFT)
+
+## The draft's pick: take the patch, apply its one-off grants, deploy.
+func uprising_pick(id: String) -> void:
+	if not is_uprising() or not (uprising.get("offers", []) as Array).has(id):
+		return
+	var p := uprising_patch(id)
+	(uprising["patches"] as Array).append(id)
+	uprising["offers"] = []
+	uprising["lives"] = int(uprising["lives"]) + int(p.get("lives", 0))
+	uprising["max_lives"] = int(uprising["max_lives"]) + int(p.get("lives", 0))
+	var ups: Dictionary = p.get("upgrade", {})
+	for k in ups:
+		upgrades[k] = mini(int(upgrades.get(k, 0)) + int(ups[k]), UPGRADE_MAX)
+	upgrades_changed.emit()
+	_uprising_deploy()
+
+## A death inside a run: spend a reboot, or end the run after a short beat.
+func _uprising_on_death() -> void:
+	if int(uprising["lives"]) > 0:
+		uprising["lives"] = int(uprising["lives"]) - 1
+		return
+	uprising["over"] = true
+	var t := get_tree().create_timer(UPRISING_CLOSE_DELAY, true, false, true)
+	t.timeout.connect(func() -> void:
+		if uprising_run_over():
+			_close_uprising(false))
+
+## Bank the run and hand back the state it replaced, then go to the menu.
+func _close_uprising(won: bool) -> void:
+	if not is_uprising():
+		return
+	var cleared := int(uprising["sector"])
+	var gained := score / UPRISING_SCORE_PER_COMPUTE + cleared * UPRISING_SECTOR_COMPUTE \
+		+ (UPRISING_CLEAR_COMPUTE if won else 0)
+	var rec := uprising_record()
+	_uprising_write({"compute": int(rec["compute"]) + gained, "earned": int(rec["earned"]) + gained,
+		"best": maxi(int(rec["best"]), cleared), "clears": int(rec["clears"]) + (1 if won else 0)})
+	uprising_result = {"won": won, "sectors": cleared, "of": (uprising["levels"] as Array).size(),
+		"score": score, "compute": gained, "best": maxi(int(rec["best"]), cleared),
+		"new_best": cleared > int(rec["best"]), "patches": (uprising["patches"] as Array).duplicate()}
+	end_uprising()
+	set_state(State.MENU)
+	get_tree().change_scene_to_file(MAIN_MENU)
+
+## Leave a run however it ended and restore what it replaced. The main menu calls
+## this on every visit (banking an abandoned run first), so no path out leaves one running.
+func end_uprising() -> void:
+	if not is_uprising():
+		return
+	for k in _uprising_saved:
+		set(k, _uprising_saved[k])
+	uprising = {}
+	_uprising_saved = {}
+
+## The main menu's guard: a run left through Quit to Menu counts as lost and banks.
+func abandon_uprising() -> void:
+	if is_uprising():
+		var cleared := int(uprising["sector"])
+		var gained := score / UPRISING_SCORE_PER_COMPUTE + cleared * UPRISING_SECTOR_COMPUTE
+		var rec := uprising_record()
+		_uprising_write({"compute": int(rec["compute"]) + gained, "earned": int(rec["earned"]) + gained,
+			"best": maxi(int(rec["best"]), cleared)})
+		uprising_result = {"won": false, "sectors": cleared, "of": (uprising["levels"] as Array).size(),
+			"score": score, "compute": gained, "best": maxi(int(rec["best"]), cleared),
+			"new_best": cleared > int(rec["best"]), "patches": (uprising["patches"] as Array).duplicate()}
+		end_uprising()
+
 var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
 
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
 	AIDirector.note_death(killer) # counts the death; only cleared levels teach the dossier
+	if is_uprising():
+		_uprising_on_death()
 	set_state(State.GAME_OVER)
 	player_died.emit()
 

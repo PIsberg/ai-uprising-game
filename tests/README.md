@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-497 probes total: **202** wired into the headless suite (`suite`), **85**
+500 probes total: **203** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **210** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **211** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -518,6 +518,9 @@ or GPU-timing probes; `--headless` renders these black).
 | tree_probe | Suburb level with scattered volumetric trees at eye level | windowed |
 | ttk_probe | Ground-truth weapon DPS against real enemy robots (pellets/falloff/pierce/splash/chain/cluster all counted) | headless |
 | unique_enemy_probe | Batch-5 signature behaviors on real AI: hunter blade dash, raptor strafing run, ripper spin-up saw, sentinel salvo, warbot crossfire | headless |
+| uprising_probe | UPRISING MODE: `uprising_plan` is fixed per seed (4 non-boss sectors in campaign order, then a boss) and differs by seed; `start_uprising` loads sector 1 without touching the campaign save; a clear opens the draft with 3 distinct offers; a reroll is refused without compute, spends it and changes the offers; the draft button takes its patch, whose multipliers come through the `directive_*_mult` getters; sector 2 loads with the score carried; `UPRISING_LIVES` deaths are forgiven and the next ends the run, banks score/100 + sector compute and restores the difficulty; the menu's Uprising button reports the run (its script writes that line, so a menu script that fails to parse fails here); a full clear banks the clear bonus and the best sector; a sector with a campaign story cutscene takes the plain briefing (red-checked: before the guard it played the UPRISING reveal) | suite |
+| uprising_playtest | Report: plays a whole UPRISING run with the reference bot (`tests/playtest_bot.gd`) on real sectors, real enemies and drafted patches, `fight` game seconds per sector, deaths through the HUD's retry path, survived sectors force-cleared; prints a SECTOR line per sector (kills, damage taken, deaths, killers, multipliers) and the banked RUN. `-- seed=7 fight=60 pick=random\|first\|damage` | headless |
+| uprising_draft_shot | UPRISING look check: the draft screen mid-run (sector strip, three patch cards with buff/cost lines, reroll) and the main menu's Uprising button after a lost run; `-- --out=<dir>` | windowed |
 | victory_probe | Clearing the last campaign level routes to the victory cutscene VIA the loading screen (asserts the destination, not the next frame) | suite |
 | victory_watch | Helper parented to `/root`; polls `current_scene` across the campaign-end scene swaps for victory_probe | headless |
 | victory_shot | Victory finale at fixed timeline moments (headless renders black) | windowed |

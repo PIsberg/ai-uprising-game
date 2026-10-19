@@ -1182,6 +1182,9 @@ func _on_level_completed() -> void:
 	if GameState.is_daily_op():
 		win_title.text = tr("DAILY OP COMPLETE")
 		win_continue.text = tr("Main Menu")
+	elif GameState.is_uprising():
+		win_title.text = tr("SECTOR %d/%d CLEARED") % [int(GameState.uprising["sector"]) + 1, (GameState.uprising["levels"] as Array).size()]
+		win_continue.text = "Draft  ▸" if GameState.has_next_level() else tr("Finish")
 	elif GameState.has_next_level():
 		win_title.text = tr("SECTOR CLEARED")
 		win_continue.text = "Continue  ▸"
@@ -1724,6 +1727,14 @@ func _fill_death_recap() -> void:
 	# about to get before they press it.
 	if game_over_restart_btn:
 		game_over_restart_btn.text = "RESPAWN (SPACE)" if GameState.has_checkpoint() else "TRY AGAIN (SPACE)"
+		game_over_restart_btn.visible = not GameState.uprising_run_over()
+	# UPRISING: a death spends a reboot; the one after the last ends the run and
+	# GameState hands back to the menu after UPRISING_CLOSE_DELAY.
+	if GameState.is_uprising():
+		if GameState.uprising_run_over():
+			_recap_label.text += "\n" + tr("RUN TERMINATED  ·  no reboots left")
+		else:
+			_recap_label.text += "\n" + (tr("REBOOTED  ·  %d left") % int(GameState.uprising["lives"]))
 
 func _show_toast(text: String) -> void:
 	toast.text = text

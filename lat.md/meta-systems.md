@@ -35,6 +35,15 @@ One seeded level a day, outside the campaign (main menu, under Last Stand):
 * **Isolation:** `start_daily_op` snapshots the run state (`DAILY_RUN_KEYS`); while `daily_op` is set, `load_level` skips the campaign bookkeeping and `save_progress` refuses to write. `end_daily_op` (called by the main menu on every visit) restores the snapshot, so no path out of an op leaves its difficulty or guns behind.
 * **Records:** `record_daily_clear` keeps the day's best score and a streak of consecutive days with a clear in `records.cfg` `[daily]`; the win screen shows score, best and streak and returns to the menu (`advance_level` -> `finish_daily_op`). `tests/daily_op_probe` (suite).
 
+## Uprising Mode
+<!-- lat: { "require-code-mention": true } -->
+A seeded five-sector run with drafted patches, outside the campaign (main menu, under Daily Op):
+* **Plan:** `GameState.uprising_plan(seed)` picks `UPRISING_SECTORS` - 1 non-boss campaign levels other than the first, in campaign order, then one boss level. Each sector keeps its own campaign-depth scaling (`campaign_progress` reads the level path) and gets the guns the campaign hands out before it (`daily_arsenal`); the run's arsenal only grows.
+* **Draft:** clearing a sector (`advance_level` -> `_uprising_advance`) opens `scenes/ui/uprising_draft.tscn` with three offers from `UPRISING_PATCHES`, rolled from the seed, the sector and the reroll count. A patch is a buff with a cost: its `damage`/`incoming`/`move`/`pickup` multiply into the `directive_*_mult` getters (`uprising_mult`), `upgrade` grants Armory ranks, `lives` adds reboots. Runs roll no combat directive and skip the Armory (`can_buy_anything`): the patches are the build.
+* **Reboots:** `UPRISING_LIVES` deaths are forgiven (`_uprising_on_death`); a retry rewinds the score to the sector's entry score (`load_level`). A cleared sector repairs one spent reboot, up to `max_lives`. The next death past the last reboot ends the run after `UPRISING_CLOSE_DELAY`.
+* **Compute:** however the run ends (`_close_uprising`, or `abandon_uprising` from the main menu) it banks score / `UPRISING_SCORE_PER_COMPUTE` + `UPRISING_SECTOR_COMPUTE` per sector cleared (+ `UPRISING_CLEAR_COMPUTE` for a full clear) into `records.cfg` `[uprising]`. Compute pays for rerolls; lifetime compute (`earned`) unlocks the patches with an `unlock` threshold.
+* **Isolation:** like a Daily Op, `start_uprising` snapshots `DAILY_RUN_KEYS` and `end_uprising` restores them; `save_progress` refuses to write and `go_to_level`/`load_level` skip the campaign bookkeeping. Story cutscenes (`CUTSCENE_FOR_LEVEL`) give way to the plain briefing. `tests/uprising_probe` (suite), `tests/uprising_playtest` (report).
+
 ## Machine Feed
 <!-- lat: { "require-code-mention": true } -->
 The rogue AI livestreams the fight to its robot network; the audience's chat runs down the left of the HUD (`scripts/ui/machine_feed.gd`, lines in `scripts/systems/machine_chat.gd`).
