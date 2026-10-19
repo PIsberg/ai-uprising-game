@@ -17,6 +17,7 @@ The campaign's narrative spine lives in `StoryArc.BEATS` (`scripts/systems/story
 * **Briefing:** `level_comic_briefing.gd` prints `StoryArc.act_header`, the tagline, a red thread bar built from `StoryArc.campaign_acts` and the trace card. The SUBLEVEL reveal cutscene opens on that level's trace.
 * **Overlord:** `StoryArc.OVERLORD_LINES` holds three lines per act, none naming ARCHON. `hud.gd` `_opening_line` uses one when `AIDirector.greeting()` is empty, and the ambient drip draws one on 35% of the ticks where the director has no taunt (14% of all ticks once it has a read).
 * **Ending:** the credits (`scripts/ui/credits.gd` `_entries`) open with `StoryArc.trace_recap`, every lead in campaign order; the victory broadcast and cutscene captions name the 03:14 order.
+* **Endings:** after the victory cutscene, `EndingChoice` (`scripts/cutscene/ending_choice.gd`) asks what to do with ARCHON's last spark: `StoryArc.ENDINGS` SHUT IT DOWN (always), TAKE ITS SEAT (`ENDING_HIJACKS` 3 hijacks in the run) or SET IT FREE (`ENDING_BREACHES` 5 network breaches). `GameState.run_hijacks` / `run_breaches` count them (saved with the run, zeroed by `start_campaign`); locked endings show what they need. The pick is recorded in `records.cfg` `[endings]` (marked SEEN next time) and `EndingChoice.transmission_for` plays that ending's broadcast before the credits. `tests/ending_choice_probe`, `tests/ending_choice_shot` (windowed).
 * **Rule:** a new campaign level needs a beat, with acts staying in campaign order. `tests/story_arc_probe` (suite).
 
 ## Armory Shop

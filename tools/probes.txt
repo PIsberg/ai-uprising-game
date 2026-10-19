@@ -133,6 +133,8 @@ res://tests/hazard_kill_label_probe.tscn
 res://tests/telemetry_probe.tscn
 # NETWORK BREACH: targeting, scan slow-mo, turret/barrel/gate/robot takeovers, costs, refusals.
 res://tests/network_breach_probe.tscn
+# Branching ending: run counters, unlocks, the choice screen, per-ending broadcast.
+res://tests/ending_choice_probe.tscn
 # UPRISING MODE: seeded run plan, draft/reroll, patch mults, reboots, banking, menu button.
 res://tests/uprising_probe.tscn
 # Weapon-specific deaths: energy kills disintegrate, arc kills electrocute.

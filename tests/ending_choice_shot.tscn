@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/ending_choice_shot.gd" id="1_s"]
+
+[node name="EndingChoiceShot" type="Node"]
+script = ExtResource("1_s")

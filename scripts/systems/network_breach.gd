@@ -179,6 +179,7 @@ func breach(n: Node) -> bool:
 	if not took:
 		return false
 	bandwidth -= cost
+	GameState.note_breach() # the finale's SET IT FREE counts these
 	breached.emit(n, label)
 	GameState.teach_hint.emit(tr("◈ BREACHED · %s") % label)
 	AudioBus.play_synth_ui("overlord_glitch", -6.0, 1.4)
