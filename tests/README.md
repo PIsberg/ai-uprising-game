@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-490 probes total: **195** wired into the headless suite (`suite`), **85**
+491 probes total: **196** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -99,6 +99,7 @@ or GPU-timing probes; `--headless` renders these black).
 | cargo_lift_shot | A level's cargo lift (LAVA WORLD, or `--level=water_world`): the shaft with the car down, the car at its top deck, the view from the deck; `-- --out=<dir> [--level=<id>]` | windowed |
 | cascade_probe | The CX-4 Cascade, the early horde-clearer: the gun carries cascade damage and radius, ranks between the Breacher and the Maelstrom and is in the warp arsenal; one cascade kill in a ring of six robots under 0.6 of a blast chains through all six, a robot outside the radius and a player inside it are untouched, and GameState reports one chain of six; the same kill from the rifle hurts no neighbour and reports no chain; a primed robot finished by an untagged hit still detonates, an expired prime does not; a 30-robot line at 0.95 of a blast pops at least 2 but not all (each generation is weaker); a boss-sized robot is never primed (red-checked: with the prime call disabled 6 checks fail) | suite |
 | changelog_clip_probe | The changelog-clip skill's scene (`tools/changelog_clip.tscn`): at the trim mark the camera is within 3 deg of the parked target and the mark precedes the first shot; the burst fires 2+ shots that land (target health drops) while the target holds its spot; the clip reloads; the player and WeaponManager take no live input (red-checked: without the lock both read true; a pushed mouse event cannot show it headless, where the mouse is never captured); `enemy=none` parks a wall slab in the line of fire instead of a target and still fires and reloads | suite |
+| chat_poll_probe | CHAT POLL: 7 event ids each with a title; a due event opens a poll between two different events and runs nothing yet; the feed shows the tally with both titles; the poll clock holds while PAUSED; votes tick up; at the end the leader (GRID SURGE, forced ahead) wins, runs (surge live) and counts as the level event; the poll closes, the feed hides the tally and posts "CHAT VOTED: GRID SURGE" (red-checked: with the winner not run, "the winner ran" fails) | suite |
 | chapters_test | Campaign chapter groupings end on the expected level titles | headless |
 | checkpoint_probe | Mid-level checkpoint/respawn: task completion sets a checkpoint; dying after relocating restores it | headless |
 | claude_showcase | Claude vault showcase; framed views of the centrepiece/lighting | windowed |

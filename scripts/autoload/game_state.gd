@@ -909,9 +909,31 @@ var _event_cd: float = EVENT_FIRST_DELAY
 var _level_events: int = 0
 var _surge_t: float = 0.0 ## grid surge seconds left (double ultimate gain)
 
+## CHAT POLL: a due event is not rolled silently. The MACHINE FEED audience votes
+## between two different events for POLL_TIME (votes tick in every POLL_TICK, the
+## feed draws the tally) and the leader runs. The poll clock only runs while
+## PLAYING. tests/chat_poll_probe.
+const EVENT_IDS := ["assassin", "supply", "surge", "hallucination", "leak", "orbital", "clone"]
+const EVENT_TITLES := {
+	"assassin": "ASSASSIN CONTRACT", "supply": "SUPPLY FLARE", "surge": "GRID SURGE",
+	"hallucination": "MODEL HALLUCINATION", "leak": "DATA LEAK",
+	"orbital": "ORBITAL STRIKE", "clone": "BEHAVIOUR CLONE",
+}
+const POLL_TIME := 8.0
+const POLL_TICK := 0.5
+signal chat_poll_started(options: Array) ## two EVENT_IDS
+signal chat_poll_votes(votes: Array)     ## running tally, one per option
+signal chat_poll_ended(winner: String)   ## the event id about to run
+var _poll: Dictionary = {} ## {options, votes, t (seconds left), tick}
+
 func _tick_events(delta: float) -> void:
 	_surge_t = maxf(0.0, _surge_t - delta)
-	if current_state != State.PLAYING or _level_events >= EVENTS_PER_LEVEL:
+	if current_state != State.PLAYING:
+		return
+	if not _poll.is_empty():
+		_tick_poll(delta)
+		return
+	if _level_events >= EVENTS_PER_LEVEL:
 		return
 	_event_cd -= delta
 	if _event_cd > 0.0:
@@ -923,14 +945,39 @@ func _tick_events(delta: float) -> void:
 	if _bounty != null and _bounty.get_ref() != null:
 		return
 	_level_events += 1
-	match randi() % 7:
-		0: _event_assassin()
-		1: _event_supply_flare()
-		2: _event_grid_surge()
-		3: _event_hallucination()
-		4: _event_data_leak()
-		5: _event_orbital_strike()
-		6: _event_behaviour_clone()
+	var a: String = EVENT_IDS[randi() % EVENT_IDS.size()]
+	var b: String = a
+	while b == a:
+		b = EVENT_IDS[randi() % EVENT_IDS.size()]
+	_poll = {"options": [a, b], "votes": [0, 0], "t": POLL_TIME, "tick": 0.0}
+	chat_poll_started.emit([a, b])
+
+## Votes come in through the poll; when it closes, the leader (the first option on
+## a tie) runs. Each tick a random share of the audience votes, either way.
+func _tick_poll(delta: float) -> void:
+	_poll["t"] = float(_poll["t"]) - delta
+	_poll["tick"] = float(_poll["tick"]) + delta
+	var votes: Array = _poll["votes"]
+	while float(_poll["tick"]) >= POLL_TICK:
+		_poll["tick"] = float(_poll["tick"]) - POLL_TICK
+		votes[randi() % 2] += randi_range(3, 14)
+		chat_poll_votes.emit(votes)
+	if float(_poll["t"]) > 0.0:
+		return
+	var winner: String = _poll["options"][0 if int(votes[0]) >= int(votes[1]) else 1]
+	_poll = {}
+	chat_poll_ended.emit(winner)
+	_run_event(winner)
+
+func _run_event(id: String) -> void:
+	match id:
+		"assassin": _event_assassin()
+		"supply": _event_supply_flare()
+		"surge": _event_grid_surge()
+		"hallucination": _event_hallucination()
+		"leak": _event_data_leak()
+		"orbital": _event_orbital_strike()
+		"clone": _event_behaviour_clone()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -1296,6 +1343,7 @@ func reset_level_stats() -> void:
 	_nemesis_spawned_this_level = false # each level gets one shot at the grudge match
 	level_hijacks = 0
 	_event_cd = EVENT_FIRST_DELAY # skirmish events re-arm per level
+	_poll = {} # a poll open when the level ended does not carry over
 	_level_events = 0
 	_surge_t = 0.0
 	AIDirector.reset_profile() # the AI re-reads you fresh each level

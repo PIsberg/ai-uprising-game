@@ -44,6 +44,7 @@ The rogue AI livestreams the fight to its robot network; the audience's chat run
 * One post per `MIN_GAP` (1.2 s): a burst of events posts the first, but small talk (`CHATTER`: intro, idle) never blocks an event line, and a death always posts. At most `MAX_LINES` (5) show, each fading after `LINE_LIFE` (7 s); a line never repeats the one its pool posted last.
 * Viewers start at `BASE_VIEWERS` + `VIEWERS_PER_LEVEL` x `GameState.level_index`, gain `MachineChat.HYPE` per event (the cascade's x pops, rampage's x tier), lose `DECAY` of the excess every `DECAY_TICK`, and keep `DEATH_KEEP` when you die.
 * Off with the Combat Callouts setting (`GraphicsSettings.combat_callouts_enabled`), which also hides the feed. `tests/machine_feed_probe`.
+* **CHAT POLL:** the skirmish-event director (`GameState._tick_events`) no longer rolls a due event silently. It opens `_poll` between two different `EVENT_IDS` (`chat_poll_started`), adds a random 3-14 votes to one side every `POLL_TICK` (`chat_poll_votes`) for `POLL_TIME` (8 s, `PLAYING` only, so a pause freezes it), then runs the leader through `_run_event` (`chat_poll_ended`; a tie goes to the first option). The poll counts against `EVENTS_PER_LEVEL` when it opens; `reset_level_stats` drops an open one. The feed draws the tally under its header and posts "CHAT VOTED: <event>". `tests/chat_poll_probe`.
 
 ## 3D Enemy Codex
 <!-- lat: { "require-code-mention": true } -->
