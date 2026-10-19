@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-500 probes total: **203** wired into the headless suite (`suite`), **86**
+501 probes total: **204** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -219,6 +219,7 @@ or GPU-timing probes; `--headless` renders these black).
 | deepfake_shot | DEEPFAKE and its two copies facing the camera over 2 s, so a copy's glitch lands in a frame; `-- --out=<dir>` | windowed |
 | difficulty_curve | Per-level THREAT INDEX (enemy DPS+survivability) shows the campaign ramps up; EASY/NORMAL/HARD spread modelled | headless |
 | difficulty_scaling_check | How many spawners survive `apply_level_scaling` per difficulty on a representative level | headless |
+| directive_roll_probe | COMBAT DIRECTIVES roll where a level is new: entering a non-boss campaign level the normal way (`go_to_level`, then the briefing's `load_level(path, false)`) rolls one about `DIRECTIVE_CHANCE` of the time (red before the fix: 0 of 200); a boss level never does; TRY AGAIN with no checkpoint (`load_level(path)`, same level) keeps the level's directive; Continue rolls one for the level it resumes | suite |
 | directive_probe | Per-level COMBAT DIRECTIVE mutators: mult getters, damage-hook effects, roll chance, HUD announcement | windowed |
 | dismember_probe | Android damaged past health thresholds; panels shed mid-degradation without errors | windowed |
 | dodge_probe | PERFECT DODGE: a hit negated by dash i-frames scores a bonus+banner once per dash; non-dashing hit does not | windowed |

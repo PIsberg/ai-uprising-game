@@ -787,6 +787,15 @@ signal directive_set(name: String, desc: String) ## Level's directive (or "" for
 var directive_id: String = ""
 var directive: Dictionary = {}
 
+## Roll the directive for a level being entered fresh: none on a boss level (those
+## fights stay pure) or inside an UPRISING run (its patches are the mutators).
+func roll_level_directive(path: String) -> void:
+	if is_uprising() or LevelDefs.level_is_boss(level_id_from_path(path)):
+		directive = {}
+		directive_id = ""
+	else:
+		roll_directive()
+
 func roll_directive() -> void:
 	var id := ""
 	if randf() <= DIRECTIVE_CHANCE:
@@ -1683,6 +1692,9 @@ func go_to_level(path: String, reset: bool = false) -> void:
 		max_level_reached = maxi(max_level_reached, found)
 	if reset:
 		reset_run()
+	# The campaign enters a level here, then the briefing calls load_level(path, false),
+	# which never rolls: before this, directives only rolled on a TRY AGAIN reload.
+	roll_level_directive(path)
 	set_state(State.PLAYING)
 	if found != -1:
 		save_progress()
@@ -1774,6 +1786,7 @@ func _save_bestiary() -> void:
 ## advancement passes false so the running score carries across levels.
 func load_level(scene_path: String, reset: bool = true) -> void:
 	clear_checkpoint() # a fresh build of the level — any mid-level checkpoint is stale
+	var retry := scene_path == _deaths_level_id # TRY AGAIN / Restart of the level we are on
 	# Only wipe the death counter on a genuine new level, not a TRY-AGAIN retry
 	# of the one we're already on (see _deaths_level_id's comment above).
 	if scene_path != _deaths_level_id:
@@ -1793,17 +1806,18 @@ func load_level(scene_path: String, reset: bool = true) -> void:
 		level_index = found
 		max_level_reached = maxi(max_level_reached, found)
 	if reset:
+		var kept := directive
 		reset_run()
-		# Roll this level's COMBAT DIRECTIVE (skip bosses — those fights stay pure).
-		# Only on a genuine new level; a TRY-AGAIN retry (reset=false) keeps it.
-		# A Daily Op always runs the directive its date picked.
+		# This level's COMBAT DIRECTIVE: a retry of the level we are on (TRY AGAIN
+		# with no checkpoint reloads with reset) keeps the one it started with; a
+		# replay of another level rolls (skipping bosses). A Daily Op always runs
+		# the directive its date picked.
 		if is_daily_op():
 			_set_directive(String(daily_op.get("directive", "")))
-		elif not LevelDefs.level_is_boss(level_id_from_path(scene_path)):
-			roll_directive()
+		elif retry:
+			_set_directive(String(kept.get("id", "")))
 		else:
-			directive = {}
-			directive_id = ""
+			roll_level_directive(scene_path)
 	reset_level_stats()
 	set_state(State.PLAYING)
 	if found != -1:
@@ -2008,6 +2022,7 @@ func continue_campaign() -> void:
 		return
 	intro_played = true # don't replay the opening broadcast on a resumed run
 	level_index = clampi(level_index, 0, campaign().size() - 1)
+	roll_level_directive(campaign()[level_index]) # the save keeps no directive: a resumed level rolls afresh
 	load_level(campaign()[level_index], false)
 
 func has_next_level() -> bool:
