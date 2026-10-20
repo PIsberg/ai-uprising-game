@@ -107,12 +107,29 @@ func _run() -> void:
 		var hb := hud.get_node("Margin/Layout/BottomLeft/HealthRow/HealthBar") as Control
 		_check("player one's HUD fits the left half", margin.get_global_rect().position.x >= -0.5 and margin.get_global_rect().end.x <= half.size.x + 0.5,
 			"layout %s in a %s half" % [margin.get_global_rect(), half.size])
+		var score := hud.get_node("Margin/Layout/Top/ScoreLabel") as Control
+		var radar := hud.get_node_or_null("Radar") as Control
+		_check("the objectives and score stay clear of the radar", radar != null
+				and not obj.get_global_rect().intersects(radar.get_global_rect())
+				and not score.get_global_rect().intersects(radar.get_global_rect()),
+			"objectives %s score %s radar %s" % [obj.get_global_rect(), score.get_global_rect(), radar.get_global_rect() if radar else "none"])
 		_check("player one's health bar is inside the half", hb.get_global_rect().position.x >= 0.0 and hb.get_global_rect().end.x <= half.size.x,
 			str(hb.get_global_rect()))
 
 	# 4. Per-player canvas layers.
 	var postfx := p2.get_node_or_null("PostFX") as CanvasLayer
 	_check("player two's post FX draws in the right half", postfx != null and postfx.custom_viewport == vps[1])
+	# A full-rect control under a routed layer is laid out against the HALF, not
+	# the window (#422: the breach meter, centred on the window, sat on the half's
+	# right edge, and a centred vignette would too).
+	var overlay := p2.get_node_or_null("PostFX/Overlay") as Control
+	if overlay == null and postfx:
+		for n in postfx.find_children("*", "ColorRect", true, false):
+			overlay = n
+			break
+	var half2: Vector2 = vps[1].get_visible_rect().size
+	_check("player two's full-screen overlay fills the right half exactly", overlay != null and overlay.get_global_rect().size.distance_to(half2) < 1.0 and overlay.get_global_rect().position.length() < 1.0,
+		"%s vs half %s" % [overlay.get_global_rect() if overlay else "none", half2])
 	var late := CanvasLayer.new()
 	p1.add_child(late)
 	await get_tree().create_timer(0.8, true, false, true).timeout

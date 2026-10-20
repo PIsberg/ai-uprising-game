@@ -212,6 +212,11 @@ layout_mode = 2
 text = "Score: 0"
 horizontal_alignment = 2
 
+[node name="RadarGap" type="Control" parent="Margin/Layout/Top"]
+custom_minimum_size = Vector2(196, 0)
+layout_mode = 2
+mouse_filter = 2
+
 [node name="Spacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
