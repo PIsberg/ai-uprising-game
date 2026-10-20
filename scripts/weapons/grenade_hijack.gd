@@ -79,6 +79,11 @@ func _burst() -> void:
 	# how close you were standing to it.
 	for pl in GameState.players():
 		_glitch(pl, pos)
+	# Once per burst, after the players: these sat inside _glitch, so with no
+	# player the spent grenade never freed and with two the scramble played twice (#408).
+	AudioBus.play_synth_at("overlord_glitch", pos, 1.0, 1.2) # firmware-injection scramble
+	AudioBus.play_synth_at("broadcast_blip", pos, -4.0, 0.7)
+	queue_free()
 
 func _glitch(pl: Node3D, pos: Vector3) -> void:
 	if pl.has_method("pulse_glitch"):
@@ -87,9 +92,6 @@ func _glitch(pl: Node3D, pos: Vector3) -> void:
 		if near > 0.0:
 			pl.pulse_glitch(near * 0.9, 2.0)
 			pl.add_screen_shock(pos, near * 0.7)
-	AudioBus.play_synth_at("overlord_glitch", pos, 1.0, 1.2) # firmware-injection scramble
-	AudioBus.play_synth_at("broadcast_blip", pos, -4.0, 0.7)
-	queue_free()
 
 ## A green ring-shockwave + flash — same read as the EMP burst, friendly color.
 func _spawn_burst_fx(pos: Vector3) -> void:
