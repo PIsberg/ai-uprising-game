@@ -10,7 +10,14 @@ extends Node
 ## (6) damage to the abandoned body snaps the link ("body");
 ## (7) the ride clock running out ends it ("time");
 ## (8) an escort (mission-critical ally) and an unhijacked robot refuse the link;
-## (9) a flying chassis climbs on jump.
+## (9) a flying chassis climbs on jump;
+## (10) signature attacks (#343), each through the uplink's own fire input: a
+##      ridden RAPTOR's belly gun strafes a 3-round burst on one pull; a ridden
+##      SEEKER dives at the aim point and detonates (the robot there is hurt, the
+##      chassis is spent and the ride ends); a ridden GUNNER spins up (its
+##      cadence shortens while the trigger is held); a ridden BRUTE's ground
+##      pound hits a robot BEHIND it, which the generic frontal slam cannot. (The
+##      HOWITZER has 640 HP, over HIJACK_BOSS_HP: it cannot be ridden at all.)
 ##   godot --headless --path . --audio-driver Dummy res://tests/neural_uplink_probe.tscn
 
 const ENEMY := "res://scenes/enemies/android.tscn"
@@ -172,6 +179,69 @@ func _run() -> void:
 	Input.action_release("jump")
 	print("flyer: %.2f -> %.2f m" % [y0, f.global_position.y])
 	_check(f.global_position.y > y0 + 1.0, "flying chassis climbs on jump")
+	uplink.end("exit")
+
+	# 10. Signature attacks.
+	var rp := _spawn("res://scenes/enemies/raptor.tscn", Vector3(-120, 3, 0))
+	var rp_t := _spawn(ENEMY, Vector3(-120, 0, -10))
+	await _frames(6)
+	rp_t.set_physics_process(false)
+	rp.hijack(60.0, player)
+	_check(uplink.begin(rp), "raptor links")
+	var rp_one: float = EnemyBase.PILOT_DPS * rp.pilot_cooldown() # one generic shot
+	var r0: float = rp_t.hp.current_health
+	uplink.set("_yaw", 0.0)
+	var to_t: Vector3 = rp_t.global_position + Vector3.UP * 1.0 - (rp.global_position + Vector3.UP * 1.2)
+	uplink.set("_pitch", atan2(to_t.y, Vector2(to_t.x, to_t.z).length()))
+	Input.action_press("fire")
+	await _frames(2)
+	Input.action_release("fire")
+	await _frames(30)
+	_check(r0 - rp_t.hp.current_health >= rp_one * 1.4, "a ridden raptor's belly gun strafes a burst on one pull (%.0f taken, one shot is %.0f)" % [r0 - rp_t.hp.current_health, rp_one])
+	uplink.end("exit")
+
+	var sk := _spawn("res://scenes/enemies/seeker.tscn", Vector3(-160, 1.2, 0))
+	var sk_t := _spawn(ENEMY, Vector3(-160, 0, -9))
+	await _frames(6)
+	sk_t.set_physics_process(false)
+	sk.hijack(60.0, player)
+	_check(uplink.begin(sk), "seeker links")
+	uplink.set("_yaw", 0.0)
+	uplink.set("_pitch", -0.1)
+	var s0: float = sk_t.hp.current_health
+	_reasons.clear()
+	Input.action_press("fire")
+	await _frames(3)
+	Input.action_release("fire")
+	await _frames(90)
+	_check(sk_t.hp.current_health < s0, "a ridden seeker dives and blasts the robot it aimed at (%.0f -> %.0f)" % [s0, sk_t.hp.current_health])
+	_check(not is_instance_valid(sk) and _reasons.has("lost"), "the seeker is spent and the ride ends " + str(_reasons))
+
+	var gn := _spawn("res://scenes/enemies/gunner.tscn", Vector3(-200, 0, 0))
+	await _frames(6)
+	gn.hijack(60.0, player)
+	_check(uplink.begin(gn), "gunner links")
+	var c0: float = gn.pilot_cooldown()
+	Input.action_press("fire")
+	await _frames(90)
+	var c1: float = gn.pilot_cooldown()
+	Input.action_release("fire")
+	_check(c1 < c0 * 0.6, "a ridden gunner spins up (cadence %.2f -> %.2f s)" % [c0, c1])
+	uplink.end("exit")
+
+	var br := _spawn("res://scenes/enemies/brute.tscn", Vector3(-240, 0, 0))
+	var br_t := _spawn(ENEMY, Vector3(-240, 0, 3)) # BEHIND it (it faces -Z)
+	await _frames(6)
+	br_t.set_physics_process(false)
+	br.hijack(60.0, player)
+	_check(uplink.begin(br), "brute links")
+	uplink.set("_yaw", 0.0)
+	var b0: float = br_t.hp.current_health
+	Input.action_press("fire")
+	await _frames(3)
+	Input.action_release("fire")
+	await _frames(10)
+	_check(br_t.hp.current_health < b0, "a ridden brute's ground pound hits a robot behind it (%.0f -> %.0f)" % [b0, br_t.hp.current_health])
 	uplink.end("exit")
 
 	print("RESULT %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))

@@ -13,6 +13,26 @@ var _shield_mat: Material
 var _block_cd: float = 0.0
 var _windup: float = 0.0
 
+## Ridden (#343): a ground pound all round it, not the generic frontal slam:
+## every loyal robot within PILOT_POUND_RADIUS takes the slam and is thrown back.
+const PILOT_POUND_RADIUS := 6.0
+func pilot_cooldown() -> float:
+	return 1.1
+
+func pilot_signature(_aim: Vector3) -> void:
+	recoil = 1.0
+	var dmg := PILOT_DPS * pilot_cooldown() * PILOT_SLAM_MULT
+	for eb in pilot_foes():
+		var to := eb.global_position - global_position
+		to.y = 0.0
+		var d := to.length()
+		if d > PILOT_POUND_RADIUS:
+			continue
+		eb.hp.apply_damage(dmg * clampf(1.2 - d / PILOT_POUND_RADIUS, 0.4, 1.0), pilot_credit())
+		eb.velocity += (to / maxf(d, 0.01)) * 8.0 + Vector3.UP * 4.0
+	spawn_shockwave_ring(PILOT_POUND_RADIUS, Color(1.0, 0.55, 0.2), global_position, false)
+	AudioBus.play_synth_at("explosion", global_position, 0.0, 0.5)
+
 func _ready() -> void:
 	add_to_group("shield_enemies")
 	_build_shield()

@@ -38,6 +38,27 @@ var _barrel_heat: float = 0.0
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
+## Ridden (#343): the trigger spins the barrels up, so the cadence shortens from
+## PILOT_SLOW to PILOT_FAST over PILOT_SPIN_SHOTS rounds held, and eases back when
+## you let go (damage per second stays the generic PILOT_DPS: the spin is the feel).
+const PILOT_SLOW := 0.32
+const PILOT_FAST := 0.08
+const PILOT_SPIN_SHOTS := 10.0
+var _pilot_spin := 0.0 ## 0..1
+var _pilot_last_ms := 0
+
+func pilot_cooldown() -> float:
+	return lerpf(PILOT_SLOW, PILOT_FAST, _pilot_spin)
+
+func pilot_signature(aim: Vector3) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _pilot_last_ms > 450: # let go: the barrels wound down
+		_pilot_spin = 0.0
+	_pilot_last_ms = now
+	_pilot_spin = minf(1.0, _pilot_spin + 1.0 / PILOT_SPIN_SHOTS)
+	_rotor_spin = ROTOR_SPIN_MAX * _pilot_spin
+	pilot_fire(aim)
+
 func _ready() -> void:
 	super._ready()
 	max_health = 230.0

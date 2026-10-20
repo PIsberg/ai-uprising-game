@@ -34,6 +34,11 @@ var camera: Camera3D = null
 var _yaw: float = 0.0
 var _pitch: float = CAM_PITCH
 var _fire_cd: float = 0.0
+## A ride is on. Tracked apart from `robot`: a ridden chassis that is freed (a
+## seeker's dive, a robot lost in lava) compares EQUAL to null, so testing
+## `robot == null` left the player linked out, weapons off, scanning for a new
+## candidate, with the ride never ended.
+var riding: bool = false
 var _scan_t: float = 0.0
 var _body_damage: float = 0.0
 var _ride_age: float = 0.0
@@ -70,7 +75,7 @@ func _ready() -> void:
 		hp.died.connect(_on_body_died)
 
 func _input(event: InputEvent) -> void:
-	if robot == null:
+	if not riding:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var m := event as InputEventMouseMotion
@@ -79,7 +84,7 @@ func _input(event: InputEvent) -> void:
 		_pitch = clampf(_pitch - m.relative.y * sens * float(player.get("_look_y_sign")), -1.1, 0.7)
 
 func _physics_process(delta: float) -> void:
-	if robot == null:
+	if not riding:
 		_scan(delta)
 		# Read every frame (the scan is throttled): a tap lasts one frame.
 		if candidate != null and _pin().just_pressed("interact"):
@@ -108,15 +113,16 @@ func _physics_process(delta: float) -> void:
 	_fire_cd = maxf(0.0, _fire_cd - delta)
 	if _fire_cd <= 0.0 and _pin().pressed("fire"):
 		_fire_cd = robot.pilot_cooldown()
-		robot.pilot_fire(_aim_point())
+		robot.pilot_signature(_aim_point())
 	_label.text = "%s · %s\n%.1f s  ·  CHASSIS %d%%" % [tr("NEURAL UPLINK"), robot.codex_key().to_upper(),
 		time_left, int(100.0 * robot.hp.current_health / maxf(robot.hp.max_health, 1.0))]
 
 ## Ride `r` now. False (and nothing changes) when it cannot carry a mind.
 func begin(r: EnemyBase) -> bool:
-	if robot != null or not can_ride(r):
+	if riding or not can_ride(r):
 		return false
 	robot = r
+	riding = true
 	candidate = null
 	r.pilot = player
 	r.pilot_ticks = 0
@@ -138,10 +144,11 @@ func begin(r: EnemyBase) -> bool:
 
 ## Snap back to the body. The ridden chassis burns out on the way.
 func end(reason: String) -> void:
-	if robot == null:
+	if not riding:
 		return
 	var r := robot
 	robot = null
+	riding = false
 	if is_instance_valid(r):
 		r.release_pilot()
 	player.set("linked_out", false)
@@ -162,7 +169,7 @@ func _on_body_died(_source: Node) -> void:
 	end("body")
 
 func _on_body_damaged(amount: float, _source: Node) -> void:
-	if robot == null:
+	if not riding:
 		return
 	_body_damage += amount
 	if _body_damage >= BODY_BREAK:
