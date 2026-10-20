@@ -11,6 +11,8 @@ extends Node3D
 ## ends (the recorder trims everything before it) and "CLIP DONE" at the end.
 ## tests/changelog_clip_probe pins the aim, burst, reload and input lock.
 
+## The global RNG seed at the trim mark (see the mark, #360).
+const CLIP_SEED := 358
 signal marked
 signal finished
 
@@ -91,9 +93,20 @@ func _run() -> void:
 		player.rotation.y = atan2(-to.x, -to.z)
 		head.rotation = Vector3(atan2(to.y, Vector2(to.x, to.z).length()), 0, 0)
 	await _wait(0.6)
+	# SoundSynth builds its streams on a worker thread, and a ref older than #360
+	# draws that noise from the global RNG, which would spend the seed below in
+	# the background. Let the pass finish first (setup is trimmed off anyway).
+	var synth_wait := 0.0
+	while SoundSynth.has_method("is_all_ready") and not SoundSynth.is_all_ready() and synth_wait < 30.0:
+		await get_tree().process_frame
+		synth_wait += get_process_delta_time()
 	# Everything before this frame is setup; the recorder trims it off.
 	mark_frame = Engine.get_process_frames()
 	print("CLIP MARK frame=%d" % Engine.get_frames_drawn())
+	# Both commits' rolls (pellet scatter, damage numbers, sparks) start from the
+	# same seed here, so a pair matches wherever their draw order is the same; a
+	# change that adds or removes draws still diverges after it (#360).
+	seed(CLIP_SEED)
 	marked.emit()
 	await _wait(0.4)
 	# Re-press every 0.15 s so SEMI guns get fresh trigger pulls; AUTO stays hot.

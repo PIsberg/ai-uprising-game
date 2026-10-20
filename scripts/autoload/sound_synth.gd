@@ -9,7 +9,8 @@ extends Node
 ## an early caller pays for that one stream instead of getting silence.
 ## tests/synth_boot_probe holds both halves. The generators below are pure
 ## (they touch no shared state and no scene tree), which is what makes the
-## worker safe; keep them that way.
+## worker safe; keep them that way. That includes the global RNG: their noise
+## comes from _rng(), never randf(), or the worker spends a caller's seed() (#360).
 
 const SR := 44100
 
@@ -27,6 +28,10 @@ var _aliases := {
 	# Armory was silent. tests/sound_id_probe now gates every referenced id.
 	"pickup_clink": "pickup_ammo",
 }
+## The generators' own noise, one per thread: get_stream() can build a stream on
+## the main thread while the worker builds others.
+var _rng_worker := RandomNumberGenerator.new()
+var _rng_main := RandomNumberGenerator.new()
 var _mutex := Mutex.new()
 var _task := -1
 var _cancel := false
@@ -48,6 +53,9 @@ func _stop_worker() -> void:
 		_cancel = true
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
+
+func _rng() -> RandomNumberGenerator:
+	return _rng_main if OS.get_thread_caller_id() == OS.get_main_thread_id() else _rng_worker
 
 func _job(id: String, gen: Callable) -> void:
 	_jobs[id] = gen
@@ -207,6 +215,7 @@ func get_stream(id: String) -> AudioStream:
 
 ## Low industrial room tone: stacked low sines + slow swell + faint air hiss.
 func _ambient_drone(dur: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(SR * dur)
 	var bytes := _silence(n)
 	for i in n:
@@ -215,19 +224,20 @@ func _ambient_drone(dur: float) -> AudioStreamWAV:
 		var s := sin(TAU * 55.0 * t) * 0.5
 		s += sin(TAU * 82.5 * t) * 0.22
 		s += sin(TAU * 110.0 * t) * 0.16
-		s += (randf() * 2.0 - 1.0) * 0.03 # faint hiss
+		s += (rng.randf() * 2.0 - 1.0) * 0.03 # faint hiss
 		s *= 0.55 + 0.45 * swell
 		_write(bytes, i, s * 0.45)
 	return _to_stream(bytes, true)
 
 ## Outdoor wind: low-passed noise with slow gusting.
 func _ambient_wind(dur: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(SR * dur)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
-		var white := randf() * 2.0 - 1.0
+		var white := rng.randf() * 2.0 - 1.0
 		lp = lp * 0.96 + white * 0.04 # one-pole low-pass -> wind rush
 		var gust := 0.5 + 0.5 * sin(TAU * 0.25 * t)
 		_write(bytes, i, lp * (0.35 + 0.65 * gust) * 0.7)
@@ -237,6 +247,7 @@ func _ambient_wind(dur: float) -> AudioStreamWAV:
 ## a brighter, shorter inhale hiss and a softer, longer exhale, both made of
 ## filtered noise so it reads as breath, not wind.
 func _breathing(dur: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(SR * dur)
 	var bytes := _silence(n)
 	var lp := 0.0
@@ -252,7 +263,7 @@ func _breathing(dur: float) -> AudioStreamWAV:
 		elif cycle >= 0.95:
 			env = sin(PI * (cycle - 0.95) / 1.05) * 0.85 # exhale: longer, softer
 			bright = 0.22
-		var white := randf() * 2.0 - 1.0
+		var white := rng.randf() * 2.0 - 1.0
 		lp = lp * (0.93 - bright * 0.28) + white * (0.07 + bright * 0.28)
 		lp2 = lp2 * 0.55 + lp * 0.45 # second pole rounds off the hiss
 		_write(bytes, i, lp2 * env * env * 0.9)
@@ -314,6 +325,7 @@ static func _to_stream(bytes: PackedByteArray, loop: bool = false) -> AudioStrea
 # ----- generators -----
 
 func _gun_fire(duration: float, body_hz: float, body_amp: float, click_amp: float, deep: bool) -> AudioStreamWAV:
+	var rng := _rng()
 	# Sharp click + body thump + decaying mid-noise
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -334,15 +346,16 @@ func _gun_fire(duration: float, body_hz: float, body_amp: float, click_amp: floa
 		sub_phase += TAU * (body_hz * 0.5) / SR
 		var sub := sin(sub_phase) * body_amp * 0.7 * exp(-t * (12.0 if deep else 20.0))
 		# Click (broadband noise multiplied by very fast decay) + a sharper snap.
-		var click := (randf() * 2.0 - 1.0) * click_amp * env_click
-		var snap := (randf() * 2.0 - 1.0) * click_amp * 0.8 * env_snap
+		var click := (rng.randf() * 2.0 - 1.0) * click_amp * env_click
+		var snap := (rng.randf() * 2.0 - 1.0) * click_amp * 0.8 * env_snap
 		# Mid-band noise tail
-		var tail := (randf() * 2.0 - 1.0) * 0.35 * env_tail
+		var tail := (rng.randf() * 2.0 - 1.0) * 0.35 * env_tail
 		var s := tanh(body + sub + click + snap + tail) * 0.85
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _plasma_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Pitched zap with rising sweep + crackle
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -356,12 +369,13 @@ func _plasma_fire(duration: float) -> AudioStreamWAV:
 		phase_a += TAU * hz_a / SR
 		phase_b += TAU * hz_b / SR
 		var tone := sin(phase_a) * 0.6 + sin(phase_b) * 0.3
-		var crackle := (randf() * 2.0 - 1.0) * 0.25 * env
+		var crackle := (rng.randf() * 2.0 - 1.0) * 0.25 * env
 		var s := tanh(tone * env + crackle) * 0.9
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _laser_zap(duration: float, hz_start: float, hz_end: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var phase := 0.0
@@ -371,11 +385,12 @@ func _laser_zap(duration: float, hz_start: float, hz_end: float) -> AudioStreamW
 		var env := exp(-t * 14.0) * (1.0 - exp(-t * 200.0))
 		var hz := lerpf(hz_start, hz_end, u)
 		phase += TAU * hz / SR
-		var s := sin(phase) * 0.7 * env + (randf() * 2.0 - 1.0) * 0.12 * env
+		var s := sin(phase) * 0.7 * env + (rng.randf() * 2.0 - 1.0) * 0.12 * env
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _rocket_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Whoosh: filtered noise with low rumble
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -387,7 +402,7 @@ func _rocket_fire(duration: float) -> AudioStreamWAV:
 		var hz := 80.0 + 30.0 * sin(t * 8.0)
 		phase += TAU * hz / SR
 		var rumble := sin(phase) * 0.5
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		# One-pole lowpass
 		lp = lerpf(lp, noise, 0.18)
 		var s := (lp * 0.7 + rumble * 0.6) * env
@@ -415,6 +430,7 @@ static func _echo(buf: PackedFloat32Array, delay: float, gain: float, lp_k: floa
 
 ## .50 Maelstrom: a deep hand-cannon crack with two slap-back echoes rolling off.
 func _hand_cannon(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -423,7 +439,7 @@ func _hand_cannon(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		ph += TAU * (110.0 - 45.0 * (1.0 - exp(-t * 20.0))) / SR
 		var body := sin(ph) * 1.3 * exp(-t * 16.0)
-		var crack := (randf() * 2.0 - 1.0) * (2.2 * exp(-t * 260.0) + 0.5 * exp(-t * 40.0))
+		var crack := (rng.randf() * 2.0 - 1.0) * (2.2 * exp(-t * 260.0) + 0.5 * exp(-t * 40.0))
 		buf[i] = body + crack
 	_echo(buf, 0.11, 0.45, 0.2)
 	_echo(buf, 0.24, 0.25, 0.12)
@@ -431,6 +447,7 @@ func _hand_cannon(duration: float) -> AudioStreamWAV:
 
 ## CL-3 Arc Coil: a capacitor dump. Mains-hum buzz under a sizzle of sparks.
 func _arc_crack(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -439,26 +456,28 @@ func _arc_crack(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		ph += TAU * 120.0 / SR
 		var buzz := signf(sin(ph)) * 0.35 * exp(-t * 14.0)
-		var spark := (randf() * 2.0 - 1.0) * (1.0 if randf() < 0.18 else 0.25) * exp(-t * 22.0)
+		var spark := (rng.randf() * 2.0 - 1.0) * (1.0 if rng.randf() < 0.18 else 0.25) * exp(-t * 22.0)
 		var zap := sin(TAU * lerpf(2600.0, 900.0, t / duration) * t) * 0.4 * exp(-t * 30.0)
-		buf[i] = buzz + spark + zap + (randf() * 2.0 - 1.0) * 1.4 * exp(-t * 300.0)
+		buf[i] = buzz + spark + zap + (rng.randf() * 2.0 - 1.0) * 1.4 * exp(-t * 300.0)
 	return _from_floats(buf)
 
 ## VK-7 Tesla: one tick of the beam (13 a second) - a short wet crackle.
 func _tesla_tick(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 55.0)
-		var crackle := (randf() * 2.0 - 1.0) * (0.9 if randf() < 0.3 else 0.2)
+		var crackle := (rng.randf() * 2.0 - 1.0) * (0.9 if rng.randf() < 0.3 else 0.2)
 		buf[i] = (crackle + signf(sin(TAU * 240.0 * t)) * 0.25) * env
 	return _from_floats(buf)
 
 ## ARC-9 Gauss Lance: the coil whines up for 60 ms, then the slug cracks out
 ## and the rails ring.
 func _lance_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -471,7 +490,7 @@ func _lance_fire(duration: float) -> AudioStreamWAV:
 			buf[i] = sin(ph) * 0.35 * (t / PRE)
 			continue
 		var u := t - PRE
-		var crack := (randf() * 2.0 - 1.0) * 2.0 * exp(-u * 200.0)
+		var crack := (rng.randf() * 2.0 - 1.0) * 2.0 * exp(-u * 200.0)
 		var ring := (sin(TAU * 1250.0 * u) * 0.35 + sin(TAU * 1870.0 * u) * 0.22) * exp(-u * 9.0)
 		var thump := sin(TAU * 70.0 * u) * 1.1 * exp(-u * 14.0)
 		buf[i] = crack + ring + thump
@@ -479,6 +498,7 @@ func _lance_fire(duration: float) -> AudioStreamWAV:
 
 ## MK-VII Longshot: the supersonic crack, a heavy boom, and a long rolling tail.
 func _longshot_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -488,8 +508,8 @@ func _longshot_fire(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		ph += TAU * (80.0 - 30.0 * (1.0 - exp(-t * 12.0))) / SR
 		var boom := sin(ph) * 1.4 * exp(-t * 11.0)
-		var crack := (randf() * 2.0 - 1.0) * 2.6 * exp(-t * 420.0)
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.06)
+		var crack := (rng.randf() * 2.0 - 1.0) * 2.6 * exp(-t * 420.0)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.06)
 		var roll := lp * 1.6 * exp(-t * 3.2) * (1.0 - exp(-t * 30.0))
 		buf[i] = boom + crack + roll
 	_echo(buf, 0.18, 0.35, 0.1)
@@ -497,6 +517,7 @@ func _longshot_fire(duration: float) -> AudioStreamWAV:
 
 ## SW-7 Swarm: three micro-rockets leave the tubes 60 ms apart.
 func _swarm_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -509,14 +530,15 @@ func _swarm_fire(duration: float) -> AudioStreamWAV:
 			if u < 0.0:
 				continue
 			s += sin(TAU * (150.0 - 20.0 * k) * u) * 0.8 * exp(-u * 30.0)
-			s += (randf() * 2.0 - 1.0) * 0.9 * exp(-u * 120.0)
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.2)
+			s += (rng.randf() * 2.0 - 1.0) * 0.9 * exp(-u * 120.0)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.2)
 		buf[i] = s + lp * 0.5 * sin(PI * minf(1.0, t / duration))
 	return _from_floats(buf)
 
 ## TPX-9 Tempest: a thunderclap - a split-second crack, a falling zap and the
 ## rumble rolling after it.
 func _tempest_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -526,14 +548,15 @@ func _tempest_fire(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		ph += TAU * lerpf(700.0, 160.0, minf(1.0, t / 0.25)) / SR
 		var zap := sin(ph) * 0.45 * exp(-t * 10.0)
-		var crack := (randf() * 2.0 - 1.0) * (2.0 * exp(-t * 90.0)) * (1.0 if randf() < 0.5 else 0.3)
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.04)
+		var crack := (rng.randf() * 2.0 - 1.0) * (2.0 * exp(-t * 90.0)) * (1.0 if rng.randf() < 0.5 else 0.3)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.04)
 		buf[i] = zap + crack + lp * 2.2 * exp(-t * 4.0) * (1.0 - exp(-t * 18.0))
 	return _from_floats(buf)
 
 ## OMEGA-X: a 100 ms charge scream, then the core lets go - a sub-drop, a wall
 ## of noise and a ringing hull.
 func _omega_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -549,14 +572,15 @@ func _omega_fire(duration: float) -> AudioStreamWAV:
 			continue
 		var u := t - PRE
 		sub += TAU * (60.0 - 26.0 * (1.0 - exp(-u * 6.0))) / SR
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.12)
-		var blast := lp * 2.4 * exp(-u * 5.0) + (randf() * 2.0 - 1.0) * 1.5 * exp(-u * 80.0)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.12)
+		var blast := lp * 2.4 * exp(-u * 5.0) + (rng.randf() * 2.0 - 1.0) * 1.5 * exp(-u * 80.0)
 		var ring := sin(TAU * 220.0 * u) * 0.3 * exp(-u * 4.0) + sin(TAU * 331.0 * u) * 0.18 * exp(-u * 5.0)
 		buf[i] = sin(sub) * 1.6 * exp(-u * 3.5) + blast + ring
 	return _from_floats(buf)
 
 ## GRK-X Devastator: the launch charge punches before the rocket motor roars off.
 func _devastator_fire(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -564,9 +588,9 @@ func _devastator_fire(duration: float) -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / SR
 		var thump := sin(TAU * (64.0 - 20.0 * t) * t) * 1.5 * exp(-t * 14.0)
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.16)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.16)
 		var motor := lp * 1.1 * pow(sin(PI * clampf(t / duration, 0.0, 1.0)), 0.5) * (1.0 - exp(-t * 25.0))
-		var pop := (randf() * 2.0 - 1.0) * 1.8 * exp(-t * 180.0)
+		var pop := (rng.randf() * 2.0 - 1.0) * 1.8 * exp(-t * 180.0)
 		buf[i] = thump + motor + pop
 	return _from_floats(buf)
 
@@ -585,6 +609,7 @@ func _fire_thump(duration: float) -> AudioStreamWAV:
 ## The action cycling behind a cartridge report (WeaponData.action_clack): two
 ## steel clicks 18 ms apart, the bolt going back and slamming home.
 func _action_clack(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -596,13 +621,14 @@ func _action_clack(duration: float) -> AudioStreamWAV:
 			if u < 0.0:
 				continue
 			var env := exp(-u * 170.0)
-			s += ((randf() * 2.0 - 1.0) * 0.8 + sin(TAU * (2200.0 + 1200.0 * k) * u) * 0.5) * env
+			s += ((rng.randf() * 2.0 - 1.0) * 0.8 + sin(TAU * (2200.0 + 1200.0 * k) * u) * 0.5) * env
 		buf[i] = s
 	return _from_floats(buf)
 
 ## An energy cell venting on reload (Weapon CELL style): a pressurised hiss
 ## that bursts, then sighs off as the cell empties.
 func _vent_hiss(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
@@ -610,7 +636,7 @@ func _vent_hiss(duration: float) -> AudioStreamWAV:
 	var prev := 0.0
 	for i in n:
 		var t := float(i) / SR
-		var white := randf() * 2.0 - 1.0
+		var white := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, white, 0.35)
 		var hp := white - lp # keep the top: steam, not rumble
 		var env := (1.0 - exp(-t * 60.0)) * exp(-t * 5.5)
@@ -620,6 +646,7 @@ func _vent_hiss(duration: float) -> AudioStreamWAV:
 	return _from_floats(buf)
 
 func _click(duration: float, hz: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var phase := 0.0
@@ -627,11 +654,12 @@ func _click(duration: float, hz: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		var env := exp(-t * 45.0)
 		phase += TAU * hz / SR
-		var s := (sin(phase) * 0.5 + (randf() * 2.0 - 1.0) * 0.6) * env
+		var s := (sin(phase) * 0.5 + (rng.randf() * 2.0 - 1.0) * 0.6) * env
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _reload_chunk(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Two metallic clicks separated in time
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -639,11 +667,12 @@ func _reload_chunk(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		var c1 := exp(-pow((t - 0.05) * 25.0, 2.0))
 		var c2 := exp(-pow((t - 0.28) * 22.0, 2.0))
-		var s := (randf() * 2.0 - 1.0) * (c1 * 0.8 + c2 * 0.7)
+		var s := (rng.randf() * 2.0 - 1.0) * (c1 * 0.8 + c2 * 0.7)
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _pump(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Cha-chunk: slide back (rasp) then forward (clack)
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -652,13 +681,14 @@ func _pump(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		var rasp := exp(-pow((t - 0.07) * 8.0, 2.0))
 		var clack := exp(-pow((t - 0.24) * 30.0, 2.0))
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.4)
-		var s := lp * rasp * 0.6 + (randf() * 2.0 - 1.0) * clack * 0.95
+		var s := lp * rasp * 0.6 + (rng.randf() * 2.0 - 1.0) * clack * 0.95
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _footstep(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Low thud + scuffed mid noise
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -669,20 +699,21 @@ func _footstep(duration: float) -> AudioStreamWAV:
 		var env := exp(-t * 18.0)
 		phase += TAU * 90.0 / SR
 		var body := sin(phase) * 0.5 * env
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.25)
 		var s := (body + lp * 0.4 * env) * 0.8
 		_write(bytes, i, s)
 	return _to_stream(bytes)
 
 func _impact(duration: float, brightness: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 28.0)
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, clampf(brightness, 0.05, 0.95))
 		var s := lp * env * 0.9
 		_write(bytes, i, s)
@@ -691,6 +722,7 @@ func _impact(duration: float, brightness: float) -> AudioStreamWAV:
 ## A round hitting METAL: a bright noise tick plus a short damped metallic ring
 ## (two high partials), so shots landing on robots clank instead of dully thudding.
 func _impact_metal(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
@@ -699,7 +731,7 @@ func _impact_metal(duration: float) -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 28.0)
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.6) # brighter than concrete
 		ph += TAU * 2100.0 / SR
 		ph2 += TAU * 3170.0 / SR
@@ -710,6 +742,7 @@ func _impact_metal(duration: float) -> AudioStreamWAV:
 ## Hollow wooden "tok": two close low-mid resonances under a short dry tick, for
 ## shots thwacking crates, logs, benches and tree trunks.
 func _impact_wood(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -723,7 +756,7 @@ func _impact_wood(duration: float) -> AudioStreamWAV:
 		ph2 += TAU * 318.0 / SR
 		var body := (sin(ph) * 0.6 + sin(ph2) * 0.3) * env
 		# A short dry tick on the very front edge so it reads as a strike, not a tone.
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.35)
 		var tick := lp * exp(-t * 130.0) * 0.5
 		_write(bytes, i, tanh(body + tick) * 0.8)
@@ -732,6 +765,7 @@ func _impact_wood(duration: float) -> AudioStreamWAV:
 ## Sharp stony crack: high-passed gritty noise that snaps and dies fast, for
 ## rock, boulders, pillars and statues (brighter and drier than concrete).
 func _impact_stone(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
@@ -739,7 +773,7 @@ func _impact_stone(duration: float) -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 48.0)
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.8)
 		var hp := lp - prev # crude high-pass -> bright chip, not a dull thud
 		prev = lp
@@ -749,13 +783,14 @@ func _impact_stone(duration: float) -> AudioStreamWAV:
 ## Molten lava bed — a seamless 4s loop of slow gloopy bubbles over a low sizzle.
 ## LFO + carrier frequencies are whole cycles over the loop so it tiles cleanly.
 func _lava_bubble(dur: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(SR * dur)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
 		# Constant low sizzle bed.
-		var white := randf() * 2.0 - 1.0
+		var white := rng.randf() * 2.0 - 1.0
 		lp = lp * 0.85 + white * 0.15
 		var sizzle := lp * 0.18
 		# Slow bubbles: overlapping low LFOs gate brief low-freq blips.
@@ -768,13 +803,14 @@ func _lava_bubble(dur: float) -> AudioStreamWAV:
 ## Gentle water — a seamless 4s loop of soft filtered burbling that swells lightly,
 ## a calm counterpart to the lava bubble so rivers/ponds read by ear.
 func _water_flow(dur: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(SR * dur)
 	var bytes := _silence(n)
 	var lp := 0.0
 	var lp2 := 0.0
 	for i in n:
 		var t := float(i) / SR
-		var white := randf() * 2.0 - 1.0
+		var white := rng.randf() * 2.0 - 1.0
 		lp = lp * 0.6 + white * 0.4    # bright trickle hiss
 		lp2 = lp2 * 0.92 + lp * 0.08   # softer flow body
 		var swell := 0.6 + 0.4 * sin(TAU * 0.5 * t) # whole cycle over 4s -> seamless
@@ -784,6 +820,7 @@ func _water_flow(dur: float) -> AudioStreamWAV:
 ## A short muffled "oof" + body thump for when the player takes a hit: a
 ## vocal-ish tone gliding down in pitch over a low-passed impact thump.
 func _hurt(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -798,7 +835,7 @@ func _hurt(duration: float) -> AudioStreamWAV:
 		var tone := sin(ph) * 0.6 + sin(ph * 2.01) * 0.25
 		tone = clampf(tone * 1.4, -1.0, 1.0) # soft growl
 		# Impact thump: low-passed noise that dies almost instantly.
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.12)
 		var thump := lp * exp(-t * 30.0) * 0.8
 		_write(bytes, i, (tone * env * 0.55 + thump * 0.6) * 0.8)
@@ -806,17 +843,19 @@ func _hurt(duration: float) -> AudioStreamWAV:
 
 ## A steady rain hiss with patter on top — looped weather bed.
 func _rain(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.5) # soft hiss
-		_write(bytes, i, (lp * 0.5 + (randf() * 2.0 - 1.0) * 0.12) * 0.5)
+		_write(bytes, i, (lp * 0.5 + (rng.randf() * 2.0 - 1.0) * 0.12) * 0.5)
 	return _to_stream(bytes, true) # looped
 
 ## A thunderclap: a sharp crack rolling into a low rumble that swells and fades.
 func _thunder(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
@@ -826,7 +865,7 @@ func _thunder(duration: float) -> AudioStreamWAV:
 		var frac := t / duration
 		var crack := exp(-t * 16.0)
 		var roll := sin(PI * frac) * (0.6 + 0.4 * sin(t * 7.0))
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.06)  # deep rumble
 		lp2 = lerpf(lp2, noise, 0.3) # crack body
 		_write(bytes, i, clampf(lp * roll * 0.9 + lp2 * crack * 0.5, -1.0, 1.0) * 0.7)
@@ -851,6 +890,7 @@ func _charge_up(duration: float) -> AudioStreamWAV:
 ## through random pitches 22 times a second) climbing as the reel speeds up,
 ## over tape hiss, with a clunk as the transport stops.
 func _tape_rewind(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -860,10 +900,10 @@ func _tape_rewind(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		var frac := t / duration
 		if i % step == 0:
-			hz = randf_range(500.0, 1400.0) * (1.0 + frac * 1.6)
+			hz = rng.randf_range(500.0, 1400.0) * (1.0 + frac * 1.6)
 		ph += TAU * hz / SR
 		var chatter := clampf(sin(ph) * 3.0, -1.0, 1.0) * 0.32
-		var hiss := (randf() * 2.0 - 1.0) * 0.12
+		var hiss := (rng.randf() * 2.0 - 1.0) * 0.12
 		var env := minf(frac * 8.0, 1.0) * (1.0 - smoothstep(0.86, 0.92, frac))
 		var s := (chatter + hiss) * env
 		if frac > 0.9: # the transport clunks to a stop
@@ -902,6 +942,7 @@ func _drone_hum(duration: float) -> AudioStreamWAV:
 	return _to_stream(bytes, true)
 
 func _explosion(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Low boom + bright crack + decaying noise rumble.
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -912,7 +953,7 @@ func _explosion(duration: float) -> AudioStreamWAV:
 		var t := float(i) / SR
 		var env := exp(-t * 6.0)
 		var env_sub := exp(-t * 3.0)   # slower-decaying deep boom for a chest-hit
-		var crack := (randf() * 2.0 - 1.0) * exp(-t * 40.0) * 0.9
+		var crack := (rng.randf() * 2.0 - 1.0) * exp(-t * 40.0) * 0.9
 		var hz := 70.0 * exp(-t * 4.0) + 30.0
 		phase += TAU * hz / SR
 		var boom := sin(phase) * env
@@ -920,15 +961,16 @@ func _explosion(duration: float) -> AudioStreamWAV:
 		var sub_hz := 42.0 * exp(-t * 2.5) + 18.0
 		sub_phase += TAU * sub_hz / SR
 		var subboom := sin(sub_phase) * env_sub * 0.8
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.15)
 		var rumble := lp * env * 0.6
 		# Sparse debris crackle peppering the rumble tail so it reads as wreckage.
-		var debris := (randf() * 2.0 - 1.0) * exp(-t * 5.0) * 0.2 if randf() < 0.25 else 0.0
+		var debris := (rng.randf() * 2.0 - 1.0) * exp(-t * 5.0) * 0.2 if rng.randf() < 0.25 else 0.0
 		_write(bytes, i, tanh(boom + subboom + crack + rumble + debris) * 0.95)
 	return _to_stream(bytes)
 
 func _whoosh(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Short airy throw whoosh (band-passed noise swelling then fading).
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -937,7 +979,7 @@ func _whoosh(duration: float) -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / SR
 		var env := sin(PI * (t / duration))
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.3)
 		hp = lp - hp * 0.5
 		_write(bytes, i, hp * env * 0.5)
@@ -982,18 +1024,19 @@ static func sign_wave(phase: float) -> float:
 	return 1.0 if sin(phase) >= 0.0 else -1.0
 
 func _radio_static(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Looped radio hiss + intermittent crackle pops, for the broadcast bed.
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.4)
 		var hiss := (noise - lp) * 0.25 # high-passed hiss
 		var crackle := 0.0
-		if randf() < 0.0025:
-			crackle = (randf() * 2.0 - 1.0) * 0.7
+		if rng.randf() < 0.0025:
+			crackle = (rng.randf() * 2.0 - 1.0) * 0.7
 		var fade := 1.0
 		var fl := 0.03
 		if t < fl:
@@ -1029,6 +1072,7 @@ const MUSIC_LAYERS := ["bed", "drums", "lead", "hot"]
 const MUSIC_GAIN := 0.85
 
 func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioStream:
+	var rng := _rng()
 	var spb := 60.0 / bpm
 	var total_beats := roots.size()
 	var dur := spb * total_beats
@@ -1077,7 +1121,7 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		if snare_lvl > 0.0 and beat_idx % 2 == 1:
 			var s_env := exp(-beat_t * 30.0)
 			var s_tone := sin(TAU * 180.0 * beat_t) * 0.5
-			snare = ((randf() * 2.0 - 1.0) * 0.7 + s_tone) * s_env * snare_lvl
+			snare = ((rng.randf() * 2.0 - 1.0) * 0.7 + s_tone) * s_env * snare_lvl
 		# Bass, eighth-note gated (saw or square), with a sub-octave sine underneath.
 		bass_phase += TAU * root / SR
 		var bass_wave := (fposmod(bass_phase, TAU) / TAU * 2.0 - 1.0) if saw_bass else sign_wave(bass_phase)
@@ -1097,7 +1141,7 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 		var hot_freq: float = arp[int(t / (spb * 0.25)) % arp.size()] * 2.0
 		hot_phase += TAU * hot_freq / SR
 		var hot_saw := fposmod(hot_phase, TAU) / TAU * 2.0 - 1.0
-		var hot_hat := (randf() * 2.0 - 1.0) * exp(-six_t * 120.0) * hat_lvl * 0.7
+		var hot_hat := (rng.randf() * 2.0 - 1.0) * exp(-six_t * 120.0) * hat_lvl * 0.7
 		var hot := hot_saw * hot_lvl * exp(-six_t * 14.0) + hot_hat
 		# Soft sustained pad (root + fifth) for atmosphere.
 		var pad := 0.0
@@ -1106,7 +1150,7 @@ func _music_track(bpm: float, roots: Array, arp: Array, p: Dictionary) -> AudioS
 			pad_b += TAU * root * 0.75 / SR
 			pad = (sin(pad_a) + sin(pad_b) * 0.7) * pad_lvl
 		# Offbeat hats.
-		var hat := (randf() * 2.0 - 1.0) * exp(-half_t * 80.0) * hat_lvl
+		var hat := (rng.randf() * 2.0 - 1.0) * exp(-half_t * 80.0) * hat_lvl
 		# Sidechain: the melodic/bass elements duck on each kick and breathe back —
 		# the classic pumping techno motion that locks everything to the beat.
 		# Applied per stem, so the bed still pumps with the drums faded out.
@@ -1248,6 +1292,7 @@ func _combo_up(duration: float) -> AudioStreamWAV:
 ## bit-crushed square tone that slides down, smeared with a little static — the
 ## sound of something inhuman keying the channel.
 func _glitch_comms(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	for i in n:
@@ -1260,13 +1305,14 @@ func _glitch_comms(duration: float) -> AudioStreamWAV:
 		var hz := 880.0 - 560.0 * (t / duration)
 		var sq: float = sign_wave(TAU * hz * t)
 		var crushed: float = round(sq * 3.0) / 3.0
-		var noise := (randf() * 2.0 - 1.0) * 0.12
+		var noise := (rng.randf() * 2.0 - 1.0) * 0.12
 		_write(bytes, i, tanh((crushed * 0.32 + noise) * gate * env * 1.3))
 	return _to_stream(bytes)
 
 ## Wet alien acid-spit: a gurgly FM tone sliding downward under a splattery noise
 ## transient — an organic "ptew" that reads apart from the metal weapons.
 func _acid_spit(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	for i in n:
@@ -1274,19 +1320,20 @@ func _acid_spit(duration: float) -> AudioStreamWAV:
 		var env := exp(-t * 9.0) * (1.0 - exp(-t * 70.0))
 		var hz: float = 520.0 - 300.0 * (t / duration)
 		var fm: float = sin(TAU * hz * t + sin(TAU * 48.0 * t) * 2.2) # gurgle
-		var splat: float = (randf() * 2.0 - 1.0) * 0.45 * exp(-t * 22.0)
+		var splat: float = (rng.randf() * 2.0 - 1.0) * 0.45 * exp(-t * 22.0)
 		_write(bytes, i, tanh((fm * 0.5 + splat) * env * 1.25))
 	return _to_stream(bytes)
 
 ## Crisp headshot ding: a high, detuned bell ping with a fast click transient.
 func _headshot_ding(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 24.0)
 		var s := sin(TAU * 2100.0 * t) * 0.5 + sin(TAU * 3150.0 * t) * 0.3
-		s += (randf() * 2.0 - 1.0) * exp(-t * 120.0) * 0.4
+		s += (rng.randf() * 2.0 - 1.0) * exp(-t * 120.0) * 0.4
 		_write(bytes, i, tanh(s * env * 1.2))
 	return _to_stream(bytes)
 
@@ -1308,6 +1355,7 @@ func _chime(duration: float, hz_lo: float, hz_hi: float) -> AudioStreamWAV:
 	return _to_stream(bytes)
 
 func _pickup_clink(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	# Bright metallic double-clink for ammo.
 	var n := int(duration * SR)
 	var bytes := _silence(n)
@@ -1318,7 +1366,7 @@ func _pickup_clink(duration: float) -> AudioStreamWAV:
 		var c2 := exp(-pow((t - 0.11) * 38.0, 2.0))
 		phase += TAU * 2200.0 / SR
 		var ring := sin(phase) * 0.3
-		var s := (randf() * 2.0 - 1.0) * (c1 * 0.7 + c2 * 0.6) + ring * (c1 + c2)
+		var s := (rng.randf() * 2.0 - 1.0) * (c1 * 0.7 + c2 * 0.6) + ring * (c1 + c2)
 		_write(bytes, i, tanh(s))
 	return _to_stream(bytes)
 
@@ -1326,13 +1374,14 @@ func _pickup_clink(duration: float) -> AudioStreamWAV:
 ## quiet and SHORT — under full-auto it has to read as a texture confirming
 ## contact, not a melody fighting the gunfire.
 func _hit_tick(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 160.0)
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.6)
 		var s := lp * env + sin(TAU * 2600.0 * t) * env * 0.35
 		_write(bytes, i, tanh(s * 1.1) * 0.8)
@@ -1341,6 +1390,7 @@ func _hit_tick(duration: float) -> AudioStreamWAV:
 ## Counter hit: a rising two-step electric chirp over a bright crack, so the
 ## right gun for this robot sounds like it is tearing something open.
 func _hit_weak(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -1349,7 +1399,7 @@ func _hit_weak(duration: float) -> AudioStreamWAV:
 		var f := 1900.0 if t < 0.05 else 2850.0
 		ph += TAU * f / SR
 		var env := exp(-fmod(t, 0.05) * 60.0) * exp(-t * 9.0)
-		var crack := (randf() * 2.0 - 1.0) * exp(-t * 140.0) * 0.6
+		var crack := (rng.randf() * 2.0 - 1.0) * exp(-t * 140.0) * 0.6
 		var s := signf(sin(ph)) * 0.3 * env + sin(ph * 1.5) * 0.25 * env + crack
 		_write(bytes, i, tanh(s * 1.4) * 0.7)
 	return _to_stream(bytes)
@@ -1357,6 +1407,7 @@ func _hit_weak(duration: float) -> AudioStreamWAV:
 ## Resisted hit: a dull low "tunk" with a short ricochet whine falling off it,
 ## plating shrugging the round off. Deliberately duller than impact_metal.
 func _hit_resist(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -1366,7 +1417,7 @@ func _hit_resist(duration: float) -> AudioStreamWAV:
 		var body := sin(TAU * 210.0 * t) * exp(-t * 34.0)
 		ph += TAU * lerpf(3400.0, 1500.0, t / duration) / SR
 		var whine := sin(ph) * exp(-t * 26.0) * 0.18
-		lp = lerpf(lp, randf() * 2.0 - 1.0, 0.25)
+		lp = lerpf(lp, rng.randf() * 2.0 - 1.0, 0.25)
 		var thud := lp * exp(-t * 90.0) * 0.5
 		_write(bytes, i, tanh((body + whine + thud) * 1.3) * 0.75)
 	return _to_stream(bytes)
@@ -1374,26 +1425,28 @@ func _hit_resist(duration: float) -> AudioStreamWAV:
 ## Kill-confirm thock: a heavier low knock through the same crosshair channel
 ## as hit_tick, so a kill lands with unmistakably more weight than a graze.
 func _kill_thock(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	for i in n:
 		var t := float(i) / SR
 		var body := sin(TAU * 150.0 * t) * exp(-t * 30.0)
 		var knock := sin(TAU * 820.0 * t) * exp(-t * 55.0) * 0.5
-		var snap := (randf() * 2.0 - 1.0) * exp(-t * 200.0) * 0.5
+		var snap := (rng.randf() * 2.0 - 1.0) * exp(-t * 200.0) * 0.5
 		_write(bytes, i, tanh((body + knock + snap) * 1.5) * 0.9)
 	return _to_stream(bytes)
 
 ## A spent casing striking the floor: one tiny bright ping with a fast noise
 ## transient. The caller randomises pitch so a burst scatters into a tinkle.
 func _brass_tink(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	for i in n:
 		var t := float(i) / SR
 		var env := exp(-t * 90.0)
 		var s := sin(TAU * 4200.0 * t) * 0.5 + sin(TAU * 6300.0 * t) * 0.25
-		s += (randf() * 2.0 - 1.0) * exp(-t * 300.0) * 0.5
+		s += (rng.randf() * 2.0 - 1.0) * exp(-t * 300.0) * 0.5
 		_write(bytes, i, tanh(s * env * 1.3) * 0.6)
 	return _to_stream(bytes)
 
@@ -1430,6 +1483,7 @@ func _ui_back(duration: float) -> AudioStreamWAV:
 ## well under mech_step's volume/length since this fires every stride, on
 ## multiple enemies, rather than as a one-off boss beat.
 func _servo_step(duration: float, hz: float, heavy: bool) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var ph := 0.0
@@ -1444,7 +1498,7 @@ func _servo_step(duration: float, hz: float, heavy: bool) -> AudioStreamWAV:
 		var env := exp(-t * ring_decay)
 		ph += TAU * hz / SR
 		var ring := sin(ph) * ring_amp * env
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.5)
 		var tick := lp * exp(-t * tick_decay) * tick_amp
 		_write(bytes, i, tanh(ring + tick) * out_amp)
@@ -1454,6 +1508,7 @@ func _servo_step(duration: float, hz: float, heavy: bool) -> AudioStreamWAV:
 ## filtered blade-whoosh with a faint tonal thrum underneath, swelling in and
 ## fading out with no hard edges (it's a repeating tick, not a sustained loop).
 func _rotor_whir(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
 	var n := int(duration * SR)
 	var bytes := _silence(n)
 	var lp := 0.0
@@ -1461,7 +1516,7 @@ func _rotor_whir(duration: float) -> AudioStreamWAV:
 	for i in n:
 		var t := float(i) / SR
 		var env := sin(PI * (t / duration))
-		var noise := randf() * 2.0 - 1.0
+		var noise := rng.randf() * 2.0 - 1.0
 		lp = lerpf(lp, noise, 0.22)
 		ph += TAU * 210.0 / SR
 		var thrum := sin(ph) * 0.25
