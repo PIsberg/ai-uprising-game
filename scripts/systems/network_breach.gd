@@ -210,13 +210,13 @@ func _process(delta: float) -> void:
 	var alive: bool = player.get("_dead") != true and GameState.current_state == GameState.State.PLAYING
 	if not scanning:
 		bandwidth = minf(MAX_BANDWIDTH, bandwidth + REGEN * delta)
-	if alive and Input.is_action_just_pressed(ACTION) and not scanning:
+	if alive and _pin().just_pressed(ACTION) and not scanning:
 		GameState.teach_once("network_breach", TEACH)
 		_start_scan()
 	if scanning:
 		if not alive:
 			_end_scan(false)
-		elif Input.is_action_just_released(ACTION) or not Input.is_action_pressed(ACTION):
+		elif _pin().just_released(ACTION) or not _pin().pressed(ACTION):
 			_end_scan(true)
 		elif Time.get_ticks_msec() - _scan_ms > int(SCAN_MAX * 1000.0):
 			_end_scan(false)
@@ -253,3 +253,8 @@ func _draw_marks() -> void:
 		_pick_label.text = "%s   −%d" % [label_of(picked), int(c)]
 		_pick_label.add_theme_color_override("font_color", COL if bandwidth >= c else Color(1.0, 0.4, 0.35))
 		_pick_label.position = cam.unproject_position(_aim_point(picked)) + Vector2(18, -10)
+
+## The owning player's input (co-op: player two's pad for player two).
+func _pin() -> PlayerInput:
+	var pi = player.get("input") if player else null
+	return pi if pi is PlayerInput else PlayerInput.new()
