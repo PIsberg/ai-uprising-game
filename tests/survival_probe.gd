@@ -24,20 +24,21 @@ var _head: Node3D
 func _ready() -> void:
 	_run.call_deferred()
 
-## The opening fight is deliberately knife-edge (min_hp bottoms out in single
-## digits even on good runs), so one attempt of a reckless bot is a coin toss:
-## RNG spikes (an overlapping spider-pack + android burst) kill it before the
-## gate. Per-attempt survival on a healthy build was ~0.64 (20/31) when the gate
-## was set; on 2026-10-12 three 12-attempt runs measured 0.44 (16/36: 5/12 and
-## 5/12 on main, 6/12 on a branch with a clean user:// dir; one earlier run read
-## 10/12, so single runs swing). At 0.44, "2 of 7" fails ~11% of healthy runs,
-## which is what CI showed (#211: four failures in a day, every death to the
-## opening androids). Need 2 of up to 14: a healthy build at 0.44 fails ~0.4%
-## of runs (0.40: 0.8%, 0.30: 5%), while a genuine regression (pre-fix bots died
-## EVERY attempt) never lands 2. Early exit stops once 2 survivals bank, so a
-## healthy run averages ~4.5 loads. Seeding the RNG per attempt does not make
-## attempts repeat (process-driven timers and frame pacing still diverge), so
-## the gate stays a rate, not a replay.
+## Each attempt now starts clean (see _attempt). Before #307's fix it did not:
+## the level's robots live on this node, not the level, so every robot an
+## attempt left alive fought in all the later ones (9 live at attempt 1, 52 by
+## attempt 8). The rates measured that way fell with the attempt number:
+## ~0.64 (20/31) when the gate was set, 0.44 (16/36) on 2026-10-12, and 11/11
+## then 3/13 within one 24-attempt run on 2026-10-20, every death to a
+## leftover android. With clean attempts, at the real-time pace CI runs at, the
+## bot survived 18 of 24 (0.75, deaths spread across the run, min_hp often in
+## single digits), so the opening did not get harder. (Under --fixed-fps 60 it
+## survives 24 of 24: frame pacing changes the fight.) The gate stays at 2 of up to 14
+## (a healthy build fails it essentially never; a genuine regression, where the
+## bot dies every attempt, never lands 2), and early exit stops once 2 survivals
+## bank. Seeding the RNG per attempt does not make attempts repeat
+## (process-driven timers and frame pacing still diverge), so the gate stays a
+## rate, not a replay.
 const ATTEMPTS := 14
 const NEEDED := 2
 
@@ -99,6 +100,11 @@ func _wait_game(seconds: float) -> float:
 ## time limit, return gate verdict + telemetry. Kills counted RELATIVE to the
 ## attempt's start (GameState.kills accumulates across attempts).
 func _attempt(level_path: String, check_reload: bool) -> Dictionary:
+	# Spawners parent robots (and tracers, wrecks, debris) to current_scene,
+	# which is THIS probe, not the level: freeing the level left them alive and
+	# the next attempt fought every robot left over (9 live robots at attempt 1,
+	# 52 by attempt 8), so the measured rate fell with the attempt number (#307).
+	var before := get_children()
 	var lvl: Node = load(level_path).instantiate()
 	add_child(lvl)
 	var hud := lvl.get_node_or_null("HUD")
@@ -211,8 +217,11 @@ func _attempt(level_path: String, check_reload: bool) -> Dictionary:
 		"pace": t / maxf(0.001, (Time.get_ticks_msec() - wall0) / 1000.0),
 		"wall_capped": wall_capped,
 	}
-	# Tear the level down cleanly so the next attempt starts fresh.
-	lvl.queue_free()
+	# Tear the level down cleanly so the next attempt starts fresh: the level and
+	# everything it spawned onto this node.
+	for c in get_children():
+		if not before.has(c):
+			c.queue_free()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	return res
