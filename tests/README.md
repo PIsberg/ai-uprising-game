@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-516 probes total: **216** wired into the headless suite (`suite`), **85**
+517 probes total: **217** wired into the headless suite (`suite`), **85**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -306,6 +306,7 @@ or GPU-timing probes; `--headless` renders these black).
 | house_stairs_probe | The real player walks up every enterable house's stairs (levels 01, suburb, suburb_boss; `HouseRamp_*`, `ramp_walker.gd`, no jump): red on the old stairwell, all 6 stopped (level 01's at 49 and 56 deg at the foot, Maple Grove's four at 1.25 m with the head against the slab) (#290); every robot is switched off during the walks (red-checked: the walker looked robots up in group `enemies`, which nothing joins, so 12, 18 and 23 stayed live) | suite |
 | pylon_clearance_probe | No outdoor light mast stands inside geometry: for 26 levels each `light_pylon`'s column overlaps no world body but itself, and open-sky levels still get masts (92). Red before `_place_light_pylons`: 34 of 126 masts in 14 levels went through SkyBridge decks, towers or walls (#290) | suite |
 | tower_spacing_probe | No two towers in any level overlap: each tower's spiral square (`radius`) plus its corner landings (1.9 m) stays clear of every other tower's, from the level defs alone (21 pairs). Red on grok before its 7 m tower moved from z 0 to z 2: overlap 2.2 m, that tower's 4.67 m landing 1.7 m over the other's 2.0 m landing, where the real player stuck (#339) | suite |
+| stairs_landing_probe | Every `stairs` ramp in every level def (scaled) whose top lands on a platform meets that platform's face within 0.1 m of its deck, following the ramp's centre line to where it enters the footprint (red before: 8 lips of 0.12-0.58 m, level 01's four rubble/slab ramps, gpt, suburb x2, suburb_boss; the real player stopped at level 01's four 3 of 3 walks); and no def wall box stands on a ramp's walking line (centre and 0.5 m either side, every 0.25 m) more than 0.3 m above it (red before: suburb's yard crate across the rooftop stair's foot) | suite |
 | hazard_kill_label_probe | Every hazard that can kill the player names itself on the death screen: a real player killed by each of 15 hazard scripts (and by its own blast) leaves a non-empty `GameState.last_killer` that matches a `hud.gd` `DEATH_TIPS` key whose tip has a German row (red before: all 16 empty) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
