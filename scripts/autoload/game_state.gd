@@ -2206,6 +2206,23 @@ func end_daily_op() -> void:
 ## tests/coop_registry_probe fails on any direct get_first_node_in_group("player")
 ## left outside the allowed files.
 
+## Co-op (#402): with co-op input on (PlayerInput.setup_coop), add player two to
+## `level` beside the scene's own player one, same parent. The level then places
+## it (1.6 m to player one's right) and splits the screen (SplitScreen.attach).
+## A no-op solo, or when player two is already there.
+func spawn_coop_partner(level: Node) -> Node3D:
+	if not PlayerInput.coop_on or players().size() != 1:
+		return null
+	var p1 := players()[0]
+	if not level.is_ancestor_of(p1):
+		return null
+	var p2: Node3D = (load("res://scenes/player/player.tscn") as PackedScene).instantiate()
+	p2.set("player_index", 1)
+	p1.get_parent().add_child(p2)
+	p2.global_transform = p1.global_transform
+	p2.global_position += p1.global_basis.x * 1.6
+	return p2
+
 ## Every player in the level, in player_index order. Typed, so `for p in players()`
 ## gives a Node3D (an untyped loop variable breaks `var x := p.method()` inference).
 func players() -> Array[Node3D]:

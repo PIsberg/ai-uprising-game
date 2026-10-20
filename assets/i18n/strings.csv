@@ -905,3 +905,6 @@ VIGNETTE,VIGNETTE,VIÑETA,VIGNETTE,VIGNETTE,VINHETA
 PLAYER %d DOWN,PLAYER %d DOWN,JUGADOR %d CAÍDO,JOUEUR %d À TERRE,SPIELER %d AM BODEN,JOGADOR %d CAÍDO
 PLAYER %d BACK UP,PLAYER %d BACK UP,JUGADOR %d EN PIE,JOUEUR %d RELEVÉ,SPIELER %d WIEDER AUF DEN BEINEN,JOGADOR %d DE PÉ
 Hold interact beside them to revive.,Hold interact beside them to revive.,Mantén interactuar a su lado para reanimarlo.,Maintenez interagir à côté pour le ranimer.,"Halte Interagieren neben ihm gedrückt, um ihn wiederzubeleben.",Segure interagir ao lado para reanimá-lo.
+PLAYER %d,PLAYER %d,JUGADOR %d,JOUEUR %d,SPIELER %d,JOGADOR %d
+DOWN: your partner can revive you,DOWN: your partner can revive you,CAÍDO: tu compañero puede reanimarte,À TERRE : ton partenaire peut te ranimer,AM BODEN: dein Partner kann dich wiederbeleben,CAÍDO: seu parceiro pode reanimar você
+Partner down: hold interact beside them,Partner down: hold interact beside them,Compañero caído: mantén interactuar a su lado,Partenaire à terre : maintiens interagir à côté,Partner am Boden: halte Interagieren neben ihm,Parceiro caído: segure interagir ao lado dele
