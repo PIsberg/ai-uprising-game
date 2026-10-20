@@ -15,12 +15,18 @@ extends Node
 ## whose footprint holds a sample, whose top is over STEP_UP above the ramp
 ## there and whose bottom is under head height blocks it (suburb's yard cover
 ## crate sat across the foot of the rooftop stair, a 3 of 3 stop).
+## Also: no platform deck is buried inside a building (footprints overlap by
+## over BURY_OVERLAP m on both axes and the building stands over STEP_UP above
+## the deck). Buildings scale their position with the arena but not their
+## size, so a deck authored at a house's front could end up inside it; the
+## suburb_boss ramps climbed into the house walls (3 of 3 stops).
 ##   godot --headless --path . --audio-driver Dummy res://tests/stairs_landing_probe.tscn
 
 const MAX_LIP := 0.1 ## metres the ramp may sit below the deck where it meets it
 const DECK_TOL := 0.06 ## a platform counts as the landing if its deck is this close to the top
 const STEP_UP := 0.3 ## the player's step-up assist clears this much
 const SAMPLE_STEP := 0.25
+const BURY_OVERLAP := 1.0
 const EDGE_TOL := 0.05 ## a top this close outside the footprint still lands on it (ramps end on the edge)
 
 var ok := true
@@ -33,10 +39,27 @@ func _run() -> void:
 	var landed := 0
 	var bad: Array[String] = []
 	var blocked: Array[String] = []
+	var buried: Array[String] = []
 	for id in LevelDefs._defs().keys():
 		var def := LevelDefs.get_def(id)
 		var plats: Array = def.get("platforms", [])
 		var walls: Array = def.get("walls", [])
+		for p in plats:
+			if p.has("rot") or not p.has("size"):
+				continue
+			var pp: Vector3 = p["pos"]
+			var ps: Vector3 = p["size"]
+			var deck := pp.y + ps.y * 0.5
+			for bld in def.get("buildings", []):
+				if not bld.has("size") or bld.get("open", false):
+					continue
+				var bp: Vector3 = bld["pos"]
+				var bs: Vector3 = bld["size"]
+				var ox := minf(pp.x + ps.x * 0.5, bp.x + bs.x * 0.5) - maxf(pp.x - ps.x * 0.5, bp.x - bs.x * 0.5)
+				var oz := minf(pp.z + ps.z * 0.5, bp.z + bs.z * 0.5) - maxf(pp.z - ps.z * 0.5, bp.z - bs.z * 0.5)
+				var b_top := bp.y + bs.y * 0.5
+				if ox > BURY_OVERLAP and oz > BURY_OVERLAP and b_top > deck + STEP_UP and bp.y - bs.y * 0.5 < deck:
+					buried.append("%s deck at %s (top %.2f) inside the building at %s (top %.2f), overlap %.1f x %.1f m" % [id, pp, deck, bp, b_top, ox, oz])
 		for s in def.get("stairs", []):
 			ramps += 1
 			var a: Vector3 = s["from"]
@@ -69,6 +92,9 @@ func _run() -> void:
 	for line in blocked:
 		print("  BLOCKED " + line)
 	_check("no wall stands on a ramp", blocked.is_empty(), "%d blocked" % blocked.size())
+	for line in buried:
+		print("  BURIED " + line)
+	_check("no platform deck is buried in a building", buried.is_empty(), "%d buried" % buried.size())
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
