@@ -22,6 +22,9 @@ func _ready() -> void:
 	# reckless bot died to overlapping opening bursts in ~38% of runs). Longest
 	# window in the game: it's the first thing a new player ever sees.
 	GameState.start_attack_grace(4.5)
+	# Co-op (#402): player two beside player one, and the split screen.
+	GameState.spawn_coop_partner(self)
+	SplitScreen.attach(self)
 	AudioBus.play_music("music_techno")
 	_setup_objectives()
 
