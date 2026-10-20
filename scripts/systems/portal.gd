@@ -266,7 +266,7 @@ func unlock() -> void:
 		var tw := _visual.create_tween()
 		tw.tween_property(_visual, "scale", Vector3.ONE * 1.25, 0.18)
 		tw.tween_property(_visual, "scale", Vector3.ONE, 0.22)
-	GameState.objective_unlocked.emit("✔ Objective complete — step into the portal")
+	GameState.objective_unlocked.emit("✓ Objective complete — step into the portal")
 
 func _on_body_entered(body: Node) -> void:
 	if _completed:

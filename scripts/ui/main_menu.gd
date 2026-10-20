@@ -670,7 +670,7 @@ func _refresh_daily_button() -> void:
 	var rec: Dictionary = GameState.daily_record()
 	var text := "%s  ·  %s  ·  %s" % [tr("Daily Op"), tr(String(op["title"])), tr(String(op["directive_name"]))]
 	if bool(rec["cleared_today"]):
-		text = "✔ " + text + "  ·  " + (tr("Best %s") % str(rec["best"]))
+		text = "✓ " + text + "  ·  " + (tr("Best %s") % str(rec["best"]))
 	if int(rec["streak"]) > 1:
 		text += "  ·  " + (tr("%d-day streak") % int(rec["streak"]))
 	_daily.text = text

@@ -1121,7 +1121,7 @@ func _on_level_graded(grade: String, stats: Dictionary) -> void:
 
 ## Cheer a finished task on the toast (the checklist updates via tasks_changed).
 func _on_task_completed(label: String) -> void:
-	_show_toast("✔ " + tr(label))
+	_show_toast("✓ " + tr(label))
 
 ## Polls the hostiles a few times a second and tells AudioBus whether the player
 ## is in active combat, so the score swells during fights and settles when clear.
@@ -1326,9 +1326,9 @@ func _update_highlights_block() -> void:
 	var b: Dictionary = GameState.level_bonus
 	match String(b.get("state", "")):
 		"won":
-			bits.append("✔ %s: %s +%d" % [tr("BONUS"), tr(String(b.get("label", ""))), int(b.get("score", 0))])
+			bits.append("✓ %s: %s +%d" % [tr("BONUS"), tr(String(b.get("label", ""))), int(b.get("score", 0))])
 		"failed":
-			bits.append("✖ %s: %s" % [tr("BONUS"), tr(String(b.get("label", "")))])
+			bits.append("✕ %s: %s" % [tr("BONUS"), tr(String(b.get("label", "")))])
 	if bits.is_empty():
 		_highlights_label.visible = false
 	else:
@@ -1650,24 +1650,24 @@ func set_objective(text: String) -> void:
 	_render_objective()
 
 ## Draw the objective line. When the level has a task checklist, show it with
-## ✔ / ▢ ticks; otherwise fall back to the flavour objective text.
+## ✓ / ▢ ticks; otherwise fall back to the flavour objective text.
 func _render_objective() -> void:
 	if GameState.level_tasks.is_empty():
 		objective_label.text = _objective_base
 		return
 	var parts: Array = []
 	for t in GameState.level_tasks:
-		# ✔ done · ▢ live · ◇ a later stage whose objects aren't in the world yet
-		var glyph: String = "✔" if t["done"] else ("◇" if t.get("staged", false) else "▢")
+		# ✓ done · ▢ live · ◇ a later stage whose objects aren't in the world yet
+		var glyph: String = "✓" if t["done"] else ("◇" if t.get("staged", false) else "▢")
 		var line: String = "%s %s" % [glyph, tr(t["label"])]
 		if not t["done"] and not t.get("staged", false) and t.get("goal", 0.0) > 0.0:
 			line += " (%d/%d)" % [int(t["progress"]), int(t["goal"])]
 		parts.append(line)
-	# The optional bonus rides at the end of the checklist: ★ live, ✔ won, ✖ lost.
+	# The optional bonus rides at the end of the checklist: ★ live, ✓ won, ✕ lost.
 	var b: Dictionary = GameState.level_bonus
 	if not b.is_empty():
 		var st: String = b.get("state", "live")
-		var bg: String = {"won": "✔", "failed": "✖"}.get(st, "★")
+		var bg: String = {"won": "✓", "failed": "✕"}.get(st, "★")
 		parts.append("%s %s: %s" % [bg, tr("BONUS"), tr(String(b.get("label", "")))])
 	objective_label.text = "   ".join(PackedStringArray(parts))
 

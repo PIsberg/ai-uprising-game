@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-513 probes total: **212** wired into the headless suite (`suite`), **86**
+514 probes total: **213** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -284,6 +284,7 @@ or GPU-timing probes; `--headless` renders these black).
 | fx_probe | HUD HP/STA bar captions + the beefed grenade-explosion FX stack mid-blast | windowed |
 | fx_render_probe | Energy-bolt flash + impact shock-ring FX upgrade | windowed |
 | gate_shot | Gated levels' bulkhead gates/tunnel mouths/guide beacons for clipping/readability | windowed |
+| glyph_probe | No ✔ (U+2714) or ✖ (U+2716) in scripts, scenes or strings.csv: both have emoji presentation and draw as purple colour emoji in the default font and Orbitron; ✓ and ✕ draw in the label colour (#398) | suite |
 | god_cheat_probe | "god" cheat toggles invincibility; a god-mode player survives lethal damage | suite |
 | grace_probe | Opening attack grace: enemies close in but land no damage for ~2.5s, then fire resumes | headless |
 | grade_assist_probe | Damage Taken accessibility assist counts toward the grade like a tier (x0.85 at 50%, x1.10 at 150%, neutral at 100%): a fixed S-run drops to an A at 50%, and stats carry the slider for the debrief | suite |

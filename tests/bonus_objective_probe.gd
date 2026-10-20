@@ -178,11 +178,11 @@ func _live() -> void:
 				GameState.bonus_win()
 				hud.call("_update_debrief_block")
 				var hl = hud.get("_highlights_label")
-				_check(hl != null and hl.visible and String(hl.text).contains("✔") and String(hl.text).contains(bo.label) and String(hl.text).contains("+500"),
+				_check(hl != null and hl.visible and String(hl.text).contains("✓") and String(hl.text).contains(bo.label) and String(hl.text).contains("+500"),
 					"%s live: a won bonus is on the debrief highlights (%s)" % [id, hl.text if hl else "<none>"])
 				GameState.level_bonus["state"] = "failed"
 				hud.call("_update_debrief_block")
-				_check(String(hl.text).contains("✖") and not String(hl.text).contains("+500"),
+				_check(String(hl.text).contains("✕") and not String(hl.text).contains("+500"),
 					"%s live: a lost bonus shows as lost, unpaid (%s)" % [id, hl.text])
 			else:
 				_check(false, "%s live: the level has a HUD to debrief on" % id)
