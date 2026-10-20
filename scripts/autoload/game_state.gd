@@ -2538,6 +2538,20 @@ func abandon_uprising() -> void:
 
 var last_killer: String = "" ## Kill-feed label of whatever downed the player (death recap).
 
+## Co-op (#402): a player went down while a partner still stands. Not a death:
+## the level plays on and the partner can revive them (Player.REVIVE_TIME).
+signal player_downed(p: Node3D)
+signal player_revived(p: Node3D)
+
+func on_player_downed(p: Node3D) -> void:
+	var n := int(p.get("player_index")) + 1
+	skirmish_event.emit(tr("PLAYER %d DOWN") % n, tr("Hold interact beside them to revive."))
+	player_downed.emit(p)
+
+func on_player_revived(p: Node3D) -> void:
+	skirmish_event.emit(tr("PLAYER %d BACK UP") % (int(p.get("player_index")) + 1), "")
+	player_revived.emit(p)
+
 func on_player_died(killer: String = "") -> void:
 	last_killer = killer
 	level_deaths += 1 # counted once per death regardless of which respawn path follows
@@ -2849,12 +2863,20 @@ func set_checkpoint() -> void:
 ## player to respawn (defensive; the HUD only calls this when has_checkpoint()
 ## is already true).
 func respawn_at_checkpoint() -> void:
-	var player := get_tree().get_first_node_in_group("player")
-	if not has_checkpoint() or player == null or not player.has_method("respawn_from_checkpoint"):
+	var ps := players()
+	if not has_checkpoint() or ps.is_empty() or not ps[0].has_method("respawn_from_checkpoint"):
 		load_level(current_level_path, false)
 		return
 	set_state(State.PLAYING)
-	player.respawn_from_checkpoint(checkpoint)
+	# Every player comes back (co-op, #402): the snapshot is player one's, and each
+	# partner stands 1.6 m to their right, as at the level spawn.
+	for p in ps:
+		var data := checkpoint.duplicate()
+		var idx := int(p.get("player_index"))
+		if idx > 0:
+			var right := Basis(Vector3.UP, float(checkpoint.get("rotation_y", 0.0))).x
+			data["position"] = Vector3(checkpoint.get("position", p.global_position)) + right * 1.6 * idx
+		p.respawn_from_checkpoint(data)
 
 # ---------------------------------------------------------------------
 # Difficulty scaling. Levels call apply_level_scaling(self) at the end of

@@ -111,6 +111,11 @@ func _run() -> void:
 	add_child(barrel)
 	barrel.global_position = Vector3(0, 0, 30)
 	await _wait_game(0.1)
+	# shake() keeps the larger of the current and the new amount, so shake left
+	# over from the laser hits above could outlast the blast's own (CI read
+	# 0.53 -> 0.52 on player two). Start both from rest: this measures the blast.
+	for p in [p1, p2]:
+		p.set("_shake_amount", 0.0)
 	var s1 := float(p1.get("_shake_amount"))
 	var s2 := float(p2.get("_shake_amount"))
 	(barrel.get("hp") as Damageable).apply_damage(9999.0, null)

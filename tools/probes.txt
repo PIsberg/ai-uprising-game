@@ -143,6 +143,8 @@ res://tests/photo_mode_probe.tscn
 res://tests/coop_registry_probe.tscn
 # Co-op stage 2: player two on its own pad; player one's pad bindings narrowed; reset.
 res://tests/coop_input_probe.tscn
+# Co-op stage 4: down not out with a partner standing, hold-to-revive, both down = game over, checkpoint brings both back.
+res://tests/coop_revive_probe.tscn
 # No emoji-presentation check marks in shown text (#398).
 res://tests/glyph_probe.tscn
 # Every shipped model is named in CREDITS.md (#363).

@@ -179,7 +179,17 @@ func _run() -> void:
 	var dmg1: float = k1.hp.max_health - k1.hp.current_health
 	var dmg2: float = k2.hp.max_health - k2.hp.current_health
 	print("kills: k1 took %.0f, k2 took %.0f, k1 on a robot %d of %d samples" % [dmg1, dmg2, on_robot, samples])
-	_check(dmg1 + dmg2 > 0.0 or not is_instance_valid(k1) or not is_instance_valid(k2), "robots damage each other")
+	var traded := dmg1 + dmg2 > 0.0 or not is_instance_valid(k1) or not is_instance_valid(k2)
+	_check(traded, "robots damage each other")
+	if not traded:
+		# About 1 run in 50 locally (and once on CI, #405) neither robot lands a
+		# hit while both target a robot; not reproduced under instrumentation.
+		# Print what each robot was doing so the next failure names the cause.
+		for r: EnemyBase in [k1, k2]:
+			print("  %s state=%d target=%s see=%s layer=%d mislabeled_t=%.1f attack_timer=%.2f burst=%s grace=%s pos=%s" % [
+				r.name, r.state, r.target.name if r.target else "-", r._can_see(r.target) if r.target else false,
+				r.collision_layer, r.mislabeled_t, float(r.get("_attack_timer")), r.get("_burst_remaining"),
+				GameState.attack_grace_active(), r.global_position])
 	_check(on_robot * 2 >= samples, "a rewritten robot targets a robot (%d of %d samples)" % [on_robot, samples])
 	await _wait(float(c3.REWRITE_TIME))
 	if is_instance_valid(k1) and k1.hp.is_alive():
