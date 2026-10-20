@@ -94,6 +94,21 @@ func _run() -> void:
 			chud = n
 	_check("player two has a CoopHud in the right half", chud != null)
 	_check("the CoopHud is bound to player two", chud != null and chud.get("player") == p2)
+	# Player one's HUD fits its half even with a long objectives line (#418: the
+	# unwrapped line set the layout's minimum width past the half, pushing the
+	# health bar off its left edge).
+	if hud:
+		var obj := hud.get_node_or_null("Margin/Layout/Top/ObjectiveLabel") as Label
+		if obj:
+			obj.text = "  ".join(PackedStringArray(["◇ Exfiltrate the weight fragments (0/4)", "◇ FOUNDRY OVERLOAD: survive the purge protocol", "★ BONUS: no damage taken", "▢ Hack the terminal"])).repeat(2)
+		await _frames(4)
+		var half: Rect2 = vps[0].get_visible_rect()
+		var margin := hud.get_node("Margin") as Control
+		var hb := hud.get_node("Margin/Layout/BottomLeft/HealthRow/HealthBar") as Control
+		_check("player one's HUD fits the left half", margin.get_global_rect().position.x >= -0.5 and margin.get_global_rect().end.x <= half.size.x + 0.5,
+			"layout %s in a %s half" % [margin.get_global_rect(), half.size])
+		_check("player one's health bar is inside the half", hb.get_global_rect().position.x >= 0.0 and hb.get_global_rect().end.x <= half.size.x,
+			str(hb.get_global_rect()))
 
 	# 4. Per-player canvas layers.
 	var postfx := p2.get_node_or_null("PostFX") as CanvasLayer
