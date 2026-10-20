@@ -131,6 +131,7 @@ func _rescan() -> void:
 			var cl := n as CanvasLayer
 			if cl.custom_viewport != viewports[i]:
 				_route(cl, viewports[i])
+			_frame(cl, viewports[i])
 		var holder := p.get_node_or_null("Head/Camera3D/WeaponHolder")
 		if holder:
 			for n in holder.find_children("*", "VisualInstance3D", true, false):
@@ -147,6 +148,30 @@ func _route(cl: CanvasLayer, vp: SubViewport) -> void:
 	cl.custom_viewport = vp
 	parent.add_child(cl)
 	parent.move_child(cl, at)
+
+## A Control placed straight under a CanvasLayer is laid out against
+## get_viewport()'s rect, which for a layer in the main tree is the WINDOW even
+## when custom_viewport points at a half: full-rect overlays came out window
+## sized and centred things sat on the half's edge (#422). Hang the layer's
+## controls off one SplitFrame sized to the half instead; controls added to the
+## layer later are moved in on the next rescan.
+func _frame(cl: CanvasLayer, vp: SubViewport) -> void:
+	var frame := cl.get_node_or_null("SplitFrame") as Control
+	if frame == null:
+		frame = Control.new()
+		frame.name = "SplitFrame"
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cl.add_child(frame)
+		cl.move_child(frame, 0)
+		var fit := func() -> void:
+			if is_instance_valid(frame):
+				frame.position = Vector2.ZERO
+				frame.size = vp.get_visible_rect().size
+		vp.size_changed.connect(fit)
+		fit.call()
+	for c in cl.get_children():
+		if c != frame and c is Control:
+			c.reparent(frame, false)
 
 ## A plain capsule standing in for player `i`, on a layer only the other camera draws.
 func _add_avatar(p: Node3D, i: int) -> void:
