@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-502 probes total: **205** wired into the headless suite (`suite`), **86**
+503 probes total: **206** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -518,6 +518,7 @@ or GPU-timing probes; `--headless` renders these black).
 | titan_pose_probe | TITAN model front/side render + mesh-part AABB dump, to identify the arm cluster | windowed |
 | tracer_screenshot | Enemy bolts + a player tracer fired across the view mid-flight | windowed |
 | tree_probe | Suburb level with scattered volumetric trees at eye level | windowed |
+| telemetry_probe | Playtest TELEMETRY on a scratch file with a real player: the player's arrival logs `level_start` (level, mode); 3 s of forward into a wall logs one `stuck` at the wall; a fire-vent kill logs a `death` naming FIRE VENT with the vent in its last-5-s hits; a task logs its label; the clear logs `level_end` with the grade, health lost by source (not the raw 99999 finisher) and a kill credited to the held gun; every line is a JSON object with event and time; headless runs record nothing without `--telemetry` | suite |
 | ttk_probe | Ground-truth weapon DPS against real enemy robots (pellets/falloff/pierce/splash/chain/cluster all counted) | headless |
 | unique_enemy_probe | Batch-5 signature behaviors on real AI: hunter blade dash, raptor strafing run, ripper spin-up saw, sentinel salvo, warbot crossfire | headless |
 | uprising_probe | UPRISING MODE: `uprising_plan` is fixed per seed (4 non-boss sectors in campaign order, then a boss) and differs by seed; `start_uprising` loads sector 1 without touching the campaign save; a clear opens the draft with 3 distinct offers; a reroll is refused without compute, spends it and changes the offers; the draft button takes its patch, whose multipliers come through the `directive_*_mult` getters; sector 2 loads with the score carried; `UPRISING_LIVES` deaths are forgiven and the next ends the run, banks score/100 + sector compute and restores the difficulty; the menu's Uprising button reports the run (its script writes that line, so a menu script that fails to parse fails here); a full clear banks the clear bonus and the best sector; a sector with a campaign story cutscene takes the plain briefing (red-checked: before the guard it played the UPRISING reveal) | suite |

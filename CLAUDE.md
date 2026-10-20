@@ -35,6 +35,11 @@ pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTempla
 # ./release itch runs it automatically; run it by hand after touching the threaded load paths.
 pwsh tools/load_race_check.ps1
 
+# Playtest telemetry: a windowed source run records user://telemetry/<datetime>.jsonl (headless/
+# release only with --telemetry); summarise the newest session per level (deaths, damage sources,
+# guns, stuck spots). The bot playtests take it too: ... uprising_playtest.tscn -- seed=7 --telemetry
+python tools/telemetry_report.py            # or <file.jsonl>, or --all
+
 # Perf measurement (windowed — render stats need a real window)
 godot --path . tools/perf_measure.tscn      # fps/draws/prims per level at HIGH tier
 godot --path . tools/perf_isolate.tscn      # splits render cost vs script cost
