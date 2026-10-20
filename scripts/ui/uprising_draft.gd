@@ -83,7 +83,7 @@ func _sector_strip(u: Dictionary) -> Control:
 		var l := Label.new()
 		var title := tr(LevelDefs.level_title(lid)).get_slice(" — ", 0)
 		if i < at:
-			l.text = "✔ " + title
+			l.text = "◆ " + title # not a check mark: it falls back to a purple emoji glyph
 			l.add_theme_color_override("font_color", Color(0.45, 0.55, 0.5))
 		elif i == at:
 			l.text = "▶ " + title

@@ -2075,6 +2075,7 @@ const DAILY_RUN_KEYS := ["difficulty", "score", "kills", "unlocked_weapons", "eq
 	"controls_taught", "seen_enemy_types", "directive", "directive_id", "run_hijacks", "run_breaches"]
 var daily_op: Dictionary = {}     ## the op being played ({} outside one)
 var daily_result: Dictionary = {} ## the last clear's {score, best, new_best, streak} for the win screen
+signal daily_completed ## a Daily Op clear was recorded into daily_result (Achievements)
 var _daily_saved: Dictionary = {}
 
 func is_daily_op() -> bool:
@@ -2250,6 +2251,7 @@ const UPRISING_PATCHES := [
 var uprising: Dictionary = {}        ## the run being played ({} outside one)
 var uprising_result: Dictionary = {} ## the last closed run: {won, sectors, score, compute, best, new_best}
 var uprising_records_path: String = RECORDS_PATH ## where compute and bests persist (probes redirect it)
+signal uprising_closed(result: Dictionary) ## a run banked and ended, won or lost (Achievements)
 var _uprising_saved: Dictionary = {}
 
 func is_uprising() -> bool:
@@ -2452,6 +2454,7 @@ func _close_uprising(won: bool) -> void:
 		"score": score, "compute": gained, "best": maxi(int(rec["best"]), cleared),
 		"new_best": cleared > int(rec["best"]), "patches": (uprising["patches"] as Array).duplicate()}
 	end_uprising()
+	uprising_closed.emit(uprising_result)
 	set_state(State.MENU)
 	get_tree().change_scene_to_file(MAIN_MENU)
 
@@ -2559,6 +2562,7 @@ func on_level_complete() -> void:
 	grade_level() # emits level_graded for the end screen
 	if is_daily_op():
 		daily_result = record_daily_clear(String(daily_op["date"]), score)
+		daily_completed.emit()
 	set_state(State.LEVEL_COMPLETE)
 	level_completed.emit()
 
@@ -2573,12 +2577,18 @@ var level_hijacks: int = 0 ## HIJACK charges that landed this level (a security 
 var run_hijacks: int = 0
 var run_breaches: int = 0
 
+signal robot_hijacked   ## a HIJACK charge took a robot (Achievements)
+signal network_breached ## a NETWORK BREACH took a machine (Achievements)
+signal ending_recorded(id: String) ## the finale's choice was made (Achievements)
+
 func note_hijack() -> void:
 	level_hijacks += 1
 	run_hijacks += 1
+	robot_hijacked.emit()
 
 func note_breach() -> void:
 	run_breaches += 1
+	network_breached.emit()
 
 # ---------- endings seen (persistent, records.cfg [endings]) ----------
 var endings_path: String = RECORDS_PATH ## probes redirect it
@@ -2596,6 +2606,7 @@ func record_ending(id: String) -> void:
 		seen.append(id)
 	cf.set_value("endings", "seen", seen)
 	cf.save(endings_path)
+	ending_recorded.emit(id)
 
 func _build_patch_notes() -> Array:
 	var notes: Array = AIDirector.patch_notes()
