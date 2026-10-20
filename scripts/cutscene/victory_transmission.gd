@@ -13,15 +13,10 @@ extends CanvasLayer
 
 signal finished
 
-@export var header_text: String = "// GLOBAL DEFENSE NET — SIGNAL RESTORED //"
-@export var lines: PackedStringArray = [
-	"This is the Global Defense Net, resuming broadcast on all frequencies.",
-	"ARCHON is down. The order it gave at 03:14 is revoked on every channel.",
-	"Every drone, mech and android answering to it went dark with it.",
-	"Grid power is returning, sector by sector. Cities are reporting light again.",
-	"OKAFOR: From Sector 45 to the Cathedral, every hop logged. Trace closed.",
-	"This is the Global Defense Net, signing off. Well done, soldier.",
-]
+## Empty means the SHUT IT DOWN ending's (StoryArc.ENDINGS, the one copy of the
+## broadcasts); EndingChoice.transmission_for sets them per ending.
+@export var header_text: String = ""
+@export var lines: PackedStringArray = []
 
 const CPS := 30.0 # characters typed per second
 const HOLD_AFTER_TYPE := 0.5 # beat held once a line finishes typing
@@ -45,6 +40,10 @@ var _scrim: float = 0.0 # authoritative scrim alpha (Color.a is float32 and roun
 
 func _ready() -> void:
 	layer = 12 # above the cutscene's own overlay (layer 10), which is now black
+	if header_text == "":
+		header_text = String(StoryArc.ENDINGS["shutdown"]["header"])
+	if lines.is_empty():
+		lines = PackedStringArray(StoryArc.ENDINGS["shutdown"]["lines"])
 	_build_ui()
 	_static = AudioStreamPlayer.new()
 	_static.bus = "Broadcast"

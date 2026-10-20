@@ -1656,6 +1656,8 @@ func start_campaign(diff: int = Difficulty.NORMAL) -> void:
 	# explicitly here, the one true "wipe everything" entry point.
 	level_deaths = 0
 	_deaths_level_id = ""
+	run_hijacks = 0
+	run_breaches = 0
 	AIDirector.note_run_start() # the overlord's dossier counts every run you start
 	go_to_level(campaign()[0], false)
 
@@ -1878,6 +1880,8 @@ func save_progress() -> void:
 	# First-encounter coaching toasts (teach_once) fire once per run — persist
 	# which keys already fired so a resumed run doesn't re-teach everything.
 	cf.set_value("run", "taught", _taught.keys())
+	cf.set_value("run", "run_hijacks", run_hijacks)
+	cf.set_value("run", "run_breaches", run_breaches)
 	cf.save(SAVE_PATH)
 
 func load_progress() -> bool:
@@ -1905,6 +1909,8 @@ func load_progress() -> bool:
 	supply_grenades = int(cf.get_value("run", "supply_grenades", 0))
 	supply_health = float(cf.get_value("run", "supply_health", 0.0))
 	has_night_vision = bool(cf.get_value("run", "night_vision", false))
+	run_hijacks = int(cf.get_value("run", "run_hijacks", 0))
+	run_breaches = int(cf.get_value("run", "run_breaches", 0))
 	# First-encounter coaching toasts already shown this run.
 	_taught.clear()
 	for k in cf.get_value("run", "taught", []):
@@ -2066,7 +2072,7 @@ const DAILY_DIFFICULTY := Difficulty.HARD
 const DAILY_RUN_KEYS := ["difficulty", "score", "kills", "unlocked_weapons", "equipped_weapon",
 	"upgrades", "owned_mods", "weapon_mods", "supply_ammo", "supply_grenades", "supply_health", "has_night_vision",
 	"nemesis", "level_index", "max_level_reached", "current_level_path", "intro_played",
-	"controls_taught", "seen_enemy_types", "directive", "directive_id"]
+	"controls_taught", "seen_enemy_types", "directive", "directive_id", "run_hijacks", "run_breaches"]
 var daily_op: Dictionary = {}     ## the op being played ({} outside one)
 var daily_result: Dictionary = {} ## the last clear's {score, best, new_best, streak} for the win screen
 var _daily_saved: Dictionary = {}
@@ -2562,9 +2568,34 @@ func on_level_complete() -> void:
 ## standing nemesis get staged as a ROBOT OS changelog on the next briefing.
 var pending_patch_notes: Array = []
 var level_hijacks: int = 0 ## HIJACK charges that landed this level (a security incident).
+## Campaign-run counts the finale's choice reads (StoryArc.ending_open): robots you
+## took over, and machines you NETWORK BREACHed. Saved with the run.
+var run_hijacks: int = 0
+var run_breaches: int = 0
 
 func note_hijack() -> void:
 	level_hijacks += 1
+	run_hijacks += 1
+
+func note_breach() -> void:
+	run_breaches += 1
+
+# ---------- endings seen (persistent, records.cfg [endings]) ----------
+var endings_path: String = RECORDS_PATH ## probes redirect it
+
+func endings_seen() -> Array:
+	var cf := ConfigFile.new()
+	cf.load(endings_path)
+	return cf.get_value("endings", "seen", [])
+
+func record_ending(id: String) -> void:
+	var cf := ConfigFile.new()
+	cf.load(endings_path) # keep the other sections
+	var seen: Array = cf.get_value("endings", "seen", [])
+	if not seen.has(id):
+		seen.append(id)
+	cf.set_value("endings", "seen", seen)
+	cf.save(endings_path)
 
 func _build_patch_notes() -> Array:
 	var notes: Array = AIDirector.patch_notes()

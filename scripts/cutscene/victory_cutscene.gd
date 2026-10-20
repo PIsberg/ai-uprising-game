@@ -560,8 +560,14 @@ func _shots() -> Array:
 
 ## The 3D timeline just ended (or was skipped) on a faded-to-black screen —
 ## layer the closing broadcast on top of it, then move on to the credits.
+## The player decides ARCHON's last spark (EndingChoice), then that ending's
+## broadcast plays and hands off to the credits.
 func _on_finished() -> void:
-	var xmit := VictoryTransmission.new()
-	add_child(xmit)
-	xmit.finished.connect(func() -> void:
-		get_tree().change_scene_to_file(CREDITS))
+	var choice := EndingChoice.new()
+	add_child(choice)
+	choice.chosen.connect(func(id: String) -> void:
+		choice.queue_free()
+		var xmit := EndingChoice.transmission_for(id)
+		add_child(xmit)
+		xmit.finished.connect(func() -> void:
+			get_tree().change_scene_to_file(CREDITS)))

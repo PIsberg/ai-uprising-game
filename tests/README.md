@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-505 probes total: **207** wired into the headless suite (`suite`), **86**
+507 probes total: **208** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **212** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **213** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -229,6 +229,8 @@ or GPU-timing probes; `--headless` renders these black).
 | elite_marker_probe | A real elite of each affix gets a marker with its own silhouette (mesh types and sizes under `EliteMarker` all differ), and every pair of marker colours is at least 0.3 apart in RGB: the affix reads by shape for colourblind players | suite |
 | ember_probe | Lava beds build ember emitters with a visibility_aabb large enough to survive frustum culling; water beds don't spark | headless |
 | emp_probe | `emp_disable()` timer/inertness and the EMP grenade's fuse-triggered radius disable | suite |
+| ending_choice_probe | Branching ending: a run counts hijacks and breaches (`note_hijack` / `note_breach`), a save/load round trip keeps them; SHUT IT DOWN always opens, TAKE ITS SEAT at 3 hijacks, SET IT FREE at 5 breaches; the choice screen offers all three, a locked one disabled with its need and the run's progress; pressing one emits `chosen`, records it (persisted) and marks it SEEN next time; each ending's transmission carries its own header and lines and the three differ | suite |
+| ending_choice_shot | The finale's choice for a run with 3 hijacks and 2 breaches (two open, SET IT FREE locked at 2/5); `-- --out=<dir>` | windowed |
 | enemy_behavior_probe | Optic (cutting beam) and Roller (ground ram) signature behaviour against a stationary dummy | windowed |
 | enemy_combat_probe | Every new enemy engages (>=CHASE), damages the player, dies cleanly | suite |
 | enemy_eval_probe | Objective 1v1 balance eval per enemy: real DPS, closing distance, lateral strafe spread | headless |

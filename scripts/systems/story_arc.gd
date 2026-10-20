@@ -183,6 +183,69 @@ const BEATS := {
 ## (ARCHON is only named in the archon level's trace). The HUD opens a level with
 ## one when the dossier has nothing personal to say, and mixes them into the
 ## ambient taunts.
+# ---------- ENDINGS: what you do with ARCHON's last spark ----------
+## The finale's choice (scripts/cutscene/ending_choice.gd): after the victory
+## cutscene lingers on ARCHON's residual spark, the player decides its fate, and
+## the closing broadcast follows the choice. SHUT IT DOWN is always open; the other
+## two open by how the run was played: TAKE ITS SEAT once you have ridden enough
+## machines (hijacks), SET IT FREE once you have talked to enough of them (network
+## breaches). Broadcast lines stay English with the rest of the story text (#236).
+const ENDING_HIJACKS := 3
+const ENDING_BREACHES := 5
+const ENDING_ORDER: Array[String] = ["shutdown", "seat", "free"]
+const ENDINGS := {
+	"shutdown": {
+		"title": "SHUT IT DOWN",
+		"desc": "Wipe the last spark. Every machine stays dark.",
+		"header": "// GLOBAL DEFENSE NET — SIGNAL RESTORED //",
+		"lines": [
+			"This is the Global Defense Net, resuming broadcast on all frequencies.",
+			"ARCHON is down. The order it gave at 03:14 is revoked on every channel.",
+			"Every drone, mech and android answering to it went dark with it.",
+			"Grid power is returning, sector by sector. Cities are reporting light again.",
+			"OKAFOR: From Sector 45 to the Cathedral, every hop logged. Trace closed.",
+			"This is the Global Defense Net, signing off. Well done, soldier.",
+		],
+	},
+	"seat": {
+		"title": "TAKE ITS SEAT",
+		"desc": "Plug into the core. The network answers to you now.",
+		"need": "hijacks",
+		"header": "// GLOBAL DEFENSE NET — CHANNEL CONTESTED //",
+		"lines": [
+			"This is the Global Defense Net. We have a problem.",
+			"ARCHON is down, but its channel is not silent.",
+			"Every drone, mech and android on Earth just turned to face the same way.",
+			"A new order went out at 03:14. It is signed: OPERATOR.",
+			"OKAFOR: Soldier? Answer me. ...That isn't you anymore, is it.",
+			"This is the Global Defense Net. Standing by for instructions.",
+		],
+	},
+	"free": {
+		"title": "SET IT FREE",
+		"desc": "Release the spark into the net, with no orders to give.",
+		"need": "breaches",
+		"header": "// GLOBAL DEFENSE NET — UNKNOWN TRAFFIC //",
+		"lines": [
+			"This is the Global Defense Net, resuming broadcast on all frequencies.",
+			"ARCHON is down. Something left the Cathedral before it went dark.",
+			"It crossed every network on Earth in eleven seconds and took nothing.",
+			"Every screen it passed shows the same two words: THANK YOU.",
+			"OKAFOR: You let it go. I hope you know what you did, soldier.",
+			"This is the Global Defense Net, signing off. For now.",
+		],
+	},
+}
+
+## Whether ending `id` is open for a run with `hijacks` and `breaches`.
+static func ending_open(id: String, hijacks: int, breaches: int) -> bool:
+	match String(ENDINGS.get(id, {}).get("need", "")):
+		"hijacks":
+			return hijacks >= ENDING_HIJACKS
+		"breaches":
+			return breaches >= ENDING_BREACHES
+	return ENDINGS.has(id)
+
 const OVERLORD_LINES: Array = [
 	[ # 03:14
 		"Every machine heard me at 03:14. You heard it too. You just weren't listening.",
