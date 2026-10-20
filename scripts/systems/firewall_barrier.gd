@@ -44,6 +44,7 @@ func _ready() -> void:
 	collision_layer = FIREWALL_LAYER
 	collision_mask = 0
 	add_to_group("firewall")
+	add_to_group("breachable")
 	_build_visual()
 	_build_collision()
 	_build_audio()
@@ -268,3 +269,20 @@ func _process(delta: float) -> void:
 ## off any damage source that has it; hud.gd DEATH_TIPS).
 func _kill_label() -> String:
 	return "FIREWALL"
+
+## NETWORK BREACH hooks (NetworkBreach reads the "breachable" group): whether it
+## can be breached now, its bandwidth cost, its scan label, and the takeover itself.
+## A lockdown door (quiet) is never offered: it seals a fight you are meant to win.
+func breach_ready() -> bool:
+	return not quiet and not is_open
+
+func breach_cost() -> float:
+	return 80.0
+
+func breach_label() -> String:
+	return "FIREWALL: OPEN"
+
+## Opens it for good: raising the sheet again could close it on a player standing in it.
+func breach(_by: Node) -> bool:
+	open()
+	return true

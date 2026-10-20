@@ -28,6 +28,7 @@ const TEACH_REACH := 6.0
 const TEACH_TEXT := "LASER GATE: only the lit beam hurts. JUMP the amber one, DUCK (Ctrl) under the red one. The next beam flickers before it lights."
 
 var _t := 0.0
+var _dark := 0.0 ## seconds left switched off by a NETWORK BREACH
 var _live := -1
 var _cool := 0.0
 var _beams: Array[MeshInstance3D] = []
@@ -35,6 +36,7 @@ var _mats: Array[StandardMaterial3D] = []
 var _cues: Array[Label3D] = []
 
 func _ready() -> void:
+	add_to_group("breachable")
 	_build()
 	_apply()
 
@@ -130,6 +132,13 @@ func _apply() -> void:
 
 func _physics_process(delta: float) -> void:
 	_t += delta
+	if _dark > 0.0:
+		_dark -= delta
+		for b in _beams:
+			b.visible = false
+		for c in _cues:
+			c.visible = false
+		return
 	_cool = maxf(0.0, _cool - delta)
 	var live := live_beam()
 	if live != _live:
@@ -163,3 +172,23 @@ func _physics_process(delta: float) -> void:
 ## off any damage source that has it; hud.gd DEATH_TIPS).
 func _kill_label() -> String:
 	return "LASER GATE"
+
+const BREACH_TIME := 6.0 ## seconds a breached gate stays dark
+
+## NETWORK BREACH hooks (NetworkBreach reads the "breachable" group): whether it
+## can be breached now, its bandwidth cost, its scan label, and the takeover itself.
+func breach_ready() -> bool:
+	return _dark <= 0.0
+
+func breach_cost() -> float:
+	return 35.0
+
+func breach_label() -> String:
+	return "LASER GATE: CUT"
+
+func breach(_by: Node) -> bool:
+	_dark = BREACH_TIME
+	return true
+
+func is_breached() -> bool:
+	return _dark > 0.0

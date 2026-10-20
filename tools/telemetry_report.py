@@ -53,7 +53,7 @@ def main(argv):
     events = load(paths)
     levels = defaultdict(lambda: {"starts": 0, "ends": Counter(), "time": 0.0, "deaths": [],
                                   "taken": Counter(), "shots": Counter(), "hits": Counter(),
-                                  "kills": Counter(), "stuck": [], "grades": []})
+                                  "kills": Counter(), "stuck": [], "grades": [], "breaches": Counter()})
     killers = Counter()
     for e in events:
         lvl = e.get("level")
@@ -66,6 +66,8 @@ def main(argv):
         elif kind == "death":
             L["deaths"].append(e)
             killers[e.get("killer") or "UNKNOWN"] += 1
+        elif kind == "breach":
+            L["breaches"][e.get("label", "?")] += 1
         elif kind == "stuck":
             L["stuck"].append(e.get("pos"))
         elif kind == "level_end":
@@ -93,6 +95,8 @@ def main(argv):
             s, h, k = L["shots"][g], L["hits"][g], L["kills"][g]
             acc = f", {100 * h / s:.0f}% hit" if s else ""
             print(f"   {g}: {s:.0f} shots{acc}, {k:.0f} kills")
+        if L["breaches"]:
+            print("   breaches: " + ", ".join(f"{k} x{n}" for k, n in L["breaches"].most_common()))
         for p in L["stuck"]:
             print(f"   stuck at {p}")
     if killers:
