@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-517 probes total: **217** wired into the headless suite (`suite`), **85**
+518 probes total: **217** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -307,6 +307,7 @@ or GPU-timing probes; `--headless` renders these black).
 | pylon_clearance_probe | No outdoor light mast stands inside geometry: for 26 levels each `light_pylon`'s column overlaps no world body but itself, and open-sky levels still get masts (92). Red before `_place_light_pylons`: 34 of 126 masts in 14 levels went through SkyBridge decks, towers or walls (#290) | suite |
 | tower_spacing_probe | No two towers in any level overlap: each tower's spiral square (`radius`) plus its corner landings (1.9 m) stays clear of every other tower's, from the level defs alone (21 pairs). Red on grok before its 7 m tower moved from z 0 to z 2: overlap 2.2 m, that tower's 4.67 m landing 1.7 m over the other's 2.0 m landing, where the real player stuck (#339) | suite |
 | stairs_landing_probe | Every `stairs` ramp in every level def (scaled) whose top lands on a platform meets that platform's face within 0.1 m of its deck, following the ramp's centre line to where it enters the footprint (red before: 8 lips of 0.12-0.58 m, level 01's four rubble/slab ramps, gpt, suburb x2, suburb_boss; the real player stopped at level 01's four 3 of 3 walks); and no def wall box stands on a ramp's walking line (centre and 0.5 m either side, every 0.25 m) more than 0.3 m above it (red before: suburb's yard crate across the rooftop stair's foot); and no platform deck is buried in a non-open building (footprints overlapping over 1 m both ways, building over 0.3 m above the deck; red before: suburb_boss's north and west decks inside their houses) | suite |
+| bridge_headroom_probe | Report (#339): builds every level with towers and stairs and lists each place a ramp runs under another with less than 1.9 m of headroom. All 14 it finds (gemini, claude, grok x2, mistral x2, assembly x2, archon x2, sublevel x2, neon, hivemind) are a sky-bridge or approach stair low over a tower spiral segment, where the real player stops. Re-phasing the spirals cleared 10 but broke sublevel's navmesh, so the fix is per level layout. Fails while the list is not empty | headless |
 | hazard_kill_label_probe | Every hazard that can kill the player names itself on the death screen: a real player killed by each of 15 hazard scripts (and by its own blast) leaves a non-empty `GameState.last_killer` that matches a `hud.gd` `DEATH_TIPS` key whose tip has a German row (red before: all 16 empty) | suite |
 | hazard_probe | Lava/water hazard arenas: hazard bed exists, flyers spawn, player spawns on a walkway (not the sea) | suite |
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
