@@ -123,6 +123,7 @@ Builds land in `build/` (git-ignored) as a single self-contained file (~250 MB, 
 | Adversarial patch (robots read you as furniture) | `T` | D-pad left |
 | **Network breach** (hold to scan, release on a target) | `B` | D-pad right |
 | Pause | `Esc` | Start |
+| Photo mode (while paused) | `P`, or the pause menu | pause menu |
 
 **Testing cheats** (type the word — no console needed): on the main menu, type **`warp`** for a direct level-select that also unlocks the full bestiary and arsenal; **in-game**, type **`god`** to toggle invincibility (tops you off to full health), and type it again to turn it off.
 
@@ -144,6 +145,7 @@ Sensitivity, FOV, invert-Y, framerate cap, graphics tier (Low/Medium/High/Ultra)
 - **Mood** — themed per-level lighting + fog, cinematic post (vignette / chromatic aberration / film grain / sharpen), AgX tonemap, glow, SSAO/SSIL/SSR, soft shadows, ambient dust, **adaptive combat music** (layered: exploring you hear a bed and a faint lead, a fight brings in the drums and lead, a RAMPAGE streak or a boss adds a hot sixteenth line), and an "area cleared" slow-mo.
 - **Cutscenes** — a **comic-panel story intro** (peaceful green-eyed helper robots → the signal → they arm and turn red) and a reusable, choreographed cutscene system used for the per-level briefings, which preview each level's *new* hostiles before you drop in.
 - **One story, start to finish**: the campaign is a six-act trace of the 03:14 command back to whoever sent it. Every comic briefing carries the act, a red thread through all 24 levels and a trace-log card saying what the last level uncovered (`scripts/systems/story_arc.gd`).
+- **Photo mode.** Freeze any moment from the pause menu, fly a free camera around it with filters, and save the shot as a PNG.
 - **Achievements.** Twenty local achievements for the signature moments (GODLIKE, a CASCADE x6, every ending, an UPRISING clear, a Daily Op streak and more), with an unlock toast and a list on the main menu.
 - **Three endings.** ARCHON's last spark is still running when it falls: shut it down, take its seat, or set it free. The last two open by how you played the run (hijack 3 robots, or network-breach 5 machines), and each has its own closing broadcast.
 - **Network breach — hack the level.** Hold `B` and time slows while every networked thing in view is marked; release with one under the crosshair to take it over, paid for from a BANDWIDTH meter (100, refilling 7/s): a sentry turret turns on the robots (50), an explosive barrel, canister or car goes off (30), a laser gate goes dark for 6 s (35), a firewall drops for good (80), a robot is jammed for 3 s (25). Bosses and lockdown doors are immune.

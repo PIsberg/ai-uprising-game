@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-509 probes total: **209** wired into the headless suite (`suite`), **86**
+511 probes total: **210** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **214** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **215** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -419,6 +419,8 @@ or GPU-timing probes; `--headless` renders these black).
 | pickup_probe | A level's hand-placed pickups (def `"kind"` key) actually instantiate (kind/type key trap regression net) | headless |
 | platform_probe | Vantage platforms + ramp corners built on the floor with a reachable ramp + nearby signage | windowed |
 | player_feel_probe | Dash/hard-landing viewmodel kicks and the weapon-accurate dynamic crosshair | headless |
+| photo_mode_probe | PHOTO MODE from the real pause menu with a real player and HUD: the button exists; entering keeps the game paused, makes the free camera current at the eye, hides the HUD, the overlays and the gun; forward flies it 4 m in 1 s while a robot stays frozen; it never strays past 12 m; zoom stops at 20 and 100; the filter key cycles all 5 and wraps; leaving restores the player's camera, the HUD, the overlays and the gun, on the pause menu | suite |
+| photo_mode_shot | PHOTO MODE in a lit yard: NOIR, zoomed, then `capture()`; RESULT FAIL if no PNG was written; copies it to `<out>/photo_mode.png` | windowed |
 | playtest_probe | Real AI live: skitters hop, Ravager leap+slam, Warmech lob salvos; facing/scale/tint/projectiles | windowed |
 | pointblank_los_probe | An enemy whose eye sits INSIDE the player's capsule still sees the player and keeps attacking (LOS ray now reports the shape it starts in at point-blank); a skitter pinned at zero distance: 0 bites and stuck in CHASE before, 5 bites in 6 s after | suite |
 | preset_probe | `GraphicsSettings.apply_preset()`/`set_window_mode()` batch-applies the quality/render-scale/feature-toggle matrix per tier | windowed |
