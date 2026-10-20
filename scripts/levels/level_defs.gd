@@ -867,15 +867,21 @@ static func _nexus() -> Dictionary:
 			{"from": Vector3(12.0, 9.2, 2.0), "to": Vector3(-6.4, 7.2, 6.4), "width": 3.5},
 			# Solved ramp up onto the east slab, replacing the old freestanding
 			# ramp that topped out 0.4 m BELOW the deck (an unclimbable lip).
-			{"from": Vector3(-1.6, 0, -2), "to": Vector3(4.8, 2.0, -2), "width": 4.5},
+			# `to` sits on the slab's near edge (x 4.0): aimed 0.8 m inside it, the
+			# ramp met the slab face 0.25 m below the deck (#339).
+			{"from": Vector3(-1.6, 0, -2), "to": Vector3(4.0, 2.0, -2), "width": 4.5},
 			# Collapsed-slab ramps chaining the rooftop spawn down the rubble
 			# cascade to the street — the drops between slabs exceed the nav
 			# step height, so without these the roof was a navmesh island
 			# (fine to jump off, but enemies couldn't push up and any nav
 			# query from the spawn read as disconnected).
-			{"from": Vector3(-11.5, 2.2, -11.5), "to": Vector3(-13.2, 3.6, -13.2), "width": 3.0},
-			{"from": Vector3(-7.2, 1.0, -7.2), "to": Vector3(-9.2, 2.2, -9.2), "width": 3.0},
-			{"from": Vector3(-3.6, 0, -3.6), "to": Vector3(-5.4, 1.0, -5.4), "width": 3.0},
+			# Each tops out where it meets the next slab (its near corner or face);
+			# aimed inside the slabs they met them 0.36-0.58 m below the deck, lips
+			# the player stopped at (#339). The top one starts further back so the
+			# shorter run stays at 23 deg.
+			{"from": Vector3(-10.8, 2.2, -10.8), "to": Vector3(-12.5, 3.6, -12.5), "width": 3.0},
+			{"from": Vector3(-7.2, 1.0, -7.2), "to": Vector3(-8.5, 2.2, -8.5), "width": 3.0},
+			{"from": Vector3(-3.6, 0, -3.6), "to": Vector3(-4.75, 1.0, -4.75), "width": 3.0},
 		],
 		"towers": [
 			{"pos": Vector3(12, 0, 2), "height": 9.0, "radius": 4.0},
@@ -4230,7 +4236,7 @@ static func _gpt() -> Dictionary:
 			# the ring instead of dead-ending on the second roof.
 			{"from": Vector3(12.0, 7.2, -18.0), "to": Vector3(28.0, 5.0, -20.0), "width": 3.0},
 			# Floor stair up the gallery's north edge.
-			{"from": Vector3(28.0, 0, -8.0), "to": Vector3(28.0, 4.8, -17.6), "width": 3.5},
+			{"from": Vector3(28.0, 0, -8.0), "to": Vector3(28.0, 4.8, -17.0), "width": 3.5}, # the deck's near edge (#339)
 		],
 		"towers": [
 			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
@@ -5270,7 +5276,9 @@ static func _suburb() -> Dictionary:
 		# sky-bridge — a low road and a high road instead of a straight sprint.
 		"walls": [
 			{"pos": Vector3(-3, 0.6, -2), "size": Vector3(3.2, 1.2, 1.6)},
-			{"pos": Vector3(9, 0.6, 6), "size": Vector3(3.2, 1.2, 1.6)},
+			# East of the rooftop stair's foot: at x 9 it stood across the stair's
+			# first 2 m and the player stopped there (#339, stairs_landing_probe).
+			{"pos": Vector3(13, 0.6, 6), "size": Vector3(3.2, 1.2, 1.6)},
 			{"pos": Vector3(-12, 0.7, 8), "size": Vector3(5, 1.4, 1)},
 			{"pos": Vector3(14, 0.7, -8), "size": Vector3(1, 1.4, 5)},
 			# Canal-lock gateposts framing the bridge crossing (too tall to mantle).
@@ -5378,10 +5386,10 @@ static func _suburb() -> Dictionary:
 			{"from": Vector3(-8.5, 0, 8), "to": Vector3(-4.5, 1.72, 8), "width": 4.0},
 			{"from": Vector3(8.5, 0, 8), "to": Vector3(4.5, 1.72, 8), "width": 4.0},
 			# Yard stair up to the SE rooftop deck.
-			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.6), "width": 3.0},
+			{"from": Vector3(10, 0, 4), "to": Vector3(10, 4.7, 11.4), "width": 3.0}, # the deck's near edge (#339)
 			# East-yard ramp onto the overwatch slab (was a freestanding ramp
 			# with a step at the foot and a gap at the deck edge).
-			{"from": Vector3(22, 0, 8.2), "to": Vector3(22, 3.2, -0.6), "width": 4.0},
+			{"from": Vector3(22, 0, 8.2), "to": Vector3(22, 3.2, 0.0), "width": 4.0}, # the slab's near edge (#339)
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
@@ -5606,7 +5614,7 @@ static func _suburb_boss() -> Dictionary:
 		"stairs": [
 			{"from": Vector3(-17.0, 9.2, 0.0), "to": Vector3(17.0, 7.2, 0.0), "width": 3.5},
 			# Yard stair up onto the ring overwatch deck (east drift).
-			{"from": Vector3(44, 0, -22.8), "to": Vector3(44, 3.2, -31.6), "width": 4.0},
+			{"from": Vector3(44, 0, -22.8), "to": Vector3(44, 3.2, -31.0), "width": 4.0}, # the deck's near edge (#339)
 		],
 		"towers": [
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 9.0, "radius": 3.6},
