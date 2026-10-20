@@ -5597,12 +5597,18 @@ static func _suburb_boss() -> Dictionary:
 			"EVACUATION CANCELLED",
 		],
 		"ramps": [
-			{"pos": Vector3(0, 1.5, -28), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
-			{"pos": Vector3(-28, 1.5, 0), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 90},
+			# Up onto the porch decks below. Each tops out on its deck's front edge;
+			# at 28 they climbed into the house walls (#339).
+			{"pos": Vector3(0, 1.5, -20.6), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
+			{"pos": Vector3(-20.6, 1.5, 0), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 90},
 		],
 		"platforms": [
-			{"pos": Vector3(0, 3.0, -34), "size": Vector3(9, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
-			{"pos": Vector3(-34, 3.0, 0), "size": Vector3(6, 0.4, 9), "color": Color(0.42, 0.42, 0.46)},
+			# Porch decks against the north and west houses' fronts. A house's
+			# position scales with the arena but its 8 m size does not, so at 34
+			# these decks sat 1.6 m below the roof INSIDE the houses (#339,
+			# stairs_landing_probe).
+			{"pos": Vector3(0, 3.0, -26.15), "size": Vector3(9, 0.4, 6), "color": Color(0.42, 0.42, 0.46)},
+			{"pos": Vector3(-26.15, 3.0, 0), "size": Vector3(6, 0.4, 9), "color": Color(0.42, 0.42, 0.46)},
 			# Ring overwatch deck on the east drift — holds the overclock (the
 			# open shells' flat roofs are grapple-only, so the reward gets a
 			# stair-served deck instead). Solved stair below.
