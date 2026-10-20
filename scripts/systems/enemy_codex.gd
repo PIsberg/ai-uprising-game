@@ -16,7 +16,7 @@ extends Object
 const ORDER: Array = [
 	"drone", "android", "spider", "mech", "skitter", "vacuum",
 	"hunter", "reaper", "sniper", "seeker", "leech", "brute",
-	"gunner", "raptor", "mender", "aegis", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
+	"gunner", "raptor", "mender", "aegis", "hive", "sentinel", "mauler", "ravager", "warmech", "dog", "server", "alien",
 	"fishbot", "warbot", "enforcer", "ripper", "optic", "roller", "shark", "gunslinger",
 	"whirlwind", "breaker", "ronin", "howitzer", "orb", "bowler", "deepfake", "forkbomb", "overfitter", "attention", "moe", "reward", "diffusion", "rollback", "quantizer",
 	"terminator", "overseer", "colossus", "manus", "smasher", "titan", "archon",
@@ -306,6 +306,12 @@ const ENTRIES := {
 		"desc": "A shield drone. It wraps the robot nearest you in a gold bubble that no shot gets through, and flees when you close in. Kill it and the bubble drops at once.",
 		"strengths": ["Makes one robot completely immune", "Always shields whoever is closest to you"],
 		"weaknesses": ["Fragile, and the shield dies with it", "Its gold beam points straight back at it"],
+	},
+	"hive": {
+		"scene": "res://scenes/enemies/hive.tscn", "name": "HIVE", "scale": 1.0, "y": 0.0,
+		"desc": "A networked flanker that never fights alone. While it holds its link to the hive it wears a shield your shots splash off, and the pack spreads out to come at you from every side instead of bunching up.",
+		"strengths": ["Shielded while linked to the hive", "The pack surrounds you, one per approach"],
+		"weaknesses": ["A jam zone cuts the link: shield down, it stands dazed", "Drive the pack through a jammer, then finish it"],
 	},
 	"sentinel": {
 		"scene": "res://scenes/enemies/sentinel.tscn", "name": "SENTINEL", "scale": 1.0, "y": 0.0,

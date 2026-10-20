@@ -42,6 +42,17 @@ func _run() -> void:
 		if not DamageMatrix.has_armour(key):
 			missing.append(key)
 	_check("every spawnable enemy has an armour class", missing.is_empty(), str(missing))
+	# And a bestiary page: the HIVE spawned in the campaign with none, so it never
+	# reached the Encyclopedia or the field manual (#349).
+	var no_page: Array = []
+	for type: String in LevelBuilder.ENEMY_SCENES:
+		var ps2 := load(LevelBuilder.ENEMY_SCENES[type]) as PackedScene
+		var inst2 := ps2.instantiate()
+		var key2: String = inst2.codex_key() if inst2.has_method("codex_key") else type
+		inst2.free()
+		if not EnemyCodex.has(key2):
+			no_page.append(key2)
+	_check("every spawnable enemy has a bestiary entry", no_page.is_empty(), str(no_page))
 	for key: String in EnemyCodex.ORDER:
 		if not DamageMatrix.has_armour(key):
 			missing.append(key)
