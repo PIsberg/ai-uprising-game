@@ -205,6 +205,7 @@ mouse_filter = 2
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Objective"
+autowrap_mode = 3
 
 [node name="ScoreLabel" type="Label" parent="Margin/Layout/Top"]
 layout_mode = 2
