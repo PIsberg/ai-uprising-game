@@ -147,6 +147,8 @@ res://tests/coop_input_probe.tscn
 res://tests/coop_revive_probe.tscn
 # Co-op stage 3: split screen, cameras follow their players, HUDs and canvas layers per half, viewmodel and avatar layers.
 res://tests/coop_split_probe.tscn
+# Co-op stage 5: the main menu's Co-op button, the join overlay (a pad joins, a key does not), leaving, Back.
+res://tests/coop_menu_probe.tscn
 # No emoji-presentation check marks in shown text (#398).
 res://tests/glyph_probe.tscn
 # Every shipped model is named in CREDITS.md (#363).
