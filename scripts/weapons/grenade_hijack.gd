@@ -77,8 +77,11 @@ func _burst() -> void:
 	# Firmware injection scrambles nearby signal — including yours. Corrupts the
 	# player's optics briefly and refracts the screen off the spike, scaled by
 	# how close you were standing to it.
-	var pl := get_tree().get_first_node_in_group("player")
-	if pl is Node3D and pl.has_method("pulse_glitch"):
+	for pl in GameState.players():
+		_glitch(pl, pos)
+
+func _glitch(pl: Node3D, pos: Vector3) -> void:
+	if pl.has_method("pulse_glitch"):
 		var pd := (pl as Node3D).global_position.distance_to(pos)
 		var near := clampf(1.0 - pd / maxf(burst_radius * 2.5, 0.001), 0.0, 1.0)
 		if near > 0.0:

@@ -139,15 +139,15 @@ func _ready() -> void:
 func _do_entrance() -> void:
 	GameState.announce_boss(self)
 	AudioBus.play_synth_ui("eas_alert", -6.0)
-	var p := get_tree().get_first_node_in_group("player")
 	# Beat 1 — it wakes: a subterranean rumble, the reactor flares white-hot, and
 	# a molten warning ring charges on the deck under it.
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.3)
 	AudioBus.play_synth_at("servo_step_heavy", global_position, 2.0, 0.4)
 	spawn_ground_warning(global_position, 6.5, 0.55, Color(1.0, 0.4, 0.12))
 	recoil = 1.0 # spikes the reactor emission (see _process glow driver)
-	if p and p.has_method("shake"):
-		p.shake(0.5)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(0.5)
 	await get_tree().create_timer(0.55).timeout
 	if state == State.DEAD:
 		return
@@ -159,8 +159,9 @@ func _do_entrance() -> void:
 	spawn_shockwave_ring(5.0, Color(1.0, 0.6, 0.2))
 	recoil = 1.0
 	GameState.hit_stop(0.1, 0.5)
-	if p and p.has_method("shake"):
-		p.shake(1.5)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(1.5)
 
 func _phase() -> int:
 	return boss_phase()
@@ -395,22 +396,20 @@ func _launch_rake() -> void:
 func _rake_check() -> void:
 	if _rake_hit:
 		return
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	var to: Vector3 = (p as Node3D).global_position - global_position
-	to.y = 0.0
-	if to.length() <= rake_reach and rad_to_deg(_rake_dir.angle_to(to)) <= rake_arc_deg * 0.5:
-		_rake_hit = true
-		var d := p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(rake_damage, self)
-		if p.has_method("shake"):
-			p.shake(0.9)
-		if to.length() > 0.1 and "velocity" in p:
-			p.velocity += to.normalized() * 11.0 + Vector3.UP * 3.5 # flung by the swipe
-		AudioBus.play_synth_at("impact_metal", (p as Node3D).global_position, 0.0, 0.7)
-		_claw_slash_fx()
+	for p in GameState.players():
+		var to: Vector3 = (p as Node3D).global_position - global_position
+		to.y = 0.0
+		if to.length() <= rake_reach and rad_to_deg(_rake_dir.angle_to(to)) <= rake_arc_deg * 0.5:
+			_rake_hit = true
+			var d := p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(rake_damage, self)
+			if p.has_method("shake"):
+				p.shake(0.9)
+			if to.length() > 0.1 and "velocity" in p:
+				p.velocity += to.normalized() * 11.0 + Vector3.UP * 3.5 # flung by the swipe
+			AudioBus.play_synth_at("impact_metal", (p as Node3D).global_position, 0.0, 0.7)
+			_claw_slash_fx()
 
 ## Three glowing talon streaks fanned across the swing — the visible claw slash.
 func _claw_slash_fx() -> void:
@@ -459,21 +458,19 @@ func _do_smash() -> void:
 	var fx := EXPLOSION.instantiate()
 	get_tree().current_scene.add_child(fx)
 	(fx as Node3D).global_position = global_position - global_transform.basis.z * smash_range * 0.5 + Vector3.UP * 0.5
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	# Frontal cone: the player must be ahead and within reach to eat the hammer.
-	var to: Vector3 = (p as Node3D).global_position - global_position
-	to.y = 0.0
-	var fwd := -global_transform.basis.z
-	if to.length() <= smash_range and rad_to_deg(fwd.angle_to(to)) <= smash_arc_deg * 0.5:
-		var d := p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(smash_damage, self)
-		if p.has_method("shake"):
-			p.shake(0.9)
-		if to.length() > 0.1 and "velocity" in p:
-			p.velocity += to.normalized() * 9.0 + Vector3.UP * 3.0  # knock them back
+	for p in GameState.players():
+		# Frontal cone: the player must be ahead and within reach to eat the hammer.
+		var to: Vector3 = (p as Node3D).global_position - global_position
+		to.y = 0.0
+		var fwd := -global_transform.basis.z
+		if to.length() <= smash_range and rad_to_deg(fwd.angle_to(to)) <= smash_arc_deg * 0.5:
+			var d := p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(smash_damage, self)
+			if p.has_method("shake"):
+				p.shake(0.9)
+			if to.length() > 0.1 and "velocity" in p:
+				p.velocity += to.normalized() * 9.0 + Vector3.UP * 3.0  # knock them back
 
 # ---------- ground slam ----------
 
@@ -491,22 +488,20 @@ func _do_slam() -> void:
 	var fx := EXPLOSION.instantiate()
 	get_tree().current_scene.add_child(fx)
 	(fx as Node3D).global_position = global_position
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	if (p as Node3D).global_position.distance_to(global_position) <= slam_radius:
-		var d := p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(slam_damage, self)
-		if p.has_method("shake"):
-			p.shake(1.1)
+	for p in GameState.players():
+		if (p as Node3D).global_position.distance_to(global_position) <= slam_radius:
+			var d := p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(slam_damage, self)
+			if p.has_method("shake"):
+				p.shake(1.1)
 
 # ---------- death ----------
 
 func _on_died(source: Node) -> void:
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(1.5)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(1.5)
 	GameState.hit_stop(0.25, 0.5)
 	_spawn_death_explosions.call_deferred()
 	super._on_died(source)

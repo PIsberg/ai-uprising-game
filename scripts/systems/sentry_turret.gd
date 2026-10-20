@@ -153,7 +153,7 @@ func _build() -> void:
 	add_child(ring)
 
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(global_position)
 
 func _flat(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()

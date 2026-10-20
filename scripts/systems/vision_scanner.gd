@@ -180,7 +180,14 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_mode_t += delta
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	# The player it has in view, if any (co-op: either one).
+	var player: Node3D = null
+	for p in GameState.players():
+		if _sees(p):
+			player = p
+			break
+	if player == null:
+		player = GameState.nearest_player(global_position)
 	match mode:
 		Mode.SWEEP:
 			_sweep()

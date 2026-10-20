@@ -43,7 +43,7 @@ func _hint() -> void:
 func _process(delta: float) -> void:
 	_cd = maxf(0.0, _cd - delta)
 	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Node3D
+		_player = GameState.primary_player() # the jammer aims from player one's view
 		if _player:
 			_cam = _player.find_child("Camera3D", true, false) as Camera3D
 		return

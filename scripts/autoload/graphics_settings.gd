@@ -567,9 +567,10 @@ func set_area_lights_enabled(v: bool) -> void:
 ## Applies to the live player immediately and persists.
 func set_aim_assist(v: bool) -> void:
 	aim_assist = v
-	var p := get_tree().get_first_node_in_group("player") if is_inside_tree() else null
-	if p and "aim_assist_enabled" in p:
-		p.aim_assist_enabled = v
+	if is_inside_tree():
+		for p in GameState.players():
+			if "aim_assist_enabled" in p:
+				p.set("aim_assist_enabled", v)
 	_save_settings()
 
 ## Show/hide the HUD FPS counter (the HUD polls show_fps each frame).
@@ -840,9 +841,9 @@ func _apply_to_live_puddles() -> void:
 func _apply_to_live_post_process() -> void:
 	if not is_inside_tree():
 		return
-	var player = get_tree().get_first_node_in_group("player")
-	if player and player.has_method("update_post_process_settings"):
-		player.update_post_process_settings()
+	for player in GameState.players():
+		if player.has_method("update_post_process_settings"):
+			player.update_post_process_settings()
 
 func apply_puddle_material_to_node(p: MeshInstance3D) -> void:
 	if puddle_ripples_enabled:

@@ -148,25 +148,40 @@ func _physics_process(delta: float) -> void:
 		_live = live
 		switched.emit(live)
 	_apply()
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if pl == null:
+	if _cool > 0.0:
+		for p in GameState.players():
+			_teach(p)
 		return
+	var hit_any := false
+	for p in GameState.players():
+		_teach(p)
+		hit_any = _hit(p, live) or hit_any
+	if hit_any:
+		_cool = HIT_GAP # after every player in the beam took theirs (co-op)
+
+func _teach(pl: Node3D) -> void:
 	var rel := pl.global_position - global_position
 	var along := rel.dot(_along())
 	var across := rel.dot(_along().cross(Vector3.UP))
 	if absf(along) <= width * 0.5 + TEACH_REACH and absf(across) <= TEACH_REACH:
 		GameState.teach_once("laser_gate", TEACH_TEXT)
-	if _cool > 0.0 or absf(along) > width * 0.5 + 0.35 or absf(across) > HIT_HALF_WIDTH:
-		return
+
+## Burn `pl` if it stands in beam `live`; true if it did.
+func _hit(pl: Node3D, live: int) -> bool:
+	var rel := pl.global_position - global_position
+	var along := rel.dot(_along())
+	var across := rel.dot(_along().cross(Vector3.UP))
+	if absf(along) > width * 0.5 + 0.35 or absf(across) > HIT_HALF_WIDTH:
+		return false
 	var tall := 1.0 if pl.get("_is_crouching") == true else 1.8
 	var beam_y := global_position.y + float(HEIGHTS[live])
 	if beam_y < pl.global_position.y + 0.02 or beam_y > pl.global_position.y + tall:
-		return
+		return false
 	var php: Node = pl.get_node_or_null("Damageable")
 	if php:
 		php.apply_damage(damage, self, false, pl.global_position + Vector3.UP * (beam_y - pl.global_position.y), true)
-	_cool = HIT_GAP
 	AudioBus.play_synth_at("hit_tick", pl.global_position, -2.0, 0.6)
+	return true
 
 ## The death screen's "Taken down by" name and its tip key (player.gd reads it
 ## off any damage source that has it; hud.gd DEATH_TIPS).

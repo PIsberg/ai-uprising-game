@@ -249,8 +249,7 @@ func _physics_process(delta: float) -> void:
 	_lane_mat.set_shader_parameter("flash", 1.0 if _flash > 0.0 and fmod(_t * 8.0, 1.0) < 0.5 else 0.0)
 	for k in _cool.keys():
 		_cool[k] = float(_cool[k]) - delta
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if pl != null:
+	for pl in GameState.players():
 		_player_tick(pl, off, head)
 
 ## Where `n` stands relative to the slot: (along, across), on the ground plane.

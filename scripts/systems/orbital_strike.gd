@@ -60,8 +60,9 @@ func _ready() -> void:
 	_beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_beam)
 
+## The player the circle follows: the nearest one to it (co-op).
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(_pos if _started else global_position)
 
 ## Where the circle is centred (on the ground plane under the player).
 func reticle_pos() -> Vector3:
@@ -119,16 +120,15 @@ func _fire(p: Node3D) -> void:
 	_beam_mat.albedo_color = Color(1.0, 0.95, 0.85, 0.95)
 	_ring_mat.albedo_color = Color.WHITE
 	AudioBus.play_synth_at("explosion", _pos, 2.0, 0.8)
-	if p == null or not is_instance_valid(p):
-		return
-	var d := Vector2(p.global_position.x - _pos.x, p.global_position.z - _pos.z).length()
-	if d > RADIUS or _covered(p):
-		return
-	var hp := p.get_node_or_null("Damageable") as Damageable
-	if hp and hp.is_alive():
-		hp.apply_damage(DAMAGE, self)
-	if p.has_method("shake"):
-		p.shake(0.6)
+	for q in GameState.players(): # everyone under the circle, not only the one it tracked
+		var d := Vector2(q.global_position.x - _pos.x, q.global_position.z - _pos.z).length()
+		if d > RADIUS or _covered(q):
+			continue
+		var hp := q.get_node_or_null("Damageable") as Damageable
+		if hp and hp.is_alive():
+			hp.apply_damage(DAMAGE, self)
+		if q.has_method("shake"):
+			q.shake(0.6)
 
 ## The death screen's "Taken down by" name and its tip key (player.gd reads it
 ## off any damage source that has it; hud.gd DEATH_TIPS).

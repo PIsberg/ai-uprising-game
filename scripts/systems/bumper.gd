@@ -173,7 +173,7 @@ func _physics_process(delta: float) -> void:
 	for b in get_overlapping_bodies():
 		_try(b)
 	_glow.emission_energy_multiplier = 2.0 + 6.0 * _pop + 0.6 * sin(Time.get_ticks_msec() / 220.0)
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	var pl := GameState.nearest_player(global_position)
 	if pl != null:
 		var d := pl.global_position - global_position
 		d.y = 0.0

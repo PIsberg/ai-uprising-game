@@ -153,9 +153,9 @@ func _do_entrance() -> void:
 	AudioBus.play_synth_ui("eas_alert", -6.0)
 	# A distant boom + dread shake as it ignites and begins its descent.
 	AudioBus.play_synth_at("explosion", global_position, 4.0, 0.7)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.7)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(0.7)
 
 ## Two foot thrusters plus a central booster, blazing straight down.
 func _spawn_thrusters() -> void:
@@ -198,9 +198,9 @@ func _land() -> void:
 	AudioBus.play_synth_at("explosion", global_position, 8.0, 0.32)
 	AudioBus.play_synth_at("mech_step", global_position, 6.0, 0.45)
 	GameState.hit_stop(0.12, 0.45)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(2.0)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(2.0)
 	for i in 8:
 		var ang := TAU * float(i) / 8.0
 		var fx := EXPLOSION.instantiate()
@@ -384,25 +384,23 @@ func _footfall_quake(at: Vector3 = Vector3.INF) -> void:
 	if at == Vector3.INF:
 		at = global_position
 	_footfall_ring(at)
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null or not (p is Node3D):
-		return
-	var to: Vector3 = (p as Node3D).global_position - at
-	to.y = 0.0
-	var d := to.length()
-	if d <= footfall_radius:
-		var prox := clampf(1.0 - d / footfall_radius, 0.0, 1.0)
-		if p.has_method("shake"):
-			p.shake(0.25 + prox * 0.55)
-		# Grace period: shake but don't crush a fresh drop-in.
-		if not GameState.attack_grace_active():
-			var dm = p.get_node_or_null("Damageable")
-			if dm:
-				dm.apply_damage(footfall_damage * maxf(prox, 0.3), self)
-			if d > 0.1 and "velocity" in p:
-				p.velocity += to.normalized() * footfall_knockback + Vector3.UP * 4.0
-	elif p.has_method("shake") and d < footfall_radius * 3.0:
-		p.shake(0.12) # far-off tremor as the giant approaches
+	for p in GameState.players():
+		var to: Vector3 = (p as Node3D).global_position - at
+		to.y = 0.0
+		var d := to.length()
+		if d <= footfall_radius:
+			var prox := clampf(1.0 - d / footfall_radius, 0.0, 1.0)
+			if p.has_method("shake"):
+				p.shake(0.25 + prox * 0.55)
+			# Grace period: shake but don't crush a fresh drop-in.
+			if not GameState.attack_grace_active():
+				var dm = p.get_node_or_null("Damageable")
+				if dm:
+					dm.apply_damage(footfall_damage * maxf(prox, 0.3), self)
+				if d > 0.1 and "velocity" in p:
+					p.velocity += to.normalized() * footfall_knockback + Vector3.UP * 4.0
+		elif p.has_method("shake") and d < footfall_radius * 3.0:
+			p.shake(0.12) # far-off tremor as the giant approaches
 
 ## An expanding shockwave dust-ring flung out from the foot on impact.
 func _footfall_ring(at: Vector3) -> void:
@@ -539,23 +537,21 @@ func _do_slam() -> void:
 	var fx := EXPLOSION.instantiate()
 	get_tree().current_scene.add_child(fx)
 	(fx as Node3D).global_position = global_position
-	var p := get_tree().get_first_node_in_group("player")
-	if p == null:
-		return
-	if (p as Node3D).global_position.distance_to(global_position) <= slam_radius:
-		var d := p.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(slam_damage, self)
-		if p.has_method("shake"):
-			p.shake(1.0)
+	for p in GameState.players():
+		if (p as Node3D).global_position.distance_to(global_position) <= slam_radius:
+			var d := p.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(slam_damage, self)
+			if p.has_method("shake"):
+				p.shake(1.0)
 
 # ---------- death ----------
 
 func _on_died(source: Node) -> void:
 	# A boss this size goes out loud: a stagger of explosions + a long quake.
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(1.5)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(1.5)
 	GameState.hit_stop(0.25, 0.5) # cinematic slow-mo on the mega-boss kill
 	_spawn_death_explosions.call_deferred()
 	super._on_died(source)

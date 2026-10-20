@@ -105,8 +105,9 @@ func _build() -> void:
 		e.position = Vector3(sin(ang), 0.0, cos(ang)) * (size * 0.5 - 0.04) + Vector3.UP * 0.012
 		_visual.add_child(e)
 
+## The player nearest the slab (the teach reach and the cracking check use it).
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(global_position)
 
 ## Player feet over the slab's footprint, from `below` to FEET_ABOVE about the top.
 func _over(p: Node3D, below: float) -> bool:

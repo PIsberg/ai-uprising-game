@@ -183,11 +183,11 @@ func _detonate(hit_player: bool) -> void:
 		var dist: float = (col as Node3D).global_position.distance_to(global_position) if col is Node3D else 0.0
 		var falloff := clampf(1.0 - dist / radius, 0.0, 1.0)
 		d.apply_damage(damage * falloff, self)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		var pd: float = (p as Node3D).global_position.distance_to(global_position)
-		if pd < radius * 2.0:
-			p.shake(clampf(1.0 - pd / (radius * 2.0), 0.0, 1.0))
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			var pd: float = (p as Node3D).global_position.distance_to(global_position)
+			if pd < radius * 2.0:
+				p.shake(clampf(1.0 - pd / (radius * 2.0), 0.0, 1.0))
 	queue_free()
 
 # Shot down before it reaches you -> it still goes off (smaller, no free kill at point-blank).

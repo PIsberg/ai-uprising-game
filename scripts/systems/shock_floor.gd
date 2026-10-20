@@ -193,27 +193,32 @@ func _physics_process(delta: float) -> void:
 		AudioBus.play_synth_at("radio_static", global_position, -6.0, 1.6)
 		zapped.emit(g)
 	_apply()
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if pl == null:
-		return
-	var local := pl.global_position - global_position
 	var half := Vector2(cells.x, cells.y) * cell * 0.5
-	if absf(local.x) <= half.x + TEACH_REACH and absf(local.z) <= half.y + TEACH_REACH:
-		GameState.teach_once("shock_floor", TEACH_TEXT)
+	for pl in GameState.players():
+		var local := (pl as Node3D).global_position - global_position
+		if absf(local.x) <= half.x + TEACH_REACH and absf(local.z) <= half.y + TEACH_REACH:
+			GameState.teach_once("shock_floor", TEACH_TEXT)
 	if not zap:
 		return
 	_tick -= delta
 	if _tick > 0.0:
 		return
+	var zapped_any := false
+	for pl in GameState.players():
+		zapped_any = _zap(pl) or zapped_any
+	if zapped_any:
+		_tick = TICK # after every player on a live tile took theirs (co-op)
+
+func _zap(pl: Node3D) -> bool:
 	var t := tile_at(pl.global_position)
 	var dy := pl.global_position.y - global_position.y
 	if t.x < 0 or dy > FEET_REACH or dy < -0.5 or tile_state(t.x, t.y) != Tile.ZAP:
-		return
-	_tick = TICK
+		return false
 	var php: Node = pl.get_node_or_null("Damageable")
 	if php:
 		php.apply_damage(damage, self, false, pl.global_position, true)
 	AudioBus.play_synth_at("hit_tick", pl.global_position, -2.0, 1.8)
+	return true
 
 ## The death screen's "Taken down by" name and its tip key (player.gd reads it
 ## off any damage source that has it; hud.gd DEATH_TIPS).

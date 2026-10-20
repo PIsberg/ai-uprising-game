@@ -198,9 +198,9 @@ func _process_rise(delta: float) -> void:
 			if m:
 				m.emission_energy_multiplier = 1.5 + 5.0 * grow * pulse
 		# Building tremor handed to the player.
-		var p := get_tree().get_first_node_in_group("player")
-		if p and p.has_method("shake"):
-			p.shake(0.08 + 0.18 * grow)
+		for p in GameState.players():
+			if p and p.has_method("shake"):
+				p.shake(0.08 + 0.18 * grow)
 		if _rise_t >= TELEGRAPH_TIME:
 			_breach()
 		return
@@ -231,9 +231,9 @@ func _breach() -> void:
 	AudioBus.play_synth_at("explosion", bp, 6.0, 0.55)
 	AudioBus.play_synth_at("mech_step", bp, 3.0, 0.7)
 	GameState.hit_stop(0.12, 0.45)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(2.2)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(2.2)
 
 ## Touchdown at deck level: a planted thud, then control returns.
 func _land_settle() -> void:
@@ -242,9 +242,9 @@ func _land_settle() -> void:
 	velocity = Vector3.ZERO
 	hp.invulnerable = false
 	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.85)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.7)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(0.7)
 
 ## Scale the model to target_height and stand its feet at y=0, centred. The
 ## model is many bone-driven parts, so we merge every part's POSED world AABB
@@ -627,8 +627,8 @@ func _on_died(source: Node) -> void:
 	if is_instance_valid(_beam):
 		_beam.queue_free()
 		_beam = null
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(1.0)
+	for p in GameState.players():
+		if p and p.has_method("shake"):
+			p.shake(1.0)
 	GameState.hit_stop(0.3, 0.45)
 	super._on_died(source)

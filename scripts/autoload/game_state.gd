@@ -2197,6 +2197,61 @@ func end_daily_op() -> void:
 	daily_op = {}
 	_daily_saved = {}
 
+# ---------- PLAYER REGISTRY (co-op) ----------
+# @lat: [[player#Co-op]]
+## The one place that finds players. Code that wants "the" player asks for the
+## one that matters to it: the nearest to a position (a robot's target, a hazard's
+## range check), or every player (damage zones, screen shake). With one player
+## each answer is that player, so single-player play is unchanged.
+## tests/coop_registry_probe fails on any direct get_first_node_in_group("player")
+## left outside the allowed files.
+
+## Every player in the level, in player_index order. Typed, so `for p in players()`
+## gives a Node3D (an untyped loop variable breaks `var x := p.method()` inference).
+func players() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for p in get_tree().get_nodes_in_group("player"):
+		if p is Node3D and is_instance_valid(p):
+			out.append(p)
+	out.sort_custom(func(a, b): return int(a.get("player_index") if a.get("player_index") != null else 0) < int(b.get("player_index") if b.get("player_index") != null else 0))
+	return out
+
+## Players that are not down.
+func living_players() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for p in players():
+		if not (p.has_method("is_down") and p.is_down()):
+			out.append(p)
+	return out
+
+## Player one (null with no player): for the few things that follow one view.
+func primary_player() -> Node3D:
+	var ps := players()
+	return ps[0] if not ps.is_empty() else null
+
+## The living player nearest `pos`, or the nearest of any if all are down.
+func nearest_player(pos: Vector3) -> Node3D:
+	var pool := living_players()
+	if pool.is_empty():
+		pool = players()
+	var best: Node3D = null
+	var bd := INF
+	for p in pool:
+		var d := p.global_position.distance_squared_to(pos)
+		if d < bd:
+			bd = d
+			best = p
+	return best
+
+## Shake every player within `reach` of `at`, fading to nothing at the edge
+## (amount at the centre, scaled by `falloff`^1). The common camera-shake pattern.
+func shake_players(at: Vector3, reach: float, amount: float) -> void:
+	for p in players():
+		if p.has_method("shake"):
+			var d := p.global_position.distance_to(at)
+			if d < reach:
+				p.shake(clampf(1.0 - d / reach, 0.0, 1.0) * amount)
+
 # ---------- UPRISING MODE: a seeded five-sector run with drafted patches ----------
 # @lat: [[meta-systems#Uprising Mode]]
 ## A run borrows campaign levels the way a Daily Op does: a seed picks four non-boss

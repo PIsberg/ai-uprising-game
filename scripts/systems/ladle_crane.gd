@@ -164,7 +164,7 @@ func _place() -> void:
 	_cable.position = Vector3(0, -drop * 0.5, 0)
 
 func _player_xz() -> Variant:
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	var pl := GameState.nearest_player(global_position)
 	if pl == null:
 		return null
 	var p := Vector2(pl.global_position.x, pl.global_position.z)

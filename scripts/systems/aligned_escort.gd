@@ -69,7 +69,7 @@ func _spawn_unit() -> void:
 		return
 	unit.position = position
 	get_parent().add_child(unit)
-	var player := get_tree().get_first_node_in_group("player")
+	var player := GameState.nearest_player(unit.global_position)
 	# Hijack takes a duration; an escort never burns out (escort_goal stops the
 	# clock), so this one only matters if the goal is ever cleared.
 	if not unit.hijack(3600.0, player):
@@ -108,7 +108,7 @@ func _physics_process(delta: float) -> void:
 		_ring_mat.emission_energy_multiplier = 2.0 + sin(_t * 3.0) * 0.8
 	if done or unit == null or not is_instance_valid(unit):
 		return
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.nearest_player(unit.global_position)
 	var d := player.global_position.distance_to(unit.global_position) if player else INF
 	if downed:
 		if d <= REBOOT_RANGE:

@@ -95,11 +95,10 @@ func contains(n: Node3D) -> bool:
 func _physics_process(delta: float) -> void:
 	_t += delta
 	_shell_mat.albedo_color = Color(COLOR, 0.07 + 0.03 * sin(_t * 2.0))
-	var p := get_tree().get_first_node_in_group("player") as Node3D
-	if p and p.global_position.distance_to(global_position) <= radius + TEACH_REACH:
-		GameState.teach_once("low_grav", TEACH_TEXT)
 	var bodies: Array = get_tree().get_nodes_in_group("enemy")
-	if p:
+	for p in GameState.players():
+		if (p as Node3D).global_position.distance_to(global_position) <= radius + TEACH_REACH:
+			GameState.teach_once("low_grav", TEACH_TEXT)
 		bodies.append(p)
 	for b in bodies:
 		if not is_instance_valid(b) or not ("gravity_scale" in b):

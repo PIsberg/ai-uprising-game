@@ -144,7 +144,7 @@ func _rider() -> bool:
 ## The landing (0 bottom, _rise top) a player standing next to the shaft is
 ## at, or -1. A rider on the car does not count.
 func _caller_landing() -> float:
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	var pl := GameState.nearest_player(global_position)
 	if pl == null:
 		return -1.0
 	var lp := to_local(pl.global_position)

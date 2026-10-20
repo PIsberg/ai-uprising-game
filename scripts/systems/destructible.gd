@@ -64,11 +64,7 @@ func _explode() -> void:
 		var falloff := clampf(1.0 - dist / splash_radius, 0.0, 1.0)
 		d.apply_damage(splash_damage * falloff, self)
 	# Camera punch if the player is close to the blast.
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		var pd := (p as Node3D).global_position.distance_to(global_position)
-		if pd < shake_radius:
-			p.shake(clampf(1.0 - pd / shake_radius, 0.0, 1.0))
+	GameState.shake_players(global_position, shake_radius, 1.0)
 
 func _shatter() -> void:
 	AudioBus.play_synth_at("impact_metal", global_position, 2.0, randf_range(0.8, 1.0))

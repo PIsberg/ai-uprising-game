@@ -242,9 +242,9 @@ func _visible_fraction(cam: Camera3D, dir: Vector3) -> float:
 	var up := right.cross(dir).normalized()
 	var origin := cam.global_position
 	var exclude: Array[RID] = []
-	var player := get_tree().get_first_node_in_group("player") as CollisionObject3D
-	if player:
-		exclude.append(player.get_rid())
+	for player in GameState.players(): # no player's own body occludes the flare
+		if player is CollisionObject3D:
+			exclude.append((player as CollisionObject3D).get_rid())
 	var near_boxes := _boxes_toward(origin, dir)
 	var clear := 0
 	for o in RAYS:

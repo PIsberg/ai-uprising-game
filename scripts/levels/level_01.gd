@@ -45,7 +45,7 @@ func _setup_objectives() -> void:
 
 	# Face the player toward the portal (open ground), not the spawn-corner
 	# wall behind them. Player forward is -Z, hence atan2(-x, -z).
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var p := GameState.primary_player()
 	if p:
 		var dir := exit_pos - p.global_position
 		dir.y = 0.0

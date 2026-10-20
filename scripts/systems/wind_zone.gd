@@ -100,7 +100,7 @@ func _windsock(at: Vector3) -> Node3D:
 	return hinge
 
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(global_position)
 
 func contains(p: Vector3) -> bool:
 	var l := p - global_position
@@ -124,15 +124,13 @@ func _physics_process(delta: float) -> void:
 		elif ph == Phase.GUST:
 			gusts += 1
 			AudioBus.play_synth_at("ambience_wind", global_position, 0.0, 0.9)
-	var p := _player()
-	if p == null:
-		return
-	var inside := contains(p.global_position)
-	if inside and not _taught:
-		_taught = true
-		GameState.teach_once("crosswind", TEACH_TEXT)
-	if inside and phase == Phase.GUST and "wind_velocity" in p:
-		p.set("wind_velocity", dir * speed)
+	for p in GameState.players():
+		var inside := contains((p as Node3D).global_position)
+		if inside and not _taught:
+			_taught = true
+			GameState.teach_once("crosswind", TEACH_TEXT)
+		if inside and phase == Phase.GUST and "wind_velocity" in p:
+			p.set("wind_velocity", dir * speed)
 
 func _process(delta: float) -> void:
 	var k := 0.0

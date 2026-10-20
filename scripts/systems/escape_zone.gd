@@ -60,9 +60,9 @@ func _process(delta: float) -> void:
 		if not purging:
 			purging = true
 			GameState.skirmish_event.emit("PURGE", "The site is burning. Keep moving.")
-		var player := get_tree().get_first_node_in_group("player")
-		if player and player.get("hp") is Damageable:
-			(player.get("hp") as Damageable).apply_damage(purge_dps * delta, self)
+		for player in GameState.players():
+			if player.get("hp") is Damageable:
+				(player.get("hp") as Damageable).apply_damage(purge_dps * delta, self)
 	# The beacon strobes harder as time runs out, red once the purge is live.
 	var urgency := 1.0 - remaining / maxf(seconds, 0.01)
 	var col := Color(1.0, 0.15, 0.1) if purging else accent

@@ -113,7 +113,7 @@ func _tick_decoy(delta: float) -> void:
 	else:
 		_card.position.x = 0.0
 		_light.light_color = Color(1.0, 0.8, 0.3)
-	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player := GameState.nearest_player(global_position)
 	_tag.visible = player != null and player.global_position.distance_to(global_position) < TAG_RANGE
 
 func _on_body_entered(body: Node) -> void:

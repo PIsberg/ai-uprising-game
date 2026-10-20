@@ -284,11 +284,7 @@ func _slam() -> void:
 func _slam_fx() -> void:
 	AudioBus.play_synth_at("impact_metal", global_position, 2.0, 0.42)
 	AudioBus.play_synth_at("mech_step", global_position, 0.0, 0.5)
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if pl and pl.has_method("shake"):
-		var d := pl.global_position.distance_to(global_position)
-		if d < 16.0:
-			pl.shake(0.55 * (1.0 - d / 16.0))
+	GameState.shake_players(global_position, 16.0, 0.55)
 	# A flat ring of dust squeezed out from under the head.
 	var ring := MeshInstance3D.new()
 	var tm := TorusMesh.new()

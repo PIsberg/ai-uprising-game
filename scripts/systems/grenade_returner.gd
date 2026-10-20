@@ -122,7 +122,7 @@ func _drop_orb() -> void:
 
 func _throw_back(eb: EnemyBase) -> void:
 	_drop_orb()
-	var p := get_tree().get_first_node_in_group("player") as Node3D
+	var p := GameState.nearest_player(eb.global_position)
 	var parent := eb.get_parent()
 	if p == null or parent == null:
 		return

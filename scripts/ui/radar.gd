@@ -46,7 +46,7 @@ func _build_sweep() -> void:
 
 func _process(delta: float) -> void:
 	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player")
+		_player = GameState.primary_player() # stage 3 gives each HUD its own player
 	if _sweep_mat:
 		_sweep_angle = fmod(_sweep_angle + delta * 1.8, TAU) # ~3.5s per revolution
 		_sweep_mat.set_shader_parameter("angle", _sweep_angle)

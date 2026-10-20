@@ -167,8 +167,8 @@ func _physics_process(delta: float) -> void:
 		return
 	_angle = fposmod(_angle + speed_deg * delta, 360.0)
 	var space := get_world_3d().direct_space_state
-	var pl := get_tree().get_first_node_in_group("player") as Node3D
-	if pl != null:
+	var pls := GameState.players()
+	for pl in pls:
 		_teach(pl)
 	for i in beams.size():
 		_cool[i] = maxf(0.0, _cool[i] - delta)
@@ -191,14 +191,17 @@ func _physics_process(delta: float) -> void:
 		var lift := 0.34 if beam_action(i) == "jump" else -0.3
 		cue.position = Vector3.UP * (h + lift) + dir * (inner + shown * 0.6)
 		cue.scale = Vector3.ONE * (1.0 + _flash[i] * 0.8)
-		if pl != null:
+		var beam_hit := false
+		for pl in pls:
 			_warn(i, pl, h)
-		if pl != null and _cool[i] <= 0.0 and _touches(pl, from, dir, len, h):
-			var php: Node = pl.get_node_or_null("Damageable")
-			if php:
-				php.apply_damage(damage, self, false, from, true)
+			if _cool[i] <= 0.0 and _touches(pl, from, dir, len, h):
+				var php: Node = pl.get_node_or_null("Damageable")
+				if php:
+					php.apply_damage(damage, self, false, from, true)
+				beam_hit = true
+				AudioBus.play_synth_at("hit_tick", pl.global_position, -2.0, 0.6)
+		if beam_hit:
 			_cool[i] = HIT_GAP
-			AudioBus.play_synth_at("hit_tick", pl.global_position, -2.0, 0.6)
 
 ## Whether beam (from `from` along `dir`, `len` long, at height `h`) passes
 ## through the player's capsule: close to the beam's line within its length,

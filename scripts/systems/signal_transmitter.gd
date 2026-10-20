@@ -97,7 +97,7 @@ func _build() -> void:
 	add_child(led)
 
 func _player() -> Node3D:
-	return get_tree().get_first_node_in_group("player") as Node3D
+	return GameState.nearest_player(global_position)
 
 func _physics_process(delta: float) -> void:
 	if dead:

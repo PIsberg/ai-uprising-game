@@ -358,8 +358,4 @@ static func _detonate(eb: EnemyBase) -> void:
 		seen[d] = true
 		var falloff := clampf(1.0 - (col as Node3D).global_position.distance_to(pos) / 4.5, 0.0, 1.0)
 		d.apply_damage(40.0 * falloff, eb)
-	var p := eb.get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		var pd := (p as Node3D).global_position.distance_to(pos)
-		if pd < 14.0:
-			p.shake(clampf(1.0 - pd / 14.0, 0.0, 1.0))
+	GameState.shake_players(pos, 14.0, 1.0)

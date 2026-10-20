@@ -108,9 +108,9 @@ func _process(delta: float) -> void:
 func _core_blast() -> void:
 	AudioBus.play_synth_at("explosion", core_pos, 4.0, 0.55)
 	AudioBus.play_synth_ui("eas_alert", -10.0)
-	var p := get_tree().get_first_node_in_group("player")
-	if p and p.has_method("shake"):
-		p.shake(0.7)
+	for p in GameState.players():
+		if p.has_method("shake"):
+			p.shake(0.7)
 	# An expanding red shock ring at the core.
 	var scene := get_tree().current_scene
 	if scene == null:

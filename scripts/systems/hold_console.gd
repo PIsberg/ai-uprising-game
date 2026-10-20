@@ -245,9 +245,9 @@ func _on_complete() -> void:
 		get_parent().add_child(fx)
 		(fx as Node3D).global_position = global_position + Vector3.UP * 1.0
 		(fx as Node3D).scale = Vector3.ONE * 1.5
-		var p := get_tree().get_first_node_in_group("player")
-		if p and p.has_method("shake"):
-			p.shake(0.6)
+		for p in GameState.players():
+			if p.has_method("shake"):
+				p.shake(0.6)
 		queue_free()
 	else:
 		# Hacked terminal goes dim/green and inert — the code rain fades out.

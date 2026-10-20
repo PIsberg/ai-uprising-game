@@ -52,13 +52,13 @@ func _physics_process(delta: float) -> void:
 func _detonate() -> void:
 	set_physics_process(false)
 	AudioBus.play_synth_at("explosion", global_position, 0.0, 1.1)
-	var player := get_tree().get_first_node_in_group("player")
-	if player is Node3D and (player as Node3D).global_position.distance_to(global_position) <= blast_radius:
-		var d = player.get_node_or_null("Damageable")
-		if d:
-			d.apply_damage(damage, self)
-		if player.has_method("shake"):
-			player.shake(0.5)
+	for player in GameState.players():
+		if player is Node3D and (player as Node3D).global_position.distance_to(global_position) <= blast_radius:
+			var d = player.get_node_or_null("Damageable")
+			if d:
+				d.apply_damage(damage, self)
+			if player.has_method("shake"):
+				player.shake(0.5)
 	# Expanding blast ring so the radius reads.
 	var ring := MeshInstance3D.new()
 	var torus := TorusMesh.new()
