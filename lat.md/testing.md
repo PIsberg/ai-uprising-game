@@ -44,6 +44,10 @@ Ensures suite manifests stay synchronized and architectural references remain in
   ```sh
   python tools/check_glb_leftovers.py
   ```
+* Verify every tracked `.gd` and `.gdshader` has its Godot `.uid` sidecar tracked beside it, and no tracked `.uid` outlives its file. An uncommitted sidecar gets a fresh random `uid://` on every other checkout, so scenes saved on two machines disagree. A missing one comes from `godot --headless --path . --import`:
+  ```sh
+  python tools/check_script_uids.py
+  ```
 * Verify no tracked file is over its size budget: 50 MB for any file (GitHub's warning threshold) and 3 MB for a still under `docs/`. The capture tools save at window size (3840x2400, 5 to 13 MB a PNG); `python tools/shrink_screenshots.py` takes a README still down to 1600 px wide. Frame dumps and verification shots from the capture tools (`docs/screenshots/<tool>/`) are gitignored:
   ```sh
   python tools/check_large_files.py

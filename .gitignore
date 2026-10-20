@@ -62,3 +62,7 @@ lat.md/.cache/*
 !lat.md/.cache/lat_init.json
 # Blender iteration previews (tools/blender/fierce2.py)
 tools/blender/preview_*
+# Python bytecode from running the tools/check_*.py scripts
+__pycache__/
+# Kiro IDE steering files the lean-ctx installer writes; per-machine, not project config
+.kiro/

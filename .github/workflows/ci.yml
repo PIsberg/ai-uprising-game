@@ -68,6 +68,9 @@ jobs:
       - name: Check no unused GLB texture extractions are tracked (they ship in the export)
         run: python3 tools/check_glb_leftovers.py
 
+      - name: Check every tracked script and shader has its tracked .uid, and no .uid is stale
+        run: python3 tools/check_script_uids.py
+
       - name: Check no tracked file is over its size budget (every checkout downloads it)
         run: python3 tools/check_large_files.py
 
