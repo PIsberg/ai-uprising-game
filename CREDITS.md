@@ -4,8 +4,8 @@
 
 ### Enemy boss model (`assets/models/robots/quaternius_heavy.glb`)
 **"Animated Robot"** by **Quaternius** (https://quaternius.com), via
-https://poly.pizza/m/QCm7qe9uNJ — rigged/animated, used for the TERMINATOR
-boss (APEX ENDOFRAME). Released under **CC0 1.0** (public domain) — no
+https://poly.pizza/m/QCm7qe9uNJ — rigged/animated, used for the SENTINEL
+(the TERMINATOR, APEX ENDOFRAME, moved to `combat_robot.glb`). Released under **CC0 1.0** (public domain) — no
 attribution required, credited here as courtesy.
 
 ### Sound effects (`assets/audio/samples/`)
@@ -46,8 +46,41 @@ released under **CC0 1.0** — no attribution required, credited here as courtes
   (https://quaternius.com), via Poly Pizza (https://poly.pizza/m/o3Ps8z8ByP),
   released under **CC0 1.0**.
 
+- **Blender forks** of the Quaternius models above, edited for this game (extra
+  weapons, masts, shields, wings): `quaternius_bot_armed.glb`, `quaternius_bot_fierce.glb`
+  and `quaternius_bot_hive.glb` (from `quaternius_bot.glb`), `quaternius_gunner_armed.glb`,
+  `quaternius_gunner_bladed.glb` and `quaternius_gunner_siege.glb` (from
+  `quaternius_gunner.glb`), `quaternius_flyergun_armed.glb` and
+  `quaternius_flyergun_strike.glb` (from `quaternius_flyergun.glb`), and
+  `quaternius_mech_armed.glb` (from `quaternius_mech.glb`). CC0 like their originals.
+
 All Quaternius packs/models are released under **CC0 1.0** (public domain)
 — no attribution required, credited here as courtesy.
+
+### Sketchfab robot models (`assets/models/robots/`)
+Each model's author, title, licence and link below come from the Sketchfab metadata
+in the file itself (`asset.extras`) or, where the shipped file was re-exported from
+Blender and lost it, from the downloaded original that the shipped file's nodes match.
+- **"Robot Ball"** by **grabthesky** (https://sketchfab.com/3d-models/robot-ball-adbb26da045e4ca8aad09461e414f2a5), **CC-BY 4.0**: `robot_ball.glb`, the ORB.
+- **"Robot Dog"** by **lenat_1** (https://sketchfab.com/3d-models/robot-dog-b8b37615db1344da9ded592adba8e6b6), **CC-BY 4.0**: `robot_dog_v2.glb`, the K-9 DOG.
+- **"Robot"** by **SkibidiSanya** (https://sketchfab.com/3d-models/robot-04100853f8624cfb8c607ccaef8d4442), **CC-BY 4.0**: `robot_minigun.glb`, the RIPPER.
+- **"Robot Shark"** by **Gianmarco** (https://sketchfab.com/3d-models/robot-shark-2ec4e968688446878b23383769eca79f), **CC-BY 4.0**: `robot_shark.glb`, the RAZORFIN.
+- **"Utility Robot"** by **nickheitzman** (https://sketchfab.com/3d-models/utility-robot-efe7b67fc77748949562e51c30795dd8), **CC-BY 4.0**: `utility_robot.glb`, the OPTICON.
+- **"Robot-Killer Model"** by **Moonlightlll** (https://sketchfab.com/3d-models/robot-killer-model-f3947935b27c4bb29da0734b31d2d37a), **CC-BY 4.0**: `robot-killer_model.glb`, the RONIN.
+- **"Reap the Whirlwind"** by **TooManyDemons** (https://sketchfab.com/3d-models/reap-the-whirlwind-297e1595d6cf4466bf5c7803db8c5bd8), **CC-BY 4.0**: `reaper_whirlwind.glb`, the WHIRLWIND.
+- **"Robot arm wip 2"** by **3DHaupt** (https://sketchfab.com/3d-models/robot-arm-wip-2-cb006bfafc20421f9f6f674f127f918b), **CC-BY 4.0**: `robot_arm_wip_2.glb`, the MANUS boss.
+- **"Rusty Humanoid Robot With Claws"** by **Pigcraft** (https://sketchfab.com/3d-models/rusty-humanoid-robot-with-claws-6bb359bacbd046c5b7bc766b8c0e1933), **CC-BY 4.0**: `rusty_claws_robot.glb`, the BEHEMOTH-X boss.
+- **"Another Robot"** by **Lagst** (https://sketchfab.com/3d-models/another-robot-b5187425ddb14676a93ab21f050e0e6f), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `another_robot.glb`, the REAPER.
+- **"Walking Robot Gun"** by **zebra_pozer** (https://sketchfab.com/3d-models/walking-robot-gun-6be6c93c4d954d97be7072adc34926fb), **CC-BY-NC 4.0 (non-commercial)**: `walking_robot_gun.glb`, the HOWITZER. See issue #406: the non-commercial clause limits how the game may be distributed.
+
+### Models whose source is not identified yet (#363)
+These shipped files carry no author or licence metadata and match none of the
+downloaded originals on the dev machine, so their credit is still owed:
+`combat_robot.glb` (the TERMINATOR, APEX ENDOFRAME; a Sketchfab export),
+`mech_police.glb` (ENFORCER), `wheeled_robot.glb` (ROLLER), `steampunk_robot.glb`
+(GUNSLINGER), `combat_steampunk.glb` (BREAKER), `serving_bot.glb` (SERVER),
+`Robot.glb` (WAR-BOT) and `RobotExpressive.glb` (MAULER; by its name and rig the
+three.js example robot by Tomás Laulhé, CC0, not yet confirmed).
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via

@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-514 probes total: **213** wired into the headless suite (`suite`), **86**
+515 probes total: **214** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -394,6 +394,7 @@ or GPU-timing probes; `--headless` renders these black).
 | muzzle_check_probe | New ranged enemy's Muzzle node marker vs the model's visible weapon | windowed |
 | network_breach_probe | NETWORK BREACH with a real player: full bandwidth and the `breach` action; the turret under the crosshair is picked over a barrel 25 deg off, a turret behind a wall is not offered; holding the key slows time to 0.3, releasing turns the turret ALLIED, restores time and costs 50; a breached barrel detonates, a breached laser gate goes dark (a player in its live beam takes nothing) and bites again after 6 s, a breached robot is EMP-jammed; a breach the bandwidth cannot pay is refused for free; a boss and a lockdown door are never offered; bandwidth refills | suite |
 | network_breach_shot | NETWORK BREACH mid-scan in a lit yard (turret, barrel, laser gate, robot): marks, picked label and cost, bandwidth bar; `-- --out=<dir>` | windowed |
+| model_credits_probe | Every .glb under assets/models is named in CREDITS.md (kit folders through their kit line); red before #363's audit with 28 uncredited models, including 11 CC-BY Sketchfab models | suite |
 | nemesis_probe | NEMESIS grudge loop: elite kill recorded, spawner substitutes the nemesis next spawn, killing it settles the grudge | headless |
 | new_models_probe | Newly-added models individually rendered, to assign each an enemy role | windowed |
 | newenemy_probe | Dog + server enemies lit, facing camera: look/facing/glowing eyes | windowed |
