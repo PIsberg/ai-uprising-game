@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-524 probes total: **223** wired into the headless suite (`suite`), **86**
+526 probes total: **224** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -242,6 +242,7 @@ or GPU-timing probes; `--headless` renders these black).
 | ending_choice_shot | The finale's choice for a run with 3 hijacks and 2 breaches (two open, SET IT FREE locked at 2/5); `-- --out=<dir>` | windowed |
 | enemy_behavior_probe | Optic (cutting beam) and Roller (ground ram) signature behaviour against a stationary dummy | windowed |
 | enemy_combat_probe | Every new enemy engages (>=CHASE), damages the player, dies cleanly | suite |
+| enemy_silence_report | Report: per non-boss robot on a baked navmesh vs a still, grounded player for 20 s, the shots it puts in the scene (tracers, projectiles), the longest gap between them, its hits and the longest gap between hits; flags SILENT over 6 s. Melee and support robots read 0 shots by design (read their hit-gap). Found the android flank stall (#414) and the lost WARBOT cross-fire fix (#80); `-- only=a,b` | headless |
 | enemy_eval_probe | Objective 1v1 balance eval per enemy: real DPS, closing distance, lateral strafe spread | headless |
 | enemy_lineup_probe | Each humanoid model playing its Idle clip front-on, catching models stuck in a Y-pose | windowed |
 | enemy_preview_probe | New/changed enemy scenes (AI frozen) post RobotModel auto-fit, for tuning scale/orientation/offsets | windowed |
@@ -548,6 +549,7 @@ or GPU-timing probes; `--headless` renders these black).
 | victory_shot | Victory finale at fixed timeline moments (headless renders black) | windowed |
 | voice_probe | Every `AudioBus.VOICE_CATEGORIES` clip resolves on disk; `play_voice_at` fires; per-family pack resolution + fallback works | suite |
 | wallrun_probe | Sprinting into a wall engages wall-run (tangent velocity hold); wall-jump launches with expected carry | headless |
+| warbot_crossfire_probe | WARBOT cross-fire lands: the two-barrel V is a half-width in metres at the target (was a fixed 6 deg that missed a still player by 3 capsule radii at 11 m); asserts >= 40 damage in 12 s at preferred range (2 bolts / 9.9 before, 21 bolts / 104 fixed). First shipped in #80, which merged into a topic branch and never reached main; restored after enemy_silence_report found the 2-of-120 hit rate | suite |
 | warbot_face_probe | WAR-BOT's mood face flips green/happy idle to red/angry once it engages the player | suite |
 | warbot_view_probe | Warbot's happy-idle then angry-combat face, for tuning procedural face/cannon offsets | windowed |
 | warm_cache_probe | The main menu warms the first (or saved) level on the loading screen's threaded path (GameState.warm_level_cache): after the real menu's _ready the load is in flight, and once done the loading screen's own request finds it LOADED in 0.00 s instead of paying ~13 s for the shared robot-model chunk | suite |
