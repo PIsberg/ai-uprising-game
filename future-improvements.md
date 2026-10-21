@@ -74,8 +74,8 @@ side until burnout (`EnemyBase.hijack`, `grenade_hijack.{gd,tscn}`, `tests/hijac
 waits exposed (`NeuralUplink`, `EnemyBase.pilot_fire`, `tests/neural_uplink_probe`). 🎮 Needs
 playtest: the 20 s ride, the 20-damage body break, and whether 34 DPS per chassis is enough.
 ✅ **Per-chassis ride attacks shipped for the seeker, GUNNER, RAPTOR and BRUTE** (#343,
-`neural_uplink_probe`). 🎨 Still generic: the HOWITZER (its shells). The BEHEMOTH is boss-class,
-so it cannot be hijacked or ridden.
+`neural_uplink_probe`). The other two named here never need one: the BEHEMOTH (boss) and the
+HOWITZER (640 HP) are both over `EnemyBase.HIJACK_BOSS_HP` (500), so they cannot be hijacked or ridden.
 ✅ **AI patch-notes escalation shipped** — the director's per-level read ships as an
 "INTERCEPTED — ROBOT OS PATCH NOTES" terminal card on the next briefing
 (`AIDirector.patch_notes`, `GameState._build_patch_notes`, `tests/patchnotes_probe`).
