@@ -9,6 +9,13 @@ The campaign map interface (`scripts/ui/campaign_map.gd`) renders an interactive
 * **Sector Intel:** Displays hostile unit compositions, primary/secondary objectives, environmental hazard ratings, and boss encounters before deployment.
 * **Navigation & State:** Supports mouse, keyboard, and controller navigation; synchronizes completed sectors and unlocked routes with `GameState.CAMPAIGN`.
 
+## Personal Board
+<!-- lat: { "require-code-mention": true } -->
+Every campaign level keeps the player's top `GameState.BOARD_SIZE` (5) clears, ranked by the 0-100 performance points behind the letter grade, so a replay can beat a run with the same letter:
+* **Entry:** `grade_level` calls `record_run(lid, {points, grade, time})`, which stamps the difficulty and date, inserts best first (a tie goes below the run already there), cuts at 5, writes `records.cfg` `[board]` and returns the 1-based place (0 off the board). UPRISING sectors, Daily Ops and levels with no id are not entered, and their stats carry no `board_place`.
+* **Display:** the debrief adds `hud.board_line` ("PERFORMANCE 77 · BOARD #2 · TOP 91", "★ #1 PERSONAL BEST" for a first place); the campaign map's sector intel lists the board under the best rank (`campaign_map.board_text`).
+* **Path:** `GameState.board_path` (default `RECORDS_PATH`) is where the per-level grades and boards are read and written; `tests/leaderboard_probe` redirects it.
+
 ## Story Thread
 <!-- lat: { "require-code-mention": true } -->
 The campaign's narrative spine lives in `StoryArc.BEATS` (`scripts/systems/story_arc.gd`), one beat per campaign level id:

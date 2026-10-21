@@ -1237,6 +1237,9 @@ func _on_level_completed() -> void:
 			+ "\n" + (tr("Accuracy %d%%") % acc) \
 			+ "   ·   " + (tr("Best Combo ×%d") % int(_last_stats.get("max_combo", 0))) \
 			+ "   ·   " + time_str
+		var board := board_line(_last_stats)
+		if board != "":
+			win_title.text += "\n" + board
 	if GameState.is_daily_op() and not GameState.daily_result.is_empty():
 		win_title.text += "\n" + _daily_result_line(GameState.daily_result)
 	# Auto-advance to the next sector after a short beat (the grade is on screen);
@@ -1254,6 +1257,24 @@ func _on_level_completed() -> void:
 		_auto_advance_armed = true
 		var tmr := get_tree().create_timer(3.5, true)
 		tmr.timeout.connect(_auto_advance)
+
+## "PERFORMANCE 77  ·  BOARD #2  ·  TOP 91" for a campaign clear: the
+## points behind the letter grade and where they placed on the level's personal
+## board (GameState.record_run). "" for a run that is not on a board (UPRISING,
+## Daily Op, a custom level).
+func board_line(stats: Dictionary) -> String:
+	if not stats.has("board_place"):
+		return ""
+	var line := tr("PERFORMANCE %d") % roundi(float(stats.get("points", 0.0)))
+	var place := int(stats["board_place"])
+	var top := tr("TOP %d") % roundi(float(stats.get("board_top", 0.0)))
+	if place == 1:
+		line += "   ·   ★ #1 " + tr("PERSONAL BEST")
+	elif place > 1:
+		line += "   ·   " + (tr("BOARD #%d") % place) + "   ·   " + top
+	else:
+		line += "   ·   " + top
+	return line
 
 ## "Score: 12,340  ·  ★ NEW BEST  ·  3-day streak" for a Daily Op clear (#172).
 func _daily_result_line(r: Dictionary) -> String:

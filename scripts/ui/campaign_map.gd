@@ -465,7 +465,21 @@ func _set_intel(i: int) -> void:
 	lines += "\n\nHostiles (%d):\n%s" % [n_total, _hostiles_of(d["id"])]
 	var best: String = str(GameState.level_bests.get(d["id"], ""))
 	lines += "\n\nBest rank: %s" % ("★ %s" % best if best != "" else "—")
+	lines += board_text(GameState.level_board(d["id"]))
 	_intel_body.text = lines
+
+## The sector's personal board (GameState.record_run) under the best rank:
+## "#1  91  S  HARD  02:34" per run, best first; "" when no run is on it.
+static func board_text(board: Array) -> String:
+	if board.is_empty():
+		return ""
+	var out := "\n" + TranslationServer.translate("Your top runs:")
+	for i in board.size():
+		var r: Dictionary = board[i]
+		var t := int(r.get("time", 0.0))
+		out += "\n  #%d  %d  %s  %s  %02d:%02d" % [i + 1, roundi(float(r.get("points", 0.0))),
+				str(r.get("grade", "")), str(r.get("diff", "")), t / 60, t % 60]
+	return out
 
 ## A readable hostile roster for a sector: unique enemy types → codex names.
 func _hostiles_of(id: String) -> String:
