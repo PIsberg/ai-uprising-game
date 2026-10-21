@@ -1429,6 +1429,12 @@ func grade_level() -> Dictionary:
 	elif score_pts >= 35.0: grade = "C"
 	var lid := level_id_from_path(current_level_path)
 	var new_best := record_level_grade(lid, grade)
+	# The personal board ranks campaign clears only: an UPRISING sector's
+	# patches and a Daily Op's directive play a different game on the same map.
+	var on_board := lid != "" and not is_uprising() and not is_daily_op()
+	var place := 0
+	if on_board:
+		place = record_run(lid, {"points": snappedf(score_pts, 0.1), "grade": grade, "time": roundf(elapsed)})
 	var stats := {
 		"accuracy": accuracy, "max_combo": max_combo,
 		"damage_taken": stat_damage_taken, "time": elapsed,
@@ -1440,7 +1446,11 @@ func grade_level() -> Dictionary:
 		"best_cascade": stat_best_cascade,
 		"par": par, "speed_bonus": speed_bonus,
 		"assist": _damage_taken_setting(), "assist_mult": assist,
+		"points": score_pts,
 	}
+	if on_board: # the debrief shows the board line only when these are here
+		stats["board_place"] = place
+		stats["board_top"] = float(level_board(lid)[0]["points"])
 	level_graded.emit(grade, stats)
 	return {"grade": grade, "stats": stats}
 
@@ -1484,7 +1494,7 @@ var level_bests: Dictionary = {} ## level_id -> best grade letter
 
 func _load_level_bests() -> void:
 	var cf := ConfigFile.new()
-	if cf.load(RECORDS_PATH) != OK or not cf.has_section("campaign"):
+	if cf.load(board_path) != OK or not cf.has_section("campaign"):
 		return
 	for k in cf.get_section_keys("campaign"):
 		level_bests[k] = str(cf.get_value("campaign", k, "D"))
@@ -1500,10 +1510,60 @@ func record_level_grade(lid: String, grade: String) -> bool:
 		return false
 	level_bests[lid] = grade
 	var cf := ConfigFile.new()
-	cf.load(RECORDS_PATH) # preserve the horde section
+	cf.load(board_path) # preserve the horde section
 	cf.set_value("campaign", lid, grade)
-	cf.save(RECORDS_PATH)
+	cf.save(board_path)
 	return true
+
+# ---------- personal leaderboard (top runs per level, persisted) ----------
+# @lat: [[meta-systems#Personal Board]]
+## Runs kept per level. The letter grade has five steps; the board ranks the
+## points behind it, so a replay can beat a run with the same letter.
+const BOARD_SIZE := 5
+## records.cfg as the per-level grades and boards read and write it (probes
+## redirect it so they never touch the player's records).
+var board_path: String = RECORDS_PATH
+## level_id -> Array of {points, grade, time, diff, date}, best first.
+var level_boards: Dictionary = {}
+
+func _load_level_boards() -> void:
+	var cf := ConfigFile.new()
+	if cf.load(board_path) != OK or not cf.has_section("board"):
+		return
+	for k in cf.get_section_keys("board"):
+		var runs = cf.get_value("board", k, [])
+		if runs is Array:
+			level_boards[k] = (runs as Array).filter(func(r) -> bool: return r is Dictionary and r.has("points"))
+
+## A copy of `lid`'s board, best first.
+func level_board(lid: String) -> Array:
+	return (level_boards.get(lid, []) as Array).duplicate(true)
+
+## Enter a run ({points, grade, time}) on `lid`'s board, stamped with today's
+## date and the difficulty. Returns its 1-based place, or 0 when it misses the
+## top BOARD_SIZE. A tie goes below the run already there: the record stands.
+func record_run(lid: String, run: Dictionary) -> int:
+	if lid == "":
+		return 0
+	var runs: Array = level_boards.get(lid, [])
+	var at := runs.size()
+	for i in runs.size():
+		if float(run["points"]) > float((runs[i] as Dictionary)["points"]):
+			at = i
+			break
+	if at >= BOARD_SIZE:
+		return 0
+	var entry := run.duplicate()
+	entry["diff"] = difficulty_label()
+	entry["date"] = Time.get_date_string_from_system()
+	runs.insert(at, entry)
+	runs.resize(mini(runs.size(), BOARD_SIZE))
+	level_boards[lid] = runs
+	var cf := ConfigFile.new()
+	cf.load(board_path)
+	cf.set_value("board", lid, runs)
+	cf.save(board_path)
+	return at + 1
 
 func reset_run() -> void:
 	score = 0
@@ -3041,6 +3101,7 @@ func _ready() -> void:
 	_setup_gamepad_bindings()
 	_load_bestiary()
 	_load_level_bests()
+	_load_level_boards()
 	_load_campaign_override()
 	_handle_cli_boot()
 

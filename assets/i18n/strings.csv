@@ -914,3 +914,8 @@ ON,ON,ACTIVADO,ACTIVÉ,AN,LIGADO
 Player two: press A on the second controller,Player two: press A on the second controller,Jugador dos: pulsa A en el segundo mando,Joueur deux : appuie sur A sur la deuxième manette,Spieler zwei: drücke A auf dem zweiten Controller,Jogador dois: pressione A no segundo controle
 Controllers connected: %d,Controllers connected: %d,Mandos conectados: %d,Manettes connectées : %d,Verbundene Controller: %d,Controles conectados: %d
 player two on pad %d,player two on pad %d,jugador dos en el mando %d,joueur deux sur la manette %d,Spieler zwei auf Controller %d,jogador dois no controle %d
+PERFORMANCE %d,PERFORMANCE %d,RENDIMIENTO %d,PERFORMANCE %d,LEISTUNG %d,DESEMPENHO %d
+PERSONAL BEST,PERSONAL BEST,RÉCORD PERSONAL,RECORD PERSONNEL,PERSÖNLICHER REKORD,RECORDE PESSOAL
+BOARD #%d,BOARD #%d,TABLA #%d,CLASSEMENT #%d,BESTENLISTE #%d,PLACAR #%d
+TOP %d,TOP %d,MÁXIMO %d,MEILLEUR %d,BESTWERT %d,MÁXIMO %d
+Your top runs:,Your top runs:,Tus mejores partidas:,Tes meilleures parties :,Deine besten Läufe:,Suas melhores partidas:

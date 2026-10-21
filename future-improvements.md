@@ -61,8 +61,9 @@ like MANUS. 🎮 Needs playtest: whether a 1.5 s smash at low HP is too much in 
 five-sector run with drafted patches, reboots and banked compute that unlocks rarer patches)
 shipped. 🎮 Needs playtest: patch numbers (four patches can stack incoming damage to 2.76x),
 the reroll cost (15), the unlock thresholds (100/250/500 lifetime compute) and whether two
-reboots plus one repaired per cleared sector is the right forgiveness for five full levels. Still open: a
-local leaderboard off `GameState.level_bests` / `records.cfg`.
+reboots plus one repaired per cleared sector is the right forgiveness for five full levels.
+✅ **Personal board shipped** (2026-10-21): every campaign level keeps your top 5 clears by
+performance points, on the debrief and the campaign map (`GameState.record_run`, `tests/leaderboard_probe`).
 
 ### The AI Director's player counter-move 🤖
 ✅ **First cut shipped** — the **EMP grenade** (3rd grenade type) bursts in a radius and
