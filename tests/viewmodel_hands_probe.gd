@@ -5,8 +5,10 @@ extends Node3D
 ##   - a trigger hand sits on the gun's grip: inside the fitted gun's footprint,
 ##     in the rear half of its length and the lower part of its height;
 ##   - long guns (fitted length >= ViewmodelHands.TWO_HAND_LEN) add a support
-##     hand on the fore-end, well forward of the trigger hand; short guns keep
-##     one hand;
+##     hand on the fore-end, well forward of the trigger hand; short guns are
+##     held two-handed too, the support hand cupping the trigger hand: beside
+##     it on the near side (lower x), within CUP_REACH of it, never forward of
+##     the gun's front;
 ##   - every forearm runs back out of view: its far end is outside the camera
 ##     frustum at hip and at full ADS, so no arm ever ends in mid-air on screen;
 ##   - the hands cast no shadow and take no RAMPAGE rim (rim_meshes skips them);
@@ -18,7 +20,9 @@ extends Node3D
 
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const RELOAD_DROP := 0.1
-const RELOAD_GUNS := ["rifle", "shotgun", "plasma", "swarm"]
+const RELOAD_GUNS := ["rifle", "shotgun", "plasma", "swarm", "pistol"]
+## How far (metres, per unit of hand scale) a cupping hand may sit from the trigger hand.
+const CUP_REACH := 0.07
 
 var ok := true
 
@@ -84,7 +88,14 @@ func _run() -> void:
 						s.z < g.z - box.size.z * 0.2 and s.z > box.position.z,
 						"support z %.2f trigger z %.2f front %.2f" % [s.z, g.z, box.position.z])
 		else:
-			_check("%s short gun is held one-handed" % id, hands.support_hand == null)
+			var c_ok: bool = hands.support_hand != null
+			_check("%s short gun is held two-handed" % id, c_ok)
+			if c_ok:
+				var c: Vector3 = _support_pos(w)
+				var reach := CUP_REACH * hands.trigger_hand.scale.x
+				_check("%s support hand cups the trigger hand" % id,
+						c.distance_to(g) < reach and c.x < g.x and c.z > box.position.z,
+						"cup %s trigger %s reach %.3f" % [c, g, reach])
 		for blend in [0.0, 1.0]:
 			_set_ads(wm, w, cam, blend)
 			await get_tree().process_frame
@@ -100,7 +111,7 @@ func _run() -> void:
 		_check("%s hands cast no shadow" % id, shadowless)
 		var rim := w.rim_meshes()
 		_check("%s hands take no rampage rim" % id, not meshes.any(func(m: Node) -> bool: return m in rim))
-	_check("several guns are two-handed", two_handed >= 8, str(two_handed))
+	_check("several guns are long two-handers", two_handed >= 8, str(two_handed))
 	for id: String in RELOAD_GUNS:
 		await _reload_check(wm, "res://scenes/weapons/%s.tscn" % id, id)
 	# A reload that finishes while the gun is put away still puts the hand back.

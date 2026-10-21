@@ -5,7 +5,8 @@ extends Node3D
 ## Viewmodel, so every kick, sway, sprint pose and reload moves hands and gun
 ## together. `fit` reads where to hold each gun off its own mesh: the trigger
 ## hand closes on the lowest vertices in the rear half (the grip), and a long gun
-## gets a support hand cupping the underside of its fore-end. The Blaster Kit
+## gets a support hand cupping the underside of its fore-end, while a pistol's
+## support hand wraps round the trigger hand. The Blaster Kit
 ## guns are toy-chunky, so the hands scale with the gun's height (`hand_scale`)
 ## rather than staying human-sized and reading as doll's hands. The forearms run
 ## back from the wrists to an elbow point beside and below the eye, out of the
@@ -13,7 +14,9 @@ extends Node3D
 ## The trigger finger curls while the trigger is held (squeeze).
 ## Covered by tests/viewmodel_hands_probe and tests/trigger_pull_probe.
 
-## Fitted gun length (metres) from which the gun is held with two hands.
+## Fitted gun length (metres) from which the support hand holds the fore-end.
+## A shorter gun is held two-handed too, the support hand wrapped round the
+## trigger hand (_build_cup_hand).
 const TWO_HAND_LEN := 0.5
 ## Elbows in viewmodel space. The WeaponHolder sits at (0.25, -0.22, -0.45) from
 ## the eye, so these are low, beside and ahead of the camera: well outside the
@@ -72,6 +75,8 @@ static func fit(viewmodel: Node3D, pts: Dictionary, box: AABB, accent: Color) ->
 	h._build_trigger_hand(pts["grip"], pts["grip_w"], k, accent)
 	if box.size.z >= TWO_HAND_LEN:
 		h._build_support_hand(pts["fore"], pts["fore_w"], k, accent)
+	else:
+		h._build_cup_hand(pts["grip_w"], k, accent)
 	return h
 
 ## Hand size for a gun `box`: 1 is a real hand (a gun 0.2 m tall), growing with
@@ -281,6 +286,36 @@ func _build_support_hand(fore: Vector3, fore_w: float, k: float, accent: Color) 
 	_box(hand, Vector3(0.008, 0.026, 0.085), Vector3(-hw - 0.02, 0.0, 0.0), _plate())
 	_led(hand, Vector3(-hw - 0.025, 0.004, -0.03), accent)
 	_forearm(support_arm, hand.transform * Vector3(-0.01, -0.03, 0.05), Vector3.ZERO, k, accent)
+
+# ---------- the cupping hand (short guns) ----------
+## Left hand wrapped round the trigger hand, thumbs-forward: palm against the
+## near side under the trigger thumb, four fingers across the front of the
+## trigger hand's fingers, thumb laid forward along the frame. Built in the
+## trigger hand's own frame (call after _build_trigger_hand), with the hand's
+## origin at the palm so support_off swings the palm, not the grip.
+func _build_cup_hand(grip_w: float, k: float, accent: Color) -> void:
+	var hw := grip_w * 0.5 / k
+	var gd := clampf(grip_w * 1.15 / k, 0.035, 0.06)
+	var front := -gd * 0.5 - 0.008
+	var palm := Vector3(-hw - 0.042, -0.02, 0.0)
+	support_arm = Node3D.new()
+	support_arm.name = "SupportArm"
+	support_arm.position = ELBOW_LEFT
+	add_child(support_arm)
+	var hand := Node3D.new()
+	hand.name = "SupportHand"
+	hand.transform = Transform3D(trigger_hand.transform.basis, trigger_hand.transform * palm - ELBOW_LEFT)
+	support_arm.add_child(hand)
+	support_hand = hand
+	_box(hand, Vector3(0.022, 0.07, 0.075), Vector3.ZERO, _glove())
+	for fy: float in [0.004, -0.016, -0.036, -0.054]:
+		_capsule(hand, Vector3(-hw - 0.04, fy, front - 0.015) - palm, Vector3(hw + 0.012, fy, front - 0.021) - palm,
+				0.0095, _glove())
+	_capsule(hand, Vector3(-hw - 0.03, 0.022, 0.01) - palm, Vector3(-hw - 0.028, 0.028, front - 0.02) - palm,
+			0.0105, _glove())
+	_box(hand, Vector3(0.008, 0.026, 0.06), Vector3(-0.014, 0.02, -0.01), _plate())
+	_led(hand, Vector3(-0.019, 0.03, -0.02), accent)
+	_forearm(support_arm, hand.transform * Vector3(-0.003, -0.02, 0.04), Vector3.ZERO, k, accent)
 
 ## Glove cuff, then a sleeve that thickens toward the elbow: an alloy vambrace
 ## over the forearm with a thin status band in the gun's colour at its wrist
