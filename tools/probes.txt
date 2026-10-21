@@ -172,6 +172,7 @@ res://tests/muzzle_flash_probe.tscn
 res://tests/tracer_streak_probe.tscn
 res://tests/gun_finish_probe.tscn
 res://tests/idle_breath_probe.tscn
+res://tests/trigger_pull_probe.tscn
 res://tests/explosion_fireball_probe.tscn
 res://tests/hit_reaction_probe.tscn
 res://tests/impact_class_probe.tscn

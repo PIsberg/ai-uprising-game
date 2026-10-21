@@ -10,7 +10,8 @@ extends Node3D
 ## rather than staying human-sized and reading as doll's hands. The forearms run
 ## back from the wrists to an elbow point beside and below the eye, out of the
 ## camera's view at hip and at ADS, so no arm ever ends in mid-air on screen.
-## Covered by tests/viewmodel_hands_probe.
+## The trigger finger curls while the trigger is held (squeeze).
+## Covered by tests/viewmodel_hands_probe and tests/trigger_pull_probe.
 
 ## Fitted gun length (metres) from which the gun is held with two hands.
 const TWO_HAND_LEN := 0.5
@@ -30,9 +31,25 @@ const GRIP_RAKE := -0.2
 ## about 0.55 m from the eye, where the trigger hand is inside the bottom of the
 ## frame instead of under it, without shrinking a pistol to a toy.
 const GRIP_Z := -0.1
+## A trigger pull curls the index finger: the whole finger rocks back about its
+## knuckle by TRIGGER_PULL radians and the fore half curls a further TRIGGER_CURL
+## about the middle joint, so the tip draws back toward the palm.
+const TRIGGER_PULL := 0.22
+const TRIGGER_CURL := 0.75
+## Seconds to fully pull and to let go of the trigger.
+const PULL_TIME := 0.03
+const RELEASE_TIME := 0.09
+## A pull is held at least this long, so a one-frame click still shows.
+const PULL_HOLD := 0.05
 
 var trigger_hand: Node3D = null
 var support_hand: Node3D = null
+## The index finger's knuckle and middle joints, and a marker at its tip.
+var trigger_finger: Node3D = null
+var trigger_joint: Node3D = null
+var trigger_tip: Node3D = null
+var _pull := 0.0 ## 0 resting on the trigger .. 1 fully pulled
+var _pull_hold := 0.0
 ## The support hand and its forearm hang off this pivot at ELBOW_LEFT, so a
 ## reload can swing the whole arm off the gun about the elbow (support_off).
 var support_arm: Node3D = null
@@ -89,6 +106,31 @@ func support_dip(secs: float) -> void:
 	support_off(secs * 0.45)
 	if _swing_tw:
 		_swing_tw.tween_property(support_arm, "quaternion", Quaternion.IDENTITY, secs * 0.55) 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+
+## Hold the trigger back: call every frame the trigger is down. The finger pulls
+## through over PULL_TIME and lets go over RELEASE_TIME once the calls stop
+## (and PULL_HOLD has passed).
+func squeeze() -> void:
+	if trigger_finger == null:
+		return
+	_pull_hold = PULL_HOLD
+	set_process(true)
+
+func _ready() -> void:
+	set_process(false)
+
+func _process(delta: float) -> void:
+	_pull_hold -= delta
+	if _pull_hold > 0.0:
+		_pull = minf(1.0, _pull + delta / PULL_TIME)
+	else:
+		_pull = maxf(0.0, _pull - delta / RELEASE_TIME)
+	# Rotating a forward-pointing finger (-z) about +x by a negative angle tips
+	# it down, and the tip draws back.
+	trigger_finger.rotation.x = -TRIGGER_PULL * _pull
+	trigger_joint.rotation.x = -TRIGGER_CURL * _pull
+	if _pull <= 0.0:
+		set_process(false)
 
 func _swing(to: Quaternion, secs: float) -> void:
 	if support_arm == null:
@@ -192,8 +234,25 @@ func _build_trigger_hand(grip: Vector3, grip_w: float, k: float, accent: Color) 
 		# Across the front strap, then back along the near side.
 		_capsule(hand, Vector3(hw + 0.006, fy, front), Vector3(-hw - 0.004, fy, front), 0.0105, _glove())
 		_capsule(hand, Vector3(-hw - 0.009, fy, front), Vector3(-hw - 0.009, fy, front + 0.04), 0.0105, _glove())
-	# Index on the trigger, thumb above it on the near side.
-	_capsule(hand, Vector3(-hw - 0.006, 0.034, -0.004), Vector3(-hw - 0.004, 0.03, front - 0.03), 0.0095, _glove())
+	# Index on the trigger, in two segments hung off knuckle and middle joint so
+	# squeeze() can curl it; thumb above it on the near side.
+	var knuckle := Vector3(-hw - 0.006, 0.034, -0.004)
+	var tip := Vector3(-hw - 0.004, 0.03, front - 0.03)
+	var mid := knuckle.lerp(tip, 0.5)
+	trigger_finger = Node3D.new()
+	trigger_finger.name = "TriggerFinger"
+	trigger_finger.position = knuckle
+	hand.add_child(trigger_finger)
+	_capsule(trigger_finger, Vector3.ZERO, mid - knuckle, 0.0095, _glove())
+	trigger_joint = Node3D.new()
+	trigger_joint.name = "Joint"
+	trigger_joint.position = mid - knuckle
+	trigger_finger.add_child(trigger_joint)
+	_capsule(trigger_joint, Vector3.ZERO, tip - mid, 0.0095, _glove())
+	trigger_tip = Node3D.new()
+	trigger_tip.name = "Tip"
+	trigger_tip.position = tip - mid
+	trigger_joint.add_child(trigger_tip)
 	_capsule(hand, Vector3(-hw - 0.012, 0.05, 0.02), Vector3(-hw - 0.01, 0.058, -0.03), 0.0105, _glove())
 	# Armoured knuckle plate on the near side, with a status LED in the gun's colour.
 	_box(hand, Vector3(0.008, 0.07, 0.03), Vector3(-hw - 0.021, -0.012, front + 0.018), _plate())

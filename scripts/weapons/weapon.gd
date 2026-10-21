@@ -510,6 +510,10 @@ func _process(delta: float) -> void:
 func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node) -> void:
 	var just_pressed := trigger_down and not _trigger_held_last
 	_trigger_held_last = trigger_down
+	# The finger on screen follows the trigger, dry clicks included; mid-reload
+	# it stays off.
+	if trigger_down and hands and not _reloading:
+		hands.squeeze()
 	if data and data.fire_mode == WeaponData.FireMode.BEAM:
 		# Beam weapons don't use the shot/cooldown machinery: try_fire just
 		# records intent + context; _update_beam() does the work each frame.
