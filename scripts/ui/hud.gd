@@ -421,6 +421,15 @@ func _build_pause_audio() -> void:
 	aim_assist.toggled.connect(func(p: bool): GraphicsSettings.set_aim_assist(p))
 	vbox.add_child(aim_assist)
 
+	for spec in [["Toggle Aim", GraphicsSettings.toggle_aim, GraphicsSettings.set_toggle_aim],
+			["Toggle Sprint", GraphicsSettings.toggle_sprint, GraphicsSettings.set_toggle_sprint],
+			["Toggle Crouch", GraphicsSettings.toggle_crouch, GraphicsSettings.set_toggle_crouch]]:
+		var tog := CheckButton.new()
+		tog.text = tr(spec[0])
+		tog.button_pressed = spec[1]
+		tog.toggled.connect(spec[2])
+		vbox.add_child(tog)
+
 	_build_language_row(vbox)
 	if quit:
 		vbox.move_child(quit, vbox.get_child_count() - 1)
@@ -1535,6 +1544,13 @@ func _build_grapple_hint() -> void:
 	_grapple_hint.visible = false
 	crosshair.add_child(_grapple_hint)
 
+## Whether the player is aiming, read through their own input so Toggle Aim's
+## latch counts (the raw button is up while a toggled aim holds).
+func aim_held() -> bool:
+	if _player_ref and is_instance_valid(_player_ref) and _player_ref.get("input") is PlayerInput:
+		return (_player_ref.get("input") as PlayerInput).pressed("aim")
+	return Input.is_action_pressed("aim")
+
 ## Dynamic reticle driven by the weapon's REAL live cone (Weapon.spread_now):
 ## base per-gun spread opened by fire bloom and movement, tightened by ADS and
 ## the cold first-shot bonus — the gap on screen is the truth of where rounds
@@ -1545,7 +1561,7 @@ func _update_crosshair(delta: float) -> void:
 		var shooter: Node = null
 		if GameState.current_state == GameState.State.PLAYING and _player_ref and is_instance_valid(_player_ref):
 			shooter = _player_ref
-		var live: float = _current_weapon.spread_now(Input.is_action_pressed("aim"), shooter)
+		var live: float = _current_weapon.spread_now(aim_held(), shooter)
 		target = clampf(live * 2.6, 0.6, 26.0)
 	if GameState.current_state == GameState.State.PLAYING and _player_ref and is_instance_valid(_player_ref):
 		if _grapple_hint:

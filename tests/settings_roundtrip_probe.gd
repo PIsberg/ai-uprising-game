@@ -76,7 +76,7 @@ func _run() -> void:
 		if not ok:
 			lost.append("%s (saved %s, loaded %s)" % [n, moved[n], got])
 	_check(lost.is_empty(), "all %d settings come back after save + load%s" % [moved.size(), "" if lost.is_empty() else ": lost " + ", ".join(lost)])
-	_check(moved.size() >= 30, "covered %d settings (30 persisted keys today)" % moved.size())
+	_check(moved.size() >= 33, "covered %d settings (33 persisted keys today)" % moved.size())
 
 	# Put the player's file and values back.
 	if had_file:

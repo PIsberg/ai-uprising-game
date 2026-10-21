@@ -16,6 +16,11 @@ static var p1_device: int = -1
 static var p2_device: int = -1
 static var coop_on: bool = false
 
+## Actions a press latches on and the next press latches off (Toggle Aim /
+## Sprint / Crouch in Settings, pushed here by GraphicsSettings). Every other
+## action, and these with their toggle off, read as the button is held.
+static var toggled: Dictionary = {}
+
 var prefix: String = ""
 var keyboard: bool = true ## owns keyboard and mouse
 var device: int = 0       ## the pad whose right stick turns this player's view
@@ -76,7 +81,22 @@ func act(a: String) -> String:
 	return p
 
 func pressed(a: String) -> bool:
-	return Input.is_action_pressed(act(a))
+	var held := Input.is_action_pressed(act(a))
+	if not toggled.get(a, false):
+		return held
+	# A press edge seen on any read flips the latch; more reads in the same
+	# frame see no new edge, so it does not matter how many callers ask.
+	if held and not _was_held.get(a, false):
+		_latched[a] = not _latched.get(a, false)
+	_was_held[a] = held
+	return _latched.get(a, false)
+
+## Drop a latched action: a toggled sprint ends when the player stops moving.
+func release(a: String) -> void:
+	_latched.erase(a)
+
+var _latched: Dictionary = {} ## action -> latched on (toggled actions only)
+var _was_held: Dictionary = {} ## action -> held at the last read, for press edges
 
 func just_pressed(a: String) -> bool:
 	return Input.is_action_just_pressed(act(a))

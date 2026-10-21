@@ -119,6 +119,7 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 - ✅ **Colourblind Mode shipped** (Settings + pause menu: Off / Protanopia / Deuteranopia / Tritanopia) — a daltonize overlay above every layer corrects the world, HUD, cutscenes and menus (`GraphicsSettings.colorblind_matrix`, `tests/colorblind_probe`, `tests/colorblind_render_probe`). Elite affix markers and radar blips now differ by shape (`tests/elite_marker_probe`, `tests/radar_shape_probe`). Still open (#150): non-colour redundancy (shape/icon) for the remaining colour-only cues.
 - ✅ **Subtitle Size shipped** (Settings, 0.8-2.0x): cutscene subtitles, overlord taunts and the victory transmission scale; cutscene subtitles now wrap above the letterbox bar (`tests/subtitle_size_probe`). Damage Number Size had already shipped (`tests/damage_number_size_probe`).
 - ✅ **Damage Taken slider shipped** (Settings + pause menu, 50–150%, `GraphicsSettings.damage_taken`, `tests/damage_taken_probe`). ✅ **It counts toward the grade like a tier** (x0.85 at 50%, x1.10 at 150%, named on the debrief next to the tier; `GameState.assist_score_mult`, `tests/grade_assist_probe`, issue #88). Still open: aim-assist for KBM, other modifiers.
+- ✅ **Toggle Aim / Toggle Sprint / Toggle Crouch shipped** (Settings + pause menu, off by default; `PlayerInput.toggled`, `tests/toggle_input_probe`).
 
 ### Weapon Codex polish 🤖
 - ✅ **Spinning 3D weapon preview shipped** — lifts each weapon's `Viewmodel` node

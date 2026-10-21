@@ -1810,6 +1810,7 @@ func _handle_movement(delta: float) -> void:
 		var f := friction if is_on_floor() else air_acceleration
 		velocity.x = move_toward(velocity.x, 0.0, f * delta)
 		velocity.z = move_toward(velocity.z, 0.0, f * delta)
+		input.release("sprint") # a toggled sprint ends when you stop
 
 ## The step-up assist: after move_and_slide() has already tried (and failed) to
 ## carry you across a low lip, probe up/forward/down for a walkable landing

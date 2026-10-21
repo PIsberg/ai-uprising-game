@@ -7,6 +7,7 @@ This document specifies the player character mechanics, movement physics, stamin
 The player controller (`scripts/player/player.gd`) implements a responsive First-Person CharacterBody3D:
 * **Movement Speeds:** Authorised walk (`5.5 m/s`), sprint (`9.0 m/s`), and crouch (`2.8 m/s`) velocities with snappy acceleration (`18.0`) and friction (`14.0`).
 * **Jump Mechanics:** Includes standard jump (`7.5 m/s`), coyote time (`0.1s`), jump buffering (`0.12s`), and a sprint-jump momentum boost (`1.3x`) charged by continuous running.
+* **Toggle vs Hold:** with Settings' Toggle Aim / Toggle Sprint / Toggle Crouch on (`GraphicsSettings.toggle_*`, pushed to `PlayerInput.toggled`), `PlayerInput.pressed` latches the action on at one press and off at the next, per player; `_handle_movement` calls `input.release("sprint")` when there is no move input, and the HUD reads aim through the player's input (`hud.aim_held`) so the crosshair follows a toggled aim (`tests/toggle_input_probe`).
 * **Stance Transition:** Smooth stance interpolation (`stance_lerp_speed = 12.0`) between standing height (`1.8m`) and crouching height (`1.0m`), with ceiling raycast clearance checks.
 
 ## Stamina and Exhaustion

@@ -55,6 +55,12 @@ var hdr_output_enabled: bool = false
 ## Gamepad aim friction (eases look speed near a target). On by default; some
 ## players prefer raw stick aim, so it's toggleable. Mouse aim is never affected.
 var aim_assist: bool = true
+## Toggle instead of hold (accessibility: no sustained button holds). A press
+## latches the action on and the next press latches it off; a toggled sprint
+## also ends when the player stops moving. Pushed to PlayerInput.toggled.
+var toggle_aim: bool = false
+var toggle_sprint: bool = false
+var toggle_crouch: bool = false
 ## Show a live FPS counter in the HUD's top-left corner. Off by default; the HUD
 ## reads this each frame and shows/hides its counter accordingly.
 var show_fps: bool = false
@@ -572,6 +578,24 @@ func set_aim_assist(v: bool) -> void:
 			if "aim_assist_enabled" in p:
 				p.set("aim_assist_enabled", v)
 	_save_settings()
+
+func set_toggle_aim(v: bool) -> void:
+	toggle_aim = v
+	_push_toggles()
+	_save_settings()
+
+func set_toggle_sprint(v: bool) -> void:
+	toggle_sprint = v
+	_push_toggles()
+	_save_settings()
+
+func set_toggle_crouch(v: bool) -> void:
+	toggle_crouch = v
+	_push_toggles()
+	_save_settings()
+
+func _push_toggles() -> void:
+	PlayerInput.toggled = {"aim": toggle_aim, "sprint": toggle_sprint, "crouch": toggle_crouch}
 
 ## Show/hide the HUD FPS counter (the HUD polls show_fps each frame).
 func set_show_fps(v: bool) -> void:
@@ -1152,6 +1176,10 @@ func _load_settings() -> void:
 		advanced_post_process_enabled = bool(cf.get_value("graphics_adv", "advanced_post_process", true))
 		area_lights_enabled = bool(cf.get_value("graphics_adv", "area_lights", true))
 		aim_assist = bool(cf.get_value("input", "aim_assist", true))
+		toggle_aim = bool(cf.get_value("input", "toggle_aim", false))
+		toggle_sprint = bool(cf.get_value("input", "toggle_sprint", false))
+		toggle_crouch = bool(cf.get_value("input", "toggle_crouch", false))
+		_push_toggles()
 		hdr_output_enabled = bool(cf.get_value("graphics_adv", "hdr_output", false))
 		show_fps = bool(cf.get_value("graphics_adv", "show_fps", false))
 		dof_enabled = bool(cf.get_value("graphics_adv", "depth_of_field", false))
@@ -1210,6 +1238,9 @@ func _save_settings() -> void:
 	cf.set_value("graphics_adv", "advanced_post_process", advanced_post_process_enabled)
 	cf.set_value("graphics_adv", "area_lights", area_lights_enabled)
 	cf.set_value("input", "aim_assist", aim_assist)
+	cf.set_value("input", "toggle_aim", toggle_aim)
+	cf.set_value("input", "toggle_sprint", toggle_sprint)
+	cf.set_value("input", "toggle_crouch", toggle_crouch)
 	cf.set_value("graphics_adv", "hdr_output", hdr_output_enabled)
 	cf.set_value("graphics_adv", "show_fps", show_fps)
 	cf.set_value("graphics_adv", "depth_of_field", dof_enabled)
