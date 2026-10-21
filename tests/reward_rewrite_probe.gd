@@ -182,9 +182,9 @@ func _run() -> void:
 	var traded := dmg1 + dmg2 > 0.0 or not is_instance_valid(k1) or not is_instance_valid(k2)
 	_check(traded, "robots damage each other")
 	if not traded:
-		# About 1 run in 50 locally (and once on CI, #405) neither robot lands a
-		# hit while both target a robot; not reproduced under instrumentation.
-		# Print what each robot was doing so the next failure names the cause.
+		# It failed about 1 run in 50 (#414): the diagnostic below caught both
+		# robots in ATTACK with their timers at 0 and no burst, running endless
+		# flanks (android_flank_probe). Kept so a new cause names itself too.
 		for r: EnemyBase in [k1, k2]:
 			print("  %s state=%d target=%s see=%s layer=%d mislabeled_t=%.1f attack_timer=%.2f burst=%s grace=%s pos=%s" % [
 				r.name, r.state, r.target.name if r.target else "-", r._can_see(r.target) if r.target else false,

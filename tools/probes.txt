@@ -175,6 +175,7 @@ res://tests/idle_breath_probe.tscn
 res://tests/trigger_pull_probe.tscn
 res://tests/leaderboard_probe.tscn
 res://tests/toggle_input_probe.tscn
+res://tests/android_flank_probe.tscn
 res://tests/explosion_fireball_probe.tscn
 res://tests/hit_reaction_probe.tscn
 res://tests/impact_class_probe.tscn
