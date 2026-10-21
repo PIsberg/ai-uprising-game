@@ -3,7 +3,8 @@ extends Node3D
 ## level lighting or HUD in the way): per gun one tile from the player's eye
 ## (WeaponHolder offset, fov 78) and one side view from the near (left) side,
 ## plus <out>/hands.png, a contact sheet of every pair. With --fire, a third tile
-## from the eye with the muzzle flash frozen at full burn (<id>_fire.png).
+## from the eye with the muzzle flash frozen at full burn and the trigger finger
+## fully pulled (<id>_fire.png), and a fourth from the side (<id>_fire_side.png).
 ## Headless renders black.
 ##   godot --path . res://tools/hands_shot.tscn -- --out=<abs dir> [--only=rifle,pistol] [--fire]
 
@@ -58,6 +59,11 @@ func _run() -> void:
 			var shot := await _grab()
 			shot.save_png(out_dir.path_join(id + "_fire.png"))
 			shots.append(shot)
+			cam.fov = 40.0
+			cam.look_at_from_position(Vector3(-1.6, 0.05, -0.15), Vector3(0, -0.05, -0.15), Vector3.UP)
+			var pulled := await _grab()
+			pulled.save_png(out_dir.path_join(id + "_fire_side.png"))
+			shots.append(pulled)
 		for im in shots:
 			var t := (im as Image).duplicate() as Image
 			t.convert(Image.FORMAT_RGBA8)
@@ -65,7 +71,7 @@ func _run() -> void:
 			tiles.append(t)
 		w.queue_free()
 		await get_tree().process_frame
-	var cols := 6 if fire else 4
+	var cols := 8 if fire else 4
 	var rows := ceili(tiles.size() / float(cols))
 	var sheet := Image.create(480 * cols, 300 * maxi(1, rows), false, Image.FORMAT_RGBA8)
 	for i in tiles.size():
@@ -76,6 +82,10 @@ func _run() -> void:
 
 ## Fire the gun's flash and freeze it at full burn (its sparks too).
 func _flash(w: Weapon) -> void:
+	if w.hands and w.hands.trigger_finger:
+		w.hands.squeeze()
+		w.hands._process(ViewmodelHands.PULL_TIME) # straight to a full pull
+		w.hands.set_process(false) # and hold it there
 	if w.data.muzzle_flash_scene == null:
 		return
 	w._play_muzzle()
