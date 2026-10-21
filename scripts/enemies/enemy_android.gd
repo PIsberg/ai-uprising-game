@@ -22,12 +22,17 @@ const KICK_REACH := 2.9     ## the kick lands if the target is still inside this
 const KICK_WINDUP := 0.32   ## the Kick clip's leg lift, then the claw arrives
 const KICK_COOLDOWN := 1.5
 const HOP_SPEED := 5.0      ## juke take-off (gravity 24: ~0.42 s up, ~0.5 m)
+## Seconds a flank may run before the android gives up on the point and shoots
+## from where it stands. It holds fire while it runs, and a point beside a
+## moving target (or one it cannot reach) kept it silent for 11 s (#414).
+const FLANK_MAX := 2.0
 
 var _burst_remaining: int = 0
 var _burst_timer: float = 0.0
 var _seeking_cover: bool = false
 var _cover_pos: Vector3
 var _last_flank_check: float = 0.0
+var _flank_t: float = 0.0 ## time left on the current flank (FLANK_MAX)
 var _dodge_cd: float = 2.0  ## Time until the next evasive sidestep.
 var _dodge_dir: float = 1.0
 var _dodge_time: float = 0.0 ## >0 while mid-juke.
@@ -57,6 +62,13 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	_kick_cd = maxf(0.0, _kick_cd - delta)
+	# The flank clock runs here, not in _state_attack: running for the point it
+	# faces away, loses sight, and flips to CHASE and back, which stopped an
+	# attack-only clock and stretched a 2 s flank to 4.5 s.
+	if _seeking_cover:
+		_flank_t -= delta
+		if _flank_t <= 0.0:
+			_seeking_cover = false
 	if _burst_remaining > 0:
 		_burst_timer -= delta
 		if _burst_timer <= 0.0:
@@ -134,8 +146,9 @@ func _state_attack(delta: float) -> void:
 	_last_flank_check += delta
 	if _last_flank_check > 3.0:
 		_last_flank_check = 0.0
-		if randf() < flank_chance:
+		if not _seeking_cover and randf() < flank_chance: # a running flank is not re-picked
 			_seeking_cover = true
+			_flank_t = FLANK_MAX
 			_cover_pos = _pick_flank_position()
 	var dodging := _tick_dodge(delta)
 	if _seeking_cover and global_position.distance_to(_cover_pos) > 1.2:
