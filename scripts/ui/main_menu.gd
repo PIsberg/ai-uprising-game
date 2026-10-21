@@ -101,6 +101,16 @@ func _build_extra_settings() -> void:
 	invert.toggled.connect(func(p: bool): GraphicsSettings.set_invert_y(p))
 	_grid.add_child(invert)
 
+	for spec in [["Toggle Aim", GraphicsSettings.toggle_aim, GraphicsSettings.set_toggle_aim],
+			["Toggle Sprint", GraphicsSettings.toggle_sprint, GraphicsSettings.set_toggle_sprint],
+			["Toggle Crouch", GraphicsSettings.toggle_crouch, GraphicsSettings.set_toggle_crouch]]:
+		var tog := CheckButton.new()
+		tog.text = tr(spec[0])
+		tog.custom_minimum_size = Vector2(360, 44)
+		tog.button_pressed = spec[1]
+		tog.toggled.connect(spec[2])
+		_grid.add_child(tog)
+
 	var gpu_parts := CheckButton.new()
 	gpu_parts.text = "Enable GPU Particles"
 	gpu_parts.custom_minimum_size = Vector2(360, 44)
