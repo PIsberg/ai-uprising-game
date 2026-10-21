@@ -1609,6 +1609,7 @@ const MECHANIC_HINTS := {
 	"overload": "⚡ OVERLOAD charged — press [X] to unleash a screen-clearing shockwave.",
 	"night_vision": "◉ NIGHT VISION — press [N] to see in the dark. It does not give you away like a flashlight.",
 	"lights_out": "◐ LIGHTS OUT — robots can't see you in the dark past a few metres. Firing or a flashlight gives you away.",
+	"hijack_overload": "⌁ OVERLOAD: in a HIJACKED robot's last 2 seconds it charges the biggest pack and blows. The blast only hurts robots.",
 	"uplink": "⌁ NEURAL UPLINK — look at a robot you HIJACKED and press [E] to ride it. Your body stays behind: guard it.",
 	"patch_key": "◇ ADVERSARIAL PATCH ready — press [T] and robot vision reads you as furniture for 15 s. Two per level.",
 	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",

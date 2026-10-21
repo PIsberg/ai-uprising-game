@@ -384,8 +384,10 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 		return false
 	if hijacked:
 		_hijack_t = maxf(_hijack_t, duration)
+		_hijack_len = maxf(_hijack_len, duration)
 		return true
 	hijacked = true
+	_hijack_len = duration
 	_think("hijack")
 	_hijack_t = duration
 	_hijack_shooter = liberator
@@ -420,7 +422,12 @@ func _hijack_process(delta: float) -> void:
 	if not escorting:
 		_hijack_t -= delta
 		if _hijack_t <= 0.0:
+			if _hijack_len >= OVERLOAD_MIN_LIFE:
+				_overload_blast()
 			_burnout()
+			return
+		if is_overloading():
+			_overload_tick(delta)
 			return
 	_hijack_zap_cd = maxf(0.0, _hijack_zap_cd - delta)
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
@@ -506,6 +513,128 @@ func _hijack_zap(foe: EnemyBase) -> void:
 
 ## Stolen time is up: the loyalty firmware reasserts itself and the chassis
 ## burns out — a guaranteed (player-credited) kill to close the fantasy.
+# ---------- hijack overload (the burnout as a bomb) ----------
+## In a hijacked unit's last OVERLOAD_WARN seconds its stolen core overloads: it
+## stops zapping, runs at the densest knot of hostile robots (picked again every
+## OVERLOAD_REPICK s) with a red flicker and a quickening beep, and when the
+## clock runs out it detonates before it burns out. The blast reaches hostile
+## robots only, so the player's side is safe; a boss-class chassis takes half.
+## Escorts (no clock), ridden units (the uplink owns the clock and
+## release_pilot burns out quietly) and hijacks shorter than OVERLOAD_MIN_LIFE
+## never overload; the OVERRIDE weapon mod's 6 s steal does. tests/hijack_overload_probe.
+const OVERLOAD_WARN := 2.0
+## A hijack shorter than this never overloads: the robot fights before it is a bomb.
+const OVERLOAD_MIN_LIFE := 4.0
+const OVERLOAD_RADIUS := 6.0
+const OVERLOAD_DAMAGE := 120.0 ## at the centre of the blast
+const OVERLOAD_EDGE := 0.5     ## fraction of OVERLOAD_DAMAGE left at OVERLOAD_RADIUS
+const OVERLOAD_REPICK := 0.5
+const OVERLOAD_COLOR := Color(1.0, 0.35, 0.2)
+var _overload_pick: float = 0.0
+var _overload_beep: float = 0.0
+var _overload_tag: Label3D = null
+var _hijack_len: float = 0.0 ## the hijack's full length (overload needs OVERLOAD_MIN_LIFE)
+
+## True while a hijacked unit is in its overload run (the last OVERLOAD_WARN s).
+func is_overloading() -> bool:
+	return hijacked and escort_goal == null and not (pilot != null and is_instance_valid(pilot)) \
+			and _hijack_len >= OVERLOAD_MIN_LIFE and _hijack_t <= OVERLOAD_WARN
+
+## Blast damage `dist` metres from an overload's centre (0 past the radius).
+static func overload_blast_damage(dist: float) -> float:
+	if dist > OVERLOAD_RADIUS:
+		return 0.0
+	return OVERLOAD_DAMAGE * lerpf(1.0, OVERLOAD_EDGE, clampf(dist / OVERLOAD_RADIUS, 0.0, 1.0))
+
+static func _overload_victim(n: Node) -> bool:
+	var e := n as EnemyBase
+	return e != null and is_instance_valid(e) and not e.hijacked and e.state != State.DEAD \
+			and e.hp != null and e.hp.is_alive()
+
+func _overload_tick(delta: float) -> void:
+	if _overload_tag == null:
+		_overload_tag = Label3D.new()
+		_overload_tag.text = tr("OVERLOAD")
+		_overload_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_overload_tag.no_depth_test = true
+		_overload_tag.fixed_size = true
+		_overload_tag.pixel_size = 0.0012
+		_overload_tag.font_size = 30
+		_overload_tag.outline_size = 8
+		_overload_tag.modulate = OVERLOAD_COLOR
+		_overload_tag.position = Vector3.UP * clampf(RobotModel.body_top(self, _mesh_instances) + 0.6, 1.8, 7.5)
+		add_child(_overload_tag)
+		GameState.teach_once("hijack_overload", GameState.MECHANIC_HINTS["hijack_overload"])
+	var urgency := 1.0 - clampf(_hijack_t / OVERLOAD_WARN, 0.0, 1.0)
+	_overload_beep -= delta
+	if _overload_beep <= 0.0:
+		_overload_beep = lerpf(0.35, 0.07, urgency)
+		AudioBus.play_synth_at("broadcast_blip", global_position, -4.0, 1.0 + urgency * 0.8)
+		_overload_tag.visible = not _overload_tag.visible or urgency < 0.5
+	var glow := _hijack_fx as OmniLight3D
+	if glow and is_instance_valid(glow):
+		glow.light_color = OVERLOAD_COLOR
+		glow.light_energy = lerpf(2.0, 6.0, urgency) * (0.7 + 0.3 * sin(_hijack_t * 40.0))
+	_overload_pick -= delta
+	if _overload_pick <= 0.0 or not is_instance_valid(target) or not _overload_victim(target):
+		_overload_pick = OVERLOAD_REPICK
+		target = _overload_knot()
+	var goal := target as Node3D
+	if goal and global_position.distance_to(goal.global_position) > 1.5:
+		_move_toward(goal.global_position, delta)
+	else:
+		_decelerate()
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## The hostile robot with the most other hostiles within OVERLOAD_RADIUS of it
+## (the nearer one on a tie), inside HIJACK_SEEK_RANGE; null when none.
+func _overload_knot() -> Node3D:
+	var foes: Array[EnemyBase] = []
+	for n in get_tree().get_nodes_in_group("enemy"):
+		if n != self and _overload_victim(n) \
+				and global_position.distance_to((n as Node3D).global_position) <= HIJACK_SEEK_RANGE:
+			foes.append(n as EnemyBase)
+	var best: EnemyBase = null
+	var best_n := -1
+	var best_d := INF
+	for f in foes:
+		var crowd := 0
+		for g in foes:
+			if g != f and f.global_position.distance_to(g.global_position) <= OVERLOAD_RADIUS:
+				crowd += 1
+		var d := global_position.distance_to(f.global_position)
+		if crowd > best_n or (crowd == best_n and d < best_d):
+			best = f
+			best_n = crowd
+			best_d = d
+	return best
+
+## The overload blast at burnout: every hostile robot within OVERLOAD_RADIUS,
+## falling off to OVERLOAD_EDGE at the rim, boss-class chassis at half. Credited
+## to the hijacker. Called while still hijacked, so the hijack sides let it land.
+func _overload_blast() -> void:
+	var pos := global_position
+	var src: Node = _hijack_shooter if (_hijack_shooter != null and is_instance_valid(_hijack_shooter)) else self
+	for n in get_tree().get_nodes_in_group("enemy"):
+		if n == self or not _overload_victim(n):
+			continue
+		var e := n as EnemyBase
+		var dmg := overload_blast_damage(pos.distance_to(e.global_position))
+		if dmg <= 0.0:
+			continue
+		if e.max_health * e._health_mult >= HIJACK_BOSS_HP:
+			dmg *= 0.5
+		GameState.apply_secondary_damage(e.hp, dmg, src, pos)
+	var scene := get_tree().current_scene
+	if scene:
+		var fx := EXPLOSION.instantiate() as Node3D
+		scene.add_child(fx)
+		fx.global_position = pos + Vector3.UP * 0.8
+		ExplosionFX.detonate(fx, OVERLOAD_RADIUS * 0.55, OVERLOAD_COLOR)
+
 func _burnout() -> void:
 	_cleanup_hijack()
 	if hp and hp.is_alive():
@@ -757,6 +886,9 @@ func _cleanup_hijack() -> void:
 	if _hijack_fx and is_instance_valid(_hijack_fx):
 		_hijack_fx.queue_free()
 	_hijack_fx = null
+	if _overload_tag and is_instance_valid(_overload_tag):
+		_overload_tag.queue_free()
+	_overload_tag = null
 
 ## Friendly green core glow + a conversion crackle so a turned unit reads as
 ## YOURS at a glance (the inverse of the red overload glow).
