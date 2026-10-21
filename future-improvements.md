@@ -73,13 +73,16 @@ side until burnout (`EnemyBase.hijack`, `grenade_hijack.{gd,tscn}`, `tests/hijac
 ✅ **NEURAL UPLINK shipped** — interact on a hijacked robot rides it for 20 s while the body
 waits exposed (`NeuralUplink`, `EnemyBase.pilot_fire`, `tests/neural_uplink_probe`). 🎮 Needs
 playtest: the 20 s ride, the 20-damage body break, and whether 34 DPS per chassis is enough.
-🎨 Optional: per-chassis signature attacks (the BEHEMOTH's real smash, the HOWITZER's shells)
-instead of the generic shot/slam.
+✅ **Per-chassis ride attacks shipped for the seeker, GUNNER, RAPTOR and BRUTE** (#343,
+`neural_uplink_probe`). The other two named here never need one: the BEHEMOTH (boss) and the
+HOWITZER (640 HP) are both over `EnemyBase.HIJACK_BOSS_HP` (500), so they cannot be hijacked or ridden.
 ✅ **AI patch-notes escalation shipped** — the director's per-level read ships as an
 "INTERCEPTED — ROBOT OS PATCH NOTES" terminal card on the next briefing
 (`AIDirector.patch_notes`, `GameState._build_patch_notes`, `tests/patchnotes_probe`).
-Still open as bigger swings: an overload that turns a robot into a bomb, weapon-disable,
-idea #4 "glitch warfare".
+✅ **HIJACK overload shipped** (2026-10-21): a hijacked robot's last 2 s are a run at the biggest
+pack and a robots-only blast (`EnemyBase._overload_tick`, `tests/hijack_overload_probe`). 🎮 Needs
+playtest: the 120 centre damage over 6 m and the 2 s warning.
+Still open as bigger swings: weapon-disable, idea #4 "glitch warfare".
 
 ### Skirmish events (mid-level pacing variety) 🤖🎮
 ✅ **Shipped** — rare announced events break up a level's authored rhythm
@@ -116,7 +119,7 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
 - ✅ **Screen Shake** scale and **Flash Intensity** scale shipped (Settings + pause menu).
 - ✅ **Flash Intensity now also scales world light bursts** (muzzle flash, hit/impact pops,
   explosion and grenade detonation lights; steady lights untouched) — `tests/flash_intensity_probe`.
-- ✅ **Colourblind Mode shipped** (Settings + pause menu: Off / Protanopia / Deuteranopia / Tritanopia) — a daltonize overlay above every layer corrects the world, HUD, cutscenes and menus (`GraphicsSettings.colorblind_matrix`, `tests/colorblind_probe`, `tests/colorblind_render_probe`). Elite affix markers and radar blips now differ by shape (`tests/elite_marker_probe`, `tests/radar_shape_probe`). Still open (#150): non-colour redundancy (shape/icon) for the remaining colour-only cues.
+- ✅ **Colourblind Mode shipped** (Settings + pause menu: Off / Protanopia / Deuteranopia / Tritanopia) — a daltonize overlay above every layer corrects the world, HUD, cutscenes and menus (`GraphicsSettings.colorblind_matrix`, `tests/colorblind_probe`, `tests/colorblind_render_probe`). Elite affix markers and radar blips now differ by shape (`tests/elite_marker_probe`, `tests/radar_shape_probe`). ✅ The rest of the colour-only cue audit closed #150 (2026-10-08): every remaining cue also carries text, a number or a shape.
 - ✅ **Subtitle Size shipped** (Settings, 0.8-2.0x): cutscene subtitles, overlord taunts and the victory transmission scale; cutscene subtitles now wrap above the letterbox bar (`tests/subtitle_size_probe`). Damage Number Size had already shipped (`tests/damage_number_size_probe`).
 - ✅ **Damage Taken slider shipped** (Settings + pause menu, 50–150%, `GraphicsSettings.damage_taken`, `tests/damage_taken_probe`). ✅ **It counts toward the grade like a tier** (x0.85 at 50%, x1.10 at 150%, named on the debrief next to the tier; `GameState.assist_score_mult`, `tests/grade_assist_probe`, issue #88). Still open: aim-assist for KBM, other modifiers.
 - ✅ **Toggle Aim / Toggle Sprint / Toggle Crouch shipped** (Settings + pause menu, off by default; `PlayerInput.toggled`, `tests/toggle_input_probe`).
@@ -130,8 +133,8 @@ per-chassis limb chunk meshes instead of the generic two-segment servo arm.
   `tracer_color` tint + `muzzle_scale` size weapon.gd uses) with a recoil kick
   scaled by `recoil_pitch`, and a tinted bloom for beam guns with no flash scene.
   Doubles as a live check that per-weapon FX values are wired right.
-- Optional "weapons discovered as you pick them up" gating (needs a persistent
-  `discovered_weapons` like the bestiary's `discovered_enemies`).
+- ✅ **Weapons discovered as you hold them shipped**: the Codex lists the standard issue plus
+  every gun in `GameState.discovered_weapons` (persisted in `bestiary.cfg`).
 
 ### In-run quick reference 🤖
 ✅ **FIELD MANUAL shipped** — a pause-menu overlay (no scene change) listing the threats alive

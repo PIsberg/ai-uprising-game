@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-527 probes total: **225** wired into the headless suite (`suite`), **87**
+528 probes total: **226** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -321,6 +321,7 @@ or GPU-timing probes; `--headless` renders these black).
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name; the screenshot also shows the story LEAD line | windowed |
+| hijack_overload_probe | HIJACK overload on a baked navmesh: a 5 s hijack is not overloading before its last OVERLOAD_WARN s and is during it (teaching the rule once), runs at a packed squad (10.9 -> 1.7 m), dies at burnout, and its blast hits every robot within OVERLOAD_RADIUS (the nearest took 95), leaves a lone android 18 m off untouched, gives a boss-sized robot at most half (44 vs 88), never hurts the player beside the squad, a hijack shorter than OVERLOAD_MIN_LIFE (4 s) never overloads and an escort never does (red-checked: without the blast the squad took 0) | suite |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping; the HIJACK grenade converts the nearest robot and frees itself with no player in the scene (red before: its free sat in the per-player glitch loop, #408); a boss resists | suite |
 | i18n_label_probe | Every task, wave, firewall and terrain label in the campaign defs translates under es/fr/de/pt (`tr()` hands back the English key when a row is missing; 64 of 78 labels were, #116); a long-standing row is the control that translations load at all | suite |
 | enemy_cost_probe | Report-only: 8 woken copies of each chassis (2 per boss) on a flat navmesh; prints the median physics tick (`tests/tick_clock.gd`) and us per robot above the empty rig, plus the physics server's collision pairs, active objects and islands (`-- types=android,drone` to restrict) | headless |
