@@ -2,10 +2,11 @@ extends Node3D
 ## MELTDOWN: a robot thrown into a LavaHazard bed melts (water: short-circuits
 ## and drowns) and the bed's kill pays GameState.MELTDOWN_BONUS, counts on the
 ## debrief and flashes the HUD. Explosions do the throwing (BlastPush). Beds are
-## 8 x 4 m; the robot slab is inset LavaHazard.ROBOT_INSET from each edge.
-##   - an android 2.5 m outside a lava bed takes nothing in 2 s;
-##   - an android brushing 0.25 m inside the bed's edge takes nothing (the inset);
-##   - an android in the bed dies within 2.5 s, the kill is an environmental kill
+## 8 x 4 m; the robot slab is inset LavaHazard.ROBOT_INSET from each edge. The
+## held robots below are marked thrown with a zero-velocity launch.
+##   - a thrown android 2.5 m outside a lava bed takes nothing in 2 s;
+##   - a thrown android brushing 0.25 m inside the bed's edge takes nothing (the inset);
+##   - a thrown android in the bed dies within 2.5 s, the kill is an environmental kill
 ##     of the lava kind, pays at least MELTDOWN_BONUS + its own 150 and teaches
 ##     the rule once;
 ##   - a drone (flyer) in the bed takes nothing;
@@ -18,7 +19,9 @@ extends Node3D
 ##     after, at least 2 m further off within 1.2 s); a boss-sized android is
 ##     not thrown; a grenade a robot threw throws nobody;
 ##   - the headline: a grenade behind an android standing 0.6 m from a lava bed
-##     lands it in the bed, where it melts (the second lava kill).
+##     lands it in the bed, where it melts (the second lava kill);
+##   - a robot that merely stands in the bed (spawned there, never thrown) is not
+##     burned, and the thrown state ends THROWN_GRACE after a throw.
 ##   godot --headless --path . --audio-driver Dummy res://tests/meltdown_probe.tscn
 
 const ANDROID := preload("res://scenes/enemies/android.tscn")
@@ -26,7 +29,7 @@ const DRONE := preload("res://scenes/enemies/drone.tscn")
 const GRENADE := preload("res://scenes/weapons/grenade.tscn")
 
 var _fail: Array[String] = []
-var _kills: Array[bool] = [] ## `water` of every environmental kill, in order
+var _kills: Array[String] = [] ## kind of every environmental kill, in order
 var _hints: Array[String] = []
 var _shooter: Node3D
 
@@ -88,7 +91,9 @@ func _run() -> void:
 	GameState.set_state(GameState.State.PLAYING)
 	GameState._taught.erase("meltdown")
 	GameState.stat_meltdowns = 0
-	GameState.environmental_kill.connect(func(w: bool, _p: Vector3) -> void: _kills.append(w))
+	GameState.environmental_kill.connect(func(k: String, p: Vector3) -> void:
+		_kills.append(k)
+		print("  kill  %s at %v" % [k, p]))
 	GameState.teach_hint.connect(func(t: String) -> void: _hints.append(t))
 
 	var lava := _bed(Vector3.ZERO)
@@ -108,41 +113,55 @@ func _run() -> void:
 	boss.hp.current_health = 900.0
 	boss.max_health = 900.0
 	boss.score_value = 1000
-	for e: EnemyBase in [control, graze, melt, flyer, boss, drown, safe]:
+	var bystander := _robot(Vector3(2.5, 0.1, 1.2)) # in the bed, clear of the headline grenade
+	await _wait(0.2)
+	for e: EnemyBase in [control, graze, melt, flyer, boss, drown, safe, bystander]:
 		e.set_physics_process(false) # hold them where they stand
+	for e: EnemyBase in [control, graze, melt, flyer, boss, drown, safe]:
+		e.launch(Vector3.ZERO, 0.1) # thrown in place (physics is off: the state holds)
 	var score0 := GameState.score
 	await _wait(1.1)
 	var boss_taken := _taken(boss)
 	_check(boss_taken > 0.0 and boss_taken <= lava.damage_per_tick * 3.0 + 0.5,
 			"a boss-sized robot takes the plain tick, not the melt multiple",
 			"%.0f in 1.1 s, a tick is %.0f" % [boss_taken, lava.damage_per_tick])
+	boss.queue_free() # held (physics off) it would stay thrown and burn to death later
 	_check(is_instance_valid(drown) and drown._emp_t > 0.0, "a robot in water is short-circuited (EMP)")
 	await _wait(1.4)
 	_check(_taken(control) == 0.0, "a robot 2.5 m outside the bed is untouched", "%.0f" % _taken(control))
 	_check(_taken(graze) == 0.0, "a robot brushing 0.25 m inside the edge is untouched (inset)", "%.0f" % _taken(graze))
 	_check(_taken(flyer) == 0.0, "a drone over the bed is untouched", "%.0f" % _taken(flyer))
 	_check(_taken(safe) == 0.0, "a bed with melts_robots off burns no robot", "%.0f" % _taken(safe))
+	_check(_taken(bystander) == 0.0, "a robot that merely stands in the bed (never thrown) is not burned", "%.0f" % _taken(bystander))
 	_check(_dead(melt), "a robot in the bed melts within 2.5 s")
 	_check(_dead(drown), "a robot in water drowns within 2.5 s")
-	_check(_kills.size() == 2 and _kills.has(false) and _kills.has(true),
+	_check(_kills.size() == 2 and _kills.has("lava") and _kills.has("water"),
 			"one lava kill and one water kill are reported", str(_kills))
 	_check(GameState.stat_meltdowns == 2, "the debrief count is 2", str(GameState.stat_meltdowns))
 	_check(GameState.score - score0 >= 2 * (GameState.MELTDOWN_BONUS + 150),
 			"both kills pay the bonus on top of the kill", "+%d" % (GameState.score - score0))
 	_check(_hints.count(GameState.MECHANIC_HINTS["meltdown"]) == 1, "the first meltdown teaches the rule once", str(_hints.size()))
 
+	# The thrown state ends after THROWN_GRACE.
+	var grace := _robot(Vector3(80, 0.1, 0))
+	await _wait(0.2)
+	grace.launch(Vector3.ZERO, 0.1)
+	_check(grace.was_thrown(), "a launched robot reads as thrown")
+	await _wait(EnemyBase.THROWN_GRACE + 0.5)
+	_check(is_instance_valid(grace) and not grace.was_thrown(), "and stops THROWN_GRACE after the throw")
+
 	# Blasts throw robots.
 	var thrown := _robot(Vector3(40, 0.1, 0))
 	var heavy := _robot(Vector3(40, 0.1, 10))
-	var bystander := _robot(Vector3(40, 0.1, 20))
+	var onlooker := _robot(Vector3(40, 0.1, 20))
 	var robot_thrower := _robot(Vector3(30, 0.1, 20))
 	await _wait(0.2)
-	for e: EnemyBase in [thrown, heavy, bystander, robot_thrower]:
+	for e: EnemyBase in [thrown, heavy, onlooker, robot_thrower]:
 		e.hp.max_health = 5000.0
 		e.hp.current_health = 5000.0
 	heavy.score_value = 1000
 	heavy.set_physics_process(false)
-	bystander.set_physics_process(false)
+	onlooker.set_physics_process(false)
 	robot_thrower.set_physics_process(false)
 	var x0 := thrown.global_position.x
 	_grenade(Vector3(38.5, 0.3, 0), _shooter)
@@ -150,7 +169,7 @@ func _run() -> void:
 	_grenade(Vector3(38.5, 0.3, 10), _shooter)
 	_check(not heavy.is_launched(), "a boss-sized robot is not thrown")
 	_grenade(Vector3(38.5, 0.3, 20), robot_thrower)
-	_check(not bystander.is_launched(), "a grenade a robot threw throws nobody")
+	_check(not onlooker.is_launched(), "a grenade a robot threw throws nobody")
 	await _wait(1.2)
 	var dx := thrown.global_position.x - x0
 	_check(dx >= 2.0, "the thrown robot lands at least 2 m further off", "%.1f m" % dx)
@@ -173,7 +192,7 @@ func _run() -> void:
 		victim.set_physics_process(false) # it is in; what it does next is the bed's business
 	await _wait(2.5)
 	_check(_dead(victim), "and melts there")
-	_check(_kills.size() == kills_before + 1 and _kills[-1] == false, "as a lava kill", str(_kills))
+	_check(_kills.size() == kills_before + 1 and _kills[-1] == "lava", "as a lava kill", str(_kills))
 
 	print("RESULT %s" % ("PASS" if _fail.is_empty() else "FAIL"))
 	get_tree().quit(0 if _fail.is_empty() else 1)

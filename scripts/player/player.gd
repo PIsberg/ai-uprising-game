@@ -923,7 +923,11 @@ func _unleash_overload() -> void:
 		if "velocity" in col and col is Node3D:
 			var push: Vector3 = (col as Node3D).global_position - origin
 			push.y = 0.0
-			col.velocity += (push.normalized() if push.length() > 0.1 else Vector3.FORWARD) * 16.0 + Vector3.UP * 4.0
+			var shove := (push.normalized() if push.length() > 0.1 else Vector3.FORWARD) * 16.0 + Vector3.UP * 4.0
+			if col.has_method("launch") and col.is_in_group("enemy"):
+				col.launch(shove, 0.6) # thrown: a bed it lands in melts it
+			else:
+				col.velocity += shove
 	# Hostiles just OUTSIDE the blast (not EMP'd) see it and scatter.
 	GameState.startle_enemies(origin, overload_radius * 1.7, 1.1)
 
@@ -1039,9 +1043,15 @@ func _do_melee() -> void:
 				d.apply_damage(melee_damage, self)
 			struck = true
 		# Heavy knockback away from the player (+ a little lift) — the "get off me".
+		# A robot is THROWN (EnemyBase.launch: its own movement pauses until it
+		# lands, and a hazard bed it lands in melts it); anything else is shoved.
 		if "velocity" in col:
 			var push := flat.normalized() if flat.length() > 0.1 else fwd
-			col.velocity += push * melee_knockback + Vector3.UP * 3.0
+			var shove := push * melee_knockback + Vector3.UP * 3.0
+			if col.has_method("launch") and col.is_in_group("enemy"):
+				col.launch(shove, 0.5)
+			else:
+				col.velocity += shove
 	if struck:
 		AudioBus.play_synth_at("impact_metal", origin + fwd * 1.5, -2.0, 0.8)
 		shake(0.3)

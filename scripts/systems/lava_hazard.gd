@@ -10,11 +10,15 @@ extends Area3D
 ## light. Size is the bed's footprint in metres.
 ##
 ## Robots never path into a bed (the carve), but one THROWN in (melee, a grenade
-## or rocket blast, OVERLOAD, a Bumper) melts: a grounded non-boss robot at least
+## or rocket blast, OVERLOAD, a Bumper: EnemyBase.was_thrown, which holds for
+## THROWN_GRACE after a launch) melts: a grounded non-boss robot at least
 ## ROBOT_INSET inside the bed takes ROBOT_MELT_MULT times the tick, a boss the
 ## plain tick, and in water the robot short-circuits (an EMP stun each tick) as
 ## it drowns. A kill the bed finishes pays GameState.note_environmental_kill.
-## Flyers hover over a bed and are never burned by it.
+## A robot that spawned or wandered into a bed wades through unharmed as it
+## always did (12 levels author robots standing in their channels, the TITAN's
+## arena among them), flyers hover over a bed, and swimmers (the shark) live in
+## one: none of those is ever burned by it.
 
 @export var size: Vector2 = Vector2(8.0, 3.0)  ## Footprint (x by z) in metres.
 @export var damage_per_tick: float = 26.0      ## Burn applied every tick to anything inside.
@@ -114,17 +118,19 @@ func _build_robot_zone() -> void:
 	add_child(_robot_zone)
 
 ## Robots the bed can melt: a grounded, living robot (group "enemy", with a
-## Damageable) inside the inset slab. Flyers hover over the bed (they say so with
-## hover_height) and are skipped. The robot is duck-typed, never named: naming
-## EnemyBase here closes a script load cycle that leaves pickup.gd unloadable
-## (the trap Salvage documents).
+## Damageable) inside the inset slab that was THROWN there (was_thrown). Flyers
+## (hover_height) and swimmers (submerge_depth) are skipped. The robot is
+## duck-typed, never named: naming EnemyBase here closes a script load cycle
+## that leaves pickup.gd unloadable (the trap Salvage documents).
 func robots_inside() -> Array[Node3D]:
 	var out: Array[Node3D] = []
 	if _robot_zone == null:
 		return out
 	for body in _robot_zone.get_overlapping_bodies():
-		if not (body is Node3D and body.is_in_group("enemy")) or "hover_height" in body:
+		if not (body is Node3D and body.is_in_group("enemy")) or "hover_height" in body or "submerge_depth" in body:
 			continue
+		if not (body.has_method("was_thrown") and body.call("was_thrown")):
+			continue # it walked or spawned in: the bed is not a trap for it
 		var d := body.get_node_or_null("Damageable") as Damageable
 		if d == null or not d.is_alive():
 			continue
@@ -144,7 +150,7 @@ func _burn_robots() -> void:
 		d.apply_damage(dmg, self)
 		AudioBus.play_synth_at("impact_metal", at, -9.0, 0.55 if water else 0.7)
 		if not d.is_alive():
-			GameState.note_environmental_kill(water, at)
+			GameState.note_environmental_kill("water" if water else "lava", at)
 
 ## The glowing molten surface plane (or, in water mode, a deep blue pool).
 func _build_surface() -> void:

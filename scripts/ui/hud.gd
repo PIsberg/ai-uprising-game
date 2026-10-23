@@ -947,11 +947,13 @@ func _on_execution(_world_pos: Vector3) -> void:
 		_exec_alpha = 1.0
 		_exec_pop = 1.3
 
-## A robot melted in lava or drowned short-circuiting: the same takedown flash
-## as an execution, worded for the hazard.
-func _on_environmental_kill(water: bool, _world_pos: Vector3) -> void:
+## The level finished a robot (GameState.environmental_kill): the same takedown
+## flash as an execution, worded for how it went.
+const ENV_KILL_WORDS := {"lava": "MELTDOWN", "water": "SHORT CIRCUIT"}
+
+func _on_environmental_kill(kind: String, _world_pos: Vector3) -> void:
 	if _exec_label:
-		_exec_label.text = (tr("SHORT CIRCUIT") if water else tr("MELTDOWN")) + "!"
+		_exec_label.text = tr(String(ENV_KILL_WORDS.get(kind, "MELTDOWN"))) + "!"
 		_exec_alpha = 1.0
 		_exec_pop = 1.3
 

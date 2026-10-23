@@ -714,15 +714,17 @@ func reward_execution(world_pos: Vector3) -> void:
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
 
-# ---------- MELTDOWN: a robot knocked into a hazard bed ----------
+# ---------- MELTDOWN: the level finished a robot ----------
 ## A LavaHazard finished a robot that was thrown into it (melee, a blast,
-## OVERLOAD, a Bumper): molten ground melts it, deep water short-circuits it.
-## The kill's own score and combo land through add_kill as usual; this is the
-## bonus on top, the callout and the debrief count. `water` picks the wording.
+## OVERLOAD, a Bumper): `kind` "lava" (molten ground melts it) or "water" (deep
+## water short-circuits it). The kill's own score and combo land through
+## add_kill as usual; this is the bonus on top, the callout (the HUD words it
+## by kind) and the debrief count.
 const MELTDOWN_BONUS := 150
-signal environmental_kill(water: bool, world_pos: Vector3)
+const MELTDOWN_KINDS := ["lava", "water"]
+signal environmental_kill(kind: String, world_pos: Vector3)
 
-func note_environmental_kill(water: bool, world_pos: Vector3) -> void:
+func note_environmental_kill(kind: String, world_pos: Vector3) -> void:
 	if current_state != State.PLAYING:
 		return
 	add_score(MELTDOWN_BONUS)
@@ -730,7 +732,7 @@ func note_environmental_kill(water: bool, world_pos: Vector3) -> void:
 	teach_once("meltdown", MECHANIC_HINTS["meltdown"])
 	combat_hitstop(0.35, 0.11)
 	AudioBus.play_synth_ui("headshot", -2.0, 0.6)
-	environmental_kill.emit(water, world_pos)
+	environmental_kill.emit(kind, world_pos)
 
 # ---------- CASCADE: chain-detonation kills (CX-4 Cascade) ----------
 ## A Cascade chain of `pops` robots just settled (Cascade._detonate). Long chains

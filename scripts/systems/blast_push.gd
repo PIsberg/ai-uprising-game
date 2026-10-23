@@ -4,8 +4,9 @@ extends RefCounted
 ## every plain grounded robot in its radius outward and up (the robot's launch(),
 ## so its own movement pauses until it lands), full strength at the centre and
 ## EDGE of it at the rim. Bosses are too heavy to move, flyers are already in
-## the air, and a robot's own rockets never scatter its squad. A throw that
-## ends in a LavaHazard bed is a MELTDOWN (lava_hazard.gd).
+## the air, swimmers stay in their water, and a robot's own rockets never
+## scatter its squad. A throw that ends in a LavaHazard bed is a MELTDOWN
+## (lava_hazard.gd).
 ##
 ## The robot is duck-typed (group "enemy", launch(), score_value, hover_height),
 ## never named: naming EnemyBase from a class the weapons load closes a script
@@ -26,7 +27,7 @@ static func throw(body: Node, centre: Vector3, falloff: float, shooter: Node) ->
 		return false
 	if not (is_instance_valid(shooter) and shooter.is_in_group("player")):
 		return false
-	if "hover_height" in body or int(body.get("score_value")) >= BOSS_SCORE:
+	if "hover_height" in body or "submerge_depth" in body or int(body.get("score_value")) >= BOSS_SCORE:
 		return false
 	var hp := body.get_node_or_null("Damageable")
 	if hp == null or not hp.is_alive():
