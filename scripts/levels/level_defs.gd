@@ -3830,9 +3830,11 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(-7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(-14, 1.5, 3), "size": Vector3(1.4, 3, 7)},
-			# Starts clear of tower 0's spiral (#339): from z -6.5 it ran out of the
-			# column through the climb's +z side (stairs_landing_probe).
-			{"pos": Vector3(14, 1.5, 2), "size": Vector3(1.4, 3, 7)},
+			# 3.5 long, between tower 0's spiral and pump_b (#339): from z -6.5 it
+			# ran out of the column through the climb's +z side
+			# (stairs_landing_probe), and the full 7 slid south buries the pump
+			# (task_reach_probe).
+			{"pos": Vector3(14, 1.5, 0.25), "size": Vector3(1.4, 3, 3.5)},
 			{"pos": Vector3(2, 1, -14), "size": Vector3(7, 2, 1.4)},
 		],
 		"accents": [

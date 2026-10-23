@@ -88,7 +88,7 @@ materials of its materialCount.
 - **"RobotExpressive"** by **Tomás Laulhé** (https://www.patreon.com/quaternius), modifications by **Don McCurdy**, from the three.js examples (https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive), **CC0 1.0**: `RobotExpressive.glb`, the MAULER. The shipped file is byte-identical to that copy (git blob `6fec9cfb`).
 - `serving_bot.glb` (the SERVER, MAITRE-D') is original to this game, built from primitives by `tools/blender/build_server.py`.
 
-### Models whose source is not identified yet (#363)
+### Models whose source is not identified yet (#435)
 This shipped file carries no author or licence metadata, matches no download on
 the dev machine, and has no Sketchfab model with its triangle count and look:
 `Robot.glb` (WAR-BOT; 2,578 triangles, one material `Robot`, texture `Robot_Albedo.tif`).
