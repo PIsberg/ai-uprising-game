@@ -1697,34 +1697,130 @@ func _dress_bridge_edges(from: Vector3, to: Vector3, width: float, def: Dictiona
 ## on the next corner landing). Opt-in via def "towers": [{pos, height?, radius?}].
 func _build_towers(def: Dictionary) -> void:
 	for t in def.get("towers", []):
-		var pos: Vector3 = t["pos"]
-		var height: float = t.get("height", 8.0)
-		# Sky-bridges leave this tower's roof and slope away — near the roof
-		# their underside is inevitably close above whatever spiral segments
-		# sit on the side they exit over (both bridge and spiral are pinned to
-		# `height` there; ramp_probe flagged the top segment on every bridged
-		# tower). The exit direction is authored (it aims at another rooftop),
-		# but the spiral's PHASE is ours to pick — collect the exit direction
-		# so _build_tower can put its highest segments on the far side.
-		var exit_dir := Vector3.ZERO
-		for s in def.get("stairs", []):
-			var f: Vector3 = s["from"]
-			if Vector2(f.x - pos.x, f.z - pos.z).length() <= t.get("radius", 3.6) and f.y >= height - 0.5:
-				var d: Vector3 = s["to"] - f
-				d.y = 0.0
-				if d.length() > 0.01:
-					exit_dir += d.normalized()
-		# An authored "phase" (0-3) pins the spiral instead. Bridges ARRIVING
-		# on a roof cross the face they come from, and the exit rule above can
-		# put the top segment right under one (#339, bridge_headroom_probe).
-		# Turning every spiral away from arrivals automatically broke
-		# sublevel's navmesh twice, so the towers that need it are turned one
-		# at a time in their defs, each checked by the level's probes.
-		_build_tower(pos, height, t.get("radius", 3.6), _theme_color(def), exit_dir, int(t.get("phase", -1)))
+		_build_tower(t, tower_phase(def, t), _theme_color(def))
 
-func _build_tower(base: Vector3, height: float, radius: float, accent: Color, bridge_exit: Vector3 = Vector3.ZERO, phase_pin: int = -1) -> void:
-	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
-	n = max(n, 1)
+## Landing footprint half-width: every corner landing is 3.8 x 3.8.
+const TOWER_LANDING_HALF := 1.9
+## See the DEPART_INSET note in _build_tower.
+const TOWER_DEPART_INSET := 1.3
+const TOWER_RAMP_WIDTH := 3.0
+
+## Spiral segments of a tower: ~2.4 m rise each (walkable pitch).
+static func tower_segment_count(height: float) -> int:
+	return maxi(int(ceil(height / 2.4)), 1)
+
+## Four corners of a spiral's footprint, relative to the tower's pos (the ramp
+## runs corner to corner).
+static func tower_corners(radius: float) -> Array:
+	return [
+		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
+		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
+	]
+
+## Which corner tower `t`'s spiral starts from (0-3), for the scaled level
+## `def`. Static so the probes check the layout the builder really lays.
+## Sky-bridges leave a tower's roof and slope away: near the roof their
+## underside is inevitably close above whatever spiral segment sits on the
+## side they exit over (both are pinned to the tower's height there;
+## ramp_probe flagged the top segment on every bridged tower). The exit
+## direction is authored (it aims at another rooftop) but the phase is ours,
+## so by default the final segment runs along the side pointing most AWAY from
+## the exits. Reachability is unaffected: the spiral is the same shape started
+## a quarter-turn (or more) around, and the roof covers whichever corner the
+## last landing ends on.
+## An authored "phase" (0-3) pins it instead. A bridge ARRIVING on a roof
+## crosses the side it comes from, and the exit rule can put the top segment
+## right under it (#339, bridge_headroom_probe). Turning every spiral away
+## from arrivals automatically broke sublevel's navmesh twice, so the towers
+## that need it are turned one at a time in their defs.
+static func tower_phase(def: Dictionary, t: Dictionary) -> int:
+	if t.has("phase"):
+		return int(t["phase"]) % 4
+	var pos: Vector3 = t["pos"]
+	var height := float(t.get("height", 8.0))
+	var exit_dir := Vector3.ZERO
+	for s in def.get("stairs", []):
+		var f: Vector3 = s["from"]
+		if Vector2(f.x - pos.x, f.z - pos.z).length() <= float(t.get("radius", 3.6)) and f.y >= height - 0.5:
+			var d: Vector3 = s["to"] - f
+			d.y = 0.0
+			if d.length() > 0.01:
+				exit_dir += d.normalized()
+	if exit_dir.length() <= 0.01:
+		return 0
+	var n := tower_segment_count(height)
+	var corners := tower_corners(float(t.get("radius", 3.6)))
+	var exit_n := exit_dir.normalized()
+	var phase := 0
+	var best_dot := INF
+	for p in range(4):
+		var edge_mid: Vector3 = (corners[(n - 1 + p) % 4] + corners[(n + p) % 4]) * 0.5
+		var dp := edge_mid.normalized().dot(exit_n)
+		if dp < best_dot:
+			best_dot = dp
+			phase = p
+	return phase
+
+## The ramp segments of tower `t`'s spiral in `phase`, bottom first, in world
+## coordinates: [{"from", "to", "corner"}], `corner` being the landing centre
+## the segment climbs to (at its height).
+static func tower_segments(t: Dictionary, phase: int) -> Array:
+	var base: Vector3 = t["pos"]
+	var height := float(t.get("height", 8.0))
+	var n := tower_segment_count(height)
+	var rise := height / float(n)
+	var corners := tower_corners(float(t.get("radius", 3.6)))
+	var out: Array = []
+	var prev: Vector3 = base + corners[phase]   # ground start, y = 0
+	for i in range(1, n + 1):
+		var c: Vector3 = base + corners[(i + phase) % 4]
+		c.y = rise * float(i)
+		# Aim the ramp to TOP OUT at the landing's NEAR edge, not its centre: a
+		# centre-aimed ramp is still LANDING_HALF*slope below deck-top where the
+		# landing's front face begins, so every corner presented its face as a
+		# 0.3-0.6 m escarpment (ramp_probe + step-assist instrumentation both
+		# confirmed — too tall to step over, jump-only). Topping out at the face
+		# makes the deck transition seamless; the wedge's RAMP_TOP_EMBED run-out
+		# then carries flush onto the deck. The segment gets slightly steeper
+		# (worst case ~29° at radius 3.1) — still well under the player's
+		# floor_max_angle and the navmesh bake's default 45° slope limit.
+		var dir_in := c - prev
+		dir_in.y = 0.0
+		dir_in = dir_in.normalized()
+		var ramp_to := c - dir_in * TOWER_LANDING_HALF
+		ramp_to.y = c.y
+		out.append({"from": prev, "to": ramp_to, "corner": c})
+		# DEPARTING ramp: start it inset from the landing's centre toward the
+		# NEXT segment's direction, not exactly at the centre — tower-dump
+		# instrumentation (base/from/to prints per segment, cross-checked
+		# against ramp_probe's STUCK coordinates) showed the old centre-start
+		# ramp begins climbing immediately, so by the time it reaches the
+		# landing's own edge (LANDING_HALF away) it had already risen ~0.6-0.8 m
+		# above the flat deck — a ramp-shaped ridge bursting up THROUGH the
+		# landing a player is standing on, right where they'd expect flat
+		# turning space (this is what ramp_probe's "STUCK ... why=no_down/
+		# no_gain" at the tail end of a corner's landing actually was — not a
+		# small lip, an ambush ramp). A spiral corner always turns 90 degrees,
+		# so the departure direction is simply the NEXT segment's direction;
+		# DEPART_INSET (see _build_tower) trades a full fix for a small,
+		# step-assisted residual so the tower's overall geometry (landing/roof
+		# thickness, neighbouring-tower clearance) doesn't need re-deriving.
+		if i < n:
+			var next_c: Vector3 = base + corners[(i + 1 + phase) % 4]
+			var dir_out := next_c - c
+			dir_out.y = 0.0
+			dir_out = dir_out.normalized()
+			prev = c + dir_out * TOWER_DEPART_INSET
+			prev.y = c.y
+		else:
+			prev = c
+	return out
+
+func _build_tower(t: Dictionary, phase: int, accent: Color) -> void:
+	var base: Vector3 = t["pos"]
+	var height := float(t.get("height", 8.0))
+	var radius := float(t.get("radius", 3.6))
+	var n := tower_segment_count(height)
 	var rise := height / float(n)
 	# Same-corner loops (4 segments apart, one full lap) land directly above one
 	# another — enforce PLAYER_CLEARANCE_M of headroom between them rather than
@@ -1747,8 +1843,7 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 	# sinks below the ramp line across the WHOLE overhang, with a margin.
 	var corner_spacing := radius * 2.0   # horizontal run of one spiral segment
 	var slope := rise / corner_spacing
-	const LANDING_HALF := 1.9   # landing footprint is 3.8 x 3.8 — keep in sync below
-	var landing_t := maxf(0.4, LANDING_HALF * slope + 0.25)
+	var landing_t := maxf(0.4, TOWER_LANDING_HALF * slope + 0.25)
 	# Departing ramps are inset DEPART_INSET from the corner centre (see the
 	# note in the loop below) rather than the full LANDING_HALF: an inset that
 	# aggressive shortens the segment's horizontal run enough (on top of the
@@ -1762,87 +1857,26 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 	# step-up assist (0.3 m) with margin, without shortening the run enough to
 	# meaningfully steepen it — so the ORIGINAL nominal slope below (unchanged
 	# since before this fix) still sizes the landings/roof correctly.
-	const DEPART_INSET := 1.3
-	# Four corners of the spiral footprint (the ramp runs corner-to-corner).
-	var corners := [
-		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
-		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
-	]
-	# Spiral phase (see _build_towers): rotate the corner ordering so the FINAL
-	# segment — the one whose surface sits within head height of the roof — runs
-	# along the side of the square pointing most AWAY from the sky-bridge exit.
-	# Reachability is unaffected: the spiral is the same shape, just started a
-	# quarter-turn (or more) around, and the roof cap covers whichever corner
-	# the last landing ends on.
-	var phase := 0
-	if phase_pin >= 0:
-		phase = phase_pin % 4
-	elif bridge_exit.length() > 0.01:
-		var best_dot := INF
-		var exit_n := bridge_exit.normalized()
-		for p in range(4):
-			var edge_mid: Vector3 = (corners[(n - 1 + p) % 4] + corners[(n + p) % 4]) * 0.5
-			var dp := edge_mid.normalized().dot(exit_n)
-			if dp < best_dot:
-				best_dot = dp
-				phase = p
+	# (DEPART_INSET is TOWER_DEPART_INSET, used by tower_segments.)
 	# Central column — the structure the player climbs around. Kept well inside the
 	# spiral radius so the ramp + landings wrap clear of it with walking room.
 	_add_collider_box(base + Vector3(0, height * 0.5, 0),
 		Vector3(radius * 0.62, height, radius * 0.62), _color_material(accent.darkened(0.7)), "TwrColumn")
 
-	var prev: Vector3 = base + corners[phase]   # ground start, y = 0
-	for i in range(1, n + 1):
-		var c: Vector3 = base + corners[(i + phase) % 4]
-		c.y = rise * float(i)
-		# Aim the ramp to TOP OUT at the landing's NEAR edge, not its centre: a
-		# centre-aimed ramp is still LANDING_HALF*slope below deck-top where the
-		# landing's front face begins, so every corner presented its face as a
-		# 0.3-0.6 m escarpment (ramp_probe + step-assist instrumentation both
-		# confirmed — too tall to step over, jump-only). Topping out at the face
-		# makes the deck transition seamless; the wedge's RAMP_TOP_EMBED run-out
-		# then carries flush onto the deck. The segment gets slightly steeper
-		# (worst case ~29° at radius 3.1) — still well under the player's
-		# floor_max_angle and the navmesh bake's default 45° slope limit.
-		var dir_in := c - prev
-		dir_in.y = 0.0
-		dir_in = dir_in.normalized()
-		var ramp_to := c - dir_in * LANDING_HALF
-		ramp_to.y = c.y
+	var segs := tower_segments(t, phase)
+	for i in range(1, segs.size() + 1):
+		var seg: Dictionary = segs[i - 1]
+		var c: Vector3 = seg["corner"]
 		# A departing segment's foot sits DEPART_INSET into the corner landing
 		# and the arriving segment ends LANDING_HALF back from the corner, at
 		# right angles: in plan they meet only where both sit at the landing's
 		# height, so the foot has nothing under it to overhang and can be full
 		# width (see _build_ramp_wedge).
-		_add_ramp_between(prev, ramp_to, 3.0, 0.5, "TwrRamp%d" % i, i > 1)
+		_add_ramp_between(seg["from"], seg["to"], TOWER_RAMP_WIDTH, 0.5, "TwrRamp%d" % i, i > 1)
 		# Corner landing, flush-topped at the segment height, so the player can
 		# turn. Thickness solved above so its underside clears the still-rising
 		# ramp across the full overhang (see the note above the loop).
-		_add_collider_box(c - Vector3(0, landing_t * 0.5, 0), Vector3(3.8, landing_t, 3.8), MAT_PROP, "TwrLand%d" % i)
-		# DEPARTING ramp: start it inset from the landing's centre toward the
-		# NEXT segment's direction, not exactly at the centre — tower-dump
-		# instrumentation (base/from/to prints per segment, cross-checked
-		# against ramp_probe's STUCK coordinates) showed the old centre-start
-		# ramp begins climbing immediately, so by the time it reaches the
-		# landing's own edge (LANDING_HALF away) it had already risen ~0.6-0.8 m
-		# above the flat deck — a ramp-shaped ridge bursting up THROUGH the
-		# landing a player is standing on, right where they'd expect flat
-		# turning space (this is what ramp_probe's "STUCK ... why=no_down/
-		# no_gain" at the tail end of a corner's landing actually was — not a
-		# small lip, an ambush ramp). A spiral corner always turns 90 degrees,
-		# so the departure direction is simply the NEXT segment's direction;
-		# DEPART_INSET (see above) trades a full fix for a small, step-assisted
-		# residual so the tower's overall geometry (landing/roof thickness,
-		# neighbouring-tower clearance) doesn't need re-deriving.
-		if i < n:
-			var next_c: Vector3 = base + corners[(i + 1 + phase) % 4]
-			var dir_out := next_c - c
-			dir_out.y = 0.0
-			dir_out = dir_out.normalized()
-			prev = c + dir_out * DEPART_INSET
-			prev.y = c.y
-		else:
-			prev = c
+		_add_collider_box(c - Vector3(0, landing_t * 0.5, 0), Vector3(TOWER_LANDING_HALF * 2.0, landing_t, TOWER_LANDING_HALF * 2.0), MAT_PROP, "TwrLand%d" % i)
 	# Centered rooftop vantage capping the column — covers the final landing so the
 	# player steps straight onto it, and gives sky-bridges a predictable target at
 	# (base.x, height, base.z). Top face flush at `height`, exactly matching the
