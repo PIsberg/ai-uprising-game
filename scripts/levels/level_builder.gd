@@ -1714,9 +1714,15 @@ func _build_towers(def: Dictionary) -> void:
 				d.y = 0.0
 				if d.length() > 0.01:
 					exit_dir += d.normalized()
-		_build_tower(pos, height, t.get("radius", 3.6), _theme_color(def), exit_dir)
+		# An authored "phase" (0-3) pins the spiral instead. Bridges ARRIVING
+		# on a roof cross the face they come from, and the exit rule above can
+		# put the top segment right under one (#339, bridge_headroom_probe).
+		# Turning every spiral away from arrivals automatically broke
+		# sublevel's navmesh twice, so the towers that need it are turned one
+		# at a time in their defs, each checked by the level's probes.
+		_build_tower(pos, height, t.get("radius", 3.6), _theme_color(def), exit_dir, int(t.get("phase", -1)))
 
-func _build_tower(base: Vector3, height: float, radius: float, accent: Color, bridge_exit: Vector3 = Vector3.ZERO) -> void:
+func _build_tower(base: Vector3, height: float, radius: float, accent: Color, bridge_exit: Vector3 = Vector3.ZERO, phase_pin: int = -1) -> void:
 	var n := int(ceil(height / 2.4))      # ~2.4 m rise per spiral segment (walkable pitch)
 	n = max(n, 1)
 	var rise := height / float(n)
@@ -1769,7 +1775,9 @@ func _build_tower(base: Vector3, height: float, radius: float, accent: Color, br
 	# quarter-turn (or more) around, and the roof cap covers whichever corner
 	# the last landing ends on.
 	var phase := 0
-	if bridge_exit.length() > 0.01:
+	if phase_pin >= 0:
+		phase = phase_pin % 4
+	elif bridge_exit.length() > 0.01:
 		var best_dot := INF
 		var exit_n := bridge_exit.normalized()
 		for p in range(4):

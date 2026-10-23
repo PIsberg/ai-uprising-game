@@ -1,17 +1,15 @@
 extends Node
-## Report tool (#339): where a ramp passes over another ramp with less than
-## player headroom. Every case found is a sky-bridge or approach stair running
-## low over a tower spiral's segment, and the real player stops under it
-## (ramp_walk_triage, 3 of 3 walks).
+## Probe (#339): no ramp passes over another ramp with less than player
+## headroom. Red before: 14 spots, each a sky-bridge or approach stair landing
+## on a tower roof low over the spiral's top segment, where the real player
+## stopped (ramp_walk_triage, 3 of 3 walks).
 ## The builder turns each spiral (its phase) away from bridges LEAVING the roof
-## only. Counting arriving bridges too, and picking the phase with the most
-## room, cleared 10 of the 14 spots this lists, but rotating a spiral moves its
-## ground start and landings, and that disconnected sublevel's navmesh
-## (mission_arc_probe: three shards and the hack terminal unreachable) and
-## opened new stops elsewhere (mistral TwrRamp1, assembly TwrRamp3). Reverted
-## twice now (2026-10-17, 2026-10-20). The clean fix is per level: move the
-## bridge or stair, or the tower, so no stair crosses the spiral low.
-## Not in the suite while it finds anything; it fails until the list is empty.
+## only. Counting arriving bridges too, for every tower at once, moved spirals
+## that needed no change, and that disconnected sublevel's navmesh
+## (mission_arc_probe: three shards and the hack terminal unreachable). Reverted
+## twice (2026-10-17, 2026-10-20). The fix is per tower instead: an authored
+## "phase" in the def, chosen by building the level in each phase, plus one
+## moved stair on sublevel, whose tower has bridges over two opposite faces.
 ## Builds every level whose def has both towers and stairs, samples each ramp's
 ## centre line every SAMPLE_STEP m and casts up CLEARANCE_M; a hit on another
 ## ramp body is reported.

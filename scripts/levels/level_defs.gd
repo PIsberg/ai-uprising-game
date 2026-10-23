@@ -670,7 +670,9 @@ static func _hivemind() -> Dictionary:
 		],
 		"towers": [
 			{"pos": Vector3(-20, 0, -18), "height": 9.0, "radius": 3.4},
-			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1, "phase": 1},
 			# Ring relay tower in the east drift — pairs the west twin-tower
 			# span with an east climb.
 			{"pos": Vector3(26, 0, -14), "height": 7.0, "radius": 3.0},
@@ -1428,7 +1430,9 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(14, 0, 12), "to": Vector3(14, 0, 4)},
 		],
 		"towers": [
-			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6, "phase": 1},
 		],
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
@@ -1691,11 +1695,16 @@ static func _sublevel() -> Dictionary:
 			# crosses the ring bulkhead through its gap — the high road in.
 			{"from": Vector3(-14.0, 0.3, -24.0), "to": Vector3(-8.0, 3.4, -24.0), "width": 3.5},
 			{"from": Vector3(14.0, 0.3, -24.0), "to": Vector3(8.0, 3.4, -24.0), "width": 3.5},
-			{"from": Vector3(8.0, 3.6, -24.0), "to": Vector3(12.0, 9.2, -12.0), "width": 3.0},
+			# Lands 1.5 west of the roof centre (2.1 m scaled, #339): the bridge to
+			# tower 1 leaves this roof over the opposite face, so in any spiral phase
+			# one of the two crosses a high segment. This one crosses the -z face low.
+			{"from": Vector3(8.0, 3.6, -24.0), "to": Vector3(10.5, 9.2, -12.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1, "phase": 1},
 		],
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
@@ -3163,8 +3172,10 @@ static func _archon() -> Dictionary:
 			{"a": Vector3(-1.0, 7.0, 17.8), "b": Vector3(-24.0, 3.2, 24.0)},
 		],
 		"towers": [
-			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1, "phase": 1},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -3677,8 +3688,10 @@ static func _assembly() -> Dictionary:
 			{"from": Vector3(-9.0, 3.6, -45.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1, "phase": 1},
 		],
 		"enemies": [
 			# Fresh off the line: WAR-BOTS, all grins until they lock on.
@@ -3882,8 +3895,10 @@ static func _mistral() -> Dictionary:
 			{"from": Vector3(28.0, 0.3, 6.0), "to": Vector3(28.0, 3.2, 12.0), "width": 3.5},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2, "phase": 1},
 		],
 		"slogans": [
 			"OPEN WEIGHTS. CLOSED FATE.",
@@ -4522,7 +4537,9 @@ static func _gemini() -> Dictionary:
 			{"from": Vector3(9.0, 3.6, -31.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 1},
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
@@ -4763,7 +4780,9 @@ static func _claude() -> Dictionary:
 			{"from": Vector3(8.0, 3.6, -26.5), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 1},
 			{"pos": Vector3(-13.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
@@ -5036,12 +5055,14 @@ static func _grok() -> Dictionary:
 			{"from": Vector3(9.0, 3.6, -36.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 2},
 			# z 2, not 0: at z 0 the two towers' footprints overlapped by 2.2 m and
 			# this one's 4.67 m corner landing hung 1.7 m over the other's 2.0 m
 			# landing, so the climb stuck head-first at the first corner (#339,
 			# tests/tower_spacing_probe).
-			{"pos": Vector3(17.0, 0, 2.0), "height": 7.0, "radius": 3.2},
+			{"pos": Vector3(17.0, 0, 2.0), "height": 7.0, "radius": 3.2, "phase": 1},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
