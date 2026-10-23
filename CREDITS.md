@@ -73,14 +73,25 @@ Blender and lost it, from the downloaded original that the shipped file's nodes 
 - **"Another Robot"** by **Lagst** (https://sketchfab.com/3d-models/another-robot-b5187425ddb14676a93ab21f050e0e6f), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `another_robot.glb`, the REAPER.
 - **"Walking Robot Gun"** by **zebra_pozer** (https://sketchfab.com/3d-models/walking-robot-gun-6be6c93c4d954d97be7072adc34926fb), **CC-BY-NC 4.0 (non-commercial)**: `walking_robot_gun.glb`, the HOWITZER. See issue #406: the non-commercial clause limits how the game may be distributed.
 
-### Models whose source is not identified yet (#363)
-These shipped files carry no author or licence metadata and match none of the
-downloaded originals on the dev machine, so their credit is still owed:
-`combat_robot.glb` (the TERMINATOR, APEX ENDOFRAME; a Sketchfab export),
-`mech_police.glb` (ENFORCER), `wheeled_robot.glb` (ROLLER), `steampunk_robot.glb`
-(GUNSLINGER), `combat_steampunk.glb` (BREAKER), `serving_bot.glb` (SERVER),
-`Robot.glb` (WAR-BOT) and `RobotExpressive.glb` (MAULER; by its name and rig the
-three.js example robot by Tomás Laulhé, CC0, not yet confirmed).
+The next five lost their metadata on re-export and no original was left on the dev
+machine. Each was matched through the Sketchfab API on its triangle count and
+material count, taken from the file as first committed (before any decimation or
+limb cutting). The brackets give our triangles of the listing's faceCount, then our
+materials of its materialCount.
+- **"Combat robot"** by **TECHGUY (tech-2144)** (https://sketchfab.com/3d-models/combat-robot-3445eff6ee4340a38a10c3fdaf625af8), **CC-BY 4.0**: `combat_robot.glb`, the TERMINATOR boss, APEX ENDOFRAME (122,006 of 122,006 triangles, 4 of 4 materials).
+- **"Combat Steampunk Robot"** by **Andrei Milin (milinam2002)** (https://sketchfab.com/3d-models/combat-steampunk-robot-81914abdc5b64b259d36ec7044118949), **CC-BY 4.0**: `combat_steampunk.glb`, the BREAKER (46,261 of 46,261, 4 of 4).
+- **"Wheeled Robot"** by **Andrei Milin (milinam2002)** (https://sketchfab.com/3d-models/wheeled-robot-6701a4f2603a44bdbd9139967025858b), **CC-BY 4.0**: `wheeled_robot.glb`, the ROLLER (33,343 of 33,344, 1 of 1).
+- **"Mech Robotic Police 3D Model w/ Scifi Gun"** by **HeiMan Chan (HeiManChan)** (https://sketchfab.com/3d-models/mech-robotic-police-3d-model-w-scifi-gun-a748deca84da4f84b90a3436d0783f89), **CC-BY 4.0**: `mech_police.glb`, the ENFORCER (90,956 of 91,168, 15 of 15; the file's root node is `Mech_Robotic_Police.obj`).
+- **"Steampunk Robot"** by **Lagst** (https://sketchfab.com/3d-models/steampunk-robot-f22d82cc3ee3436786bf8a97277ea66c), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `steampunk_robot.glb`, the GUNSLINGER (41,620 of 41,642, 2 of 2).
+
+### Other robot models (`assets/models/robots/`)
+- **"RobotExpressive"** by **Tomás Laulhé** (https://www.patreon.com/quaternius), modifications by **Don McCurdy**, from the three.js examples (https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive), **CC0 1.0**: `RobotExpressive.glb`, the MAULER. The shipped file is byte-identical to that copy (git blob `6fec9cfb`).
+- `serving_bot.glb` (the SERVER, MAITRE-D') is original to this game, built from primitives by `tools/blender/build_server.py`.
+
+### Models whose source is not identified yet (#435)
+This shipped file carries no author or licence metadata, matches no download on
+the dev machine, and has no Sketchfab model with its triangle count and look:
+`Robot.glb` (WAR-BOT; 2,578 triangles, one material `Robot`, texture `Robot_Albedo.tif`).
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via

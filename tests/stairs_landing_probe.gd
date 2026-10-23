@@ -14,7 +14,10 @@ extends Node
 ## The line and 0.5 m either side are sampled every SAMPLE_STEP m; a wall
 ## whose footprint holds a sample, whose top is over STEP_UP above the ramp
 ## there and whose bottom is under head height blocks it (suburb's yard cover
-## crate sat across the foot of the rooftop stair, a 3 of 3 stop).
+## crate sat across the foot of the rooftop stair, a 3 of 3 stop). Tower spiral
+## segments count as ramps here, laid by LevelBuilder.tower_segments in the phase
+## the builder picks (#339: mistral's 3 m wall ran out through its tower's side
+## and gpt's 1.8 m wall across a ground segment, both 3 of 3 walker stops).
 ## Also: no platform deck is buried inside a building (footprints overlap by
 ## over BURY_OVERLAP m on both axes and the building stands over STEP_UP above
 ## the deck). Buildings scale their position with the arena but not their
@@ -60,6 +63,13 @@ func _run() -> void:
 				var b_top := bp.y + bs.y * 0.5
 				if ox > BURY_OVERLAP and oz > BURY_OVERLAP and b_top > deck + STEP_UP and bp.y - bs.y * 0.5 < deck:
 					buried.append("%s deck at %s (top %.2f) inside the building at %s (top %.2f), overlap %.1f x %.1f m" % [id, pp, deck, bp, b_top, ox, oz])
+		for t: Dictionary in def.get("towers", []):
+			var segs: Array = LevelBuilder.tower_segments(t, LevelBuilder.tower_phase(def, t))
+			for i in segs.size():
+				ramps += 1
+				var tb := _wall_on(segs[i]["from"], segs[i]["to"], walls)
+				if tb != "":
+					blocked.append("%s tower at %s, segment %d: %s" % [id, t["pos"], i + 1, tb])
 		for s in def.get("stairs", []):
 			ramps += 1
 			var a: Vector3 = s["from"]

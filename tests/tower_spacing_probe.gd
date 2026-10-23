@@ -8,7 +8,7 @@ extends Node
 ## squares that far apart. Data only: reads every level def, builds nothing.
 ##   godot --headless --path . --audio-driver Dummy res://tests/tower_spacing_probe.tscn
 
-const LANDING_HALF := 1.9 # level_builder._build_tower: keep in sync
+const LANDING_HALF := LevelBuilder.TOWER_LANDING_HALF
 
 func _ready() -> void:
 	var fails := 0

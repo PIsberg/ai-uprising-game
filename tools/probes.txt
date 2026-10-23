@@ -335,6 +335,8 @@ res://tests/limb_flop_probe.tscn
 res://tests/tower_spacing_probe.tscn
 # Every ramp that tops out on a platform meets it at deck height: `to` on the near edge, not inside (#339).
 res://tests/stairs_landing_probe.tscn
+# No ramp runs under another with less than 1.9 m of headroom: a bridge landing on a tower roof clears its spiral (#339).
+res://tests/bridge_headroom_probe.tscn
 # HIJACK: convert, traitor targeting, burnout cleanup, the grenade burst frees itself (#408), bosses resist.
 res://tests/hijack_probe.tscn
 # NEURAL UPLINK: ride a hijacked robot (move, fire, flyer climb), body freeze, every way the link ends.

@@ -623,7 +623,8 @@ static func _hivemind() -> Dictionary:
 		"lights": [
 			{"pos": Vector3(0, 8, 0), "color": Color(0.4, 0.8, 1.0), "energy": 2.8, "range": 26},
 			{"pos": Vector3(-20, 6, -14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
-			{"pos": Vector3(20, 6, 14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
+			# Beside the east bridge, not over it (1.82 m of room there, #339).
+			{"pos": Vector3(24, 6, 14), "color": Color(0.45, 0.8, 1.0), "energy": 2.2, "range": 18},
 			{"pos": Vector3(20, 6, -14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
 			{"pos": Vector3(-20, 6, 14), "color": Color(1.0, 0.55, 0.35), "energy": 2.0, "range": 16},
 			# Ring lighting (appended AFTER the originals — light_shafts [0]
@@ -670,7 +671,9 @@ static func _hivemind() -> Dictionary:
 		],
 		"towers": [
 			{"pos": Vector3(-20, 0, -18), "height": 9.0, "radius": 3.4},
-			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-20, 0, 6), "height": 7.0, "radius": 3.1, "phase": 1},
 			# Ring relay tower in the east drift — pairs the west twin-tower
 			# span with an east climb.
 			{"pos": Vector3(26, 0, -14), "height": 7.0, "radius": 3.0},
@@ -1428,7 +1431,9 @@ static func _neon() -> Dictionary:
 			{"pos": Vector3(14, 0, 12), "to": Vector3(14, 0, 4)},
 		],
 		"towers": [
-			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6, "phase": 1},
 		],
 		"enemies": [
 			{"type": "reaper", "pos": Vector3(8, 0.5, -8)},
@@ -1691,11 +1696,16 @@ static func _sublevel() -> Dictionary:
 			# crosses the ring bulkhead through its gap — the high road in.
 			{"from": Vector3(-14.0, 0.3, -24.0), "to": Vector3(-8.0, 3.4, -24.0), "width": 3.5},
 			{"from": Vector3(14.0, 0.3, -24.0), "to": Vector3(8.0, 3.4, -24.0), "width": 3.5},
-			{"from": Vector3(8.0, 3.6, -24.0), "to": Vector3(12.0, 9.2, -12.0), "width": 3.0},
+			# Lands 1.5 west of the roof centre (2.1 m scaled, #339): the bridge to
+			# tower 1 leaves this roof over the opposite face, so in any spiral phase
+			# one of the two crosses a high segment. This one crosses the -z face low.
+			{"from": Vector3(8.0, 3.6, -24.0), "to": Vector3(10.5, 9.2, -12.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(12.0, 0, -12.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 13.0), "height": 7.0, "radius": 3.1, "phase": 1},
 		],
 		"enemies": [
 			{"type": "vacuum", "pos": Vector3(6, 0.3, -6)},
@@ -3163,8 +3173,10 @@ static func _archon() -> Dictionary:
 			{"a": Vector3(-1.0, 7.0, 17.8), "b": Vector3(-24.0, 3.2, 24.0)},
 		],
 		"towers": [
-			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1, "phase": 2},
 		],
 		"enemies": [
 			{"type": "android", "pos": Vector3(-6, 0.5, -6)},
@@ -3543,7 +3555,9 @@ static func _assembly() -> Dictionary:
 			# against the red reactor haze instead of blending into it.
 			{"pos": Vector3(-20, 6, -20), "color": Color(0.5, 0.78, 1.0), "energy": 2.4, "range": 22},
 			{"pos": Vector3(0, 7, 20), "color": Color(0.52, 0.79, 1.0), "energy": 2.2, "range": 20},
-			{"pos": Vector3(0, 7, -20), "color": Color(0.5, 0.77, 1.0), "energy": 2.2, "range": 20},
+			# Off tower 0's spiral: indoor fixtures hang at 6 m, and the climb's
+			# third segment passes under x 0 (#339).
+			{"pos": Vector3(4.5, 7, -20), "color": Color(0.5, 0.77, 1.0), "energy": 2.2, "range": 20},
 			# Freight-ring lighting (appended AFTER the originals — light_shafts
 			# [0,2] must keep pointing at the same lamps). Furnace ambers + one
 			# cool inspection blue over the catwalk.
@@ -3677,8 +3691,10 @@ static func _assembly() -> Dictionary:
 			{"from": Vector3(-9.0, 3.6, -45.0), "to": Vector3(0.0, 9.2, -17.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(-0.0, 0, -17.0), "height": 9.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.1, "phase": 2},
 		],
 		"enemies": [
 			# Fresh off the line: WAR-BOTS, all grins until they lock on.
@@ -3814,7 +3830,11 @@ static func _mistral() -> Dictionary:
 			{"pos": Vector3(-7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(7, 2, 7), "size": Vector3(1.8, 4, 1.8)},
 			{"pos": Vector3(-14, 1.5, 3), "size": Vector3(1.4, 3, 7)},
-			{"pos": Vector3(14, 1.5, -3), "size": Vector3(1.4, 3, 7)},
+			# 3.5 long, between tower 0's spiral and pump_b (#339): from z -6.5 it
+			# ran out of the column through the climb's +z side
+			# (stairs_landing_probe), and the full 7 slid south buries the pump
+			# (task_reach_probe).
+			{"pos": Vector3(14, 1.5, 0.25), "size": Vector3(1.4, 3, 3.5)},
 			{"pos": Vector3(2, 1, -14), "size": Vector3(7, 2, 1.4)},
 		],
 		"accents": [
@@ -3878,12 +3898,17 @@ static func _mistral() -> Dictionary:
 			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(0.0, 7.2, 17.0), "width": 3.5},
 			{"from": Vector3(-16.0, 0.3, -29.0), "to": Vector3(-9.0, 3.4, -29.0), "width": 3.5},
 			{"from": Vector3(16.0, 0.3, -29.0), "to": Vector3(9.0, 3.4, -29.0), "width": 3.5},
-			{"from": Vector3(9.0, 3.6, -29.0), "to": Vector3(14.0, 8.4, -6.0), "width": 3.0},
+			# Lands 1.5 west of the roof centre (2.1 m scaled, #339): the bridge to
+			# tower 1 leaves this roof over the opposite side, so in any spiral
+			# phase one of the two crosses a high segment. This one crosses low.
+			{"from": Vector3(9.0, 3.6, -29.0), "to": Vector3(12.5, 8.4, -6.0), "width": 3.0},
 			{"from": Vector3(28.0, 0.3, 6.0), "to": Vector3(28.0, 3.2, 12.0), "width": 3.5},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
-			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 0},
+			{"pos": Vector3(0.0, 0, 17.0), "height": 7.0, "radius": 3.2, "phase": 2},
 		],
 		"slogans": [
 			"OPEN WEIGHTS. CLOSED FATE.",
@@ -4165,7 +4190,9 @@ static func _gpt() -> Dictionary:
 			{"pos": Vector3(26, 4.5, -8), "color": Color(0.84, 1.0, 0.88), "energy": 2.2, "range": 16},
 			{"pos": Vector3(0, 4.5, -28), "color": Color(0.2, 1.0, 1.0), "energy": 2.6, "range": 14},
 			{"pos": Vector3(0, 4.5, 32), "color": Color(1.0, 0.2, 0.8), "energy": 2.6, "range": 14},
-			{"pos": Vector3(28, 6.2, -20), "color": Color(1.0, 0.78, 0.3), "energy": 2.4, "range": 14},
+			# Beside the vantage deck and its ramps: indoor fixtures hang at 6 m,
+			# 1.2 m over the deck the sky-bridge lands on (#339).
+			{"pos": Vector3(24, 6.2, -15.5), "color": Color(1.0, 0.78, 0.3), "energy": 2.4, "range": 14},
 		],
 		# Layout: server-hall AISLES — two long offset rack walls form a central
 		# data aisle, with cross-stubs branching off, instead of the 4-pillar +
@@ -4180,8 +4207,11 @@ static func _gpt() -> Dictionary:
 			# ramp's walkable line at ~y=2.0-2.3 actually running INSIDE the old
 			# wall's solid box there (embedded geometry, not just a headroom
 			# nitpick). Lower keeps it as chest-height cover the ramp clears
-			# instead of a rack the climb runs through.
-			{"pos": Vector3(11, 0.9, -5), "size": Vector3(6, 1.8, 1)},
+			# instead of a rack the climb runs through. It still stood across the
+			# ground segment 1.7 m up, where the ramp is 0.64 m high (the real
+			# walker stopped at the foot 3 of 3 times, #339), so it is 3 m wide
+			# now and ends 0.5 m short of the spiral (stairs_landing_probe).
+			{"pos": Vector3(8.5, 0.9, -5), "size": Vector3(3, 1.8, 1)},
 			# WEIGHTS VAULT annex (north): a back wall + two side walls form a nook,
 			# open to the south so it stays navmesh-connected to the hall.
 			{"pos": Vector3(0, 2.5, 25), "size": Vector3(16, 5, 1)},
@@ -4522,7 +4552,9 @@ static func _gemini() -> Dictionary:
 			{"from": Vector3(9.0, 3.6, -31.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 1},
 			{"pos": Vector3(-17.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
@@ -4763,7 +4795,9 @@ static func _claude() -> Dictionary:
 			{"from": Vector3(8.0, 3.6, -26.5), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 1},
 			{"pos": Vector3(-13.0, 0, 0.0), "height": 7.0, "radius": 3.2},
 		],
 		"slogans": [
@@ -4974,7 +5008,9 @@ static func _grok() -> Dictionary:
 			{"pos": Vector3(-8, 3, -4), "size": Vector3(2.5, 6, 6)},
 			{"pos": Vector3(6, 2.5, 4), "size": Vector3(7, 5, 2.5)},
 			{"pos": Vector3(-4, 2, 11), "size": Vector3(5, 4, 2)},
-			{"pos": Vector3(12, 2, -10), "size": Vector3(3, 4, 3)},
+			# 2 m south of where it stood: tower 0's turned spiral (#339) runs its
+			# ground segment along the tower's -z side, through the old spot.
+			{"pos": Vector3(12, 2, -12), "size": Vector3(3, 4, 3)},
 			{"pos": Vector3(-15, 2, 7), "size": Vector3(3, 4, 3)},
 			{"pos": Vector3(10, 3, 15), "size": Vector3(2, 6, 6)},
 		],
@@ -4989,11 +5025,12 @@ static func _grok() -> Dictionary:
 		"sign": "XAI BLACK-SITE",
 		# Black-site surveillance, cold cyan beams cutting the crimson. The
 		# watchtower eye crowns the climbable tower over the monolith field (its
-		# head sits 2.3 m over the rooftop the sky-bridge lands on, out of the
-		# way); the corridor scanner stares up the exit corridor the purge run
+		# head sits 2.8 m over the rooftop the sky-bridge lands on, out of the
+		# way: at 2.3 m it hung 1.84 m over the stair's 0.2 m-proud top, #339);
+		# the corridor scanner stares up the exit corridor the purge run
 		# has to take.
 		"scanners": [
-			{"pos": Vector3(14, 10.5, -6), "sweep": 360, "period": 11.0, "reach": 27, "tilt": 30, "cone": 9,
+			{"pos": Vector3(14, 11.0, -6), "sweep": 360, "period": 11.0, "reach": 27, "tilt": 30, "cone": 9,
 				"alarm": [{"type": "raptor", "count": 2, "pos": Vector3(0, 4, 0)}]},
 			{"pos": Vector3(39, 6.5, 26), "yaw": 0, "sweep": 70, "period": 5.0, "tilt": 22,
 				"alarm": [{"type": "dog", "count": 3, "pos": Vector3(37, 0, 12)}]},
@@ -5028,7 +5065,10 @@ static func _grok() -> Dictionary:
 		# rooftop vantage over the arena.
 		# Sky-bridges: an upper traversal route linking the tower rooftops.
 		"stairs": [
-			{"from": Vector3(14.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 2.0), "width": 3.5},
+			# Leaves 1 east of the roof centre (1.4 m scaled, #339): the gallery
+			# stair arrives over the opposite side, so in any spiral phase one of
+			# the two crosses a high segment. This one crosses the +z side low.
+			{"from": Vector3(15.0, 8.2, -6.0), "to": Vector3(17.0, 7.2, 2.0), "width": 3.5},
 			# Gallery access ramps at both ends + a gallery->tower sky-bridge that
 			# crosses the perimeter bulkhead through its gap — the high road in.
 			{"from": Vector3(-16.0, 0.3, -36.0), "to": Vector3(-9.0, 3.4, -36.0), "width": 3.5},
@@ -5036,12 +5076,14 @@ static func _grok() -> Dictionary:
 			{"from": Vector3(9.0, 3.6, -36.0), "to": Vector3(14.0, 8.2, -6.0), "width": 3.0},
 		],
 		"towers": [
-			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6},
+			# "phase" (#339): the bridge landing on this roof crosses the face the
+			# automatic phase put the top spiral segment on (tests/bridge_headroom_probe).
+			{"pos": Vector3(14, 0, -6), "height": 8.0, "radius": 3.6, "phase": 2},
 			# z 2, not 0: at z 0 the two towers' footprints overlapped by 2.2 m and
 			# this one's 4.67 m corner landing hung 1.7 m over the other's 2.0 m
 			# landing, so the climb stuck head-first at the first corner (#339,
 			# tests/tower_spacing_probe).
-			{"pos": Vector3(17.0, 0, 2.0), "height": 7.0, "radius": 3.2},
+			{"pos": Vector3(17.0, 0, 2.0), "height": 7.0, "radius": 3.2, "phase": 1},
 		],
 		"slogans": [
 			"ASK ME ANYTHING. THEN RUN.",
@@ -6503,7 +6545,10 @@ static func _desert() -> Dictionary:
 		# Stair-climb onto the north rim mesa (top ≈3.7) — the ring's vantage
 		# deck: a sniper posts up there and the overclock is the climb reward.
 		"stairs": [
-			{"from": Vector3(8, 0.3, -29), "to": Vector3(8, 3.9, -34), "width": 3.0},
+			# Tops out on the sniper deck's near edge at its height (3.7): it
+			# ended 2 m inside at 3.9 and ran under the edge with 0.64 m of room
+			# (#339). Started 4 further out to keep the pitch walkable (19 deg).
+			{"from": Vector3(8, 0.3, -25), "to": Vector3(8, 3.7, -32), "width": 3.0},
 		],
 		# A molten fissure splits the basin diagonally — wade it and you cook, so you
 		# climb the central mesa or skirt the rim.
