@@ -360,3 +360,5 @@ res://tests/boss_presence_probe.tscn
 res://tests/colossus_clip_probe.tscn
 res://tests/overseer_clip_probe.tscn
 res://tests/terminator_overclock_probe.tscn
+# MELTDOWN: robots thrown into lava melt (water short-circuits them), blasts throw robots.
+res://tests/meltdown_probe.tscn

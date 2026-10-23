@@ -104,6 +104,7 @@ func _rise() -> void:
 		var lava := LavaHazard.new()
 		lava.size = b.get("size", Vector2(4, 4))
 		lava.shore = false # rises over existing ground and decks: no flush shoreline plane
+		lava.melts_robots = false # weather, not a trap: the tide must not delete the low tier's robots
 		if b.has("dmg"):
 			lava.damage_per_tick = b["dmg"]
 		if b.get("water", false):

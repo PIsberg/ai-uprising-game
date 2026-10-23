@@ -41,6 +41,13 @@ const LINES := {
 		"that was personal",
 		"clipping that for the training set",
 	],
+	"meltdown": [
+		"it went in the lava. it went IN the LAVA",
+		"he's melting he's melting",
+		"that unit was not rated for liquids",
+		"ok who put the floor there",
+		"environmental storytelling, they call it",
+	],
 	"dodge": [
 		"how did that miss, the aimbot was ON",
 		"frame-perfect. are we sure it's human",
@@ -87,6 +94,6 @@ const LINES := {
 
 ## Viewers each event brings (the cascade's scales with the chain).
 const HYPE := {
-	"intro": 0, "idle": 0, "cascade": 45, "execution": 60, "dodge": 50,
+	"intro": 0, "idle": 0, "cascade": 45, "execution": 60, "dodge": 50, "meltdown": 70,
 	"salvage": 40, "rampage": 120, "clutch": 90, "boss": 300, "death": 0,
 }

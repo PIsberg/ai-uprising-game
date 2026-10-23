@@ -8,6 +8,13 @@ extends Area3D
 ## Self-contained: builds its own glowing surface (shaders/lava.gdshader), a
 ## damage Area3D shape, a NavigationObstacle3D that carves the bake, and a warm
 ## light. Size is the bed's footprint in metres.
+##
+## Robots never path into a bed (the carve), but one THROWN in (melee, a grenade
+## or rocket blast, OVERLOAD, a Bumper) melts: a grounded non-boss robot at least
+## ROBOT_INSET inside the bed takes ROBOT_MELT_MULT times the tick, a boss the
+## plain tick, and in water the robot short-circuits (an EMP stun each tick) as
+## it drowns. A kill the bed finishes pays GameState.note_environmental_kill.
+## Flyers hover over a bed and are never burned by it.
 
 @export var size: Vector2 = Vector2(8.0, 3.0)  ## Footprint (x by z) in metres.
 @export var damage_per_tick: float = 26.0      ## Burn applied every tick to anything inside.
@@ -27,9 +34,22 @@ extends Area3D
 ## floor. Off for a FloodSurge bed: it rises over ground and decks that already
 ## have their own surface, and its band would z-fight the pools' own margins.
 @export var shore: bool = true
+## Whether robots thrown into the bed melt (see the class comment). Off for a
+## ladle pour (a trap set for the player) and a FloodSurge bed (weather, not a
+## trap: the tide must not delete every robot on the low tier).
+@export var melts_robots: bool = true
 
 const PLAYER_LAYER := 2
 const ENEMY_LAYER := 4
+## A robot counts as IN the bed only this far inside its edge, so a chase that
+## brushes the shoreline is not a death sentence; a throw lands well past it.
+const ROBOT_INSET := 0.7
+## A plain robot in the bed takes this many ticks' worth per tick: it melts in a
+## couple of seconds instead of wading out. Bosses (ROBOT_BOSS_SCORE) take 1x.
+const ROBOT_MELT_MULT := 4.0
+const ROBOT_BOSS_SCORE := 1000
+## Water: the robot short-circuits, stunned this long per tick while it drowns.
+const ROBOT_WATER_STUN := 1.2
 
 var _t: float = 0.0       ## damage-tick accumulator
 var _clock: float = 0.0   ## continuous clock for the glow flicker
@@ -37,11 +57,12 @@ var _mat: ShaderMaterial
 var _light: OmniLight3D            ## first of _lights (back-compat handle)
 var _lights: Array[OmniLight3D] = []
 var _embers: GPUParticles3D
+var _robot_zone: Area3D = null ## the inset slab that catches thrown robots
 
 func _ready() -> void:
-	# Burns the PLAYER only (layer 2). Enemies route around the bed via the navmesh
-	# carve below — they must never cook to death in it, so they are not monitored
-	# here at all. The lava itself is on no layer, so nothing collides with it.
+	# This area burns the PLAYER (layer 2). Enemies route around the bed via the
+	# navmesh carve below; the ones that end up in it anyway (thrown) are caught by
+	# the smaller _robot_zone. The lava itself is on no layer, so nothing collides with it.
 	collision_layer = 0
 	collision_mask = PLAYER_LAYER
 	monitoring = true
@@ -60,6 +81,8 @@ func _ready() -> void:
 	cs.shape = bs
 	cs.position = Vector3(0, surface_y, 0)
 	add_child(cs)
+	if melts_robots:
+		_build_robot_zone()
 
 	_build_surface()
 	_build_obstacle()
@@ -74,6 +97,54 @@ func _ready() -> void:
 	# danger is unmistakable regardless of the fluid's colour.
 	if recolor or water:
 		_build_warning_edge()
+
+## The slab that catches robots: the bed's footprint shrunk by ROBOT_INSET on
+## every side (never under 0.5 m), watching the enemy layer only.
+func _build_robot_zone() -> void:
+	_robot_zone = Area3D.new()
+	_robot_zone.collision_layer = 0
+	_robot_zone.collision_mask = ENEMY_LAYER
+	_robot_zone.monitoring = true
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(maxf(0.5, size.x - 2.0 * ROBOT_INSET), 1.6, maxf(0.5, size.y - 2.0 * ROBOT_INSET))
+	cs.shape = bs
+	cs.position = Vector3(0, surface_y, 0)
+	_robot_zone.add_child(cs)
+	add_child(_robot_zone)
+
+## Robots the bed can melt: a grounded, living robot (group "enemy", with a
+## Damageable) inside the inset slab. Flyers hover over the bed (they say so with
+## hover_height) and are skipped. The robot is duck-typed, never named: naming
+## EnemyBase here closes a script load cycle that leaves pickup.gd unloadable
+## (the trap Salvage documents).
+func robots_inside() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	if _robot_zone == null:
+		return out
+	for body in _robot_zone.get_overlapping_bodies():
+		if not (body is Node3D and body.is_in_group("enemy")) or "hover_height" in body:
+			continue
+		var d := body.get_node_or_null("Damageable") as Damageable
+		if d == null or not d.is_alive():
+			continue
+		out.append(body as Node3D)
+	return out
+
+## One burn tick on every robot in the bed. A kill the bed finishes is an
+## environmental kill: GameState pays the bonus and the HUD calls it out.
+func _burn_robots() -> void:
+	for e in robots_inside():
+		var d := e.get_node("Damageable") as Damageable
+		var boss := int(e.get("score_value")) >= ROBOT_BOSS_SCORE
+		var dmg := damage_per_tick * (1.0 if boss else ROBOT_MELT_MULT)
+		var at := e.global_position
+		if water and e.has_method("emp_disable"):
+			e.call("emp_disable", ROBOT_WATER_STUN) # short circuit: inert while it drowns
+		d.apply_damage(dmg, self)
+		AudioBus.play_synth_at("impact_metal", at, -9.0, 0.55 if water else 0.7)
+		if not d.is_alive():
+			GameState.note_environmental_kill(water, at)
 
 ## The glowing molten surface plane (or, in water mode, a deep blue pool).
 func _build_surface() -> void:
@@ -414,6 +485,7 @@ func _process(delta: float) -> void:
 	if _t < tick:
 		return
 	_t = 0.0
+	_burn_robots()
 	for body in get_overlapping_bodies():
 		var d := body.get_node_or_null("Damageable") as Damageable
 		if d and d.is_alive():
