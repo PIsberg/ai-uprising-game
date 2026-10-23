@@ -254,6 +254,9 @@ func _ready() -> void:
 	GameState.directive_set.connect(_on_directive_set)
 	GameState.bounty_marked.connect(func(label: String): _show_toast("◆ BOUNTY: " + label + " — down it for a prize"))
 	GameState.bounty_claimed.connect(func(points: int): _show_toast("◆ BOUNTY CLAIMED  +%d" % points))
+	GameState.rogue_deleted.connect(func(points: int, left: int):
+		_show_toast(("⌁ %s  +%d" % [tr("FORK CONTAINED"), points]) if left == 0
+				else ("⌁ %s  +%d · %d %s" % [tr("FORK DELETED"), points, left, tr("REMAINING")])))
 	GameState.nemesis_spawned.connect(func(title: String): _show_toast("☠ NEMESIS: %s HAS RETURNED FOR YOU" % title))
 	GameState.nemesis_down.connect(func(title: String, points: int): _show_toast("☠ GRUDGE SETTLED: %s DESTROYED  +%d" % [title, points]))
 	GameState.boss_killcam_started.connect(func(label: String, _dur: float): _show_toast("☠ %s NEUTRALIZED" % label))

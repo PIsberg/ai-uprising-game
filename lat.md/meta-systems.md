@@ -78,6 +78,7 @@ The rogue AI livestreams the fight to its robot network; the audience's chat run
 * One post per `MIN_GAP` (1.2 s): a burst of events posts the first, but small talk (`CHATTER`: intro, idle) never blocks an event line, and a death always posts. At most `MAX_LINES` (5) show, each fading after `LINE_LIFE` (7 s); a line never repeats the one its pool posted last.
 * Viewers start at `BASE_VIEWERS` + `VIEWERS_PER_LEVEL` x `GameState.level_index`, gain `MachineChat.HYPE` per event (the cascade's x pops, rampage's x tier), lose `DECAY` of the excess every `DECAY_TICK`, and keep `DEATH_KEEP` when you die.
 * Off with the Combat Callouts setting (`GraphicsSettings.combat_callouts_enabled`), which also hides the feed. `tests/machine_feed_probe`.
+* **ROGUE FORK:** a skirmish event (`GameState._event_rogue_fork`, id `rogue`): `ROGUE_SQUAD` (android, android, drone, gunner) spawns on a ring 1.8 m round a point `ROGUE_SPAWN_DIST` (18 m) from the player and each calls `EnemyBase.go_rogue()` ([[enemies#Collisions and Hijacking]]). `_on_rogue_died` pays `ROGUE_BONUS` (100) only when the source is the player, plus `ROGUE_CONTAIN_BONUS` (300) when no live fork is left, through `rogue_deleted(points, left)` (HUD toast FORK DELETED / FORK CONTAINED). Forks never burn out. `tests/rogue_fork_probe`.
 * **CHAT POLL:** the skirmish-event director (`GameState._tick_events`) no longer rolls a due event silently. It opens `_poll` between two different `EVENT_IDS` (`chat_poll_started`), adds a random 3-14 votes to one side every `POLL_TICK` (`chat_poll_votes`) for `POLL_TIME` (8 s, `PLAYING` only, so a pause freezes it), then runs the leader through `_run_event` (`chat_poll_ended`; a tie goes to the first option). The poll counts against `EVENTS_PER_LEVEL` when it opens; `reset_level_stats` drops an open one. The feed draws the tally under its header and posts "CHAT VOTED: <event>". `tests/chat_poll_probe`.
 
 ## 3D Enemy Codex
@@ -98,7 +99,7 @@ The weapon codex (`scripts/ui/weapon_codex.gd`) documents the full arsenal avail
 
 ## Orbital Strike
 <!-- lat: { "require-code-mention": true } -->
-A skirmish event (`GameState._event_orbital_strike`, one of the director's seven kinds) that makes the player move or take cover (`OrbitalStrike`).
+A skirmish event (`GameState._event_orbital_strike`, one of the director's eight kinds) that makes the player move or take cover (`OrbitalStrike`).
 
 * A ground circle of `RADIUS` under a thin sky beam tracks the player for `TRACK_TIME`, lagging (`FOLLOW`), so a moving player stays near its edge; then it LOCKS for `LOCK_TIME` (red, pulsing, rising whine) and FIRES: `DAMAGE` to a player inside the circle with nothing (world layer) over their head within `SKY`.
 * Robots are never hurt. The node frees itself after the column fades.

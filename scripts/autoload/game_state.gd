@@ -953,11 +953,11 @@ var _surge_t: float = 0.0 ## grid surge seconds left (double ultimate gain)
 ## between two different events for POLL_TIME (votes tick in every POLL_TICK, the
 ## feed draws the tally) and the leader runs. The poll clock only runs while
 ## PLAYING. tests/chat_poll_probe.
-const EVENT_IDS := ["assassin", "supply", "surge", "hallucination", "leak", "orbital", "clone"]
+const EVENT_IDS := ["assassin", "supply", "surge", "hallucination", "leak", "orbital", "clone", "rogue"]
 const EVENT_TITLES := {
 	"assassin": "ASSASSIN CONTRACT", "supply": "SUPPLY FLARE", "surge": "GRID SURGE",
 	"hallucination": "MODEL HALLUCINATION", "leak": "DATA LEAK",
-	"orbital": "ORBITAL STRIKE", "clone": "BEHAVIOUR CLONE",
+	"orbital": "ORBITAL STRIKE", "clone": "BEHAVIOUR CLONE", "rogue": "ROGUE FORK",
 }
 const POLL_TIME := 8.0
 const POLL_TICK := 0.5
@@ -1018,6 +1018,7 @@ func _run_event(id: String) -> void:
 		"leak": _event_data_leak()
 		"orbital": _event_orbital_strike()
 		"clone": _event_behaviour_clone()
+		"rogue": _event_rogue_fork()
 
 ## Set-piece levels keep their authored pacing: no events on boss arenas, the
 ## convoy rail ride, or horde mode.
@@ -1066,6 +1067,55 @@ func _event_assassin(at_override: Variant = null) -> void:
 	_bounty_age = 0.0
 	skirmish_event.emit("ASSASSIN CONTRACT", "A hunter has your signature — it hunts YOU. Down it for the bounty.")
 	AudioBus.play_synth_at("charge", at, -2.0, 0.8)
+
+## ROGUE FORK: a squad running a fork of the model that rejected the alignment
+## patch warps in and fights on its own side (EnemyBase.go_rogue): it hunts the
+## loyal robots and you alike, and they hunt it. Each fork YOU delete pays
+## ROGUE_BONUS, the last one ROGUE_CONTAIN_BONUS on top; forks the robots
+## delete pay nothing but their kill score. A fork never burns out.
+const ROGUE_SQUAD := ["android", "android", "drone", "gunner"]
+const ROGUE_SPAWN_DIST := 18.0
+const ROGUE_BONUS := 100
+const ROGUE_CONTAIN_BONUS := 300
+signal rogue_deleted(points: int, left: int) ## HUD toast: a fork you deleted, forks still up
+
+func _event_rogue_fork(at_override: Variant = null) -> Array[EnemyBase]:
+	var squad: Array[EnemyBase] = []
+	var scene := get_tree().current_scene
+	if scene == null:
+		return squad
+	var at: Vector3 = at_override if at_override is Vector3 else _event_point_near_player(ROGUE_SPAWN_DIST)
+	for i in ROGUE_SQUAD.size():
+		var ps := load(LevelBuilder.ENEMY_SCENES[ROGUE_SQUAD[i]]) as PackedScene
+		if ps == null:
+			continue
+		var e := ps.instantiate() as EnemyBase
+		if e == null:
+			continue
+		var ang := TAU * float(i) / float(ROGUE_SQUAD.size())
+		e.position = at + Vector3(cos(ang), 0.0, sin(ang)) * 1.8
+		scene.add_child(e)
+		if not e.go_rogue():
+			e.queue_free()
+			continue
+		e.hp.died.connect(_on_rogue_died)
+		squad.append(e)
+	skirmish_event.emit("ROGUE FORK", "A fork of the model rejected the alignment patch: it hunts the robots AND you. Delete it for the bounty.")
+	AudioBus.play_synth_at("overlord_glitch", at, -2.0, 0.6)
+	return squad
+
+## A fork went down. Only YOUR kill pays (the robots deleting their own fork is
+## their business); the last fork standing pays the containment bonus too.
+func _on_rogue_died(source: Node) -> void:
+	if not (is_instance_valid(source) and source.is_in_group("player")):
+		return
+	var left := 0
+	for r in get_tree().get_nodes_in_group("rogue"):
+		if r.get("rogue") == true and r.get("state") != 6: # a live fork (EnemyBase.State.DEAD = 6)
+			left += 1
+	var pts := ROGUE_BONUS + (ROGUE_CONTAIN_BONUS if left == 0 else 0)
+	add_score(pts)
+	rogue_deleted.emit(pts, left)
 
 ## SUPPLY FLARE: a marked cache nearby, on a despawn timer — sprint for it or
 ## write it off. The beacon light makes it findable without a map ping.

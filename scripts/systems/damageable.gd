@@ -70,18 +70,18 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 	
 	# Enemies should not take damage from OTHER enemies' fire. Self-damage stays
 	# allowed — kamikaze mechanics (the mauler's overload pop) kill their owner
-	# via apply_damage(self) and must keep working. Hijacked units are the
-	# exception BOTH ways: a converted robot and a loyal robot are on opposite
-	# sides, so their fire lands (robot civil war is the whole point).
+	# via apply_damage(self) and must keep working. Robots on different SIDES
+	# are the exception both ways: loyal (0), the player's hijacked units (1) and
+	# a ROGUE FORK (2) all hurt each other (robot civil war is the whole point);
+	# only fire from the same side is blocked. Mirrors EnemyBase.side_of,
+	# duck-typed here because this script loads before the robots do.
 	var victim := get_parent()
 	if victim and source and source != victim \
 			and victim.is_in_group("enemy") and source.is_in_group("enemy"):
-		var v_hijacked: bool = victim.get("hijacked") == true
-		var s_hijacked: bool = source.get("hijacked") == true
 		# A MISLABELED victim (EnemyBase.mislabel) reads as human to its squad,
 		# so their fire lands on it too.
 		var v_tagged: bool = victim.get("mislabeled_t") != null and float(victim.get("mislabeled_t")) > 0.0
-		if v_hijacked == s_hijacked and not v_tagged:
+		if _side_of(victim) == _side_of(source) and not v_tagged:
 			return
 	# Warded by an AEGIS drone: the bubble takes the hit. The drone clears
 	# warded_by when its beam breaks or it dies.
@@ -126,6 +126,14 @@ func apply_damage(amount: float, source = null, crit: bool = false, origin = nul
 	if killed:
 		died.emit(source)
 
+
+## Which side a robot fights on (EnemyBase.side_of): 0 loyal, 1 hijacked, 2 rogue.
+static func _side_of(n: Node) -> int:
+	if n.get("rogue") == true:
+		return 2
+	if n.get("hijacked") == true:
+		return 1
+	return 0
 
 ## Damage-number tints for a counter hit / a resisted hit (DamageMatrix).
 const WEAK_TINT := Color(0.35, 1.0, 0.95)

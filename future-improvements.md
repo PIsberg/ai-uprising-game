@@ -98,7 +98,8 @@ BEHAVIOUR CLONE (a model trains on you for 4 s, then walks your path 4 s behind 
 fired where you aimed; delete it for +250, `tests/behaviour_clone_probe`).
 Gated off boss/convoy/horde levels,
 max 2/level. 🎮 Needs playtest: frequency (75s first / ~90s interval) and
-whether more event types are wanted (rogue patrol, jammer, double-bounty hour), and
+whether more event types are wanted (jammer, double-bounty hour; ✅ ROGUE FORK shipped 2026-10-23: a
+four-robot third side that fights robots and you, `tests/rogue_fork_probe`), and
 whether a 6 s leak upload is catchable on the biggest arenas.
 
 ### Nemesis / kill-cam / dismemberment (2026-07-10 pack) 🤖

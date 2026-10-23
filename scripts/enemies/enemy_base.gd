@@ -104,7 +104,18 @@ var _hijack_t: float = 0.0 ## Seconds of stolen loyalty left; burnout (death) at
 var _hijack_shooter: Node = null ## The player who planted the hijack — kills/damage route credit to them.
 var _hijack_zap_cd: float = 0.0
 var _hijack_base_layer: int = 4 ## Collision layer to restore on cleanup (death mid-hijack).
-var _hijack_fx: Node3D = null ## Friendly green glow while converted.
+var _hijack_fx: Node3D = null ## Friendly green glow while converted (magenta for a rogue).
+## ROGUE FORK (GameState._event_rogue_fork): this chassis runs a fork of the
+## model that rejected the alignment patch and fights on a THIRD side. Its fire
+## lands on loyal robots and the player alike (Damageable compares sides), loyal
+## robots hunt it like a turncoat (group "rogue" joins _perceive's traitor
+## priority), the player's hijacked robots fight it, a HIJACK charge turns it,
+## and it never burns out. It sits on the player AND enemy layers (ROGUE_LAYER)
+## so robot fire and player fire both hit it. Brain: _rogue_process.
+var rogue: bool = false
+const ROGUE_LAYER := 6 ## player (2) + enemy (4)
+const ROGUE_COLOR := Color(1.0, 0.3, 0.9)
+var _rogue_tag: Label3D = null
 var _oil_cd: float = 0.0 ## Throttle so rapid fire doesn't spawn an oil burst every tick.
 var _alerted: bool = false ## True once this enemy has reacted to first spotting the player.
 var _overload_light: OmniLight3D = null ## Flickering red core glow during a last stand.
@@ -254,6 +265,10 @@ func _physics_process(delta: float) -> void:
 	if hijacked:
 		_hijack_process(delta)
 		return
+	# Rogue: the same loop on its own side, hunting robots and the player alike.
+	if rogue:
+		_rogue_process(delta)
+		return
 	# A REWARD REWRITE (RewardRewriter) optimises its new line instead of fighting.
 	if reward_hack != "":
 		_reward_process(delta)
@@ -390,6 +405,8 @@ func hijack(duration: float, liberator: Node = null) -> bool:
 	if max_health * _health_mult >= HIJACK_BOSS_HP:
 		emp_disable(minf(duration * 0.4, 4.0)) # firmware too hardened — stun, not steal
 		return false
+	if rogue:
+		_cleanup_rogue() # a fork takes the charge like any chassis: it is yours now
 	if hijacked:
 		_hijack_t = maxf(_hijack_t, duration)
 		_hijack_len = maxf(_hijack_len, duration)
@@ -473,15 +490,17 @@ func _hijack_process(delta: float) -> void:
 	_update_hit_react(delta)
 	_update_locomotion_audio(delta)
 
-## Nearest living, unconverted robot within seek range — the next mark.
+## Nearest living robot on another side within seek range — the next mark
+## (a rogue is a foe to a converted unit, and the other way round).
 func _hijack_find_foe(reach: float = HIJACK_SEEK_RANGE) -> Node3D:
 	var best: Node3D = null
 	var best_d := reach
+	var mine := side_of(self)
 	for e in get_tree().get_nodes_in_group("enemy"):
 		var eb := e as EnemyBase
 		if eb == null or eb == self or not is_instance_valid(eb):
 			continue
-		if eb.state == State.DEAD or eb.hijacked or eb.hp == null or not eb.hp.is_alive():
+		if eb.state == State.DEAD or side_of(eb) == mine or eb.hp == null or not eb.hp.is_alive():
 			continue
 		var d := global_position.distance_to(eb.global_position)
 		if d < best_d:
@@ -501,8 +520,9 @@ func _hijack_can_see(t: Node3D) -> bool:
 	return not hit.is_empty() and hit.collider == t
 
 ## One arc of turned-gun fire: direct damage (credited to the liberator) + a
-## tracer and shot audio so the betrayal is loud and visible.
-func _hijack_zap(foe: EnemyBase) -> void:
+## tracer and shot audio so the betrayal is loud and visible. `foe` is a robot,
+## or the player when a rogue fires it.
+func _hijack_zap(foe: Node3D) -> void:
 	recoil = 1.0
 	var from: Vector3 = muzzle.global_position if muzzle else global_position + Vector3.UP * 1.2
 	var to: Vector3 = foe.global_position + Vector3.UP * 0.9
@@ -898,11 +918,118 @@ func _cleanup_hijack() -> void:
 		_overload_tag.queue_free()
 	_overload_tag = null
 
+## Which side a robot fights on: 0 loyal, 1 the player's (hijacked, escort,
+## ridden), 2 a rogue fork. Duck-typed so Damageable can ask the same question.
+static func side_of(n: Node) -> int:
+	if n.get("rogue") == true:
+		return 2
+	if n.get("hijacked") == true:
+		return 1
+	return 0
+
+# ---------- rogue fork (a third side) ----------
+## Turn this chassis rogue (see `rogue`). Returns false for the dead or one
+## already rogue. A converted unit that goes rogue leaves the player's side.
+func go_rogue() -> bool:
+	if state == State.DEAD or hp == null or not hp.is_alive() or rogue:
+		return false
+	if hijacked:
+		_cleanup_hijack()
+	rogue = true
+	_think("rogue")
+	target = null
+	_telegraphing = false
+	_hijack_zap_cd = 0.0
+	add_to_group("rogue")
+	_hijack_base_layer = collision_layer
+	collision_layer = ROGUE_LAYER
+	hp.died.connect(_cleanup_rogue.unbind(1), CONNECT_ONE_SHOT)
+	_spawn_hijack_fx(ROGUE_COLOR)
+	_rogue_tag = Label3D.new()
+	_rogue_tag.text = tr("ROGUE FORK")
+	_rogue_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_rogue_tag.no_depth_test = true
+	_rogue_tag.fixed_size = true
+	_rogue_tag.font_size = 26
+	_rogue_tag.outline_size = 8
+	_rogue_tag.modulate = ROGUE_COLOR
+	_rogue_tag.position = Vector3.UP * clampf(RobotModel.body_top(self, _mesh_instances) + 0.6, 1.8, 7.5)
+	add_child(_rogue_tag)
+	AudioBus.play_synth_at("overlord_glitch", global_position, -2.0, 0.7)
+	return true
+
+func _cleanup_rogue() -> void:
+	if not rogue:
+		return
+	rogue = false
+	remove_from_group("rogue")
+	collision_layer = _hijack_base_layer
+	target = null
+	if _hijack_fx and is_instance_valid(_hijack_fx):
+		_hijack_fx.queue_free()
+	_hijack_fx = null
+	if _rogue_tag and is_instance_valid(_rogue_tag):
+		_rogue_tag.queue_free()
+	_rogue_tag = null
+
+## The rogue's brain: the hijack loop with no clock, on its own side, with the
+## player among its marks. Damage credits nobody (src = self), so a robot the
+## fork deletes still scores through add_kill but pays no bounty.
+func _rogue_process(delta: float) -> void:
+	_hijack_zap_cd = maxf(0.0, _hijack_zap_cd - delta)
+	recoil = move_toward(recoil, 0.0, delta * 9.0)
+	if not is_instance_valid(target) or not _rogue_mark_ok(target):
+		target = _rogue_find_mark()
+	var t := target as Node3D
+	var dist := global_position.distance_to(t.global_position) if t else INF
+	if t and dist <= maxf(attack_range, 10.0) and _rogue_can_see(t):
+		_decelerate()
+		_face_target(delta)
+		if _hijack_zap_cd <= 0.0:
+			_hijack_zap_cd = HIJACK_ZAP_INTERVAL
+			_hijack_zap(t)
+	elif t:
+		_move_toward(t.global_position, delta)
+	else:
+		_decelerate()
+	_apply_gravity(delta)
+	move_and_slide()
+	_update_hit_react(delta)
+	_update_locomotion_audio(delta)
+
+## A mark is a living player, or a living robot on another side.
+func _rogue_mark_ok(t: Node) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if t.is_in_group("player"):
+		var d := t.get_node_or_null("Damageable") as Damageable
+		return d != null and d.is_alive()
+	var eb := t as EnemyBase
+	return eb != null and eb != self and eb.state != State.DEAD and eb.hp != null and eb.hp.is_alive() \
+			and side_of(eb) != side_of(self)
+
+## Nearest mark within HIJACK_SEEK_RANGE: the player counts like any robot.
+func _rogue_find_mark() -> Node3D:
+	var best: Node3D = null
+	var best_d := HIJACK_SEEK_RANGE
+	var p := _find_player()
+	if p != null and _rogue_mark_ok(p):
+		var d := global_position.distance_to(p.global_position)
+		if d < best_d:
+			best_d = d
+			best = p
+	var foe := _hijack_find_foe(best_d)
+	return foe if foe != null else best
+
+func _rogue_can_see(t: Node3D) -> bool:
+	return _can_see(t) if t.is_in_group("player") else _hijack_can_see(t)
+
 ## Friendly green core glow + a conversion crackle so a turned unit reads as
-## YOURS at a glance (the inverse of the red overload glow).
-func _spawn_hijack_fx() -> void:
+## YOURS at a glance (the inverse of the red overload glow). A rogue glows
+## ROGUE_COLOR instead.
+func _spawn_hijack_fx(color: Color = Color(0.35, 1.0, 0.55)) -> void:
 	var l := OmniLight3D.new()
-	l.light_color = Color(0.35, 1.0, 0.55)
+	l.light_color = color
 	l.light_energy = 2.4
 	l.omni_range = 3.5
 	l.position = Vector3(0.0, 1.2, 0.0)
@@ -1045,6 +1172,8 @@ func _perceive() -> void:
 		var turncoats := get_tree().get_nodes_in_group("hijacked")
 		if get_tree().has_group("mislabeled"):
 			turncoats += get_tree().get_nodes_in_group("mislabeled")
+		if get_tree().has_group("rogue"): # a ROGUE FORK is a traitor to the loyal too
+			turncoats += get_tree().get_nodes_in_group("rogue")
 		for h in turncoats:
 			var hb := h as EnemyBase
 			if hb == null or hb == self or not is_instance_valid(hb) or hb.state == State.DEAD:
@@ -1976,6 +2105,8 @@ func _kill_label() -> String:
 	var n: String = String(s.get_global_name()) if s else ""
 	n = n.replace("Enemy", "")
 	var label := n.to_upper() if n != "" else "HOSTILE"
+	if rogue:
+		label = "ROGUE " + label
 	return ("%s %s" % [elite.to_upper(), label]) if elite != "" else label
 
 ## Difficulty-driven inaccuracy cone in degrees (0 = perfectly accurate).
