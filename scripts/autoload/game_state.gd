@@ -1699,6 +1699,7 @@ const MECHANIC_HINTS := {
 	"cascade": "✸ CASCADE — robots the CX-4 kills detonate and set off their neighbours. Shoot into the thick of a pack.",
 	"meltdown": "♨ MELTDOWN — a robot knocked into molten ground or deep water is finished. Melee, grenades and OVERLOAD throw robots.",
 	"scrapped": "⚙ SCRAPPED — a thrown robot takes the wall, the robot or the drop it lands on. Throw them hard, and off things.",
+	"tackle": "⤭ TACKLE — dashing into a robot throws it. Dash them into walls, off ledges and into the lava.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 }
 
