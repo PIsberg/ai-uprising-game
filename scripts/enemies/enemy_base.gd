@@ -92,6 +92,8 @@ var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_thre
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
 var _launch_t: float = 0.0 ## Seconds of thrown flight left (a Bumper, BlastPush, a shove); AI movement paused while > 0.
 var _launch_age: float = 0.0
+var _launch_peak_y: float = 0.0 ## highest point of the current throw, for the drop on landing
+var _bowled: Array[Node] = []   ## robots this throw already slammed into (one hit each)
 ## Seconds since a throw during which the level may finish this robot (a
 ## LavaHazard bed melts a THROWN robot, never one that spawned or wandered in:
 ## 12 levels author robots standing in their channels). Set by launch().
@@ -1413,6 +1415,14 @@ func _consider_cover_seek(_amount: float, source: Node) -> void:
 ## player's melee shove and OVERLOAD. The dead are not thrown. Mirrors
 ## Player.launch. For THROWN_GRACE after, was_thrown() holds: a hazard bed it
 ## lands in may finish it (lava_hazard.gd).
+##
+## A thrown robot is a projectile (scrap physics): slammed into a wall at
+## IMPACT_MIN_SPEED or more it takes IMPACT_DMG_PER_MS per m/s and its flight
+## ends there; a robot in its path takes the same and flies on with
+## IMPACT_BOWL_KEEP of the velocity (bosses take the hit but stay put); and a
+## landing from more than FALL_FREE_M above takes FALL_DMG_PER_M per metre
+## past that. A kill any of these finishes is an environmental kill ("impact"
+## or "fall": GameState.note_environmental_kill), like a melt in lava.
 func launch(v: Vector3, seconds: float) -> void:
 	if state == State.DEAD:
 		return
@@ -1420,6 +1430,8 @@ func launch(v: Vector3, seconds: float) -> void:
 	_launch_t = seconds + 0.3
 	_launch_age = 0.0
 	_throw_grace_t = THROWN_GRACE
+	_launch_peak_y = global_position.y
+	_bowled.clear()
 
 ## Whether a throw is still in the air.
 func is_launched() -> bool:
@@ -1429,15 +1441,106 @@ func is_launched() -> bool:
 func was_thrown() -> bool:
 	return _launch_t > 0.0 or _throw_grace_t > 0.0
 
+const FALL_FREE_M := 3.0        ## a drop this far lands clean
+const FALL_DMG_PER_M := 16.0    ## damage per metre of drop past FALL_FREE_M
+const IMPACT_MIN_SPEED := 4.5   ## m/s into a wall or a robot before it hurts
+const IMPACT_DMG_PER_MS := 7.0  ## damage per m/s of impact speed
+const IMPACT_BOWL_KEEP := 0.7   ## share of the velocity a bowled robot flies on with
+const IMPACT_REACH := 0.9       ## m ahead of the flier's centre that counts as hitting a robot
+const LAUNCH_MAX_AGE := 4.0     ## a throw never holds the AI longer than this
+
 func _tick_launch(delta: float) -> void:
 	_launch_t -= delta
 	_launch_age += delta
+	_launch_peak_y = maxf(_launch_peak_y, global_position.y)
+	var v_before := velocity
 	_apply_gravity(delta)
 	move_and_slide()
+	if _launch_age > 0.1 and state != State.DEAD:
+		_launch_bowl(v_before)
+		_launch_wall(v_before)
+	if _launch_t <= 0.0 and not is_on_floor() and _launch_age < LAUNCH_MAX_AGE:
+		_launch_t = 0.05 # still falling (thrown off a ledge): keep flying until it lands
 	if _launch_age > 0.15 and is_on_floor():
+		var drop := _launch_peak_y - global_position.y
 		_launch_t = 0.0
 		velocity.x *= 0.25 # land where thrown, not skid past it
 		velocity.z *= 0.25
+		_land_from(drop)
+
+## Horizontal speed of a flight velocity.
+static func _flat_speed(v: Vector3) -> float:
+	return Vector2(v.x, v.z).length()
+
+## Slammed into something solid this tick (a wall, a pillar, a crate): the
+## flight ends against it and the robot takes the impact.
+func _launch_wall(v_before: Vector3) -> void:
+	var speed := _flat_speed(v_before)
+	if speed < IMPACT_MIN_SPEED:
+		return
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		var n := c.get_normal()
+		if absf(n.y) >= 0.5 or c.get_collider() == null or (c.get_collider() as Node).is_in_group("enemy"):
+			continue
+		_launch_t = 0.0
+		velocity.x = 0.0
+		velocity.z = 0.0
+		_take_impact(speed * IMPACT_DMG_PER_MS, c.get_position(), "impact")
+		return
+
+## A robot in the flier's path is bowled over: both take the impact, and the
+## one hit flies on with IMPACT_BOWL_KEEP of the velocity (a boss stays put).
+func _launch_bowl(v_before: Vector3) -> void:
+	var speed := _flat_speed(v_before)
+	if speed < IMPACT_MIN_SPEED:
+		return
+	var dir := Vector3(v_before.x, 0.0, v_before.z).normalized()
+	var q := PhysicsShapeQueryParameters3D.new()
+	var s := SphereShape3D.new()
+	s.radius = 0.7
+	q.shape = s
+	q.transform = Transform3D(Basis(), global_position + dir * IMPACT_REACH + Vector3.UP * 0.9)
+	q.collision_mask = 4 # enemies
+	q.exclude = [get_rid()]
+	for hit in get_world_3d().direct_space_state.intersect_shape(q, 6):
+		var other := hit["collider"] as Node
+		if other == null or other == self or _bowled.has(other) or not other.is_in_group("enemy") \
+				or not other.has_method("launch") or "hover_height" in other:
+			continue
+		var ohp := other.get_node_or_null("Damageable") as Damageable
+		if ohp == null or not ohp.is_alive():
+			continue
+		_bowled.append(other)
+		var dmg := speed * IMPACT_DMG_PER_MS * 0.6
+		var at: Vector3 = (other as Node3D).global_position + Vector3.UP * 1.0
+		if int(other.get("score_value")) < 1000:
+			other.call("launch", Vector3(v_before.x, maxf(v_before.y, 2.5), v_before.z) * IMPACT_BOWL_KEEP, 1.0)
+		if other.has_method("_play_hit_flash"):
+			other.call("_play_hit_flash")
+		ohp.apply_damage(dmg, null)
+		if not ohp.is_alive():
+			GameState.note_environmental_kill("impact", at)
+		velocity.x *= 0.5
+		velocity.z *= 0.5
+		_take_impact(speed * IMPACT_DMG_PER_MS * 0.6, at, "impact")
+		return
+
+## Landed after a throw: a drop past FALL_FREE_M hurts.
+func _land_from(drop: float) -> void:
+	if drop <= FALL_FREE_M or state == State.DEAD:
+		return
+	_take_impact((drop - FALL_FREE_M) * FALL_DMG_PER_M, global_position, "fall")
+
+## Take `dmg` from an impact at `at`; a kill it finishes is an environmental
+## kill of `kind`.
+func _take_impact(dmg: float, at: Vector3, kind: String) -> void:
+	_play_hit_flash()
+	_spawn_oil_spray(at)
+	AudioBus.play_synth_at("impact_metal", at, -3.0, 0.55)
+	hp.apply_damage(dmg, null)
+	if not hp.is_alive():
+		GameState.note_environmental_kill(kind, global_position)
 
 ## Panic-scatter away from `from_pos` for `duration` (reuses the grenade-evade
 ## channel). Broadcast when the player hits a power peak (GODLIKE rampage /

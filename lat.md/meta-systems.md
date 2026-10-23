@@ -73,7 +73,7 @@ Twenty local unlocks for the game's signature moments (`scripts/autoload/achieve
 <!-- lat: { "require-code-mention": true } -->
 The rogue AI livestreams the fight to its robot network; the audience's chat runs down the left of the HUD (`scripts/ui/machine_feed.gd`, lines in `scripts/systems/machine_chat.gd`).
 
-* `MachineChat.LINES` holds 11 pools (intro, idle, cascade, execution, meltdown, dodge, salvage, rampage, clutch, boss, death), 5 lines each, every one a `strings.csv` key translated into all five languages; `HANDLES` are robot usernames, untranslated.
+* `MachineChat.LINES` holds 12 pools (intro, idle, cascade, execution, meltdown, scrapped, dodge, salvage, rampage, clutch, boss, death), 5 lines each, every one a `strings.csv` key translated into all five languages; `HANDLES` are robot usernames, untranslated.
 * `MachineFeed` listens to GameState (`cascade_chain` from `CASCADE_CALLOUT` pops, `execution`, `environmental_kill`, `perfect_dodge`, `rampage_changed`, `adrenaline_changed`, `boss_spawned`, `player_died`); the HUD calls `on_salvage` when a salvage gun is armed. A quiet `IDLE_GAP` (22 s) posts an idle line.
 * One post per `MIN_GAP` (1.2 s): a burst of events posts the first, but small talk (`CHATTER`: intro, idle) never blocks an event line, and a death always posts. At most `MAX_LINES` (5) show, each fading after `LINE_LIFE` (7 s); a line never repeats the one its pool posted last.
 * Viewers start at `BASE_VIEWERS` + `VIEWERS_PER_LEVEL` x `GameState.level_index`, gain `MachineChat.HYPE` per event (the cascade's x pops, rampage's x tier), lose `DECAY` of the excess every `DECAY_TICK`, and keep `DEATH_KEEP` when you die.

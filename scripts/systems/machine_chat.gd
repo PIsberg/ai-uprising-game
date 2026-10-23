@@ -48,6 +48,13 @@ const LINES := {
 		"ok who put the floor there",
 		"environmental storytelling, they call it",
 	],
+	"scrapped": [
+		"it threw a robot at a robot",
+		"wall: 1. unit: 0",
+		"robots don't bounce. that one bounced",
+		"physics engine moment",
+		"that's a two for one",
+	],
 	"dodge": [
 		"how did that miss, the aimbot was ON",
 		"frame-perfect. are we sure it's human",
@@ -94,6 +101,6 @@ const LINES := {
 
 ## Viewers each event brings (the cascade's scales with the chain).
 const HYPE := {
-	"intro": 0, "idle": 0, "cascade": 45, "execution": 60, "dodge": 50, "meltdown": 70,
+	"intro": 0, "idle": 0, "cascade": 45, "execution": 60, "dodge": 50, "meltdown": 70, "scrapped": 55,
 	"salvage": 40, "rampage": 120, "clutch": 90, "boss": 300, "death": 0,
 }
