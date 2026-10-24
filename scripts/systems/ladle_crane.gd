@@ -202,6 +202,7 @@ func _pour() -> void:
 	pool.size = Vector2(pool_size, pool_size)
 	pool.damage_per_tick = pool_dmg
 	pool.shore = false
+	pool.melts_robots = false # a trap set for the player; the robots chasing it wade through
 	# Fresh metal, brighter than the level's own beds, with the hazard border.
 	pool.recolor = true
 	pool.hazard_color = Color(1.0, 0.72, 0.22)

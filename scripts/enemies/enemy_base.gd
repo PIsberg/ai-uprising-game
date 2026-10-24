@@ -90,8 +90,13 @@ var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
-var _launch_t: float = 0.0 ## Seconds of thrown flight left (a Bumper); AI movement paused while > 0.
+var _launch_t: float = 0.0 ## Seconds of thrown flight left (a Bumper, BlastPush, a shove); AI movement paused while > 0.
 var _launch_age: float = 0.0
+## Seconds since a throw during which the level may finish this robot (a
+## LavaHazard bed melts a THROWN robot, never one that spawned or wandered in:
+## 12 levels author robots standing in their channels). Set by launch().
+const THROWN_GRACE := 2.5
+var _throw_grace_t: float = 0.0
 var hijacked: bool = false ## Converted to the player's side by a HIJACK charge — hunts robots until burnout.
 var _hijack_t: float = 0.0 ## Seconds of stolen loyalty left; burnout (death) at 0.
 var _hijack_shooter: Node = null ## The player who planted the hijack — kills/damage route credit to them.
@@ -219,6 +224,7 @@ func _collect_meshes(n: Node) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	_throw_grace_t = maxf(0.0, _throw_grace_t - delta)
 	if _muzzle_bone and muzzle:
 		_follow_muzzle_bone()
 	# Thrown (a Bumper): ballistic until it lands, its own movement paused so the
@@ -1403,18 +1409,25 @@ func _consider_cover_seek(_amount: float, source: Node) -> void:
 	_think("retreat")
 
 ## Throw this robot: fly with velocity `v` for up to `seconds` (plus a margin),
-## its own movement paused, until it lands. Called by Bumper. The dead are
-## not thrown. Mirrors Player.launch.
+## its own movement paused, until it lands. Called by Bumper, BlastPush and the
+## player's melee shove and OVERLOAD. The dead are not thrown. Mirrors
+## Player.launch. For THROWN_GRACE after, was_thrown() holds: a hazard bed it
+## lands in may finish it (lava_hazard.gd).
 func launch(v: Vector3, seconds: float) -> void:
 	if state == State.DEAD:
 		return
 	velocity = v
 	_launch_t = seconds + 0.3
 	_launch_age = 0.0
+	_throw_grace_t = THROWN_GRACE
 
 ## Whether a throw is still in the air.
 func is_launched() -> bool:
 	return _launch_t > 0.0
+
+## In the air from a throw, or landed from one under THROWN_GRACE ago.
+func was_thrown() -> bool:
+	return _launch_t > 0.0 or _throw_grace_t > 0.0
 
 func _tick_launch(delta: float) -> void:
 	_launch_t -= delta

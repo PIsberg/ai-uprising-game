@@ -375,6 +375,7 @@ func _explode(pos: Vector3) -> void:
 			KillFx.tag(d, kill_fx, weapon_data)
 			d.apply_damage(_splash_damage * falloff + _damage, _shooter, false, pos)
 			KillFx.untag(d)
+			BlastPush.throw(col, pos, falloff, _shooter)
 	# Impact blast: a big boom for splash rounds (rocket), a sharp burst otherwise
 	# (plasma), plus a brief colored flash light in the round's energy colour.
 	var scene := get_tree().current_scene

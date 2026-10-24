@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-528 probes total: **227** wired into the headless suite (`suite`), **86**
+529 probes total: **228** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -321,6 +321,7 @@ or GPU-timing probes; `--headless` renders these black).
 | headshot_callout_probe | HUD headshot callout popup via `GameState.report_player_hit(crit=true)` | suite |
 | headshot_shot | HEADSHOT callout forced visible to eyeball its style | windowed |
 | highlights_probe | Debrief HIGHLIGHTS: engagement systems counted per level with correct singular/plural + streak name; the screenshot also shows the story LEAD line | windowed |
+| meltdown_probe | MELTDOWN: a robot THROWN into a LavaHazard bed melts. On 8 x 4 m beds, with held robots marked thrown by a zero-velocity launch: an android 2.5 m outside takes nothing, one brushing 0.25 m inside the edge takes nothing (ROBOT_INSET 0.7), one in the bed dies within 2.5 s as a lava environmental kill paying MELTDOWN_BONUS on top of its own 150 and teaching the rule once, a drone over the bed takes nothing, a boss-sized android takes the plain tick (78 in 1.1 s, not x4), one in a water bed is EMP-stunned and drowns as a water kill, a bed with melts_robots off burns nobody, and an android that merely stands in the bed (never thrown; 12 levels author robots in their channels) takes nothing; the thrown state ends THROWN_GRACE (2.5 s) after a launch; a player grenade 1.5 m from an android throws it (is_launched, lands 2.5 m further), a boss-sized one is not thrown, a robot's grenade throws nobody; and a grenade behind an android 0.6 m from the shore lands it in the bed where it melts (red-checked: without the burn tick 10 checks fail, without the grenade throw 6) | suite |
 | hijack_overload_probe | HIJACK overload on a baked navmesh: a 5 s hijack is not overloading before its last OVERLOAD_WARN s and is during it (teaching the rule once), runs at a packed squad (10.9 -> 1.7 m), dies at burnout, and its blast hits every robot within OVERLOAD_RADIUS (the nearest took 95), leaves a lone android 18 m off untouched, gives a boss-sized robot at most half (44 vs 88), never hurts the player beside the squad, a hijack shorter than OVERLOAD_MIN_LIFE (4 s) never overloads and an escort never does (red-checked: without the blast the squad took 0) | suite |
 | hijack_probe | HIJACK: flips a unit to the player's side, hostiles retarget the traitor, burnout kills + cleans up bookkeeping; the HIJACK grenade converts the nearest robot and frees itself with no player in the scene (red before: its free sat in the per-player glitch loop, #408); a boss resists | suite |
 | i18n_label_probe | Every task, wave, firewall and terrain label in the campaign defs translates under es/fr/de/pt (`tr()` hands back the English key when a row is missing; 64 of 78 labels were, #116); a long-standing row is the control that translations load at all | suite |

@@ -714,6 +714,26 @@ func reward_execution(world_pos: Vector3) -> void:
 	AudioBus.play_synth_ui("headshot", -2.0, 0.8)
 	execution.emit(world_pos)
 
+# ---------- MELTDOWN: the level finished a robot ----------
+## A LavaHazard finished a robot that was thrown into it (melee, a blast,
+## OVERLOAD, a Bumper): `kind` "lava" (molten ground melts it) or "water" (deep
+## water short-circuits it). The kill's own score and combo land through
+## add_kill as usual; this is the bonus on top, the callout (the HUD words it
+## by kind) and the debrief count.
+const MELTDOWN_BONUS := 150
+const MELTDOWN_KINDS := ["lava", "water"]
+signal environmental_kill(kind: String, world_pos: Vector3)
+
+func note_environmental_kill(kind: String, world_pos: Vector3) -> void:
+	if current_state != State.PLAYING:
+		return
+	add_score(MELTDOWN_BONUS)
+	stat_meltdowns += 1
+	teach_once("meltdown", MECHANIC_HINTS["meltdown"])
+	combat_hitstop(0.35, 0.11)
+	AudioBus.play_synth_ui("headshot", -2.0, 0.6)
+	environmental_kill.emit(kind, world_pos)
+
 # ---------- CASCADE: chain-detonation kills (CX-4 Cascade) ----------
 ## A Cascade chain of `pops` robots just settled (Cascade._detonate). Long chains
 ## pay a bonus per robot past the second and get a HUD callout; the robots' own
@@ -1316,6 +1336,7 @@ var stat_bounties: int = 0
 var stat_dodges: int = 0
 var stat_best_rampage: int = 0
 var stat_best_cascade: int = 0 ## longest CX-4 Cascade chain this level (note_cascade)
+var stat_meltdowns: int = 0 ## robots a hazard bed finished this level (note_environmental_kill)
 ## Timestamp the current level attempt started. NOTE: this is reset on every
 ## load_level() call, including a TRY-AGAIN full reload — so the debrief's TIME
 ## reads "time since the last retry", not a cumulative clock across deaths.
@@ -1347,6 +1368,7 @@ func reset_level_stats() -> void:
 	stat_dodges = 0
 	stat_best_rampage = 0
 	stat_best_cascade = 0
+	stat_meltdowns = 0
 	ultimate_charge = 0.0
 	ultimate_changed.emit(0.0)
 	max_combo = 0
@@ -1443,7 +1465,7 @@ func grade_level() -> Dictionary:
 		"deaths": level_deaths,
 		"executions": stat_executions, "bounties": stat_bounties,
 		"dodges": stat_dodges, "best_rampage": stat_best_rampage,
-		"best_cascade": stat_best_cascade,
+		"best_cascade": stat_best_cascade, "meltdowns": stat_meltdowns,
 		"par": par, "speed_bonus": speed_bonus,
 		"assist": _damage_taken_setting(), "assist_mult": assist,
 		"points": score_pts,
@@ -1615,6 +1637,7 @@ const MECHANIC_HINTS := {
 	"patch": "◇ PATCHED — robots that look long or close still see a human. Shooting drops it. Melee a robot to slap it on and its squad shoots it.",
 	"salvage": "⚙ SALVAGE — heavy robots drop their own gun. One magazine, no reload: spend it, then it's gone.",
 	"cascade": "✸ CASCADE — robots the CX-4 kills detonate and set off their neighbours. Shoot into the thick of a pack.",
+	"meltdown": "♨ MELTDOWN — a robot knocked into molten ground or deep water is finished. Melee, grenades and OVERLOAD throw robots.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 }
 

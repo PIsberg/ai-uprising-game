@@ -247,6 +247,7 @@ func _ready() -> void:
 	GameState.adrenaline_changed.connect(_on_adrenaline_changed)
 	GameState.perfect_dodge.connect(_on_perfect_dodge)
 	GameState.execution.connect(_on_execution)
+	GameState.environmental_kill.connect(_on_environmental_kill)
 	GameState.ultimate_changed.connect(_on_ultimate_changed)
 	GameState.ultimate_ready.connect(_on_ultimate_ready)
 	GameState.ultimate_fired.connect(_on_ultimate_fired)
@@ -942,6 +943,17 @@ func _on_cascade_chain(pops: int, _world_pos: Vector3) -> void:
 
 func _on_execution(_world_pos: Vector3) -> void:
 	if _exec_label:
+		_exec_label.text = tr("EXECUTED") + "!"
+		_exec_alpha = 1.0
+		_exec_pop = 1.3
+
+## The level finished a robot (GameState.environmental_kill): the same takedown
+## flash as an execution, worded for how it went.
+const ENV_KILL_WORDS := {"lava": "MELTDOWN", "water": "SHORT CIRCUIT"}
+
+func _on_environmental_kill(kind: String, _world_pos: Vector3) -> void:
+	if _exec_label:
+		_exec_label.text = tr(String(ENV_KILL_WORDS.get(kind, "MELTDOWN"))) + "!"
 		_exec_alpha = 1.0
 		_exec_pop = 1.3
 
@@ -1341,8 +1353,11 @@ func _update_highlights_block() -> void:
 	var dodges := int(_last_stats.get("dodges", 0))
 	var streak := int(_last_stats.get("best_rampage", 0))
 	var chain := int(_last_stats.get("best_cascade", 0))
+	var melts := int(_last_stats.get("meltdowns", 0))
 	if execs > 0:
 		bits.append("%d %s" % [execs, tr("EXECUTED") if execs == 1 else tr("EXECUTIONS")])
+	if melts > 0:
+		bits.append("%d %s" % [melts, tr("MELTDOWN") if melts == 1 else tr("MELTDOWNS")])
 	if bounties > 0:
 		bits.append("%d %s" % [bounties, tr("BOUNTY") if bounties == 1 else tr("BOUNTIES")])
 	if dodges > 0:
