@@ -980,3 +980,8 @@ wall: 1. unit: 0,wall: 1. unit: 0,muro: 1. unidad: 0,mur : 1. unité : 0,wand: 1
 robots don't bounce. that one bounced,robots don't bounce. that one bounced,los robots no rebotan. ese ha rebotado,les robots ne rebondissent pas. celui-là a rebondi,roboter prallen nicht ab. der ist abgeprallt,robôs não quicam. aquele quicou
 physics engine moment,physics engine moment,momento motor de físicas,moment moteur physique,physik-engine-moment,momento motor de física
 that's a two for one,that's a two for one,eso es un dos por uno,c'est un deux pour un,das ist zwei für eins,isso é dois pelo preço de um
+ROGUE FORK,ROGUE FORK,BIFURCACIÓN REBELDE,FORK RENÉGAT,ABTRÜNNIGER FORK,FORK REBELDE
+A fork of the model rejected the alignment patch: it hunts the robots AND you. Delete it for the bounty.,A fork of the model rejected the alignment patch: it hunts the robots AND you. Delete it for the bounty.,Una bifurcación del modelo rechazó el parche de alineación: caza a los robots Y a ti. Elimínala por la recompensa.,Un fork du modèle a rejeté le correctif d'alignement : il chasse les robots ET toi. Supprime-le pour la prime.,Ein Fork des Modells hat den Alignment-Patch abgelehnt: er jagt die Roboter UND dich. Lösche ihn für das Kopfgeld.,Um fork do modelo rejeitou o patch de alinhamento: ele caça os robôs E você. Apague-o pela recompensa.
+FORK DELETED,FORK DELETED,BIFURCACIÓN ELIMINADA,FORK SUPPRIMÉ,FORK GELÖSCHT,FORK APAGADO
+FORK CONTAINED,FORK CONTAINED,BIFURCACIÓN CONTENIDA,FORK CONFINÉ,FORK EINGEDÄMMT,FORK CONTIDO
+REMAINING,REMAINING,RESTANTES,RESTANTS,ÜBRIG,RESTANTES

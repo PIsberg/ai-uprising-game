@@ -71,6 +71,13 @@ func _unit() -> void:
 	z.radius = 3.0
 	add_child(z)
 	await _frames(6)
+	# The clock ticks in _process. A loaded runner catches up with several
+	# physics steps inside one frame (up to physics/common/max_physics_steps_per_frame),
+	# so six physics frames can pass before the zone has processed once: CI
+	# failed both checks below that way (label "Run", 1.50 left) on a run with
+	# six Verify jobs in flight. Wait for a process frame as well.
+	await get_tree().process_frame
+	await get_tree().process_frame
 	_check(_label("esc") == "Run (2s)", "label carries the remaining seconds (%s)" % _label("esc"))
 	_check(not GameState.is_task_done("esc"), "task open while the player is away")
 	_check(z.remaining < 1.5, "the clock is running while PLAYING (%.2f)" % z.remaining)

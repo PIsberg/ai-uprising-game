@@ -25,7 +25,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	# 1. Data.
-	_check("seven events", GameState.EVENT_IDS.size() == 7, str(GameState.EVENT_IDS))
+	_check("eight events", GameState.EVENT_IDS.size() == 8, str(GameState.EVENT_IDS))
 	_check("every event has a title", GameState.EVENT_IDS.all(
 			func(id) -> bool: return String(GameState.EVENT_TITLES.get(id, "")) != ""))
 

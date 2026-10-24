@@ -364,3 +364,5 @@ res://tests/terminator_overclock_probe.tscn
 res://tests/meltdown_probe.tscn
 # Scrap physics: thrown robots slam walls, bowl over robots and take fall damage.
 res://tests/scrap_physics_probe.tscn
+# ROGUE FORK: a third side that hunts robots and the player; sides in Damageable.
+res://tests/rogue_fork_probe.tscn
