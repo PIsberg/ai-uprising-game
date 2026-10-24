@@ -366,3 +366,5 @@ res://tests/meltdown_probe.tscn
 res://tests/scrap_physics_probe.tscn
 # ROGUE FORK: a third side that hunts robots and the player; sides in Damageable.
 res://tests/rogue_fork_probe.tscn
+# TACKLE: dashing into a robot throws it along the dash.
+res://tests/dash_tackle_probe.tscn

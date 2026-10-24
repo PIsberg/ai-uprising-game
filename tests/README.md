@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-531 probes total: **230** wired into the headless suite (`suite`), **86**
+532 probes total: **231** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -151,6 +151,7 @@ or GPU-timing probes; `--headless` renders these black).
 | damage_taken_probe | Damage Taken accessibility slider: a real hit on the real player lands at amount x damage_taken (40/20/60 for 1.0/0.5/1.5), setter clamps, settings-file round trip | suite |
 | dark_spot_probe | Mean frame luminance from spawn, per campaign level, ranking under-lit "dark spot" levels | windowed |
 | damage_source_probe | `Damageable.apply_damage` survives a FREED or non-Node `source` (shooter died before its projectile landed) and still applies the damage | suite |
+| dash_tackle_probe | Dash TACKLE: a real player dashing forward (Input "dash") into an android 1.6 m ahead throws it (is_launched) and deals tackle_damage once per dash, teaching the rule once; an android 3 m to the side is untouched; a boss-sized android ahead takes the hit but is not launched; a drone ahead is untouched; and a dash into an android standing 0.7 m from a lava shore lands it in the bed, where it melts as a lava environmental kill (red-checked: without the tackle tick 7 checks fail) | suite |
 | dash_probe | Dash i-frame phase-through: soft enemy separation stands in for hard collision during the dash window | suite |
 | death_probe | Player death: fall-over + input lockout + game-over flow | windowed |
 | debrief_shot | Victory screen's mission-debrief line (KILLS/DEATHS) matches known source stats | windowed |

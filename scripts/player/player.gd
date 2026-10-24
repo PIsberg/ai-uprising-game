@@ -74,6 +74,18 @@ var _base_stamina: float = 100.0 ## authored max stamina before the STAMINA-trac
 @export var dash_speed: float = 20.0
 @export var dash_duration: float = 0.16
 @export var dash_cooldown: float = 1.1
+## TACKLE: a robot in the dash's path takes tackle_damage and is thrown along
+## the dash (EnemyBase.launch: tackle_push out, tackle_lift up), once per robot
+## per dash. Bosses take the hit but are too heavy to move, flyers are above the
+## shoulder, your own hijacked robots sit on the player layer and are not in
+## the sweep. Where it lands is the level's business: a bed melts it
+## (MELTDOWN), a wall or a drop scraps it (SCRAPPED).
+@export var tackle_damage: float = 18.0
+@export var tackle_push: float = 9.0  ## m/s along the dash
+@export var tackle_lift: float = 4.5  ## m/s up
+const TACKLE_REACH := 1.1  ## m ahead of the chest the shoulder lands
+const TACKLE_RADIUS := 0.9
+var _tackled: Array[Node] = [] ## robots this dash already hit
 @export var slide_speed: float = 12.5
 @export var slide_duration: float = 0.7
 @export var slide_friction: float = 6.0
@@ -1067,6 +1079,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_time -= delta
 		velocity.x = _dash_dir.x * dash_speed
 		velocity.z = _dash_dir.z * dash_speed
+		_tackle_tick()
 		if _dash_time <= 0.0:
 			hp.invulnerable = _god  # dash i-frames end — but stay invincible if god mode is on
 		return
@@ -1086,6 +1099,7 @@ func _handle_dash(delta: float) -> void:
 		_dash_dir = dir.normalized()
 		_dash_time = dash_duration
 		_dash_cd = dash_cooldown
+		_tackled.clear()
 		for l in get_tree().get_nodes_in_group("leech_latched"):
 			(l as EnemyLeech).shake_off(_dash_dir) # the lunge throws it loose
 		_dodge_scored = false
@@ -1104,6 +1118,31 @@ func _handle_dash(delta: float) -> void:
 		# opposite the melee jab's forward punch) so the dash reads in first person
 		# instead of just being a camera/velocity trick.
 		_kick_weapon_holder(Vector3(0, -0.03, 0.1), 0.05, 0.24)
+
+## One tick of the dash's shoulder: every robot in a TACKLE_RADIUS sphere
+## TACKLE_REACH ahead of the chest, not yet hit this dash, takes the tackle.
+func _tackle_tick() -> void:
+	var q := PhysicsShapeQueryParameters3D.new()
+	var s := SphereShape3D.new()
+	s.radius = TACKLE_RADIUS
+	q.shape = s
+	q.transform = Transform3D(Basis(), global_position + _dash_dir * TACKLE_REACH + Vector3.UP * 1.0)
+	q.collision_mask = 4 # enemies
+	for hit in get_world_3d().direct_space_state.intersect_shape(q, 8):
+		var col := hit["collider"] as Node
+		if col == null or _tackled.has(col) or not col.is_in_group("enemy") or "hover_height" in col:
+			continue
+		var d := col.get_node_or_null("Damageable") as Damageable
+		if d == null or not d.is_alive():
+			continue
+		_tackled.append(col)
+		d.apply_damage(tackle_damage, self)
+		if d.is_alive() and col.has_method("launch") and int(col.get("score_value")) < 1000:
+			col.call("launch", _dash_dir * tackle_push + Vector3.UP * tackle_lift, 0.7)
+		AudioBus.play_synth_at("impact_metal", (col as Node3D).global_position + Vector3.UP, -2.0, 0.75)
+		shake(0.25)
+		_fov_kick = maxf(_fov_kick, 7.0)
+		GameState.teach_once("tackle", GameState.MECHANIC_HINTS["tackle"])
 
 ## GOD-mode cheat: flip the player's invulnerability. Topped up to full health on
 ## enable so a near-dead tester is instantly safe. Feedback via the HUD toast
