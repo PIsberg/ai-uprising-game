@@ -72,7 +72,8 @@ func _ready() -> void:
 		if pops >= GameState.CASCADE_CALLOUT:
 			_event("cascade", MachineChat.HYPE["cascade"] * pops))
 	GameState.execution.connect(func(_p: Vector3) -> void: _event("execution"))
-	GameState.environmental_kill.connect(func(_k: String, _p: Vector3) -> void: _event("meltdown"))
+	GameState.environmental_kill.connect(func(k: String, _p: Vector3) -> void:
+		_event("meltdown" if k in GameState.MELTDOWN_KINDS else "scrapped"))
 	GameState.perfect_dodge.connect(func() -> void: _event("dodge"))
 	GameState.rampage_changed.connect(func(tier: int, _n: String) -> void:
 		if tier > 0:

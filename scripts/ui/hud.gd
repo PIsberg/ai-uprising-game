@@ -949,7 +949,7 @@ func _on_execution(_world_pos: Vector3) -> void:
 
 ## The level finished a robot (GameState.environmental_kill): the same takedown
 ## flash as an execution, worded for how it went.
-const ENV_KILL_WORDS := {"lava": "MELTDOWN", "water": "SHORT CIRCUIT"}
+const ENV_KILL_WORDS := {"lava": "MELTDOWN", "water": "SHORT CIRCUIT", "impact": "SCRAPPED", "fall": "SCRAPPED"}
 
 func _on_environmental_kill(kind: String, _world_pos: Vector3) -> void:
 	if _exec_label:
@@ -1354,10 +1354,13 @@ func _update_highlights_block() -> void:
 	var streak := int(_last_stats.get("best_rampage", 0))
 	var chain := int(_last_stats.get("best_cascade", 0))
 	var melts := int(_last_stats.get("meltdowns", 0))
+	var scrapped := int(_last_stats.get("scrapped", 0))
 	if execs > 0:
 		bits.append("%d %s" % [execs, tr("EXECUTED") if execs == 1 else tr("EXECUTIONS")])
 	if melts > 0:
 		bits.append("%d %s" % [melts, tr("MELTDOWN") if melts == 1 else tr("MELTDOWNS")])
+	if scrapped > 0:
+		bits.append("%d %s" % [scrapped, tr("SCRAPPED")])
 	if bounties > 0:
 		bits.append("%d %s" % [bounties, tr("BOUNTY") if bounties == 1 else tr("BOUNTIES")])
 	if dodges > 0:

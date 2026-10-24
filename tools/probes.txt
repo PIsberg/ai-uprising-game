@@ -362,3 +362,5 @@ res://tests/overseer_clip_probe.tscn
 res://tests/terminator_overclock_probe.tscn
 # MELTDOWN: robots thrown into lava melt (water short-circuits them), blasts throw robots.
 res://tests/meltdown_probe.tscn
+# Scrap physics: thrown robots slam walls, bowl over robots and take fall damage.
+res://tests/scrap_physics_probe.tscn
