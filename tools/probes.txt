@@ -376,7 +376,7 @@ res://tests/breaker_hammer_probe.tscn
 res://tests/melee_clip_probe.tscn
 # RAZORFIN tail: sweeps with swim speed, beats hard through the breach's climb, straight on the dive.
 res://tests/shark_tail_probe.tscn
-# Static bipeds walk (BipedGait): ENFORCER legs+boots cut at spawn, GUNSLINGER and WARBOT legs cut offline.
+# Static bipeds walk (BipedGait): ENFORCER and RONIN legs cut at spawn, GUNSLINGER and WARBOT legs cut offline.
 res://tests/biped_gait_probe.tscn
 # Threat display: every non-boss chassis rears back and lifts at first contact, once per engagement.
 res://tests/threat_display_probe.tscn

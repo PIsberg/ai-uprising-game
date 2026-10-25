@@ -52,6 +52,17 @@ var _shot_pending := false
 # Cube_024); the scabbard (Cube_023) stays on the back.
 const HANDLE_PARTS := ["Cylinder_003", "Circle_040", "Cube_024"]
 const SCABBARD := "Cube_023"
+
+## Legs. Below the cloak's hem the GLB keeps the shins, ankles and feet as a
+## dozen small meshes, each holding the left and the right leg; `_setup_gait`
+## cuts every one by side (PartRig.split_x at the gap between the legs,
+## like the guns) and a `BipedGait` swings each bundle about the hem (the
+## top of the bundle), the two in opposition, at a cadence from ground
+## speed. The guns' meshes sit at the same height and are left out by name.
+## tests/biped_gait_probe.
+const LEG_TOP := 0.76 ## body-frame y: a mesh entirely below it is leg (the cloak hem)
+var _gait := BipedGait.new(1.2, 0.35) ## 1.2 m a stride, 0.35 rad each side (shins only, under the cloak)
+var _gait_tried := false
 const BLADE_LEN := 1.15
 const DRAW_RANGE := 6.0      ## m: draws when the target is this close
 const SHEATHE_AFTER := 1.5   ## s with nobody that close before it sheathes
@@ -100,6 +111,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_tick_guns(delta)
 	_tick_sword(delta)
+	_tick_gait(delta)
 	_dash_cd = maxf(0.0, _dash_cd - delta)
 	_slug_cd = maxf(0.0, _slug_cd - delta)
 	# Mid-dash: ride the burst, ignore nav steering for its duration.
@@ -438,3 +450,48 @@ func _trail_tick(swinging: bool) -> void:
 			im.surface_set_color(v[1])
 			im.surface_add_vertex(v[0])
 	im.surface_end()
+
+## Cut the leg meshes by side and find the hem each bundle swings from, once
+## RobotModel's fit has landed.
+func _setup_gait() -> void:
+	var first := find_child(GUN_PARTS[0], true, false) as Node3D
+	if first == null or not first.is_visible_in_tree():
+		return
+	_gait_tried = true # one attempt: a failed cut keeps the legs as they are
+	var inv := global_transform.affine_inverse()
+	var legs: Array[MeshInstance3D] = []
+	var xs := PackedVector3Array()
+	for m in find_children("*", "MeshInstance3D", true, false):
+		var mi := m as MeshInstance3D
+		if mi.mesh == null or not mi.is_visible_in_tree():
+			continue
+		var parent := String(mi.get_parent().name)
+		if parent in GUN_PARTS or parent in BARREL_PARTS:
+			continue
+		var box: AABB = inv * (mi.global_transform * mi.mesh.get_aabb())
+		if box.end.y > LEG_TOP or box.position.y > LEG_TOP - 0.3:
+			continue
+		legs.append(mi)
+		xs.append_array(PartRig.body_points(self, mi))
+	if legs.is_empty():
+		return
+	var mid := PartRig.mean(xs).x
+	var sides: Array = [[], []]
+	var pts: Array = [PackedVector3Array(), PackedVector3Array()]
+	for mi in legs:
+		var halves := PartRig.split_x(self, mi, mid)
+		for side in 2:
+			if halves[side] != null:
+				(sides[side] as Array).append(halves[side])
+				pts[side] = (pts[side] as PackedVector3Array) + PartRig.body_points(self, halves[side][0])
+	for side in 2:
+		if (sides[side] as Array).is_empty():
+			continue
+		var c := PartRig.mean(pts[side])
+		_gait.add_leg(sides[side], Vector3(c.x, LEG_TOP - 0.02, c.z), side)
+
+func _tick_gait(delta: float) -> void:
+	if not _gait_tried:
+		_setup_gait()
+		return
+	_gait.tick(delta, Vector2(velocity.x, velocity.z).length(), move_speed)
