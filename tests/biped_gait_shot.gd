@@ -1,18 +1,21 @@
 extends Node3D
-## Windowed visual check for the ENFORCER's walk: side and front-left views
-## at four points of its gait cycle at full swing, and standing. Headless
-## gives black frames.
-##   godot --path . res://tests/enforcer_gait_shot.tscn -- --out=<abs dir>
+## Windowed visual check for a static biped's walk (BipedGait): side and
+## front-left views standing and at four points of its gait at full swing.
+## Headless gives black frames.
+##   godot --path . res://tests/biped_gait_shot.tscn -- --out=<abs dir> [--enemy=enforcer|gunslinger]
 
 var _out_dir := ""
+var _enemy := "enforcer"
 var _e: CharacterBody3D
 var _cam: Camera3D
 
 func _ready() -> void:
-	_out_dir = ProjectSettings.globalize_path("user://enforcer_gait_shots")
+	_out_dir = ProjectSettings.globalize_path("user://biped_gait_shots")
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			_out_dir = a.substr(6)
+		elif a.begins_with("--enemy="):
+			_enemy = a.substr(8)
 	DirAccess.make_dir_recursive_absolute(_out_dir)
 	_run.call_deferred()
 
@@ -20,7 +23,7 @@ func _shot(name: String) -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	img.resize(960, 540)
-	img.save_png("%s/enforcer_%s.png" % [_out_dir, name])
+	img.save_png("%s/%s_%s.png" % [_out_dir, _enemy, name])
 	print("SHOT ", name)
 
 func _aim(from: Vector3, at: Vector3) -> void:
@@ -56,7 +59,7 @@ func _run() -> void:
 	cs.position = Vector3(0, -0.5, 0)
 	body.add_child(cs)
 	add_child(body)
-	_e = (load("res://scenes/enemies/enforcer.tscn") as PackedScene).instantiate()
+	_e = (load("res://scenes/enemies/%s.tscn" % _enemy) as PackedScene).instantiate()
 	add_child(_e)
 	_e.global_position = Vector3(0, 0.05, 0)
 	_cam = Camera3D.new()
@@ -65,11 +68,10 @@ func _run() -> void:
 	for i in 12:
 		await get_tree().physics_frame
 	_e.set_physics_process(false)
-	var phases := [["stand", 0.0, 0.0], ["q0", 0.0, 1.0], ["q1", PI * 0.5, 1.0], ["q2", PI, 1.0], ["q3", PI * 1.5, 1.0]]
-	for ph in phases:
-		_e.set("_gait_phase", float(ph[1]))
-		_e.set("_gait_amp", EnemyEnforcer.SWING * float(ph[2]))
-		_e.call("_tick_gait", 0.0)
+	var gait = _e.get("_gait")
+	for ph in [["stand", 0.0, 0.0], ["q0", 0.0, 1.0], ["q1", PI * 0.5, 1.0], ["q2", PI, 1.0], ["q3", PI * 1.5, 1.0]]:
+		if gait:
+			gait.pose_at(float(ph[1]), float(ph[2]))
 		await get_tree().physics_frame
 		_aim(Vector3(3.2, 1.1, 0.0), Vector3(0, 0.9, 0))
 		await _shot(String(ph[0]) + "_side")

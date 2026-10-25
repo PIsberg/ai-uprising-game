@@ -15,10 +15,10 @@ extends EnemyAndroid
 ## barrel's tip; it brings the rifle back across its chest when it loses you.
 ## tests/enforcer_rifle_probe.
 ##
-## It walks on its legs (tests/enforcer_gait_probe): the GLB keeps both
+## It walks on its legs (tests/biped_gait_probe): the GLB keeps both
 ## trouser legs in one mesh and the boots in the chest-plate mesh, so
-## `_setup_gait` cuts both by side (PartRig) and `_tick_gait` swings each leg
-## with its boot about the hip, the two in opposition, at a cadence that
+## `_setup_gait` cuts both by side (PartRig) and a `BipedGait` swings each
+## leg with its boot about the hip, the two in opposition, at a cadence that
 ## follows ground speed; they come back under it when it stands.
 
 const LASER_COLOR := Color(0.35, 1.0, 0.4)
@@ -43,12 +43,8 @@ var _rifle: AimedPart
 const LEGS := "Object_8"     ## both trouser legs, one mesh
 const BOOTS := "Object_13"   ## the chest plate and both boots, one mesh
 const BOOT_TOP := 0.5        ## body-frame y below which that mesh is boot and ankle (its faces sit at 0-0.4 and 1.4-1.6)
-const STRIDE := 1.3          ## m of ground per gait cycle
-const SWING := 0.42          ## rad each leg swings either side at full speed
-var _legs: Array = []        ## {entries, pivot, offset}
+var _gait := BipedGait.new(1.3, 0.42) ## 1.3 m a stride, 0.42 rad each side at full speed
 var _gait_tried := false
-var _gait_phase := 0.0
-var _gait_amp := 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -164,22 +160,10 @@ func _setup_gait() -> void:
 		var entries: Array = [halves[side]]
 		if boot_parts[side] != null:
 			entries.append(boot_parts[side])
-		_legs.append({"entries": entries, "pivot": hip, "offset": 0.0 if side == 0 else PI})
+		_gait.add_leg(entries, hip, side)
 
-## Swing each leg about its hip: cadence from ground speed, the two legs in
-## opposition, back under it at rest.
 func _tick_gait(delta: float) -> void:
 	if not _gait_tried:
 		_setup_gait()
 		return
-	if _legs.is_empty():
-		return
-	var speed := Vector2(velocity.x, velocity.z).length()
-	_gait_phase = fposmod(_gait_phase + delta * speed / STRIDE * TAU, TAU)
-	# A deadband under the creep a nav agent or a shove leaves on a standing
-	# unit (about 0.05 m/s), or the legs twitch while it holds its ground.
-	_gait_amp = move_toward(_gait_amp, SWING * clampf((speed - 0.25) / maxf(move_speed - 0.25, 0.1), 0.0, 1.0), delta * 3.0)
-	for leg in _legs:
-		var lay := PartRig.turn(leg["pivot"], Vector3.RIGHT, sin(_gait_phase + float(leg["offset"])) * _gait_amp)
-		for e in leg["entries"]:
-			PartRig.pose(e, lay)
+	_gait.tick(delta, Vector2(velocity.x, velocity.z).length(), move_speed)
