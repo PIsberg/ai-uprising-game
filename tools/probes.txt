@@ -374,3 +374,5 @@ res://tests/roller_rig_probe.tscn
 res://tests/breaker_hammer_probe.tscn
 # RAVAGER leap/swipe and HUNTER dash on the rig's Jump/Attack clips; swipe hit lands on the lunge.
 res://tests/melee_clip_probe.tscn
+# RAZORFIN tail: sweeps with swim speed, beats hard through the breach's climb, straight on the dive.
+res://tests/shark_tail_probe.tscn

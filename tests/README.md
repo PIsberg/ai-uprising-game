@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-537 probes total: **234** wired into the headless suite (`suite`), **86**
+539 probes total: **235** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **217** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **218** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -146,6 +146,8 @@ or GPU-timing probes; `--headless` renders these black).
 | boss_presence_probe | Boss fights are staged: all 7 bosses have a name and an epithet that translates (es); each phased boss's `_phase()` follows its `boss_phase_marks()` at 90/50/20 % (1, 2, 3); with the real HUD, BEHEMOTH-X's arrival slides the letterbox in (211 px), shows its name and epithet and holds them (a tween that chained its fade-out into the hold cleared the card 0.85 s in), then clears; the bar is notched at 66/33 %; a 10 % hit leaves a trail that drains to the bar; crossing 66 % stages PHASE II once (signal, banner, a roar ring), crossing 33 % the FINAL PHASE; a 4 s hitch frame advances the card 0.05 s, not to its end | suite |
 | boss_presence_shot | Look-check of the boss presence HUD over BEHEMOTH-X: the intro card at its peak, the notched bar with a damage trail, the PHASE II and FINAL PHASE banners; `-- --out=<dir>` | windowed |
 | boss_preview_probe | Every Enemy Codex entry with a `preview` flag (8 bosses) staged exactly as the Encyclopedia does: for 4 s it stays the only enemy in the tree, spawns nothing into the world and never emits `GameState.boss_spawned`; with preview forced off ARCHON alone spawns 8 enemies | suite |
+| shark_tail_probe | RAZORFIN swims with its tail (robot_shark.glb cut offline into Body and Tail): the hinge sits at the caudal peduncle (72% of the nose-to-tip length, at the Tail's front); holding station the tip sways under 0.12 m (0.04); swimming at 7 m/s it swings 0.2+ m aside (0.28) and reverses 3+ times a second (13); the first half of a breach beats it 0.3+ m aside (0.40) with 3+ reversals in 0.6 s, the dive trails it straight (0.03); the Body's nose never moves. Read with the flyer's bank and the breach's pitch taken out | suite |
+| shark_tail_shot | RAZORFIN top-down and from the side with the tail straight and swung 0.45 rad each way; `-- --out=<dir>` | windowed |
 | story_arc_probe | The red thread: every campaign level has a StoryArc beat (tagline and lead, and a trace entry after the first), acts run in campaign order with none skipped, the briefing shows act header + tagline + numbered trace card + thread bar (guardrails), and a level outside the story (range) shows none of it; the HUD's SECTOR CLEARED lead line shows gpt's lead and hides on the range; every act has 3+ overlord lines, none naming ARCHON, and with an empty dossier the HUD opens uplink on an act-III line; the credits list THE 03:14 TRACE with one numbered lead per level, the finale's last | suite |
 | story_i18n_probe | The story reaches the screen translated (#236): with the locale set to German, the briefing displays the tagline, "AKT V · DIE RELAISKETTE", the trace log and the trace card header in German; the SECTOR CLEARED lead line, an act overlord line and an ambient taunt show German in the HUD; the credits' trace title and recap are German (red on the old code: act header, trace header and lead line were built with %, nothing had a row) | suite |
 | death_screen_i18n_probe | The game-over screen is translated (#337): with the locale set to German and a K-9 killer, the overlord taunt, the "Erledigt von" recap, the dog tip and the restart button display German (red on the old code: all built with % around English) | suite |

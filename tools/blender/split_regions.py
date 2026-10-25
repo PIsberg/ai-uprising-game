@@ -51,6 +51,14 @@ for ob in meshes:
 bpy.context.view_layer.objects.active = meshes[0]
 bpy.ops.object.join()
 whole = bpy.context.view_layer.objects.active
+# Unparent the joined object and bake its transform into its vertices, so
+# every part exports at the scene root with an identity transform and
+# world-space vertices. The join keeps the active object's frame (the first
+# mesh's: for the RAZORFIN a bubble sphere under an empty scaled 0.11 and
+# rotated at random), and a part whose mesh lives in a rotated frame has a
+# bounding box 1.3x too big, which put the tail's hinge ahead of the cut.
+bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 mw = whole.matrix_world
 
 

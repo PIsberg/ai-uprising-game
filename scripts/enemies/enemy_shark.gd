@@ -5,6 +5,28 @@ extends EnemyDrone
 ## BREACHES: it rockets up out of the water in an arc, snaps at you mid-leap, and
 ## crashes back under with a splash. Hard to hit while submerged — punish it at
 ## the apex of a breach.
+##
+## It swims with its tail (`shark_tail_probe`): robot_shark.glb is cut
+## offline (tools/blender/split_regions.py, cfg_robot_shark_parts.json) into
+## `Body` and `Tail`, hinged at the caudal peduncle, and `_tick_tail` sweeps
+## the tail side to side at a cadence that follows its swim speed, lazily
+## while it holds station, and in hard fast beats through the climb of a
+## breach (the thrust), trailing straight on the dive.
+
+const TAIL := "Tail"
+const TAIL_SWING := 0.4      ## rad each side at full swim speed
+const TAIL_IDLE := 0.06      ## rad of lazy sweep holding station
+const TAIL_STRIDE := 1.1     ## m of swim per tail beat
+const TAIL_IDLE_RATE := 1.5  ## rad/s of phase holding station
+const BREACH_BEAT := 18.0    ## rad/s of phase through the breach's climb (about 3 beats a second)
+const BREACH_SWING := 0.7    ## rad each side in those beats
+
+var _tail_e: Array = []
+var _tail_pivot := Vector3.ZERO ## body frame, at the peduncle
+var _tail_tried := false
+var _tail_phase := 0.0
+var _tail_amp := 0.0
+var _tail_angle := 0.0
 
 @export var surface_y: float = 0.0     ## Water surface height for this level.
 @export var submerge_depth: float = 1.7 ## How far below the surface it cruises.
@@ -41,6 +63,44 @@ func _ready() -> void:
 
 func _cruise_y() -> float:
 	return surface_y - submerge_depth
+
+func _physics_process(delta: float) -> void:
+	super._physics_process(delta)
+	if not _dying:
+		_tick_tail(delta)
+
+## Find the tail once RobotModel's fit has landed; its hinge is the front of
+## its bounds (the cut at the peduncle) on the body's midline.
+func _setup_tail() -> void:
+	var mi := find_child(TAIL, true, false) as MeshInstance3D
+	if mi == null or not mi.is_visible_in_tree():
+		return
+	_tail_tried = true
+	var box: AABB = global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	_tail_pivot = Vector3(0.0, box.get_center().y, box.position.z + 0.03)
+	_tail_e = PartRig.entry(self, mi)
+
+## Sweep the tail: cadence from swim speed, hard beats through a breach's
+## climb, straight on the dive.
+func _tick_tail(delta: float) -> void:
+	if not _tail_tried:
+		_setup_tail()
+		return
+	if _tail_e.is_empty():
+		return
+	var want := 0.0
+	if _breaching:
+		if _breach_t < BREACH_TIME * 0.5:
+			_tail_phase += BREACH_BEAT * delta
+			want = BREACH_SWING
+	else:
+		var speed := Vector2(velocity.x, velocity.z).length()
+		_tail_phase += delta * (speed / TAIL_STRIDE * TAU + TAIL_IDLE_RATE)
+		want = TAIL_IDLE + TAIL_SWING * clampf(speed / maxf(move_speed, 0.1), 0.0, 1.0)
+	_tail_phase = fposmod(_tail_phase, TAU)
+	_tail_amp = lerpf(_tail_amp, want, 1.0 - exp(-delta * 10.0))
+	_tail_angle = sin(_tail_phase) * _tail_amp
+	PartRig.pose(_tail_e, PartRig.turn(_tail_pivot, Vector3.UP, _tail_angle))
 
 ## Bubbles streaming off it as it swims (replaces the drone's thruster trail).
 func _make_exhaust() -> void:
