@@ -31,7 +31,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _box(mi: MeshInstance3D) -> AABB:
-	return _e.global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	return (_e.call("rig_frame") as Transform3D).affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
 
 ## A part-local point in the body frame with the chassis bank and the
 ## breach's pitch taken out.
@@ -77,10 +77,17 @@ func _run() -> void:
 	_e = (load("res://scenes/enemies/shark.tscn") as PackedScene).instantiate()
 	add_child(_e)
 	_e.global_position = Vector3(0, -1.7, 0)
+	# The rig sets itself up on the tick after RobotModel's deferred fit lands,
+	# and deferred calls run on PROCESS frames: a loaded CI runner packs up to
+	# 8 physics steps into one frame, so a physics-time wait ran out before
+	# the fit had had a frame. Count process frames (up to about 4 s), then
+	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_tail_tried")):
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
+	var frames := 0
+	while frames < 240 and not bool(_e.get("_tail_tried")):
+		await get_tree().process_frame
+		frames += 1
+	await get_tree().physics_frame
 	_tail = _e.find_child("Tail", true, false) as MeshInstance3D
 	_body = _e.find_child("Body", true, false) as MeshInstance3D
 	var rigged: bool = _tail != null and _body != null and not (_e.get("_tail_e") as Array).is_empty()
@@ -90,14 +97,15 @@ func _run() -> void:
 		get_tree().quit()
 		return
 	var pivot: Vector3 = _e.get("_tail_pivot")
-	var tb := _box(_tail)
-	var bb0 := _box(_body)
+	# Rest bounds (PartRig.rest_box): a live box would carry the tail's sway.
+	var tb := PartRig.rest_box(_e.get("_tail_e"))
+	var bb0 := PartRig.rest_box(PartRig.entry(_e, _body))
 	# The peduncle: about three quarters of the way from the nose to the tail tip.
 	var along: float = (pivot.z - bb0.position.z) / (tb.end.z - bb0.position.z)
-	_check("hinge sits at the peduncle", along > 0.6 and along < 0.8 and absf(pivot.x) < 0.01 and absf(pivot.z - tb.position.z) < 0.05, "(%s, %.0f%% of the length)" % [pivot, along * 100.0])
-	_tip_local = _tail.global_transform.affine_inverse() * (_e.global_transform * Vector3(0, tb.get_center().y, tb.end.z))
+	_check("hinge sits at the peduncle", along > 0.6 and along < 0.8 and absf(pivot.x) < 0.01 and absf(pivot.z - tb.position.z) < 0.05, "(%s, %.0f%% of the length; rest tail box %s)" % [pivot, along * 100.0, tb])
+	_tip_local = _tail.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * Vector3(0, tb.get_center().y, tb.end.z))
 	var bb := _box(_body)
-	_nose_local = _body.global_transform.affine_inverse() * (_e.global_transform * Vector3(0, bb.get_center().y, bb.position.z))
+	_nose_local = _body.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * Vector3(0, bb.get_center().y, bb.position.z))
 	var nose_rest := _read(_body, _nose_local)
 	print("  tip at rest %s, nose %s" % [_tip(), nose_rest])
 

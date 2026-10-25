@@ -55,12 +55,12 @@ func _build_floor() -> void:
 
 ## A part's bounds in the body frame.
 func _box(mi: MeshInstance3D) -> AABB:
-	return _e.global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	return (_e.call("rig_frame") as Transform3D).affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
 
 ## Remember a body-frame point as a point in `part`'s own frame.
 func _mark(name: String, part: String, body_p: Vector3) -> void:
 	var mi: MeshInstance3D = _parts[part]
-	_marks[name] = [part, mi.global_transform.affine_inverse() * (_e.global_transform * body_p)]
+	_marks[name] = [part, mi.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * body_p)]
 
 ## Where a mark is now, in the body frame with the chassis nudges taken out:
 ## RobotModel leans the `Mesh` node the parts hang under and EnemyBase rears
@@ -86,10 +86,17 @@ func _run() -> void:
 	_e = (load("res://scenes/enemies/roller.tscn") as PackedScene).instantiate()
 	add_child(_e)
 	_e.global_position = Vector3(0, 0.1, 0)
+	# The rig sets itself up on the tick after RobotModel's deferred fit lands,
+	# and deferred calls run on PROCESS frames: a loaded CI runner packs up to
+	# 8 physics steps into one frame, so a physics-time wait ran out before
+	# the fit had had a frame. Count process frames (up to about 4 s), then
+	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_rig_ready")):
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
+	var frames := 0
+	while frames < 240 and not bool(_e.get("_rig_ready")):
+		await get_tree().process_frame
+		frames += 1
+	await get_tree().physics_frame
 	for n in ["Body", "Wheel", "ArmL", "ArmR"]:
 		_parts[n] = _e.find_child(n, true, false) as MeshInstance3D
 	var have := bool(_e.get("_rig_ready")) and not _parts.values().has(null)

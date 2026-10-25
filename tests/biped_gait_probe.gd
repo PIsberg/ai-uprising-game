@@ -25,6 +25,7 @@ const SPECS := [
 ]
 
 var ok := true
+var _failed: Array = [] ## labels of the failed checks, listed before the verdict (CI keeps only the last lines)
 var _e: CharacterBody3D
 var _player: CharacterBody3D
 var _marks := {} ## name -> [MeshInstance3D, point in its frame]
@@ -34,6 +35,7 @@ func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
 	if not cond:
 		ok = false
+		_failed.append("%s %s" % [label, detail])
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -67,7 +69,7 @@ func _read(mi: MeshInstance3D, local: Vector3) -> Vector3:
 	return base * (mesh_node.global_transform.affine_inverse() * (mi.global_transform * local))
 
 func _mark(name: String, mi: MeshInstance3D, body_p: Vector3) -> void:
-	_marks[name] = [mi, mi.global_transform.affine_inverse() * (_e.global_transform * body_p)]
+	_marks[name] = [mi, mi.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * body_p)]
 
 func _at(name: String) -> Vector3:
 	var m: Array = _marks[name]
@@ -103,10 +105,17 @@ func _test(spec: Dictionary) -> void:
 	add_child(_e)
 	_e.global_position = Vector3(0, 0.1, 0)
 	_quiet(spec)
+	# The rig sets itself up on the tick after RobotModel's deferred fit lands,
+	# and deferred calls run on PROCESS frames: a loaded CI runner packs up to
+	# 8 physics steps into one frame, so a physics-time wait ran out before
+	# the fit had had a frame. Count process frames (up to about 4 s), then
+	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_gait_tried")):
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
+	var frames := 0
+	while frames < 240 and not bool(_e.get("_gait_tried")):
+		await get_tree().process_frame
+		frames += 1
+	await get_tree().physics_frame
 	var names: Array = []
 	for side in spec["legs"]:
 		names.append_array(side)
@@ -198,5 +207,7 @@ func _run() -> void:
 	php.current_health = 1000000.0
 	for spec in SPECS:
 		await _test(spec)
+	for f in _failed:
+		print("FAILED: %s" % f)
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()

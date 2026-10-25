@@ -76,7 +76,7 @@ func _setup_tail() -> void:
 	if mi == null or not mi.is_visible_in_tree():
 		return
 	_tail_tried = true
-	var box: AABB = global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	var box: AABB = rig_frame().affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
 	_tail_pivot = Vector3(0.0, box.get_center().y, box.position.z + 0.03)
 	_tail_e = PartRig.entry(self, mi)
 
