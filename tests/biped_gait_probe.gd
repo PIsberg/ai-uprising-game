@@ -118,18 +118,15 @@ func _test(spec: Dictionary) -> void:
 	# the fit had had a frame. Count process frames (up to about 4 s), then
 	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_gait_tried")):
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
-	# The gait poses on the tick after it is set up (a rest turn straightens
-	# the REAPER's mid-stride legs), so the rest marks wait for that pose.
-	for i in 3:
-		await get_tree().physics_frame
 	var frames := 0
 	while frames < 240 and not bool(_e.get("_gait_tried")):
 		await get_tree().process_frame
 		frames += 1
 	await get_tree().physics_frame
+	# The gait poses on the tick after it is set up (a rest turn straightens
+	# the REAPER's mid-stride legs), so the rest marks wait for that pose.
+	for i in 3:
+		await get_tree().physics_frame
 	var names: Array = []
 	for side in spec["legs"]:
 		names.append_array(side)

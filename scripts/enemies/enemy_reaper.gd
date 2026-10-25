@@ -68,8 +68,11 @@ func _physics_process(delta: float) -> void:
 func _setup_gait() -> void:
 	var parts: Array = []
 	for n in LEGS:
-		parts.append(find_child(n, true, false) as MeshInstance3D)
-	if parts.has(null) or not (parts[0] as MeshInstance3D).is_visible_in_tree():
+		var mi := find_child(n, true, false) as MeshInstance3D
+		if mi == null:
+			return # a model without the cut parts (a stale import) keeps still, quietly
+		parts.append(mi)
+	if not (parts[0] as MeshInstance3D).is_visible_in_tree():
 		return
 	_gait_tried = true
 	for side in 2:
