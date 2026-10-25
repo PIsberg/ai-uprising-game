@@ -1087,6 +1087,20 @@ func _update_hit_react(delta: float) -> void:
 	# Reel backward (lean about X) when staggered; rear back when bristling.
 	_visual_root.rotation = _visual_base_rot + Vector3(-0.5 * _stagger - BRISTLE_REAR * bristle, 0.0, 0.0)
 
+## The body frame with the Model node's visual nudges taken out (the flinch,
+## the stagger reel and the first-contact bristle move `_visual_root` off
+## `_visual_base`). Part rigs measure and pose in this frame (PartRig and the
+## rigs' own bounds reads), so a rig that sets itself up while the chassis
+## is bristling at a player it spawned in front of still finds its joints
+## where the model keeps them. The lean on the Mesh node below is not taken
+## out (it is zero at spawn, and it composes under the parts' parent).
+func rig_frame() -> Transform3D:
+	if _visual_root == null:
+		return global_transform
+	var nudge := Transform3D(Basis.from_euler(_visual_root.rotation), _visual_root.position)
+	var base := Transform3D(Basis.from_euler(_visual_base_rot), _visual_base)
+	return global_transform * (nudge * base.affine_inverse())
+
 ## Multiplier on gravity inside a LowGravField (set and restored by the field);
 ## a Bumper throw ignores it so the solved arc still lands on its ring.
 var gravity_scale: float = 1.0

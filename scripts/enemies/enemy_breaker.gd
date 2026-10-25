@@ -76,7 +76,7 @@ func _setup_hammer() -> void:
 	if mi == null or not mi.is_visible_in_tree():
 		return
 	_hammer_tried = true
-	var box: AABB = global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	var box: AABB = rig_frame().affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
 	_hammer_root = Vector3(box.end.x - 0.02, box.end.y - 0.03, box.position.z + 0.06)
 	_hammer_e = PartRig.entry(self, mi)
 

@@ -59,10 +59,17 @@ func _run() -> void:
 	_e = (load("res://scenes/enemies/breaker.tscn") as PackedScene).instantiate()
 	add_child(_e)
 	_e.global_position = Vector3(0, 2.0, 0)
+	# The rig sets itself up on the tick after RobotModel's deferred fit lands,
+	# and deferred calls run on PROCESS frames: a loaded CI runner packs up to
+	# 8 physics steps into one frame, so a physics-time wait ran out before
+	# the fit had had a frame. Count process frames (up to about 4 s), then
+	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_hammer_tried")):
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
+	var frames := 0
+	while frames < 240 and not bool(_e.get("_hammer_tried")):
+		await get_tree().process_frame
+		frames += 1
+	await get_tree().physics_frame
 	_mi = _e.find_child("Object_7", true, false) as MeshInstance3D
 	var rigged: bool = _mi != null and not (_e.get("_hammer_e") as Array).is_empty()
 	_check("hammer found and rigged", rigged, "(tried %s)" % _e.get("_hammer_tried"))
@@ -70,12 +77,14 @@ func _run() -> void:
 		print("RESULT FAIL")
 		get_tree().quit()
 		return
-	var pts := PartRig.body_points(_e, _mi)
+	# Rest vertices (PartRig.rest_points): a live read would carry the flyer's
+	# bank and the first-contact bristle (it spawns 2.5 m from the player).
+	var pts := PartRig.rest_points(_e.get("_hammer_e"))
 	var top := AimedPart.band_mean(pts, Vector3.UP, 0.04)
 	var root: Vector3 = _e.get("_hammer_root")
 	_check("root sits where the arm leaves the chassis", root.distance_to(top) < 0.06, "(root %s, topmost %s, %.3f m)" % [root, top, root.distance_to(top)])
 	var head_body := AimedPart.far_mean(pts, root, 0.06)
-	_head_local = _mi.global_transform.affine_inverse() * (_e.global_transform * head_body)
+	_head_local = _mi.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * head_body)
 	_rest = _head()
 	print("  head at rest %s" % _rest)
 

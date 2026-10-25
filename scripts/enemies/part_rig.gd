@@ -7,16 +7,40 @@ extends RefCounted
 ## right copy of a part into one mesh (RONIN's revolvers, the DOG's legs):
 ## `split_x` cuts such a mesh in two so each side can move on its own.
 
+## The body frame a rig measures and poses in: the body's `rig_frame()` when
+## it has one (EnemyBase: the Model node's flinch, stagger and bristle nudges
+## taken out), else its global transform.
+static func frame(body: Node3D) -> Transform3D:
+	if body.has_method("rig_frame"):
+		return body.call("rig_frame")
+	return body.global_transform
+
 ## A posable part: [MeshInstance3D, rest Transform3D, body->parent Transform3D].
 ## Taken once the model's fit has landed.
 static func entry(body: Node3D, mi: MeshInstance3D) -> Array:
-	var to_parent: Transform3D = (mi.get_parent() as Node3D).global_transform.affine_inverse() * body.global_transform
+	var to_parent: Transform3D = (mi.get_parent() as Node3D).global_transform.affine_inverse() * frame(body)
 	return [mi, mi.transform, to_parent]
 
 ## Pose an entry by `lay`, a transform in the body frame.
 static func pose(e: Array, lay: Transform3D) -> void:
 	var to_parent := e[2] as Transform3D
 	(e[0] as MeshInstance3D).transform = to_parent * lay * to_parent.affine_inverse() * (e[1] as Transform3D)
+
+## An entry's bounds and vertices at REST, in the rig frame it was taken in:
+## what the part looked like before any pose, whatever it is doing now (a
+## probe compares a measured joint against these; a live read would carry
+## the part's current swing and the chassis lean).
+static func rest_box(e: Array) -> AABB:
+	var mi := e[0] as MeshInstance3D
+	return (e[2] as Transform3D).affine_inverse() * ((e[1] as Transform3D) * mi.mesh.get_aabb())
+
+static func rest_points(e: Array) -> PackedVector3Array:
+	var mi := e[0] as MeshInstance3D
+	var xf: Transform3D = (e[2] as Transform3D).affine_inverse() * (e[1] as Transform3D)
+	var out := PackedVector3Array()
+	for v in mi.mesh.get_faces():
+		out.append(xf * v)
+	return out
 
 ## Rotation by `angle` about the body-frame `axis` through `pivot`.
 static func turn(pivot: Vector3, axis: Vector3, angle: float) -> Transform3D:
@@ -37,7 +61,7 @@ static func split_x(body: Node3D, mi: MeshInstance3D, mid: float) -> Array:
 ## the original only: splitting a split copy again produced garbage triangles
 ## that covered the screen. All groups or nothing, as in split_x.
 static func split_groups(body: Node3D, mi: MeshInstance3D, classify: Callable, names: Array) -> Array:
-	var xf := body.global_transform.affine_inverse() * mi.global_transform
+	var xf := frame(body).affine_inverse() * mi.global_transform
 	var n := names.size()
 	var keeps: Array = []
 	for g in n:
@@ -106,7 +130,7 @@ static func split_groups(body: Node3D, mi: MeshInstance3D, classify: Callable, n
 ## Body-frame positions of the vertices `mi` draws (a split copy keeps the
 ## whole vertex array, so only indexed vertices count).
 static func body_points(body: Node3D, mi: MeshInstance3D) -> PackedVector3Array:
-	var xf := body.global_transform.affine_inverse() * mi.global_transform
+	var xf := frame(body).affine_inverse() * mi.global_transform
 	var out := PackedVector3Array()
 	for si in mi.mesh.get_surface_count():
 		var arr: Array = mi.mesh.surface_get_arrays(si)
