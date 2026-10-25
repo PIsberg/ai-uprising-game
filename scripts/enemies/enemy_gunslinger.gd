@@ -8,8 +8,15 @@ extends EnemyAndroid
 ## forearm about the elbow onto you (both forearms are one mesh in the GLB,
 ## Object_158, split per side by PartRig) and every slug leaves the gun's
 ## tip; disengaged the arm drops back to its side. tests/gunslinger_arm_probe.
+## It walks on its legs (tests/biped_gait_probe): the GLB is cut offline
+## (tools/blender/cfg_steampunk_robot_parts.json) into `Body`, `LegL` and
+## `LegR` below the hips, and a `BipedGait` swings each leg about its hip (the
+## top of its bounds), the two in opposition, at a cadence from ground speed.
 
 const FOREARMS := "Object_158"
+const LEGS := ["LegL", "LegR"]
+var _gait := BipedGait.new(1.2, 0.42) ## 1.2 m a stride, 0.42 rad each side at full speed
+var _gait_tried := false
 const ARM_RATE := 6.0 ## 1/s: arm up in about 0.17 s
 var _arm: AimedPart
 
@@ -34,7 +41,29 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if state != State.DEAD:
 		_tick_arm(delta) # before the slug this tick may fire
+		_tick_gait(delta)
 	super._physics_process(delta)
+
+## Find the leg parts once RobotModel's fit has landed; each hip is the top
+## of its leg's bounds on the leg's own centre line.
+func _setup_gait() -> void:
+	var parts: Array = []
+	for n in LEGS:
+		parts.append(find_child(n, true, false) as MeshInstance3D)
+	if parts.has(null) or not (parts[0] as MeshInstance3D).is_visible_in_tree():
+		return
+	_gait_tried = true
+	for side in 2:
+		var mi: MeshInstance3D = parts[side]
+		var box: AABB = global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+		var c := box.get_center()
+		_gait.add_leg([PartRig.entry(self, mi)], Vector3(c.x, box.end.y - 0.02, c.z), side)
+
+func _tick_gait(delta: float) -> void:
+	if not _gait_tried:
+		_setup_gait()
+		return
+	_gait.tick(delta, Vector2(velocity.x, velocity.z).length(), move_speed)
 
 ## Split the forearms once RobotModel's fit has landed; the gun-arm is the
 ## right one (x > 0): elbow its top band, tip its far end.

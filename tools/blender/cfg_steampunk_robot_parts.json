@@ -1,0 +1,46 @@
+{
+  "_doc": "GUNSLINGER legs (steampunk_robot.glb). World after import: Z up (0.33..1.95), X = width, Y = front/back. The body mesh (material Mech) holds both legs as two columns below the hips at z 0.97 (left x -0.30..-0.11, right 0.16..0.36, the gap centred on x 0.025). The forearms are their own mesh (material Arms) and must stay one object named Object_158 (enemy_gunslinger.gd splits it by side at spawn for the gun-arm), so they are claimed first by material. tools/blender/split_regions.py",
+  "rest": "Body",
+  "regions": [
+    {
+      "name": "Object_158",
+      "material": "Arms",
+      "min": [
+        -9,
+        -9,
+        -9
+      ],
+      "max": [
+        9,
+        9,
+        9
+      ]
+    },
+    {
+      "name": "LegL",
+      "min": [
+        -9,
+        -9,
+        -9
+      ],
+      "max": [
+        0.025,
+        9,
+        0.97
+      ]
+    },
+    {
+      "name": "LegR",
+      "min": [
+        0.025,
+        -9,
+        -9
+      ],
+      "max": [
+        9,
+        9,
+        0.97
+      ]
+    }
+  ]
+}
