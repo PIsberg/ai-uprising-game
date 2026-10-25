@@ -1,0 +1,8 @@
+{
+  "_doc": "RAZORFIN tail (robot_shark.glb). World after import: Z up, Y = nose (-4.7) to tail (7.8), X = width. The body narrows to its caudal peduncle at y 4.5-5.5 (x within 0.75) and the fin runs y 5.5-8; everything aft of y 4.3 is the Tail, hinged there. The baked 'bolla' bubble spheres are dropped: the shark streams its own bubbles in code. tools/blender/split_regions.py",
+  "rest": "Body",
+  "drop_materials": ["bolla"],
+  "regions": [
+    {"name": "Tail", "min": [-9, 4.3, -9], "max": [9, 9, 9]}
+  ]
+}
