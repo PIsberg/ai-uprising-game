@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-541 probes total: **236** wired into the headless suite (`suite`), **86**
+543 probes total: **237** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **219** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **220** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -170,6 +170,8 @@ or GPU-timing probes; `--headless` renders these black).
 | captcha_shot | An android caught mid-challenge in a CAPTCHA gate under the panel, then the panel ticked for the player; `-- --out=<dir>` | windowed |
 | rail_trail_probe | Rail trail: gauss and Longshot carry WeaponData.rail_trail, the rifle not; a gauss hitscan leaves one RailTrail from the muzzle to the wall it hit, its mesh as long as the shot; a rifle shot leaves none; a 400 m shot keeps MAX_LEN by the muzzle; MAX_LIVE at once, each freed after LIFE | suite |
 | rail_trail_shot | Three gauss trails side-on 0.5 s apart (fresh, half-life, fading), then the view down the barrel of a fresh one; `-- --out=<dir>` | windowed |
+| threat_display_probe | A robot bristles at first contact: within 0.3 s of an ANDROID and a DRONE first locking onto the player their Model node rears back 0.15+ rad (0.32) and lifts 0.04+ m (0.09) and 0.8 s on is back within 0.01 rad / 0.005 m (0.000); a second state change while engaged does not re-trigger it and dropping to IDLE re-arms it; the MANUS boss never bristles | suite |
+| threat_display_shot | ANDROID, DOG and DRONE from the side at rest and at the top of the bristle; `-- --out=<dir>` | windowed |
 | walker_bank_probe | Grounded robots without a walk clip (DOG, RONIN, HOWITZER, SERVER, ROLLER, WARBOT, GUNSLINGER, ENFORCER, OPTIC) stand on the floor and, fed a full-speed strafe, roll at most 0.24 rad and pitch at most 0.15 advancing (0.57 / 0.21 before, #276); DRONE, RAPTOR and QUANTIZER off the floor still bank 0.45+ | suite |
 | wind_probe | Crosswinds (WindZone) with the real player on a 2.6 m deck 1.6 m up: outside the box a gust does nothing; stepping in teaches; windsocks droop when calm (-0.95) and stand out in a gust (-0.01); standing still a gust blows you off the deck (2.8 m, lands on the floor); crouched you brace (1.09 m, still on the deck); walking into it makes headway, slowed (0.41 m in 0.8 s vs 4.4 walking). Water World: each zone sits on a SCRAM gantry, blows across it, and just past the downwind edge is water, not a deck. A first version passed the lean-in check by walking out of the box during the warning; at 4.5 m/s walking into a gust made no headway, so the default is 4.0. Red-checked: without the wind move 2 checks fail, without the brace 1 | suite |
 | wind_shot | Water World's first SCRAM gantry from its start at eye height: a fresh calm (windsock hanging, no streaks; the first version waited on the level's initial calm and captured the warning), then mid-gust (sock straight out, streaks running) (`--out=<dir> [--level=<id>]`) | windowed |
