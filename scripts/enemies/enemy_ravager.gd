@@ -6,6 +6,20 @@ extends EnemyBase
 ## bounds the length of the arena and lands on your head — the late-game threat
 ## that punishes standing still. Tanky and hard to stagger; the windup before
 ## each leap is your window. Real model: the bladed fierce chassis, scaled up.
+##
+## It moves on the rig's own clips (`melee_clip_probe`): the leap plays the
+## Jump clip's crouch through the wind-up and the rest of it from the take-off
+## to the landing, and the swipe between leaps is the Attack clip (a rear-back
+## and lunge, squeezed into `SWIPE_T`), with the hit landing at the lunge's
+## peak (`SWIPE_HIT`) rather than the moment the attack is decided. The scene
+## sets no `anim_attack`, so the gun Shoot clip never plays on an armless,
+## bladed brute.
+
+const SWIPE_CLIP := "CharacterArmature|Attack"
+const LEAP_CLIP := "CharacterArmature|Jump"
+const SWIPE_T := 1.0          ## s the 1.67 s rear-back-and-lunge clip is squeezed into
+const SWIPE_HIT := 0.24       ## s into the swipe the lunge peaks (0.4 s of the clip): the hit
+const JUMP_TAKEOFF := 0.17    ## clip s where the crouch ends and it springs
 
 @export var slam_damage: float = 20.0
 @export var slam_radius: float = 4.2 ## Landing shockwave — clips you even if the leap overshoots.
@@ -22,6 +36,7 @@ var _leaping: bool = false
 var _leap_time: float = 0.0
 var _windup: float = 0.0
 var _leap_cd: float = 0.0
+var _swipe_t: float = -1.0 ## time into a swipe; -1 = none
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
@@ -47,6 +62,13 @@ func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
 	_leap_cd = maxf(0.0, _leap_cd - delta)
+	if _swipe_t >= 0.0:
+		var before := _swipe_t
+		_swipe_t += delta
+		if before < SWIPE_HIT and _swipe_t >= SWIPE_HIT:
+			_land_swipe()
+		if _swipe_t > SWIPE_T:
+			_swipe_t = -1.0
 	if _leaping:
 		_apply_gravity(delta)
 		move_and_slide()
@@ -75,6 +97,9 @@ func _physics_process(delta: float) -> void:
 func _begin_windup() -> void:
 	_windup = leap_windup
 	recoil = 0.6
+	# The Jump clip's crouch (its first JUMP_TAKEOFF s) stretched over the wind-up.
+	if _visual_root and _visual_root.has_method("play_oneshot"):
+		_visual_root.play_oneshot(LEAP_CLIP, 0.1, JUMP_TAKEOFF / maxf(leap_windup, 0.05))
 	AudioBus.play_synth_at("overlord_glitch", global_position, -5.0, 1.2)
 
 func _launch_leap() -> void:
@@ -89,6 +114,11 @@ func _launch_leap() -> void:
 	velocity.z = dir.z * leap_h_speed
 	velocity.y = leap_up
 	recoil = 1.0
+	# The rest of the Jump clip (spring, tuck, land) over the ballistic flight.
+	var g: float = float(ProjectSettings.get_setting("physics/3d/default_gravity")) * gravity_scale
+	var flight := 2.0 * leap_up / maxf(g, 1.0) + 0.1
+	if _visual_root and _visual_root.has_method("play_oneshot_over"):
+		_visual_root.play_oneshot_over(LEAP_CLIP, flight, 0.05, JUMP_TAKEOFF)
 	AudioBus.play_synth_at("impact_metal", global_position, -3.0, 0.8)
 
 ## Ground-slam: a heavy AoE thump on landing — hits the player if they're inside
@@ -158,12 +188,22 @@ func _process(_delta: float) -> void:
 		var tell := 3.5 if _windup > 0.0 else 0.0
 		_eye_light.light_energy = lerpf(_eye_light.light_energy, 1.7 + recoil * 2.0 + tell, 0.2)
 
+## A swipe between leaps: the Attack clip's rear-back and lunge; the hit
+## lands at the lunge's peak (`_land_swipe`).
 func _perform_attack() -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	_swipe_t = 0.0
+	if _visual_root and _visual_root.has_method("play_oneshot_over"):
+		_visual_root.play_oneshot_over(SWIPE_CLIP, SWIPE_T, 0.08)
+	AudioBus.play_synth_at("overlord_glitch", global_position, -9.0, 0.9)
+
+func _land_swipe() -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	if global_position.distance_to(target.global_position) <= attack_range * 1.3:
 		var d = target.get_node_or_null("Damageable")
 		if d:
-			d.apply_damage(slam_damage * 0.6, self)  # a swipe between leaps
+			d.apply_damage(slam_damage * 0.6, self)
 		recoil = 1.0
 		AudioBus.play_synth_at("impact_metal", global_position, -5.0, 1.1)

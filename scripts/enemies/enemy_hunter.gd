@@ -13,6 +13,8 @@ extends EnemyBase
 ## the blades on arrival, then kicks back out to strafing bolt bursts. Rides
 ## the base lunge machinery, stretched into a real dash.
 @export var dash_cooldown: float = 6.5
+const DASH_CLIP := "CharacterArmature|Attack" ## the rig's rear-back-and-lunge, squeezed over the dash
+const DASH_CLIP_T := 0.9
 @export var rake_damage: float = 16.0
 
 const PROJECTILE := preload("res://scenes/weapons/projectile_drone.tscn")
@@ -60,6 +62,8 @@ func _physics_process(delta: float) -> void:
 			attack_lunge_speed = 20.0
 			_attack_lunge()
 			_lunge_time = 0.55 # stretch the base pounce into a truer dash
+			if _visual_root and _visual_root.has_method("play_oneshot_over"):
+				_visual_root.play_oneshot_over(DASH_CLIP, DASH_CLIP_T, 0.08)
 			AudioBus.play_synth_at("grenade_throw", global_position, -6.0, 1.35)
 	# The rake lands once per dash, the moment the blades reach the target.
 	if _lunge_time > 0.0 and not _raked and target and is_instance_valid(target) \

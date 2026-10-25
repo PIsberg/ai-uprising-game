@@ -232,20 +232,26 @@ var _hold_left: float = 0.0
 
 ## Play a clip once and keep idle/walk off it for its length at `speed`
 ## (play_named's clip is taken back by locomotion on the next physics tick).
-func play_oneshot(anim_name: String, blend: float = 0.12, speed: float = 1.0) -> void:
+## `from` starts it that many clip seconds in (the RAVAGER plays its Jump
+## clip's crouch through the wind-up, then the rest from the take-off).
+func play_oneshot(anim_name: String, blend: float = 0.12, speed: float = 1.0, from: float = 0.0) -> void:
 	if _anim == null or not _anim.has_animation(anim_name):
 		return
 	_anim.speed_scale = 1.0
 	_anim.play(anim_name, blend, speed)
+	if from > 0.0:
+		_anim.seek(from, true)
 	_hold_clip = anim_name
-	_hold_left = _anim.get_animation(anim_name).length / maxf(speed, 0.01)
+	_hold_left = maxf(_anim.get_animation(anim_name).length - from, 0.0) / maxf(speed, 0.01)
 
-## play_oneshot stretched (or squeezed) to last `seconds`: a 0.33 s crouch clip
-## played over a 1.3 s charge, a jump clip over the whole leap.
-func play_oneshot_over(anim_name: String, seconds: float, blend: float = 0.12) -> void:
+## play_oneshot stretched (or squeezed) so the clip (from `from` on) lasts
+## `seconds`: a 0.33 s crouch clip played over a 1.3 s charge, a jump clip
+## over the whole leap.
+func play_oneshot_over(anim_name: String, seconds: float, blend: float = 0.12, from: float = 0.0) -> void:
 	if _anim == null or not _anim.has_animation(anim_name):
 		return
-	play_oneshot(anim_name, blend, _anim.get_animation(anim_name).length / maxf(seconds, 0.05))
+	var left := maxf(_anim.get_animation(anim_name).length - from, 0.01)
+	play_oneshot(anim_name, blend, left / maxf(seconds, 0.05), from)
 
 func update_advanced_materials() -> void:
 	_glow_mats.clear()
