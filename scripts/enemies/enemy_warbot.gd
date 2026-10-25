@@ -15,6 +15,14 @@ const HAND_X := 0.6
 const HAND_Y := 1.08
 const HAND_Z := -0.42
 
+## Legs. Robot.glb is cut offline (tools/blender/cfg_robot_warbot_parts.json)
+## into `Body`, `LegL` and `LegR` (the stubby legs under the pelvis ball), and
+## a `BipedGait` swings each about its hip (the top of its bounds), the two in
+## opposition, at a cadence from ground speed. tests/biped_gait_probe.
+const LEGS := ["LegL", "LegR"]
+var _gait := BipedGait.new(0.9, 0.42) ## 0.9 m a stride on short legs, 0.42 rad each side at full speed
+var _gait_tried := false
+
 var _happy: Node3D
 var _angry: Node3D
 var _angry_now: bool = false
@@ -127,6 +135,8 @@ func _build_face() -> void:
 ## Happy until it engages — angry the moment it's alerted / chasing / attacking.
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
+	if state != State.DEAD:
+		_tick_gait(delta)
 	var hostile := state == State.ALERT or state == State.CHASE or state == State.ATTACK
 	if hostile != _angry_now:
 		_angry_now = hostile
@@ -209,3 +219,24 @@ func _cross_bolt(origin: Vector3, dir: Vector3) -> void:
 		get_tree().current_scene.add_child(t)
 		if t.has_method("setup"):
 			t.setup(origin, end_point)
+
+## Find the leg parts once RobotModel's fit has landed; each hip is the top
+## of its leg's bounds on the leg's own centre line.
+func _setup_gait() -> void:
+	var parts: Array = []
+	for n in LEGS:
+		parts.append(find_child(n, true, false) as MeshInstance3D)
+	if parts.has(null) or not (parts[0] as MeshInstance3D).is_visible_in_tree():
+		return
+	_gait_tried = true
+	for side in 2:
+		var mi: MeshInstance3D = parts[side]
+		var box: AABB = global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+		var c := box.get_center()
+		_gait.add_leg([PartRig.entry(self, mi)], Vector3(c.x, box.end.y - 0.02, c.z), side)
+
+func _tick_gait(delta: float) -> void:
+	if not _gait_tried:
+		_setup_gait()
+		return
+	_gait.tick(delta, Vector2(velocity.x, velocity.z).length(), move_speed)

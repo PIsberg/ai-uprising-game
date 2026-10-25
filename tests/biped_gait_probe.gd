@@ -1,12 +1,13 @@
 extends Node3D
 ## Probe: static bipeds walk on their legs (BipedGait) instead of sliding.
 ## ENFORCER: mech_police.glb keeps both trouser legs in one mesh and the boots
-## in the chest plate's mesh; both are cut by side at spawn. GUNSLINGER:
-## steampunk_robot.glb is cut offline into Body, LegL and LegR. For each,
+## in the chest plate's mesh; both are cut by side at spawn. GUNSLINGER and
+## WARBOT: their GLBs are cut offline into Body, LegL and LegR. For each,
 ## the sole of every leg part (its lowest band at rest, in the copy's own
 ## frame) is followed through the copy's transform, read with the chassis
 ## lean taken out.
-## (1) walking after a target: each foot swings fore and aft 0.15+ m;
+## (1) walking after a target: each foot swings fore and aft 0.15+ m (the
+##     WARBOT's stubby legs 0.10+);
 ## (2) the two legs in opposition (correlation < -0.6);
 ## (3) a leg's extra parts (the ENFORCER's boots) move with it (r > 0.9);
 ## (4) the parts that must not swing (chest plate, Body) stay put (< 0.03 m);
@@ -19,6 +20,8 @@ const SPECS := [
 		"still": ["Object_13_Plate"], "quiet": ["_attack_timer", "_laser_cd"], "walk": 2.0},
 	{"name": "GUNSLINGER", "scene": "res://scenes/enemies/gunslinger.tscn",
 		"legs": [["LegL"], ["LegR"]], "still": ["Body"], "quiet": ["_attack_timer"], "walk": 3.0},
+	{"name": "WARBOT", "scene": "res://scenes/enemies/warbot.tscn",
+		"legs": [["LegL"], ["LegR"]], "still": ["Body"], "quiet": ["_attack_timer"], "walk": 2.0, "swing": 0.10},
 ]
 
 var ok := true
@@ -153,7 +156,7 @@ func _test(spec: Dictionary) -> void:
 		feet.append(foot)
 		var a: Array = track[foot]
 		var span: float = a.max() - a.min()
-		_check("%s: %s swings fore and aft" % [tag, foot], span >= 0.15, "(%.3f m)" % span)
+		_check("%s: %s swings fore and aft" % [tag, foot], span >= float(spec.get("swing", 0.15)), "(%.3f m)" % span)
 		for extra in side.slice(1):
 			var r := _corr(track[foot], track[extra])
 			_check("%s: %s moves with %s" % [tag, extra, foot], r > 0.9, "(r %.2f)" % r)
