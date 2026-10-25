@@ -9,6 +9,22 @@ extends EnemyDog
 ## charge: a brief plant/spin-up tell, then a fast straight-line drive at the
 ## player that ends on impact (not on landing — it never leaves the floor) with
 ## a bite plus a shove that knocks the player back.
+##
+## Rig. wheeled_robot.glb is cut offline (tools/blender/split_regions.py with
+## tools/blender/cfg_wheeled_robot_parts.json) into the WHEEL (the tire and
+## spokes between the fork legs), the two coiled spring ARMS (everything
+## outboard of the drum between the claws and the shoulder housings) and the
+## rest (`Body`: drum, fork, head). It is cut offline rather than by
+## PartRig.split_groups at spawn because, in a windowed run, reading this
+## mesh's vertices back from the renderer returns about 400 garbage positions
+## (headless it is clean; the HOWITZER's and DOG's meshes read clean in both),
+## which covered the screen in spikes. `_setup_rig` takes each part's joint
+## from its bounds (no vertex read), once RobotModel's fit has landed.
+## `_tick_rig` then rolls the wheel by ground speed about its axle, spins it
+## up on the spot through the ram's plant (the tell), rears the drum back over
+## the wheel in the plant and tips it into the charge, and whips the arms:
+## cocked back and out through the plant, lashed forward together for the
+## charge, flexing with the roll in between.
 
 const RAM_SPEED := 18.0        ## faster than move_speed — this is the charge, not the chase
 const RAM_WINDUP := 0.35       ## plant/spin-up tell before it commits
@@ -20,6 +36,25 @@ var _ramming: bool = false
 var _ram_t: float = 0.0
 var _ram_windup_t: float = 0.0
 var _ram_cd: float = 0.0
+
+const SHOULDER_IN := 0.05                ## m below the arm's top and behind its rearmost, body frame
+const ARM_COCK := 0.8                    ## rad the arms sweep back and out in the plant
+const ARM_LASH := -0.9                   ## rad they sweep forward together in the charge
+const ARM_FLEX := 0.12                   ## rad they flex with the roll
+const REAR := 0.22                       ## rad the drum rears back about the axle in the plant
+const TIP := -0.18                       ## rad it tips into the charge
+const SPINUP := 30.0                     ## rad/s the wheel spins on the spot in the plant
+
+var _rig_ready := false
+var _body_e: Array = []
+var _wheel_e: Array = []
+var _arm_e: Array = [[], []]             ## left, right
+var _arm_pivot: Array = [Vector3.ZERO, Vector3.ZERO]
+var _axle := Vector3.ZERO                ## wheel centre, body frame
+var _wheel_r := 0.3
+var _wheel_spin := 0.0
+var _arm_sweep := 0.0
+var _tilt := 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -40,6 +75,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	_tick_rig(delta)
 	if _emp_t > 0.0:
 		_emp_t = maxf(0.0, _emp_t - delta)
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
@@ -118,3 +154,53 @@ func _ram_impact() -> void:
 			if player is CharacterBody3D and "velocity" in player:
 				(player as CharacterBody3D).velocity += away * RAM_KNOCK + Vector3.UP * 2.5
 	AudioBus.play_synth_at("impact_metal", global_position, -5.0, 1.6)
+
+## A part's bounds in the body frame.
+func _part_box(mi: MeshInstance3D) -> AABB:
+	return global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+
+## Find the parts once the fit has landed (RobotModel hides the mesh until
+## then): the axle is the wheel's centre, each shoulder sits just inside the
+## arm's top rear corner on the drum's side.
+func _setup_rig() -> void:
+	var model := get_node_or_null("Model")
+	var wheel := model.find_child("Wheel", true, false) as MeshInstance3D if model else null
+	if wheel == null or not wheel.is_visible_in_tree():
+		return
+	_rig_ready = true # one attempt: a model without the parts keeps still
+	var body := model.find_child("Body", true, false) as MeshInstance3D
+	var arms: Array = [model.find_child("ArmL", true, false) as MeshInstance3D, model.find_child("ArmR", true, false) as MeshInstance3D]
+	if body == null or arms[0] == null or arms[1] == null:
+		return
+	var wb := _part_box(wheel)
+	_axle = wb.get_center()
+	_wheel_r = wb.size.y * 0.5
+	_body_e = PartRig.entry(self, body)
+	_wheel_e = PartRig.entry(self, wheel)
+	for side in 2:
+		var box := _part_box(arms[side])
+		var inner_x := box.end.x if side == 0 else box.position.x
+		_arm_pivot[side] = Vector3(inner_x, box.end.y - SHOULDER_IN, box.end.z - SHOULDER_IN)
+		_arm_e[side] = PartRig.entry(self, arms[side])
+
+## Roll, rear, tip and whip (see the class doc).
+func _tick_rig(delta: float) -> void:
+	if not _rig_ready:
+		_setup_rig()
+		return
+	if _wheel_e.is_empty():
+		return
+	var speed := velocity.dot(-global_transform.basis.z) # signed, along its facing
+	var planting := _ram_windup_t > 0.0
+	_wheel_spin = fposmod(_wheel_spin + (speed / _wheel_r + (SPINUP if planting else 0.0)) * delta, TAU)
+	var want_tilt := REAR if planting else (TIP if _ramming else 0.0)
+	_tilt = lerpf(_tilt, want_tilt, 1.0 - exp(-delta * 9.0))
+	var want_sweep := ARM_COCK if planting else (ARM_LASH if _ramming else sin(_wheel_spin) * ARM_FLEX * clampf(absf(speed) / 4.0, 0.0, 1.0))
+	_arm_sweep = lerpf(_arm_sweep, want_sweep, 1.0 - exp(-delta * (22.0 if _ramming else 9.0)))
+	var tilt := PartRig.turn(_axle, Vector3.RIGHT, _tilt)
+	PartRig.pose(_body_e, tilt)
+	# Rolling forward (-Z) the top of the wheel moves forward: a negative turn about +X.
+	PartRig.pose(_wheel_e, PartRig.turn(_axle, Vector3.RIGHT, -_wheel_spin))
+	for side in 2:
+		var sweep := PartRig.turn(_arm_pivot[side], Vector3.UP, _arm_sweep if side == 0 else -_arm_sweep)
+		PartRig.pose(_arm_e[side], tilt * sweep)

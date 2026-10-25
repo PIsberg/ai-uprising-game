@@ -368,3 +368,5 @@ res://tests/scrap_physics_probe.tscn
 res://tests/rogue_fork_probe.tscn
 # TACKLE: dashing into a robot throws it along the dash.
 res://tests/dash_tackle_probe.tscn
+# ROLLER rig: wheel rolls by distance, arms cock/lash, drum rears/tips through the ram.
+res://tests/roller_rig_probe.tscn

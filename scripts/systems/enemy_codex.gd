@@ -105,7 +105,7 @@ const ENTRIES := {
 	},
 	"roller": {
 		"scene": "res://scenes/enemies/roller.tscn", "name": "ROLLER", "scale": 1.0, "y": 0.0, "light": 1.6,
-		"desc": "A monowheel brawler — a heavy drum balanced on one fat wheel, whipping spring-arms. It rolls in fast and rams, knocking you back. Tougher than a hound but slower to turn.",
+		"desc": "A monowheel brawler — a heavy drum balanced on one fat wheel, whipping spring-arms. It rolls in fast and rams, knocking you back: when it rears back and spins its wheel on the spot with both claws cocked, the charge is coming. Tougher than a hound but slower to turn.",
 		"strengths": ["Closes distance in a fast roll", "Tanky — soaks a lot before it drops", "Rams hard and knocks you off balance"],
 		"weaknesses": ["No ranged attack — kite it", "Wide turning circle — circle-strafe it"],
 	},
