@@ -2,7 +2,9 @@ extends Node3D
 ## Probe: static bipeds walk on their legs (BipedGait) instead of sliding.
 ## ENFORCER: mech_police.glb keeps both trouser legs in one mesh and the boots
 ## in the chest plate's mesh; both are cut by side at spawn. GUNSLINGER and
-## WARBOT: their GLBs are cut offline into Body, LegL and LegR. For each,
+## WARBOT: their GLBs are cut offline into Body, LegL and LegR. RONIN: the
+## shins, ankles and feet under its cloak are a dozen small meshes, each cut
+## by side at spawn. For each,
 ## the sole of every leg part (its lowest band at rest, in the copy's own
 ## frame) is followed through the copy's transform, read with the chassis
 ## lean taken out.
@@ -22,6 +24,9 @@ const SPECS := [
 		"legs": [["LegL"], ["LegR"]], "still": ["Body"], "quiet": ["_attack_timer"], "walk": 3.0},
 	{"name": "WARBOT", "scene": "res://scenes/enemies/warbot.tscn",
 		"legs": [["LegL"], ["LegR"]], "still": ["Body"], "quiet": ["_attack_timer"], "walk": 2.0, "swing": 0.10},
+	{"name": "RONIN", "scene": "res://scenes/enemies/ronin.tscn",
+		"legs": [["Cube_007_Material_006_0_L", "Cube_003_Material_005_0_L"], ["Cube_007_Material_006_0_R", "Cube_003_Material_005_0_R"]],
+		"still": ["Plane_017_Material_048_0"], "quiet": ["_attack_timer", "_slug_cd", "_dash_cd"], "walk": 3.0, "swing": 0.10},
 ]
 
 var ok := true
