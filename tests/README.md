@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-539 probes total: **235** wired into the headless suite (`suite`), **86**
+541 probes total: **236** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **218** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **219** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -123,6 +123,8 @@ or GPU-timing probes; `--headless` renders these black).
 | coop_registry_probe | Co-op player registry with two real players: `players()` in index order, `nearest_player` by distance and past a downed player; a robot targets the nearer player and turns to the one still standing; a laser gate hurts both players in its beam; a barrel blast shakes both; no script outside `game_state.gd`/`hud.gd` calls `get_first_node_in_group("player")` | suite |
 | cull_aabb_probe | Every enemy scene's effective culling box (custom_aabb, else the mesh AABB) tops out within 4x its collision top (6 m floor) and spans at most twice that, so skinned robots frustum-cull (#207: the clamp has held since ff8eda5; red with `_clamp_cull_aabbs` disabled, 10 robots at 18-298 m) | suite |
 | colorblind_probe | Colourblind Mode: for protanopia, deuteranopia and tritanopia the correction matrix pulls a confusable colour pair at least 1.25x further apart as seen through the probe's own simulation of that deficiency (Machado 2009); Off is the identity; greys and white are fixed points; the GraphicsSettings overlay sits above every CanvasLayer (player post + HUD, campaign map, Armory), carries the matrix, never eats clicks and hides when Off; the player's post-process does not correct twice; the choice survives a settings reload | suite |
+| enforcer_gait_probe | The ENFORCER walks: its trouser legs (one mesh) and boots (in the chest plate's mesh) are cut by side at spawn; walking after a target at 4.2 m/s each boot's sole swings 0.15+ m fore and aft (0.89), the two legs in opposition (r -1.00), each boot with its trouser leg (r 1.00), the chest plate still (0.000 m); stopped out of sight of the player, every leg back within 0.03 m of rest (0.002). Read with the chassis lean taken out | suite |
+| enforcer_gait_shot | ENFORCER from the side and front-left standing and at four points of its gait at full swing; `-- --out=<dir>` | windowed |
 | melee_clip_probe | Melee moves on the rig's own clips. RAVAGER: the leap's wind-up plays the Jump clip and the Body bone crouches 0.4+ m (0.83), the clip plays through the flight with the feet tucked 0.8+ m up (0.91) and is let go within 0.4 s of landing; a swipe plays the Attack clip, the Body bone lunges 1+ m forward (2.47) and the hit (0.6 x slam_damage) lands at the lunge's peak (0.23 s), not when decided. HUNTER: the blade dash plays the Attack clip for the whole lunge and the rake still lands | suite |
 | quality_restart_probe | Dropping the quality tier below the one the session started at (`GraphicsSettings.launch_quality`) recommends a restart, and Settings shows a Restart-to-apply button exactly then, following the real stepper; raising it never does (#156) | suite |
 | radar_shape_probe | HUD radar blips differ by shape, not colour alone: renders the real radar x4 with an enemy, an elite and an objective, simulates protanopia and requires every pair of lit-pixel masks to overlap at most 0.5 (IoU); was 0.77 / 0.60 / 0.79 with same-shape dots | windowed |
