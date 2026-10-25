@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-534 probes total: **232** wired into the headless suite (`suite`), **86**
+536 probes total: **233** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **216** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **217** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -87,6 +87,8 @@ or GPU-timing probes; `--headless` renders these black).
 | bounty_probe | BOUNTY director: tagged-enemy kill awards bonus + clears director + always drops the rare prize | windowed |
 | breakable_cover_probe | Breakable cover: a census of qualifying `walls` per level (at least 30 blocks on 8 levels) and the opt-outs; in a live `neon` build every qualifying block is a `BreakableCover`, enemy rounds x0.3 and splash x1.6, two crack stages, chipping is not a player hit; the shatter frees the block, leaves rubble, hurts a body beside it, and one threaded rebake turns a 1.5x detour into a straight path; a shockwave ring damages a block | suite |
 | breakable_cover_shot | Frames one breakable block of a level (default `neon`) at eye height: intact, from a raised three-quarter view, next to a solid wall, cracked, failing, mid-shatter and as rubble. `-- --out=<dir> [--level=<id>]` | windowed |
+| breaker_hammer_probe | The BREAKER swings its piston hammer (combat_steampunk.glb's own hammer mesh, hung from the chassis top): the root sits within 0.06 m of the arm's topmost vertices (0.012); hovering over the player the head only sways (0.05 m, chassis bank taken out); an attack draws the head 0.15+ m back in the wind-up (0.39), whips it 0.3+ m forward through the stroke (0.70), hurts for smash_damage at the end of the stroke (0.23 s) and not when the attack is decided; a second later it hangs within 0.06 m of rest (0.04) | suite |
+| breaker_hammer_shot | BREAKER from its left side and front-left with the hammer hanging, drawn back and at the end of the stroke; `-- --out=<dir>` | windowed |
 | briefing_view | Per-level comic briefings: art + glow FX + weather + title/tagline/objective, act header, story thread and trace card all show (gpt, mistral, suburb_boss, desert, archon) | windowed |
 | brute_shield_probe | BRUTE still visibly carries its frontal shield slab (front + 3/4 shots) | windowed |
 | bumper_probe | Bumper aimed at a ring 9 m off: a player stepping on lands within 1.2 m of the ring on a real arc (feet 1.5 m+ up) in time; a grounded robot on it is thrown too (red with robots ignored), lands within 2 m of the ring unhurt and is back under its AI once down; a flyer brushing the floor over it is not thrown (red with flyers thrown); the ring is drawn where it throws; walking up teaches the rule once; the Neon Arcade's bumpers each throw across an energy conduit, standing and landing clear of conduits, cabinets and jump pads | suite |
