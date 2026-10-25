@@ -129,7 +129,7 @@ const ENTRIES := {
 	},
 	"breaker": {
 		"scene": "res://scenes/enemies/breaker.tscn", "name": "BREAKER", "scale": 1.0, "y": 1.3, "yaw": 90.0,
-		"desc": "A hovering bronze sphere-bot built around a glowing core, dragging a massive piston hammer. It floats in, bobbing, then dives to slam you before drifting back up. Pure melee — shoot it down before it closes.",
+		"desc": "A hovering bronze sphere-bot built around a glowing core, dragging a massive piston hammer. It floats in, bobbing, then dives and swings the hammer through you before drifting back up: it draws back for a beat before the stroke, so step out of the arc. Pure melee — shoot it down before it closes.",
 		"strengths": ["Floats above the fight and dives to smash", "Hammer slam hits hard", "Tougher than a recon drone"],
 		"weaknesses": ["No ranged attack — punish it at range", "Slow, glowing, easy to track"],
 	},
