@@ -8,7 +8,7 @@ extends Node3D
 ##   godot --headless --path . --audio-driver Dummy res://tests/reaper_rifle_probe.tscn
 
 const SCENE := "res://scenes/enemies/reaper.tscn"
-const RIFLE_MESH := "Object_6" ## the rifle body in another_robot.glb (front end at the barrel)
+const RIFLE_MESH := "Gun2" ## the rifle body in another_robot.glb (its Gun2 material, kept whole by the offline leg cut; front end at the barrel)
 var ok := true
 
 func _check(label: String, cond: bool, detail: String = "") -> void:

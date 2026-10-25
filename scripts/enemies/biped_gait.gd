@@ -20,9 +20,12 @@ func _init(stride_m: float, swing_rad: float) -> void:
 	stride = stride_m
 	swing = swing_rad
 
-## `side` 0 = left (swings with phase), 1 = right (in opposition).
-func add_leg(entries: Array, hip: Vector3, side: int) -> void:
-	_legs.append({"entries": entries, "pivot": hip, "offset": 0.0 if side == 0 else PI})
+## `side` 0 = left (swings with phase), 1 = right (in opposition). `rest` is
+## a constant turn (rad, about the hip, positive swings the foot forward)
+## the leg always carries: a model shipped posed mid-stride is straightened
+## by the angle its foot hangs behind its hip (the REAPER).
+func add_leg(entries: Array, hip: Vector3, side: int, rest: float = 0.0) -> void:
+	_legs.append({"entries": entries, "pivot": hip, "offset": 0.0 if side == 0 else PI, "rest": rest})
 
 func is_empty() -> bool:
 	return _legs.is_empty()
@@ -36,7 +39,7 @@ func tick(delta: float, speed: float, full_speed: float) -> void:
 	var want := swing * clampf((speed - deadband) / maxf(full_speed - deadband, 0.1), 0.0, 1.0)
 	_amp = move_toward(_amp, want, delta * 3.0)
 	for leg in _legs:
-		var lay := PartRig.turn(leg["pivot"], Vector3.RIGHT, sin(_phase + float(leg["offset"])) * _amp)
+		var lay := PartRig.turn(leg["pivot"], Vector3.RIGHT, float(leg["rest"]) + sin(_phase + float(leg["offset"])) * _amp)
 		for e in leg["entries"]:
 			PartRig.pose(e, lay)
 
