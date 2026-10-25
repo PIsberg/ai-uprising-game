@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-532 probes total: **231** wired into the headless suite (`suite`), **86**
+534 probes total: **232** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **215** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **216** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -194,6 +194,8 @@ or GPU-timing probes; `--headless` renders these black).
 | lens_flare_shot | Each level's sun or moon flaring from above the spawn through the player's own LensFlare, HDRI levels included (suburb, suburb_boss); `-- --out=<dir> --levels=desert,gemini` | windowed |
 | arm_aim_probe | Gun-arm aim (`HeadTrackModifier` arms, #232) on eight gun chassis (the HUNTER, OVERFITTER, DEEPFAKE, DIFFUSION and HIVE turret `Gun` bones, the QUANTIZER's head gun, the STILT MECH's right palm from its upper arm, both SNIPER guns): the barrel (pivot to muzzle, a twin gun's midline) points at a target 25 deg right / 30 deg up within 8 deg; `EnemyBase.muzzle` sits on the drawn, aimed barrel (within 0.15 m); dropped, the gun eases back within 3 deg of its clip pose; dead, it keeps the clip pose. Reads poses inside `skeleton_updated` | suite |
 | head_track_shot | Five rig families facing the viewer, at rest and then tracking a "player" on a ledge up and to the right; `-- --out=<dir>`, `--rigs=hunter,mech,sniper,...` for the gun robots' arm aim | windowed |
+| roller_rig_probe | The ROLLER's monowheel rig (wheeled_robot.glb cut offline into Body/Wheel/ArmL/ArmR): the axle and shoulders land on the model (wheel centre within 0.04 m, shoulders within 0.08 m of the arms' innermost points); chasing at 8 m/s the wheel turns forward (front dipping) by the distance rolled over its radius (x0.98) while the claws only flex and lean (0.15 m); the ram's plant cocks the claws back 0.12+ m (0.43), rears the head back 0.03+ m (0.28) and spins the wheel 2+ rad on the spot (6.1); the charge lashes the claws forward 0.12+ m (0.28) and tips the head in (0.51); stopped, claws and head back within 0.03 m and the wheel still | suite |
+| roller_rig_shot | ROLLER front-left at rest, in the plant and in the charge, plus the wheel alone (front and side, at rest and turned) to see nothing static turns with it; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
 | diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |

@@ -21,7 +21,11 @@ Config:
 before any region is cut (APEX's model ships welded to a display slab). A
 region's "material" (optional) narrows it to faces whose material name
 contains that string, for models whose limbs reach into the same box as the
-torso but are textured apart from it.
+torso but are textured apart from it. A region's "cylinder" (optional) narrows
+it further to faces within "radius" of an axis-aligned line: "axis" names the
+line's axis and "center" gives its coordinates on the other two axes in order
+(the ROLLER's wheel is a cylinder about x; its fork runs through the box the
+wheel fills).
 
 Why offline: BEHEMOTH-X (rusty_claws_robot.glb, 337k triangles in 12 meshes,
 each mesh a material slice through the whole body) took about 1.3 s to cut
@@ -30,6 +34,7 @@ with PartRig.split_groups at spawn, a visible hitch as the boss arrives.
 import bmesh
 import bpy
 import json
+import math
 import sys
 
 argv = sys.argv[sys.argv.index("--") + 1:]
@@ -57,8 +62,14 @@ def region_of(c, mat_index):
         lo, hi = r["min"], r["max"]
         if "material" in r and r["material"] not in mat_names[mat_index]:
             continue
-        if all(lo[k] <= c[k] < hi[k] for k in range(3)):
-            return i
+        if not all(lo[k] <= c[k] < hi[k] for k in range(3)):
+            continue
+        if "cylinder" in r:
+            cyl = r["cylinder"]
+            others = [k for k in range(3) if k != "xyz".index(cyl["axis"])]
+            if math.hypot(c[others[0]] - cyl["center"][0], c[others[1]] - cyl["center"][1]) > cyl["radius"]:
+                continue
+        return i
     return -1
 
 
