@@ -88,6 +88,15 @@ var _visual_base: Vector3
 var _visual_base_rot: Vector3
 var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
+## The threat display: 1 at first contact, decaying over about 0.4 s while
+## the chassis rears back and lifts (`BRISTLE_REAR` / `BRISTLE_RISE`, folded
+## into the flinch nudge below), so a robot that spots you bristles before it
+## comes. Bosses (the ones with phase marks) never: they have an entrance
+## for that. tests/threat_display_probe.
+var _bristle: float = 0.0
+const BRISTLE_REAR := 0.32 ## rad the chassis rears back at the top of the display
+const BRISTLE_RISE := 0.09 ## m it lifts
+const BRISTLE_RATE := 2.6  ## 1/s decay of _bristle: 0.38 s up and down
 var _poise: float = 0.0 ## Accumulated recent damage; staggers past stagger_threshold.
 var _emp_t: float = 0.0 ## Seconds left disabled by an EMP grenade — inert while > 0.
 var _launch_t: float = 0.0 ## Seconds of thrown flight left (a Bumper, BlastPush, a shove); AI movement paused while > 0.
@@ -1068,9 +1077,15 @@ func _update_hit_react(delta: float) -> void:
 		_flinch = maxf(0.0, _flinch - delta * 9.0)
 	if _stagger > 0.0:
 		_stagger = maxf(0.0, _stagger - delta * 3.0)
-	_visual_root.position = _visual_base + Vector3(0.0, -0.04, 0.13) * _flinch + Vector3(0.0, 0.0, 0.25) * _stagger
-	# Reel backward (lean about X) when staggered.
-	_visual_root.rotation = _visual_base_rot + Vector3(-0.5 * _stagger, 0.0, 0.0)
+	# The threat display: a hump (up, then back down) over _bristle's decay.
+	var bristle := 0.0
+	if _bristle > 0.0:
+		_bristle = maxf(0.0, _bristle - delta * BRISTLE_RATE)
+		bristle = sin(_bristle * PI)
+	_visual_root.position = _visual_base + Vector3(0.0, -0.04, 0.13) * _flinch + Vector3(0.0, 0.0, 0.25) * _stagger \
+		+ Vector3(0.0, BRISTLE_RISE, 0.02) * bristle
+	# Reel backward (lean about X) when staggered; rear back when bristling.
+	_visual_root.rotation = _visual_base_rot + Vector3(-0.5 * _stagger - BRISTLE_REAR * bristle, 0.0, 0.0)
 
 ## Multiplier on gravity inside a LowGravField (set and restored by the field);
 ## a Bumper throw ignores it so the solved arc still lands on its ring.
@@ -1302,6 +1317,8 @@ func set_state(new_state: State) -> void:
 		# Reaction delay before it can open fire on first contact — the window
 		# scales with difficulty (easy = slow on the trigger, hard = near-instant).
 		_attack_timer = maxf(_attack_timer, reaction_time)
+		if boss_phase_marks().is_empty(): # bosses have an entrance for this
+			_bristle = 1.0
 		_alert()
 		_think("alert")
 		# First contact rallies the squad — wider net = more enemies pile in at

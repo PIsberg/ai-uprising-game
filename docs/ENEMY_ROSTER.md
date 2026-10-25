@@ -101,6 +101,8 @@ inherit that parent's overrides too.
 | WARMECH | `enemy_warmech.gd` | Quaternius Mech, twin shoulder cannons (`quaternius_mech_armed.glb`, cannons skinned to `Torso`) | heavy siege walker; long charged telegraph (a charge orb in each cannon) into a 3-shell plasma salvo that alternates cannons (`CANNON_TIPS` as offsets on a `muzzle_on_bone("Torso")` muzzle), plants while firing | — | — |
 | WHIRLWIND | `enemy_whirlwind.gd` (extends EnemyDrone) | scene model (spins `Model/Mesh`) | hovering buzzsaw; dives to melee-slash at close range, no ranged attack | (drone's) | — |
 
+**First contact:** the moment a robot first locks onto the player (`EnemyBase.set_state`, the `_alerted` latch) it blips, speaks, flares an eye orb and BRISTLES: `_bristle` runs 1 to 0 over about 0.4 s and `_update_hit_react` folds a hump of it into the Model node's nudge (reared back `BRISTLE_REAR` 0.32 rad, lifted `BRISTLE_RISE` 0.09 m, on top of the flinch and stagger reel), so every chassis rears up before it comes. Bosses (any class with `boss_phase_marks`) never bristle: they have an entrance. Re-arms when it drops back to IDLE. `threat_display_probe`.
+
 **Boss entrances:** `_begin_entrance` is defined on `EnemyColossus` and overridden by
 `EnemyTitan`; the other bosses stage their own bespoke entrances (SMASHER wake-slam,
 TERMINATOR floor eruption, MANUS finger-drum, OVERSEER/ARCHON `BossPortal`), all announcing

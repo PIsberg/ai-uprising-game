@@ -3,11 +3,12 @@ extends Node3D
 ## Body, Wheel, ArmL and ArmR (tools/blender/cfg_wheeled_robot_parts.json);
 ## EnemyRoller._setup_rig takes the axle and the shoulders from the parts'
 ## bounds and _tick_rig rolls, rears, tips and whips them. Points are measured
-## once at rest in each part's own frame and followed through its transform.
+## once at rest in each part's own frame and followed through its transform,
+## read with the chassis lean and the first-contact bristle taken out.
 ## (1) the parts are there and the axle and shoulders land on the model
 ##     (the wheel's centre and the arms' innermost points, read headless);
 ## (2) chasing: the wheel turns forward (its front dips) by the distance
-##     rolled over its radius (within 20%) while the claws only flex (and lean);
+##     rolled over its radius (within 20%) while the claws only flex;
 ## (3) the ram's plant: the claws sweep back 0.12+ m, the head rears back
 ##     0.03+ m and the wheel spins 2+ rad on the spot;
 ## (4) the charge: the claws lash forward 0.12+ m of rest, the head tips in;
@@ -61,11 +62,16 @@ func _mark(name: String, part: String, body_p: Vector3) -> void:
 	var mi: MeshInstance3D = _parts[part]
 	_marks[name] = [part, mi.global_transform.affine_inverse() * (_e.global_transform * body_p)]
 
-## Where a mark is now, in the body frame.
+## Where a mark is now, in the body frame with the chassis nudges taken out:
+## RobotModel leans the `Mesh` node the parts hang under and EnemyBase rears
+## the `Model` node above it at first contact (the bristle), so the mark is
+## read in the Mesh node's frame and put back through the fitted base.
 func _at(name: String) -> Vector3:
 	var m: Array = _marks[name]
 	var mi: MeshInstance3D = _parts[m[0]]
-	return _e.global_transform.affine_inverse() * (mi.global_transform * (m[1] as Vector3))
+	var mesh_node: Node3D = _e.get_node("Model/Mesh")
+	var base: Transform3D = _e.get_node("Model").get("_mesh_base")
+	return base * (mesh_node.global_transform.affine_inverse() * (mi.global_transform * (m[1] as Vector3)))
 
 ## Angle of the wheel mark about the axle: 0 at the front, rising as the
 ## wheel rolls forward (the front of a wheel rolling forward moves down
@@ -151,9 +157,8 @@ func _run() -> void:
 	_check("wheel turned forward (front dipping)", phi_total > 1.0, "(%.2f rad)" % phi_total)
 	var ratio := phi_total * _r / maxf(odometer, 0.001)
 	_check("wheel turned by the distance rolled over its radius", absf(ratio - 1.0) < 0.2, "(%.2f rad x %.3f m vs %.2f m: x%.2f)" % [phi_total, _r, odometer, ratio])
-	# The chassis lean (RobotModel, 0.14 rad at speed) carries the claws about
-	# 0.15 m; the plant's cock moves them 0.4 m.
-	_check("claws only flex on the roll", claw_dev < 0.22, "(%.3f m)" % claw_dev)
+	# The flex is 0.12 rad on a 0.45 m arm; the plant's cock moves the claws 0.4 m.
+	_check("claws only flex on the roll", claw_dev < 0.12, "(%.3f m)" % claw_dev)
 
 	# (3) The plant: cock, rear, spin up on the spot.
 	_e.set("_ram_windup_t", 0.35)
