@@ -52,6 +52,9 @@ func tick(delta: float, want: String) -> void:
 	if want != phase:
 		_enter(want)
 	_t += delta
+	# Ask whether this frame is inside the landing before counting its time: a
+	# frame of LAND_T or longer (under 10 fps) used to skip the squash outright.
+	var landing := _landed < LAND_T
 	_landed += delta
 	var want_squash := 1.0
 	var want_pitch := 0.0
@@ -68,7 +71,7 @@ func tick(delta: float, want: String) -> void:
 			var vh := Vector2(body.velocity.x, body.velocity.z).length()
 			want_pitch = clampf(atan2(body.velocity.y, maxf(vh, 0.1)) * ARC_PITCH, -ARC_MAX, ARC_MAX)
 		"ground":
-			if _landed < LAND_T:
+			if landing:
 				want_squash = LAND_SQUASH
 	_squash = move_toward(_squash, want_squash, rate * delta)
 	_pitch = move_toward(_pitch, want_pitch, PITCH_RATE * delta)

@@ -113,14 +113,19 @@ func _run_one(scene: String, label: String, with_assess: bool) -> void:
 		elif _e.velocity.y < -0.5:
 			pitch_down = minf(pitch_down, _pitch())
 	_check("%s springs: stretched at take-off, nose up rising, nose down falling, hanging" % label, leaping and stretch > 1.05 and pitch_up > 0.1 and clip_up == "Hanging" and pitch_down < -0.1, "(stretch %.2f, pitch up to %.2f (clip %s), down to %.2f, flight %.2f s)" % [stretch, pitch_up, clip_up, pitch_down, t])
-	# (3) the landing.
+	# (3) the landing. The squash lasts about LAND_T: watch every rendered frame
+	# for 0.3 s from touchdown and keep the deepest, rather than sampling one
+	# frame a fixed count after it (on a slow CI frame that one had recovered).
 	frames = 0
-	while frames < 300 and bool(_e.get("_leaping")):
-		await get_tree().physics_frame
+	while frames < 600 and bool(_e.get("_leaping")):
+		await get_tree().process_frame
 		frames += 1
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var land_sy: float = _model().scale.y / base_y
+	var land_sy := INF
+	var lt := 0.0
+	while lt < 0.3:
+		await get_tree().process_frame
+		lt += get_process_delta_time()
+		land_sy = minf(land_sy, _model().scale.y / base_y)
 	await _wait(0.5)
 	var rest_sy: float = _model().scale.y / base_y
 	_check("%s lands: a squash that recovers, the Hanging clip released" % label, land_sy < 0.9 and rest_sy > 0.98 and absf(_pitch()) < 0.03 and _clip() != "Hanging", "(landing y %.2f, 0.5 s later %.2f, pitch %.2f, clip %s)" % [land_sy, rest_sy, _pitch(), _clip()])
@@ -132,8 +137,10 @@ func _run_one(scene: String, label: String, with_assess: bool) -> void:
 	_e.set("sight_range", 40.0)
 	_e.call("set_state", 4) # ATTACK
 	_e.set("_attack_timer", 0.0)
+	# The ATTACK state charges a wind-up telegraph (about 30 ticks) before the
+	# bite: 30 ticks was the whole budget and passed only on the last one.
 	frames = 0
-	while frames < 30 and _clip() != "Attack":
+	while frames < 120 and _clip() != "Attack":
 		await get_tree().physics_frame
 		frames += 1
 	_check("%s bites with the Attack clip" % label, _clip() == "Attack", "(clip %s after %d ticks, state %s)" % [_clip(), frames, _e.get("state")])
@@ -166,5 +173,24 @@ func _run() -> void:
 	php.current_health = 1000000.0
 	await _run_one("res://scenes/enemies/spider.tscn", "SPIDER", true)
 	await _run_one("res://scenes/enemies/skitter.tscn", "SKITTER", false)
+	await _slow_frame_landing()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()
+
+## A landing that arrives on one long frame (0.15 s, under 7 fps) still squashes:
+## the frame that lands is inside LAND_T however long it ran. The tick used to
+## count the frame's time before asking, so a frame of LAND_T or longer skipped
+## the squash outright.
+func _slow_frame_landing() -> void:
+	var e: EnemyBase = (load("res://scenes/enemies/skitter.tscn") as PackedScene).instantiate()
+	e.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(e)
+	e.global_position = Vector3(40, 0.2, 0)
+	var pounce := CrawlerPounce.new(e)
+	pounce.tick(1.0 / 60.0, "flight")
+	pounce.tick(0.15, "ground")
+	_check("a landing on one 0.15 s frame still squashes", e.pose_squash < 0.9, "(squash %.2f)" % e.pose_squash)
+	pounce.tick(0.15, "ground")
+	_check("and recovers on the next", e.pose_squash > 0.98, "(squash %.2f)" % e.pose_squash)
+	e.queue_free()
+	await get_tree().process_frame
