@@ -17,7 +17,10 @@ var weapon: Node3D = null
 static func make(w: Node3D) -> SignatureFx:
 	var sig: SignatureFx = null
 	var data: WeaponData = w.get("data") if w else null
-	if data and data.signature_fx:
+	# A signature script that failed to compile cannot be instanced: fall back to
+	# the silent default rather than leave the gun with no signature at all
+	# (every hook call would then error, every frame).
+	if data and data.signature_fx and data.signature_fx.can_instantiate():
 		var inst = data.signature_fx.new()
 		if inst is SignatureFx:
 			sig = inst
