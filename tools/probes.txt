@@ -394,3 +394,5 @@ res://tests/rifle_fx_probe.tscn
 res://tests/shotgun_fx_probe.tscn
 # CX-4 Cascade look: dart tracer, hex tag on hit, spinning hex fuse ring that blinks faster to expiry, chain link arcs.
 res://tests/cascade_fx_probe.tscn
+# .50 Maelstrom signature: fat streak, compensator jets, rolling smoke ring, exit spray through robots, crater burst on walls.
+res://tests/magnum_fx_probe.tscn
