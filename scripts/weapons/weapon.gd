@@ -1055,6 +1055,7 @@ func _update_beam(delta: float) -> void:
 				WeaponMods.on_world_hit(self, hit.position, hit.normal, dir, eff_damage() * _range_mult(origin.distance_to(hit.position)))
 			if _beam_pop % 6 == 0:
 				_spawn_impact(hit.position, hit.normal, _surface_of(col, false) if col else "concrete")
+		_sig.on_beam_tick(hit.position, hit.normal, dmg_node.get_parent() if dmg_node else col, dmg_node != null)
 	fired.emit(self)
 
 func _ensure_beam() -> void:

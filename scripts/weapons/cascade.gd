@@ -147,45 +147,25 @@ static func _blast_fx(tree: SceneTree, pos: Vector3, radius: float, gen: int) ->
 
 ## A jagged cyan arc from a detonation to a robot it primes, so a chain reads as
 ## a chain: the spark visibly jumps from the wreck to the next robot in line.
+## Drawn as an ArcBolt (glowing segments, not a one-pixel line), bowed upward
+## and fading over LINK_TIME.
 static func _link_fx(tree: SceneTree, a: Vector3, b: Vector3) -> void:
 	var scene := tree.current_scene
 	if scene == null:
 		return
 	var from := a + Vector3.UP * 1.0
 	var to := b + Vector3.UP * 1.0
-	var d := to - from
-	var dist := d.length()
+	var dist := from.distance_to(to)
 	if dist < 0.2:
 		return
-	var im := ImmediateMesh.new()
-	im.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
-	var side := d.cross(Vector3.UP).normalized()
-	if side.length() < 0.5:
-		side = Vector3.RIGHT
-	var lift := side.cross(d).normalized()
-	for i in LINK_SEGS + 1:
-		var t := float(i) / LINK_SEGS
-		var p := from + d * t
-		if i > 0 and i < LINK_SEGS:
-			var amp := 0.35 * sin(PI * t) * minf(dist * 0.15, 1.0)
-			p += side * randf_range(-amp, amp) + lift * randf_range(-amp, amp) + Vector3.UP * sin(PI * t) * 0.4
-		im.surface_add_vertex(p - from)
-	im.surface_end()
-	var mi := MeshInstance3D.new()
-	mi.set_meta("sig_fx", "cascade_link")
-	mi.mesh = im
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.albedo_color = Color(COLOR.lerp(Color.WHITE, 0.4), 1.0)
-	mi.material_override = m
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	scene.add_child(mi)
-	mi.global_position = from
-	var tw := mi.create_tween()
-	tw.tween_property(m, "albedo_color:a", 0.0, LINK_TIME)
-	tw.tween_callback(mi.queue_free)
+	var bolt := ArcBolt.make(LINK_SEGS, 0.035, COLOR)
+	bolt.set_meta("sig_fx", "cascade_link")
+	scene.add_child(bolt)
+	bolt.global_position = from
+	bolt.zap(from, to, 0.35 * minf(dist * 0.15, 1.0))
+	var tw := bolt.create_tween()
+	tw.tween_method(bolt.set_alpha, 1.0, 0.0, LINK_TIME)
+	tw.tween_callback(bolt.queue_free)
 
 ## The prime itself: lives on the robot, glows while live, detonates on death.
 class CascadeCharge extends Node3D:
