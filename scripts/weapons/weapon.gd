@@ -486,6 +486,7 @@ func _build_heat_glow() -> void:
 
 func _process(delta: float) -> void:
 	_update_heat(delta)
+	_sig.on_process(delta)
 	if _ammo_label and readout_low():
 		# Low-mag pulse: the warning breathes at 3 Hz instead of sitting still.
 		_ammo_label.modulate.a = 0.55 + 0.45 * absf(sin(Time.get_ticks_msec() * 0.0094))
@@ -809,7 +810,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
 			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)
-			_sig.on_enemy_hit(hpos, dir, final_damage, is_crit)
+			_sig.on_enemy_hit(hpos, hit.normal, dir, final_damage, is_crit)
 			if mod_id != "":
 				# x matchup: a mod works off what the hit dealt after the armour-class table.
 				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage * dmg_node.matchup)
@@ -953,6 +954,9 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 		return
 	var t := data.tracer_scene.instantiate()
 	get_tree().current_scene.add_child(t)
+	# The gun's signature may re-cut the bolt (a pistol cracks, a belt pulses):
+	# asked once per round, since a signature may count rounds.
+	var style := _sig.tracer_style()
 	# Fly the round as a visible bolt from the muzzle to the impact point so the
 	# player sees the shot travel and connect (damage stays instant hitscan; the
 	# bolt is fast enough — 150 m/s — to stay snappy).
@@ -961,12 +965,16 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 		t.bolt_speed = 150.0
 		t.bolt_length = 2.2
 		t.bolt_width = 1.5
-		# The gun's signature may re-cut the bolt (a pistol cracks, a cannon lobs).
-		var style := _sig.tracer_style()
 		for k in style:
-			t.set(k, style[k])
+			if k != "color":
+				t.set(k, style[k])
 	if t.has_method("setup"):
-		t.setup(from, to, shot_color())
+		# A signature may recolour a round (a tracer belt's hot every-third), but a
+		# RAMPAGE tier's colour wins: the streak is the streak's.
+		var col: Color = shot_color()
+		if GameState.rampage_tier <= 0 and style.has("color"):
+			col = style["color"]
+		t.setup(from, to, col)
 
 ## Persistent bullet scars on world geometry — delegates to the shared
 ## BulletMark utility (scripts/fx/bullet_mark.gd) so hitscan AND projectile

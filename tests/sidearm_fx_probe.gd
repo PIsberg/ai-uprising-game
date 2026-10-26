@@ -8,8 +8,9 @@ extends Node3D
 ##   - a round into a robot pings a cross glint at the hit, which fades out, and
 ##     never ricochets;
 ##   - a shot curls a wisp out of the breech and throws no shared muzzle smoke;
-##   - the rifle has none of this: a silent default signature, stock bolt, no
-##     ricochet off the same metal wall.
+##   - an unsigned gun (the same scene with its signature cleared) has none of
+##     this: a silent default signature, stock bolt, no ricochet off the same
+##     metal wall, the shared smoke and no wisp.
 ##   godot --headless --path . --audio-driver Dummy res://tests/sidearm_fx_probe.tscn
 
 const SIDEARM_FX := "res://scripts/weapons/fx/sidearm_fx.gd"
@@ -37,7 +38,10 @@ func _run() -> void:
 	var w: Weapon = (load("res://scenes/weapons/pistol.tscn") as PackedScene).instantiate()
 	add_child(w)
 	w.global_position = Vector3(0.2, 1.4, 0)
-	var rifle: Weapon = (load("res://scenes/weapons/rifle.tscn") as PackedScene).instantiate()
+	# The control: the same scene with its signature cleared, an unsigned gun.
+	var rifle: Weapon = (load("res://scenes/weapons/pistol.tscn") as PackedScene).instantiate()
+	rifle.data = rifle.data.duplicate()
+	rifle.data.signature_fx = null
 	add_child(rifle)
 	rifle.global_position = Vector3(-0.2, 1.4, 0)
 	await get_tree().process_frame
@@ -46,7 +50,7 @@ func _run() -> void:
 	var sig: Object = w._sig
 	_check("the M9 carries the sidearm signature",
 			sig != null and sig.get_script() != null and sig.get_script().resource_path == SIDEARM_FX)
-	_check("the rifle carries the silent default signature",
+	_check("an unsigned gun carries the silent default signature",
 			rifle._sig != null and rifle._sig.get_script().resource_path.ends_with("signature_fx.gd"))
 
 	# Tracer: the crack.
@@ -59,7 +63,7 @@ func _run() -> void:
 				is_equal_approx(t[0].bolt_length, 1.1) and is_equal_approx(t[0].bolt_speed, 240.0),
 				"%.1f m at %.0f m/s" % [t[0].bolt_length, t[0].bolt_speed])
 	var rt := _spawned(func() -> void: rifle._spawn_tracer(from, to), "")
-	_check("the rifle's tracer is the stock bolt (2.2 m at 150 m/s)",
+	_check("an unsigned gun's tracer is the stock bolt (2.2 m at 150 m/s)",
 			rt.size() == 1 and is_equal_approx(rt[0].bolt_length, 2.2) and is_equal_approx(rt[0].bolt_speed, 150.0))
 	for n in t + rt:
 		if is_instance_valid(n):
@@ -96,7 +100,7 @@ func _run() -> void:
 	var wric := _spawned(func() -> void: w._do_hitscan(origin, wdir), "ricochet")
 	_check("a round into wood never ricochets", wric.is_empty(), str(wric.size()))
 	var rric := _spawned(func() -> void: rifle._do_hitscan(origin, dir), "ricochet")
-	_check("the rifle never ricochets off the same metal wall", rric.is_empty(), str(rric.size()))
+	_check("an unsigned gun never ricochets off the same metal wall", rric.is_empty(), str(rric.size()))
 
 	# Glint on a robot.
 	await get_tree().process_frame
@@ -140,9 +144,9 @@ func _run() -> void:
 	rifle._active_camera = cam
 	rifle.mag = maxi(rifle.mag, 3)
 	var rshot := _spawned(func() -> void: rifle._do_shot(), "")
-	_check("the rifle keeps the shared muzzle smoke",
+	_check("an unsigned gun keeps the shared muzzle smoke",
 			rshot.any(func(n: Node) -> bool: return n.get_meta("shared_fx", "") == "muzzle_smoke"))
-	_check("the rifle curls no wisp",
+	_check("an unsigned gun curls no wisp",
 			not rshot.any(func(n: Node) -> bool: return n.get_meta("sig_fx", "") == "breech_wisp"))
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()
