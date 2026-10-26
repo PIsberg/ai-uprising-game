@@ -372,6 +372,7 @@ res://tests/dash_tackle_probe.tscn
 res://tests/roller_rig_probe.tscn
 res://tests/optic_rig_probe.tscn
 res://tests/whirlwind_rig_probe.tscn
+res://tests/ripper_rig_probe.tscn
 # BREAKER hammer: pendulum swing, wind-up then stroke, hit lands on the stroke.
 res://tests/breaker_hammer_probe.tscn
 # RAVAGER leap/swipe and HUNTER dash on the rig's Jump/Attack clips; swipe hit lands on the lunge.

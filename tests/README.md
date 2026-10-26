@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-547 probes total: **239** wired into the headless suite (`suite`), **86**
+549 probes total: **240** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **222** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **223** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -209,6 +209,8 @@ or GPU-timing probes; `--headless` renders these black).
 | optic_rig_shot | OPTIC front-left at rest, through the beam's charge (both torches raised onto the player, from the front and from behind) and burning (a beam from each tip), plus the wheels alone (at rest and a quarter turn on) to see nothing static turns with them; `-- --out=<dir>` | windowed |
 | whirlwind_rig_probe | The WHIRLWIND's blade rig (reaper_whirlwind.glb cut offline into Core/Blades): the blades' root sits on the body's axis (within 0.08 m; the box fit had it 0.99 m off) and the core's centre on the body (0.1 m); idle, the blades turn at 1.6 rad/s (measured from a tip followed through the mesh, the chassis lean taken out) with the tip at its rest height; with you in sight the whirl runs up to 7.5; a dive revs it to 18 and lifts the tip 1.05 m toward level; the dive over, back to 7.5 and hanging; the core's transform never changes and the Mesh node is not spun (the old rig turned the whole model); dead, the whirl is winding down 0.3 s in (4.5 from 7.5) | suite |
 | whirlwind_rig_shot | WHIRLWIND front-left at rest, the core and the blades alone, from a player's eye with the core turned onto it, and mid-dive from that eye and from the side (blades lifted toward level); `-- --out=<dir>` | windowed |
+| ripper_rig_probe | The RIPPER's minigun rig (robot_minigun.glb ships the gun as two meshes, the barrel cluster under its Barrel node and the housing): both there and nothing split, the cluster 0.3+ m forward of the housing, the muzzle at the cluster's far end (within 0.04 m; the scene's old Muzzle node was 0.6 m off at a shoulder); idle the barrels are still (under 0.03 m over 0.3 s, the idle clip bobs the hips); the spin-up turns the cluster (15+ rad/s) before any shot while the housing does not spin; the saw holds it at 45 rad/s (40+ measured about the live axis) and the gun turns onto the saw point within 0.15 rad (a player 30 deg off its nose); the saw over, the spin runs down under 5 and the gun is back on its rest line within 0.05 rad | suite |
+| ripper_rig_shot | RIPPER front-left at rest, close on the gun, the cluster and the housing alone, mid-saw with the gun turned onto a player off to its side (tracers from the cluster's tip) and that from the player's eye; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
 | diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |
