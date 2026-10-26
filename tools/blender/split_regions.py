@@ -25,7 +25,22 @@ torso but are textured apart from it. A region's "cylinder" (optional) narrows
 it further to faces within "radius" of an axis-aligned line: "axis" names the
 line's axis and "center" gives its coordinates on the other two axes in order
 (the ROLLER's wheel is a cylinder about x; its fork runs through the box the
-wheel fills).
+wheel fills). A cylinder's "whole" (optional, true) tests every vertex of the
+face instead of its centroid, for a wheel whose fork is welded to it as big
+flat plates that reach past the tire while their centroids sit inside it
+(the OPTIC's feet: every tire vertex is within the radius, every plate has a
+corner past it). A region's "exclude" (optional) lists boxes whose faces the
+region leaves alone, for a limb whose box holds another limb's root (the
+OPTIC's shin runs from the knee its torch hangs on down to the wheel, through
+the torch's box); a face an exclude box holds falls through to the next
+region, or to the rest. An exclude box may carry its own "cylinder", and
+"any_vertex" (true) makes it claim a face that has any corner inside it, not
+only its centroid (the OPTIC's smaller yoke plates each reach a corner in to
+the hub in the wheel's mid-plane, where no tire face has one). A region's
+"max_edge" (optional) leaves out any face with an edge longer than that, for
+a part tessellated finer than what is welded to it (the OPTIC's tire faces
+have edges under 2 units; the yoke's skin draped over its top is a few faces
+with 3-4 unit edges).
 
 Why offline: BEHEMOTH-X (rusty_claws_robot.glb, 337k triangles in 12 meshes,
 each mesh a material slice through the whole body) took about 1.3 s to cut
@@ -65,18 +80,36 @@ mw = whole.matrix_world
 mat_names = [m.name if m else "" for m in whole.data.materials]
 
 
-def region_of(c, mat_index):
+def in_box(shape, p):
+    return all(shape["min"][k] <= p[k] < shape["max"][k] for k in range(3))
+
+
+def in_cylinder(cyl, p):
+    others = [k for k in range(3) if k != "xyz".index(cyl["axis"])]
+    return math.hypot(p[others[0]] - cyl["center"][0], p[others[1]] - cyl["center"][1]) <= cyl["radius"]
+
+
+def region_of(c, mat_index, verts):
     for i, r in enumerate(cfg["regions"]):
-        lo, hi = r["min"], r["max"]
         if "material" in r and r["material"] not in mat_names[mat_index]:
             continue
-        if not all(lo[k] <= c[k] < hi[k] for k in range(3)):
+        if not in_box(r, c):
             continue
         if "cylinder" in r:
             cyl = r["cylinder"]
-            others = [k for k in range(3) if k != "xyz".index(cyl["axis"])]
-            if math.hypot(c[others[0]] - cyl["center"][0], c[others[1]] - cyl["center"][1]) > cyl["radius"]:
+            probe = verts if cyl.get("whole") else [c]
+            if not all(in_cylinder(cyl, p) for p in probe):
                 continue
+        if "max_edge" in r and max((verts[k] - verts[k - 1]).length for k in range(len(verts))) > r["max_edge"]:
+            continue
+        excluded = False
+        for e in r.get("exclude", []):
+            probe = verts if e.get("any_vertex") else [c]
+            if any(in_box(e, p) and ("cylinder" not in e or in_cylinder(e["cylinder"], p)) for p in probe):
+                excluded = True
+                break
+        if excluded:
+            continue
         return i
     return -1
 
@@ -102,7 +135,7 @@ for g, r in enumerate(cfg["regions"]):
     bm = bmesh.from_edit_mesh(whole.data)
     n = 0
     for face in bm.faces:
-        if region_of(mw @ face.calc_center_median(), face.material_index) == g:
+        if region_of(mw @ face.calc_center_median(), face.material_index, [mw @ v.co for v in face.verts]) == g:
             face.select_set(True)
             n += 1
     bm.select_flush_mode()

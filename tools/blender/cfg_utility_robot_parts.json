@@ -1,0 +1,152 @@
+{
+  "_doc": "OPTIC parts (utility_robot.glb, the camera-box maintenance unit). World after import: Z up (-15.4..33.9), X = width (symmetric), Y = front/back (the torch tips reach y -34 at the front). Two wheel feet: tires of radius 3.3 about an x axis through (y -8.6, z -12.1), one each side between |x| 11.0 and 16.0; the fork's side plates just outside that band stay with the shin, and so do the flat yoke plates welded over the tire's top and out past its front and back: their centroids sit inside the tire (a first cut by centroid took them round with it), so the tire is cut by whole faces, every vertex within 3.6 of the axle (the tire's farthest vertex is at 3.54, every big plate has a corner past 3.6), and the smaller plates, which each reach a corner in to the hub between the sidewalls (|x| 12.3-14.7, within 2.6 of the axle, where the tire has only its tread at 3+ and its sidewalls at |x| 12.0 and 15.0), are excluded by any vertex; the last of the yoke's skin, a few faces draped over the tire's top with 3-4 unit edges, is left out by max_edge 2.2 (the tire's own faces have edges under 2). Two welding torches: the tapered cylinders hung off the elbows beside the pelvis, pointing forward-down-out from the fat end at about (|x| 15, y -14, z 5) to the tips at (|x| 22.5, y -34, z -7.7); everything else forward of y -13.5 and outboard of |x| 14 between z -9 and 9 is torch except the shin, which runs from the knee the torch hangs on down and back to the wheel through the torch's box (the exclude box: y > -18 below z -3; the torch itself is past y -24 down there). The scene yaws the model 180 deg, so Blender -x is the body's RIGHT: the names follow the body. tools/blender/split_regions.py",
+  "rest": "Body",
+  "regions": [
+    {
+      "name": "WheelL",
+      "min": [
+        11.0,
+        -14,
+        -16
+      ],
+      "max": [
+        16.0,
+        -3,
+        -7.5
+      ],
+      "cylinder": {
+        "axis": "x",
+        "center": [
+          -8.6,
+          -12.1
+        ],
+        "radius": 3.6,
+        "whole": true
+      },
+      "exclude": [
+        {
+          "min": [
+            12.3,
+            -14,
+            -16
+          ],
+          "max": [
+            14.7,
+            -3,
+            -7.5
+          ],
+          "cylinder": {
+            "axis": "x",
+            "center": [
+              -8.6,
+              -12.1
+            ],
+            "radius": 2.6
+          },
+          "any_vertex": true
+        }
+      ],
+      "max_edge": 2.2
+    },
+    {
+      "name": "WheelR",
+      "min": [
+        -16.0,
+        -14,
+        -16
+      ],
+      "max": [
+        -11.0,
+        -3,
+        -7.5
+      ],
+      "cylinder": {
+        "axis": "x",
+        "center": [
+          -8.6,
+          -12.1
+        ],
+        "radius": 3.6,
+        "whole": true
+      },
+      "exclude": [
+        {
+          "min": [
+            -14.7,
+            -14,
+            -16
+          ],
+          "max": [
+            -12.3,
+            -3,
+            -7.5
+          ],
+          "cylinder": {
+            "axis": "x",
+            "center": [
+              -8.6,
+              -12.1
+            ],
+            "radius": 2.6
+          },
+          "any_vertex": true
+        }
+      ],
+      "max_edge": 2.2
+    },
+    {
+      "name": "TorchL",
+      "min": [
+        14,
+        -36,
+        -9
+      ],
+      "max": [
+        24,
+        -13.5,
+        9
+      ],
+      "exclude": [
+        {
+          "min": [
+            -24,
+            -18,
+            -16
+          ],
+          "max": [
+            24,
+            -3,
+            -3
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TorchR",
+      "min": [
+        -24,
+        -36,
+        -9
+      ],
+      "max": [
+        -14,
+        -13.5,
+        9
+      ],
+      "exclude": [
+        {
+          "min": [
+            -24,
+            -18,
+            -16
+          ],
+          "max": [
+            24,
+            -3,
+            -3
+          ]
+        }
+      ]
+    }
+  ]
+}
