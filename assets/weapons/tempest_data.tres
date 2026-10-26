@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/projectile_tempest.tscn" id="3_proj"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/tempest_fx.gd" id="9_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -26,6 +27,7 @@ mag_size = 5
 reserve_max = 40
 reload_time = 2.4
 projectile_scene = ExtResource("3_proj")
+signature_fx = ExtResource("9_sig")
 projectile_speed = 60.0
 splash_radius = 2.8
 splash_damage = 55.0
