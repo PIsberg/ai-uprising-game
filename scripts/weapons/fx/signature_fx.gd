@@ -39,6 +39,11 @@ func tracer_style() -> Dictionary:
 func owns_muzzle_smoke() -> bool:
 	return false
 
+## True when the signature throws its own spent case (a shotgun's hull on the pump
+## beat), so the shared brass case on the shot is skipped.
+func owns_brass() -> bool:
+	return false
+
 ## Every shot, after the shared muzzle FX (flash, sparks, brass) have spawned.
 func on_fire() -> void:
 	pass
