@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-545 probes total: **238** wired into the headless suite (`suite`), **86**
+547 probes total: **239** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **221** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **222** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -207,6 +207,8 @@ or GPU-timing probes; `--headless` renders these black).
 | roller_rig_shot | ROLLER front-left at rest, in the plant and in the charge, plus the wheel alone (front and side, at rest and turned) to see nothing static turns with it; `-- --out=<dir>` | windowed |
 | optic_rig_probe | The OPTIC's rig (utility_robot.glb cut offline into Body/WheelL/WheelR/TorchL/TorchR): each axle is its wheel's centre (within 0.01 m), each torch's hinge sits on the barrel at its top (0.015 m) and its tip on the welding point (0.001 m, the torch's farthest vertices from the hinge); chasing at 3.4 m/s the wheels turn forward (fronts dipping) by the distance rolled over their radius (x0.98) while the torches hang still (read in the Mesh node's frame so the chassis lean and the first-contact bristle do not count); the cutting beam's charge raises both tips 0.3+ m (0.51) and points each torch down its hinge-to-player line within 0.12 rad (0.001), and the beam leaves the right tip (0.000 m off the tip followed through the mesh); the beam burns the player and ends; over, both torches back within 0.04 m of rest; stopped, the wheels are still | suite |
 | optic_rig_shot | OPTIC front-left at rest, through the beam's charge (both torches raised onto the player, from the front and from behind) and burning (a beam from each tip), plus the wheels alone (at rest and a quarter turn on) to see nothing static turns with them; `-- --out=<dir>` | windowed |
+| whirlwind_rig_probe | The WHIRLWIND's blade rig (reaper_whirlwind.glb cut offline into Core/Blades): the blades' root sits on the body's axis (within 0.08 m; the box fit had it 0.99 m off) and the core's centre on the body (0.1 m); idle, the blades turn at 1.6 rad/s (measured from a tip followed through the mesh, the chassis lean taken out) with the tip at its rest height; with you in sight the whirl runs up to 7.5; a dive revs it to 18 and lifts the tip 1.05 m toward level; the dive over, back to 7.5 and hanging; the core's transform never changes and the Mesh node is not spun (the old rig turned the whole model); dead, the whirl is winding down 0.3 s in (4.5 from 7.5) | suite |
+| whirlwind_rig_shot | WHIRLWIND front-left at rest, the core and the blades alone, from a player's eye with the core turned onto it, and mid-dive from that eye and from the side (blades lifted toward level); `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
 | diffusion_probe | DIFFUSION: wired into the level builder, codex, DESERT and FROSTBREAK; while it noises out and crosses as a cloud it is off the enemy layer and takes nothing; it denoises at the destination, back on the layer, taking HALF_FORMED_MULT under a DENOISING hologram; formed again every surface has its own material; flank picks avoid a walled side and stay at range; live AI in a fight diffuses on its own onto a flank; killed mid-denoise it dies in its own materials | suite |
