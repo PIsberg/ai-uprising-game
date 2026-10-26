@@ -937,6 +937,8 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 	if "kill_fx" in proj:
 		proj.kill_fx = data.kill_fx
 		proj.weapon_data = data
+	if "signature" in proj:
+		proj.signature = _sig
 	if proj.has_method("launch"):
 		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
 	_sig.on_projectile(proj)

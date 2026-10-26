@@ -70,3 +70,8 @@ func on_process(_delta: float) -> void:
 ## A projectile round was launched (after `launch`), so the signature can dress it.
 func on_projectile(_proj: Node3D) -> void:
 	pass
+
+## One of this gun's projectile rounds went off at `pos` (from the round's
+## `_explode`, after its own blast; the round is freed right after).
+func on_projectile_hit(_proj: Node3D, _pos: Vector3) -> void:
+	pass

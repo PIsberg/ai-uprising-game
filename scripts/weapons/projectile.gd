@@ -23,6 +23,9 @@ const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 
 var kill_fx: int = 0 ## KillFx style of robots this round kills; the firing weapon sets it (WeaponData.kill_fx).
 var weapon_data: WeaponData = null ## the gun that fired it, tagged on every hit (Damageable.hit_weapon)
+## The firing gun's SignatureFx (Weapon._spawn_projectile sets it): told where the
+## round went off, so a gun's own impact FX follow its rounds. Null on enemy rounds.
+var signature: RefCounted = null
 var _velocity: Vector3
 var _shooter: Node
 var _damage: float = 0.0
@@ -404,6 +407,8 @@ func _explode(pos: Vector3) -> void:
 		_spawn_cluster(pos)
 	if chain_count > 0:
 		_chain_lightning(pos)
+	if signature and signature.has_method("on_projectile_hit"):
+		signature.on_projectile_hit(self, pos)
 	queue_free()
 
 ## Chain lightning: hop from the nearest robot to the next-nearest, up to
