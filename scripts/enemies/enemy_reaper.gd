@@ -4,19 +4,29 @@ extends EnemyBase
 ## battle droid carrying a heavy rifle at its right hip, no blades: it closes
 ## at a sprint firing short bursts from that rifle without slowing (marching
 ## fire), and up close it lunges and drives the rifle into you, a strike that
-## shoves you back. Visuals come from a real robot model in reaper.tscn. The
-## chassis HOVERS: the model is static (no walk clip), so it floats on an
-## anti-grav cushion (no gait; RobotModel's flyer auto-bank tilts it into
-## turns like a wraith) with a gentle bob.
+## shoves you back. Visuals come from a real robot model in reaper.tscn. It
+## RUNS on its legs: the GLB is cut offline (tools/blender/cfg_another_robot_parts.json)
+## into `Body`, the rifle (`Gun1`, `Gun2`), `LegL` and `LegR`, and a
+## `BipedGait` swings each leg about its hip (the top of its bounds), the two
+## in opposition, on a sprinter's stride. (It used to hover 0.42 m up on an
+## anti-grav cushion because the static model had no walk clip.)
+## tests/biped_gait_probe.
 
 @export var slash_damage: float = 20.0  ## the rifle strike at the end of the lunge
-@export var hover_height: float = 0.42
-@export var hover_bob: float = 0.08
 @export var shot_damage: float = 4.0    ## per round of the marching-fire burst
 
+const LEGS := ["LegL", "LegR"]
+## Each leg's hip (the top band of its part, body frame) and the rest turn
+## that hangs it straight under that hip: the GLB ships posed mid-stride,
+## the left leg reaching 0.34 m back. Measured headless on the cut model.
+const HIPS := [Vector3(-0.144, 0.868, 0.229), Vector3(0.240, 0.801, 0.100)]
+const REST_TURN := [0.382, -0.137]
+var _gait := BipedGait.new(1.8, 0.55) ## 1.8 m a stride, 0.55 rad each side: a sprint
+var _gait_tried := false
+
 const TRACER := preload("res://scenes/fx/tracer_red.tscn")
-## The rifle's barrel end on the static model, in the body's frame before the
-## hover lift (front-most rifle vertices at (0.30, 0.94, -0.78)).
+## The rifle's barrel end on the static model, in the body's frame
+## (front-most rifle vertices at (0.30, 0.94, -0.78)).
 const RIFLE_TIP := Vector3(0.30, 0.94, -0.84)
 const BURST_ROUNDS := 3
 const BURST_GAP := 0.09     ## s between rounds
@@ -26,7 +36,6 @@ const FIRE_MAX := 24.0
 const SPREAD_DEG := 3.5
 const STRIKE_SHOVE := 7.0   ## m/s the rifle strike drives the target back
 
-var _hover_t: float = 0.0
 var _burst_left: int = 0
 var _burst_t: float = 0.0
 var _burst_cd: float = 0.6
@@ -45,20 +54,35 @@ func _ready() -> void:
 	score_value = 130
 	stagger_threshold = 40.0
 	super._ready()
+	if muzzle:
+		muzzle.position = RIFLE_TIP
 
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	# Anti-grav hover: lift the visual chassis and bob it gently. Set as an
-	# ABSOLUTE height over the model base (not +=) so ticks where the base pass
-	# skips its re-basing (e.g. EMP-stunned) can't accumulate lift.
-	if _visual_root and state != State.DEAD:
-		_hover_t += delta
-		_visual_root.position.y = _visual_base.y - 0.04 * _flinch \
-			+ hover_height + sin(_hover_t * 3.1) * hover_bob
-		# The muzzle rides the rifle up and down with the hover.
-		if muzzle:
-			muzzle.position = RIFLE_TIP + Vector3.UP * (_visual_root.position.y - _visual_base.y)
+	if state != State.DEAD:
+		_tick_gait(delta)
+
+## Find the leg parts once RobotModel's fit has landed and hang each from
+## its measured hip, straightened by its rest turn.
+func _setup_gait() -> void:
+	var parts: Array = []
+	for n in LEGS:
+		var mi := find_child(n, true, false) as MeshInstance3D
+		if mi == null:
+			return # a model without the cut parts (a stale import) keeps still, quietly
+		parts.append(mi)
+	if not (parts[0] as MeshInstance3D).is_visible_in_tree():
+		return
+	_gait_tried = true
+	for side in 2:
+		_gait.add_leg([PartRig.entry(self, parts[side])], HIPS[side], side, REST_TURN[side])
+
+func _tick_gait(delta: float) -> void:
+	if not _gait_tried:
+		_setup_gait()
+		return
+	_gait.tick(delta, Vector2(velocity.x, velocity.z).length(), move_speed)
 
 
 ## Marching fire: bursts start and run from here, on top of whatever the state

@@ -458,7 +458,7 @@ func _setup_gait() -> void:
 	if first == null or not first.is_visible_in_tree():
 		return
 	_gait_tried = true # one attempt: a failed cut keeps the legs as they are
-	var inv := global_transform.affine_inverse()
+	var inv := rig_frame().affine_inverse()
 	var legs: Array[MeshInstance3D] = []
 	var xs := PackedVector3Array()
 	for m in find_children("*", "MeshInstance3D", true, false):

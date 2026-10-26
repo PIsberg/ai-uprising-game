@@ -1078,14 +1078,40 @@ func _update_hit_react(delta: float) -> void:
 	if _stagger > 0.0:
 		_stagger = maxf(0.0, _stagger - delta * 3.0)
 	# The threat display: a hump (up, then back down) over _bristle's decay.
-	var bristle := 0.0
 	if _bristle > 0.0:
 		_bristle = maxf(0.0, _bristle - delta * BRISTLE_RATE)
-		bristle = sin(_bristle * PI)
-	_visual_root.position = _visual_base + Vector3(0.0, -0.04, 0.13) * _flinch + Vector3(0.0, 0.0, 0.25) * _stagger \
-		+ Vector3(0.0, BRISTLE_RISE, 0.02) * bristle
+	var nudge := _visual_nudge()
+	_visual_root.position = _visual_base + (nudge[0] as Vector3)
 	# Reel backward (lean about X) when staggered; rear back when bristling.
-	_visual_root.rotation = _visual_base_rot + Vector3(-0.5 * _stagger - BRISTLE_REAR * bristle, 0.0, 0.0)
+	_visual_root.rotation = _visual_base_rot + Vector3(nudge[1] as float, 0.0, 0.0)
+
+## The hit-react nudge the Model node carries for the current _flinch,
+## _stagger and _bristle: [offset: Vector3, pitch: float] in its local frame.
+## _update_hit_react applies it on top of the base; rig_frame() takes it off.
+func _visual_nudge() -> Array:
+	var hump := sin(_bristle * PI) if _bristle > 0.0 else 0.0
+	var off := Vector3(0.0, -0.04, 0.13) * _flinch + Vector3(0.0, 0.0, 0.25) * _stagger + Vector3(0.0, BRISTLE_RISE, 0.02) * hump
+	return [off, -0.5 * _stagger - BRISTLE_REAR * hump]
+
+## The body frame with the Model node's visual nudges taken out (the flinch,
+## the stagger reel and the first-contact bristle move `_visual_root` off
+## `_visual_base`). Part rigs measure and pose in this frame (PartRig and the
+## rigs' own bounds reads), so a rig that sets itself up while the chassis
+## is bristling at a player it spawned in front of still finds its joints
+## where the model keeps them. The lean on the Mesh node below is not taken
+## out (it is zero at spawn, and it composes under the parts' parent).
+## It is built from the nudge amounts themselves, not from `_visual_base`: a
+## subclass that places its Model node after the base was captured (the
+## TERMINATOR's fit, in preview mode with physics off) would otherwise read
+## that placement as a nudge and measure everything a model-height off.
+func rig_frame() -> Transform3D:
+	if _visual_root == null:
+		return global_transform
+	var nudge := _visual_nudge()
+	var unnudged := Transform3D(
+		Basis.from_euler(_visual_root.rotation - Vector3(nudge[1] as float, 0.0, 0.0)) * Basis.from_scale(_visual_root.scale),
+		_visual_root.position - (nudge[0] as Vector3))
+	return global_transform * (_visual_root.transform * unnudged.affine_inverse())
 
 ## Multiplier on gravity inside a LowGravField (set and restored by the field);
 ## a Bumper throw ignores it so the solved arc still lands on its ring.

@@ -2,7 +2,7 @@ extends Node3D
 ## Probe: static bipeds walk on their legs (BipedGait) instead of sliding.
 ## ENFORCER: mech_police.glb keeps both trouser legs in one mesh and the boots
 ## in the chest plate's mesh; both are cut by side at spawn. GUNSLINGER and
-## WARBOT: their GLBs are cut offline into Body, LegL and LegR. RONIN: the
+## WARBOT and REAPER: their GLBs are cut offline into Body, LegL and LegR. RONIN: the
 ## shins, ankles and feet under its cloak are a dozen small meshes, each cut
 ## by side at spawn. For each,
 ## the sole of every leg part (its lowest band at rest, in the copy's own
@@ -27,9 +27,12 @@ const SPECS := [
 	{"name": "RONIN", "scene": "res://scenes/enemies/ronin.tscn",
 		"legs": [["Cube_007_Material_006_0_L", "Cube_003_Material_005_0_L"], ["Cube_007_Material_006_0_R", "Cube_003_Material_005_0_R"]],
 		"still": ["Plane_017_Material_048_0"], "quiet": ["_attack_timer", "_slug_cd", "_dash_cd"], "walk": 3.0, "swing": 0.10},
+	{"name": "REAPER", "scene": "res://scenes/enemies/reaper.tscn",
+		"legs": [["LegL"], ["LegR"]], "still": ["Body", "Gun2"], "quiet": ["_attack_timer", "_burst_cd"], "walk": 4.0},
 ]
 
 var ok := true
+var _failed: Array = [] ## labels of the failed checks, listed before the verdict (CI keeps only the last lines)
 var _e: CharacterBody3D
 var _player: CharacterBody3D
 var _marks := {} ## name -> [MeshInstance3D, point in its frame]
@@ -39,6 +42,7 @@ func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
 	if not cond:
 		ok = false
+		_failed.append("%s %s" % [label, detail])
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -72,7 +76,7 @@ func _read(mi: MeshInstance3D, local: Vector3) -> Vector3:
 	return base * (mesh_node.global_transform.affine_inverse() * (mi.global_transform * local))
 
 func _mark(name: String, mi: MeshInstance3D, body_p: Vector3) -> void:
-	_marks[name] = [mi, mi.global_transform.affine_inverse() * (_e.global_transform * body_p)]
+	_marks[name] = [mi, mi.global_transform.affine_inverse() * ((_e.call("rig_frame") as Transform3D) * body_p)]
 
 func _at(name: String) -> Vector3:
 	var m: Array = _marks[name]
@@ -108,10 +112,21 @@ func _test(spec: Dictionary) -> void:
 	add_child(_e)
 	_e.global_position = Vector3(0, 0.1, 0)
 	_quiet(spec)
+	# The rig sets itself up on the tick after RobotModel's deferred fit lands,
+	# and deferred calls run on PROCESS frames: a loaded CI runner packs up to
+	# 8 physics steps into one frame, so a physics-time wait ran out before
+	# the fit had had a frame. Count process frames (up to about 4 s), then
+	# step back onto the physics clock the rig poses on.
 	var t := 0.0
-	while t < 2.0 and not bool(_e.get("_gait_tried")):
+	var frames := 0
+	while frames < 240 and not bool(_e.get("_gait_tried")):
+		await get_tree().process_frame
+		frames += 1
+	await get_tree().physics_frame
+	# The gait poses on the tick after it is set up (a rest turn straightens
+	# the REAPER's mid-stride legs), so the rest marks wait for that pose.
+	for i in 3:
 		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
 	var names: Array = []
 	for side in spec["legs"]:
 		names.append_array(side)
@@ -185,7 +200,7 @@ func _test(spec: Dictionary) -> void:
 	for side in spec["legs"]:
 		for n in side:
 			worst = maxf(worst, _at(n).distance_to(_rest[n]))
-	_check("%s: legs back under it when it stops" % tag, worst < 0.03, "(%.3f m)" % worst)
+	_check("%s: legs back under it when it stops" % tag, worst < 0.03, "(%.3f m; still moving at %.2f m/s in state %d)" % [worst, Vector2(_e.velocity.x, _e.velocity.z).length(), int(_e.get("state"))])
 	_e.queue_free()
 	await get_tree().physics_frame
 
@@ -203,5 +218,7 @@ func _run() -> void:
 	php.current_health = 1000000.0
 	for spec in SPECS:
 		await _test(spec)
+	for f in _failed:
+		print("FAILED: %s" % f)
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()

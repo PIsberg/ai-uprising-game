@@ -157,7 +157,7 @@ func _ram_impact() -> void:
 
 ## A part's bounds in the body frame.
 func _part_box(mi: MeshInstance3D) -> AABB:
-	return global_transform.affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+	return rig_frame().affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
 
 ## Find the parts once the fit has landed (RobotModel hides the mesh until
 ## then): the axle is the wheel's centre, each shoulder sits just inside the

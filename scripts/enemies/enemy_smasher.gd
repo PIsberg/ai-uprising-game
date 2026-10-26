@@ -196,7 +196,7 @@ func _setup_limbs() -> void:
 	if body == null or not body.is_visible_in_tree():
 		return
 	_limbs_tried = true
-	var inv := global_transform.affine_inverse()
+	var inv := rig_frame().affine_inverse()
 	for n in ["ArmP", "ArmN", "LegP", "LegN"]:
 		var mi := model.find_child(n, true, false) as MeshInstance3D
 		if mi == null:
