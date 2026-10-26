@@ -1,8 +1,12 @@
 class_name EnemySpider
 extends EnemyBase
 ## Medium, fast, ground-hugging spider drone. Scuttles up to the player and bites
-## in melee with a short lunge. Visuals are the imported "Trilobite" crawler
-## (RobotModel on $Model drives the Run/Attack clips).
+## in melee with a short lunge. Visuals are the imported "Trilobite" walker (a
+## flat disc on two digitigrade legs; RobotModel on $Model drives the
+## Run/Attack clips). The coil, the spring, the flight, the landing and the
+## scuttle's freeze pose the chassis through CrawlerPounce (tests/
+## crawler_pounce_probe): it used to go through all of them stiff as a
+## board, with only the eye flaring.
 
 @export var bite_damage: float = 20.0
 @export var lunge_speed: float = 13.5
@@ -25,6 +29,8 @@ var _leap_cd: float = 0.0
 # motionless pause while it's pursuing at range (it still commits up close).
 var _scuttle_t: float = 0.0
 var _assessing: bool = false
+var _frozen: bool = false ## this tick's assess freeze (the Look clip)
+var _pounce: CrawlerPounce
 
 
 func _ready() -> void:
@@ -43,6 +49,7 @@ func _ready() -> void:
 	score_value = 120
 	hp.max_health = max_health
 	hp.current_health = max_health
+	_pounce = CrawlerPounce.new(self)
 
 # Leap-pounce: scuttles up, crouches into a brief telegraphed windup, then springs
 # in a ballistic arc at the player. The whole pounce is the threat — and the shot
@@ -50,10 +57,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	_frozen = false
 	_leap_cd = maxf(0.0, _leap_cd - delta)
 	if _leaping:
 		_apply_gravity(delta)
 		move_and_slide()
+		_update_hit_react(delta) # the pounce posture rides the Model node's nudges
 		_leap_time += delta
 		if (is_on_floor() and _leap_time > 0.2) or _leap_time > 2.5:
 			_leaping = false
@@ -66,6 +75,7 @@ func _physics_process(delta: float) -> void:
 		_face_target(delta)
 		_apply_gravity(delta)
 		move_and_slide()
+		_update_hit_react(delta)
 		if _windup <= 0.0:
 			_launch_leap()
 		return
@@ -79,10 +89,12 @@ func _physics_process(delta: float) -> void:
 			_assessing = not _assessing
 			_scuttle_t = randf_range(0.18, 0.34) if _assessing else randf_range(0.45, 0.8)
 		if _assessing:
+			_frozen = true
 			_decelerate()
 			_face_target(delta)
 			_apply_gravity(delta)
 			move_and_slide()
+			_update_hit_react(delta)
 			# Still allow a leap to interrupt the freeze if the spacing is right.
 			if _leap_cd <= 0.0:
 				var ld := global_position.distance_to(target.global_position)
@@ -120,11 +132,24 @@ func _bite_if_close() -> void:
 		var d = target.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(bite_damage, self)
+		recoil = 1.0 # the Attack clip: the disc tips onto the bite
 		AudioBus.play_synth_at("impact_metal", global_position, -1.0, 1.4)
+
+## The phase the chassis is posed for (CrawlerPounce.tick).
+func _pounce_phase() -> String:
+	if _leaping:
+		return "flight"
+	if _windup > 0.0:
+		return "windup"
+	if _frozen:
+		return "assess"
+	return "ground"
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
 		return
+	if _pounce:
+		_pounce.tick(delta, _pounce_phase())
 	# Eye light flares bright during the windup — the tell to time your shot.
 	var lamp := get_node_or_null("EyeLight") as OmniLight3D
 	if lamp:
@@ -139,6 +164,7 @@ func _perform_attack() -> void:
 		var d = target.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(bite_damage, self)
+		recoil = 1.0 # the Attack clip
 		# Quick forward lunge on the bite.
 		var dir := target.global_position - global_position
 		dir.y = 0.0

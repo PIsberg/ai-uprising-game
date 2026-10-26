@@ -257,6 +257,12 @@ func play_oneshot(anim_name: String, blend: float = 0.12, speed: float = 1.0, fr
 	_hold_clip = anim_name
 	_hold_left = maxf(_anim.get_animation(anim_name).length - from, 0.0) / maxf(speed, 0.01)
 
+## Let locomotion take the held clip back on the next physics tick (the
+## SPIDER lands out of its Hanging clip, stops looking when it moves again).
+func release_hold() -> void:
+	_hold_clip = ""
+	_hold_left = 0.0
+
 ## play_oneshot stretched (or squeezed) so the clip (from `from` on) lasts
 ## `seconds`: a 0.33 s crouch clip played over a 1.3 s charge, a jump clip
 ## over the whole leap.

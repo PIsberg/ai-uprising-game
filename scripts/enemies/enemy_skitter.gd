@@ -3,8 +3,10 @@ extends EnemyBase
 ## SKITTER — a tiny, fast robotic bug that attacks in swarms. One is trivial
 ## (paper HP, a weak bite); a dozen pouring across the floor and flanking from
 ## every angle is a real threat. Built to be cheap and relentless so they can
-## come in masses. Real model: the imported Trilobite crawler, shrunk and tinted
-## hostile red (RobotModel on $Model drives the Run/Attack clips).
+## come in masses. Real model: the imported Trilobite walker (a flat disc on two
+## digitigrade legs), shrunk and tinted hostile red (RobotModel on $Model drives
+## the Run/Attack clips). The coil, the spring, the flight and the landing pose
+## the chassis through CrawlerPounce, as the SPIDER's do (tests/crawler_pounce_probe).
 
 @export var bite_damage: float = 6.0
 @export var lunge_speed: float = 7.0
@@ -23,6 +25,7 @@ var _leaping: bool = false
 var _leap_time: float = 0.0
 var _windup: float = 0.0
 var _leap_cd: float = 0.0
+var _pounce: CrawlerPounce
 
 @onready var _eye_light: OmniLight3D = $EyeLight
 
@@ -43,6 +46,7 @@ func _ready() -> void:
 	drop_chance = 0.06         # swarms must not flood the floor with pickups
 	hp.max_health = max_health
 	hp.current_health = max_health
+	_pounce = CrawlerPounce.new(self)
 
 ## Pause-then-pounce: scuttles toward the player, then crouches into a brief
 ## telegraphed windup (your shot window) and springs in a ballistic arc — instead
@@ -54,6 +58,7 @@ func _physics_process(delta: float) -> void:
 	if _leaping:
 		_apply_gravity(delta)
 		move_and_slide()
+		_update_hit_react(delta) # the pounce posture rides the Model node's nudges
 		_leap_time += delta
 		if (is_on_floor() and _leap_time > 0.15) or _leap_time > 2.0:
 			_leaping = false
@@ -66,6 +71,7 @@ func _physics_process(delta: float) -> void:
 		_face_target(delta)
 		_apply_gravity(delta)
 		move_and_slide()
+		_update_hit_react(delta)
 		if _windup <= 0.0:
 			_launch_leap()
 		return
@@ -96,7 +102,6 @@ func _launch_leap() -> void:
 	velocity.x = dir.x * reach + side.x
 	velocity.z = dir.z * reach + side.z
 	velocity.y = leap_up * randf_range(0.85, 1.2)
-	recoil = 1.0 # plays the Attack clip
 	if randf() < 0.5:
 		AudioBus.play_synth_at("impact_metal", global_position, -7.0, 2.1)
 
@@ -107,10 +112,13 @@ func _bite_if_close() -> void:
 		var d = target.get_node_or_null("Damageable")
 		if d:
 			d.apply_damage(bite_damage, self)
+		recoil = 1.0 # the Attack clip: the disc tips onto the bite
 		if randf() < 0.5:
 			AudioBus.play_synth_at("impact_metal", global_position, -7.0, 1.9)
 
 func _process(delta: float) -> void:
+	if _pounce and state != State.DEAD:
+		_pounce.tick(delta, "flight" if _leaping else ("windup" if _windup > 0.0 else "ground"))
 	if state == State.DEAD:
 		return
 	if _eye_light:

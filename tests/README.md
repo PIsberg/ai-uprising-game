@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-551 probes total: **241** wired into the headless suite (`suite`), **86**
+553 probes total: **242** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **224** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **225** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -212,6 +212,8 @@ or GPU-timing probes; `--headless` renders these black).
 | ripper_rig_probe | The RIPPER's minigun rig (robot_minigun.glb ships the gun as two meshes, the barrel cluster under its Barrel node and the housing): both there and nothing split, the cluster 0.3+ m forward of the housing, the muzzle at the cluster's far end (within 0.04 m; the scene's old Muzzle node was 0.6 m off at a shoulder); idle the barrels are still (under 0.03 m over 0.3 s, the idle clip bobs the hips); the spin-up turns the cluster (15+ rad/s) before any shot while the housing does not spin; the saw holds it at 45 rad/s (40+ measured about the live axis) and the gun turns onto the saw point within 0.15 rad (a player 30 deg off its nose); the saw over, the spin runs down under 5 and the gun is back on its rest line within 0.05 rad | suite |
 | fishbot_rig_probe | The FISHBOT's swim rig (robot_flyer.glb with box fins hung under its Mesh node): the four fins under the node the chassis banks, the tail behind the body hinged on its front edge, the muzzle at the lens of the eye (within 0.08 m; the scene's old Muzzle node was 0.8 m off, under the body); hanging still the tail sculls at BEAT_IDLE (6 rad/s, tip swing 0.16 m); chasing at full speed it beats at BEAT_SWIM (19, swing 0.41 m) and each leg trails behind its hip within 0.25 rad of LEG_TRAIL (0.07; the clip hangs the foot 0.44 m below); a descent pitches the pectorals nose-down (-0.45 rad at -6 m/s, the front edge below the rear); a spit darts it 4.5+ m/s sideways (6.0) with the strafe side flipped, the bolt leaves 0.3+ m above the body's origin (0.62) and the tail thrashes past TAIL_SWIM; dead 0.3 s, the beat is winding down and the legs going limp | suite |
 | fishbot_rig_shot | FISHBOT side-on, front-left, from behind and above at rest, mid-swim from behind and the side (the tail mid-stroke, the legs trailing), a spit and the dart from the player's eye (`-- --out=<dir>`) | windowed |
+| crawler_pounce_probe | The SPIDER's and SKITTER's pounce posture (CrawlerPounce on the two-legged disc walker), each in turn: the coil squashes the Model (y 0.72) and tips it nose-down (-0.22 rad) while the Mesh read through rig_frame() has not moved; the spring stretches it (1.18) in the first 0.12 s, pitches nose-up rising (0.33) with the Hanging clip and nose-down falling (-0.36); the landing squashes (0.8) and recovers within 0.5 s with the clip released; the bite through the attack state plays Attack; the SPIDER's assess freeze plays Look and moving on drops it | suite |
+| crawler_pounce_shot | SPIDER at rest, coiled in the windup, at take-off, mid-flight rising and falling, landing, and frozen to assess, from the side (`-- --out=<dir>`) | windowed |
 | ripper_rig_shot | RIPPER front-left at rest, close on the gun, the cluster and the housing alone, mid-saw with the gun turned onto a player off to its side (tracers from the cluster's tip) and that from the player's eye; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |

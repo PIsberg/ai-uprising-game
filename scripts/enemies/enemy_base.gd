@@ -86,6 +86,17 @@ var _strafe_cd: float = 0.0
 var _visual_root: Node3D ## Rig/Model node nudged for the hit-flinch.
 var _visual_base: Vector3
 var _visual_base_rot: Vector3
+## A subclass's own posture on the Model node, composed with the hit-react
+## nudges each tick and taken out of rig_frame() like them: a squash of the
+## chassis (y scale, with the width swelling a third as much the other way)
+## and a pitch about X (positive = nose up). The SPIDER's and SKITTER's
+## coil, spring and landing (CrawlerPounce). The squash multiplies whatever
+## scale the Model node has when it starts (an elite's bulk, the
+## TERMINATOR's fit) and puts that back when it ends.
+var pose_squash: float = 1.0
+var pose_pitch: float = 0.0
+var _pose_scaled := false
+var _pose_scale_base := Vector3.ONE
 var _flinch: float = 0.0
 var _stagger: float = 0.0 ## 0..1 visual reel from a staggering hit.
 ## The threat display: 1 at first contact, decaying over about 0.4 s while
@@ -1084,6 +1095,15 @@ func _update_hit_react(delta: float) -> void:
 	_visual_root.position = _visual_base + (nudge[0] as Vector3)
 	# Reel backward (lean about X) when staggered; rear back when bristling.
 	_visual_root.rotation = _visual_base_rot + Vector3(nudge[1] as float, 0.0, 0.0)
+	if not is_equal_approx(pose_squash, 1.0):
+		if not _pose_scaled:
+			_pose_scale_base = _visual_root.scale
+			_pose_scaled = true
+		var w := 1.0 + (1.0 - pose_squash) * 0.33
+		_visual_root.scale = _pose_scale_base * Vector3(w, pose_squash, w)
+	elif _pose_scaled:
+		_visual_root.scale = _pose_scale_base
+		_pose_scaled = false
 
 ## The hit-react nudge the Model node carries for the current _flinch,
 ## _stagger and _bristle: [offset: Vector3, pitch: float] in its local frame.
@@ -1091,7 +1111,7 @@ func _update_hit_react(delta: float) -> void:
 func _visual_nudge() -> Array:
 	var hump := sin(_bristle * PI) if _bristle > 0.0 else 0.0
 	var off := Vector3(0.0, -0.04, 0.13) * _flinch + Vector3(0.0, 0.0, 0.25) * _stagger + Vector3(0.0, BRISTLE_RISE, 0.02) * hump
-	return [off, -0.5 * _stagger - BRISTLE_REAR * hump]
+	return [off, -0.5 * _stagger - BRISTLE_REAR * hump + pose_pitch]
 
 ## The body frame with the Model node's visual nudges taken out (the flinch,
 ## the stagger reel and the first-contact bristle move `_visual_root` off
