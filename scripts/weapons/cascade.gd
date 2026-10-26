@@ -28,6 +28,10 @@ const SETTLE := 0.6     ## seconds after the last pop before the chain is report
 const BOSS_HP := 500.0  ## same tell as EnemyBase.HIJACK_BOSS_HP
 const COLOR := Color(0.55, 0.95, 1.0)
 const PROP_MULT := 10.0 ## an explosive prop in range always goes off
+const FUSE_RADIUS := 0.55 ## metres: the hex fuse ring round a primed robot
+const FUSE_BLINK := Vector2(0.5, 0.08) ## blink period fresh, and about to expire
+const LINK_TIME := 0.22 ## seconds a chain link arc holds before it is gone
+const LINK_SEGS := 6
 
 ## One chain reaction: how many robots have popped and when the last one did.
 class Chain extends RefCounted:
@@ -88,6 +92,7 @@ static func _detonate(tree: SceneTree, pos: Vector3, damage: float, radius: floa
 			victims.append(e)
 	for e in victims:
 		prime(e, damage * DECAY, radius, src, gen + 1, chain)
+		_link_fx(tree, pos, (e as Node3D).global_position)
 	for e in victims:
 		if is_instance_valid(e):
 			GameState.apply_secondary_damage(_hp(e), damage, src, pos)
@@ -140,6 +145,48 @@ static func _blast_fx(tree: SceneTree, pos: Vector3, radius: float, gen: int) ->
 	tw.tween_property(light, "light_energy", 0.0, 0.3)
 	tw.chain().tween_callback(root.queue_free)
 
+## A jagged cyan arc from a detonation to a robot it primes, so a chain reads as
+## a chain: the spark visibly jumps from the wreck to the next robot in line.
+static func _link_fx(tree: SceneTree, a: Vector3, b: Vector3) -> void:
+	var scene := tree.current_scene
+	if scene == null:
+		return
+	var from := a + Vector3.UP * 1.0
+	var to := b + Vector3.UP * 1.0
+	var d := to - from
+	var dist := d.length()
+	if dist < 0.2:
+		return
+	var im := ImmediateMesh.new()
+	im.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+	var side := d.cross(Vector3.UP).normalized()
+	if side.length() < 0.5:
+		side = Vector3.RIGHT
+	var lift := side.cross(d).normalized()
+	for i in LINK_SEGS + 1:
+		var t := float(i) / LINK_SEGS
+		var p := from + d * t
+		if i > 0 and i < LINK_SEGS:
+			var amp := 0.35 * sin(PI * t) * minf(dist * 0.15, 1.0)
+			p += side * randf_range(-amp, amp) + lift * randf_range(-amp, amp) + Vector3.UP * sin(PI * t) * 0.4
+		im.surface_add_vertex(p - from)
+	im.surface_end()
+	var mi := MeshInstance3D.new()
+	mi.set_meta("sig_fx", "cascade_link")
+	mi.mesh = im
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_color = Color(COLOR.lerp(Color.WHITE, 0.4), 1.0)
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	scene.add_child(mi)
+	mi.global_position = from
+	var tw := mi.create_tween()
+	tw.tween_property(m, "albedo_color:a", 0.0, LINK_TIME)
+	tw.tween_callback(mi.queue_free)
+
 ## The prime itself: lives on the robot, glows while live, detonates on death.
 class CascadeCharge extends Node3D:
 	var damage := 0.0
@@ -149,6 +196,11 @@ class CascadeCharge extends Node3D:
 	var chain: Cascade.Chain = null
 	var expires_ms := 0
 	var _glow: OmniLight3D
+	## A hexagonal ring round the chassis that spins and blinks faster as the
+	## prime runs out: the player reads which robots are primed, and for how long.
+	var fuse: MeshInstance3D = null
+	var _fuse_mat: StandardMaterial3D
+	var _blink := 0.0
 
 	func live() -> bool:
 		return Time.get_ticks_msec() < expires_ms
@@ -163,10 +215,49 @@ class CascadeCharge extends Node3D:
 			add_child(_glow)
 		_glow.light_energy = 2.2
 		_glow.visible = true
+		if fuse == null:
+			var tm := TorusMesh.new()
+			tm.inner_radius = Cascade.FUSE_RADIUS - 0.035
+			tm.outer_radius = Cascade.FUSE_RADIUS
+			tm.rings = 6 # six segments round: a hexagon
+			tm.ring_segments = 4
+			_fuse_mat = StandardMaterial3D.new()
+			_fuse_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_fuse_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			_fuse_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			_fuse_mat.albedo_color = Color(Cascade.COLOR, 0.9)
+			_fuse_mat.emission_enabled = true
+			_fuse_mat.emission = Cascade.COLOR
+			_fuse_mat.emission_energy_multiplier = 5.0
+			tm.material = _fuse_mat
+			fuse = MeshInstance3D.new()
+			fuse.name = "Fuse"
+			fuse.mesh = tm
+			fuse.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			fuse.position = Vector3.UP * 1.1
+			add_child(fuse)
+		fuse.visible = true
+		_blink = 0.0
 
-	func _process(_delta: float) -> void:
+	## Seconds per blink right now: FUSE_BLINK.x fresh, toward FUSE_BLINK.y at expiry.
+	func fuse_period() -> float:
+		var left := clampf(float(expires_ms - Time.get_ticks_msec()) / (Cascade.PRIME_TIME * 1000.0), 0.0, 1.0)
+		return lerpf(Cascade.FUSE_BLINK.y, Cascade.FUSE_BLINK.x, left)
+
+	func _process(delta: float) -> void:
 		if _glow and _glow.visible and not live():
 			_glow.visible = false
+		if fuse == null or not fuse.visible:
+			return
+		if not live():
+			fuse.visible = false
+			return
+		var period := fuse_period()
+		_blink = fmod(_blink + delta / period, 1.0)
+		fuse.rotate_y(delta * TAU / (period * 4.0))
+		var on := 1.0 if _blink < 0.55 else 0.25
+		_fuse_mat.albedo_color.a = 0.9 * on
+		_fuse_mat.emission_energy_multiplier = 5.0 * on
 
 	func _on_died(_src: Node) -> void:
 		if not live() or chain == null:
@@ -174,6 +265,8 @@ class CascadeCharge extends Node3D:
 		expires_ms = 0 # one detonation per robot
 		if _glow:
 			_glow.visible = false
+		if fuse:
+			fuse.visible = false
 		var tree := get_tree()
 		if tree == null:
 			return

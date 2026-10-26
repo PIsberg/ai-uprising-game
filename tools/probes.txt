@@ -392,3 +392,5 @@ res://tests/sidearm_fx_probe.tscn
 res://tests/rifle_fx_probe.tscn
 # SG-12 Breacher signature: pellet beads / slug bolt, fire bloom, wad, rolling cloud, hull on the pump beat, one pepper per blast.
 res://tests/shotgun_fx_probe.tscn
+# CX-4 Cascade look: dart tracer, hex tag on hit, spinning hex fuse ring that blinks faster to expiry, chain link arcs.
+res://tests/cascade_fx_probe.tscn
