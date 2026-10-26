@@ -388,3 +388,5 @@ res://tests/biped_gait_probe.tscn
 res://tests/threat_display_probe.tscn
 # M9 Sidearm signature (SignatureFx hooks): crack tracer, ricochet off hard walls, cross glint on robots, breech wisp.
 res://tests/sidearm_fx_probe.tscn
+# AR-7 Pulse Rifle signature: every-third long tracer, heat shimmer past HAZE_HEAT, streamer not puff, spall along plating.
+res://tests/rifle_fx_probe.tscn

@@ -48,8 +48,13 @@ func on_fire() -> void:
 func on_world_hit(_pos: Vector3, _normal: Vector3, _dir: Vector3, _surface: String) -> void:
 	pass
 
-## A hitscan round struck a robot (or destructible) at `pos` for `dmg`.
-func on_enemy_hit(_pos: Vector3, _dir: Vector3, _dmg: float, _crit: bool) -> void:
+## A hitscan round struck a robot (or destructible) at `pos` (surface normal
+## `normal`, flying along `dir`) for `dmg`.
+func on_enemy_hit(_pos: Vector3, _normal: Vector3, _dir: Vector3, _dmg: float, _crit: bool) -> void:
+	pass
+
+## Every frame, after the gun's own `_process` work (barrel heat, readouts).
+func on_process(_delta: float) -> void:
 	pass
 
 ## A projectile round was launched (after `launch`), so the signature can dress it.

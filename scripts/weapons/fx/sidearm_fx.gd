@@ -34,7 +34,7 @@ func on_world_hit(pos: Vector3, normal: Vector3, dir: Vector3, surface: String) 
 		return
 	_ricochet(pos, normal, dir)
 
-func on_enemy_hit(pos: Vector3, _dir: Vector3, _dmg: float, crit: bool) -> void:
+func on_enemy_hit(pos: Vector3, _normal: Vector3, _dir: Vector3, _dmg: float, crit: bool) -> void:
 	_glint(pos, crit)
 
 ## The round leaves the wall along its bounce, scattered a little, always away
