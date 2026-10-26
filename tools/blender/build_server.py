@@ -70,21 +70,48 @@ box("Mouth", (0, -0.33, 1.7), (0.22, 0.02, 0.05), DARK)
 box("EarL", (0.2, 0.0, 2.08), (0.12, 0.1, 0.22), SHELL, rot=(0, 18, 0))
 box("EarR", (-0.2, 0.0, 2.08), (0.12, 0.1, 0.22), SHELL, rot=(0, -18, 0))
 
+# Four meshes, not one: the head (with its face), each arm, and the rest, so
+# enemy_server.gd can turn the head onto the player and swing the arms
+# (PartRig finds them by name). Everything else stays welded to the column.
+GROUPS = {
+    "Head": ["Head", "Screen", "FaceGlow", "EyeL", "EyeR", "Mouth", "EarL", "EarR"],
+    "ArmL": ["ArmL"],
+    "ArmR": ["ArmR"],
+}
+exported = []
+rest = [o.name for o in parts]  # by name: a join frees every object but the active one
+for name, members in GROUPS.items():
+    bpy.ops.object.select_all(action='DESELECT')
+    for m in members:
+        bpy.data.objects[m].select_set(True)
+    bpy.context.view_layer.objects.active = bpy.data.objects[members[0]]
+    bpy.ops.object.join()
+    joined = bpy.context.active_object
+    joined.name = name
+    joined.data.name = name
+    exported.append(joined)
+    rest = [n for n in rest if n not in members]
 bpy.ops.object.select_all(action='DESELECT')
-for o in parts:
-    o.select_set(True)
-bpy.context.view_layer.objects.active = parts[0]
+for n in rest:
+    bpy.data.objects[n].select_set(True)
+bpy.context.view_layer.objects.active = bpy.data.objects[rest[0]]
 bpy.ops.object.join()
 body = bpy.context.active_object
 body.name = "ServingBot"
+body.data.name = "ServingBot"
+exported.append(body)
 
+bpy.ops.object.select_all(action='DESELECT')
+for o in exported:
+    o.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True)
-print("EXPORTED", OUT)
+print("EXPORTED", OUT, [o.name for o in exported])
 
 mn = Vector((1e9,)*3); mx = Vector((-1e9,)*3)
-for c in body.bound_box:
-    w = body.matrix_world @ Vector(c)
-    for i in range(3): mn[i] = min(mn[i], w[i]); mx[i] = max(mx[i], w[i])
+for o in exported:
+    for c in o.bound_box:
+        w = o.matrix_world @ Vector(c)
+        for i in range(3): mn[i] = min(mn[i], w[i]); mx[i] = max(mx[i], w[i])
 ctr = (mn+mx)*0.5; rad = max((mx-mn).x, (mx-mn).y, (mx-mn).z)
 cam_d = bpy.data.cameras.new("C"); cam = bpy.data.objects.new("C", cam_d)
 bpy.context.scene.collection.objects.link(cam)
