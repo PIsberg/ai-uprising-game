@@ -404,3 +404,5 @@ res://tests/arccoil_fx_probe.tscn
 res://tests/longshot_fx_probe.tscn
 # PL-1 Plasma Launcher signature: orbiting motes and a wobbling shell in flight, a crown of droplets and a cooling molten pool on impact.
 res://tests/plasma_fx_probe.tscn
+# ARC-9 Gauss signature: charge rails that glow with the alt charge and arc at full, punch-through rings, slag spots that cool.
+res://tests/gauss_fx_probe.tscn
