@@ -701,7 +701,8 @@ func _do_shot() -> void:
 			_launch_flame()
 	_muzzle_sparks()
 	_muzzle_shockwave()
-	_eject_brass()
+	if not _sig.owns_brass():
+		_eject_brass()
 	if not _sig.owns_muzzle_smoke():
 		_muzzle_smoke()
 	_sig.on_fire()
@@ -1369,6 +1370,7 @@ func _eject_brass() -> void:
 	mat.emission_enabled = true; mat.emission = Color(0.6, 0.4, 0.12); mat.emission_energy_multiplier = 0.4
 	mesh.material = mat
 	p.mesh = mesh
+	p.set_meta("shared_fx", "brass")
 	get_tree().current_scene.add_child(p)
 	p.global_position = global_position + cam.global_basis.x * 0.14 - cam.global_basis.y * 0.04
 	get_tree().create_timer(1.5).timeout.connect(p.queue_free)

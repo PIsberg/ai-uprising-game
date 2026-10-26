@@ -390,3 +390,5 @@ res://tests/threat_display_probe.tscn
 res://tests/sidearm_fx_probe.tscn
 # AR-7 Pulse Rifle signature: every-third long tracer, heat shimmer past HAZE_HEAT, streamer not puff, spall along plating.
 res://tests/rifle_fx_probe.tscn
+# SG-12 Breacher signature: pellet beads / slug bolt, fire bloom, wad, rolling cloud, hull on the pump beat, one pepper per blast.
+res://tests/shotgun_fx_probe.tscn
