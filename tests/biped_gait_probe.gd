@@ -100,9 +100,16 @@ static func _corr(a: Array, b: Array) -> float:
 		sbb += (b[i] - mb) * (b[i] - mb)
 	return sab / sqrt(maxf(saa * sbb, 1e-12))
 
+## Keep the unit walking: its attack cooldowns are pushed out of reach and its
+## attack range pulled in under the player's distance, so it stays in CHASE
+## at full speed for the whole window. In ATTACK an android plants between
+## random jukes, and the GUNSLINGER (attack range 32 m, the player at 34)
+## crossed into it 0.4 s in: its swing then rode on the juke dice, 0.24 m on
+## one machine and 0.13 on CI's runner three runs out of four.
 func _quiet(spec: Dictionary) -> void:
 	for k in spec["quiet"]:
 		_e.set(k, 999.0)
+	_e.set("attack_range", 1.0)
 
 func _test(spec: Dictionary) -> void:
 	var tag: String = spec["name"]
