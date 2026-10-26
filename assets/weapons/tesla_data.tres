@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="2_imp"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/tesla_fx.gd" id="9_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -33,6 +34,7 @@ impact_scene = ExtResource("2_imp")
 tracer_color = Color(0.45, 0.85, 1, 1)
 muzzle_scale = 1.2
 arc_fx = true
+signature_fx = ExtResource("9_sig")
 slide_kick = 0.0
 viewmodel_color = Color(0.45, 0.85, 1, 1)
 ads_fov = 62.0

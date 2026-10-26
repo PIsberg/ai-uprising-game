@@ -396,3 +396,5 @@ res://tests/shotgun_fx_probe.tscn
 res://tests/cascade_fx_probe.tscn
 # .50 Maelstrom signature: fat streak, compensator jets, rolling smoke ring, exit spray through robots, crater burst on walls.
 res://tests/magnum_fx_probe.tscn
+# VK-7 Tesla signature: an electrocution cage of crawling ArcBolts on a beamed robot that crackles on after release.
+res://tests/tesla_fx_probe.tscn

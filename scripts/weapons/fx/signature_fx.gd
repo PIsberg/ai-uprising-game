@@ -58,6 +58,11 @@ func on_world_hit(_pos: Vector3, _normal: Vector3, _dir: Vector3, _surface: Stri
 func on_enemy_hit(_pos: Vector3, _normal: Vector3, _dir: Vector3, _dmg: float, _crit: bool) -> void:
 	pass
 
+## A BEAM gun's damage tick landed at `pos` on `target` (the robot when
+## `hit_enemy`, else the collider struck).
+func on_beam_tick(_pos: Vector3, _normal: Vector3, _target: Node, _hit_enemy: bool) -> void:
+	pass
+
 ## Every frame, after the gun's own `_process` work (barrel heat, readouts).
 func on_process(_delta: float) -> void:
 	pass
