@@ -14,6 +14,8 @@ collision_layer = 4
 collision_mask = 1
 floor_max_angle = 1.57
 script = ExtResource("1_fish")
+muzzle_bone = "Eye"
+muzzle_bone_offset = Vector3(0, 0.04, 0.1)
 projectile_scene = ExtResource("3_proj")
 
 [node name="Model" type="Node3D" parent="."]
@@ -29,15 +31,12 @@ anim_stagger = ""
 transform = Transform3D(-1.4, 0, 0, 0, 1.4, 0, 0, 0, -1.4, 0, 0, 0)
 
 [node name="Eye" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.36)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.66, -0.42)
 
 [node name="EyeLight" type="OmniLight3D" parent="Eye"]
 light_color = Color(0.35, 0.8, 1, 1)
 light_energy = 1.0
 omni_range = 6.0
-
-[node name="Muzzle" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.42)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_col")
