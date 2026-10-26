@@ -75,10 +75,13 @@ func _run() -> void:
 	# A robot ahead: one lock while the swarm homes on it, gone after.
 	var robot := _robot(Vector3(0, 0, -20))
 	await get_tree().physics_frame
+	# The kind of each tag, read as it is added: shrapnel frees itself before
+	# the lock's hold runs out, and a freed node's meta aborts on Linux CI.
 	var tags: Array = []
 	var watch := func(n: Node) -> void:
-		if n.get_meta("sig_fx", "") in ["swarm_lock", "swarm_shrapnel"]:
-			tags.append(n)
+		var kind: String = n.get_meta("sig_fx", "")
+		if kind in ["swarm_lock", "swarm_shrapnel"]:
+			tags.append(kind)
 	get_tree().node_added.connect(watch)
 	var homing := _volley(w, Vector3(0, 1.5, 0), Vector3(0, 0, -1))
 	var lock_seen := false
@@ -99,7 +102,7 @@ func _run() -> void:
 	_check("the lock faces the camera", lock_faces)
 	await _wait(SwarmFx.LOCK_HOLD + 0.3)
 	_check("the lock goes once no rocket holds it", robot.get_node_or_null(SwarmFx.LOCK_NAME) == null)
-	var shrapnel := tags.filter(func(n) -> bool: return n.get_meta("sig_fx", "") == "swarm_shrapnel")
+	var shrapnel := tags.filter(func(kind: String) -> bool: return kind == "swarm_shrapnel")
 	_check("each rocket goes off in a starburst of shrapnel", shrapnel.size() == 3, str(shrapnel.size()))
 	get_tree().node_added.disconnect(watch)
 
