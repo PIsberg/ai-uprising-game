@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
 [ext_resource type="PackedScene" uid="uid://b0proj0swarm01" path="res://scenes/weapons/projectile_swarm.tscn" id="3_proj"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/swarm_fx.gd" id="9_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -25,6 +26,7 @@ mag_size = 9
 reserve_max = 72
 reload_time = 2.2
 projectile_scene = ExtResource("3_proj")
+signature_fx = ExtResource("9_sig")
 projectile_speed = 34.0
 splash_radius = 2.2
 splash_damage = 14.0
