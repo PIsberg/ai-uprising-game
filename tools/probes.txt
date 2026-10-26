@@ -400,3 +400,5 @@ res://tests/magnum_fx_probe.tscn
 res://tests/tesla_fx_probe.tscn
 # CL-3 Arc Coil signature: three coil rings that drain per burst round and refill, surface arcs on walls, arc jumps between robots.
 res://tests/arccoil_fx_probe.tscn
+# MK-VII Longshot signature: a train of shock rings down the line, a crit star on headshots, a hot smoking case on the bolt.
+res://tests/longshot_fx_probe.tscn
