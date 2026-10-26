@@ -398,3 +398,5 @@ res://tests/cascade_fx_probe.tscn
 res://tests/magnum_fx_probe.tscn
 # VK-7 Tesla signature: an electrocution cage of crawling ArcBolts on a beamed robot that crackles on after release.
 res://tests/tesla_fx_probe.tscn
+# CL-3 Arc Coil signature: three coil rings that drain per burst round and refill, surface arcs on walls, arc jumps between robots.
+res://tests/arccoil_fx_probe.tscn
