@@ -412,3 +412,5 @@ res://tests/swarm_fx_probe.tscn
 res://tests/tempest_fx_probe.tscn
 # GRK-X Devastator signature: backblast, a dust ring across the floor, burning debris; an uninstanceable signature falls back to the default.
 res://tests/devastator_fx_probe.tscn
+# OMEGA-X signature: muzzle implosion, a turning corona on the round, a pillar of light where it lands.
+res://tests/omega_fx_probe.tscn
