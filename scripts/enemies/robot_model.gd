@@ -263,6 +263,16 @@ func release_hold() -> void:
 	_hold_clip = ""
 	_hold_left = 0.0
 
+## Play a one-shot and stay on its last frame until release_hold: a pose the
+## clip ends in (the MENDER's Charging ends on a narrowed iris, held through
+## the beam). A finished non-looping clip keeps its last pose; the hold is
+## then recognised by the player's assigned clip, since the current one is
+## cleared when it stops.
+func hold_pose(anim_name: String, blend: float = 0.12) -> void:
+	play_oneshot(anim_name, blend)
+	if _hold_clip == anim_name:
+		_hold_left = INF
+
 ## play_oneshot stretched (or squeezed) so the clip (from `from` on) lasts
 ## `seconds`: a 0.33 s crouch clip played over a 1.3 s charge, a jump clip
 ## over the whole leap.
@@ -665,7 +675,8 @@ func _physics_process(delta: float) -> void:
 	# A special clip held by play_oneshot (a rake, a charge, a leap) outranks
 	# the routine per-shot attack clip; a stagger still interrupts it.
 	_hold_left = maxf(0.0, _hold_left - delta)
-	var holding := _hold_clip != "" and _anim.current_animation == _hold_clip and _hold_left > 0.0
+	var holding := _hold_clip != "" and _hold_left > 0.0 and (_anim.current_animation == _hold_clip \
+		or (is_inf(_hold_left) and _anim.assigned_animation == _hold_clip))
 	if anim_attack != "" and not holding and _parent.recoil > 0.9 and _prev_recoil <= 0.9 \
 			and _anim.has_animation(anim_attack):
 		_anim.play(anim_attack, 0.12)
@@ -678,7 +689,7 @@ func _physics_process(delta: float) -> void:
 	if _anim.is_playing() and (_anim.current_animation == anim_attack
 			or _anim.current_animation == anim_stagger):
 		return
-	if holding and _anim.current_animation == _hold_clip:
+	if holding:
 		return
 	# Locomotion: idle <-> walk by ground speed.
 	var speed := Vector2(_parent.velocity.x, _parent.velocity.z).length()

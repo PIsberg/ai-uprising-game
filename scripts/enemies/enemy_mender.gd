@@ -5,6 +5,23 @@ extends EnemyBase
 ## undoing your damage in real time. While a MENDER is alive a pack heals faster
 ## than you can whittle it down, so it's a priority kill — which is exactly why
 ## it flees the moment you close in. Reuses the EyeDrone chassis, tinted teal.
+##
+## Eye rig (tests/mender_eye_probe). The chassis IS an eye (Enemy_EyeDrone:
+## a sphere with a lidded lens on its Body bone, clips Idle/Look/Charging/
+## BackFlip/Attack/Hit, no head chain). The beam used to leave a fixed node
+## 0.36 m inside the sphere while the lens stared at the horizon, and the
+## flee was a drift. Now the sphere pitches on its Body bone to look at
+## what it is doing (the ally it mends, the player it runs from;
+## BoneSweepModifier), the beam leaves the lens (the Muzzle node put on it each tick from the Body bone's swept pose),
+## the iris narrows into the Charging clip's end pose and stays there
+## while it mends (RobotModel.hold_pose), and when you close in it
+## back-flips away (the BackFlip clip over a burst of speed).
+
+const LENS_OFF := Vector3(0.0, 0.0, 0.8)  ## the lens, in the Body bone's frame (its +Z is the look)
+const EYE_RATE := 6.0       ## rad/s the eye pitches onto a target
+const EYE_MAX := 0.95       ## rad
+const FLIP_CD := 3.5        ## s between back-flips
+const FLIP_BURST := 1.6     ## flee speed through the flip
 
 @export var hover_height: float = 3.2
 @export var heal_range: float = 15.0
@@ -19,6 +36,11 @@ var _beam_mat: StandardMaterial3D
 var _beam_light: OmniLight3D
 var _pulse: float = 0.0
 var _repair_cd: float = 0.0
+var _sweep: BoneSweepModifier = null
+var _eye_pitch: float = 0.0
+var _flip_t: float = 0.0
+var _flip_cd: float = 0.0
+var _focused: bool = false
 
 @onready var _eye_light: OmniLight3D = $Eye/EyeLight
 
@@ -39,6 +61,29 @@ func _ready() -> void:
 	hp.current_health = max_health
 	_hover_phase = randf() * TAU
 	_build_beam()
+	_build_eye()
+
+## The sphere's pitch rides a sweep on the Body bone; the muzzle (the beam's
+## root) is put on the lens each tick from the bone's swept pose (the
+## skeleton hands the clip's pose back once a frame is drawn, and this rig
+## has no head chain for muzzle_on_bone's record to follow).
+func _build_eye() -> void:
+	var sk := find_child("Skeleton3D", true, false) as Skeleton3D
+	if sk == null or sk.find_bone("Body") < 0:
+		return
+	_sweep = BoneSweepModifier.new()
+	_sweep.name = "EyeSweep"
+	_sweep.body = self
+	sk.add_child(_sweep)
+	_sweep.sweep("Body", Quaternion.IDENTITY)
+
+## The lens, world space, on the Body bone as swept this frame.
+func _lens_point() -> Vector3:
+	if _sweep == null:
+		return muzzle.global_position if muzzle else global_position
+	var sk := _sweep.get_skeleton()
+	var pose: Transform3D = sk.global_transform * _sweep.posed("Body")
+	return pose.origin + pose.basis.orthonormalized() * LENS_OFF
 
 func _build_beam() -> void:
 	_beam = MeshInstance3D.new()
@@ -74,6 +119,8 @@ func _physics_process(delta: float) -> void:
 	recoil = move_toward(recoil, 0.0, delta * 9.0)
 	_hover_phase += delta * 3.0
 	_repair_cd = maxf(0.0, _repair_cd - delta)
+	_flip_t = maxf(0.0, _flip_t - delta)
+	_flip_cd = maxf(0.0, _flip_cd - delta)
 	_update_hit_react(delta)
 	_poise = maxf(0.0, _poise - delta * 26.0)
 
@@ -88,24 +135,71 @@ func _physics_process(delta: float) -> void:
 
 	_fly(player, delta)
 
-	# Beam-support (heal, for a MENDER) if the target is in range.
+	# Beam-support (heal, for a MENDER) if the target is in range; not
+	# through a back-flip.
 	var healing := false
-	if _heal_target and is_instance_valid(_heal_target) and _heal_target.hp \
+	var look_at: Variant = null
+	if _flip_t <= 0.0 and _heal_target and is_instance_valid(_heal_target) and _heal_target.hp \
 			and global_position.distance_to(_heal_target.global_position) <= heal_range + 1.0:
 		healing = true
+		look_at = _heal_target.global_position + Vector3.UP * 0.6
 		_support(_heal_target, delta)
-		_show_beam(_eye_light.global_position if _eye_light else global_position,
-			_heal_target.global_position + Vector3.UP * 0.6)
+		_focus()
+		_show_beam(_lens_point(), _heal_target.global_position + Vector3.UP * 0.6)
 	if not healing:
 		_hide_beam()
+		_unfocus()
 		_support_lost()
+	if look_at == null and player and global_position.distance_to(player.global_position) < flee_range * 1.5:
+		look_at = player.global_position + Vector3.UP * 1.5 # eyes on what it runs from
+	_aim_eye(look_at, delta)
 
 	move_and_slide()
+	if muzzle:
+		muzzle.global_position = _lens_point()
 
 	# Eye throb in the support colour, hotter while actively supporting.
 	if _eye_light:
 		_eye_light.light_color = support_color()
 		_eye_light.light_energy = 0.7 + sin(_hover_phase * 2.0) * 0.3 + (1.2 if healing else 0.0)
+
+## Pitch the sphere on its Body bone to look at `at` (a world point, or null
+## for level), the yaw being the body's (_face_dir).
+func _aim_eye(at: Variant, delta: float) -> void:
+	var want := 0.0
+	if at is Vector3:
+		var to: Vector3 = (at as Vector3) - global_position
+		want = clampf(atan2(to.y, Vector2(to.x, to.z).length()), -EYE_MAX, EYE_MAX)
+	_eye_pitch = move_toward(_eye_pitch, want, EYE_RATE * delta)
+	if _sweep:
+		_sweep.sweep("Body", Quaternion(Vector3.RIGHT, _eye_pitch))
+
+## The iris narrows into the Charging clip's end pose for the beam.
+func _focus() -> void:
+	if _focused:
+		return
+	_focused = true
+	if _visual_root and _visual_root.has_method("hold_pose"):
+		_visual_root.hold_pose("Charging", 0.15)
+
+func _unfocus() -> void:
+	if not _focused:
+		return
+	_focused = false
+	if _visual_root and _visual_root.has_method("release_hold"):
+		_visual_root.release_hold()
+
+## A back-flip away from a player who has closed in: the clip over a burst
+## of flee speed, the beam dropped for its length.
+func _back_flip() -> void:
+	if _flip_cd > 0.0 or _flip_t > 0.0 or _visual_root == null or not _visual_root.has_method("play_oneshot"):
+		return
+	_flip_cd = FLIP_CD
+	_unfocus()
+	_visual_root.play_oneshot("BackFlip", 0.1)
+	var ap := find_child("AnimationPlayer", true, false) as AnimationPlayer
+	_flip_t = ap.get_animation("BackFlip").length if ap and ap.has_animation("BackFlip") else 1.3
+	AudioBus.play_synth_at("drone_hum", global_position, 0.0, 1.9)
 
 # --- support hooks (EnemyAegis overrides these to shield instead of heal) ---
 
@@ -153,11 +247,13 @@ func _fly(player: Node3D, delta: float) -> void:
 		var pd := fp.length()
 		if pd < flee_range and pd > 0.01:
 			move += fp.normalized() * 1.6
+			_back_flip()
 			if look.length_squared() < 0.01:
 				look = -fp
 	var dir := move.limit_length(1.0)
-	velocity.x = move_toward(velocity.x, dir.x * move_speed, 14.0 * delta)
-	velocity.z = move_toward(velocity.z, dir.z * move_speed, 14.0 * delta)
+	var speed := move_speed * (FLIP_BURST if _flip_t > 0.0 else 1.0)
+	velocity.x = move_toward(velocity.x, dir.x * speed, 14.0 * delta)
+	velocity.z = move_toward(velocity.z, dir.z * speed, 14.0 * delta)
 	var anchor_y := pos.y
 	if _heal_target and is_instance_valid(_heal_target):
 		anchor_y = _heal_target.global_position.y

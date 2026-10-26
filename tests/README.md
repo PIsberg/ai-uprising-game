@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-553 probes total: **242** wired into the headless suite (`suite`), **86**
+555 probes total: **243** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **225** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **226** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -214,6 +214,8 @@ or GPU-timing probes; `--headless` renders these black).
 | fishbot_rig_shot | FISHBOT side-on, front-left, from behind and above at rest, mid-swim from behind and the side (the tail mid-stroke, the legs trailing), a spit and the dart from the player's eye (`-- --out=<dir>`) | windowed |
 | crawler_pounce_probe | The SPIDER's and SKITTER's pounce posture (CrawlerPounce on the two-legged disc walker), each in turn: the coil squashes the Model (y 0.72) and tips it nose-down (-0.22 rad) while the Mesh read through rig_frame() has not moved; the spring stretches it (1.18) in the first 0.12 s, pitches nose-up rising (0.33) with the Hanging clip and nose-down falling (-0.36); the landing squashes (0.8, the deepest of every frame in the 0.3 s after touchdown) and recovers within 0.5 s with the clip released; the bite through the attack state plays Attack within 120 ticks (the wind-up takes about 30); the SPIDER's assess freeze plays Look and moving on drops it; a landing that arrives on one 0.15 s frame still squashes and recovers on the next (red before the fix: squash 1.00) | suite |
 | crawler_pounce_shot | SPIDER at rest, coiled in the windup, at take-off, mid-flight rising and falling, landing, and frozen to assess, from the side (`-- --out=<dir>`) | windowed |
+| mender_eye_probe | The MENDER's eye rig (Enemy_EyeDrone, the chassis an eye) mending a SPIDER 6 m off: the beam's root on the lens (0.80 m from the sphere's centre along the eye's look, 0.00 m off it, 0.48 m from the old fixed node, the Muzzle node on it), the eye pitched down onto the patient (-0.37 rad, the true angle -0.38, the Body bone's look dropped), the Charging clip held while the patient heals (+16 in 1 s), a back-flip within 2 ticks of the player closing to 5 m (BackFlip clip, beam dropped, 8.6 m/s flee against 6.2 move speed), the beam and the focus back once it is over, and with the patient whole the beam off, the hold released and the eye level | suite |
+| mender_eye_shot | MENDER at rest, mending a SPIDER below it (the eye pitched down, the beam from the lens, the iris narrowed), mid back-flip as the player closes in, and the mend from the player's eye (`-- --out=<dir>`) | windowed |
 | ripper_rig_shot | RIPPER front-left at rest, close on the gun, the cluster and the housing alone, mid-saw with the gun turned onto a player off to its side (tracers from the cluster's tip) and that from the player's eye; `-- --out=<dir>` | windowed |
 | rollback_probe | ROLLBACK: wired into the level builder, codex, HIVEMIND and SUBLEVEL; a kill in range leaves a checkpoint, a live ROLLBACK channels within RESTORE_GAP (beam, rewind column, status) and brings the same chassis back where it fell, restored, worth RESTORED_SCORE, off the enemy layer on the dissolve shader while it rebuilds, then whole; no checkpoint for disintegrated, boss-sized, out-of-range or restored robots; INTERRUPT_DMG, an EMP or its death mid-channel restore nothing; stale checkpoints drop after CHECKPOINT_TTL | suite |
 | rollback_shot | A ROLLBACK mid-rewind (beam, VHS column, timecode) over a dead android, then the android half rebuilt and whole again; `-- --out=<dir>` | windowed |
