@@ -140,6 +140,7 @@ func _register_jobs() -> void:
 	_job("hit_resist", _hit_resist.bind(0.2))
 	# A spent casing striking the floor a beat after ejection.
 	_job("brass_tink", _brass_tink.bind(0.09))
+	_job("ricochet", _ricochet.bind(0.3))
 	# Menu sounds campaign_map already referenced but nothing registered — both
 	# calls were silent no-ops.
 	_job("ui_deny", _ui_deny.bind(0.24))
@@ -1448,6 +1449,24 @@ func _brass_tink(duration: float) -> AudioStreamWAV:
 		var s := sin(TAU * 4200.0 * t) * 0.5 + sin(TAU * 6300.0 * t) * 0.25
 		s += (rng.randf() * 2.0 - 1.0) * exp(-t * 300.0) * 0.5
 		_write(bytes, i, tanh(s * env * 1.3) * 0.6)
+	return _to_stream(bytes)
+
+## A round skipping off a hard surface: a sharp click, then a whine that falls
+## from 3.2 kHz to 700 Hz as the streak flies off (the M9's ricochet, SidearmFx).
+func _ricochet(duration: float) -> AudioStreamWAV:
+	var rng := _rng()
+	var n := int(duration * SR)
+	var bytes := _silence(n)
+	var phase := 0.0
+	for i in n:
+		var t := float(i) / SR
+		var u := t / duration
+		var f := lerpf(3200.0, 700.0, pow(u, 0.6))
+		phase += TAU * f / SR
+		var whine := sin(phase) * (1.0 - u) * (1.0 - u) * 0.55
+		whine += sin(phase * 2.01) * (1.0 - u) * 0.15
+		var click := (rng.randf() * 2.0 - 1.0) * exp(-t * 400.0) * 0.8
+		_write(bytes, i, tanh((whine + click) * 1.3) * 0.6)
 	return _to_stream(bytes)
 
 ## Locked/denied action: a flat low double-buzz — unmistakably "no". Smooth

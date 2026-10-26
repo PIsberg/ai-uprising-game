@@ -78,6 +78,14 @@ Robots bleed binary when hit and pour it out when they die (`scripts/fx/data_ble
 * `DataBleed.burst` runs from `EnemyBase._data_burst`, on `hp.died` rather than in `_on_died`, so subclasses that override `_on_died` without super still burst: `BURST_AMOUNT` glyphs rising from mid-body. It ignores the frame budget.
 * One CPUParticles3D per spill, freeing itself on `finished`; a two-frame sheet ("0" | "1", `glyph_texture()` drawn from 5x7 bitmaps) picked per particle by `anim_offset`. Unshaded, `disable_fog`, no shadows; LOW halves the amounts. `tests/data_bleed_probe`.
 
+## Weapon Signatures
+<!-- lat: { "require-code-mention": true } -->
+Every gun shares one flash, tracer, impact and smoke, tinted and sized by its data; a signature is the firing FX that belong to one gun alone (`scripts/weapons/fx/`).
+
+* `WeaponData.signature_fx` names a script extending `SignatureFx` (`scripts/weapons/fx/signature_fx.gd`, a RefCounted); `Weapon._ready` builds one per gun with `SignatureFx.make` (a silent default when the data names none, so an unsigned gun fires as before). The weapon is duck-typed as a `Node3D` there so the two scripts never name each other's class (a load cycle nilled autoloads on the enemies).
+* Hooks, called from the firing path: `tracer_style` (overrides for the tracer's `bolt_speed`/`bolt_length`/`bolt_width`, applied in `Weapon._spawn_tracer`), `owns_muzzle_smoke` (skips `Weapon._muzzle_smoke`, which tags its node `shared_fx = muzzle_smoke`), `on_fire` (after the shared muzzle FX in `Weapon._do_shot`), `on_world_hit` and `on_enemy_hit` (from `Weapon._do_hitscan`, after the bullet hole / hit pop), `on_projectile` (after `launch` in `Weapon._spawn_projectile`). Signature nodes carry a `sig_fx` meta naming the effect, which the probes filter on.
+* M9 Sidearm, `SidearmFx` (`scripts/weapons/fx/sidearm_fx.gd`): bolt `BOLT` (1.1 m at 240 m/s); a round stopped on a wall ricochets with `RICOCHET_CHANCE` per surface (metal 1, concrete/stone 0.7, soft 0) as the tracer scene in bolt mode along `dir.bounce(normal)` jittered up to `RICOCHET_JITTER_DEG`, never back into the wall, with the `ricochet` synth whine (`SoundSynth._ricochet`); a round on a robot throws `_glint`, two crossed billboard bars that fade in `GLINT_TIME`; `_breech_wisp` rises from the ejection port in place of the shared smoke. `tests/sidearm_fx_probe`.
+
 ## Rail Trail
 <!-- lat: { "require-code-mention": true } -->
 Railgun rounds ionize the air they cross (`scripts/fx/rail_trail.gd`, `WeaponData.rail_trail`: the gauss and the Longshot).

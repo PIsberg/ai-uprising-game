@@ -99,6 +99,8 @@ var mod_override_ms: int = -100000
 var salvage: bool = false
 ## The gloved hands holding this gun (ViewmodelHands), on every imported model.
 var hands: ViewmodelHands = null
+## This gun's firing signature (WeaponData.signature_fx), a silent default when it has none.
+var _sig: SignatureFx = SignatureFx.new()
 var mod_bank: float = 0.0 ## hit damage since the last ARC/RICOCHET proc (WeaponMods._bank)
 
 func get_active_shooter() -> Node:
@@ -122,6 +124,7 @@ func _ready() -> void:
 		mag = eff_mag_size()
 		reserve = data.reserve_max
 		ammo_changed.emit(mag, reserve)
+	_sig = SignatureFx.make(self)
 	if not _apply_real_model():
 		_bevel_viewmodel()
 	_build_heat_glow()
@@ -698,7 +701,9 @@ func _do_shot() -> void:
 	_muzzle_sparks()
 	_muzzle_shockwave()
 	_eject_brass()
-	_muzzle_smoke()
+	if not _sig.owns_muzzle_smoke():
+		_muzzle_smoke()
+	_sig.on_fire()
 	_play_fire_sound()
 	_play_fire_anim()
 	# Gamepad rumble: every trigger pull snaps the buzz motor; the thump motor
@@ -777,6 +782,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 		AudioBus.play_synth_at(_impact_sound_for(surf), hpos, -8.0, pitch)
 		if dmg_node == null:
 			_spawn_bullet_hole(hpos, hit.normal)
+			_sig.on_world_hit(hpos, hit.normal, dir, surf)
 		if dmg_node:
 			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos))
 			# Headshots — and the crit bonus + "headshot" callout — apply ONLY to
@@ -803,6 +809,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			dmg_node.apply_damage(final_damage, _active_shooter, is_crit)
 			KillFx.untag(dmg_node)
 			_enemy_hit_pop(hpos, is_crit, final_damage)
+			_sig.on_enemy_hit(hpos, dir, final_damage, is_crit)
 			if mod_id != "":
 				# x matchup: a mod works off what the hit dealt after the armour-class table.
 				WeaponMods.on_enemy_hit(self, dmg_node.get_parent(), hpos, final_damage * dmg_node.matchup)
@@ -930,6 +937,7 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 		proj.weapon_data = data
 	if proj.has_method("launch"):
 		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
+	_sig.on_projectile(proj)
 
 func _find_damageable(node: Node) -> Node:
 	var n := node
@@ -953,6 +961,10 @@ func _spawn_tracer(from: Vector3, to: Vector3) -> void:
 		t.bolt_speed = 150.0
 		t.bolt_length = 2.2
 		t.bolt_width = 1.5
+		# The gun's signature may re-cut the bolt (a pistol cracks, a cannon lobs).
+		var style := _sig.tracer_style()
+		for k in style:
+			t.set(k, style[k])
 	if t.has_method("setup"):
 		t.setup(from, to, shot_color())
 
@@ -1397,6 +1409,7 @@ func _muzzle_smoke() -> void:
 		grad,
 		curve
 	)
+	p.set_meta("shared_fx", "muzzle_smoke")
 	get_tree().current_scene.add_child(p)
 	p.global_position = muzzle.global_position
 	get_tree().create_timer(1.0).timeout.connect(p.queue_free)
