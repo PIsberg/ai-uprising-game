@@ -11,20 +11,28 @@ const SHADER := preload("res://shaders/lightning.gdshader")
 @export var color: Color = Color(0.55, 0.72, 1.0)
 @export var lifetime: float = 0.75
 @export var bolts: int = 4
+## Take the flash light from the combat FX light budget (FXLights), skipping it
+## when the budget is full: for strikes a gun throws every shot. Bosses leave it off.
+@export var light_budgeted: bool = false
+@export var sound_id: String = "overlord_glitch"
+@export var sound_pitch: float = 0.7
 
 func _ready() -> void:
 	var col := Vector3(color.r, color.g, color.b)
-	var light := OmniLight3D.new()
-	light.light_color = color
-	light.light_energy = 0.0
-	light.omni_range = height * 1.3
-	light.shadow_enabled = false
-	light.position = Vector3(0, height * 0.4, 0)
-	add_child(light)
-	# Flash the light bright, then decay over the lifetime.
-	var lt := create_tween()
-	lt.tween_property(light, "light_energy", 7.0, 0.06)
-	lt.tween_property(light, "light_energy", 0.0, lifetime)
+	if not light_budgeted or FXLights.take():
+		var light := OmniLight3D.new()
+		light.light_color = color
+		light.light_energy = 0.0
+		light.omni_range = height * 1.3
+		light.shadow_enabled = false
+		light.position = Vector3(0, height * 0.4, 0)
+		add_child(light)
+		if light_budgeted:
+			light.tree_exited.connect(FXLights.give)
+		# Flash the light bright, then decay over the lifetime.
+		var lt := create_tween()
+		lt.tween_property(light, "light_energy", 7.0, 0.06)
+		lt.tween_property(light, "light_energy", 0.0, lifetime)
 
 	for i in bolts:
 		var mi := MeshInstance3D.new()
@@ -54,7 +62,7 @@ func _ready() -> void:
 	if has_node("/root/AudioBus"):
 		var ab := get_node("/root/AudioBus")
 		if ab.has_method("play_synth_at"):
-			ab.play_synth_at("overlord_glitch", global_position, 1.0, 0.7)
+			ab.play_synth_at(sound_id, global_position, 1.0, sound_pitch)
 
 	await get_tree().create_timer(lifetime + 0.15).timeout
 	queue_free()

@@ -408,3 +408,5 @@ res://tests/plasma_fx_probe.tscn
 res://tests/gauss_fx_probe.tscn
 # SW-7 Swarm signature: corkscrewing rocket bodies a third of a turn apart with smoke threads, a lock diamond on the homed robot, shrapnel bursts.
 res://tests/swarm_fx_probe.tscn
+# TPX-9 Tempest signature: crackling tendrils and a ground arc on the orb, a budgeted sky strike where it goes off.
+res://tests/tempest_fx_probe.tscn
