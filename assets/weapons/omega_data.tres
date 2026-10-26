@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
 [ext_resource type="PackedScene" uid="uid://b0proj0omega001" path="res://scenes/weapons/projectile_omega.tscn" id="3_proj"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/omega_fx.gd" id="9_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -26,6 +27,7 @@ mag_size = 3
 reserve_max = 21
 reload_time = 3.2
 projectile_scene = ExtResource("3_proj")
+signature_fx = ExtResource("9_sig")
 projectile_speed = 44.0
 splash_radius = 9.0
 splash_damage = 160.0
