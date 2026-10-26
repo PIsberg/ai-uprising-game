@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="WeaponData" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
 [ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/sidearm_fx.gd" id="5_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -30,6 +31,7 @@ reload_time = 1.2
 muzzle_flash_scene = ExtResource("3_mf")
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
+signature_fx = ExtResource("5_sig")
 muzzle_scale = 0.85
 sound_id = "pistol"
 slide_kick = 0.03

@@ -118,6 +118,9 @@ enum ReloadStyle { MAG, SHELLS, CELL, TUBE }
 @export var kill_fx: int = 0 ## How a robot this weapon kills dies (KillFx: 0 classic blast, 1 disintegrate, 2 electrocute, 3 shred, 5 blast apart; 4 decapitate is tagged by the weapon on a killing headshot when this is 0).
 @export var rail_trail: bool = false ## Hitscan only: the round leaves a lingering ionization coil round its path (RailTrail). Railguns.
 @export var arc_fx: bool = false ## Adds jagged electric arcs to the energy beam (Tesla/Arc weapons). Implies an energy beam.
+## This gun's own firing signature on top of the shared FX: a script extending SignatureFx
+## (scripts/weapons/fx/), built once per gun by Weapon and called from its firing path. Null = none.
+@export var signature_fx: GDScript
 @export var fire_sound: AudioStream
 @export var reload_sound: AudioStream
 @export var empty_sound: AudioStream

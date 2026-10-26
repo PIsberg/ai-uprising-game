@@ -386,3 +386,5 @@ res://tests/shark_tail_probe.tscn
 res://tests/biped_gait_probe.tscn
 # Threat display: every non-boss chassis rears back and lifts at first contact, once per engagement.
 res://tests/threat_display_probe.tscn
+# M9 Sidearm signature (SignatureFx hooks): crack tracer, ricochet off hard walls, cross glint on robots, breech wisp.
+res://tests/sidearm_fx_probe.tscn
