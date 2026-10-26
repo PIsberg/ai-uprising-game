@@ -170,6 +170,19 @@ func _apply_fit() -> void:
 	# unscaled import's height (3.2 m clamp on the ronin's 2.35 m frame).
 	_build_menace_glow()
 
+## Shift the fitted model so `point` (in this node's frame) lands on the
+## body's axis, `y` up. The fit centres the model's BOX, which hangs a robot
+## that is mostly blade held out to one side (the WHIRLWIND: a core with two
+## long blades in one fist) a metre off its collision sphere; a rig that
+## swings the blades about that fist calls this once, before it takes its
+## parts, so the core sits on the body and the lean composes on the shifted
+## base. The culling boxes are in each mesh's own frame, so they follow.
+func recentre(point: Vector3, y: float) -> void:
+	if _mesh == null:
+		return
+	_mesh.transform.origin -= Vector3(point.x, point.y - y, point.z)
+	_mesh_base = _mesh.transform
+
 ## Pin every sub-mesh's culling AABB to the model's real bounds. Imported skinned
 ## meshes carry a huge counter-scale in their instance transform (the rig scales
 ## verts back down), so their world AABB spans hundreds of metres and they NEVER
