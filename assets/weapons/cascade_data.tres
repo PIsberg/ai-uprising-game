@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
 [ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/cascade_fx.gd" id="9_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -37,6 +38,7 @@ muzzle_flash_scene = ExtResource("3_mf")
 muzzle_scale = 1.2
 impact_scene = ExtResource("4_imp")
 tracer_scene = ExtResource("2_tracer")
+signature_fx = ExtResource("9_sig")
 tracer_color = Color(0.55, 0.95, 1, 1)
 sound_id = "cascade"
 slide_kick = 0.02
