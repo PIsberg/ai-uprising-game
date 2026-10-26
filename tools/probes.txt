@@ -402,3 +402,5 @@ res://tests/tesla_fx_probe.tscn
 res://tests/arccoil_fx_probe.tscn
 # MK-VII Longshot signature: a train of shock rings down the line, a crit star on headshots, a hot smoking case on the bolt.
 res://tests/longshot_fx_probe.tscn
+# PL-1 Plasma Launcher signature: orbiting motes and a wobbling shell in flight, a crown of droplets and a cooling molten pool on impact.
+res://tests/plasma_fx_probe.tscn
