@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-544 probes total: **238** wired into the headless suite (`suite`), **86**
+545 probes total: **238** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **220** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **221** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -505,7 +505,8 @@ or GPU-timing probes; `--headless` renders these black).
 | skel_pose_probe | Candidate ArmRelaxModifier rotations on the George rig, to pick a natural arm-carry angle | windowed |
 | skinned_models_probe | Skinned models rendered after playing their animation (not the misleading rest pose), framed on posed bone bounds | windowed |
 | seeker_grace_probe | Opening attack grace holds against CONTACT damage: the SEEKER kamikaze defers its blast through grace, then still detonates once it lapses | suite |
-| server_spin_probe | MAITRE-D' (SERVER): around its cleaver throws (9 m out) and its tray-bash (2 m) the model's yaw relative to the body sweeps 300+ deg inside 0.6 s (360; 0 before), and it faces forward again (within 5 deg) once idle | suite |
+| server_rig_probe | MAITRE-D' (SERVER) fights with its head and arms (serving_bot.glb built in four meshes: Head, ArmL, ArmR, the column): the neck, shoulders and hands land on the model (head bottom, the arms' rear and front ends, within 0.03 m); engaged on a player 50 deg to its left with the body pinned, the face turns onto it (0.87 rad, on the line); a cleaver throw is no pirouette (0 deg), cocks the right hand 0.4+ m up over the shoulder (0.67) and the cleaver appears within 0.45 m of the hand (0.06; the old origin over the column was 0.6+ m off); the tray-bash whirls 300+ deg inside 0.6 s (327) with both hands flung 0.25+ m out (0.48) and the face on the player through the spin (worst 0.13 rad); idle, the head is forward, the hands at rest and the model facing forward | suite |
+| server_rig_shot | SERVER front-left at rest, with the head turned onto a player at its side, with the right arm cocked for a throw, and a third of the way round a tray-bash with both arms flung out; `-- --out=<dir>` | windowed |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
 | sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |
