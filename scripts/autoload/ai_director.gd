@@ -30,6 +30,18 @@ extends Node
 ##   - a weapon that has carried your play across several levels gets a firmware
 ##     COUNTERMEASURE: it deals COUNTERMEASURE_MULT damage until you rotate off it;
 ##   - the overlord greets you with what it remembers (runs, deaths, your killers).
+##
+## And one in-level counter-move, OVERLORD LOCKOUT: when the gun you are holding is
+## your dominant gun and carries LOCKOUT_FOCUS of this level's shots, the overlord
+## jams it for LOCKOUT_JAM_SEC (Weapon.try_fire dry-clicks). At most
+## LOCKOUT_MAX_PER_LEVEL jams a level, LOCKOUT_COOLDOWN apart, never while calibrating.
+
+signal lockout_started(weapon_name: String)
+
+const LOCKOUT_FOCUS := 0.72            ## weapon focus that makes a gun jam-worthy
+const LOCKOUT_JAM_SEC := 1.5           ## how long a jammed gun refuses to fire
+const LOCKOUT_COOLDOWN := 20.0         ## seconds from one jam's start to the next
+const LOCKOUT_MAX_PER_LEVEL := 3       ## jams a level, however favoured the gun
 
 var mobility: float = 0.5      ## 0 = camps in place, 1 = always on the move
 var range_pref: float = 0.5    ## 0 = brawler (point blank), 1 = sniper (long range)
@@ -52,6 +64,10 @@ var _frags: int = 0                  ## frag grenades thrown this level
 var _sample_t: float = 0.0
 var _player: Node3D = null
 var _wm: Node = null
+var _lock_weapon: String = ""        ## the gun currently jammed ("" = none)
+var _lock_left: float = 0.0          ## seconds of jam left
+var _lock_cd: float = 0.0            ## seconds until another jam may start
+var _lock_jams: int = 0              ## jams this level
 
 # ---------- long-term dossier (persists across levels, runs and restarts) ----------
 const DOSSIER_ALPHA := 0.35            ## weight of the newest level read in the running blend
@@ -76,6 +92,7 @@ func reset_profile() -> void:
 	_mob_n = 0; _mob_sum = 0.0
 	_weapon_shots.clear()
 	_frags = 0
+	_lock_weapon = ""; _lock_left = 0.0; _lock_cd = 0.0; _lock_jams = 0
 
 func _ready() -> void:
 	forget_dossier(false)
@@ -182,6 +199,28 @@ func countermeasure_mult(weapon_name: String) -> float:
 	var c := countermeasure_weapon()
 	return COUNTERMEASURE_MULT if c != "" and c == weapon_name else 1.0
 
+## OVERLORD LOCKOUT. Ticks the jam timers, then jams `held` if it is the level's dominant
+## gun at LOCKOUT_FOCUS or more, once calibrated, off cooldown and under the per-level cap.
+## `held` is "" when no gun is in hand (nothing to jam, timers still run).
+func lockout_update(delta: float, held: String) -> void:
+	_lock_left = maxf(0.0, _lock_left - delta)
+	_lock_cd = maxf(0.0, _lock_cd - delta)
+	if held == "" or calibrating() or _lock_jams >= LOCKOUT_MAX_PER_LEVEL:
+		return
+	if _lock_left > 0.0 or _lock_cd > 0.0:
+		return
+	if held != dominant_weapon() or weapon_focus() < LOCKOUT_FOCUS:
+		return
+	_lock_weapon = held
+	_lock_left = LOCKOUT_JAM_SEC
+	_lock_cd = LOCKOUT_COOLDOWN
+	_lock_jams += 1
+	lockout_started.emit(held)
+
+## True while `weapon_name` is jammed by OVERLORD LOCKOUT (Weapon.try_fire checks this).
+func is_jammed(weapon_name: String) -> bool:
+	return _lock_left > 0.0 and weapon_name != "" and weapon_name == _lock_weapon
+
 ## The robot label that has killed the player most often, and how often.
 func _top_killer() -> Array:
 	var best := ""
@@ -232,6 +271,11 @@ func greeting() -> String:
 func _process(delta: float) -> void:
 	if GameState.current_state != GameState.State.PLAYING:
 		return
+	# OVERLORD LOCKOUT runs every frame so a jam lasts its real 1.5 s, not a sample tick.
+	var held := ""
+	if _wm and is_instance_valid(_wm) and _wm.current and _wm.current.data:
+		held = _wm.current.data.display_name
+	lockout_update(delta, held)
 	_sample_t -= delta
 	if _sample_t > 0.0:
 		return

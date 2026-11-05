@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-569 probes total: **257** wired into the headless suite (`suite`), **86**
+570 probes total: **258** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -458,6 +458,7 @@ or GPU-timing probes; `--headless` renders these black).
 | open_house_probe | OPEN building photographed from street + inside; grapple pad exists | windowed |
 | opening_distance_check | Per level, distance from the player spawn to the nearest enemy awake from the start (no `trigger`, or a trigger radius that already contains the spawn) — the campaign's own opening-room convention, and which levels break it | headless |
 | overlord_memory_probe | The overlord's long-term dossier (`user://overlord.cfg`): a probe boot keeps it in memory only; a calibrating level counters the dossier after 2 folded levels; 3 levels leaning on one gun cut its real `eff_damage` to x0.85 and the patch notes say so; rotating lifts it within 2 levels; Settings' Wipe Overlord Memory button arms on one press and wipes the dossier and its file on the second; deaths and killers are tallied through `GameState.on_player_died` but teach the dossier nothing (five deaths on one gun earn no countermeasure); save + load round trip | suite |
+| overlord_lockout_probe | OVERLORD LOCKOUT (`AIDirector.lockout_update` / `is_jammed`): a calibrating level never jams; a held gun that is the dominant one at 72%+ focus jams for 1.5 s and `lockout_started` fires once; the cooldown is 20 s and the cap three a level; a non-dominant held gun or a spread loadout (under 72%) never jams; on a real `Weapon` a jammed trigger fires nothing and spends no ammo, and the same trigger fires once the jam ends | suite |
 | orbital_strike_probe | ORBITAL STRIKE event: the event spawns a strike and toasts; the circle tracks the player; standing still through the lock costs 45; the strike frees itself; stepping out of the locked circle is a miss; under a roof it never reaches you (red-checked: with cover ignored it hit); a robot on the locked spot is untouched; fired at a player already under a roof, the event falls back to a SUPPLY FLARE (red before the gate) | suite |
 | orbital_strike_shot | The ORBITAL STRIKE circle tracking (amber), locked (red) and firing (white column) beside the player on a level (`--out=<dir>`, `--level=<id>`) | windowed |
 | overload_probe | OVERLOAD ultimate: meter charges to full, unleash damages+EMP-stuns hostiles in range, consuming empties the meter | windowed |

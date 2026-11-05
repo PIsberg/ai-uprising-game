@@ -6,6 +6,8 @@
 res://tests/ai_director_probe.tscn
 # The overlord's long-term dossier: pre-adapts the swarm, countermeasures a crutch gun, persists.
 res://tests/overlord_memory_probe.tscn
+# OVERLORD LOCKOUT: a gun held at 72% focus jams for 1.5 s (dry-click), 3 a level, 20 s apart.
+res://tests/overlord_lockout_probe.tscn
 # Breakable cover: census, damage scaling, crack stages, shatter + shrapnel, nav rebake, slam damage.
 res://tests/breakable_cover_probe.tscn
 # BeveledBoxMesh winds its triangles like the engine's BoxMesh (it rendered inside-out until 2026-10-08).
