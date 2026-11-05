@@ -82,7 +82,12 @@ HOWITZER (640 HP) are both over `EnemyBase.HIJACK_BOSS_HP` (500), so they cannot
 ✅ **HIJACK overload shipped** (2026-10-21): a hijacked robot's last 2 s are a run at the biggest
 pack and a robots-only blast (`EnemyBase._overload_tick`, `tests/hijack_overload_probe`). 🎮 Needs
 playtest: the 120 centre damage over 6 m and the 2 s warning.
-Still open as bigger swings: weapon-disable, idea #4 "glitch warfare".
+✅ **OVERLORD LOCKOUT shipped** (the weapon-disable swing): when you hold the gun that carries 72% of
+your shots, the overlord jams it for 1.5 s (the trigger dry-clicks, a toast says so), at most three
+times a level, 20 s apart (`AIDirector.lockout_update`, `tests/overlord_lockout_probe`). 🎮 Needs
+playtest: whether 1.5 s reads as a fair sting or a cheap death, and whether 72% catches players who
+switch guns by choice.
+Still open as a bigger swing: idea #4 "glitch warfare".
 
 ### Skirmish events (mid-level pacing variety) 🤖🎮
 ✅ **Shipped** — rare announced events break up a level's authored rhythm

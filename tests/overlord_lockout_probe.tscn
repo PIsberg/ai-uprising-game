@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://covrlockout001"]
+
+[ext_resource type="Script" path="res://tests/overlord_lockout_probe.gd" id="1_p"]
+
+[node name="OverlordLockoutProbe" type="Node"]
+script = ExtResource("1_p")

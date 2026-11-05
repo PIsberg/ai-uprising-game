@@ -239,6 +239,8 @@ func _ready() -> void:
 	# skirmish toasts: they reached the toast as English keys until #317.
 	GameState.teach_hint.connect(func(text: String) -> void: _show_toast(tr(text)))
 	GameState.checkpoint_set.connect(func(): _show_toast("⚑ CHECKPOINT"))
+	# OVERLORD LOCKOUT: say why the trigger went dead (the dry click alone reads as ammo).
+	AIDirector.lockout_started.connect(func(gun: String) -> void: _show_toast("⚠ OVERLORD LOCKOUT  %s JAMMED" % gun))
 	GameState.objective_unlocked.connect(_on_objective_unlocked)
 	GameState.tasks_changed.connect(_render_objective)
 	GameState.task_completed.connect(_on_task_completed)

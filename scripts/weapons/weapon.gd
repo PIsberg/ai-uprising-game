@@ -518,6 +518,14 @@ func try_fire(trigger_down: bool, aiming: bool, camera: Camera3D, shooter: Node)
 	# it stays off.
 	if trigger_down and hands and not _reloading:
 		hands.squeeze()
+	# OVERLORD LOCKOUT: a jammed gun fires nothing. A fresh press dry-clicks; a
+	# burst or beam already running is cut so it cannot finish through the jam.
+	if data and AIDirector.is_jammed(data.display_name):
+		_beam_wanted = false
+		_burst_remaining = 0
+		if just_pressed:
+			_play_empty()
+		return
 	if data and data.fire_mode == WeaponData.FireMode.BEAM:
 		# Beam weapons don't use the shot/cooldown machinery: try_fire just
 		# records intent + context; _update_beam() does the work each frame.
