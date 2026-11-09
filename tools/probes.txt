@@ -418,3 +418,5 @@ res://tests/devastator_fx_probe.tscn
 res://tests/omega_fx_probe.tscn
 # SIEGE Chaingun signature: a six-barrel cluster that spins up and coasts, barrels that soak heat and smoke, a case and a link per round, one scorch the stream feeds on a wall, chips off robots.
 res://tests/siege_fx_probe.tscn
+# Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
+res://tests/lamp_headroom_probe.tscn
