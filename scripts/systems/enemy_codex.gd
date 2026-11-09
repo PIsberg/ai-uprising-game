@@ -274,8 +274,8 @@ const ENTRIES := {
 	"brute": {
 		"scene": "res://scenes/enemies/brute.tscn", "name": "BULWARK BRUTE", "scale": 1.0, "y": 0.0,
 		"desc": "A walking wall — its frontal shield soaks everything you throw at its face.",
-		"strengths": ["Frontal shield negates head-on fire", "Heavy and relentless"],
-		"weaknesses": ["Exposed sides and back — flank it", "Slow to wheel around"],
+		"strengths": ["Frontal shield negates head-on fire", "Heavy and relentless", "Fire into the shield and it charges"],
+		"weaknesses": ["Exposed sides and back — flank it", "Slow to wheel around", "Sidestep the charge: it hits the wall and the shield hangs open"],
 	},
 	"gunner": {
 		"scene": "res://scenes/enemies/gunner.tscn", "name": "GUNNER", "scale": 1.0, "y": 0.0,

@@ -9,6 +9,38 @@ extends EnemyBase
 @export var front_cone_dot: float = 0.4 ## How wide the shielded front arc is.
 @export var windup_time: float = 0.5 ## Telegraphed coil before the slam — your window to step aside.
 
+## SHIELD RUSH: fire into the shield and the brute comes for you. RUSH_PROVOKE of
+## damage blocked on the slab (it forgets RUSH_FORGET of it a second) makes it
+## plant for RUSH_TELL, turning to face you at its own slow turn speed, then run
+## the line it is facing at RUSH_SPEED for up to RUSH_TIME. Stand still and you
+## are bashed. Step aside and it runs past: into a wall it is stunned for
+## RUSH_STUN, onto open floor it stumbles for RUSH_MISS_OPEN, and either way the
+## shield hangs open (no block at all) until it recovers. Covered by
+## tests/brute_rush_probe.
+enum Rush { NONE, TELL, RUSH, OPEN }
+const RUSH_PROVOKE := 45.0 ## blocked damage that sets it off
+const RUSH_FORGET := 6.0 ## provocation lost per second
+const RUSH_MIN := 5.0 ## metres: nearer than this it slams instead
+const RUSH_MAX := 22.0
+const RUSH_TELL := 0.7
+const RUSH_SPEED := 11.0
+const RUSH_TIME := 1.3
+const RUSH_DAMAGE := 22.0
+const RUSH_REACH := 1.9 ## metres from its centre the bash connects
+const RUSH_STUN := 2.4 ## open after hitting a wall
+const RUSH_MISS_OPEN := 1.1 ## open after running out of floor time
+const RUSH_COOLDOWN := 7.0
+const RUSH_OPEN_YAW := 1.2 ## rad the shield arm hangs aside while open
+var rush: Rush = Rush.NONE
+var _rush_t := 0.0 ## seconds left in the current phase
+var _rush_cd := 0.0
+var _rush_dir := Vector3.ZERO
+var _provoked := 0.0
+
+## True while a dodged rush has left the shield hanging aside: nothing is blocked.
+func shield_open() -> bool:
+	return rush == Rush.OPEN
+
 var _shield_mat: Material
 var _block_cd: float = 0.0
 var _windup: float = 0.0
@@ -177,6 +209,9 @@ func modify_incoming_damage(amount: float, source: Node, origin = null) -> float
 	var fwd := -global_transform.basis.z
 	fwd.y = 0.0
 	if fwd.normalized().dot(to.normalized()) > front_cone_dot:
+		if shield_open():
+			return amount # the slab hangs aside: the front is as soft as the back
+		_provoked += amount
 		_shield_spark()
 		notify_shield_hit(source)
 		return amount * block_factor
@@ -195,6 +230,9 @@ func _shield_spark() -> void:
 		AudioBus.play_synth_at("impact_metal", global_position - global_transform.basis.z * 0.7, -2.0, 0.7)
 
 func _physics_process(delta: float) -> void:
+	_ease_shield_arm(delta)
+	if state != State.DEAD and _tick_rush(delta):
+		return
 	# Mid-windup: the brute is committed to the coil — hold ground with the
 	# shield flared bright as the tell, then slam when it expires. It does NOT
 	# track you during this window, so a sidestep beats it.
@@ -251,3 +289,115 @@ func _slam() -> void:
 			(target as CharacterBody3D).velocity += away.normalized() * 8.0 + Vector3.UP * 2.0
 	_attack_lunge() # heave forward into the slam (sets recoil -> slam clip)
 	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.6)
+
+## True when nothing else has the body: an EMP, a hijack, a throw and the other
+## takeovers in EnemyBase._physics_process all cancel a rush.
+func _rush_free() -> bool:
+	return _emp_t <= 0.0 and _launch_t <= 0.0 and not hijacked and not rogue 			and reward_hack == "" and courier_goal == null and state != State.STAGGER
+
+## Drives the SHIELD RUSH. Returns true on a tick it moved the body itself.
+func _tick_rush(delta: float) -> bool:
+	_rush_cd = maxf(0.0, _rush_cd - delta)
+	_provoked = maxf(0.0, _provoked - RUSH_FORGET * delta)
+	if not _rush_free():
+		if rush != Rush.NONE:
+			_end_rush()
+		return false
+	match rush:
+		Rush.NONE:
+			if _provoked >= RUSH_PROVOKE and _rush_cd <= 0.0 and _windup <= 0.0 and is_instance_valid(target) 					and (state == State.CHASE or state == State.ATTACK):
+				var d := global_position.distance_to(target.global_position)
+				if d >= RUSH_MIN and d <= RUSH_MAX and _can_see(target):
+					rush = Rush.TELL
+					_rush_t = RUSH_TELL
+					AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.45) # a lower, longer growl than the slam's
+			return false
+		Rush.TELL:
+			_rush_t -= delta
+			_decelerate()
+			if is_instance_valid(target):
+				_face_target(delta)
+			_apply_gravity(delta)
+			move_and_slide()
+			_set_shield_glow(1.0, 9.0)
+			if _rush_t <= 0.0:
+				# The line is where it faces NOW: it turns slowly, so a late step
+				# aside is off the line.
+				_rush_dir = -global_transform.basis.z
+				_rush_dir.y = 0.0
+				_rush_dir = _rush_dir.normalized()
+				rush = Rush.RUSH
+				_rush_t = RUSH_TIME
+				AudioBus.play_synth_at("mech_step", global_position, 4.0, 0.8)
+			return true
+		Rush.RUSH:
+			_rush_t -= delta
+			velocity.x = _rush_dir.x * RUSH_SPEED
+			velocity.z = _rush_dir.z * RUSH_SPEED
+			_apply_gravity(delta)
+			move_and_slide()
+			_set_shield_glow(1.0, 9.0)
+			if is_instance_valid(target):
+				var to := target.global_position - global_position
+				to.y = 0.0
+				if to.length() <= RUSH_REACH and to.normalized().dot(_rush_dir) > 0.2:
+					_bash()
+					_end_rush()
+					return true
+			if is_on_wall() and get_wall_normal().dot(_rush_dir) < -0.5:
+				_hang_open(RUSH_STUN)
+				spawn_shockwave_ring(2.2, Color(1.0, 0.6, 0.25), global_position, false)
+				AudioBus.play_synth_at("impact_metal", global_position, 4.0, 0.5)
+				AudioBus.play_synth_at("explosion", global_position, -6.0, 1.3)
+			elif _rush_t <= 0.0:
+				_hang_open(RUSH_MISS_OPEN)
+			return true
+		Rush.OPEN:
+			_rush_t -= delta
+			_decelerate()
+			_apply_gravity(delta)
+			move_and_slide()
+			_set_shield_glow(0.05, 0.4)
+			if _rush_t <= 0.0:
+				_end_rush()
+			return true
+	return false
+
+## The rush connected: the slab hits like a door.
+func _bash() -> void:
+	var d := target.get_node_or_null("Damageable")
+	if d:
+		d.apply_damage(RUSH_DAMAGE, self)
+	if target is CharacterBody3D:
+		(target as CharacterBody3D).velocity += _rush_dir * 11.0 + Vector3.UP * 3.0
+	recoil = 1.0
+	AudioBus.play_synth_at("impact_metal", global_position + _rush_dir, 3.0, 0.6)
+	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.6)
+
+func _hang_open(seconds: float) -> void:
+	rush = Rush.OPEN
+	_rush_t = seconds
+	velocity.x = 0.0
+	velocity.z = 0.0
+	var rig := get_node_or_null("ShieldRig") as Node3D
+	if rig:
+		rig.rotation.y = -RUSH_OPEN_YAW # thrown out to its right, off the front
+
+func _end_rush() -> void:
+	rush = Rush.NONE
+	_rush_cd = RUSH_COOLDOWN
+	_provoked = 0.0
+
+## The shield arm swings back across the front once it is no longer open.
+func _ease_shield_arm(delta: float) -> void:
+	if rush == Rush.OPEN:
+		return
+	var rig := get_node_or_null("ShieldRig") as Node3D
+	if rig and rig.rotation.y != 0.0:
+		rig.rotation.y = move_toward(rig.rotation.y, 0.0, delta * 7.0)
+
+func _set_shield_glow(grid: float, emission: float) -> void:
+	if _shield_mat is ShaderMaterial:
+		_shield_mat.set_shader_parameter("grid_intensity", grid)
+	elif _shield_mat:
+		_shield_mat.emission_energy_multiplier = emission

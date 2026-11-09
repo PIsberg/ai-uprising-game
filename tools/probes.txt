@@ -372,6 +372,8 @@ res://tests/rogue_fork_probe.tscn
 res://tests/dash_tackle_probe.tscn
 # ROLLER rig: wheel rolls by distance, arms cock/lash, drum rears/tips through the ram.
 res://tests/roller_rig_probe.tscn
+# BRUTE SHIELD RUSH: blocked damage provokes it; tell, straight run, bash; a dodged rush into a wall or onto open floor leaves the shield open; EMP cancels; cooldown.
+res://tests/brute_rush_probe.tscn
 res://tests/optic_rig_probe.tscn
 res://tests/whirlwind_rig_probe.tscn
 res://tests/ripper_rig_probe.tscn
