@@ -416,3 +416,5 @@ res://tests/tempest_fx_probe.tscn
 res://tests/devastator_fx_probe.tscn
 # OMEGA-X signature: muzzle implosion, a turning corona on the round, a pillar of light where it lands.
 res://tests/omega_fx_probe.tscn
+# SIEGE Chaingun signature: a six-barrel cluster that spins up and coasts, barrels that soak heat and smoke, a case and a link per round, one scorch the stream feeds on a wall, chips off robots.
+res://tests/siege_fx_probe.tscn

@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://b0fx0tracer01" path="res://scenes/fx/tracer.tscn" id="2_tracer"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="3_mf"]
 [ext_resource type="PackedScene" uid="uid://b0fx0impact01" path="res://scenes/fx/impact.tscn" id="4_imp"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/siege_fx.gd" id="5_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -53,3 +54,4 @@ fov_punch = 0.3
 fire_thump = 0.4
 action_clack = false
 reload_style = 0
+signature_fx = ExtResource("5_sig")
