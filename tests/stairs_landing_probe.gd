@@ -104,6 +104,19 @@ func _run() -> void:
 				if r_lip > MAX_LIP:
 					roof_bad.append("%s %s -> %s: meets the tower roof at %s with the stair %.2f m below its top" % [
 						id, e_low, e_top, e_low.lerp(e_top, rt), r_lip])
+				# The spiral's top corner landing is a deck at the same height
+				# that sticks out past the roof: a stair crossing it first must
+				# meet it at its top too (crucible's stopped the walker 0.42 m
+				# under it once the roof itself was fixed).
+				var segs: Array = LevelBuilder.tower_segments(tw, LevelBuilder.tower_phase(def, tw))
+				var corner: Vector3 = segs[segs.size() - 1]["corner"]
+				var ls := Vector3.ONE * LevelBuilder.TOWER_LANDING_HALF * 2.0
+				var ct := _cross_t(e_low, e_top, corner, ls)
+				if ct >= 0.0:
+					var c_lip := th - lerpf(e_low.y, e_top.y, ct)
+					if c_lip > MAX_LIP:
+						roof_bad.append("%s %s -> %s: meets the tower's top corner landing at %s with the stair %.2f m below its top" % [
+							id, e_low, e_top, e_low.lerp(e_top, ct), c_lip])
 			for p in plats:
 				if p.has("rot") or not p.has("size"):
 					continue
@@ -216,6 +229,25 @@ func _entry_t(low: Vector3, top: Vector3, pos: Vector3, size: Vector3) -> float:
 		var t1: float = (hi - low[axis]) / d
 		t_in = maxf(t_in, minf(t0, t1))
 	return clampf(t_in, 0.0, 1.0)
+
+## Fraction along low -> top where the XZ line first enters the box footprint,
+## or -1 when the line (ended at `top`) never crosses it.
+func _cross_t(low: Vector3, top: Vector3, pos: Vector3, size: Vector3) -> float:
+	var t_in := 0.0
+	var t_out := 1.0
+	for axis in [0, 2]:
+		var lo: float = pos[axis] - size[axis] * 0.5
+		var hi: float = pos[axis] + size[axis] * 0.5
+		var d: float = top[axis] - low[axis]
+		if absf(d) < 0.0001:
+			if low[axis] < lo or low[axis] > hi:
+				return -1.0
+			continue
+		var t0: float = (lo - low[axis]) / d
+		var t1: float = (hi - low[axis]) / d
+		t_in = maxf(t_in, minf(t0, t1))
+		t_out = minf(t_out, maxf(t0, t1))
+	return t_in if t_in < t_out else -1.0
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
