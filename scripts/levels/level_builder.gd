@@ -322,6 +322,8 @@ func _ready() -> void:
 	_apply_objective_text(def)
 	GameState.apply_level_scaling(self) # difficulty: tune enemy/pickup counts
 	_place_light_pylons() # after every solid exists, before the bake routes round them
+	if not def.get("open_sky", false):
+		_settle_luminaires.call_deferred(room_height(def))
 	_bake_navmesh.call_deferred()
 	## Openings are the deadliest seconds (playtest: 100->16 HP before the
 	## first orientation). Enemies still close in and jockey for position;
@@ -889,9 +891,7 @@ func _build_geometry(def: Dictionary) -> void:
 	# keyed to the WALL_HEIGHT constant elsewhere (trim, light housings) stay
 	# calibrated to the original height, a purely cosmetic (not gameplay)
 	# trade-off already implicit in a low-poly builder level.
-	var room_h := WALL_HEIGHT
-	for t in def.get("towers", []):
-		room_h = maxf(room_h, float((t as Dictionary).get("height", 8.0)) + PLAYER_CLEARANCE_M + 0.3)
+	var room_h := room_height(def)
 	var wall_mat: Material = MAT_WALL_OUT if def.get("open_sky", false) else MAT_WALL
 	_add_box(Vector3(0, room_h * 0.5, -hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete", "", "ArenaWallN")
 	_add_box(Vector3(0, room_h * 0.5, hz), Vector3(fs.x, room_h, 1.0), wall_mat, "surf_concrete", "", "ArenaWallS")
@@ -2649,15 +2649,42 @@ func _build_bumpers(def: Dictionary) -> void:
 		b.position = e.get("pos", Vector3.ZERO)
 		add_child(b)
 
+## Height of the room's shell (walls and, indoors, the ceiling's underside):
+## WALL_HEIGHT, raised to clear the tallest climbable tower with the player's
+## own headroom margin.
+static func room_height(def: Dictionary) -> float:
+	var room_h := WALL_HEIGHT
+	for t in def.get("towers", []):
+		room_h = maxf(room_h, float((t as Dictionary).get("height", 8.0)) + PLAYER_CLEARANCE_M + 0.3)
+	return room_h
+
+## What became of the indoor luminaires once they settled ("kept", "lifted",
+## "removed" -> count), empty until `_settle_luminaires` has run.
+var luminaire_tally: Dictionary = {}
+
+## Indoor luminaires are built first (`_build_environment`), at the stock
+## ceiling height, before any tower, deck, bridge or pillar exists. Once every
+## solid is in the physics space each one settles (ShootableLight.settle): out
+## of the headroom over whatever was built under it, and hung from whatever is
+## over it. Deferred, because a space query does not see a body until the
+## physics server has stepped.
+func _settle_luminaires(ceiling_y: float) -> void:
+	for i in 2:
+		await get_tree().physics_frame
+	if not is_inside_tree():
+		return
+	var tally := {"kept": 0, "lifted": 0, "removed": 0}
+	for n in get_children():
+		if n is ShootableLight:
+			tally[(n as ShootableLight).settle(PLAYER_CLEARANCE_M, ceiling_y)] += 1
+	luminaire_tally = tally
+
 ## Jump pads (JumpPad): throw the player onto a deck. Indoors the arc is
 ## capped under the room's ceiling with head room.
 func _build_jump_pads(def: Dictionary) -> void:
 	var cap := INF
 	if not def.get("open_sky", false):
-		var room_h := WALL_HEIGHT
-		for t in def.get("towers", []):
-			room_h = maxf(room_h, float((t as Dictionary).get("height", 8.0)) + PLAYER_CLEARANCE_M + 0.3)
-		cap = room_h - 2.0
+		cap = room_height(def) - 2.0
 	for e in def.get("jump_pads", []):
 		var p := JumpPad.new()
 		p.to = e.get("to", Vector3.ZERO)
