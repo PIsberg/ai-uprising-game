@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="PackedScene" uid="uid://b0fx0muzzle01" path="res://scenes/fx/muzzle_flash.tscn" id="2_mf"]
 [ext_resource type="PackedScene" uid="uid://b0proj0plasma1" path="res://scenes/weapons/projectile_plasma.tscn" id="3_proj"]
+[ext_resource type="Script" path="res://scripts/weapons/fx/palm_fx.gd" id="4_sig"]
 
 [resource]
 script = ExtResource("1_data")
@@ -47,3 +48,4 @@ fov_punch = 1.2
 fire_thump = 0.6
 action_clack = false
 reload_style = 2
+signature_fx = ExtResource("4_sig")
