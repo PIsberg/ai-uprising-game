@@ -2667,9 +2667,13 @@ var luminaire_tally: Dictionary = {}
 ## solid is in the physics space each one settles (ShootableLight.settle): out
 ## of the headroom over whatever was built under it, and hung from whatever is
 ## over it. Deferred, because a space query does not see a body until the
-## physics server has stepped.
+## physics server has stepped. A level can leave the tree during that wait (a
+## scene change within two physics frames of the build): it then settles
+## nothing, and must not ask for a tree it no longer has.
 func _settle_luminaires(ceiling_y: float) -> void:
 	for i in 2:
+		if not is_inside_tree():
+			return
 		await get_tree().physics_frame
 	if not is_inside_tree():
 		return
