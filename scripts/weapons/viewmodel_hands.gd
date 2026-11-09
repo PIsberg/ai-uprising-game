@@ -53,6 +53,9 @@ var trigger_joint: Node3D = null
 var trigger_tip: Node3D = null
 var _pull := 0.0 ## 0 resting on the trigger .. 1 fully pulled
 var _pull_hold := 0.0
+## squeeze() was called since the last frame: that frame holds the pull whatever
+## its length (a frame over PULL_HOLD used to run the hold out and let go).
+var _squeezed := false
 ## The support hand and its forearm hang off this pivot at ELBOW_LEFT, so a
 ## reload can swing the whole arm off the gun about the elbow (support_off).
 var support_arm: Node3D = null
@@ -119,13 +122,17 @@ func squeeze() -> void:
 	if trigger_finger == null:
 		return
 	_pull_hold = PULL_HOLD
+	_squeezed = true
 	set_process(true)
 
 func _ready() -> void:
 	set_process(false)
 
 func _process(delta: float) -> void:
-	_pull_hold -= delta
+	if _squeezed:
+		_squeezed = false
+	else:
+		_pull_hold -= delta
 	if _pull_hold > 0.0:
 		_pull = minf(1.0, _pull + delta / PULL_TIME)
 	else:
