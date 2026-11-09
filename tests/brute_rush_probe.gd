@@ -14,6 +14,10 @@ extends Node3D
 ##   - with no wall to hit, a dodged rush runs RUSH_TIME and leaves the shield
 ##     open for the shorter RUSH_MISS_OPEN;
 ##   - an EMP during the tell cancels the rush;
+##   - it does not run off its footing: on a deck that ends 6 m ahead of it,
+##     with the player across the gap, it stops on the deck and hangs open like
+##     a miss; and where the floor goes on but the navmesh ends (how lava and
+##     water are carved) it stops at the navmesh's edge the same way;
 ##   - it does not rush again inside RUSH_COOLDOWN.
 ## Timed in physics frames (60 a second), so a slow machine reads the same.
 ##   godot --headless --path . --audio-driver Dummy res://tests/brute_rush_probe.tscn
@@ -38,6 +42,8 @@ func _run() -> void:
 	await _case_wall()
 	await _case_miss()
 	await _case_emp()
+	await _case_deck_edge()
+	await _case_nav_edge()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
@@ -171,12 +177,57 @@ func _case_emp() -> void:
 			"moved %.1f m" % brute.global_position.distance_to(start))
 	await _clear(s)
 
-## A brute at the origin facing -Z and a player `dist` metres in front of it,
-## once the brute has the player as its target.
-func _stage(dist: float) -> Array:
+## A deck 3 m up that ends 6 m ahead of the brute; the player stands on a second
+## deck across a 4 m gap.
+func _case_deck_edge() -> void:
+	var at := Vector3(60, 3.0, 0)
+	var deck := _box(at + Vector3(0, -0.25, 0), Vector3(10, 0.5, 12)) # z -6 .. 6
+	var far := _box(at + Vector3(0, -0.25, -13), Vector3(10, 0.5, 6)) # z -16 .. -10
+	var s := await _stage(12.0, at)
+	var brute: EnemyBrute = s[0]
+	var player: CharacterBody3D = s[1]
+	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player)
+	var began := await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.RUSH, 120)
+	var f := await _until(func() -> bool: return brute.rush != EnemyBrute.Rush.RUSH, 150)
+	await _frames(30)
+	_check("it rushes toward a player across a gap", began >= 0 and f >= 0)
+	_check("and stops on the deck, short of the edge", brute.global_position.z > -6.2 and brute.global_position.z < -2.0
+			and absf(brute.global_position.y - at.y) < 0.4, "at %s" % brute.global_position)
+	_check("hanging open like a miss", brute.shield_open() or brute.rush == EnemyBrute.Rush.NONE)
+	deck.queue_free()
+	far.queue_free()
+	await _clear(s)
+
+## The floor goes on but the navmesh ends 6 m ahead (a carved lava bed).
+func _case_nav_edge() -> void:
+	var at := Vector3(-60, 0.0, 0)
+	var region := NavigationRegion3D.new()
+	var nm := NavigationMesh.new()
+	nm.vertices = PackedVector3Array([
+		at + Vector3(-10, 0, -6), at + Vector3(10, 0, -6), at + Vector3(10, 0, 10), at + Vector3(-10, 0, 10)])
+	nm.add_polygon(PackedInt32Array([0, 1, 2, 3]))
+	region.navigation_mesh = nm
+	add_child(region)
+	await _frames(4)
+	var s := await _stage(12.0, at)
+	var brute: EnemyBrute = s[0]
+	var player: CharacterBody3D = s[1]
+	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player)
+	var began := await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.RUSH, 120)
+	var f := await _until(func() -> bool: return brute.rush != EnemyBrute.Rush.RUSH, 150)
+	await _frames(30)
+	_check("it rushes toward a player past the navmesh's edge", began >= 0 and f >= 0)
+	_check("and stops at the navmesh's edge", brute.global_position.z > -7.2 and brute.global_position.z < -2.0,
+			"at z %.1f (the navmesh ends at -6)" % brute.global_position.z)
+	region.queue_free()
+	await _clear(s)
+
+## A brute at `at` facing -Z and a player `dist` metres in front of it, once the
+## brute has the player as its target.
+func _stage(dist: float, at: Vector3 = Vector3.ZERO) -> Array:
 	var brute: EnemyBrute = (load(BRUTE) as PackedScene).instantiate()
 	add_child(brute)
-	brute.global_position = Vector3(0, 0.1, 0)
+	brute.global_position = at + Vector3(0, 0.1, 0)
 	var player := CharacterBody3D.new()
 	player.add_to_group("player")
 	player.collision_layer = 2
@@ -194,7 +245,7 @@ func _stage(dist: float) -> Array:
 	player.add_child(d)
 	add_child(player)
 	d.current_health = 500.0
-	player.global_position = Vector3(0, 0.05, -dist)
+	player.global_position = at + Vector3(0, 0.05, -dist)
 	await _until(func() -> bool: return brute.target == player, 240)
 	return [brute, player]
 

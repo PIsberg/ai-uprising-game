@@ -15,7 +15,9 @@ extends EnemyBase
 ## the line it is facing at RUSH_SPEED for up to RUSH_TIME. Stand still and you
 ## are bashed. Step aside and it runs past: into a wall it is stunned for
 ## RUSH_STUN, onto open floor it stumbles for RUSH_MISS_OPEN, and either way the
-## shield hangs open (no block at all) until it recovers. Covered by
+## shield hangs open (no block at all) until it recovers. It keeps its footing:
+## the run stops (as a miss) RUSH_LOOK short of a drop, of the navmesh's edge
+## (how lava and water are carved) or of a hazard bed. Covered by
 ## tests/brute_rush_probe.
 enum Rush { NONE, TELL, RUSH, OPEN }
 const RUSH_PROVOKE := 45.0 ## blocked damage that sets it off
@@ -31,6 +33,8 @@ const RUSH_STUN := 2.4 ## open after hitting a wall
 const RUSH_MISS_OPEN := 1.1 ## open after running out of floor time
 const RUSH_COOLDOWN := 7.0
 const RUSH_OPEN_YAW := 1.2 ## rad the shield arm hangs aside while open
+const RUSH_LOOK := 1.3 ## metres ahead its footing is checked while it runs
+const RUSH_DROP := 0.7 ## a floor further below its feet than this is an edge
 var rush: Rush = Rush.NONE
 var _rush_t := 0.0 ## seconds left in the current phase
 var _rush_cd := 0.0
@@ -326,6 +330,9 @@ func _tick_rush(delta: float) -> bool:
 				_rush_dir = -global_transform.basis.z
 				_rush_dir.y = 0.0
 				_rush_dir = _rush_dir.normalized()
+				if not _rush_footing():
+					_end_rush() # nowhere to run: it stays behind its shield
+					return true
 				rush = Rush.RUSH
 				_rush_t = RUSH_TIME
 				AudioBus.play_synth_at("mech_step", global_position, 4.0, 0.8)
@@ -349,7 +356,7 @@ func _tick_rush(delta: float) -> bool:
 				spawn_shockwave_ring(2.2, Color(1.0, 0.6, 0.25), global_position, false)
 				AudioBus.play_synth_at("impact_metal", global_position, 4.0, 0.5)
 				AudioBus.play_synth_at("explosion", global_position, -6.0, 1.3)
-			elif _rush_t <= 0.0:
+			elif _rush_t <= 0.0 or not _rush_footing():
 				_hang_open(RUSH_MISS_OPEN)
 			return true
 		Rush.OPEN:
@@ -362,6 +369,31 @@ func _tick_rush(delta: float) -> bool:
 				_end_rush()
 			return true
 	return false
+
+## Is there ground to run on RUSH_LOOK metres along the rush line? A wall there
+## counts as ground (it is about to hit it, which is the point). Otherwise the
+## floor must be within RUSH_DROP below its feet, on the navmesh when the level
+## has one, and outside every hazard bed.
+func _rush_footing() -> bool:
+	var space := get_world_3d().direct_space_state
+	var chest := global_position + Vector3.UP * 0.9
+	var ahead := PhysicsRayQueryParameters3D.create(chest, chest + _rush_dir * RUSH_LOOK, 1)
+	ahead.exclude = [get_rid()]
+	if not space.intersect_ray(ahead).is_empty():
+		return true
+	var p := global_position + _rush_dir * RUSH_LOOK
+	var down := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 0.9, p + Vector3.DOWN * RUSH_DROP, 1)
+	down.exclude = [get_rid()]
+	var hit := space.intersect_ray(down)
+	if hit.is_empty():
+		return false
+	var floor_at: Vector3 = hit.position
+	var map := get_world_3d().navigation_map
+	if map.is_valid() and not NavigationServer3D.map_get_regions(map).is_empty():
+		var on_nav := NavigationServer3D.map_get_closest_point(map, floor_at)
+		if Vector2(on_nav.x - floor_at.x, on_nav.z - floor_at.z).length() > 0.6:
+			return false
+	return not _pos_in_hazard(floor_at)
 
 ## The rush connected: the slab hits like a door.
 func _bash() -> void:
