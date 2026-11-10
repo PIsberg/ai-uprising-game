@@ -2155,39 +2155,9 @@ func _build_platforms(def: Dictionary) -> void:
 ##    "beacon": bool}    # emissive guide posts flanking the gap (default true)
 ## Reachability is guaranteed by construction: the gap is never closed, and
 ## tests/campaign_nav_sweep confirms spawn->exit still solves on every gated level.
-## How far gate `idx` of def "gates" runs along its own length: (lo, hi) on
-## the axis it does not block. A gate spans the floor, but it stops at the
-## nearest gate listed BEFORE it that crosses it, on either side of its own
-## gap. Two full-span gates that cross wall off a quadrant no gap opens into
-## (14 levels had one: 120 to 870 m2 of floor nobody could walk onto, #500).
-## Stopping the later gate at the earlier one hands that floor to the room on
-## the earlier gate's near side, as a dead end: it opens no way round either
-## gap. `"through": true` on a gate keeps its full span.
+## A gate stops at an earlier gate that crosses it (LevelDefs.gate_span).
 static func gate_span(def: Dictionary, idx: int) -> Vector2:
-	var gates: Array = def.get("gates", [])
-	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
-	var g: Dictionary = gates[idx]
-	var axis := String(g.get("axis", "z"))
-	var half := (fs.x if axis == "z" else fs.y) * 0.5
-	var span := Vector2(-half, half)
-	if g.get("through", false):
-		return span
-	var gap_pos := float(g.get("gap_pos", 0.0))
-	var gap_half := float(g.get("gap", 5.5)) * 0.5
-	for i in idx:
-		var o: Dictionary = gates[i]
-		if String(o.get("axis", "z")) == axis:
-			continue
-		# The other gate lies at `at` on this gate's length. It only stops this
-		# gate where it is solid, which it is unless its own gap is on this line.
-		var o_at := float(o.get("at", 0.0))
-		if absf(float(o.get("gap_pos", 0.0)) - float(g.get("at", 0.0))) < float(o.get("gap", 5.5)) * 0.5 + 0.5:
-			continue
-		if o_at <= gap_pos - gap_half:
-			span.x = maxf(span.x, o_at)
-		elif o_at >= gap_pos + gap_half:
-			span.y = minf(span.y, o_at)
-	return span
+	return LevelDefs.gate_span(def, idx)
 
 func _build_gates(def: Dictionary) -> void:
 	var open_sky: bool = def.get("open_sky", false)
@@ -2203,7 +2173,7 @@ func _build_gates(def: Dictionary) -> void:
 		var thick: float = g.get("thick", 1.0)
 		# The wall spans the floor on the axis it does NOT block, or stops at an
 		# earlier gate that crosses it (gate_span).
-		var span := gate_span(def, gate_i)
+		var span := LevelDefs.gate_span(def, gate_i)
 		var g0 := gap_pos - gap * 0.5
 		var g1 := gap_pos + gap * 0.5
 		# One wall segment either side of the opening; skip a segment that would
