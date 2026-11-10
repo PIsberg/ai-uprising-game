@@ -424,5 +424,7 @@ res://tests/omega_fx_probe.tscn
 res://tests/siege_fx_probe.tscn
 # PALM Cannon signature: a muzzle iris that closes with the cooldown, a halo and echo rings in flight, a clap ring at the splash radius, a cooling handprint on the struck face.
 res://tests/palm_fx_probe.tscn
+# Blast scorch lies on the struck face: a rocket into a wall projects along the wall's normal, floors and air bursts project down.
+res://tests/scorch_wall_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn

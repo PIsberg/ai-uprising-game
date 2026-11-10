@@ -7,6 +7,10 @@ extends Decal
 ##
 ## Usage from any FX/level script:
 ##   ScorchDecal.spawn(get_tree().current_scene, pos, radius)
+## A decal projects along its local -Y. With no `normal` that is straight down,
+## right for a blast on or over a floor. A round that goes off on a wall passes
+## the wall's normal (`struck_normal` finds it): projected down, its burn and
+## ember ring smeared down the wall as two vertical stripes.
 
 const MAX_MARKS := 24
 const LIFETIME := 22.0
@@ -16,7 +20,7 @@ static var _marks: Array = []
 static var _burn_tex: GradientTexture2D = null
 static var _ember_tex: GradientTexture2D = null
 
-static func spawn(world: Node, pos: Vector3, radius: float = 2.2) -> void:
+static func spawn(world: Node, pos: Vector3, radius: float = 2.2, normal: Vector3 = Vector3.UP) -> void:
 	if world == null or not world.is_inside_tree():
 		return
 	# Ambient-detail tier gate: LOW strips decorative FX entirely.
@@ -34,10 +38,30 @@ static func spawn(world: Node, pos: Vector3, radius: float = 2.2) -> void:
 	d.albedo_mix = 1.0
 	d.cull_mask = 1 # project onto world geometry only, not robots walking over
 	d.position = pos
-	d.rotation.y = randf() * TAU
+	var n := normal.normalized() if normal.length() > 0.01 else Vector3.UP
+	if n.dot(Vector3.UP) > 0.999:
+		d.rotation.y = randf() * TAU
+	else:
+		# Local Y out of the struck face, spun at random about it.
+		var x := n.cross(Vector3.UP if absf(n.y) < 0.99 else Vector3.RIGHT).normalized()
+		d.basis = Basis(x, n, x.cross(n)).rotated(n, randf() * TAU)
 	world.add_child(d)
 	_marks.append(d)
 	d._play_life()
+
+## The normal of the world face a round flying along `dir` struck at `pos`
+## (a world-only ray through the blast point), or UP when it burst on a robot
+## or in the air.
+static func struck_normal(from: Node3D, pos: Vector3, dir: Vector3) -> Vector3:
+	if from == null or not from.is_inside_tree() or dir.length() < 0.01:
+		return Vector3.UP
+	var d := dir.normalized()
+	var q := PhysicsRayQueryParameters3D.create(pos - d * 0.6, pos + d * 0.9)
+	q.collision_mask = 1
+	var hit := from.get_world_3d().direct_space_state.intersect_ray(q)
+	if hit.is_empty() or (hit.normal as Vector3).length() < 0.5:
+		return Vector3.UP
+	return (hit.normal as Vector3).normalized()
 
 func _play_life() -> void:
 	var tw := create_tween()
