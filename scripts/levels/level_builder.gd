@@ -1632,8 +1632,9 @@ func _build_ramp_wedge(from: Vector3, to: Vector3, width: float, thickness: floa
 func _build_stairs(def: Dictionary) -> void:
 	var stairs: Array = def.get("stairs", [])
 	for s in stairs:
-		var from: Vector3 = s["from"]
-		var to: Vector3 = s["to"]
+		var ends := stair_ends(def, s["from"], s["to"])
+		var from: Vector3 = ends[0]
+		var to: Vector3 = ends[1]
 		# Full-width foot for a stair that starts up on a roof or a deck: a
 		# pointed foot there is a spike to walk into (#339: horde's SkyBridge
 		# stopped 3 of 3 walks), unless another stair arrives just below it.
@@ -1716,6 +1717,66 @@ static func tower_corners(radius: float) -> Array:
 		Vector3(radius, 0, radius), Vector3(-radius, 0, radius),
 		Vector3(-radius, 0, -radius), Vector3(radius, 0, -radius),
 	]
+
+## Half-width of a tower's square roof slab (its top face is at the tower's height).
+static func tower_roof_half(t: Dictionary) -> float:
+	return float(t.get("radius", 3.6)) * 0.9
+
+## A stair's top this close to a tower's height (and over its roof) lands on that roof.
+const STAIR_ROOF_TOL := 0.3
+## A stair this far under the roof's top where it crosses the roof's edge is re-landed.
+const STAIR_ROOF_LIP := 0.05
+
+## A stair's ends as the builder lays them, [from, to], for the scaled level `def`.
+## A stair authored to a tower's centre (the sky-bridge convention: the roof is
+## "at" the tower's pos) crosses the roof slab's edge short of its top, so it
+## runs into the slab's side: up to 0.88 m under the top on the short, steep
+## gallery stairs, where the real player stopped 3 of 3 walks (#339). Such a
+## stair's high end is pulled back to where its line first crosses the roof's
+## edge, or the spiral's top corner landing (a deck at the same height that
+## sticks out past the roof: crucible's stair met it first), and set to the
+## roof's height, so its top face meets the deck's top (the wedge's flat
+## run-out, RAMP_TOP_EMBED, buries into it). A bridge that already crosses
+## within STAIR_ROOF_LIP of the top is left alone.
+## Static so stairs_landing_probe checks the ends the builder really lays.
+static func stair_ends(def: Dictionary, from: Vector3, to: Vector3) -> Array:
+	var up := to.y >= from.y
+	var top := to if up else from
+	var low := from if up else to
+	for t: Dictionary in def.get("towers", []):
+		var pos: Vector3 = t["pos"]
+		var height := float(t.get("height", 8.0))
+		var half := tower_roof_half(t)
+		if absf(top.y - height) > STAIR_ROOF_TOL or absf(top.x - pos.x) > half or absf(top.z - pos.z) > half:
+			continue
+		var t_in := _footprint_entry(low, top, pos, half)
+		var segs := tower_segments(t, tower_phase(def, t))
+		var t_corner := _footprint_entry(low, top, segs[segs.size() - 1]["corner"], TOWER_LANDING_HALF)
+		if t_corner >= 0.0 and (t_in < 0.0 or t_corner < t_in):
+			t_in = t_corner
+		if t_in <= 0.0 or height - lerpf(low.y, top.y, t_in) <= STAIR_ROOF_LIP:
+			continue # starts on the roof, or already meets its top
+		var edge := low.lerp(top, t_in)
+		edge.y = height
+		return [from, edge] if up else [edge, to]
+	return [from, to]
+
+## Fraction along low -> top where the XZ line first enters the square footprint
+## of half-width `half` at `centre`; -1 when it never crosses it.
+static func _footprint_entry(low: Vector3, top: Vector3, centre: Vector3, half: float) -> float:
+	var t_in := 0.0
+	var t_out := 1.0
+	for axis in [0, 2]:
+		var d: float = top[axis] - low[axis]
+		if absf(d) < 0.0001:
+			if absf(low[axis] - centre[axis]) > half:
+				return -1.0
+			continue
+		var t0: float = (centre[axis] - half - low[axis]) / d
+		var t1: float = (centre[axis] + half - low[axis]) / d
+		t_in = maxf(t_in, minf(t0, t1))
+		t_out = minf(t_out, maxf(t0, t1))
+	return t_in if t_in <= t_out else -1.0
 
 ## Which corner tower `t`'s spiral starts from (0-3), for the scaled level
 ## `def`. Static so the probes check the layout the builder really lays.
@@ -1896,7 +1957,7 @@ func _build_tower(t: Dictionary, phase: int, accent: Color) -> void:
 	# up to radius*0.85 — but no longer reaching out to where the spiral
 	# itself runs, so it only overhangs the final approach near its own corner,
 	# same as an ordinary corner landing (solved the same way, below).
-	var roof_half := radius * 0.9
+	var roof_half := tower_roof_half(t)
 	var roof_t := maxf(0.4, roof_half * slope + 0.25)
 	_add_collider_box(base + Vector3(0, height - roof_t * 0.5, 0),
 		Vector3(roof_half * 2.0, roof_t, roof_half * 2.0), _color_material(accent), "TwrRoof")
