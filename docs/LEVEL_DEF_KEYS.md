@@ -206,8 +206,8 @@ no `tasks` key defaults to a single `kill_all` task.
 | `overload` | {trigger_label,core} | Climactic red-alert set-piece (`OverloadDirector`): when the task whose `label` matches `trigger_label` completes, every static light bleeds red/strobes and the `core` point erupts with periodic blasts | `_build_overload` | No | — |
 | `objective` | String | HUD objective text and the exit Portal's on-screen prompt | `_build_exit`, `_apply_objective_text` | n/a | — |
 | `weapon` | {scene,pos,color?} | The level's starting weapon pickup | `_build_weapon_pickup` → `_spawn_weapon_pickup` | pos | `tests/weapon_order_probe` |
-| `extra_weapons` | Array (same shape as `weapon`) | Additional weapon pickups to find in the level | `_build_weapon_pickup` | Yes (pos) | `tests/weapon_order_probe` |
-| `pickups` | Array<{type\|kind,pos}> | Hand-placed supply/powerup pickups. Accepts **both** `type` (used by every hand-authored campaign def) and `kind` (used by the level editor) — see the intro note above | `_build_pickups` | Yes (pos) | `tests/pickup_probe` |
+| `extra_weapons` | Array (same shape as `weapon`) | Additional weapon pickups to find in the level | `_build_weapon_pickup` | Yes (pos) | `tests/weapon_order_probe`, `tests/task_reach_probe` |
+| `pickups` | Array<{type\|kind,pos}> | Hand-placed supply/powerup pickups. Accepts **both** `type` (used by every hand-authored campaign def) and `kind` (used by the level editor) — see the intro note above | `_build_pickups` | Yes (pos) | `tests/pickup_probe`, `tests/task_reach_probe` (clear, supported, on the navmesh) |
 | `targets` | Array<{pos,hp?,move?,speed?,color?}> | Pop-up range-target dummies (static, sliding, or armored) | `_build_targets` | Yes (pos) | — |
 | `lore` | Array<{pos,id?,title?,text?,color?}> | Walk-up `LoreTerminal` that voices a recovered log through the broadcast bus | `_build_lore` | Yes (pos) | — |
 
