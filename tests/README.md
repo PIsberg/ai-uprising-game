@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-593 probes total: **270** wired into the headless suite (`suite`), **88**
+595 probes total: **271** wired into the headless suite (`suite`), **88**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **235** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **236** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -288,6 +288,8 @@ or GPU-timing probes; `--headless` renders these black).
 | dismember_probe | Android damaged past health thresholds; panels shed mid-degradation without errors | windowed |
 | dodge_probe | PERFECT DODGE: a hit negated by dash i-frames scores a bonus+banner once per dash; non-dashing hit does not | windowed |
 | dog_gait_probe | The DOG trots: running after a target at 9.2 m/s every paw (the GLB's paw meshes, by side, body frame) swings 0.12+ m fore and aft (0.50; 0.00 before), diagonal paws together (r 1.00) and the front pair in opposition (r -1.00); stopped, every paw back within 0.03 m of rest | suite |
+| dog_pack_probe | The K-9 HUNTER's PACK HUNT (`EnemyDog.pack_hunt`), four real dogs round a stand-in player for 14 s: only one pounce is ever under way, no dog rears until PACK_GAP after the last landing, no two pounce bites land within half a second, every dog gets a turn, and the waiting dogs run a ring round the prey (on the move, 4.5 to 10 m out on average); a lone dog rears at once, closes to bite and pounces again on its own cooldown; a dog killed while rearing does not hold the turn; ORB and ROLLER do not pack hunt (12 checks; 4 failed when every dog pounced on its own timer) | suite |
+| dog_pack_shot | Four K-9 HUNTERs on a stand-in player from above: one rearing with three on the ring, and one in the air | windowed |
 | dog_gait_shot | Side view of the DOG at four points of its trot and in the stretched pounce pose; `-- --out=<dir>` | windowed |
 | elite_probe | `Elite.maybe_apply` pre-`add_child` with a forced roll (catches the "get_node from outside tree" regression) | suite |
 | elite_marker_probe | A real elite of each affix gets a marker with its own silhouette (mesh types and sizes under `EliteMarker` all differ), and every pair of marker colours is at least 0.3 apart in RGB: the affix reads by shape for colourblind players | suite |

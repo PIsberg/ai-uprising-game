@@ -339,9 +339,9 @@ const ENTRIES := {
 	},
 	"dog": {
 		"scene": "res://scenes/enemies/dog.tscn", "name": "K-9 HUNTER", "scale": 1.05, "y": 0.0, "yaw": 40.0,
-		"desc": "A four-legged robot attack-hound. It sprints the gap in a heartbeat, hunts in packs, and lunges in to bite. Fragile — but if one closes, more are right behind it.",
-		"strengths": ["Blistering speed — eats distance instantly", "Hunts in packs and flanks", "Low to the ground, hard to track far off"],
-		"weaknesses": ["Thin armour — drops to a solid hit", "No ranged attack — kill it before it reaches you"],
+		"desc": "A four-legged robot attack-hound. It sprints the gap in a heartbeat and rears back before it pounces. A pack runs a ring round you and sends one dog in at a time.",
+		"strengths": ["Blistering speed: eats distance instantly", "A pack circles you: there is always one behind you", "Low to the ground, hard to track far off"],
+		"weaknesses": ["Thin armour: drops to a solid hit", "Only one pounces at a time: watch for the dog that rears, and sidestep", "No ranged attack: thin the pack while it circles"],
 	},
 	"server": {
 		"scene": "res://scenes/enemies/server.tscn", "name": "MAITRE-D'", "scale": 1.0, "y": 0.0,

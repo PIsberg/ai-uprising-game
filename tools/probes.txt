@@ -261,6 +261,8 @@ res://tests/ronin_katana_probe.tscn
 res://tests/conveyor_probe.tscn
 # DOG GAIT: the K-9 HUNTER trots on its split leg parts, diagonal pairs together.
 res://tests/dog_gait_probe.tscn
+# PACK HUNT: dogs on the same prey pounce one at a time, the rest run a ring round it; a lone dog is unchanged.
+res://tests/dog_pack_probe.tscn
 # ENFORCER: rifle swings from port arms onto the target; rounds leave the barrel tip.
 res://tests/enforcer_rifle_probe.tscn
 # LADLE CRANE: hunts the player, telegraphs, pours a cooling molten pool; Crucible coverage clear of the towers.
