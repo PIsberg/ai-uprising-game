@@ -3869,6 +3869,9 @@ static func _mistral() -> Dictionary:
 		# gap, out over the exit-side gap (or over the top: the gallery
 		# sky-bridge clears both walls). Task level, so gating fits — this is
 		# not a swarm arena (see the hivemind note for the counter-example).
+		# The x gate is listed second, so it stops at the z gate
+		# (LevelBuilder.gate_span): run wall to wall, the two sealed the
+		# north-east corner (#500). That corner is now the spawn strip's east end.
 		"gates": [
 			{"axis": "z", "at": -22, "gap": 8, "gap_pos": 14, "height": 4.2, "captcha": true},
 			{"axis": "x", "at": 22, "gap": 8, "gap_pos": 14, "height": 4.2},

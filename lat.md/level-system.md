@@ -304,6 +304,14 @@ Every open-sky level with a landmark gets a colossal war machine walking its hor
 * Two fog-free red eyes placed every frame from the rig's `Head` bone, `EYE_FWD` ahead along the walker's facing (`head_position`, `_place_eyes`): the bone's own axes are the rig's. Night skies (env `stars`) add a searchlight cone from the head down toward the arena.
 * The body takes the level's fog (a silhouette in haze); no collision or shadows. LOW skips it. `tests/horizon_walker_probe`; `tests/horizon_walker_shot` (`--close` frames it from 300 m).
 
+## Route Gates
+<!-- lat: { "require-code-mention": true } -->
+The `gates` def key walls the arena into rooms: each gate is a full-height wall with one gap (`_build_gates`), so the route serpentines instead of running straight to the exit.
+
+* A gate runs wall to wall unless an earlier-listed gate crosses it: it stops there (`LevelBuilder.gate_span`). Two full-span gates that cross seal the quadrant neither gap opens into; 14 levels had such floor, 120 to 868 m2 each.
+* Stopping the later gate hands that floor to the room beside it as a dead end, so no gap is bypassed. `"through": true` keeps a gate's full span.
+* `tests/sealed_floor_probe` builds every gated level: no cut-off ground floor of 100 m2 or more, and the navmesh route to the exit crosses each gate through its gap. `tests/sealed_floor_sweep` reports cut-off floor on any level.
+
 ## CAPTCHA Gates
 <!-- lat: { "require-code-mention": true } -->
 A `gates` entry with `"captcha": true` gets a CAPTCHA checkpoint in its gap (`CaptchaGate.build` from `_build_gates`): an arch and a "[ ] I'm not a robot" panel.
