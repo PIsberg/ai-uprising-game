@@ -3,7 +3,8 @@ extends Node3D
 ## player, for a SEMI gun (pistol), an AUTO gun (rifle) and the BEAM gun (tesla):
 ##   - holding the trigger curls the index finger back through the guard: its
 ##     tip moves at least PULL_BACK toward the palm (+z) and down, in the
-##     trigger hand's own space, and stays back for as long as it is held;
+##     trigger hand's own space, and stays back for as long as it is held,
+##     through frames longer than PULL_HOLD too;
 ##   - letting go puts the finger back where it rested;
 ##   - a one-frame tap still shows: the finger reaches most of its full pull;
 ##   - during a reload the finger stays off the trigger: holding fire moves it
@@ -63,6 +64,10 @@ func _gun_check(wm: Node, id: String) -> void:
 		return
 	var rest := _tip(w)
 	# Held: sample every frame for 0.4 s once the finger has had 0.1 s to get there.
+	# process_frame fires before the frame's own _process calls, so at a sample
+	# the hands have been stepped through the frames before this one only: the
+	# 0.1 s is counted without the current frame (counting it sampled a
+	# half-pulled finger after one 0.13 s first frame, one headless run in three).
 	var t := 0.0
 	var max_back := 0.0
 	var min_back := INF
@@ -70,9 +75,10 @@ func _gun_check(wm: Node, id: String) -> void:
 	while t < 0.5:
 		w.try_fire(true, false, _cam, _player)
 		await get_tree().process_frame
-		t += get_process_delta_time()
+		var dt := get_process_delta_time()
+		t += dt
 		var d := _tip(w) - rest
-		if t > 0.1:
+		if t - dt > 0.1:
 			max_back = maxf(max_back, d.z)
 			min_back = minf(min_back, d.z)
 			down = maxf(down, -d.y)
@@ -80,18 +86,25 @@ func _gun_check(wm: Node, id: String) -> void:
 			"back %.4f m, down %.4f m" % [max_back, down])
 	_check("%s the finger stays back while the trigger is held" % id, min_back >= max_back * 0.8,
 			"min %.4f of max %.4f" % [min_back, max_back])
+	# A frame longer than PULL_HOLD (a hitch, or any headless frame) must not let
+	# a held trigger go: squeeze, then step the hands 0.12 s, six times over.
+	var low := 1.0
+	for i in 6:
+		w.hands.squeeze()
+		w.hands._process(0.12)
+		low = minf(low, w.hands._pull)
+	_check("%s a 0.12 s frame does not drop a held trigger" % id, low >= 0.99, "pull %.2f" % low)
 	await _release(w, 0.4)
 	_check("%s letting go puts the finger back" % id, _tip(w).distance_to(rest) < REST_TOL,
 			"%.4f m off rest" % _tip(w).distance_to(rest))
-	# One-frame tap.
+	# One-frame tap through try_fire, the hands then stepped by hand at 60 fps: a
+	# real headless frame (70 to 130 ms) outlasts the whole 0.05 s tap.
 	w._cooldown = 0.0
 	w.try_fire(true, false, _cam, _player)
+	w.try_fire(false, false, _cam, _player)
 	var tap := 0.0
-	t = 0.0
-	while t < 0.3:
-		await get_tree().process_frame
-		t += get_process_delta_time()
-		w.try_fire(false, false, _cam, _player)
+	for i in 18:
+		w.hands._process(1.0 / 60.0)
 		tap = maxf(tap, (_tip(w) - rest).z)
 	_check("%s a one-frame tap still shows the pull" % id, tap >= max_back * 0.8,
 			"tap %.4f of full %.4f" % [tap, max_back])

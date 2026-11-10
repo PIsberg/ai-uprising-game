@@ -23,6 +23,12 @@ extends Node3D
 ##     CLEARANCE under its footprint, none stands inside one, every fixture under
 ##     open air has a rod reaching what is over it, and the builder's tally
 ##     accounts for every authored light.
+## (3) A level left before its fixtures settle (taken out of the tree in the
+##     frame it was built, and one physics frame later) settles nothing and
+##     raises no script error. The settle waits two physics frames, and it used
+##     to ask a node that had left the tree for its tree: `uprising_probe`, which
+##     changes scene that fast, failed 1 CI run in 8 on it. A script error cannot
+##     be caught here; the suite runner fails any probe that logs one.
 ##   godot --headless --path . --audio-driver Dummy res://tests/lamp_headroom_probe.tscn [-- levels=gpt,assembly]
 
 const CLEARANCE_M := LevelBuilder.PLAYER_CLEARANCE_M
@@ -41,8 +47,24 @@ func _ready() -> void:
 func _run() -> void:
 	await _unit_cases()
 	await _campaign()
+	await _left_early()
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
+
+# ---------- (3) a level left before it settles ----------
+
+func _left_early() -> void:
+	for wait in [0, 1]:
+		var lvl: Node = (load("res://scenes/levels/level_gpt.tscn") as PackedScene).instantiate()
+		add_child(lvl)
+		for i in wait:
+			await get_tree().physics_frame
+		remove_child(lvl)
+		for i in 4:
+			await get_tree().physics_frame
+		var tally: Dictionary = lvl.get("luminaire_tally")
+		_check("a level left %d physics frame(s) after it was built settles nothing" % wait, tally.is_empty(), str(tally))
+		lvl.free()
 
 # ---------- (1) unit cases ----------
 
