@@ -267,9 +267,9 @@ const ENTRIES := {
 	},
 	"seeker": {
 		"scene": "res://scenes/enemies/seeker.tscn", "name": "SEEKER", "scale": 1.0, "y": 1.3,
-		"desc": "A kamikaze flyer that rushes in and detonates against you. Drop it early.",
-		"strengths": ["Fast, direct, and explosive", "Forces you to keep moving"],
-		"weaknesses": ["Detonates harmlessly if killed at range", "Low health"],
+		"desc": "A kamikaze flyer. It stops short, arms with a whine as its band burns white, then dives down one straight line.",
+		"strengths": ["Fast and explosive", "Its dive leads you if you walk in a straight line"],
+		"weaknesses": ["Change direction as it launches and it flies past, spent and harmless for a moment", "Detonates harmlessly if killed at range", "Low health"],
 	},
 	"brute": {
 		"scene": "res://scenes/enemies/brute.tscn", "name": "BULWARK BRUTE", "scale": 1.0, "y": 0.0,
