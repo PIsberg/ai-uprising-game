@@ -21,6 +21,7 @@ The `level_builder.gd` script consumes level definition dictionaries and generat
 To maintain size consistency:
 * All authored level coordinates in definitions are scaled by a multiplier: `WORLD_SCALE = 1.4`.
 * Any manual positioning logic must check if the coordinate was already scaled to avoid mixed-coordinate scaling bugs.
+* A def ramp's `size` is not scaled but its deck is, so `LevelBuilder.ramp_ends` slides a ramp along its run to the edge of the platform it points at (within `RAMP_DECK_REACH`, 3 m); `tests/ramp_landing_probe` requires every def ramp to top out on a deck.
 
 ### Exceptions
 Specifies non-procedural levels and user-made content exceptions.

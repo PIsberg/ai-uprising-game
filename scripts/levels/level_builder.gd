@@ -1461,16 +1461,27 @@ const STAIR_FOOT_GAP := 0.3 ## Open building: floor between the end wall and the
 const STAIR_LANDING := 1.2  ## Open building: slab between the ramp's top and the far end wall.
 
 func _build_ramps(def: Dictionary) -> void:
-	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
-	for r in def.get("ramps", []):
-		_add_ramp(r["pos"], r["size"], r.get("pitch", 24.0), r.get("yaw", 0.0), fs)
+	for r: Dictionary in def.get("ramps", []):
+		var ends := ramp_ends(def, r)
+		var size: Vector3 = r["size"]
+		_build_ramp_wedge(ends[0], ends[1], size.x, size.y, "DefRamp")
+
+## A def ramp's top this far (m, along its run) short of a deck is slid up to it.
+const RAMP_DECK_REACH := 3.0
+## ...when the deck's top is within this of the ramp's top.
+const RAMP_DECK_TOL := 0.5
 
 ## Author-facing ramp: a center/size/pitch/yaw box, as placed by def "ramps"
-## entries. Recovers the true walking-surface endpoints (the box's TOP face at
-## each end, not its centerline — see the root-cause note above) and builds
-## the actual geometry via the shared wedge (no more box-center-vs-surface
-## drift).
-func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float, floor_size: Vector2 = Vector2(1e6, 1e6)) -> void:
+## entries. Returns the walking-surface ends the builder lays, [foot, top], for
+## the scaled level `def`: the box's TOP face at each end, not its centerline
+## (see the root-cause note above), built by the shared wedge.
+## Static so ramp_landing_probe checks the ends the builder really lays.
+static func ramp_ends(def: Dictionary, r: Dictionary) -> Array:
+	var center: Vector3 = r["pos"]
+	var size: Vector3 = r["size"]
+	var pitch_deg := float(r.get("pitch", 24.0))
+	var yaw_deg := float(r.get("yaw", 0.0))
+	var floor_size: Vector2 = def.get("floor_size", Vector2(40, 40))
 	var b := Basis(Vector3.UP, deg_to_rad(yaw_deg)) * Basis(Vector3.RIGHT, deg_to_rad(pitch_deg))
 	var half_len := size.z * 0.5
 	var half_thick := size.y * 0.5
@@ -1483,6 +1494,15 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float,
 		var tmp := foot
 		foot = top
 		top = tmp
+	# A ramp's length is not scaled with the world but its deck is (see
+	# LevelDefs._scaled), so a ramp authored flush against a deck's edge is left
+	# short of it: the shared vantage deck's ramp stopped 1.98 m from the deck
+	# on 17 levels, a gap to jump, not a way up (and no path for a robot). Slide
+	# the whole ramp along its run until its top meets the edge of the deck it
+	# points at, at the deck's height: the slope is the authored one.
+	var slid := _ramp_to_deck(def, foot, top)
+	foot = slid[0]
+	top = slid[1]
 	# Several def ramps are authored with the foot a little ABOVE the floor
 	# (e.g. the shared vantage-deck ramp's foot sits at y=0.23), leaving the
 	# wedge's knife edge hovering (RAMP_FOOT_SINK only sinks it 0.05) — an
@@ -1522,7 +1542,50 @@ func _add_ramp(center: Vector3, size: Vector3, pitch_deg: float, yaw_deg: float,
 		t_clear = maxf(t_clear, (absf(foot.z) - inner_z) / absf(dirv.z))
 	if t_clear > 0.0 and t_clear < 0.5:
 		foot += dirv * t_clear
-	_build_ramp_wedge(foot, top, size.x, size.y, "DefRamp")
+	return [foot, top]
+
+## [foot, top] slid along the ramp's run so the top lands on the near edge of
+## the def platform ahead of it: one whose top is within RAMP_DECK_TOL of the
+## ramp's and whose footprint the ramp's line enters within RAMP_DECK_REACH.
+## Unchanged when there is none, or the top is already on a deck.
+static func _ramp_to_deck(def: Dictionary, foot: Vector3, top: Vector3) -> Array:
+	var run := Vector3(top.x - foot.x, 0.0, top.z - foot.z)
+	if run.length() < 0.1:
+		return [foot, top]
+	var dir := run.normalized()
+	var best := INF
+	var best_y := top.y
+	for p: Dictionary in def.get("platforms", []):
+		var pos: Vector3 = p["pos"]
+		var half: Vector3 = (p["size"] as Vector3) * 0.5
+		var deck_y := pos.y + half.y
+		if absf(deck_y - top.y) > RAMP_DECK_TOL:
+			continue
+		# Distance along the run from the top to where it enters the footprint.
+		var t_in := -INF
+		var t_out := INF
+		var misses := false
+		for axis in [0, 2]:
+			if absf(dir[axis]) < 0.0001:
+				if absf(top[axis] - pos[axis]) > half[axis]:
+					misses = true
+				continue
+			var t0: float = (pos[axis] - half[axis] - top[axis]) / dir[axis]
+			var t1: float = (pos[axis] + half[axis] - top[axis]) / dir[axis]
+			t_in = maxf(t_in, minf(t0, t1))
+			t_out = minf(t_out, maxf(t0, t1))
+		if misses or t_in > t_out or t_out < 0.0:
+			continue
+		if t_in <= 0.0:
+			return [foot, top] # already on a deck
+		if t_in <= RAMP_DECK_REACH and t_in < best:
+			best = t_in
+			best_y = deck_y
+	if best == INF:
+		return [foot, top]
+	var to := top + dir * best
+	to.y = best_y
+	return [foot + dir * best, to]
 
 ## Connect two points with a ramp the player can walk straight up — `from` (low)
 ## to `to` (high). Length and pitch are solved so the surface lands exactly on
