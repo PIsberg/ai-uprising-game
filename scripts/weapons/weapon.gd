@@ -612,6 +612,18 @@ var _alt_held := false
 var _alt_prev := false
 var _alt_step := 0             # rising charge-tick audio stage
 
+## FAN (hold): the off hand slaps the hammer. Rounds leave FAN_RATE_MULT times
+## as fast as the trigger fires them, in a fixed FAN_SPREAD_DEG cone whether
+## hip or aimed, each doing FAN_DAMAGE of the gun's damage. Letting go (or
+## running dry) costs FAN_RECOVER seconds before the gun fires again.
+const FAN_RATE_MULT := 3.0
+const FAN_SPREAD_DEG := 5.5
+const FAN_DAMAGE := 0.8
+const FAN_RECOVER := 0.55
+
+var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
+var _fanning := false
+
 ## Driven every frame by WeaponManager with the alt-fire button state.
 func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) -> void:
 	var just := pressed and not _alt_prev
@@ -638,6 +650,28 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 				_alt_tight = false
 				_alt_slug = false
 				_cooldown *= 1.6 # heavier shot, slower follow-up
+		WeaponData.AltMode.FAN:
+			_alt_fan_logic(pressed, just, camera, shooter)
+
+## Hold to fan the hammer: one wide, weaker round per fan beat until the
+## cylinder is empty or the button is let go.
+func _alt_fan_logic(pressed: bool, just: bool, camera: Camera3D, shooter: Node) -> void:
+	if pressed and mag > 0:
+		if _cooldown <= 0.0:
+			_fanning = true
+			_alt_boost = FAN_DAMAGE
+			_alt_wide = FAN_SPREAD_DEG
+			_fire_once(camera, shooter, false)
+			_alt_boost = 1.0
+			_alt_wide = 0.0
+			_cooldown = 1.0 / maxf(0.1, eff_fire_rate() * FAN_RATE_MULT)
+			AudioBus.play_synth_ui("empty_click", -8.0, 0.7) # the palm on the hammer
+		return
+	if _fanning: # let go, or dry: the hand goes back to the grip
+		_fanning = false
+		_cooldown = maxf(_cooldown, FAN_RECOVER)
+	elif just and mag <= 0:
+		_play_empty()
 
 ## Hold to charge (barrel heat ramps as feedback), release to loose a single
 ## perfectly-accurate shot at up to ~3.4× damage for 3 ammo.
@@ -667,6 +701,7 @@ func _alt_charge_logic(pressed: bool, delta: float, camera: Camera3D, shooter: N
 		_alt_charge = 0.0
 
 func _cancel_charge() -> void:
+	_fanning = false
 	_alt_held = false
 	_alt_charge = 0.0
 	_alt_step = 0
@@ -685,13 +720,21 @@ func _fire_volley(camera: Camera3D, shooter: Node) -> void:
 	_alt_tight = false
 	_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * 2.2 # breather after the volley
 
+## The cone half-angle in degrees the round being fired flies in: spread_now,
+## unless an alt-fire pins it (CHARGE, VOLLEY and SLUG are dead straight, a
+## fanned round is always FAN_SPREAD_DEG wide).
+func shot_spread_deg(aiming: bool, shooter: Node = null) -> float:
+	if _alt_tight:
+		return 0.0
+	if _alt_wide > 0.0:
+		return _alt_wide
+	return spread_now(aiming, shooter)
+
 func _do_shot() -> void:
 	if _active_camera == null or data == null:
 		return
 	GameState.register_shot() # accuracy stat for the end-of-level grade
-	var spread := deg_to_rad(spread_now(_active_aiming, _active_shooter))
-	if _alt_tight:
-		spread = 0.0 # alt-fire shots are laser-accurate
+	var spread := deg_to_rad(shot_spread_deg(_active_aiming, _active_shooter))
 	_register_spread_shot(_active_aiming)
 	var origin := _active_camera.global_position
 	var base_dir := -_active_camera.global_transform.basis.z

@@ -115,6 +115,13 @@ The gun charges up with the RAMPAGE kill streak (`Weapon._on_rampage_changed`, o
 * At tier n, `Weapon.shot_color()` returns `GameState.RAMPAGE_COLORS[n - 1]` (the HUD banner's palette, one source): tracers and the muzzle flash take it, and the flash grows `RAMPAGE_FLASH_GROW` per tier.
 * Every viewmodel mesh outside the muzzle subtree (`rim_meshes()`) wears `assets/materials/rampage_rim.tres` (`shaders/rampage_rim.gdshader`, a pulsing fresnel rim) as `material_overlay`; tier 0 takes it off. `tests/weapon_rampage_probe`.
 
+## Alt-Fire
+Secondary fire (`alt_fire`: `V` or the mouse thumb button), one mode per gun in `WeaponData.alt_mode`, driven each frame by `Weapon.try_alt_fire`.
+
+* `CHARGE` holds up to 0.9 s for one dead-straight boosted shot (3 rounds); `VOLLEY` is an instant straight 3-round burst; `SLUG` collapses a shotgun's pellets into one heavy round.
+* `FAN` (the .50 Maelstrom) is held: `Weapon._alt_fan_logic` fires a round every `1 / (fire_rate * FAN_RATE_MULT)` s in a fixed `FAN_SPREAD_DEG` cone at `FAN_DAMAGE` of the gun's damage, and letting go costs `FAN_RECOVER` (`tests/fan_fire_probe`).
+* `Weapon.shot_spread_deg` is the cone the round being fired flies in: `spread_now` unless an alt-fire pins it.
+
 ## Grenades
 Defines the physics layers and player-bound scripts for throwing grenades.
 

@@ -12,7 +12,7 @@ const DOSSIER := {
 	"rifle": "AR-7 Pulse Rifle — the do-everything full-auto: accurate, controllable, effective at every range.",
 	"shotgun": "SG-12 Breacher. A wall of pellets that deletes anything point-blank. SLUG alt collapses it into one heavy round.",
 	"cascade": "CX-4 Cascade — every robot it kills detonates, and every robot that blast kills goes off too. Soften a pack, drop one, watch the chain run.",
-	"magnum": ".50 Maelstrom hand cannon — enormous per-shot damage and headshots, slow and unforgiving.",
+	"magnum": ".50 Maelstrom hand cannon — enormous per-shot damage and headshots, slow and unforgiving. Hold alt-fire to fan the hammer: all six in two thirds of a second, wide and a fifth weaker.",
 	"tesla": "VK-7 Tesla Projector. A vicious close-range arc that shreds armour — but almost no reach, so it leaves you wide open to melee. Get in, zap, get out.",
 	"arccoil": "CL-3 Arc Coil — a short-range electric burst that chains between bunched-up machines.",
 	"sniper": "MK-VII Longshot. One-shot precision at any distance. CHARGE for a boosted round; weak up close.",
@@ -26,7 +26,7 @@ const DOSSIER := {
 
 const FIRE_NAMES := ["SEMI", "AUTO", "BURST", "BEAM"]
 const DMG_NAMES := ["HITSCAN", "PROJECTILE"]
-const ALT_NAMES := ["", " · CHARGE alt", " · VOLLEY alt", " · SLUG alt"]
+const ALT_NAMES := ["", " · CHARGE alt", " · VOLLEY alt", " · SLUG alt", " · FAN alt"]
 const ACCENT := Color(0.5, 0.8, 1.0)
 
 var _weapons: Array = []   # [{id, data}]
@@ -548,7 +548,7 @@ func _refresh() -> void:
 	_name_lbl.text = d.display_name
 	_class_lbl.text = "%s · %s%s" % [
 		FIRE_NAMES[clampi(d.fire_mode, 0, 3)], DMG_NAMES[clampi(d.damage_type, 0, 1)],
-		ALT_NAMES[clampi(d.alt_mode, 0, 3)]]
+		ALT_NAMES[clampi(d.alt_mode, 0, ALT_NAMES.size() - 1)]]
 	_count_lbl.text = "%d / %d  ·  weakest → strongest" % [_index + 1, _weapons.size()]
 	_desc_lbl.text = DOSSIER.get(id, "")
 	_matchup_lbl.text = DamageMatrix.describe_class(d.damage_class)

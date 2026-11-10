@@ -430,5 +430,7 @@ res://tests/siege_fx_probe.tscn
 res://tests/palm_fx_probe.tscn
 # Blast scorch lies on the struck face: a rocket into a wall projects along the wall's normal, floors and air bursts project down.
 res://tests/scorch_wall_probe.tscn
+# FAN THE HAMMER: the Maelstrom alt-fire empties the cylinder three times as fast, wide and weaker; letting go costs a recover.
+res://tests/fan_fire_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
