@@ -71,7 +71,7 @@ const ENTRIES := {
 		"scene": "res://scenes/enemies/drone.tscn", "name": "RECON DRONE", "scale": 1.0, "y": 1.6,
 		"desc": "A skittish flying eye that strafes and dives, peppering you with light bolts.",
 		"strengths": ["Fast and erratic — hard to track in the air", "Attacks from angles ground units can't"],
-		"weaknesses": ["Paper-thin armour — one solid hit drops it", "Predictable dive telegraphs its approach"],
+		"weaknesses": ["Paper-thin armour — one solid hit drops it", "Its eye flares before a dive, and the dive stitches a row of bolts toward you: step out of the row"],
 	},
 	"fishbot": {
 		"scene": "res://scenes/enemies/fishbot.tscn", "name": "ANGLER UNIT", "scale": 1.0, "y": 1.6, "light": 0.5,
