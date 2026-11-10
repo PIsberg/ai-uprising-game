@@ -1,12 +1,13 @@
 extends Node3D
 ## Windowed shot: a def ramp meeting its deck (gpt's vantage deck, the stairs
-## up range's overwatch deck). Logic is pinned by tests/ramp_landing_probe.
+## up range's overwatch deck, the ramp up desert's west mesa). Logic is pinned by tests/ramp_landing_probe.
 ##   godot --path . res://tests/ramp_landing_shot.tscn
 ## Saves user://ramp_landing_<id>.png (pass "-- tag=before" to change the suffix).
 
 const CASES := [
 	["gpt", Vector3(-31.0, 7.5, 33.0), Vector3(-18.5, 2.0, 24.5)],
 	["range", Vector3(-22.0, 6.0, 27.0), Vector3(-12.0, 1.2, 42.0)],
+	["desert", Vector3(-5.0, 7.0, 7.5), Vector3(-15.0, 1.5, 19.6)],
 ]
 
 func _ready() -> void:

@@ -10,9 +10,12 @@ extends Node3D
 ##   - a ramp with no deck ahead, one already on a deck, one further than
 ##     RAMP_DECK_REACH from a deck and one under a deck too high above it are
 ##     laid as authored;
+##   - no ramp that starts on the floor has its foot in or within 1 m of a lava
+##     bed (desert's west ramp, turned round, first stood in the fissure);
 ##   - built for real (gpt, horde, desert, range): the builder lays those ends,
-##     there is a surface to step onto past every ramp's and stair's top, and
-##     nothing solid stands on range's two deck stairs.
+##     there is a surface to step onto past every ramp's and stair's top, the
+##     navmesh carries a robot from the floor in front of each floor ramp onto
+##     its deck, and nothing solid stands on range's two deck stairs.
 ##   godot --headless --path . --audio-driver Dummy res://tests/ramp_landing_probe.tscn
 
 const IDS := [
@@ -22,6 +25,8 @@ const IDS := [
 	"water_world", "desert", "convoy", "guardrails", "hivemind",
 ]
 const BUILT := ["gpt", "horde", "desert", "range"]
+const FLOOR_FOOT := 0.6 ## a ramp whose foot is under this starts on the floor
+const LAVA_CLEAR := 1.0 ## sand a floor ramp's foot needs between it and a lava bed
 
 var ok := true
 
@@ -46,6 +51,7 @@ func _run() -> void:
 	# 1. Every def ramp lands on a deck.
 	var ramps := 0
 	var off: Array = []
+	var molten: Array = []
 	for id: String in IDS:
 		var def := LevelDefs.get_def(id)
 		if def.is_empty():
@@ -55,8 +61,16 @@ func _run() -> void:
 			var ends := LevelBuilder.ramp_ends(def, r)
 			if _deck_under(def, ends[1], 0.05).is_empty():
 				off.append("%s %s" % [id, ends[1]])
+			var foot: Vector3 = ends[0]
+			for l: Dictionary in def.get("lava", []):
+				var lp: Vector3 = l["pos"]
+				var lh: Vector2 = (l["size"] as Vector2) * 0.5
+				if foot.y < FLOOR_FOOT and absf(foot.x - lp.x) < lh.x + LAVA_CLEAR and absf(foot.z - lp.z) < lh.y + LAVA_CLEAR:
+					molten.append("%s %s" % [id, foot])
 	_check("every def ramp's top lands on a deck's edge at its height", off.is_empty() and ramps >= 24,
 			"%d ramps, %d off: %s" % [ramps, off.size(), ", ".join(off)])
+
+	_check("no floor ramp's foot stands in or within %.1f m of a lava bed" % LAVA_CLEAR, molten.is_empty(), ", ".join(molten))
 
 	# 2. The slide keeps the slope and the length.
 	var gpt := LevelDefs.get_def("gpt")
@@ -141,6 +155,29 @@ func _built(id: String) -> void:
 			dead.append(str(to))
 	_check("%s: a surface to step onto past every ramp's top" % id, dead.is_empty() and not bodies.is_empty(),
 			"%d ramps, off: %s" % [bodies.size(), ", ".join(dead)])
+	# A robot can path from the floor in front of each floor ramp onto its deck.
+	# The navmesh bakes over the first frames: poll for it.
+	var map := lvl.get_world_3d().navigation_map
+	var unlinked: Array = []
+	for i in 30:
+		unlinked.clear()
+		for r: Dictionary in def_ramps:
+			var ends := LevelBuilder.ramp_ends(def, r)
+			var foot: Vector3 = ends[0]
+			var top: Vector3 = ends[1]
+			if foot.y >= FLOOR_FOOT:
+				continue
+			var d := Vector3(top.x - foot.x, 0, top.z - foot.z).normalized()
+			var start := Vector3(foot.x, 0.0, foot.z) - d * 3.0
+			var goal := top + d * 1.5
+			var path := NavigationServer3D.map_get_path(map, start, goal, true)
+			if path.is_empty() or path[path.size() - 1].distance_to(goal) > 1.0:
+				unlinked.append(str(top))
+		if unlinked.is_empty():
+			break
+		for j in 10:
+			await get_tree().physics_frame
+	_check("%s: the navmesh links the floor to the deck up each floor ramp" % id, unlinked.is_empty(), ", ".join(unlinked))
 	if id == "range":
 		var stairs: Array = def.get("stairs", [])
 		_check("range: two stairs up to the overwatch deck", stairs.size() == 2 and bodies.size() == 2,

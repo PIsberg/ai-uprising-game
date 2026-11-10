@@ -6547,13 +6547,16 @@ static func _desert() -> Dictionary:
 			{"pos": Vector3(8, 3.4, -36), "size": Vector3(11, 0.6, 8), "color": Color(0.6, 0.44, 0.28)},
 			{"pos": Vector3(36, 2.4, 4), "size": Vector3(9, 0.6, 8), "color": Color(0.63, 0.47, 0.31)},
 		],
-		# Each climbs TOWARD its mesa (a ramp's low end is its +Z end at yaw 0).
-		# All three were authored the other way round, top out in the open, and
-		# the central one was a 4 m stub hanging 0.7 m off the sand; it now runs
-		# from the sand to the central mesa's west edge, clear of the fissure
-		# (tests/ramp_landing_probe).
+		# Each climbs TOWARD its mesa (a ramp's low end is its +Z end at yaw 0,
+		# +X at yaw 90). All three were authored the other way round, top out in
+		# the open. The west mesa's now climbs its east side from the dry sand
+		# south of the fissure: on the north side its foot stands in the lava
+		# (z 0 to 5.6, scaled) or, drawn out past it, 1.5 m from the canyon wall,
+		# where the navmesh does not link. The central one was a 4 m stub hanging
+		# 0.7 m off the sand; it now runs from the sand to the central mesa's
+		# west edge, clear of the fissure (tests/ramp_landing_probe).
 		"ramps": [
-			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 180},
+			{"pos": Vector3(-9.4, 1.7, 14), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 90},
 			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 0},
 			{"pos": Vector3(-3.6, 1.02, -2), "size": Vector3(4, 0.5, 6.4), "pitch": 22, "yaw": -90},
 		],
