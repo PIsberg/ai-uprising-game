@@ -1,9 +1,10 @@
 class_name EnemySeeker
 extends EnemyBase
-## A fast, fragile kamikaze flyer. It doesn't shoot — it locks on, screams in at
-## the player's height, and detonates on contact (or when shot down). A blinking
-## core pulses faster the closer it gets, telegraphing the blast so you can pop
-## it or dodge in time.
+## A fast, fragile kamikaze flyer. It doesn't shoot: it closes at the player's
+## height, stops short to arm, then dives down one straight line and detonates
+## on contact (or when shot down). A blinking core pulses faster the closer it
+## gets; armed, the core and band burn steady white. Step off the line after it
+## commits and it flies past and hangs spent (see DIVE_LOCK).
 
 @export var intercept_height: float = 1.0 ## Flies toward the player's chest height.
 @export var detonate_radius: float = 2.2
@@ -11,6 +12,25 @@ extends EnemyBase
 @export var blast_damage: float = 40.0
 
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
+
+## TERMINAL DIVE. Inside DIVE_LOCK metres, with a line of sight, it stops and
+## arms for DIVE_ARM seconds, then flies one straight line at DIVE_SPEED. The
+## line leads a walking target and is fixed DIVE_COMMIT seconds before launch:
+## change direction after that and it flies past, DIVE_OVERRUN metres beyond
+## where it aimed, and hangs spent for DIVE_RECOVER seconds, its fuse cold.
+const DIVE_LOCK := 8.0
+const DIVE_ARM := 0.5
+const DIVE_COMMIT := 0.2
+const DIVE_SPEED := 21.0
+const DIVE_OVERRUN := 5.0
+const DIVE_RECOVER := 1.2
+
+enum Dive { NONE, ARM, DIVE, RECOVER }
+var _dive := Dive.NONE
+var _dive_t := 0.0 ## seconds left of ARM or RECOVER
+var _dive_aim := Vector3.ZERO ## where the line ends (the led chest point)
+var _dive_dir := Vector3.ZERO
+var _dive_left := 0.0 ## metres of the line still to fly
 
 var _detonated: bool = false
 var _pulse: float = 0.0
@@ -42,6 +62,9 @@ func _build_warhead_dressing() -> void:
 	# Centre the dressing on the hull, measured from the actual meshes (the
 	# model is offset and scaled in the scene, so don't guess).
 	var center := Vector3(0, 1.0, 0)
+	# The hull's radius, measured too: sized by guess (0.36 and 0.42 against a
+	# 0.6 m hull) the fins and the band were buried inside it and showed nothing.
+	var hull_r := 0.6
 	var mdl := get_node_or_null("Model")
 	if mdl:
 		var inv := global_transform.affine_inverse()
@@ -55,6 +78,7 @@ func _build_warhead_dressing() -> void:
 				first = false
 		if not first:
 			center = merged.get_center()
+			hull_r = maxf(merged.size.x, merged.size.z) * 0.5
 	var hub := Node3D.new()
 	hub.position = center
 	add_child(hub)
@@ -69,13 +93,14 @@ func _build_warhead_dressing() -> void:
 		bm.material = fin_mat
 		fin.mesh = bm
 		var a := TAU * float(i) / 4.0 + TAU / 8.0 # X pattern, clear of the eye
-		fin.position = Vector3(sin(a) * 0.36, 0.0, cos(a) * 0.36)
+		var fin_r := hull_r * 0.92 + 0.06 # rooted in the hull, 0.19 m proud of it
+		fin.position = Vector3(sin(a) * fin_r, 0.0, cos(a) * fin_r)
 		fin.rotation.y = a
 		hub.add_child(fin)
 	var band := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
-	cm.top_radius = 0.42
-	cm.bottom_radius = 0.42
+	cm.top_radius = hull_r * 1.0
+	cm.bottom_radius = hull_r * 1.0
 	cm.height = 0.07
 	_band_mat = StandardMaterial3D.new()
 	_band_mat.albedo_color = Color(1.0, 0.6, 0.1)
@@ -95,13 +120,78 @@ func pilot_flies() -> bool:
 
 # Rush straight at the target instead of holding at a range.
 func _state_chase(delta: float) -> void:
-	if target == null:
+	if target == null or not is_instance_valid(target):
+		_dive = Dive.NONE
 		set_state(State.IDLE)
+		return
+	if _tick_dive(delta):
 		return
 	_move_toward(target.global_position, delta)
 
 func _state_attack(delta: float) -> void:
 	_state_chase(delta)
+
+## The terminal dive. True while it owns the seeker's movement.
+func _tick_dive(delta: float) -> bool:
+	match _dive:
+		Dive.NONE:
+			# Hold the dive, like the blast, through the opening-seconds grace.
+			if GameState.attack_grace_active():
+				return false
+			var chest := target.global_position + Vector3.UP * intercept_height
+			if global_position.distance_to(chest) > DIVE_LOCK or not _can_see(target):
+				return false
+			_dive = Dive.ARM
+			_dive_t = DIVE_ARM
+			_dive_aim = _lead_point()
+			if has_node("/root/AudioBus"):
+				AudioBus.play_synth_at("charge", global_position, 2.0, 1.9)
+			return true
+		Dive.ARM:
+			_dive_t -= delta
+			_danger_cd = 0.5 # a bomb on its run does not flinch from a grenade
+			# The line follows the target until DIVE_COMMIT before launch.
+			if _dive_t > DIVE_COMMIT:
+				_dive_aim = _lead_point()
+			velocity = velocity.move_toward(Vector3.ZERO, 60.0 * delta)
+			var look := _dive_aim - global_position
+			look.y = 0.0
+			if look.length() > 0.05:
+				_face_dir(look.normalized(), delta)
+			if _dive_t <= 0.0:
+				var line := _dive_aim - global_position
+				_dive_dir = line.normalized() if line.length() > 0.05 else -global_basis.z
+				_dive_left = line.length() + DIVE_OVERRUN
+				_dive = Dive.DIVE
+				if has_node("/root/AudioBus"):
+					AudioBus.play_synth_at("rocket_fire", global_position, -1.0, 1.5)
+			return true
+		Dive.DIVE:
+			_danger_cd = 0.5
+			velocity = _dive_dir * DIVE_SPEED
+			_dive_left -= DIVE_SPEED * delta
+			if _dive_left <= 0.0:
+				_dive = Dive.RECOVER
+				_dive_t = DIVE_RECOVER
+			return true
+		Dive.RECOVER:
+			_dive_t -= delta
+			velocity = velocity.move_toward(Vector3.ZERO, 24.0 * delta)
+			if _dive_t <= 0.0:
+				_dive = Dive.NONE
+			return true
+	return false
+
+## The target's chest, led by its ground velocity over what is left of the arm
+## (at most DIVE_COMMIT) plus the flight.
+func _lead_point() -> Vector3:
+	var chest := target.global_position + Vector3.UP * intercept_height
+	var v := Vector3.ZERO
+	if target is CharacterBody3D:
+		v = (target as CharacterBody3D).velocity
+		v.y = 0.0
+	var t := global_position.distance_to(chest) / DIVE_SPEED + minf(_dive_t, DIVE_COMMIT)
+	return chest + v * t
 
 func _move_toward(dest: Vector3, delta: float) -> void:
 	var ty: float = (target.global_position.y if target else dest.y) + intercept_height
@@ -119,14 +209,35 @@ func _physics_process(delta: float) -> void:
 	if state == State.DEAD:
 		return
 	super._physics_process(delta)
-	# Blink faster as it closes in — the telegraph to pop it or dodge.
-	if target and _eye_light:
+	if state == State.DEAD or _detonated:
+		return
+	# Knocked out of the fight (EMP, stagger, lost its target): the run is off.
+	if state != State.CHASE and state != State.ATTACK:
+		_dive = Dive.NONE
+	# A dive that meets the world goes off there.
+	if _dive == Dive.DIVE and get_slide_collision_count() > 0:
+		_detonate(true)
+		return
+	# Blink faster as it closes in — the telegraph to pop it or dodge. Armed and
+	# diving, core and band burn steady and white-hot; spent, they go dark.
+	if target and is_instance_valid(target) and _eye_light:
 		var dist := global_position.distance_to(target.global_position)
 		_pulse += delta * clampf(14.0 - dist, 3.0, 22.0)
 		var b := 0.6 + 0.4 * sin(_pulse)
-		_eye_light.light_energy = (2.0 + 4.0 * (1.0 - clampf(dist / 8.0, 0.0, 1.0))) * b
+		var energy := (2.0 + 4.0 * (1.0 - clampf(dist / 8.0, 0.0, 1.0))) * b
+		var band := 1.0 + 4.5 * b
+		var hot := _dive == Dive.ARM or _dive == Dive.DIVE
+		if hot:
+			energy = 9.0
+			band = 9.0
+		elif _dive == Dive.RECOVER:
+			energy = 0.4
+			band = 0.2
+		_eye_light.light_energy = energy
 		if _band_mat:
-			_band_mat.emission_energy_multiplier = 1.0 + 4.5 * b
+			_band_mat.emission_energy_multiplier = band
+			_band_mat.emission = Color(1.0, 0.95, 0.85) if hot else Color(1.0, 0.55, 0.1)
+			_band_mat.albedo_color = Color(0.22, 0.13, 0.04) if _dive == Dive.RECOVER else Color(1.0, 0.6, 0.1)
 	_check_detonate()
 
 func _check_detonate() -> void:
@@ -141,6 +252,8 @@ func _check_detonate() -> void:
 	# Covered by tests/seeker_grace_probe and tests/spawn_safety_probe.
 	if GameState.attack_grace_active():
 		return
+	if not is_instance_valid(target) or _dive == Dive.RECOVER:
+		return # spent after a missed dive: the fuse is cold until it comes round
 	if global_position.distance_to(target.global_position) <= detonate_radius:
 		_detonate(true)
 

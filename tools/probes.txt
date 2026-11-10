@@ -378,6 +378,8 @@ res://tests/roller_rig_probe.tscn
 res://tests/brute_rush_probe.tscn
 # DRONE STRAFING RUN: the dive flares the eye, then stitches three rounds across the floor onto the player; subclasses keep their own attacks.
 res://tests/drone_strafe_probe.tscn
+# SEEKER TERMINAL DIVE: it stops to arm, dives one straight line, a dodge leaves it spent with a cold fuse.
+res://tests/seeker_dive_probe.tscn
 res://tests/optic_rig_probe.tscn
 res://tests/whirlwind_rig_probe.tscn
 res://tests/ripper_rig_probe.tscn
