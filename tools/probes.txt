@@ -380,6 +380,8 @@ res://tests/brute_rush_probe.tscn
 res://tests/drone_strafe_probe.tscn
 # SEEKER TERMINAL DIVE: it stops to arm, dives one straight line, a dodge leaves it spent with a cold fuse.
 res://tests/seeker_dive_probe.tscn
+# GROUND POUND: the MAULER marks the floor, winds up, slams the mark; out of the ring is a miss and a stuck MAULER.
+res://tests/mauler_pound_probe.tscn
 res://tests/optic_rig_probe.tscn
 res://tests/whirlwind_rig_probe.tscn
 res://tests/ripper_rig_probe.tscn
