@@ -117,8 +117,12 @@ func _run() -> void:
 		_check("the glint sits at the hit", g.global_position.distance_to(Vector3(0, 1.5, -5 + 0.4)) < 0.5, str(g.global_position))
 		_check("the glint is two crossed bars", g.get_child_count() == 2)
 		var t1 := Time.get_ticks_msec()
+		# The frame the glint was spawned in steps its tween too, with that
+		# frame's own delta: a hitch there outruns the glint before the next
+		# frame starts (1 run in 12, 2026-11-10), so both frames count.
+		var spawn_dt := get_process_delta_time()
 		await get_tree().process_frame
-		var gdt := get_process_delta_time()
+		var gdt := maxf(spawn_dt, get_process_delta_time())
 		if gdt < SidearmFx.GLINT_TIME * 0.8:
 			_check("the glint is still lit a frame later", is_instance_valid(g), "dt %.3f" % gdt)
 		else:

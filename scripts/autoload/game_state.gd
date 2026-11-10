@@ -1705,6 +1705,7 @@ const MECHANIC_HINTS := {
 	"alt_volley": "◎ ALT-FIRE: VOLLEY — tap [V] for 3 dead-straight rounds at once, then a short breather.",
 	"alt_slug": "◎ ALT-FIRE: SLUG — tap [V] to fire the shell as one dead-straight slug that hits like most of the spread. Slower to follow up.",
 	"alt_fan": "◎ ALT-FIRE: FAN — hold [V] to fan the hammer: 3 times the fire rate, wide, each round 20% weaker.",
+	"alt_double": "◎ ALT-FIRE: DOUBLE TAP — tap [V] for 2 dead-straight rounds, hip or aimed, then a short breather.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

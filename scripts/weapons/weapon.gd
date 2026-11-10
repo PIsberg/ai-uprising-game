@@ -621,11 +621,19 @@ const FAN_SPREAD_DEG := 5.5
 const FAN_DAMAGE := 0.8
 const FAN_RECOVER := 0.55
 
+## DOUBLE (tap): the M9's double tap. DOUBLE_ROUNDS dead-straight rounds one
+## after the other, then the gun rests DOUBLE_REST of its own shot intervals.
+## Slower than the trigger (2 rounds in 0.47 s against 0.4 s), but both rounds
+## go where the sights are, hip or aimed, moving or not.
+const DOUBLE_ROUNDS := 2
+const DOUBLE_REST := 2.0
+
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE and VOLLEY, one for SLUG and FAN, 0 on a gun with no alt mode.
+## CHARGE and VOLLEY, DOUBLE_ROUNDS for DOUBLE, one for SLUG and FAN, 0 on a
+## gun with no alt mode.
 func alt_cost() -> int:
 	if data == null:
 		return 0
@@ -634,6 +642,8 @@ func alt_cost() -> int:
 			return 0
 		WeaponData.AltMode.CHARGE, WeaponData.AltMode.VOLLEY:
 			return ALT_COST
+		WeaponData.AltMode.DOUBLE:
+			return DOUBLE_ROUNDS
 	return 1
 
 ## Driven every frame by WeaponManager with the alt-fire button state.
@@ -664,6 +674,11 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 				_cooldown *= 1.6 # heavier shot, slower follow-up
 		WeaponData.AltMode.FAN:
 			_alt_fan_logic(pressed, just, camera, shooter)
+		WeaponData.AltMode.DOUBLE:
+			if just and _cooldown <= 0.0 and mag >= DOUBLE_ROUNDS:
+				_fire_volley(camera, shooter, DOUBLE_ROUNDS, DOUBLE_REST)
+			elif just and mag < DOUBLE_ROUNDS:
+				_play_empty()
 
 ## Hold to fan the hammer: one wide, weaker round per fan beat until the
 ## cylinder is empty or the button is let go.
@@ -718,19 +733,20 @@ func _cancel_charge() -> void:
 	_alt_charge = 0.0
 	_alt_step = 0
 
-## Instant 3-round laser-tight burst, spaced just enough to read as a volley.
-func _fire_volley(camera: Camera3D, shooter: Node) -> void:
+## Instant laser-tight burst of `rounds` (3 for VOLLEY, 2 for DOUBLE), spaced
+## just enough to read as a volley, then a breather of `rest` shot intervals.
+func _fire_volley(camera: Camera3D, shooter: Node, rounds: int = ALT_COST, rest: float = 2.2) -> void:
 	_alt_tight = true
-	for i in ALT_COST:
+	for i in rounds:
 		if mag <= 0 or data == null:
 			break
 		_fire_once(camera, shooter, true)
-		if i < ALT_COST - 1:
+		if i < rounds - 1:
 			await get_tree().create_timer(0.07).timeout
 			if not is_instance_valid(self) or not is_inside_tree():
 				return
 	_alt_tight = false
-	_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * 2.2 # breather after the volley
+	_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * rest # breather after the volley
 
 ## The cone half-angle in degrees the round being fired flies in: spread_now,
 ## unless an alt-fire pins it (CHARGE, VOLLEY and SLUG are dead straight, a

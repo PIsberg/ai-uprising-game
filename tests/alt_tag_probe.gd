@@ -1,20 +1,25 @@
 extends Node3D
 ## Probe: the HUD teaches alt-fire (#495). Nothing in play said a gun had a
 ## secondary fire. Through the real player, WeaponManager and HUD:
-##   - on a gun with no alt mode (the M9) the HUD's alt tag is hidden;
+##   - the M9 the player starts with shows DOUBLE TAP, and its hint is the
+##     first toast of the level;
+##   - on a gun with no alt mode (the Longshot) the HUD's alt tag is hidden;
 ##   - on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher it shows the
 ##     mode (VOLLEY, SLUG, FAN, CHARGE) and the key the alt-fire is bound to;
-##   - back on the M9 it hides again;
+##   - back on the Longshot it hides again;
 ##   - the tag dims while the magazine holds fewer rounds than one use costs,
 ##     and lights again when it holds enough;
 ##   - a rebind of "alt_fire" shows in the tag;
 ##   - in German the tag is translated;
 ##   - the first time a gun with an alt mode is in hand the mode's hint is
 ##     toasted, after the pickup's own toast has cleared (the toast line holds
-##     one message), and once only: four modes, four hints, however often the
+##     one message), and once only: five modes, five hints, however often the
 ##     guns are drawn again.
 ## Timed on process frames (a toast lasts 2.4 s).
 ##   godot --headless --path . --audio-driver Dummy res://tests/alt_tag_probe.tscn
+
+const NO_ALT := "res://scenes/weapons/sniper.tscn" ## the MK-VII Longshot: no alt mode
+const NO_ALT_BEFORE := "res://scenes/weapons/pistol.tscn" ## the M9: DOUBLE TAP since #496, none before
 
 const GUNS := [
 	["res://scenes/weapons/rifle.tscn", "VOLLEY", 3],
@@ -91,17 +96,26 @@ func _run() -> void:
 	player.global_position = Vector3(0, 0.2, 0)
 	await _frames(3)
 	wm = player.get_node_or_null("Head/Camera3D/WeaponHolder") as WeaponManager
-	hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate()
-	add_child(hud)
-	await _frames(4)
 	GameState.teach_hint.connect(func(text: String) -> void:
 		if text.contains("ALT-FIRE"):
 			hints.append(text)
 			alpha_at_hint.append(_alpha))
+	hud = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate()
+	add_child(hud)
+	await _frames(4)
+
+	# 0. The starting gun.
+	_check("the M9 the player starts with shows DOUBLE TAP and the key", wm.current != null and wm.current.scene_file_path == NO_ALT_BEFORE
+			and _shown() and _text().contains("DOUBLE TAP") and _text().contains("[V]"), "'%s'" % _text())
+	_check("and its hint is the first toast", hints.size() == 1 and (hints[0] as String).contains("DOUBLE TAP"), str(hints.size()))
+	await _wait(2.6)
 
 	# 1. No alt mode: no tag.
-	var pistol := await _draw("res://scenes/weapons/pistol.tscn")
-	_check("the M9 is in hand and has no alt mode", pistol != null and pistol.data.alt_mode == WeaponData.AltMode.NONE)
+	if not wm.add_weapon(load(NO_ALT) as PackedScene): # in the starting rack already: draw it
+		await _draw(NO_ALT)
+	await _frames(3)
+	var plain := wm.current
+	_check("the Longshot is in hand and has no alt mode", plain != null and plain.scene_file_path == NO_ALT and plain.data.alt_mode == WeaponData.AltMode.NONE)
 	_check("on a gun with no alt mode the tag is hidden", not _shown(), "'%s'" % _text())
 
 	# 2. Each mode shows its name and the key.
@@ -123,9 +137,9 @@ func _run() -> void:
 				"%d new, '%s', the old toast at alpha %.2f" % [hints.size() - was, (hints[-1] as String).left(40) if hints.size() > was else "", alpha_at_hint[-1] if hints.size() > was else -1.0])
 		await _wait(2.6)
 
-	# 3. Back on the M9 it hides.
-	await _draw("res://scenes/weapons/pistol.tscn")
-	_check("back on the M9 the tag hides again", not _shown(), "'%s'" % _text())
+	# 3. Back on the Longshot it hides.
+	await _draw(NO_ALT)
+	_check("back on the Longshot the tag hides again", not _shown(), "'%s'" % _text())
 
 	# 4. Dim when one use costs more than the magazine holds.
 	var plasma := await _draw("res://scenes/weapons/plasma.tscn")
@@ -179,11 +193,12 @@ func _run() -> void:
 
 	# 7. Once only.
 	for g in GUNS:
-		await _draw("res://scenes/weapons/pistol.tscn")
+		await _draw(NO_ALT)
 		await _draw(String(g[0]))
 		await _wait(0.4)
+	await _draw(NO_ALT_BEFORE)
 	await _wait(3.0)
-	_check("four modes, four hints, however often the guns are drawn", hints.size() == 4, str(hints.size()))
+	_check("five modes, five hints, however often the guns are drawn", hints.size() == 5, str(hints.size()))
 
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
