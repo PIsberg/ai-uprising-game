@@ -109,7 +109,7 @@ static func _scaled(def: Dictionary, s: float) -> Dictionary:
 				e["size"] = _sv(e["size"], s)
 	# "ramps" (pos/size/pitch/yaw) reposition with the arena like the entries
 	# above, but must NOT rescale "size": a ramp's rise/run is derived from
-	# size.z (its length) against a FIXED pos.y and pitch (see _add_ramp), so
+	# size.z (its length) against a FIXED pos.y and pitch (see LevelBuilder.ramp_ends), so
 	# stretching size.z without touching pos.y or pitch to compensate doesn't
 	# make a proportionally bigger ramp — it drops the foot further below
 	# pos.y and pushes it further out along the (also-scaled) ground plane
@@ -2081,9 +2081,12 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(-18, 2.6, 12), "size": Vector3(9, 0.5, 8), "color": Color(0.2, 0.2, 0.26)},
 			{"pos": Vector3(18, 2.6, -12), "size": Vector3(9, 0.5, 8), "color": Color(0.2, 0.2, 0.26)},
 		],
+		# Each climbs TOWARD its deck (a ramp's low end is its +Z end at yaw 0).
+		# They were authored the other way round: foot at the deck, top 8 m out
+		# in the open (tests/ramp_landing_probe).
 		"ramps": [
-			{"pos": Vector3(-18, 1.3, 5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
-			{"pos": Vector3(18, 1.3, -5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 180},
+			{"pos": Vector3(-18, 1.3, 5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 180},
+			{"pos": Vector3(18, 1.3, -5), "size": Vector3(4, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
 		"accents": [
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(0.35, 0.08, 36), "color": Color(1, 0.35, 0.25)},
@@ -2168,7 +2171,7 @@ static func _range() -> Dictionary:
 			"CHECK YOUR CORNERS",
 		],
 		"lore": [
-			{"id": "lore_range", "title": "QUARTERMASTER'S NOTE", "pos": Vector3(-12.5, 0, 29), "color": Color(0.55, 0.95, 0.9),
+			{"id": "lore_range", "title": "QUARTERMASTER'S NOTE", "pos": Vector3(-10, 0, 26.5), "color": Color(0.55, 0.95, 0.9),
 				"text": "Quartermaster's note. Every blaster on this rack was pried from a dead machine. Make your shots count. They remember everything."},
 		],
 		# Two shooting benches at the firing line with a walk-through gap.
@@ -2181,9 +2184,13 @@ static func _range() -> Dictionary:
 		"platforms": [
 			{"pos": Vector3(0, 2.2, 30), "size": Vector3(16, 0.5, 5), "color": Color(0.16, 0.18, 0.22)},
 		],
-		"ramps": [
-			{"pos": Vector3(-13, 1.1, 28), "size": Vector3(3.5, 0.5, 6), "pitch": 20, "yaw": 0},
-			{"pos": Vector3(13, 1.1, 28), "size": Vector3(3.5, 0.5, 6), "pitch": 20, "yaw": 0},
+		# A stair up each end of the deck, landing on its end edges at its top
+		# (2.45). The two ramps here before stood 5 m off the deck's ends and
+		# climbed away from it, to 2.36 over open floor: the deck could not be
+		# reached (tests/ramp_landing_probe).
+		"stairs": [
+			{"from": Vector3(-14.5, 0.05, 30), "to": Vector3(-8, 2.45, 30), "width": 3.0},
+			{"from": Vector3(14.5, 0.05, 30), "to": Vector3(8, 2.45, 30), "width": 3.0},
 		],
 		# Distance markers painted across the lanes every ten metres.
 		"accents": [
@@ -2234,10 +2241,11 @@ static func _range() -> Dictionary:
 			{"pos": Vector3(10, 0, -26), "hp": 60.0},
 		],
 		"props": [
-			{"type": "crate", "pos": Vector3(-15, 0, 29)},
-			{"type": "crate", "pos": Vector3(-13, 0, 29.5), "yaw": 25},
-			{"type": "server", "pos": Vector3(15, 0, 29), "yaw": 180},
-			{"type": "terminal", "pos": Vector3(12.5, 0, 29.5), "yaw": 180},
+			# Clear of the deck stairs (z 30) and their approach.
+			{"type": "crate", "pos": Vector3(-16.6, 0, 25)},
+			{"type": "crate", "pos": Vector3(-16.2, 0, 23.4), "yaw": 25},
+			{"type": "server", "pos": Vector3(16.6, 0, 25), "yaw": -90},
+			{"type": "terminal", "pos": Vector3(16.6, 0, 23.2), "yaw": -90},
 		],
 	}
 
@@ -2356,7 +2364,9 @@ static func _overseer() -> Dictionary:
 		],
 		"ramps": [
 			{"pos": Vector3(-18.6, 1.5, 25.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
-			{"pos": Vector3(18.6, 1.5, -11.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 180},
+			# On the yard side of its deck, so it climbs -Z like the first: at
+			# yaw 180 it climbed away from the deck (tests/ramp_landing_probe).
+			{"pos": Vector3(18.6, 1.5, -11.6), "size": Vector3(3.5, 0.5, 8), "pitch": 22, "yaw": 0},
 		],
 		# A single command bulwark partway up the approach: bends the opening
 		# sprint and gives first cover from the gunship without caging the fight.
@@ -6537,10 +6547,15 @@ static func _desert() -> Dictionary:
 			{"pos": Vector3(8, 3.4, -36), "size": Vector3(11, 0.6, 8), "color": Color(0.6, 0.44, 0.28)},
 			{"pos": Vector3(36, 2.4, 4), "size": Vector3(9, 0.6, 8), "color": Color(0.63, 0.47, 0.31)},
 		],
+		# Each climbs TOWARD its mesa (a ramp's low end is its +Z end at yaw 0).
+		# All three were authored the other way round, top out in the open, and
+		# the central one was a 4 m stub hanging 0.7 m off the sand; it now runs
+		# from the sand to the central mesa's west edge, clear of the fissure
+		# (tests/ramp_landing_probe).
 		"ramps": [
-			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 0},
-			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 180},
-			{"pos": Vector3(-3, 1.1, -2), "size": Vector3(8, 0.5, 4), "pitch": 18, "yaw": 90},
+			{"pos": Vector3(-18, 1.7, 4), "size": Vector3(4, 0.5, 9), "pitch": 22, "yaw": 180},
+			{"pos": Vector3(20, 2.0, -8), "size": Vector3(4, 0.5, 9), "pitch": 26, "yaw": 0},
+			{"pos": Vector3(-3.6, 1.02, -2), "size": Vector3(4, 0.5, 6.4), "pitch": 22, "yaw": -90},
 		],
 		# Stair-climb onto the north rim mesa (top ≈3.7) — the ring's vantage
 		# deck: a sniper posts up there and the overclock is the climb reward.
