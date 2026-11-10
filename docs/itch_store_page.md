@@ -48,7 +48,7 @@ From the starter pistol, SMG, rifle and shotgun up to a heavy/energy tier: a
 **Tesla** lightning beam, **Arc-Coil**, **Plasma**, **Nova** scatter, piercing
 **Gauss Lance**, **Twin-Rail**, homing **Swarm Launcher**, rocket **Devastator**,
 chain-lightning **Tempest Coil**, the **Singularity Cannon**, and the ultimate
-**OMEGA-X Annihilator**. Hitscan & projectile, ADS, recoil, charge/volley/slug
+**OMEGA-X Annihilator**. Hitscan & projectile, ADS, recoil, charge/volley/slug/fan
 alt-fires, piercing/splash/cluster/homing/chain mechanics — plus a frag, an
 **EMP**, and a **gravity-well** grenade that herds a whole pack into one knot.
 

@@ -11,6 +11,7 @@ script = ExtResource("1_data")
 damage_class = 0
 display_name = ".50 Maelstrom"
 fire_mode = 0
+alt_mode = 4
 damage_type = 0
 damage = 88.0
 fire_rate = 2.6

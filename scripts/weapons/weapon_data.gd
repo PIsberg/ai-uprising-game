@@ -5,8 +5,9 @@ enum FireMode { SEMI, AUTO, BURST, BEAM } ## BEAM: continuous ray while held —
 enum DamageType { HITSCAN, PROJECTILE }
 ## Secondary fire (V / mouse thumb). CHARGE: hold to charge a boosted accurate
 ## shot (3 ammo). VOLLEY: instant tight 3-round burst (3 ammo). SLUG: collapse
-## all pellets into one accurate heavy slug (shotguns).
-enum AltMode { NONE, CHARGE, VOLLEY, SLUG }
+## all pellets into one accurate heavy slug (shotguns). FAN: hold to fan the
+## hammer, emptying the cylinder fast and wide (revolvers).
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN }
 ## What the round does to plating: DamageMatrix.TABLE scales every hit by this
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
