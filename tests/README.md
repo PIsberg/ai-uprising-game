@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-586 probes total: **267** wired into the headless suite (`suite`), **87**
+588 probes total: **268** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **232** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **233** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -448,6 +448,8 @@ or GPU-timing probes; `--headless` renders these black).
 | map_probe | Campaign map fully unlocked: lava/water sectors, hazard rings, act grouping, drifting motes | windowed |
 | map_shot | Campaign map driven by keyboard cursor: selection reticle + sector intel | windowed |
 | mauler_overload_probe | MAULER's wounded OVERLOAD sprint actually bumps live `move_speed` (was a dead `_speed_mult` write), and on a floor with a navmesh the charge plays the Running clip on 80%+ of its frames at 6.5+ m/s (15+ such frames) | suite |
+| mauler_pound_probe | The MAULER's GROUND POUND (`EnemyMauler._tick_pound`), each case its own MAULER: in reach it marks the floor under the player with a ring of POUND_RADIUS before any damage and holds its ground for POUND_WINDUP; a player in the ring takes slam_damage once and is thrown outward, and the next pound waits out the cooldown; a player who leaves the ring takes nothing and the MAULER stays stuck for POUND_STUCK, then pounds again; killed or overloading mid-windup it leaves no ring; an overloading MAULER only detonates (15 checks; 8 failed on the instant slam) | suite |
+| mauler_pound_shot | One real MAULER photographed early in the windup (rim on the floor, disc small), late (disc at the rim) and just after the fists land | windowed |
 | mech_shot | Freshly-sourced Quaternius Mech idle pose: scale/orientation before building an enemy from it | windowed |
 | melee_probe | Melee shove: in-cone enemies take damage+knockback, out-of-range ones don't | headless |
 | mender_probe | MENDER flies to a wounded android and beam-heals it, flight/death without errors | headless |

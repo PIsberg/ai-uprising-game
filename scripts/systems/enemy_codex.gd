@@ -321,9 +321,9 @@ const ENTRIES := {
 	},
 	"mauler": {
 		"scene": "res://scenes/enemies/mauler.tscn", "name": "MAULER", "scale": 1.0, "y": 0.0,
-		"desc": "A slab-bodied brawler with two oversized hammer-fists. Slow but brutally tough — it closes in and slams.",
-		"strengths": ["Enormous health pool", "One slam can end you"],
-		"weaknesses": ["Slow — kite it endlessly", "Never let it corner you"],
+		"desc": "A slab-bodied brawler with two oversized hammer-fists. Slow but brutally tough. In reach it marks the floor under you with a red ring, then brings both fists down on it. Hurt badly enough, it overloads: it runs at you and blows itself up.",
+		"strengths": ["Enormous health pool", "The pound throws you across the room", "Its overload blast hurts more than its fists"],
+		"weaknesses": ["Step out of the red ring: the fists stay buried for a moment", "Slow: kite it", "Back off when its core glows red"],
 	},
 	"ravager": {
 		"scene": "res://scenes/enemies/ravager.tscn", "name": "RAVAGER", "scale": 0.7, "y": 0.0,
