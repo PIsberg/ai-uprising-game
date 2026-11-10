@@ -20,6 +20,19 @@ extends EnemyBase
 @export var standoff: bool = false
 var _standoff_retreat_t: float = 0.0
 
+## STRAFING RUN (the plain drone only, see _tick_run): what its dive is for.
+## The eye flares for STRAFE_LEAD, then STRAFE_SHOTS rounds stitch a row across
+## the floor at the target, the first STRAFE_SHORT short and the last on it, so
+## the row can be read and stepped out of. It fires nothing else while diving.
+## Covered by tests/drone_strafe_probe.
+const STRAFE_SHOTS := 3
+const STRAFE_LEAD := 0.25 ## s of flared eye before the first round
+const STRAFE_GAP := 0.18 ## s between rounds
+const STRAFE_SHORT := 4.0 ## m short of the target the first round lands
+var _strafing := false ## true on the plain drone; its subclasses keep their own attacks
+var _run_left := 0
+var _run_t := 0.0
+
 var _hover_phase: float = 0.0
 var _strafe_dir: float = 1.0
 var _strafe_change_timer: float = 0.0
@@ -45,6 +58,9 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	_hover_phase = randf() * TAU
+	# By script, not by class: WHIRLWIND, SHARK, BREAKER and the rest extend this
+	# one and keep their own attacks.
+	_strafing = (get_script() as Script).resource_path.ends_with("enemy_drone.gd")
 	_setup_hum()
 	_make_exhaust()
 
@@ -83,7 +99,7 @@ func _process(_delta: float) -> void:
 		return
 	if _eye_light:
 		# Steady throb, plus a bright spike from firing recoil.
-		_eye_light.light_energy = 0.8 + sin(_hover_phase * 3.0) * 0.4 + recoil * 1.5
+		_eye_light.light_energy = 0.8 + sin(_hover_phase * 3.0) * 0.4 + recoil * 1.5 				+ (3.5 if _diving and _run_left > 0 else 0.0) # the strafing run's tell
 
 
 func _setup_hum() -> void:
@@ -123,12 +139,18 @@ func _update_dive(delta: float) -> void:
 	if not _diving and _dive_timer <= 0.0:
 		_diving = true
 		_dive_time = 0.85
+		if _strafing:
+			_run_left = STRAFE_SHOTS
+			_run_t = STRAFE_LEAD
 		AudioBus.play_synth_at("drone_hum", global_position, 2.0, 1.6)
 	if _diving:
 		_dive_time -= delta
 		if _dive_time <= 0.0:
 			_diving = false
 			_dive_timer = randf_range(2.5, 4.5)
+			if _strafing:
+				_run_left = 0
+				_attack_timer = attack_interval() # a beat after the run before it plinks again
 
 func _state_attack(delta: float) -> void:
 	if target == null or not _can_see(target):
@@ -166,7 +188,9 @@ func _state_attack(delta: float) -> void:
 	_hover_phase += delta * hover_freq
 	var desired_y := target.global_position.y + fly_height + sin(_hover_phase) * hover_amplitude
 	velocity.y = move_toward(velocity.y, (desired_y - global_position.y) * 5.0, 30.0 * delta)
-	if _attack_timer <= 0.0 and not GameState.attack_grace_active():
+	if _strafing and _diving:
+		_tick_run(delta)
+	elif _attack_timer <= 0.0 and not GameState.attack_grace_active():
 		_perform_attack()
 		_attack_timer = attack_interval()
 		if standoff:
@@ -255,7 +279,34 @@ func _explode_on_impact() -> void:
 	queue_free()
 
 func _perform_attack() -> void:
-	if target == null or muzzle == null or projectile_scene == null:
+	if target == null:
+		return
+	_fire_at(target.global_position + Vector3.UP * 0.8, true)
+
+## The dive's rounds: one every STRAFE_GAP after STRAFE_LEAD, walking a row
+## across the floor from STRAFE_SHORT short of the target (on the drone's side)
+## onto the target itself.
+func _tick_run(delta: float) -> void:
+	if _run_left <= 0 or target == null or GameState.attack_grace_active():
+		return
+	_run_t -= delta
+	if _run_t > 0.0:
+		return
+	_run_t += STRAFE_GAP
+	var k := STRAFE_SHOTS - _run_left
+	_run_left -= 1
+	if _run_left == 0:
+		_fire_at(target.global_position + Vector3.UP * 0.8, true)
+		return
+	var back := global_position - target.global_position
+	back.y = 0.0
+	back = back.normalized() if back.length() > 0.01 else Vector3.BACK
+	var short := STRAFE_SHORT * (1.0 - float(k) / float(STRAFE_SHOTS - 1))
+	_fire_at(target.global_position + back * short, false)
+
+## One round from the muzzle at `aim`; `scatter` applies the difficulty's inaccuracy.
+func _fire_at(aim: Vector3, scatter: bool) -> void:
+	if muzzle == null or projectile_scene == null:
 		return
 	_bark_attack()
 	recoil = 1.0
@@ -263,9 +314,9 @@ func _perform_attack() -> void:
 	var proj := projectile_scene.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = muzzle.global_position
-	var dir := (target.global_position + Vector3.UP * 0.8 - muzzle.global_position).normalized()
-	# Lead a tiny bit upward to compensate for player crouch
-	dir = scatter_aim(dir) # difficulty-driven inaccuracy
+	var dir := (aim - muzzle.global_position).normalized()
+	if scatter:
+		dir = scatter_aim(dir) # difficulty-driven inaccuracy
 	if proj.has_method("launch"):
 		proj.launch(dir * projectile_speed, self, projectile_damage, 0.0, 0.0)
 	AudioBus.play_synth_at("drone_shot", muzzle.global_position, -4.0, randf_range(0.95, 1.05))
