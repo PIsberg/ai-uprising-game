@@ -523,7 +523,7 @@ static func _guardrails() -> Dictionary:
 		"pickups": [
 			{"kind": "health", "pos": Vector3(-4, 1.0, -21)},
 			{"kind": "ammo", "pos": Vector3(4, 1.0, -21)},
-			{"kind": "health", "pos": Vector3(0, 1.7, 30)},
+			{"kind": "health", "pos": Vector3(0, 1.0, 30)},
 		],
 		"lore": [
 			{"id": "lore_guardrails", "title": "SUBSTRATE NOTE", "pos": Vector3(5, 1.0, -22), "color": Color(0.4, 0.9, 1.0),
@@ -1767,7 +1767,7 @@ static func _sublevel() -> Dictionary:
 			# blackout. Removes itself if GPT's pair was already found. A few
 			# steps off the (annex) spawn.
 			{"type": "nightvision", "pos": Vector3(-27, 0, -29)},
-			{"type": "health", "pos": Vector3(-15, 0, -6)},
+			{"type": "health", "pos": Vector3(-12, 0, -6)},
 			{"type": "ammo", "pos": Vector3(8, 0, 6)},
 			# Ring supplies + the gallery-climb reward.
 			{"type": "health", "pos": Vector3(-26, 0, -4)},
@@ -2093,14 +2093,14 @@ static func _horde() -> Dictionary:
 			{"pos": Vector3(0, 0.05, 0), "size": Vector3(36, 0.08, 0.35), "color": Color(1, 0.35, 0.25)},
 		],
 		# An arsenal spread around the arena — grabbing the next gun is a run.
-		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(0, 0, -6), "color": Color(0.45, 0.65, 1)},
+		"weapon": {"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(0, 0, -4), "color": Color(0.45, 0.65, 1)},
 		"extra_weapons": [
 			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-12, 0, 12), "color": Color(1, 0.6, 0.3)},
 			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(12, 0, -12), "color": Color(0.4, 1, 0.55)},
 			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(12, 0, 12), "color": Color(0.45, 0.9, 1)},
 			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(-12, 0, -12), "color": Color(1, 0.4, 0.35)},
-			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(-18, 0, 0), "color": Color(0.45, 0.85, 1)},
-			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 6), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(-18, 0, 3), "color": Color(0.45, 0.85, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(0, 0, 4), "color": Color(1, 0.55, 0.25)},
 		],
 		"pickups": [
 			{"type": "ammo", "pos": Vector3(-4, 0, 4)},
@@ -2199,23 +2199,26 @@ static func _range() -> Dictionary:
 			{"pos": Vector3(0, 0.05, -12), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 			{"pos": Vector3(0, 0.05, -22), "size": Vector3(30, 0.06, 0.25), "color": Color(0.4, 0.8, 1)},
 		],
-		# The WHOLE arsenal racked along the firing line — all 13 of GameState.
-		# ALL_WEAPONS plus the magnum/sniper sidearms, evenly spaced across the span.
-		# Keep this in sync when a weapon is added or cut.
-		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-13.5, 0, 21), "color": Color(0.8, 0.85, 0.9)},
+		# The WHOLE arsenal racked along the firing line, weakest to strongest:
+		# the 12 of GameState.ALL_WEAPONS plus the magnum and the sniper, 2.3 m
+		# apart from x -15 to 15 (the room is 36 wide; the OMEGA once lay at
+		# x 22.5, outside the wall, and the Cascade was never racked).
+		# tests/task_reach_probe fails when a player gun is missing here.
+		"weapon": {"scene": "res://scenes/weapons/pistol.tscn", "pos": Vector3(-15, 0, 21), "color": Color(0.8, 0.85, 0.9)},
 		"extra_weapons": [
-			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-10.9, 0, 21), "color": Color(0.45, 0.65, 1)},
-			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-8.4, 0, 21), "color": Color(1, 0.6, 0.3)},
-			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(1, 0.85, 0.4)},
-			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-3.2, 0, 21), "color": Color(0.4, 1, 0.55)},
-			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-0.6, 0, 21), "color": Color(0.55, 0.8, 1)},
-			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(1.9, 0, 21), "color": Color(0.45, 0.9, 1)},
-			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(4.5, 0, 21), "color": Color(1, 0.75, 0.35)},
-			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(7.1, 0, 21), "color": Color(0.5, 0.7, 1)},
-			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(9.6, 0, 21), "color": Color(1, 0.4, 0.35)},
-			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(12.2, 0, 21), "color": Color(0.45, 0.85, 1)},
-			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(14.8, 0, 21), "color": Color(1, 0.55, 0.25)},
-			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(22.5, 0, 21), "color": Color(1, 0.8, 0.35)},
+			{"scene": "res://scenes/weapons/rifle.tscn", "pos": Vector3(-12.7, 0, 21), "color": Color(0.45, 0.65, 1)},
+			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(-10.4, 0, 21), "color": Color(1, 0.6, 0.3)},
+			{"scene": "res://scenes/weapons/magnum.tscn", "pos": Vector3(-8.1, 0, 21), "color": Color(1, 0.85, 0.4)},
+			{"scene": "res://scenes/weapons/cascade.tscn", "pos": Vector3(-5.8, 0, 21), "color": Color(0.55, 0.95, 0.9)},
+			{"scene": "res://scenes/weapons/plasma.tscn", "pos": Vector3(-3.5, 0, 21), "color": Color(0.4, 1, 0.55)},
+			{"scene": "res://scenes/weapons/gauss.tscn", "pos": Vector3(-1.2, 0, 21), "color": Color(0.55, 0.8, 1)},
+			{"scene": "res://scenes/weapons/tesla.tscn", "pos": Vector3(1.2, 0, 21), "color": Color(0.45, 0.9, 1)},
+			{"scene": "res://scenes/weapons/arccoil.tscn", "pos": Vector3(3.5, 0, 21), "color": Color(1, 0.75, 0.35)},
+			{"scene": "res://scenes/weapons/sniper.tscn", "pos": Vector3(5.8, 0, 21), "color": Color(0.5, 0.7, 1)},
+			{"scene": "res://scenes/weapons/devastator.tscn", "pos": Vector3(8.1, 0, 21), "color": Color(1, 0.4, 0.35)},
+			{"scene": "res://scenes/weapons/tempest.tscn", "pos": Vector3(10.4, 0, 21), "color": Color(0.45, 0.85, 1)},
+			{"scene": "res://scenes/weapons/swarm.tscn", "pos": Vector3(12.7, 0, 21), "color": Color(1, 0.55, 0.25)},
+			{"scene": "res://scenes/weapons/omega.tscn", "pos": Vector3(15, 0, 21), "color": Color(1, 0.8, 0.35)},
 		],
 		# Resupply behind the firing line — generous, this is a sandbox.
 		"pickups": [
@@ -3993,7 +3996,7 @@ static func _mistral() -> Dictionary:
 			# Annex supplies + the gallery-climb reward.
 			{"type": "health", "pos": Vector3(-30, 0, -4)},
 			{"type": "ammo", "pos": Vector3(-16, 0, -26)},
-			{"type": "ammo", "pos": Vector3(26, 0, -26)},
+			{"type": "ammo", "pos": Vector3(8, 0, -27)},
 			{"type": "health", "pos": Vector3(24, 0, 12)},
 			{"type": "overclock", "pos": Vector3(0, 3.6, -28)},
 		],
@@ -4897,9 +4900,9 @@ static func _claude() -> Dictionary:
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-15, 0, -10)},
-			{"type": "ammo", "pos": Vector3(-9, 0, 10)},
+			{"type": "ammo", "pos": Vector3(-9, 0, 8)},
 			{"type": "health", "pos": Vector3(2, 0, 8)},
-			{"type": "ammo", "pos": Vector3(14, 0, 2)},
+			{"type": "ammo", "pos": Vector3(12, 0, 2)},
 			{"type": "health", "pos": Vector3(10, 0, 14)},
 			# Ring supplies + the gallery-climb reward.
 			{"type": "health", "pos": Vector3(-27, 0, -6)},
@@ -5179,7 +5182,7 @@ static func _grok() -> Dictionary:
 			{"type": "health", "pos": Vector3(-20, 0, -16)},
 			{"type": "ammo", "pos": Vector3(-12, 0, 2)},
 			{"type": "ammo", "pos": Vector3(2, 0, -12)},
-			{"type": "health", "pos": Vector3(0, 0, 0)},
+			{"type": "health", "pos": Vector3(0, 0, 3)},
 			{"type": "ammo", "pos": Vector3(12, 0, 6)},
 			{"type": "health", "pos": Vector3(18, 0, 18)},
 			{"type": "ammo", "pos": Vector3(-16, 0, 16)},
@@ -5710,7 +5713,7 @@ static func _suburb_boss() -> Dictionary:
 			{"type": "health", "pos": Vector3(-20, 0, 20)},
 			{"type": "ammo", "pos": Vector3(20, 0, -20)},
 			{"type": "health", "pos": Vector3(28, 0, 28)},
-			{"type": "overclock", "pos": Vector3(0, 0, 0)},
+			{"type": "overclock", "pos": Vector3(0, 0, 3)},
 			# Ring supplies along the staged approach + the deck overclock.
 			{"type": "health", "pos": Vector3(-44, 0, -36)},
 			{"type": "ammo", "pos": Vector3(-28, 0, -44)},
@@ -6078,7 +6081,7 @@ static func _lava_world() -> Dictionary:
 			{"type": "raptor", "pos": Vector3(26, 3, 16), "trigger": 18, "pack": "lava_m3"},      # over the E moat
 		],
 		"pickups": [
-			{"kind": "health", "pos": Vector3(0, 1.7, 0)},
+			{"kind": "health", "pos": Vector3(3.3, 1.7, 3.3)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
 			{"kind": "overclock", "pos": Vector3(7, 8.1, -16.6)}, # ladle gantry: the lift ride's reward
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
@@ -6673,10 +6676,10 @@ static func _desert() -> Dictionary:
 			{"type": "sniper", "pos": Vector3(8, 3.9, -36), "trigger": 28, "pack": "desert_r4"},
 		],
 		"pickups": [
-			{"kind": "health", "pos": Vector3(-2, 1.7, 9)},
+			{"kind": "health", "pos": Vector3(-2, 0.6, 9)},
 			{"kind": "ammo", "pos": Vector3(2, 2.9, -2)},
 			{"kind": "ammo", "pos": Vector3(20, 4.6, -16)},
-			{"kind": "health", "pos": Vector3(18, 0.6, 16)},
+			{"kind": "health", "pos": Vector3(20, 0.6, 12)},
 			# Dune-ring supplies + the deck-climb reward.
 			{"kind": "health", "pos": Vector3(-36, 0.6, 6)},
 			{"kind": "ammo", "pos": Vector3(-8, 0.6, 38)},

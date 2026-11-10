@@ -13,9 +13,27 @@ extends Node
 ##   - a point inside assembly's hero monolith is moved,
 ##   - a ring zone centred on that monolith is NOT (the player stands in the ring),
 ##   - an ObjectiveCore on open floor is NOT (it used to hit its own collider).
+##
+## Supplies and guns are held to the same bar on every campaign level plus the
+## armory range and the horde arena (310 pickups were swept once by hand: 12
+## were authored into a wall, a locker, a prop, a pole, the 0.6 m gap under
+## lava_world's dais, mid-air, a walled-off corner, or outside the room):
+##   - each def "pickups" entry and each weapon pickup has nothing solid in a
+##     0.25 m ball at its hover height, a surface within SUPPORT under it, and
+##     the navmesh within 1.6 m;
+##   - one authored on the floor (y <= FLOOR_Y) is on the navmesh the spawn is
+##     on (mistral's north-east ammo lay in a corner two bulkheads sealed);
+##   - the range racks every player gun: GameState.ALL_WEAPONS, the magnum and
+##     the sniper (the Cascade was missing and the OMEGA lay outside the wall).
 ##   godot --headless --path . --audio-driver Dummy res://tests/task_reach_probe.tscn
 
+## Levels outside GameState.CAMPAIGN that hand out supplies and guns.
+const EXTRA := ["res://scenes/levels/level_range.tscn", "res://scenes/levels/level_horde.tscn"]
+const SUPPORT := 1.0 ## a pickup hovers at most this far over what it stands on
+const FLOOR_Y := 0.7 ## authored at or under this, a pickup is on the floor
+
 var _ok := true
+var _supplies := 0
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -46,6 +64,9 @@ func _task_nodes(lvl: Node) -> Dictionary:
 func _run() -> void:
 	for path: String in GameState.CAMPAIGN:
 		await _check_level(path)
+	for path: String in EXTRA:
+		await _check_level(path)
+	_check("supplies checked", _supplies >= 250, "%d pickups and guns" % _supplies)
 	await _controls()
 	print("RESULT ", "PASS" if _ok else "FAIL")
 	get_tree().quit()
@@ -109,8 +130,52 @@ func _check_level(path: String) -> void:
 		var at: Vector3 = lvl._reachable_task_pos(wp)
 		_check("%s weapon %s" % [lid, String(w["scene"]).get_file()],
 			_flat(at).distance_to(_flat(wp)) < 0.01, "authored=%s at=%s" % [wp, at])
+		_supply(lvl, "%s weapon %s" % [lid, String(w["scene"]).get_file()], wp)
+	for p: Dictionary in def.get("pickups", []):
+		_supply(lvl, "%s %s" % [lid, String(p.get("type", p.get("kind", "?")))], p["pos"])
+	if lid == "range":
+		var racked: Array = weapons.map(func(w: Dictionary) -> String: return w["scene"])
+		var want: Array = Array(GameState.ALL_WEAPONS) + ["res://scenes/weapons/magnum.tscn", "res://scenes/weapons/sniper.tscn"]
+		var missing: Array = want.filter(func(g: String) -> bool: return not racked.has(g))
+		_check("range racks every player gun", missing.is_empty() and racked.size() == want.size(),
+			"%d of %d, missing %s" % [racked.size(), want.size(), str(missing)])
 	lvl.queue_free()
 	await get_tree().create_timer(0.3).timeout
+
+## One supply or gun at `at`: nothing solid in it, something under it, on the
+## navmesh, and (authored on the floor) on the navmesh the spawn is on.
+func _supply(lvl: Node3D, label: String, at: Vector3) -> void:
+	_supplies += 1
+	var space := lvl.get_world_3d().direct_space_state
+	var nav_map := lvl.get_world_3d().navigation_map
+	var why: Array = []
+	var ball := SphereShape3D.new()
+	ball.radius = 0.25
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = ball
+	q.transform = Transform3D(Basis.IDENTITY, at + Vector3.UP * 0.45)
+	q.collision_mask = 1
+	var hits := space.intersect_shape(q, 1)
+	if not hits.is_empty():
+		why.append("inside %s" % hits[0].collider.name)
+	var ray := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 0.45, at - Vector3.UP * 3.0, 1)
+	var under := space.intersect_ray(ray)
+	if under.is_empty():
+		why.append("nothing under it")
+	elif at.y - under.position.y > SUPPORT:
+		why.append("%.1f m over %s" % [at.y - under.position.y, under.collider.name])
+	var nav := NavigationServer3D.map_get_closest_point(nav_map, at)
+	if _flat(nav).distance_to(_flat(at)) > 1.6:
+		why.append("%.1f m off the navmesh" % _flat(nav).distance_to(_flat(at)))
+	elif at.y <= FLOOR_Y:
+		var from: Vector3 = LevelDefs.get_def(lvl.level_id).get("spawn", Vector3.ZERO)
+		var pl := get_tree().get_first_node_in_group("player") as Node3D
+		if pl and lvl.is_ancestor_of(pl):
+			from = pl.global_position
+		var path := NavigationServer3D.map_get_path(nav_map, from, nav, true)
+		if path.is_empty() or path[path.size() - 1].distance_to(nav) > 1.5:
+			why.append("no navmesh route from the spawn")
+	_check(label, why.is_empty(), "at %s %s" % [at, "; ".join(why)])
 
 func _controls() -> void:
 	var lvl: Node3D = load("res://scenes/levels/level_assembly.tscn").instantiate()

@@ -452,6 +452,7 @@ The builder rescues an objective or weapon pickup authored inside solid geometry
 * The test ignores the task object's own bodies (an `ObjectiveCore` is a world-layer StaticBody), and a hold or escape zone counts as clear while any point on the ring at half its radius is clear.
 * Every outdoor light builds a solid mast from the floor to the lamp, so a light authored over an objective buries it. A god-ray over a target opts out with `"mast": false`. The masts are placed last (`_place_light_pylons`), and one whose column would pass through a bridge deck, tower, platform or wall is skipped.
 * `tests/task_reach_probe` builds every campaign level and fails if any objective or weapon pickup moved, so the log line only ever fires for a real authoring mistake.
+* Supplies (`pickups`) get no rescue: they are built where the def says. The same probe requires each one, and each gun, to have nothing solid in it, a surface within 1 m under it and the navmesh within 1.6 m, and a floor pickup to be on the navmesh the spawn is on (two full-width `gates` seal the corner between them). It also builds the range and the horde arena, and fails when the range does not rack every player gun.
 
 ## Hazards and Objectives
 Defines environmental challenges and mission completion criteria across generated maps.
