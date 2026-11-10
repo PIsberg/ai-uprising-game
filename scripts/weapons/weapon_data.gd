@@ -20,6 +20,21 @@ enum ReloadStyle { MAG, SHELLS, CELL, TUBE }
 @export var fire_mode: FireMode = FireMode.SEMI
 @export var damage_type: DamageType = DamageType.HITSCAN
 @export var alt_mode: AltMode = AltMode.NONE
+
+## What the HUD calls each alt mode (its tag by the ammo count, HUD._refresh_alt_tag),
+## and the key of its first-time hint in GameState.MECHANIC_HINTS. NONE has neither.
+const ALT_TAGS := {
+	AltMode.CHARGE: "ALT: CHARGE",
+	AltMode.VOLLEY: "ALT: VOLLEY",
+	AltMode.SLUG: "ALT: SLUG",
+	AltMode.FAN: "ALT: FAN",
+}
+const ALT_HINTS := {
+	AltMode.CHARGE: "alt_charge",
+	AltMode.VOLLEY: "alt_volley",
+	AltMode.SLUG: "alt_slug",
+	AltMode.FAN: "alt_fan",
+}
 @export var damage_class: DamageClass = DamageClass.KINETIC
 
 @export_group("Damage / Fire")

@@ -1415,6 +1415,7 @@ func _process(delta: float) -> void:
 	if _toast_time > 0.0:
 		_toast_time = maxf(0.0, _toast_time - delta)
 		toast.modulate.a = clampf(_toast_time, 0.0, 1.0) # hold full, then fade
+	_tick_alt_teach()
 	if _combo_label:
 		_combo_alpha = move_toward(_combo_alpha, 0.0, delta * 0.6)
 		_combo_pop = move_toward(_combo_pop, 0.0, delta * 4.0)
@@ -1998,6 +1999,8 @@ func _make_upgrade_chip(glyph: String, color: Color, lvl: int) -> Control:
 const AMMO_SEGS := 12
 var _ammo_big: Label
 var _ammo_small: Label
+var _alt_tag: Label ## "ALT: CHARGE  [V]" under the weapon name; hidden on a gun with no alt mode
+var _alt_teach := "" ## MECHANIC_HINTS key of an alt-fire hint waiting for a free toast
 var _segs: Array[ColorRect] = []
 var _pips: Array[ColorRect] = []
 var _glabel: Label
@@ -2019,6 +2022,15 @@ func _build_ammo_block() -> void:
 	weapon_label.add_theme_font_size_override("font_size", 14)
 	weapon_label.modulate = Color(1, 1, 1, 0.7)
 	weapon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Under the name: the held gun's alt-fire mode and the key it is on.
+	_alt_tag = Label.new()
+	_alt_tag.name = "AltTag"
+	_alt_tag.add_theme_font_size_override("font_size", 13)
+	_alt_tag.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_alt_tag.add_theme_constant_override("outline_size", 4)
+	_alt_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_alt_tag.visible = false
+	box.add_child(_alt_tag)
 	var nums := HBoxContainer.new()
 	nums.alignment = BoxContainer.ALIGNMENT_END
 	nums.add_theme_constant_override("separation", 6)
@@ -2081,6 +2093,47 @@ func _refresh_ammo_visual(reserve: int) -> void:
 	for i in AMMO_SEGS:
 		_segs[i].color = col if i < lit else Color(1, 1, 1, 0.13)
 
+## The alt-fire tag: "ALT: CHARGE  [V]" under the weapon name while the held
+## gun has an alt mode, hidden on a gun without one. The key is read from the
+## live binding, so a rebind shows. It dims while the magazine holds fewer
+## rounds than one use costs (Weapon.alt_cost).
+func _refresh_alt_tag() -> void:
+	if _alt_tag == null:
+		return
+	var w := _current_weapon
+	if not is_instance_valid(w) or w.data == null or not WeaponData.ALT_TAGS.has(w.data.alt_mode):
+		_alt_tag.visible = false
+		return
+	_alt_tag.visible = true
+	_alt_tag.text = "%s  [%s]" % [tr(WeaponData.ALT_TAGS[w.data.alt_mode]), alt_fire_key()]
+	var ready := w.mag >= w.alt_cost()
+	_alt_tag.modulate = Color(_reticle_base.r, _reticle_base.g, _reticle_base.b, 0.95) if ready else Color(1, 1, 1, 0.32)
+
+## The key the alt-fire is on, as the tag prints it: the first keyboard key
+## bound to "alt_fire", else its first mouse button, else "?".
+static func alt_fire_key() -> String:
+	if not InputMap.has_action("alt_fire"):
+		return "V" # WeaponManager registers it on _ready; this is its default
+	var mouse := ""
+	for e in InputMap.action_get_events("alt_fire"):
+		if e is InputEventKey:
+			var k := e as InputEventKey
+			var code: int = k.physical_keycode if k.physical_keycode != 0 else k.keycode
+			return OS.get_keycode_string(code).to_upper()
+		if e is InputEventMouseButton and mouse == "":
+			mouse = "MOUSE %d" % (e as InputEventMouseButton).button_index
+	return mouse if mouse != "" else "?"
+
+## The first-time hint for the held gun's alt mode waits here until no other
+## toast is showing: a pickup's "WEAPON ACQUIRED" lands in the same frame as
+## the switch and the toast line holds one message.
+func _tick_alt_teach() -> void:
+	if _alt_teach == "" or _toast_time > 0.0:
+		return
+	var key := _alt_teach
+	_alt_teach = ""
+	GameState.teach_once(key, GameState.MECHANIC_HINTS.get(key, ""))
+
 func _on_ammo_changed(mag: int, reserve: int) -> void:
 	# A fresh magazine (count jumped up) punches the big number — reload juice.
 	if mag > _prev_mag:
@@ -2088,6 +2141,7 @@ func _on_ammo_changed(mag: int, reserve: int) -> void:
 	_prev_mag = mag
 	_mag = mag
 	_refresh_ammo_visual(reserve)
+	_refresh_alt_tag()
 
 var _countermeasure_warned: bool = false
 
@@ -2105,6 +2159,11 @@ func _on_weapon_changed(w: Weapon) -> void:
 		_mag = w.mag
 		_reticle_base = _reticle_hue(w.data.display_name)
 		_refresh_ammo_visual(w.reserve)
+	# Teach the alt mode of the gun in hand (once per mode per run).
+	_alt_teach = ""
+	if w and w.data:
+		_alt_teach = String(WeaponData.ALT_HINTS.get(w.data.alt_mode, ""))
+	_refresh_alt_tag()
 	_update_carousel_highlight()
 	_flash_carousel()
 
