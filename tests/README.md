@@ -38,11 +38,11 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-588 probes total: **268** wired into the headless suite (`suite`), **87**
+590 probes total: **269** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
-intentionally not suite-shaped), **233** windowed-only (`windowed` — screenshot
+intentionally not suite-shaped), **234** windowed-only (`windowed` — screenshot
 or GPU-timing probes; `--headless` renders these black).
 
 | Probe | Verifies | Mode |
@@ -50,6 +50,8 @@ or GPU-timing probes; `--headless` renders these black).
 | aaa_axes_probe | Batch-3 five-axis AAA gaps on a live level: warp-in telegraph before spawn, lava heat-haze curtains, per-level par time + speed bonus, wounded-grunt cover-seek fallback | headless |
 | adrenaline_probe | ADRENALINE SURGE: critical-HP hit fires heal+buff+banner, buffs collapse on end, cooldown blocks immediate re-trigger | windowed |
 | ads_zoom_probe | Holding aim (RMB) converges FOV to the weapon's ads_fov; release restores base FOV | headless |
+| alt_tag_probe | The HUD teaches alt-fire (#495), through the real player, WeaponManager and HUD: the alt tag (`HUD._refresh_alt_tag`) is hidden on the M9, names VOLLEY, SLUG, FAN and CHARGE and the bound key on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher, hides again on the M9, dims below `Weapon.alt_cost` rounds, follows a rebind (key or mouse button) and is translated; each mode's hint is toasted once the pickup toast has faded, and once only (20 checks; 14 failed before the tag existed) | suite |
+| alt_tag_shot | The alt tag in a real level: the Pulse Rifle with its first-time hint up, the Plasma Launcher's tag lit, and dim at 2 rounds | windowed |
 | aegis_probe | AEGIS shield drone on a baked floor: with two androids live it wards the one nearer the player (gold beam, bubble) and only that one; the warded android takes no damage (red-checked: without the ward check it took 200) while the other does; shooting the bubble teaches the rule once; killing the AEGIS drops the ward and the bubble and the android takes damage again; a boss-class robot is never warded; the builder knows it, the codex lists it and it is placed on a campaign level | suite |
 | ai_director_probe | Adaptive AI Director's counter logic against synthetic playstyle profiles | suite |
 | aim_hit_probe | Aiming at a robot actually damages it: every weapon vs a reference enemy at 6/18/35m (skipping ranges past each weapon's own `range_m`), and every enemy scene in scenes/enemies vs the rifle (~319s, run deliberately) | headless |

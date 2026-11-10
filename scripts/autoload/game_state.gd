@@ -1701,6 +1701,10 @@ const MECHANIC_HINTS := {
 	"scrapped": "⚙ SCRAPPED — a thrown robot takes the wall, the robot or the drop it lands on. Throw them hard, and off things.",
 	"tackle": "⤭ TACKLE — dashing into a robot throws it. Dash them into walls, off ledges and into the lava.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
+	"alt_charge": "◎ ALT-FIRE: CHARGE — hold [V] to charge, let go to fire one dead-straight shot at up to 3.4 times the damage. It costs 3 rounds.",
+	"alt_volley": "◎ ALT-FIRE: VOLLEY — tap [V] for 3 dead-straight rounds at once, then a short breather.",
+	"alt_slug": "◎ ALT-FIRE: SLUG — tap [V] to fire the shell as one dead-straight slug that hits like most of the spread. Slower to follow up.",
+	"alt_fan": "◎ ALT-FIRE: FAN — hold [V] to fan the hammer: 3 times the fire rate, wide, each round 20% weaker.",
 }
 
 ## Emit a coaching hint the first time `key` comes up this run (idempotent).

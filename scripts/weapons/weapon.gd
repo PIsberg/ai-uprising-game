@@ -624,6 +624,18 @@ const FAN_RECOVER := 0.55
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
+## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
+## CHARGE and VOLLEY, one for SLUG and FAN, 0 on a gun with no alt mode.
+func alt_cost() -> int:
+	if data == null:
+		return 0
+	match data.alt_mode:
+		WeaponData.AltMode.NONE:
+			return 0
+		WeaponData.AltMode.CHARGE, WeaponData.AltMode.VOLLEY:
+			return ALT_COST
+	return 1
+
 ## Driven every frame by WeaponManager with the alt-fire button state.
 func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) -> void:
 	var just := pressed and not _alt_prev
