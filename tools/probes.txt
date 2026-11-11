@@ -384,6 +384,8 @@ res://tests/dash_tackle_probe.tscn
 res://tests/roller_rig_probe.tscn
 # BRUTE SHIELD RUSH: blocked damage provokes it; tell, straight run, bash; a dodged rush into a wall or onto open floor leaves the shield open; EMP cancels; cooldown.
 res://tests/brute_rush_probe.tscn
+# The SHIELD RUSH in every built level: 8 lines from spawns, navmesh points and hazard edges end on ground with a way home (#482).
+res://tests/brute_rush_levels_probe.tscn
 # DRONE STRAFING RUN: the dive flares the eye, then stitches three rounds across the floor onto the player; subclasses keep their own attacks.
 res://tests/drone_strafe_probe.tscn
 # SEEKER TERMINAL DIVE: it stops to arm, dives one straight line, a dodge leaves it spent with a cold fuse.

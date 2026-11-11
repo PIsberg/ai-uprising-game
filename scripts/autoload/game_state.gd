@@ -1699,6 +1699,7 @@ const MECHANIC_HINTS := {
 	"cascade": "✸ CASCADE — robots the CX-4 kills detonate and set off their neighbours. Shoot into the thick of a pack.",
 	"meltdown": "♨ MELTDOWN — a robot knocked into molten ground or deep water is finished. Melee, grenades and OVERLOAD throw robots.",
 	"scrapped": "⚙ SCRAPPED — a thrown robot takes the wall, the robot or the drop it lands on. Throw them hard, and off things.",
+	"shield_rush": "▣ SHIELD RUSH — shoot a BRUTE's shield and it charges. Step off its line: it runs past, and its shield hangs open.",
 	"tackle": "⤭ TACKLE — dashing into a robot throws it. Dash them into walls, off ledges and into the lava.",
 	"rewriter": "R(s) REWARD REWRITE — press [E] to pick the line, stay put to upload it. Robots nearby optimise it literally.",
 	"alt_charge": "◎ ALT-FIRE: CHARGE — hold [V] to charge, let go to fire one dead-straight shot at up to 3.4 times the damage. It costs 3 rounds.",

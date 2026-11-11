@@ -5,6 +5,8 @@ extends Node3D
 ##   - damage it takes in the back does not provoke it;
 ##   - RUSH_PROVOKE of damage blocked on the shield does: it plants for
 ##     RUSH_TELL (holds its ground), then runs a straight line at RUSH_SPEED;
+##   - the first tell of a run teaches the counter in one hint, and no later
+##     tell repeats it (#482: the tell had no coaching at all);
 ##   - a player who stands still is bashed for RUSH_DAMAGE and thrown back, and
 ##     the shield stays up (a rush that lands is not punished);
 ##   - a player who steps aside lets it run into the wall behind them: it is
@@ -25,6 +27,7 @@ extends Node3D
 const BRUTE := "res://scenes/enemies/brute.tscn"
 
 var ok := true
+var _hints: Array[String] = []
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
@@ -36,7 +39,9 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	GameState.reset_run()
 	GameState.set_state(GameState.State.PLAYING)
+	GameState.teach_hint.connect(func(t: String) -> void: _hints.append(t))
 	await _case_unprovoked()
 	await _case_bash()
 	await _case_wall()
@@ -44,6 +49,8 @@ func _run() -> void:
 	await _case_emp()
 	await _case_deck_edge()
 	await _case_nav_edge()
+	_check("every later tell left the hint alone", _hints.count(GameState.MECHANIC_HINTS.get("shield_rush", "?")) == 1,
+		"%d hint(s) over the run" % _hints.size())
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
 
@@ -78,6 +85,7 @@ func _case_bash() -> void:
 	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player)
 	var f := await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.TELL, 30)
 	_check("RUSH_PROVOKE of blocked damage starts the tell", f >= 0, "after %d frames" % f)
+	_check("the first tell teaches the counter", _hints.count(GameState.MECHANIC_HINTS.get("shield_rush", "?")) == 1, str(_hints))
 	var at_tell := brute.global_position
 	var tell_frames := await _until(func() -> bool: return brute.rush != EnemyBrute.Rush.TELL, 120)
 	_check("the tell lasts RUSH_TELL", absf(tell_frames / 60.0 - EnemyBrute.RUSH_TELL) < 0.1, "%.2f s" % (tell_frames / 60.0))
