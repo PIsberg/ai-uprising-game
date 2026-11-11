@@ -4,11 +4,13 @@ extends Node3D
 ## mistral's north-east corner seen from the spawn strip, where the east
 ## bulkhead used to run on to the north wall (sealed_floor_mistral.png), and
 ## gemini's east strip seen from the middle band (sealed_floor_gemini.png).
+## Each frame is aimed at the pocket's cache (LevelDefs._with_pocket_caches):
+## a supply, two crates and the amber floor strip.
 ##   godot --path . res://tests/sealed_floor_shot.tscn
 
 const SHOTS := [
-	["mistral", Vector3(22, 2.4, -41), Vector3(40, 1.0, -38)],
-	["gemini", Vector3(24, 2.4, 0), Vector3(44, 1.0, 0)],
+	["mistral", Vector3(27, 2.6, -42), Vector3(39, 0.6, -39)],
+	["gemini", Vector3(33, 2.6, 6), Vector3(42, 0.6, -1)],
 ]
 
 func _ready() -> void:

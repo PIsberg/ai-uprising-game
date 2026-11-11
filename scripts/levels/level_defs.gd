@@ -22,7 +22,133 @@ static func get_def(id: String) -> Dictionary:
 	# the convoy's ConvoyRide (truck path, platforms, highway scenery) lives in
 	# world units, and blanket-scaling only the def half tore the level apart:
 	# the exit portal landed 74 m past where the truck parks.
-	return _scaled(def, def.get("world_scale", WORLD_SCALE))
+	return _with_pocket_caches(_scaled(def, def.get("world_scale", WORLD_SCALE)))
+
+## How far gate `idx` of def "gates" runs along its own length: (lo, hi) on
+## the axis it does not block. A gate spans the floor, but it stops at the
+## nearest gate listed BEFORE it that crosses it, on either side of its own
+## gap. Two full-span gates that cross wall off a quadrant no gap opens into
+## (14 levels had one: 120 to 870 m2 of floor nobody could walk onto, #500).
+## Stopping the later gate at the earlier one hands that floor to the room on
+## the earlier gate's near side, as a dead end: it opens no way round either
+## gap. `"through": true` on a gate keeps its full span.
+static func gate_span(def: Dictionary, idx: int) -> Vector2:
+	var gates: Array = def.get("gates", [])
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	var g: Dictionary = gates[idx]
+	var axis := String(g.get("axis", "z"))
+	var half := (fs.x if axis == "z" else fs.y) * 0.5
+	var span := Vector2(-half, half)
+	if g.get("through", false):
+		return span
+	var gap_pos := float(g.get("gap_pos", 0.0))
+	var gap_half := float(g.get("gap", 5.5)) * 0.5
+	for i in idx:
+		var o: Dictionary = gates[i]
+		if String(o.get("axis", "z")) == axis or not _gate_stops(o, g):
+			continue
+		var o_at := float(o.get("at", 0.0))
+		if o_at <= gap_pos - gap_half:
+			span.x = maxf(span.x, o_at)
+		elif o_at >= gap_pos + gap_half:
+			span.y = minf(span.y, o_at)
+	return span
+
+## True when gate `o` is solid where gate `g`'s line meets it (its own gap is
+## not on that line), so it can end `g`.
+static func _gate_stops(o: Dictionary, g: Dictionary) -> bool:
+	return absf(float(o.get("gap_pos", 0.0)) - float(g.get("at", 0.0))) >= float(o.get("gap", 5.5)) * 0.5 + 0.5
+
+## The dead-end pockets gate_span opens: one Rect2 (x, z, in the def's own
+## units) per stretch of floor a later gate used to wall off. For each gate
+## that stops short, the cut stretch is split at the earlier gates crossing
+## it; each piece is a pocket, lying on the side of the gate away from the gap
+## of the earlier gate that bounds it. Pockets are inset POCKET_INSET from
+## their walls.
+const POCKET_INSET := 1.5
+static func gate_pockets(def: Dictionary) -> Array:
+	var out: Array = []
+	var gates: Array = def.get("gates", [])
+	var fs: Vector2 = def.get("floor_size", Vector2(40, 40))
+	for idx in gates.size():
+		var g: Dictionary = gates[idx]
+		var x_axis := String(g.get("axis", "z")) == "x" # an "x" gate sits at x = at and runs along z
+		var half_along := (fs.y if x_axis else fs.x) * 0.5
+		var half_across := (fs.x if x_axis else fs.y) * 0.5
+		var at := float(g.get("at", 0.0))
+		var span := gate_span(def, idx)
+		# Earlier crossing gates, by where they lie on this gate's length.
+		var cuts: Array = []
+		for i in idx:
+			var o: Dictionary = gates[i]
+			if (String(o.get("axis", "z")) == "x") != x_axis and _gate_stops(o, g):
+				cuts.append([float(o.get("at", 0.0)), o])
+		cuts.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+		# The stretch cut off below the span, then the one above it. In each,
+		# walk outward from the span's end: every piece is bounded on its near
+		# side by one earlier gate.
+		for below in [true, false]:
+			var edges: Array = [] # [position, bounding gate], near to far
+			for c in cuts:
+				var pos := float(c[0])
+				if (below and pos <= span.x + 0.01) or (not below and pos >= span.y - 0.01):
+					edges.append(c)
+			if below:
+				edges.reverse()
+			for k in edges.size():
+				var near := float(edges[k][0])
+				var far := float(edges[k + 1][0]) if k + 1 < edges.size() else (-half_along if below else half_along)
+				var bound: Dictionary = edges[k][1]
+				var side := -1.0 if float(bound.get("gap_pos", 0.0)) > at else 1.0
+				var a0 := minf(near, far) + POCKET_INSET
+				var a1 := maxf(near, far) - POCKET_INSET
+				var c0 := (at if side > 0.0 else -half_across) + POCKET_INSET
+				var c1 := (half_across if side > 0.0 else at) - POCKET_INSET
+				if a1 - a0 < 3.0 or c1 - c0 < 3.0:
+					continue
+				out.append(Rect2(c0, a0, c1 - c0, a1 - a0) if x_axis else Rect2(a0, c0, a1 - a0, c1 - c0))
+	return out
+
+## POCKET CACHES: every dead-end pocket (gate_pockets) gets a reason to walk
+## into it: a supply at its centre (ammo and health by turns), two crates of
+## cover beside it, and an amber strip on the floor down its length. The
+## entries carry "pocket": true. `"pocket_caches": false` on a def opts out.
+## Before gate_span that floor was sealed, so no level authored anything for
+## it (#507). tests/pocket_cache_probe.
+const POCKET_KINDS := ["ammo", "health"]
+const POCKET_STRIP := Color(1.0, 0.72, 0.28)
+const POCKET_SIDESTEP := 3.5
+static func _with_pocket_caches(def: Dictionary) -> Dictionary:
+	if def.is_empty() or not def.get("pocket_caches", true):
+		return def
+	var pockets := gate_pockets(def)
+	if pockets.is_empty():
+		return def
+	def = def.duplicate(true)
+	for key in ["pickups", "props", "accents"]:
+		if not def.has(key):
+			def[key] = []
+	for i in pockets.size():
+		var r: Rect2 = pockets[i]
+		var c := r.get_center()
+		var long_x := r.size.x >= r.size.y
+		var along := Vector3(1, 0, 0) if long_x else Vector3(0, 0, 1)
+		var across := Vector3(0, 0, 1) if long_x else Vector3(1, 0, 0)
+		var at := Vector3(c.x, 0.0, c.y)
+		# A lamp authored over the pocket's centre stands on a mast there (grok):
+		# the cache steps POCKET_SIDESTEP along the pocket, away from it.
+		for l: Dictionary in def.get("lights", []):
+			var lp: Vector3 = l.get("pos", Vector3.INF)
+			if Vector2(lp.x - at.x, lp.z - at.z).length() < 2.5:
+				var room := (r.size.x if long_x else r.size.y) * 0.5 - 1.0
+				at += along * minf(POCKET_SIDESTEP, room)
+				break
+		def["pickups"].append({"type": POCKET_KINDS[i % POCKET_KINDS.size()], "pos": at, "pocket": true})
+		def["props"].append({"type": "crate", "pos": at + along * 2.6, "pocket": true})
+		def["props"].append({"type": "crate", "pos": at - along * 2.2 + across * 1.8, "pocket": true})
+		def["accents"].append({"pos": Vector3(c.x, 0.05, c.y), "size": Vector3(r.size.x, 0.1, 0.35) if long_x else Vector3(0.35, 0.1, r.size.y),
+				"color": POCKET_STRIP, "pocket": true})
+	return def
 
 ## Enemy types that headline their own level — used to flag boss levels on the
 ## campaign map. Each appears exactly once across the campaign.

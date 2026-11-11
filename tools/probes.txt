@@ -111,6 +111,8 @@ res://tests/haul_probe.tscn
 res://tests/task_reach_probe.tscn
 # No two crossing route gates wall a quadrant off: a gate stops at an earlier gate that crosses it, and the route still threads every gap.
 res://tests/sealed_floor_probe.tscn
+# POCKET CACHES: every dead-end pocket behind crossing gates holds a supply, two crates and a strip, reachable from the spawn.
+res://tests/pocket_cache_probe.tscn
 # Every campaign task, wave, firewall and terrain label translates in es/fr/de/pt.
 res://tests/i18n_label_probe.tscn
 # The HDRI skies ship VRAM-compressed (2 MB, not 8) without losing their HDR sun.
