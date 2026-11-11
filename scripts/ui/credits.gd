@@ -11,13 +11,14 @@ const SKIP_GRACE := 1.5
 const SCROLL_SPEED := 34.0 # px/sec
 const MAIN_MENU := "res://scenes/ui/main_menu.tscn"
 
-## {text, size, color?, gap (px of space after this line)}.
+## {text, size, color?, gap (px of space after this line)}. "{godot}" in a text
+## becomes the running engine's version (the line said 4.7.1 on a 4.7.2 build).
 const LINES: Array = [
 	{"text": "AI UPRISING", "size": 54, "color": Color(0.95, 0.96, 1.0), "gap": 40},
 	{"text": "A game by Peter Isberg", "size": 22, "color": Color(0.75, 0.82, 0.95), "gap": 70},
 	{"text": "CAMPAIGN COMPLETE", "size": 20, "color": Color(1.0, 0.6, 0.3), "gap": 60},
 	{"text": "ENGINE", "size": 16, "color": Color(0.55, 0.62, 0.75), "gap": 8},
-	{"text": "Godot Engine 4.7.1  —  godotengine.org", "size": 18, "gap": 50},
+	{"text": "Godot Engine {godot}  —  godotengine.org", "size": 18, "gap": 50},
 	{"text": "THIRD-PARTY ASSETS  (CC0 unless noted)", "size": 16, "color": Color(0.55, 0.62, 0.75), "gap": 8},
 	{"text": "Quaternius (quaternius.com) — enemy robot models", "size": 18, "gap": 4},
 	{"text": "Kenney (kenney.nl) — weapon models, suburb & car kits", "size": 18, "gap": 4},
@@ -25,9 +26,11 @@ const LINES: Array = [
 	{"text": "Poly Haven (polyhaven.com) — HDRI sky", "size": 18, "gap": 4},
 	{"text": "Poly Pizza (poly.pizza) — model hosting", "size": 18, "gap": 4},
 	{"text": "dook — data crystal & off-world drone models", "size": 18, "gap": 4},
+	{"text": "Polygonal Mind, GLB conversion by ToxSam — WAR-BOT model", "size": 18, "gap": 4},
 	{"text": "Dann Beeson — \"Giant Robot\" finale boss model (CC-BY 3.0)", "size": 18, "gap": 4},
 	{"text": "Sketchfab robot models (CC-BY 4.0): grabthesky, lenat_1, SkibidiSanya,", "size": 18, "gap": 0},
-	{"text": "Gianmarco, nickheitzman, Moonlightlll, TooManyDemons, 3DHaupt, Pigcraft", "size": 18, "gap": 4},
+	{"text": "Gianmarco, nickheitzman, Moonlightlll, TooManyDemons, 3DHaupt, Pigcraft,", "size": 18, "gap": 0},
+	{"text": "TECHGUY, Andrei Milin, HeiMan Chan", "size": 18, "gap": 4},
 	{"text": "zebra_pozer (CC-BY-NC 4.0)  ·  Lagst (Sketchfab Standard)", "size": 18, "gap": 4},
 	{"text": "Matt McInerney — Orbitron font (SIL OFL 1.1), Google Fonts", "size": 18, "gap": 4},
 	{"text": "Full attributions in CREDITS.md", "size": 14, "color": Color(0.5, 0.55, 0.65), "gap": 90},
@@ -102,6 +105,11 @@ func _ready() -> void:
 ## campaign order (StoryArc.trace_recap), the whole trace of the 03:14 order.
 func _entries() -> Array:
 	var out: Array = LINES.duplicate()
+	var v := Engine.get_version_info()
+	for i in out.size():
+		if str(out[i]["text"]).contains("{godot}"):
+			out[i] = (out[i] as Dictionary).duplicate()
+			out[i]["text"] = str(out[i]["text"]).replace("{godot}", "%d.%d.%d" % [v.major, v.minor, v.patch])
 	var trace := StoryArc.trace_recap(GameState.campaign())
 	if trace.is_empty():
 		return out

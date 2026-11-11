@@ -121,6 +121,14 @@ func _run() -> void:
 	print("CREDITS: recapped=%s lines=%d" % [recapped, recap.size()])
 	if not recapped:
 		ok = false
+	# The engine line names the build that is running, not a version typed in once
+	# (it read 4.7.1 on 4.7.2, #435).
+	var ev := Engine.get_version_info()
+	var engine_line := "Godot Engine %d.%d.%d" % [ev.major, ev.minor, ev.patch]
+	var versioned: bool = ctexts.any(func(t: String) -> bool: return t.begins_with(engine_line)) 		and not ctexts.any(func(t: String) -> bool: return t.contains("{godot}"))
+	print("CREDITS: engine line '%s' shown=%s" % [engine_line, versioned])
+	if not versioned:
+		ok = false
 	credits.queue_free()
 
 	print("RESULT ", "PASS" if ok else "FAIL")
