@@ -4,7 +4,9 @@ extends Node3D
 ## with the authored squad; out of the cone, or behind a wall, nothing happens;
 ## the alarm respects max_alarms; a shot-out head never detects again. Then on
 ## every campaign level that authors "scanners", each alarm squad spawns on the
-## built navmesh with a walking route to the player spawn.
+## built navmesh with a walking route to the player spawn, and each scanner's
+## mast stands on what is under the head: it runs through no solid (grok's ran
+## 10.6 m from the ground up through a tower, #499) and through no pickup.
 ##   godot --headless --path . --audio-driver Dummy res://tests/scanner_probe.tscn
 
 var _fails: Array[String] = []
@@ -128,6 +130,48 @@ func _campaign() -> void:
 		await _frames(10)
 		var built := get_tree().get_nodes_in_group("scanner").size()
 		_check(built == def["scanners"].size(), "%s builds all %d scanners (%d)" % [id, def["scanners"].size(), built])
+		# Masts (#499). The mast's own collider says where it is.
+		var space := level.get_world_3d().direct_space_state
+		var picks: Array = level.find_children("*", "Node3D", true, false).filter(func(n: Node) -> bool: return String(n.scene_file_path).begins_with("res://scenes/pickups/"))
+		var si := 0
+		for s: Node3D in get_tree().get_nodes_in_group("scanner"):
+			var own: Array[RID] = []
+			var mast_cs: CollisionShape3D = null
+			for b in s.find_children("*", "CollisionObject3D", true, false):
+				own.append((b as CollisionObject3D).get_rid())
+				for c in b.get_children():
+					if c is CollisionShape3D and (c as CollisionShape3D).shape is CylinderShape3D:
+						mast_cs = c
+			if mast_cs == null:
+				print("  %s scanner %d at %s: no mast" % [id, si, s.global_position.snapped(Vector3.ONE * 0.1)])
+				si += 1
+				continue
+			var h: float = (mast_cs.shape as CylinderShape3D).height
+			var mid := mast_cs.global_position
+			var probe_shape := CylinderShape3D.new()
+			probe_shape.radius = 0.1
+			probe_shape.height = maxf(0.1, h - 0.8) # clear of the surface it stands on
+			var q := PhysicsShapeQueryParameters3D.new()
+			q.shape = probe_shape
+			q.transform = Transform3D(Basis(), mid + Vector3.UP * 0.3)
+			q.collision_mask = 1
+			q.exclude = own
+			var hits := space.intersect_shape(q, 4)
+			var through := ""
+			for hit: Dictionary in hits:
+				var col := hit["collider"] as Node3D
+				var top := -INF
+				for c in col.get_children():
+					if c is CollisionShape3D and (c as CollisionShape3D).shape is BoxShape3D:
+						top = maxf(top, (c as CollisionShape3D).global_position.y + ((c as CollisionShape3D).shape as BoxShape3D).size.y * 0.5)
+				through += " %s/%s top %.1f" % [col.get_parent().name, col.name, top]
+			var in_pick := ""
+			for pk: Node3D in picks:
+				var pp := pk.global_position
+				if Vector2(pp.x - mid.x, pp.z - mid.z).length() < 0.9 and pp.y > mid.y - h * 0.5 - 0.5 and pp.y < mid.y + h * 0.5 + 0.5:
+					in_pick = "%s at %s" % [pk.name, pp.snapped(Vector3.ONE * 0.1)]
+			_check(hits.is_empty() and in_pick == "", "%s scanner %d at %s: its %.1f m mast runs through no solid and no pickup%s%s" % [id, si, s.global_position.snapped(Vector3.ONE * 0.1), h, (" (through" + through + ")") if through != "" else "", (" (in " + in_pick + ")") if in_pick != "" else ""])
+			si += 1
 		var k := 0
 		for sc in def["scanners"]:
 			for e in sc.get("alarm", []):

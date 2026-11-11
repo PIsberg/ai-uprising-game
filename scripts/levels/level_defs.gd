@@ -5217,8 +5217,11 @@ static func _grok() -> Dictionary:
 		# way: at 2.3 m it hung 1.84 m over the stair's 0.2 m-proud top, #339);
 		# the corridor scanner stares up the exit corridor the purge run
 		# has to take.
+		# It stands on the roof's east corner, 2.1 m off the tower's centre: the
+		# centre holds the tower's medkit, which the mast ran through (#499), and
+		# the stair lands on the opposite corner.
 		"scanners": [
-			{"pos": Vector3(14, 11.0, -6), "sweep": 360, "period": 11.0, "reach": 27, "tilt": 30, "cone": 9,
+			{"pos": Vector3(15.5, 11.0, -4.5), "sweep": 360, "period": 11.0, "reach": 27, "tilt": 30, "cone": 9,
 				"alarm": [{"type": "raptor", "count": 2, "pos": Vector3(0, 4, 0)}]},
 			{"pos": Vector3(39, 6.5, 26), "yaw": 0, "sweep": 70, "period": 5.0, "tilt": 22,
 				"alarm": [{"type": "dog", "count": 3, "pos": Vector3(37, 0, 12)}]},

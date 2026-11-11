@@ -23,7 +23,7 @@ enum Mode { SWEEP, TRACK, COOLDOWN, DEAD }
 @export var track_time: float = 4.0
 @export var cooldown: float = 9.0
 @export var max_alarms: int = 2
-@export var mast: bool = true           ## build a mast from the floor up to the head
+@export var mast: bool = true           ## build a mast up to the head, from whatever is under it (_stand_mast)
 @export var alarm_specs: Array = []
 
 const BEAM_SHADER := preload("res://shaders/scanner_beam.gdshader")
@@ -56,37 +56,7 @@ func _build() -> void:
 	metal.metallic = 0.8
 	metal.roughness = 0.35
 	if mast and position.y > 0.6:
-		var pole := MeshInstance3D.new()
-		var pm := CylinderMesh.new()
-		pm.top_radius = 0.12
-		pm.bottom_radius = 0.2
-		pm.height = position.y
-		pm.radial_segments = 8
-		pole.mesh = pm
-		pole.material_override = metal
-		pole.position.y = -position.y * 0.5
-		add_child(pole)
-		var foot := MeshInstance3D.new()
-		var fm := CylinderMesh.new()
-		fm.top_radius = 0.35
-		fm.bottom_radius = 0.5
-		fm.height = 0.3
-		fm.radial_segments = 8
-		foot.mesh = fm
-		foot.material_override = metal
-		foot.position.y = -position.y + 0.15
-		add_child(foot)
-		var body := StaticBody3D.new()
-		body.collision_layer = 1
-		body.collision_mask = 0
-		var cs := CollisionShape3D.new()
-		var cyl := CylinderShape3D.new()
-		cyl.radius = 0.22
-		cyl.height = position.y - 0.4
-		cs.shape = cyl
-		cs.position.y = -position.y * 0.5 - 0.2
-		body.add_child(cs)
-		add_child(body)
+		_stand_mast.call_deferred(metal)
 
 	_pivot = Node3D.new()
 	add_child(_pivot)
@@ -160,6 +130,61 @@ func _build() -> void:
 	cone.position.z = -0.45 - reach * 0.5
 	tilt.add_child(cone)
 	_set_color(EYE, 0.09)
+
+## The mast stands on whatever is under the head: the floor, or the top of the
+## tower, wall block or roof the scanner was authored over. Built from y 0 it
+## ran straight through that solid: grok's stood 10.6 m from the ground up
+## through a tower and the medkit on its roof, and 6 of the campaign's 11
+## masts passed through something (#499). Level geometry added this frame is
+## not in the physics space until it has stepped, hence the wait.
+func _stand_mast(metal: Material) -> void:
+	for i in 2:
+		await get_tree().physics_frame
+	if not is_inside_tree():
+		return
+	var head := global_position
+	var drop := position.y
+	var q := PhysicsRayQueryParameters3D.create(head, Vector3(head.x, head.y - position.y - 1.0, head.z), 1)
+	var own: Array[RID] = []
+	for b in find_children("*", "CollisionObject3D", true, false):
+		own.append((b as CollisionObject3D).get_rid())
+	q.exclude = own
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if not hit.is_empty():
+		drop = head.y - (hit["position"] as Vector3).y
+	if drop < 0.9:
+		return # the head sits on the solid itself
+	var pole := MeshInstance3D.new()
+	var pm := CylinderMesh.new()
+	pm.top_radius = 0.12
+	pm.bottom_radius = 0.2
+	pm.height = drop
+	pm.radial_segments = 8
+	pole.mesh = pm
+	pole.material_override = metal
+	pole.position.y = -drop * 0.5
+	add_child(pole)
+	var foot := MeshInstance3D.new()
+	var fm := CylinderMesh.new()
+	fm.top_radius = 0.35
+	fm.bottom_radius = 0.5
+	fm.height = 0.3
+	fm.radial_segments = 8
+	foot.mesh = fm
+	foot.material_override = metal
+	foot.position.y = -drop + 0.15
+	add_child(foot)
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var cyl := CylinderShape3D.new()
+	cyl.radius = 0.22
+	cyl.height = drop - 0.4
+	cs.shape = cyl
+	cs.position.y = -drop * 0.5 - 0.2
+	body.add_child(cs)
+	add_child(body)
 
 func _set_color(c: Color, cone_alpha: float) -> void:
 	_spot.light_color = c
