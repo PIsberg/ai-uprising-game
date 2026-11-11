@@ -18,12 +18,7 @@ extends Node3D
 ##     its deck, and nothing solid stands on range's two deck stairs.
 ##   godot --headless --path . --audio-driver Dummy res://tests/ramp_landing_probe.tscn
 
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy", "guardrails", "hivemind",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 const BUILT := ["gpt", "horde", "desert", "range"]
 const FLOOR_FOOT := 0.6 ## a ramp whose foot is under this starts on the floor
 const LAVA_CLEAR := 1.0 ## sand a floor ramp's foot needs between it and a lava bed
@@ -52,7 +47,7 @@ func _run() -> void:
 	var ramps := 0
 	var off: Array = []
 	var molten: Array = []
-	for id: String in IDS:
+	for id: String in LevelIds.all():
 		var def := LevelDefs.get_def(id)
 		if def.is_empty():
 			_check("level def %s exists" % id, false)

@@ -5,16 +5,11 @@ extends Node3D
 ## check). Prints one PASS/FAIL line per level; no screenshots (headless-safe).
 ## Run: godot --headless --path . --quit-after 4000 res://tests/campaign_nav_sweep.tscn
 
-const IDS := [
-	"01", "gpt", "gemini", "mistral", "suburb", "suburb_boss",
-	"claude", "grok", "uplink", "overseer",
-	"alien", "assembly", "sublevel", "frostbreak", "water_world", "desert",
-	"neon", "crucible", "lava_world", "titan", "archon",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 func _ready() -> void:
 	var fails := 0
-	for id in IDS:
+	for id in LevelIds.all():
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			print("SKIP %s (no scene)" % id)

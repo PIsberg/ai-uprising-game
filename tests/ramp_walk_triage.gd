@@ -25,9 +25,7 @@ extends Node
 ## a low-gravity field (not REPEATABLE on any level today).
 
 const Walker := preload("res://tests/ramp_walker.gd")
-const LEVEL_DIR := "res://scenes/levels"
-## level_custom.tscn is the shell an editor .lvl loads into: no level of its own.
-const NOT_LEVELS := ["custom"]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 const TRIES := 3 ## walks of a ramp that stopped once; REPEATABLE = stopped on all
 
@@ -48,16 +46,7 @@ func _ids() -> Array:
 ## Every level scene on disk. A hand-kept list here left out hivemind and
 ## guardrails for as long as it existed (#339).
 static func level_ids() -> Array:
-	var out: Array = []
-	for f in DirAccess.get_files_at(LEVEL_DIR):
-		# An exported build lists "level_x.tscn.remap".
-		var name := f.trim_suffix(".remap")
-		if name.begins_with("level_") and name.ends_with(".tscn"):
-			var id := name.trim_prefix("level_").trim_suffix(".tscn")
-			if not NOT_LEVELS.has(id):
-				out.append(id)
-	out.sort()
-	return out
+	return LevelIds.all()
 
 func _run() -> void:
 	for id in _ids():

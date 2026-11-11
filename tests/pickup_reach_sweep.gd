@@ -11,21 +11,28 @@ extends Node3D
 ## what the builder places (grok's tower medkit has a light mast through it).
 ##   godot --headless --path . --audio-driver Dummy res://tests/pickup_reach_sweep.tscn [-- levels=gpt,range]
 
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy", "guardrails", "hivemind",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 func _ready() -> void:
 	_run.call_deferred()
 
+## Robots do nothing while a level is measured. A VACUUM eats the supplies in
+## its reach, and a robot outlives its level here (see the teardown): by titan
+## three were loose and 2 to 7 pickups a run went uncounted, a different set
+## each run, so those were never checked (#514).
+func _robots_off() -> void:
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e.process_mode != Node.PROCESS_MODE_DISABLED:
+			e.process_mode = Node.PROCESS_MODE_DISABLED
+
 func _run() -> void:
-	var ids: Array = IDS
+	var ids: Array = LevelIds.all()
+	var list := false ## `-- list`: one PICK line per pickup seen
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("levels="):
 			ids = a.trim_prefix("levels=").split(",")
+		if a == "list":
+			list = true
 	var total := 0
 	var bad := 0
 	for id: String in ids:
@@ -33,6 +40,7 @@ func _run() -> void:
 		var lvl: Node3D = (load("res://scenes/levels/level_%s.tscn" % id) as PackedScene).instantiate()
 		add_child(lvl)
 		for i in 90:
+			_robots_off()
 			await get_tree().physics_frame
 		var def := LevelDefs.get_def(id)
 		var space := get_world_3d().direct_space_state
@@ -48,6 +56,8 @@ func _run() -> void:
 				continue
 			n += 1
 			var p: Vector3 = (node as Node3D).global_position
+			if list:
+				print("PICK %s %s %s" % [id, f.get_file().get_basename(), p.snapped(Vector3.ONE * 0.1)])
 			var why: Array = []
 			var sh := SphereShape3D.new()
 			sh.radius = 0.2
@@ -90,6 +100,11 @@ func _run() -> void:
 		print("LEVEL %s: %d pickups" % [id, n])
 		total += n
 		lvl.queue_free()
+		# Spawned robots are parented beside the level, not under it, so freeing
+		# the level leaves them in the tree for every level after it.
+		for e in get_tree().get_nodes_in_group("enemy"):
+			if not lvl.is_ancestor_of(e):
+				e.queue_free()
 		for i in 5:
 			await get_tree().physics_frame
 	print("TOTAL %d pickups, %d flagged" % [total, bad])

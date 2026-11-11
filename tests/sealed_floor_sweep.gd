@@ -9,12 +9,7 @@ extends Node3D
 ## gate for the def-level cause (two crossing "gates").
 ##   godot --headless --path . --audio-driver Dummy res://tests/sealed_floor_sweep.tscn [-- levels=mistral,gpt]
 
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy", "guardrails", "hivemind",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 const STEP := 2.0
 const MIN_CELLS := 4 ## 16 m2
 
@@ -22,7 +17,7 @@ func _ready() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	var ids: Array = IDS
+	var ids: Array = LevelIds.all()
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("levels="):
 			ids = a.trim_prefix("levels=").split(",")

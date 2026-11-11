@@ -67,6 +67,7 @@ Probe-writing rules learned the hard way:
 - Spawn a floor (`StaticBody3D`, collision layer 1) or every CharacterBody falls forever and position/range assertions lie.
 - Sample with **short timer loops** (0.25–0.3 s); one long `SceneTreeTimer` await stalls autoload `_process` ticking headless.
 - `get_tree().change_scene_*` frees the probe scene itself — run watchers from a node parented directly under root.
+- A sweep over levels takes its ids from `tests/level_ids.gd` (the scenes on disk), never a hand-kept list, and frees group `enemy` after each level: spawned robots are parented to the current scene, so they outlive the level node and act on the next one.
 
 ## Architecture
 

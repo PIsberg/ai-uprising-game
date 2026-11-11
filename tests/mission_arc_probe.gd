@@ -9,12 +9,7 @@ extends Node
 ##   objects mid-mission, reinforcement waves pour in, kill_quota counts kills.
 ##   godot --headless --path . res://tests/mission_arc_probe.tscn
 
-const LEVELS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 var _ok := true
 
@@ -55,7 +50,7 @@ func _task_id(t: Dictionary) -> String:
 	return t.get("id", "task")
 
 func _validate_defs() -> void:
-	for lid in LEVELS:
+	for lid in LevelIds.all():
 		var def := LevelDefs.get_def(lid)
 		var tasks: Array = def.get("tasks", [])
 		var fs: Vector2 = def.get("floor_size", Vector2(100, 100))
@@ -124,7 +119,7 @@ const BARE_OK := {
 }
 
 func _validate_arc_depth() -> void:
-	for lid in LEVELS:
+	for lid in LevelIds.all():
 		var objectives := 0
 		var sandbox := false
 		for t in LevelDefs.get_def(lid).get("tasks", []):
