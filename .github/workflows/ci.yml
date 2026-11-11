@@ -108,6 +108,51 @@ jobs:
           done
           exit $fail
 
+  # The real player walks up every ramp of every level, no jump and no sprint
+  # (#339). It needs --fixed-fps 60 (4 minutes locally; real time, about 16,
+  # without), which the suite runners do not pass, so it is its own job beside
+  # the suite and adds nothing to the suite's hour.
+  ramp-walk:
+    name: Ramp walk (the real player climbs every ramp)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-bin
+          curl -fsSL -o godot.zip             "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Add Godot to PATH
+        run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Import resources
+        run: godot --headless --path . --import || true
+
+      - name: Walk every ramp of every level
+        # The verdict is the RESULT line, as in tools/run_tests.sh: the log goes to
+        # a file first so no pipe stands between the run and its check.
+        run: |
+          godot --headless --path . --audio-driver Dummy --fixed-fps 60             res://tests/ramp_walk_triage.tscn > walk.log 2>&1 || true
+          grep -E "STOPPED|^WALKS|^RAMP_WALK|^RESULT|^no player|SCRIPT ERROR" walk.log || true
+          if ! grep -q "RESULT PASS" walk.log || grep -q "SCRIPT ERROR" walk.log; then
+            echo "::error::a ramp stopped the player on every try, or the walk did not finish"
+            tail -n 40 walk.log
+            exit 1
+          fi
+
   lat-check:
     name: Validate Agent Lattice (lat.md)
     runs-on: ubuntu-latest
@@ -134,7 +179,7 @@ jobs:
   # is kept off the per-push path.
   export:
     name: Export game binaries
-    needs: [verify, lat-check]
+    needs: [verify, ramp-walk, lat-check]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:

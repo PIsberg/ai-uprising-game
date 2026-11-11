@@ -13,12 +13,9 @@ extends Node3D
 ## function's comment for what the remaining residuals actually turn out to be.
 ## Run headless: godot --headless --path . --quit-after 9000 res://tests/ramp_probe.tscn
 
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy",
-]
+## Every level scene on disk, the walker's list: a list kept here by hand left
+## out hivemind and guardrails (#339).
+const Triage := preload("res://tests/ramp_walk_triage.gd")
 
 const CAPSULE_RADIUS := 0.35
 const CAPSULE_HEIGHT := 1.8
@@ -57,7 +54,7 @@ func _ready() -> void:
 	add_child(_probe)
 	await get_tree().physics_frame
 
-	for id in IDS:
+	for id in Triage.level_ids():
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			print("SKIP %s: no scene" % id)

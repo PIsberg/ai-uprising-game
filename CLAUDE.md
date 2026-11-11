@@ -19,6 +19,10 @@ godot --headless --path . --import              # (re)import assets — run once
 # tools/probes.txt; tools/check_suite_manifest.py (CI) fails if it and tests/README.md disagree
 tools/run_tests.sh
 
+# Ramp walk: the real player climbs every ramp of every level (CI job ramp-walk; ~4 min, needs
+# --fixed-fps 60 so it is not in the suite). Run it after touching ramps, stairs, towers or decks
+godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/ramp_walk_triage.tscn   # -- levels=01,gpt
+
 # Single probe — every logic probe prints "RESULT PASS" / "RESULT FAIL"
 godot --headless --path . --audio-driver Dummy res://tests/<name>_probe.tscn
 
