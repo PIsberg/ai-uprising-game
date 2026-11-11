@@ -345,6 +345,8 @@ res://tests/tower_spacing_probe.tscn
 res://tests/stairs_landing_probe.tscn
 # Every def ramp leads onto a deck: its top on a platform's edge at the platform's height.
 res://tests/ramp_landing_probe.tscn
+# The ramp walker (CI job ramp-walk, house_stairs_probe) still tells a walked ramp from a stopped one (#339).
+res://tests/ramp_walker_probe.tscn
 # No ramp runs under another with less than 1.9 m of headroom: a bridge landing on a tower roof clears its spiral (#339).
 res://tests/bridge_headroom_probe.tscn
 # HIJACK: convert, traitor targeting, burnout cleanup, the grenade burst frees itself (#408), bosses resist.

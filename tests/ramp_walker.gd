@@ -12,8 +12,13 @@ extends RefCounted
 
 const ARRIVE_XZ := 0.8
 const ARRIVE_DY := 0.35
+## A zipline station that takes the walker this close to the top (XZ) is the ramp's
+## landing: titan's SkyBridge ends in one, 1.6 m before its `to`, and the cable then
+## carried the walker 47 m off, which read as the one stop left in #339.
+const ZIP_REACH := 3.0
 
-## {ok, at: Vector3 where it ended, best_y: highest point reached}.
+## {ok, at: Vector3 where it ended, best_y: highest point reached, state, rode: true
+## when a zipline station at the top took the walker}.
 static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Dictionary:
 	var tree := player.get_tree()
 	# A ramp that ends in a zipline station (level 01's and titan's SkyBridge)
@@ -30,6 +35,7 @@ static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Diction
 	var t := 0.0
 	var best_y := player.global_position.y
 	var ok := false
+	var rode := false
 	Input.action_press("move_forward")
 	while t < budget:
 		var to_top := Vector3(to.x - player.global_position.x, 0, to.z - player.global_position.z)
@@ -49,9 +55,18 @@ static func walk(player: CharacterBody3D, from: Vector3, to: Vector3) -> Diction
 		if Vector2(p.x - to.x, p.z - to.z).length() < ARRIVE_XZ and p.y > to.y - ARRIVE_DY:
 			ok = true
 			break
+		# On a scripted zipline: the walk is over either way. It counts when the
+		# station that took the walker stands at the ramp's top, not part way up.
+		if player.get("_grappling") and is_instance_valid(player.get("_zip_anchor")):
+			rode = true
+			# Still on the ramp's line there (a rising ramp is below its top's
+			# height 3 m out), not fallen to the floor under it.
+			var along := clampf(Vector3(p.x - from.x, 0, p.z - from.z).dot(dir) / maxf(flat.length(), 0.01), 0.0, 1.0)
+			ok = Vector2(p.x - to.x, p.z - to.z).length() < ZIP_REACH and p.y > lerpf(from.y, to.y, along) - ARRIVE_DY
+			break
 	var why := _state(player)
 	Input.action_release("move_forward")
-	return {"ok": ok, "at": player.global_position, "best_y": best_y, "state": why}
+	return {"ok": ok, "at": player.global_position, "best_y": best_y, "state": why, "rode": rode}
 
 ## What could be holding the player when a walk ends: anything here other than
 ## an on-floor walk is the harness or a game system, not the ramp.

@@ -1,5 +1,6 @@
 extends Node
-## Report tool (#290): does the REAL player walk up every ramp? ramp_probe
+## CI gate (#339; a report tool until it reached zero, #290): does the REAL
+## player walk up every ramp of every level? ramp_probe
 ## sweeps a bare capsule with test_move and a copy of the step-up assist; this
 ## drives the actual Player scene instead (its own floor snapping, step-up,
 ## slope limit and collision, tests/ramp_walker.gd), so a ramp ramp_probe flags
@@ -11,24 +12,29 @@ extends Node
 ## from the first frame: a dead walker used to read as a stopped ramp.
 ##   godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/ramp_walk_triage.tscn -- levels=01,gpt
 ## Prints one WALK line per ramp (OK, or STOPPED with where it ended, how high
-## it got and what stands in front of it) and a per-level and total summary.
-## Known non-defects it reports as STOPPED: a ramp whose top lands in a zipline
-## station (titan's SkyBridge: the cable carries the player away) and a walk
-## that crosses a jump pad or a low-gravity field.
+## it got and what stands in front of it), a per-level and total summary, and
+## RESULT PASS when no ramp stopped on every try and each level had a player
+## (exit code 1 otherwise). With no `levels=` it walks every level scene on
+## disk: 256 ramps on 26 levels in 4 min 12 s with `--fixed-fps 60`, but in real
+## time without it (titan alone 13 s against 46 s), and the suite runners pass
+## no such flag. So it is not in tools/probes.txt: CI runs it as its own job
+## beside the suite (ci.yml, job ramp-walk).
+## A ramp whose top lands in a zipline station (titan's SkyBridge) counts as
+## walked when the station takes the player (ramp_walker.gd ZIP_REACH). Known
+## non-defect it can still report as STOPPED: a walk that crosses a jump pad or
+## a low-gravity field (not REPEATABLE on any level today).
 
 const Walker := preload("res://tests/ramp_walker.gd")
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy",
-]
+const LEVEL_DIR := "res://scenes/levels"
+## level_custom.tscn is the shell an editor .lvl loads into: no level of its own.
+const NOT_LEVELS := ["custom"]
 
 const TRIES := 3 ## walks of a ramp that stopped once; REPEATABLE = stopped on all
 
 var _total := 0
 var _stopped := 0
 var _repeatable := 0
+var _no_player: Array = [] ## levels that built without a player: nothing was walked
 
 func _ready() -> void:
 	_run.call_deferred()
@@ -37,7 +43,21 @@ func _ids() -> Array:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("levels="):
 			return Array(a.substr(7).split(",", false))
-	return IDS
+	return level_ids()
+
+## Every level scene on disk. A hand-kept list here left out hivemind and
+## guardrails for as long as it existed (#339).
+static func level_ids() -> Array:
+	var out: Array = []
+	for f in DirAccess.get_files_at(LEVEL_DIR):
+		# An exported build lists "level_x.tscn.remap".
+		var name := f.trim_suffix(".remap")
+		if name.begins_with("level_") and name.ends_with(".tscn"):
+			var id := name.trim_prefix("level_").trim_suffix(".tscn")
+			if not NOT_LEVELS.has(id):
+				out.append(id)
+	out.sort()
+	return out
 
 func _run() -> void:
 	for id in _ids():
@@ -66,6 +86,7 @@ func _run() -> void:
 			await get_tree().physics_frame
 		if player == null:
 			print("WALK %s: no player" % id)
+			_no_player.append(id)
 			lvl.queue_free()
 			await get_tree().process_frame
 			continue
@@ -84,7 +105,7 @@ func _run() -> void:
 			# a stop on every try counts as REPEATABLE, the ones worth fixing.
 			var r: Dictionary = await Walker.walk(player, from, to)
 			if r["ok"]:
-				print("WALK %s OK %s [%s -> %s]" % [id, body.name, from, to])
+				print("WALK %s OK%s %s [%s -> %s]" % [id, " (zipline station at the top)" if r["rode"] else "", body.name, from, to])
 				continue
 			var stops := 1
 			for k in TRIES - 1:
@@ -107,7 +128,13 @@ func _run() -> void:
 		await get_tree().process_frame
 		await get_tree().process_frame
 	print("RAMP_WALK %d ramp(s), %d stopped, %d repeatable" % [_total, _stopped, _repeatable])
-	get_tree().quit()
+	# A pass that walked nothing is not a pass: a level with no player or a
+	# renamed group would both read as zero stops.
+	var ok := _repeatable == 0 and _total > 0 and _no_player.is_empty()
+	if not _no_player.is_empty():
+		print("no player in: %s" % ", ".join(_no_player))
+	print("RESULT %s" % ("PASS" if ok else "FAIL"))
+	get_tree().quit(0 if ok else 1)
 
 ## What stands in front of the player at ankle, knee and chest height toward
 ## `to`: the collider's path, and its shape's world bounds.
