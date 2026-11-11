@@ -86,12 +86,8 @@ materials of its materialCount.
 
 ### Other robot models (`assets/models/robots/`)
 - **"RobotExpressive"** by **Tomás Laulhé** (https://www.patreon.com/quaternius), modifications by **Don McCurdy**, from the three.js examples (https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive), **CC0 1.0**: `RobotExpressive.glb`, the MAULER. The shipped file is byte-identical to that copy (git blob `6fec9cfb`).
+- **"Robot"** by **Polygonal Mind**, from the Trash Polka set of the Polygonal Mind Open Source Initiative (https://github.com/PolygonalMind/initiative-opensource-release), converted to GLB by **ToxSam** (https://github.com/ToxSam/cc0-models-Polygonal-Mind/tree/main/projects/trash-polka, listed at https://www.opensource3dassets.com as `trash-polka-022`), **CC0 1.0**: `Robot.glb`, the WAR-BOT. The file as first committed is byte-identical to `projects/trash-polka/Robot.glb` in that repository (git blob `8726a430`, 528,196 bytes); the shipped file is that mesh cut into body and legs for the walk (#435).
 - `serving_bot.glb` (the SERVER, MAITRE-D') is original to this game, built from primitives by `tools/blender/build_server.py`.
-
-### Models whose source is not identified yet (#435)
-This shipped file carries no author or licence metadata, matches no download on
-the dev machine, and has no Sketchfab model with its triangle count and look:
-`Robot.glb` (WAR-BOT; 2,578 triangles, one material `Robot`, texture `Robot_Albedo.tif`).
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via
