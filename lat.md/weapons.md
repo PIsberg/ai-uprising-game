@@ -120,6 +120,7 @@ Secondary fire (`alt_fire`: `V` or the mouse thumb button), one mode per gun in 
 
 * `CHARGE` holds up to 0.9 s for one dead-straight boosted shot (3 rounds); `VOLLEY` is an instant straight 3-round burst; `SLUG` collapses a shotgun's pellets into one heavy round.
 * `FAN` (the .50 Maelstrom) is held: `Weapon._alt_fan_logic` fires a round every `1 / (fire_rate * FAN_RATE_MULT)` s in a fixed `FAN_SPREAD_DEG` cone at `FAN_DAMAGE` of the gun's damage, and letting go costs `FAN_RECOVER` (`tests/fan_fire_probe`).
+* `DOUBLE` (the M9 Sidearm) is a tap: `_fire_volley` with `DOUBLE_ROUNDS` (2) dead-straight rounds, then `DOUBLE_REST` shot intervals of rest (`tests/double_tap_probe`).
 * `Weapon.shot_spread_deg` is the cone the round being fired flies in: `spread_now` unless an alt-fire pins it.
 * The HUD teaches it: `HUD._refresh_alt_tag` prints the held gun's mode (`WeaponData.ALT_TAGS`) and the live `alt_fire` key under the weapon name, dimmed while the magazine holds fewer than `Weapon.alt_cost` rounds, and `HUD._tick_alt_teach` toasts the mode's hint (`WeaponData.ALT_HINTS` into `GameState.MECHANIC_HINTS`) once a run, when the toast line is free (`tests/alt_tag_probe`).
 

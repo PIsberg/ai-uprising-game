@@ -10,6 +10,7 @@
 script = ExtResource("1_data")
 damage_class = 0
 display_name = "M9 Sidearm"
+alt_mode = 5
 fire_mode = 0
 damage_type = 0
 damage = 26.0

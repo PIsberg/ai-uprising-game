@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-595 probes total: **271** wired into the headless suite (`suite`), **88**
+596 probes total: **272** wired into the headless suite (`suite`), **88**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -50,7 +50,7 @@ or GPU-timing probes; `--headless` renders these black).
 | aaa_axes_probe | Batch-3 five-axis AAA gaps on a live level: warp-in telegraph before spawn, lava heat-haze curtains, per-level par time + speed bonus, wounded-grunt cover-seek fallback | headless |
 | adrenaline_probe | ADRENALINE SURGE: critical-HP hit fires heal+buff+banner, buffs collapse on end, cooldown blocks immediate re-trigger | windowed |
 | ads_zoom_probe | Holding aim (RMB) converges FOV to the weapon's ads_fov; release restores base FOV | headless |
-| alt_tag_probe | The HUD teaches alt-fire (#495), through the real player, WeaponManager and HUD: the alt tag (`HUD._refresh_alt_tag`) is hidden on the M9, names VOLLEY, SLUG, FAN and CHARGE and the bound key on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher, hides again on the M9, dims below `Weapon.alt_cost` rounds, follows a rebind (key or mouse button) and is translated; each mode's hint is toasted once the pickup toast has faded, and once only (20 checks; 14 failed before the tag existed) | suite |
+| alt_tag_probe | The HUD teaches alt-fire (#495), through the real player, WeaponManager and HUD: the alt tag (`HUD._refresh_alt_tag`) reads DOUBLE TAP on the starting M9 (its hint is the first toast), is hidden on the Longshot, names VOLLEY, SLUG, FAN and CHARGE and the bound key on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher, hides again on the Longshot, dims below `Weapon.alt_cost` rounds, follows a rebind (key or mouse button) and is translated; each mode's hint is toasted once the pickup toast has faded, and once only, five hints for five modes (22 checks; 14 of the first 20 failed before the tag existed) | suite |
 | alt_tag_shot | The alt tag in a real level: the Pulse Rifle with its first-time hint up, the Plasma Launcher's tag lit, and dim at 2 rounds | windowed |
 | aegis_probe | AEGIS shield drone on a baked floor: with two androids live it wards the one nearer the player (gold beam, bubble) and only that one; the warded android takes no damage (red-checked: without the ward check it took 200) while the other does; shooting the bubble teaches the rule once; killing the AEGIS drops the ward and the bubble and the android takes damage again; a boss-class robot is never warded; the builder knows it, the codex lists it and it is placed on a campaign level | suite |
 | ai_director_probe | Adaptive AI Director's counter logic against synthetic playstyle profiles | suite |
@@ -290,6 +290,7 @@ or GPU-timing probes; `--headless` renders these black).
 | dog_gait_probe | The DOG trots: running after a target at 9.2 m/s every paw (the GLB's paw meshes, by side, body frame) swings 0.12+ m fore and aft (0.50; 0.00 before), diagonal paws together (r 1.00) and the front pair in opposition (r -1.00); stopped, every paw back within 0.03 m of rest | suite |
 | dog_pack_probe | The K-9 HUNTER's PACK HUNT (`EnemyDog.pack_hunt`), four real dogs round a stand-in player for 14 s: only one pounce is ever under way, no dog rears until PACK_GAP after the last landing, no two pounce bites land within half a second, every dog gets a turn, and the waiting dogs run a ring round the prey (on the move, 4.5 to 10 m out on average); a lone dog rears at once, closes to bite and pounces again on its own cooldown; a dog killed while rearing does not hold the turn; ORB and ROLLER do not pack hunt (12 checks; 4 failed when every dog pounced on its own timer) | suite |
 | dog_pack_shot | Four K-9 HUNTERs on a stand-in player from above: one rearing with three on the ring, and one in the air | windowed |
+| double_tap_probe | The M9 Sidearm's alt-fire DOUBLE TAP (`WeaponData.AltMode.DOUBLE`), through the real weapon scene: one use costs 2 rounds; a tap fires exactly two, under 0.12 s apart, both dead straight from the hip and at full damage; 5 taps put 10 of 10 rounds on a 0.3 m plate at 30 m where 10 hip-fired trigger rounds land fewer; holding the button fires one pair; the trigger then waits `DOUBLE_REST` shot intervals; with one round left the tap fires nothing (11 checks; 8 failed when the M9 had no alt-fire) | suite |
 | dog_gait_shot | Side view of the DOG at four points of its trot and in the stretched pounce pose; `-- --out=<dir>` | windowed |
 | elite_probe | `Elite.maybe_apply` pre-`add_child` with a forced roll (catches the "get_node from outside tree" regression) | suite |
 | elite_marker_probe | A real elite of each affix gets a marker with its own silhouette (mesh types and sizes under `EliteMarker` all differ), and every pair of marker colours is at least 0.3 apart in RGB: the affix reads by shape for colourblind players | suite |

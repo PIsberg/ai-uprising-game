@@ -440,5 +440,7 @@ res://tests/scorch_wall_probe.tscn
 res://tests/fan_fire_probe.tscn
 # ALT TAG: the HUD names the held gun's alt-fire mode and key, dims it when the mag is short, and teaches each mode once.
 res://tests/alt_tag_probe.tscn
+# DOUBLE TAP: the M9 alt-fire is two dead-straight rounds for 2 from the mag, then a breather.
+res://tests/double_tap_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn

@@ -7,7 +7,7 @@ enum DamageType { HITSCAN, PROJECTILE }
 ## shot (3 ammo). VOLLEY: instant tight 3-round burst (3 ammo). SLUG: collapse
 ## all pellets into one accurate heavy slug (shotguns). FAN: hold to fan the
 ## hammer, emptying the cylinder fast and wide (revolvers).
-enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN }
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE }
 ## What the round does to plating: DamageMatrix.TABLE scales every hit by this
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
@@ -28,12 +28,14 @@ const ALT_TAGS := {
 	AltMode.VOLLEY: "ALT: VOLLEY",
 	AltMode.SLUG: "ALT: SLUG",
 	AltMode.FAN: "ALT: FAN",
+	AltMode.DOUBLE: "ALT: DOUBLE TAP",
 }
 const ALT_HINTS := {
 	AltMode.CHARGE: "alt_charge",
 	AltMode.VOLLEY: "alt_volley",
 	AltMode.SLUG: "alt_slug",
 	AltMode.FAN: "alt_fan",
+	AltMode.DOUBLE: "alt_double",
 }
 @export var damage_class: DamageClass = DamageClass.KINETIC
 
