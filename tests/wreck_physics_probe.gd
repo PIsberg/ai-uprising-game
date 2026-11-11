@@ -55,7 +55,8 @@ func _tilt_deg(t: Transform3D) -> float:
 	return rad_to_deg(t.basis.orthonormalized().y.angle_to(Vector3.UP))
 
 ## The wreck's transform when its WreckBody settles (asleep after 1 s, or the
-## 2.2 s tumble cap) and freezes, just before the sink. Waited on the physics
+## 2.2 s tumble cap, later if it is still falling then) and freezes, just
+## before the sink. Waited on the physics
 ## timeline, up to 5 game seconds. Empty if it never settles.
 ##
 ## It used to sample the robot every 0.1 s of process time for 3 s and want two
@@ -115,6 +116,22 @@ func _run() -> void:
 			_check("%s wreck comes to rest" % scene, false)
 		wrecks.append(w)
 		await _wait(0.5)
+
+	# 2b. Still falling when the tumble cap comes up. From 60 m the wreck is
+	# still in the air at the 2.2 s cap (gravity is 24): it used to freeze
+	# 9.96 m up and sink there. The same thing, 1.84 m up, is what failed the reaper's catwalk
+	# case on CI now and then: it teetered on the edge and went over late.
+	shooter.global_position = Vector3(32, 60, 40)
+	var high := await _spawn("gunner", Vector3(40, 60, 40), shooter)
+	_kill(high, shooter)
+	var rh := await _rest(high)
+	if not rh.is_empty():
+		var hy: float = (rh[0] as Transform3D).origin.y
+		_check("a wreck still falling at the tumble cap lands before it settles", hy < 1.5 and hy > -0.6, "rests at y %.2f after a 60 m drop" % hy)
+	else:
+		_check("the 60 m wreck comes to rest", false)
+	wrecks.append(high)
+	await _wait(0.5)
 
 	# 3. Cleaned up.
 	await _wait(5.0)

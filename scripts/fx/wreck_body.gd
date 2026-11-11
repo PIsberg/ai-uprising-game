@@ -19,6 +19,13 @@ extends RigidBody3D
 signal settled
 
 const SETTLE_TIME := 2.2 ## Tumble this long (or until asleep) before the sink.
+## A wreck still moving faster than MOVING at SETTLE_TIME is falling or sliding,
+## not rocking: it keeps going until it slows, or HARD_CAP. Frozen on the dot it
+## hung in the air and sank there: a flyer shot down from about 60 m, or a robot
+## that teetered on a catwalk edge and went over late (the REAPER, 1.84 m up,
+## which failed tests/wreck_physics_probe on CI about one run in several).
+const MOVING := 1.5      ## m/s
+const HARD_CAP := 4.5    ## s; a fall of some 240 m at the project's gravity of 24
 const MIN_TIME := 1.0    ## Never settle sooner, even if it lands asleep.
 const PUSH := 3.4        ## m/s along the shot.
 const LIFT := 1.2        ## m/s up, so it clears a lip instead of scraping.
@@ -88,7 +95,8 @@ func _physics_process(delta: float) -> void:
 		follower.queue_free()
 		queue_free()
 		return
-	if _t >= SETTLE_TIME or (_t >= MIN_TIME and sleeping):
+	var capped := _t >= SETTLE_TIME and (linear_velocity.length() < MOVING or _t >= HARD_CAP)
+	if capped or (_t >= MIN_TIME and sleeping):
 		set_physics_process(false)
 		freeze = true
 		settled.emit()
