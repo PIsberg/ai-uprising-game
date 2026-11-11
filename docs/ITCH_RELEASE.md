@@ -38,6 +38,9 @@ Both desktop presets already **embed the PCK** (one self-contained file) and
       in a game, and list it in `CREDITS.md` with author + source + license. If any is
       "personal use only" or unclear, **remove it or replace it** before publishing.
       (The CC0 Quaternius/Kenney assets already in the repo are fine.)
+      `python tools/check_licences.py` (CI) fails on a CREDITS.md section with no
+      licence. The free build may carry the one CC-BY-NC model; a paid tier or
+      pay-what-you-want may not: run it with `--commercial` first (#406).
 - [ ] **Music/audio** — same check. Procedural SFX you generate is fine; any recorded
       samples under `assets/audio/samples/` need a redistributable license.
 - [ ] `config/version` in `project.godot` matches the version you're publishing (currently `1.0.0`).

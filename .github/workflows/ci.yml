@@ -77,6 +77,13 @@ jobs:
       - name: Check every tracked README still is referenced (capture tools write to gitignored folders)
         run: python3 tools/check_screenshot_refs.py
 
+      - name: Check every third-party asset section in CREDITS.md states a licence
+        # A paid build must also pass `--commercial` (it fails today on the
+        # HOWITZER's CC-BY-NC model, #406): add that to any job that sells one.
+        run: |
+          python3 tools/check_licences.py --self-test
+          python3 tools/check_licences.py
+
       - name: Check the imported assets a release ships stay inside the size budget
         run: python3 tools/check_import_budget.py
 
@@ -259,7 +266,8 @@ jobs:
   #   - repository SECRET    BUTLER_API_KEY (itch.io -> Settings -> API keys)
   # The "linux"/"windows" channel names map to itch.io platform tags.
   # Steam: once a Steamworks app exists (paid registration + appid/depots),
-  # add a sibling job here that pushes the same build/ dirs via steamcmd.
+  # add a sibling job here that pushes the same build/ dirs via steamcmd. It
+  # must run `python3 tools/check_licences.py --commercial` first (#406).
   publish-itch:
     name: Publish to itch.io
     needs: export

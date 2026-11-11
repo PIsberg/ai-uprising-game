@@ -26,6 +26,9 @@ godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/ramp_w
 # Single probe — every logic probe prints "RESULT PASS" / "RESULT FAIL"
 godot --headless --path . --audio-driver Dummy res://tests/<name>_probe.tscn
 
+# Licence audit of CREDITS.md (CI). --commercial also fails on anything a paid build may not carry
+python tools/check_licences.py      # run with --commercial before any build that is sold (#406)
+
 # Release build (Windows + Linux single-file binaries into build/)
 pwsh tools/build_release.ps1        # needs 4.7 export templates; -InstallTemplates downloads them
 

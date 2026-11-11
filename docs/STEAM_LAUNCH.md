@@ -139,6 +139,11 @@ platform-specific GDExtension binary that has to match your Godot build):
 
 ## Pre-launch checklist
 
+- [ ] `python tools/check_licences.py --commercial` passes. Today it fails: the
+      HOWITZER's `walking_robot_gun.glb` is CC-BY-NC 4.0, which forbids a paid
+      build (#406: replace the model or get the author's permission). It also
+      warns about the two Sketchfab Standard models (#517): read those terms
+      before selling.
 - [ ] `pwsh tools/build_release.ps1` succeeds; both binaries boot to the menu.
 - [ ] App ID + both Depot IDs filled into `tools/steam/app_build.vdf`.
 - [ ] Build uploaded via steamcmd and **set live** on `default`.

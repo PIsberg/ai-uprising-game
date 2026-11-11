@@ -71,7 +71,7 @@ Blender and lost it, from the downloaded original that the shipped file's nodes 
 - **"Robot arm wip 2"** by **3DHaupt** (https://sketchfab.com/3d-models/robot-arm-wip-2-cb006bfafc20421f9f6f674f127f918b), **CC-BY 4.0**: `robot_arm_wip_2.glb`, the MANUS boss.
 - **"Rusty Humanoid Robot With Claws"** by **Pigcraft** (https://sketchfab.com/3d-models/rusty-humanoid-robot-with-claws-6bb359bacbd046c5b7bc766b8c0e1933), **CC-BY 4.0**: `rusty_claws_robot.glb`, the BEHEMOTH-X boss.
 - **"Another Robot"** by **Lagst** (https://sketchfab.com/3d-models/another-robot-b5187425ddb14676a93ab21f050e0e6f), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `another_robot.glb`, the REAPER.
-- **"Walking Robot Gun"** by **zebra_pozer** (https://sketchfab.com/3d-models/walking-robot-gun-6be6c93c4d954d97be7072adc34926fb), **CC-BY-NC 4.0 (non-commercial)**: `walking_robot_gun.glb`, the HOWITZER. See issue #406: the non-commercial clause limits how the game may be distributed.
+- **"Walking Robot Gun"** by **zebra_pozer** (https://sketchfab.com/3d-models/walking-robot-gun-6be6c93c4d954d97be7072adc34926fb), **CC-BY-NC 4.0 (non-commercial)**: `walking_robot_gun.glb`, the HOWITZER. See issue #406: the non-commercial clause limits how the game may be distributed (`python tools/check_licences.py --commercial` fails on it).
 
 The next five lost their metadata on re-export and no original was left on the dev
 machine. Each was matched through the Sketchfab API on its triangle count and
