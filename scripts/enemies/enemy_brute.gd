@@ -15,7 +15,9 @@ extends EnemyBase
 ## the line it is facing at RUSH_SPEED for up to RUSH_TIME. Stand still and you
 ## are bashed. Step aside and it runs past: into a wall it is stunned for
 ## RUSH_STUN, onto open floor it stumbles for RUSH_MISS_OPEN, and either way the
-## shield hangs open (no block at all) until it recovers. It keeps its footing:
+## shield hangs open (no block at all) until it recovers. The first tell of a
+## run aimed at the player toasts the counter (MECHANIC_HINTS "shield_rush").
+## It keeps its footing:
 ## the run stops (as a miss) RUSH_LOOK short of a drop, of the navmesh's edge
 ## (how lava and water are carved) or of a hazard bed. Covered by
 ## tests/brute_rush_probe.
@@ -314,6 +316,10 @@ func _tick_rush(delta: float) -> bool:
 				if d >= RUSH_MIN and d <= RUSH_MAX and _can_see(target):
 					rush = Rush.TELL
 					_rush_t = RUSH_TELL
+					# The glow and the growl say something is coming, not what to
+					# do about it: the first one aimed at the player says so.
+					if target.is_in_group("player"):
+						GameState.teach_once("shield_rush", GameState.MECHANIC_HINTS["shield_rush"])
 					AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.45) # a lower, longer growl than the slam's
 			return false
 		Rush.TELL:
