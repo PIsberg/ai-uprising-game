@@ -237,7 +237,7 @@ func _ready() -> void:
 	GameState.objective_blocked.connect(_show_toast)
 	# One-off coaching toasts (elite affixes, hazards), translated here like the
 	# skirmish toasts: they reached the toast as English keys until #317.
-	GameState.teach_hint.connect(func(text: String) -> void: _show_toast(tr(text)))
+	GameState.teach_hint.connect(func(text: String) -> void: _show_toast(fill_keys(tr(text))))
 	GameState.checkpoint_set.connect(func(): _show_toast("⚑ CHECKPOINT"))
 	# OVERLORD LOCKOUT: say why the trigger went dead (the dry click alone reads as ammo).
 	AIDirector.lockout_started.connect(func(gun: String) -> void: _show_toast("⚠ OVERLORD LOCKOUT  %s JAMMED" % gun))
@@ -2095,7 +2095,8 @@ func _refresh_ammo_visual(reserve: int) -> void:
 
 ## The alt-fire tag: "ALT: CHARGE  [V]" under the weapon name while the held
 ## gun has an alt mode, hidden on a gun without one. The key is read from the
-## live binding, so a rebind shows. It dims while the magazine holds fewer
+## live binding, so a rebind shows, and with a gamepad in use it is the pad
+## button (action_key). It dims while the magazine holds fewer
 ## rounds than one use costs (Weapon.alt_cost).
 func _refresh_alt_tag() -> void:
 	if _alt_tag == null:
@@ -2109,20 +2110,73 @@ func _refresh_alt_tag() -> void:
 	var ready := w.mag >= w.alt_cost()
 	_alt_tag.modulate = Color(_reticle_base.r, _reticle_base.g, _reticle_base.b, 0.95) if ready else Color(1, 1, 1, 0.32)
 
-## The key the alt-fire is on, as the tag prints it: the first keyboard key
-## bound to "alt_fire", else its first mouse button, else "?".
+## The key the alt-fire is on, as the tag prints it.
 static func alt_fire_key() -> String:
-	if not InputMap.has_action("alt_fire"):
-		return "V" # WeaponManager registers it on _ready; this is its default
+	return action_key("alt_fire", "V") # WeaponManager registers it on _ready; V is its default
+
+## True once the last button pressed was on a gamepad (set in _input): the tag
+## and the hints then name pad buttons.
+static var pad_active := false
+const PAD_NAMES := {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB",
+	JOY_BUTTON_LEFT_STICK: "L3", JOY_BUTTON_RIGHT_STICK: "R3",
+	JOY_BUTTON_DPAD_UP: "D-PAD UP", JOY_BUTTON_DPAD_DOWN: "D-PAD DOWN",
+	JOY_BUTTON_DPAD_LEFT: "D-PAD LEFT", JOY_BUTTON_DPAD_RIGHT: "D-PAD RIGHT",
+	JOY_BUTTON_BACK: "BACK", JOY_BUTTON_START: "START",
+}
+
+## What `action` is bound to, as the HUD prints it. With a gamepad in use, its
+## first pad button; otherwise its first keyboard key, else its first mouse
+## button. `fallback` when the action is not registered yet or has nothing a
+## name can be given to.
+static func action_key(action: String, fallback: String = "?") -> String:
+	if not InputMap.has_action(action):
+		return fallback
+	var key := ""
 	var mouse := ""
-	for e in InputMap.action_get_events("alt_fire"):
-		if e is InputEventKey:
+	var pad := ""
+	for e in InputMap.action_get_events(action):
+		if e is InputEventKey and key == "":
 			var k := e as InputEventKey
 			var code: int = k.physical_keycode if k.physical_keycode != 0 else k.keycode
-			return OS.get_keycode_string(code).to_upper()
-		if e is InputEventMouseButton and mouse == "":
+			key = OS.get_keycode_string(code).to_upper()
+		elif e is InputEventMouseButton and mouse == "":
 			mouse = "MOUSE %d" % (e as InputEventMouseButton).button_index
+		elif e is InputEventJoypadButton and pad == "":
+			pad = String(PAD_NAMES.get((e as InputEventJoypadButton).button_index, ""))
+	if pad_active and pad != "":
+		return pad
+	if key != "":
+		return key
 	return mouse if mouse != "" else "?"
+
+## The bracketed keys a hint may name, and the action each stands for. Hint
+## text is a translation key, so it is written with the default key and every
+## language keeps the token (tools/check_strings_csv.py); fill_keys swaps in
+## the live binding after tr(), so a rebind or a gamepad shows (#504).
+const KEY_TOKENS := {"[V]": "alt_fire", "[E]": "interact", "[N]": "night_vision", "[T]": "adversarial_patch", "[X]": "ultimate"}
+static func fill_keys(text: String) -> String:
+	var tokens: Array = KEY_TOKENS.keys()
+	# Two passes, so a key that reads like another token is not swapped twice.
+	for i in tokens.size():
+		text = text.replace(String(tokens[i]), "\u0001%d\u0001" % i)
+	for i in tokens.size():
+		var tok := String(tokens[i])
+		text = text.replace("\u0001%d\u0001" % i, "[%s]" % action_key(String(KEY_TOKENS[tok]), tok.substr(1, tok.length() - 2)))
+	return text
+
+## Keyboard or gamepad: whichever a button was last pressed on. Stick and
+## mouse movement do not count (a drifting stick would flip it every frame).
+func _input(event: InputEvent) -> void:
+	var now := pad_active
+	if event is InputEventJoypadButton and event.is_pressed():
+		now = true
+	elif (event is InputEventKey or event is InputEventMouseButton) and event.is_pressed():
+		now = false
+	if now != pad_active:
+		pad_active = now
+		_refresh_alt_tag()
 
 ## The first-time hint for the held gun's alt mode waits here until no other
 ## toast is showing: a pickup's "WEAPON ACQUIRED" lands in the same frame as

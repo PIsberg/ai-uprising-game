@@ -116,13 +116,14 @@ The gun charges up with the RAMPAGE kill streak (`Weapon._on_rampage_changed`, o
 * Every viewmodel mesh outside the muzzle subtree (`rim_meshes()`) wears `assets/materials/rampage_rim.tres` (`shaders/rampage_rim.gdshader`, a pulsing fresnel rim) as `material_overlay`; tier 0 takes it off. `tests/weapon_rampage_probe`.
 
 ## Alt-Fire
-Secondary fire (`alt_fire`: `V` or the mouse thumb button), one mode per gun in `WeaponData.alt_mode`, driven each frame by `Weapon.try_alt_fire`.
+Secondary fire (`alt_fire`: `V`, the mouse thumb button, or BACK/View on a gamepad), one mode per gun in `WeaponData.alt_mode`, driven each frame by `Weapon.try_alt_fire`.
 
 * `CHARGE` holds up to 0.9 s for one dead-straight boosted shot (3 rounds); `VOLLEY` is an instant straight 3-round burst; `SLUG` collapses a shotgun's pellets into one heavy round.
 * `FAN` (the .50 Maelstrom) is held: `Weapon._alt_fan_logic` fires a round every `1 / (fire_rate * FAN_RATE_MULT)` s in a fixed `FAN_SPREAD_DEG` cone at `FAN_DAMAGE` of the gun's damage, and letting go costs `FAN_RECOVER` (`tests/fan_fire_probe`).
 * `DOUBLE` (the M9 Sidearm) is a tap: `_fire_volley` with `DOUBLE_ROUNDS` (2) dead-straight rounds, then `DOUBLE_REST` shot intervals of rest (`tests/double_tap_probe`).
 * `Weapon.shot_spread_deg` is the cone the round being fired flies in: `spread_now` unless an alt-fire pins it.
 * The HUD teaches it: `HUD._refresh_alt_tag` prints the held gun's mode (`WeaponData.ALT_TAGS`) and the live `alt_fire` key under the weapon name, dimmed while the magazine holds fewer than `Weapon.alt_cost` rounds, and `HUD._tick_alt_teach` toasts the mode's hint (`WeaponData.ALT_HINTS` into `GameState.MECHANIC_HINTS`) once a run, when the toast line is free (`tests/alt_tag_probe`).
+* Hints name the live binding: hint text is the translation key, written with the default key (`[V]`), and `HUD.fill_keys` swaps in `HUD.action_key` for every token in `HUD.KEY_TOKENS` (`[V]`, `[E]`, `[N]`, `[T]`, `[X]`) after `tr()`. Once a pad button is pressed (`HUD.pad_active`) the tag and the hints name the pad button instead. `tools/check_strings_csv.py` fails a translation that drops a token.
 
 ## Grenades
 Defines the physics layers and player-bound scripts for throwing grenades.

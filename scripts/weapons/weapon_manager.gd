@@ -292,7 +292,8 @@ func _toss_salvage(w: Weapon, rearm: bool) -> void:
 	else:
 		current_index = weapons.find(back)
 
-## Registers the alt-fire action (V + mouse thumb button) at runtime, same
+## Registers the alt-fire action (V + mouse thumb button + pad BACK/View, the one
+## pad button no other action had) at runtime, same
 ## pattern as the player's dash — no project input-map edit needed.
 func _register_alt_fire_action() -> void:
 	if InputMap.has_action("alt_fire"):
@@ -304,6 +305,9 @@ func _register_alt_fire_action() -> void:
 	var mb := InputEventMouseButton.new()
 	mb.button_index = MOUSE_BUTTON_XBUTTON1
 	InputMap.action_add_event("alt_fire", mb)
+	var pad := InputEventJoypadButton.new()
+	pad.button_index = JOY_BUTTON_BACK
+	InputMap.action_add_event("alt_fire", pad)
 
 ## Watchdog for the recurring "I shoot / get shot and lose my weapons" report.
 ##

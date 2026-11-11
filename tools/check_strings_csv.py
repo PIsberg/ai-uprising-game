@@ -9,6 +9,11 @@ intro comic's "For years, the machines served us." never translated, and the
 Fails (exit 1) on any row whose column count differs from the header, any key
 that differs from its `en` cell, and any duplicate key.
 
+Also fails on any translation that drops a key token its English text names
+(`[V]`, `[E]`, ...: HUD.KEY_TOKENS in scripts/ui/hud.gd). The HUD swaps the
+live binding in for the token after tr() (HUD.fill_keys, #504), so a cell
+that spells the key another way shows the default key after a rebind.
+
 Also fails on any task, wave or firewall `"label"` authored in
 scripts/levels/level_defs.gd, or any default label the builder and task objects
 fall back to, that has no row: the HUD passes them through tr(), which returns
@@ -209,6 +214,13 @@ def skirmish_toasts() -> dict:
     return out
 
 
+def key_tokens() -> list:
+    """The bracketed keys HUD.fill_keys replaces, read from HUD.KEY_TOKENS."""
+    with open(os.path.join(ROOT, "scripts", "ui", "hud.gd"), encoding="utf-8") as f:
+        m = re.search(r"const KEY_TOKENS := \{(.*?)\}", f.read(), re.S)
+    return re.findall(r'"(\[[^"\]]+\])"\s*:', m.group(1)) if m else []
+
+
 def main() -> int:
     # The hints carry symbols (◆ ✦ ☠) a Windows cp1252 console cannot print.
     if hasattr(sys.stdout, "reconfigure"):
@@ -219,6 +231,9 @@ def main() -> int:
     en = header.index("en")
     errors = []
     seen = {}
+    tokens = key_tokens()
+    if not tokens:
+        errors.append("HUD.KEY_TOKENS not found in scripts/ui/hud.gd: the key-token check cannot run")
     for line, row in enumerate(rows[1:], start=2):
         if not row:
             continue
@@ -228,6 +243,12 @@ def main() -> int:
             continue
         if row[0] != row[en]:
             errors.append("line %d: key %r differs from its en cell %r" % (line, row[0], row[en]))
+        for tok in tokens:
+            if tok in row[en]:
+                for col, cell in enumerate(row):
+                    if col != 0 and cell and tok not in cell:
+                        errors.append("line %d: %s drops the key token %s of %r"
+                                      % (line, header[col], tok, row[0][:50]))
         if row[0] in seen:
             errors.append("line %d: duplicate key %r (first on line %d)" % (line, row[0], seen[row[0]]))
         seen[row[0]] = line
