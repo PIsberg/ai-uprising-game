@@ -303,7 +303,7 @@ func _factory_default_events(action: String) -> Array:
 		"grapple": return [_key(KEY_C), _joy_btn(JOY_BUTTON_LEFT_SHOULDER)]
 		"fire": return [_mouse_btn(MOUSE_BUTTON_LEFT), _joy_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)]
 		"aim": return [_mouse_btn(MOUSE_BUTTON_RIGHT), _joy_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)]
-		"alt_fire": return [_key(KEY_V), _mouse_btn(MOUSE_BUTTON_XBUTTON1)]
+		"alt_fire": return [_key(KEY_V), _mouse_btn(MOUSE_BUTTON_XBUTTON1), _joy_btn(JOY_BUTTON_BACK)]
 		"reload": return [_key(KEY_R), _joy_btn(JOY_BUTTON_X)]
 		"interact": return [_key(KEY_E), _joy_btn(JOY_BUTTON_X)]
 		"grenade": return [_key(KEY_G), _joy_btn(JOY_BUTTON_Y)]
