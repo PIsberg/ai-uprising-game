@@ -109,6 +109,8 @@ res://tests/escort_probe.tscn
 res://tests/haul_probe.tscn
 # Every campaign objective and weapon pickup stays where authored (no burial nudge).
 res://tests/task_reach_probe.tscn
+# The six pickups with no navmesh route (lift, grapple, jump, roof step) are reached by the real player (#498).
+res://tests/pickup_route_probe.tscn
 # No two crossing route gates wall a quadrant off: a gate stops at an earlier gate that crosses it, and the route still threads every gap.
 res://tests/sealed_floor_probe.tscn
 # POCKET CACHES: every dead-end pocket behind crossing gates holds a supply, two crates and a strip, reachable from the spawn.

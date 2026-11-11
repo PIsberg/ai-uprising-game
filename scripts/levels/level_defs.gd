@@ -1133,6 +1133,8 @@ static func _nexus() -> Dictionary:
 		# ramp — the only way up is the grapple (C). Teaches the tool early.
 		"extra_weapons": [
 			# was the CL-3 Arc Coil (rank 6 of 13) — on the FIRST level. The Breacher (rank 3) is the right reward for this rooftop.
+			# Route: the grapple, fired at the GRAPPLE PAD's lip from the street
+			# (no ramp by design; tests/pickup_route_probe winches the player up, #498).
 			{"scene": "res://scenes/weapons/shotgun.tscn", "pos": Vector3(16, 6.1, -16), "color": Color(1.0, 0.82, 0.3)},
 		],
 	}
@@ -4769,7 +4771,7 @@ static func _gemini() -> Dictionary:
 		],
 		"pickups": [
 			{"type": "health", "pos": Vector3(-18, 0, -14)},
-			{"type": "ammo", "pos": Vector3(-2, 1.05, 0)},
+			{"type": "ammo", "pos": Vector3(-2, 1.05, 0)}, # on the 1 m centre dais: its own navmesh island, but the player walks up (pickup_route_probe, #498)
 			{"type": "ammo", "pos": Vector3(16, 0, -16)},
 			{"type": "health", "pos": Vector3(18, 0, 6)},
 			{"type": "ammo", "pos": Vector3(-14, 0, 16)},
@@ -6212,7 +6214,7 @@ static func _lava_world() -> Dictionary:
 		"pickups": [
 			{"kind": "health", "pos": Vector3(3.3, 1.7, 3.3)},
 			{"kind": "ammo", "pos": Vector3(14, 1.7, -15)},
-			{"kind": "overclock", "pos": Vector3(7, 8.1, -16.6)}, # ladle gantry: the lift ride's reward
+			{"kind": "overclock", "pos": Vector3(7, 8.1, -16.6)}, # ladle gantry: the lift ride's reward (pickup_route_probe rides it, #498)
 			{"kind": "ammo", "pos": Vector3(-7, 1.7, 11)},
 			# Loop rewards on the new islands (kind-style like the rest).
 			{"kind": "health", "pos": Vector3(-21, 1.7, 22)},
@@ -6517,7 +6519,7 @@ static func _water_world() -> Dictionary:
 			{"kind": "health", "pos": Vector3(-16, 3.5, 0)},   # west lookout
 			{"kind": "ammo", "pos": Vector3(2, 1.7, -21)},     # PUMP A
 			{"kind": "ammo", "pos": Vector3(19, 1.7, 2)},      # PUMP B
-			{"kind": "health", "pos": Vector3(21.5, 8.1, 7.0)}, # pump crane cab, up the lift
+			{"kind": "health", "pos": Vector3(21.5, 8.1, 7.0)}, # pump crane cab, up the lift (pickup_route_probe rides it, #498)
 			{"kind": "health", "pos": Vector3(-21, 1.7, 21)},  # PUMP C
 			{"kind": "ammo", "pos": Vector3(-19, 1.7, 19)},    # PUMP C
 			{"kind": "ammo", "pos": Vector3(10, 1.7, 10)},     # ring SE corner

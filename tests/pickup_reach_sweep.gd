@@ -4,7 +4,9 @@ extends Node3D
 ## Prints one BAD line per pickup that is inside something solid, has nothing
 ## within 1 m under it, lies in a lava bed, is more than 1.2 m off the navmesh,
 ## or has no navmesh route from the spawn. That last one is only a lead for a
-## pickup up a tower, a lift or a jump: the navmesh does not follow those.
+## pickup up a tower, a lift or a jump: the navmesh does not follow those. The
+## six it flags today are walked by the real player in tests/pickup_route_probe
+## (suite); a new one belongs in that probe's SPOTS with its route.
 ## tests/task_reach_probe is the gate for def supplies and guns; this also sees
 ## what the builder places (grok's tower medkit has a light mast through it).
 ##   godot --headless --path . --audio-driver Dummy res://tests/pickup_reach_sweep.tscn [-- levels=gpt,range]
