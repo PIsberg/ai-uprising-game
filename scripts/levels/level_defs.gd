@@ -22,7 +22,7 @@ static func get_def(id: String) -> Dictionary:
 	# the convoy's ConvoyRide (truck path, platforms, highway scenery) lives in
 	# world units, and blanket-scaling only the def half tore the level apart:
 	# the exit portal landed 74 m past where the truck parks.
-	return _with_pocket_caches(_scaled(def, def.get("world_scale", WORLD_SCALE)))
+	return _with_pocket_caches(_scaled(def, def.get("world_scale", WORLD_SCALE)), id)
 
 ## How far gate `idx` of def "gates" runs along its own length: (lo, hi) on
 ## the axis it does not block. A gate spans the floor, but it stops at the
@@ -115,19 +115,54 @@ static func gate_pockets(def: Dictionary) -> Array:
 ## entries carry "pocket": true. `"pocket_caches": false` on a def opts out.
 ## Before gate_span that floor was sealed, so no level authored anything for
 ## it (#507). tests/pocket_cache_probe.
+##
+## Pockets are not all alike (pocket_plan), so walking into one is a guess:
+##   "cache"  the supply, as above;
+##   "bait"   a honeypot stands in for the supply (shoot it and it drops the
+##            real one; walk into it and a squad warps in);
+##   "guard"  both supplies, and a sentry turret beside them: hack it or
+##            break it for the double haul.
 const POCKET_KINDS := ["ammo", "health"]
 const POCKET_STRIP := Color(1.0, 0.72, 0.28)
 const POCKET_SIDESTEP := 3.5
-static func _with_pocket_caches(def: Dictionary) -> Dictionary:
+## A pocket this large has room for a sentry's 24 m reach to matter.
+const POCKET_GUARD_AREA := 400.0
+## The campaign levels that teach each mechanic: no pocket uses one on or
+## before the level that introduces it.
+const POCKET_BAIT_AFTER := "mistral"
+const POCKET_GUARD_AFTER := "grok"
+
+## One kind per pocket of `def`, in gate_pockets order, for the level `id`.
+## A level outside the campaign order (a custom .lvl, range, horde) gets
+## plain caches.
+static func pocket_plan(def: Dictionary, id: String) -> Array:
+	var order: Array = []
+	for c: Dictionary in CHAPTERS:
+		order.append_array(c["ids"])
+	var at := order.find(id)
+	var out: Array = []
+	var pockets := gate_pockets(def)
+	for i in pockets.size():
+		var r: Rect2 = pockets[i]
+		if at > order.find(POCKET_GUARD_AFTER) and at >= 0 and r.get_area() >= POCKET_GUARD_AREA:
+			out.append("guard")
+		elif at > order.find(POCKET_BAIT_AFTER) and at >= 0 and i == 1:
+			out.append("bait")
+		else:
+			out.append("cache")
+	return out
+
+static func _with_pocket_caches(def: Dictionary, id: String = "") -> Dictionary:
 	if def.is_empty() or not def.get("pocket_caches", true):
 		return def
 	var pockets := gate_pockets(def)
 	if pockets.is_empty():
 		return def
 	def = def.duplicate(true)
-	for key in ["pickups", "props", "accents"]:
+	for key in ["pickups", "props", "accents", "honeypots", "turrets"]:
 		if not def.has(key):
 			def[key] = []
+	var plan := pocket_plan(def, id)
 	for i in pockets.size():
 		var r: Rect2 = pockets[i]
 		var c := r.get_center()
@@ -143,7 +178,16 @@ static func _with_pocket_caches(def: Dictionary) -> Dictionary:
 				var room := (r.size.x if long_x else r.size.y) * 0.5 - 1.0
 				at += along * minf(POCKET_SIDESTEP, room)
 				break
-		def["pickups"].append({"type": POCKET_KINDS[i % POCKET_KINDS.size()], "pos": at, "pocket": true})
+		var supply: String = POCKET_KINDS[i % POCKET_KINDS.size()]
+		match String(plan[i]):
+			"bait":
+				def["honeypots"].append({"kind": supply, "pos": at, "pocket": true})
+			"guard":
+				def["pickups"].append({"type": supply, "pos": at, "pocket": true})
+				def["pickups"].append({"type": POCKET_KINDS[(i + 1) % POCKET_KINDS.size()], "pos": at - across * 2.0, "pocket": true})
+				def["turrets"].append({"pos": at + across * 3.5, "pocket": true})
+			_:
+				def["pickups"].append({"type": supply, "pos": at, "pocket": true})
 		def["props"].append({"type": "crate", "pos": at + along * 2.6, "pocket": true})
 		def["props"].append({"type": "crate", "pos": at - along * 2.2 + across * 1.8, "pocket": true})
 		def["accents"].append({"pos": Vector3(c.x, 0.05, c.y), "size": Vector3(r.size.x, 0.1, 0.35) if long_x else Vector3(0.35, 0.1, r.size.y),

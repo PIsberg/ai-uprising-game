@@ -1,16 +1,21 @@
 extends Node3D
 ## Windowed: photographs floor that two crossing route gates used to wall off
-## (#500), now open (LevelBuilder.gate_span). Two frames into user://:
+## (#500), now open (LevelBuilder.gate_span). Four frames into user://:
 ## mistral's north-east corner seen from the spawn strip, where the east
 ## bulkhead used to run on to the north wall (sealed_floor_mistral.png), and
 ## gemini's east strip seen from the middle band (sealed_floor_gemini.png).
 ## Each frame is aimed at the pocket's cache (LevelDefs._with_pocket_caches):
-## a supply, two crates and the amber floor strip.
+## a supply, two crates and the amber floor strip. Then the two other kinds
+## of pocket (#507): titan's GUARDED corner, a sentry beside both supplies
+## (sealed_floor_titan.png), and claude's BAITED middle pocket, a honeypot
+## where the supply would be (sealed_floor_claude.png).
 ##   godot --path . res://tests/sealed_floor_shot.tscn
 
 const SHOTS := [
 	["mistral", Vector3(27, 2.6, -42), Vector3(39, 0.6, -39)],
 	["gemini", Vector3(33, 2.6, 6), Vector3(42, 0.6, -1)],
+	["titan", Vector3(59, 2.6, -59), Vector3(68.6, 0.8, -67)],
+	["claude", Vector3(33.5, 2.4, -15.5), Vector3(35.7, 0.6, -22.4)],
 ]
 
 func _ready() -> void:
