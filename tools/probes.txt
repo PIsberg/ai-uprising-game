@@ -117,6 +117,8 @@ res://tests/pocket_cache_probe.tscn
 res://tests/i18n_label_probe.tscn
 # The HDRI skies ship VRAM-compressed (2 MB, not 8) without losing their HDR sun.
 res://tests/sky_hdri_probe.tscn
+# No imported model stores the same texture twice: the importer copies one per material without the post-import script (#56).
+res://tests/shared_textures_probe.tscn
 # The per-tick CPU clock reads a typical tick, not the worst tick of each second.
 res://tests/tick_clock_probe.tscn
 # SoundSynth synthesizes off the main thread; every stream still resolves at once.
