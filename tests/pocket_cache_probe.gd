@@ -11,6 +11,14 @@ extends Node3D
 ##   - every level with gates has at least one cache; each cache's supply lies
 ##     inside a pocket, at least 3 m from the spawn and the exit, with its two
 ##     crates and its strip;
+##   - pockets differ (pocket_plan): a pocket of 400 m2 or more, on a level
+##     after grok (which introduces sentries), is GUARDED: both supplies and a
+##     sentry turret; the second pocket of a level after mistral (which
+##     introduces honeypots) is BAITED: a honeypot stands in for the supply;
+##     the rest are plain caches. Neither mechanic appears before the level
+##     that introduces it, and the campaign has some of each;
+##   - nothing a pocket adds (crate, sentry, honeypot, supply) stands within
+##     1.5 m of an authored prop, wall block or lore terminal;
 ##   - built: each cache's pickup stands where the def says, and a navmesh
 ##     route from the spawn reaches it (tests/task_reach_probe gates its
 ##     clearance and footing with every other supply).
@@ -59,6 +67,29 @@ func _run() -> void:
 	with = _defs_call("_with_pocket_caches", [d])
 	_check("\"pocket_caches\": false opts a def out", with is Dictionary and _marked(with, "pickups").is_empty())
 
+	# 1b. Kinds. The same synthetic pockets, as if on levels around the two
+	# introductions: 600 m2 and 2 pockets with a second gate pair.
+	var big := {"floor_size": Vector2(120, 120), "gates": [
+		{"axis": "z", "at": -30.0, "gap": 8.0, "gap_pos": 10.0},
+		{"axis": "x", "at": 30.0, "gap": 8.0, "gap_pos": 15.0},
+	]}
+	var plan: Variant = _defs_call("pocket_plan", [big, "titan"])
+	_check("a 400 m2 pocket after grok is guarded", plan is Array and plan == ["guard"], str(plan))
+	plan = _defs_call("pocket_plan", [big, "gemini"])
+	_check("the same pocket before grok is a plain cache", plan is Array and plan == ["cache"], str(plan))
+	plan = _defs_call("pocket_plan", [big, ""])
+	_check("and so is one on a level outside the campaign", plan is Array and plan == ["cache"], str(plan))
+	var g: Variant = _defs_call("_with_pocket_caches", [big, "titan"])
+	_check("a guarded pocket holds both supplies and one sentry", g is Dictionary and _marked(g, "pickups").size() == 2 and _marked(g, "turrets").size() == 1
+			and _marked(g, "props").size() == 2 and _marked(g, "accents").size() == 1,
+			"%d supplies %d turrets" % [_marked(g, "pickups").size() if g is Dictionary else -1, _marked(g, "turrets").size() if g is Dictionary else -1])
+	if g is Dictionary and _marked(g, "turrets").size() == 1 and _marked(g, "pickups").size() == 2:
+		var tp: Vector3 = _marked(g, "turrets")[0]["pos"]
+		var near := 99.0
+		for e: Dictionary in _marked(g, "pickups") + _marked(g, "props"):
+			near = minf(near, Vector2(tp.x - e["pos"].x, tp.z - e["pos"].z).length())
+		_check("the sentry stands clear of the supplies and crates, within reach of them", near >= 2.0 and near <= 6.0, "%.1f m" % near)
+
 	# 2. The real defs.
 	var a := LevelDefs.get_def("mistral")
 	var b := LevelDefs.get_def("mistral")
@@ -70,6 +101,8 @@ func _run() -> void:
 		ids.append(path.get_file().trim_suffix(".tscn").trim_prefix("level_"))
 	var levels := 0
 	var caches := 0
+	var tally := {}
+	var order: Array = ids
 	for id: String in ids:
 		var def := LevelDefs.get_def(id)
 		if (def.get("gates", []) as Array).is_empty():
@@ -91,9 +124,43 @@ func _run() -> void:
 				bad = "%s outside every pocket" % p.snapped(Vector3.ONE * 0.1)
 			if Vector2(p.x - spawn.x, p.z - spawn.z).length() < 3.0 or Vector2(p.x - exit_at.x, p.z - exit_at.z).length() < 3.0:
 				bad = "%s on the spawn or the exit" % p.snapped(Vector3.ONE * 0.1)
+		var n_pockets := (rects as Array).size() if rects is Array else 0
+		var kinds_v: Variant = _defs_call("pocket_plan", [def, id])
+		var kinds: Array = kinds_v if kinds_v is Array else []
+		var want_sup := kinds.count("cache") + 2 * kinds.count("guard")
+		for k: String in kinds:
+			tally[k] = int(tally.get(k, 0)) + 1
+		if kinds.has("bait") and order.find(id) <= order.find("mistral"):
+			bad = "a honeypot before mistral introduces them"
+		if kinds.has("guard") and order.find(id) <= order.find("grok"):
+			bad = "a sentry before grok introduces them"
+		for hp: Dictionary in _marked(def, "honeypots") + _marked(def, "turrets"):
+			var hpos: Vector3 = hp["pos"]
+			var hin := false
+			if rects is Array:
+				for r: Rect2 in rects:
+					if r.has_point(Vector2(hpos.x, hpos.z)):
+						hin = true
+			if not hin:
+				bad = "%s outside every pocket" % hpos.snapped(Vector3.ONE * 0.1)
+		var clash := ""
+		for key: String in ["props", "turrets", "honeypots", "pickups"]:
+			for mine: Dictionary in _marked(def, key):
+				var mp: Vector3 = mine["pos"]
+				for akey: String in ["props", "walls", "lore", "turrets", "honeypots"]:
+					for theirs: Dictionary in def.get(akey, []):
+						if theirs.get("pocket", false) or not (theirs.get("pos") is Vector3):
+							continue
+						var tp: Vector3 = theirs["pos"]
+						var sz: Vector3 = theirs.get("size", Vector3.ZERO)
+						if absf(tp.x - mp.x) < sz.x * 0.5 + 1.5 and absf(tp.z - mp.z) < sz.z * 0.5 + 1.5:
+							clash = "%s at %s on %s at %s" % [key, mp.snapped(Vector3.ONE * 0.1), akey, tp.snapped(Vector3.ONE * 0.1)]
+		_check("%s: nothing a pocket adds stands on authored content" % id, clash == "", clash)
 		_check("%s: its caches lie in its pockets, with crates and strips" % id,
-				sup.size() >= 1 and bad == "" and _marked(def, "props").size() == sup.size() * 2 and _marked(def, "accents").size() == sup.size(),
-				"%d caches %s" % [sup.size(), bad])
+				n_pockets >= 1 and kinds.size() == n_pockets and bad == "" and sup.size() == want_sup
+				and _marked(def, "honeypots").size() == kinds.count("bait") and _marked(def, "turrets").size() == kinds.count("guard")
+				and _marked(def, "props").size() == n_pockets * 2 and _marked(def, "accents").size() == n_pockets,
+				"%d pockets %s: %d supplies, %d honeypots, %d sentries %s" % [n_pockets, str(kinds), sup.size(), _marked(def, "honeypots").size(), _marked(def, "turrets").size(), bad])
 		if sup.is_empty():
 			continue
 		# Built.
@@ -124,10 +191,24 @@ func _run() -> void:
 			if cp.distance_to(p) > 1.6 or path.is_empty() or path[path.size() - 1].distance_to(cp) > 1.5:
 				cut = str(p.snapped(Vector3.ONE * 0.1))
 		_check("%s: each cache's pickup is built and a route from the spawn reaches it" % id, missing == "" and cut == "", "missing %s, cut off %s" % [missing, cut])
+		# Report only (#507): can the exit or the spawn be seen from the cache?
+		var space := get_world_3d().direct_space_state
+		for s: Dictionary in sup:
+			var eye: Vector3 = s["pos"] + Vector3.UP * 1.5
+			var sees := []
+			for target: Array in [["exit", exit_at], ["spawn", spawn]]:
+				var q := PhysicsRayQueryParameters3D.create(eye, (target[1] as Vector3) * Vector3(1, 0, 1) + Vector3.UP * 1.5, 1)
+				if space.intersect_ray(q).is_empty():
+					sees.append("%s at %d m" % [target[0], int(eye.distance_to(target[1]))])
+			print("SIGHT %s cache %s sees: %s" % [id, (s["pos"] as Vector3).snapped(Vector3.ONE * 0.1), ", ".join(sees) if not sees.is_empty() else "neither exit nor spawn"])
 		lvl.queue_free()
+		# Robots are parented beside the level and outlive it (tests/README.md).
+		for e in get_tree().get_nodes_in_group("enemy"):
+			e.queue_free()
 		for i in 5:
 			await get_tree().physics_frame
 	_check("levels with gates checked", levels >= 14 and caches >= 14, "%d levels, %d caches" % [levels, caches])
+	_check("the campaign's pockets are not all alike", int(tally.get("cache", 0)) >= 4 and int(tally.get("bait", 0)) >= 3 and int(tally.get("guard", 0)) >= 4, str(tally))
 
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)

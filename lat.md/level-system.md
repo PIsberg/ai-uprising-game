@@ -310,7 +310,7 @@ The `gates` def key walls the arena into rooms: each gate is a full-height wall 
 
 * A gate runs wall to wall unless an earlier-listed gate crosses it: it stops there (`LevelBuilder.gate_span`). Two full-span gates that cross seal the quadrant neither gap opens into; 14 levels had such floor, 120 to 868 m2 each.
 * Stopping the later gate hands that floor to the room beside it as a dead end, so no gap is bypassed. `"through": true` keeps a gate's full span.
-* Each pocket that opens gets a cache (`LevelDefs.gate_pockets`, `_with_pocket_caches` in `get_def`): a supply, two crates and an amber floor strip, 23 across the 14 levels; `"pocket_caches": false` opts out (`tests/pocket_cache_probe`).
+* Each pocket that opens gets a cache (`LevelDefs.gate_pockets`, `_with_pocket_caches` in `get_def`): a supply, two crates and an amber floor strip, 23 across the 14 levels; `"pocket_caches": false` opts out (`tests/pocket_cache_probe`). They are not all alike (`pocket_plan`): 13 are plain, 4 are baited (a honeypot in the supply's place, on the second pocket of a level after mistral) and 6 are guarded (both supplies and a sentry turret, in a pocket of 400 m2 or more after grok), so no pocket uses a mechanic before the level that introduces it.
 * `tests/sealed_floor_probe` builds every gated level: no cut-off ground floor of 100 m2 or more, and the navmesh route to the exit crosses each gate through its gap. `tests/sealed_floor_sweep` reports cut-off floor on any level.
 
 ## CAPTCHA Gates
