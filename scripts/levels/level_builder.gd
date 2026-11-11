@@ -2040,6 +2040,9 @@ func _build_tower(t: Dictionary, phase: int, accent: Color) -> void:
 	for off in [Vector3(radius * 0.5, 0, -radius * 0.5), Vector3(-radius * 0.5, 0, radius * 0.3)]:
 		_add_collider_box(base + Vector3(off.x, roof_y + 0.6, off.z),
 			Vector3(1.4, 1.2, 0.7), MAT_PROP_B, "TwrRoofCover")
+	# Where a sky-bridge lands on the roof (horde, crucible) its end slab lifts
+	# this loot 0.22 m onto a separate navmesh island: a step the player walks up
+	# (tests/pickup_route_probe, #498).
 	const ROOF_LOOT := ["health", "ammo", "overclock"]
 	var pk: PackedScene = pickup_scene(ROOF_LOOT[_tower_count % ROOF_LOOT.size()])
 	if pk:
