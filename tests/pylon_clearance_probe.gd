@@ -9,12 +9,7 @@ extends Node
 ## still get masts (the guard skips a mast, it must not skip them all).
 ##   godot --headless --path . --audio-driver Dummy res://tests/pylon_clearance_probe.tscn
 
-const IDS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"horde", "sublevel", "crucible", "frostbreak", "neon", "lava_world",
-	"water_world", "desert", "convoy", "guardrails", "hivemind",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 var ok := true
 
@@ -28,7 +23,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	var masts := 0
-	for id in IDS:
+	for id in LevelIds.all():
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			continue

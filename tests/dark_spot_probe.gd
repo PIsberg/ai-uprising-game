@@ -5,12 +5,7 @@ extends Node3D
 ##   godot --path . tests/dark_spot_probe.tscn
 ## Saves user://dark_<id>.png for each and prints a brightness table.
 
-const LEVELS := [
-	"01", "gpt", "gemini", "claude", "grok", "suburb", "suburb_boss", "mistral",
-	"overseer", "alien", "uplink", "assembly", "titan", "archon", "range",
-	"sublevel", "crucible", "frostbreak", "neon", "lava_world", "water_world",
-	"desert",
-]
+const LevelIds := preload("res://tests/level_ids.gd")
 
 func _ready() -> void:
 	var cam := Camera3D.new()
@@ -24,7 +19,7 @@ func _ready() -> void:
 	cam.attributes = ca
 	add_child(cam)
 	var rows: Array = []
-	for id in LEVELS:
+	for id in LevelIds.all():
 		var path := "res://scenes/levels/level_%s.tscn" % id
 		if not ResourceLoader.exists(path):
 			print("skip ", id, " (no scene)")
