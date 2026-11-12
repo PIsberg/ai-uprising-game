@@ -27,6 +27,12 @@ superseded by a fork or a v2 keeps shipping: 17.7 MB of imports on 2026-10-17
 blasters, the reverted health-pack model and the textures only it used).
 References from tests/, tools/ and docs/ do not count, since those do not ship.
 
+Also fails on a shipped GLB that carries a UV set copying TEXCOORD_0 byte for
+byte (some exporters write the layout two or three times). Godot imports the
+copies as UV2 and CUSTOM0, 16 bytes a vertex that nothing samples, and a surface
+with them misses the importer's vertex compression: six robots did on 2026-11-12.
+`python tools/glb_drop_dup_uvs.py <in> <out>` drops them and changes nothing else.
+
     python tools/check_import_budget.py     # needs a populated .godot (run --import first)
 """
 import os
@@ -34,9 +40,12 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import glb_drop_dup_uvs  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 224 * MB  # 2026-11-11: 8 models share identical textures (tools/import/share_textures.gd), 252.3 -> 221.5 MB
+TOTAL_BUDGET = 223 * MB  # 2026-11-12: 6 robots lose their duplicate UV sets (tools/glb_drop_dup_uvs.py), 221.5 -> 220.4 MB
 FILE_BUDGET = 40 * MB
 # A texture imported lossless (compress/mode=0) ships as a lossless WebP and, on a
 # mesh, uploads uncompressed with no mipmaps: the 23 comics were 1.2-1.5 MB each
@@ -66,6 +75,19 @@ def unreferenced_models(shipped: list) -> list:
             continue
     text = "\n".join(corpus)
     return [src for src in shipped if src.endswith(MODEL_EXT) and ("res://" + src) not in text]
+
+
+def duplicate_uv_sets(shipped: list) -> list:
+    """(source, set names) for every shipped GLB with a UV set that copies set 0."""
+    found = []
+    for src in shipped:
+        if not src.lower().endswith(".glb"):
+            continue
+        gltf, binbuf, _version, _size = glb_drop_dup_uvs.read_glb(os.path.join(ROOT, src))
+        drop = glb_drop_dup_uvs.duplicate_sets(gltf, binbuf)
+        if drop:
+            found.append((src, ", ".join("TEXCOORD_%d" % n for n in sorted(drop))))
+    return found
 
 
 def main() -> int:
@@ -112,6 +134,8 @@ def main() -> int:
                       "2 (VRAM compressed, mipmaps on) for a texture on a mesh" % (src, size / MB))
     for src in unreferenced_models([src for _, src in rows]):
         errors.append("%s ships but no scene, script or resource loads it (git rm it and its .import)" % src)
+    for src, sets in duplicate_uv_sets([src for _, src in rows]):
+        errors.append("%s carries %s as a copy of TEXCOORD_0: drop it with tools/glb_drop_dup_uvs.py" % (src, sets))
     for size, src in rows:
         if size > FILE_BUDGET:
             errors.append("%s imports to %.1f MB, per-file budget %d MB" % (src, size / MB, FILE_BUDGET // MB))

@@ -2,6 +2,9 @@ extends Node3D
 ## Dev probe: render an arbitrary model scene front/side/q3 to judge its pose.
 ## Pass the resource path after `--`:
 ##   godot --path . res://tests/model_view_probe.tscn -- res://assets/models/robots/George.fbx tag
+## A third argument moves the camera back by that factor (2 = twice as far, the
+## subject half as tall), to judge a texture change at the distance it is played at
+## and not only at point-blank, where a 2K sheet is magnified either way (#56).
 
 func _ready() -> void:
 	var argv := OS.get_cmdline_user_args()
@@ -11,6 +14,18 @@ func _ready() -> void:
 		path = argv[0]
 	if argv.size() >= 2:
 		tag = argv[1]
+	var back := 1.0
+	if argv.size() >= 3:
+		back = maxf(float(argv[2]), 0.1)
+
+	# Native scale, no temporal upscaler: on a 4K desktop GraphicsSettings picks a
+	# render scale under 1 with FSR2. Two runs of one shot still differ without it
+	# (30 to 99 dB on five props), so compare variants inside one process:
+	# tools/texture_cap_ab.tscn.
+	var vp := get_viewport()
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = 1.0
+	vp.use_taa = false
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-40, 35, 0)
@@ -38,7 +53,7 @@ func _ready() -> void:
 	var focus := Vector3(0, h * 0.5, 0)
 	for shot in [["front", Vector3(0, 1, 1)], ["side", Vector3(1, 1, 0.04)], ["q3", Vector3(0.75, 1, 0.75)]]:
 		var dir: Vector3 = (shot[1] as Vector3).normalized()
-		cam.global_position = focus + dir * (h * 0.95)
+		cam.global_position = focus + dir * (h * 0.95 * back)
 		cam.global_position.y = h * 0.55
 		cam.look_at(focus, Vector3.UP)
 		await get_tree().create_timer(0.4).timeout

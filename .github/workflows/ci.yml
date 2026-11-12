@@ -85,7 +85,11 @@ jobs:
           python3 tools/check_licences.py
 
       - name: Check the imported assets a release ships stay inside the size budget
-        run: python3 tools/check_import_budget.py
+        # The budget check also fails on a GLB with a UV set that copies set 0; the
+        # self-test pins the rules that decide a set is a copy.
+        run: |
+          python3 tools/glb_drop_dup_uvs.py --self-test
+          python3 tools/check_import_budget.py
 
       - name: Run probe suite
         # Logic/integration probes (objectives, hazards, loot, teaching, the
