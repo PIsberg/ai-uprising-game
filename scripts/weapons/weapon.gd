@@ -638,6 +638,14 @@ const PUNCH_THICK := 2.5
 const PUNCH_KEEP := 0.75
 const PUNCH_REST := 1.6
 
+## BRACE (hold): the SIEGE Chaingun planted. It fires nothing itself: while the
+## button is held every round the trigger fires flies in BRACE_SPREAD_DEG,
+## moving or not and however long the burst, and the player moves at
+## BRACE_MOVE of their speed (Player._current_speed reads move_mult).
+const BRACE_SPREAD_DEG := 0.5
+const BRACE_MOVE := 0.45
+
+var _braced := false
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
@@ -656,6 +664,11 @@ func alt_cost() -> int:
 		WeaponData.AltMode.DOUBLE:
 			return DOUBLE_ROUNDS
 	return 1
+
+## What holding this gun does to the player's speed: BRACE_MOVE while it is
+## braced, else 1.
+func move_mult() -> float:
+	return BRACE_MOVE if _braced else 1.0
 
 ## Driven every frame by WeaponManager with the alt-fire button state.
 func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) -> void:
@@ -703,6 +716,10 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 					shooter.shake(0.45)
 			elif just and mag < ALT_COST:
 				_play_empty()
+		WeaponData.AltMode.BRACE:
+			if pressed != _braced:
+				_braced = pressed
+				AudioBus.play_synth_ui("empty_click", -9.0, 0.55 if pressed else 0.8) # the bipod down, and up
 
 ## Hold to fan the hammer: one wide, weaker round per fan beat until the
 ## cylinder is empty or the button is let go.
@@ -752,6 +769,7 @@ func _alt_charge_logic(pressed: bool, delta: float, camera: Camera3D, shooter: N
 		_alt_charge = 0.0
 
 func _cancel_charge() -> void:
+	_braced = false
 	_fanning = false
 	_alt_held = false
 	_alt_charge = 0.0
@@ -773,13 +791,16 @@ func _fire_volley(camera: Camera3D, shooter: Node, rounds: int = ALT_COST, rest:
 	_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * rest # breather after the volley
 
 ## The cone half-angle in degrees the round being fired flies in: spread_now,
-## unless an alt-fire pins it (CHARGE, VOLLEY and SLUG are dead straight, a
-## fanned round is always FAN_SPREAD_DEG wide).
+## unless an alt-fire pins it (CHARGE, VOLLEY, SLUG, DOUBLE and PUNCH are dead
+## straight, a fanned round is always FAN_SPREAD_DEG wide, a braced one
+## BRACE_SPREAD_DEG).
 func shot_spread_deg(aiming: bool, shooter: Node = null) -> float:
 	if _alt_tight:
 		return 0.0
 	if _alt_wide > 0.0:
 		return _alt_wide
+	if _braced:
+		return BRACE_SPREAD_DEG
 	return spread_now(aiming, shooter)
 
 func _do_shot() -> void:
