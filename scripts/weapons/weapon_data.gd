@@ -14,8 +14,9 @@ enum DamageType { HITSCAN, PROJECTILE }
 ## in the magazine, then a long rest (the Swarm Launcher). MINE: the round
 ## sticks where it lands and goes off when a robot comes near (the Tempest Coil).
 ## NOVA: a ring discharge around the player that hurts and switches off every
-## robot close by (the Tesla Projector).
-enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO, MINE, NOVA }
+## robot close by (the Tesla Projector). DETONATE: every robot the gun has
+## primed goes off now, still standing (the Cascade).
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO, MINE, NOVA, DETONATE }
 ## What the round does to plating: DamageMatrix.TABLE scales every hit by this
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
@@ -42,6 +43,7 @@ const ALT_TAGS := {
 	AltMode.SALVO: "ALT: SALVO",
 	AltMode.MINE: "ALT: ARC MINE",
 	AltMode.NOVA: "ALT: NOVA",
+	AltMode.DETONATE: "ALT: DETONATE",
 }
 const ALT_HINTS := {
 	AltMode.CHARGE: "alt_charge",
@@ -54,6 +56,7 @@ const ALT_HINTS := {
 	AltMode.SALVO: "alt_salvo",
 	AltMode.MINE: "alt_mine",
 	AltMode.NOVA: "alt_nova",
+	AltMode.DETONATE: "alt_detonate",
 }
 @export var damage_class: DamageClass = DamageClass.KINETIC
 

@@ -10,6 +10,10 @@ extends RefCounted
 ## times softer, and MAX_GEN caps the depth, so a long line of robots does not
 ## all go off one shot.
 ##
+## The gun's alt-fire (trip) sets off every live charge without waiting for a
+## death: the robot is inside its own blast, so it takes it and is primed one
+## generation deeper like its neighbours.
+##
 ## The blast goes through GameState.apply_secondary_damage (score, leech and
 ## OVERLOAD like any hit, not counted as a fresh hit) and only ever reaches the
 ## "enemy" group, so it can't hurt the player directly. It also sets off any
@@ -77,6 +81,20 @@ static func prime(robot: Node, damage: float, radius: float, source: Node, gen: 
 	c.source = source
 	c.expires_ms = Time.get_ticks_msec() + int(PRIME_TIME * 1000.0)
 	c.mark()
+
+## Set off every live charge in the scene now, POP_DELAY apart so they read as
+## pop-pop-pop. Returns how many went off.
+static func trip(tree: SceneTree) -> int:
+	if tree == null:
+		return 0
+	var n := 0
+	for e in tree.get_nodes_in_group("enemy"):
+		if not _hostile(e):
+			continue
+		var c := (e as Node).get_node_or_null("CascadeCharge") as CascadeCharge
+		if c != null and c.pop(POP_DELAY * (n + 1)):
+			n += 1
+	return n
 
 ## The blast at `pos`: prime everything in range one generation deeper, then hit it.
 static func _detonate(tree: SceneTree, pos: Vector3, damage: float, radius: float, source: Node, gen: int, chain: Chain) -> void:
@@ -240,21 +258,27 @@ class CascadeCharge extends Node3D:
 		_fuse_mat.emission_energy_multiplier = 5.0 * on
 
 	func _on_died(_src: Node) -> void:
+		pop(Cascade.POP_DELAY)
+
+	## Spend the charge: detonate where the robot is now, `delay` seconds on.
+	## Returns whether there was a live charge to spend.
+	func pop(delay: float) -> bool:
 		if not live() or chain == null:
-			return
-		expires_ms = 0 # one detonation per robot
+			return false
+		expires_ms = 0 # one detonation per charge
 		if _glow:
 			_glow.visible = false
 		if fuse:
 			fuse.visible = false
 		var tree := get_tree()
 		if tree == null:
-			return
+			return false
 		var pos := (get_parent() as Node3D).global_position
 		var dmg := damage
 		var r := radius
 		var src := source
 		var g := gen
 		var ch := chain
-		tree.create_timer(Cascade.POP_DELAY, false).timeout.connect(func() -> void:
+		tree.create_timer(delay, false).timeout.connect(func() -> void:
 				Cascade._detonate(tree, pos, dmg, r, src, g, ch))
+		return true

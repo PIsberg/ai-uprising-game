@@ -671,13 +671,19 @@ const NOVA_DAMAGE := 90.0
 const NOVA_STUN := 1.5
 const NOVA_REST := 1.2
 
+## DETONATE (tap): the Cascade spends DETONATE_COST rounds to set off every
+## live charge now (Cascade.trip), with the primed robots still standing, then
+## rests DETONATE_REST seconds. With nothing primed it spends nothing.
+const DETONATE_COST := 4
+const DETONATE_REST := 1.0
+
 var _alt_mine := false         # the round being fired is a mine (read by _spawn_projectile)
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, NOVA_COST for NOVA, one
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, NOVA_COST for NOVA, DETONATE_COST for DETONATE, one
 ## for SLUG, FAN and BRACE, 0
 ## on a gun with no alt mode.
 func alt_cost() -> int:
@@ -696,6 +702,8 @@ func alt_cost() -> int:
 			return MINE_COST
 		WeaponData.AltMode.NOVA:
 			return NOVA_COST
+		WeaponData.AltMode.DETONATE:
+			return DETONATE_COST
 	return 1
 
 ## What holding this gun does to the player's speed: BRACE_MOVE while it is
@@ -770,6 +778,16 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 				_fire_nova(camera, shooter)
 			elif just and _cooldown <= 0.0 and mag < NOVA_COST:
 				_play_empty()
+		WeaponData.AltMode.DETONATE:
+			if just and _cooldown <= 0.0:
+				if mag >= DETONATE_COST and Cascade.trip(get_tree()) > 0:
+					mag -= DETONATE_COST
+					_cooldown = DETONATE_REST
+					AudioBus.play_synth_ui("empty_click", -4.0, 1.9) # the clacker
+					if is_instance_valid(shooter) and shooter.has_method("shake"):
+						shooter.shake(0.3)
+				else:
+					_play_empty()
 		WeaponData.AltMode.BRACE:
 			if pressed != _braced:
 				_braced = pressed
