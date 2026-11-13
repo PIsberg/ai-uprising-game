@@ -1,5 +1,8 @@
 extends Node
 ## Probe: the REAL player reaches the six pickups the navmesh cannot route to (#498).
+## SPOTS below is also read by tests/pickup_reach_sweep (suite): a pickup with
+## no navmesh route fails there unless it is listed here, and an entry no pickup
+## stands on fails there as stale (#528).
 ## tests/pickup_reach_sweep flags them "no navmesh route from the spawn", which
 ## proves nothing: the navmesh follows no lift, jump or grapple. This takes the
 ## Player along the route each one's def names, in the built level:
