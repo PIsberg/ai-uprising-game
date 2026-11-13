@@ -32,6 +32,11 @@ tools/run_tests.sh          # bash / CI
 tools/run_tests.ps1         # Windows
 ```
 
+For a probe that fails, both runners print its script errors (first 10), then
+every line of its output that starts with `FAIL ` (first 20), then its last 20
+lines. So print a failed check as a line starting with `FAIL `: a long probe's
+failing line is otherwise above the tail and the CI log cannot be read.
+
 `GODOT_BIN` overrides the binary (defaults to `godot` on PATH). A handful of
 probes take extra CLI args after `--` (e.g. `model_view_probe`,
 `boss_ingame_probe`, `lava_probe`) — check the probe's own header comment.

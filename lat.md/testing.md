@@ -24,6 +24,7 @@ Command-line tools to execute single probes or the entire test suite.
   # On Windows:
   tools/run_tests.ps1
   ```
+  A failed probe is reported with its script errors, its own lines starting with `FAIL `, then its last 20 lines.
 * Run a single logic test:
   ```sh
   godot --headless --path . --audio-driver Dummy res://tests/<test_name>_probe.tscn

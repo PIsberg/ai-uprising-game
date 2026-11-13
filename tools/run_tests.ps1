@@ -45,6 +45,8 @@ foreach ($p in $probes) {
     else { Write-Host "FAIL  $p  (exit $($proc.ExitCode))" }
     $lines = $out -split "`r?`n"
     $lines | Where-Object { $_ -match "SCRIPT ERROR|ERROR:|Parse Error" } | Select-Object -First 10 | ForEach-Object { Write-Host "      $_" }
+    # Then the checks that failed: a long probe buries them above the tail (see run_tests.sh).
+    $lines | Where-Object { $_ -cmatch "^FAIL " } | Select-Object -First 20 | ForEach-Object { Write-Host "      $_" }
     Write-Host "      --- last 20 lines ---"
     $lines | Select-Object -Last 20 | ForEach-Object { Write-Host "      $_" }
     $failed++
