@@ -33,6 +33,13 @@ copies as UV2 and CUSTOM0, 16 bytes a vertex that nothing samples, and a surface
 with them misses the importer's vertex compression: six robots did on 2026-11-12.
 `python tools/glb_drop_dup_uvs.py <in> <out>` drops them and changes nothing else.
 
+Also fails on a shipped model imported with `meshes/create_shadow_meshes=true`
+(the importer's default). The shadow mesh is a second, position-only copy of
+every mesh for the shadow and depth passes: 19.2 MB of the 220.4 shipped on
+2026-11-13, and tools/shadow_mesh_ab.tscn measured no GPU time for it (7 models,
+8 or 16 copies under two shadowed lights: at most 0.04 ms either way, inside the
+run-to-run noise, where the shadow passes themselves cost 7.8 ms).
+
     python tools/check_import_budget.py     # needs a populated .godot (run --import first)
 """
 import os
@@ -45,7 +52,7 @@ import glb_drop_dup_uvs  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 223 * MB  # 2026-11-12: 6 robots lose their duplicate UV sets (tools/glb_drop_dup_uvs.py), 221.5 -> 220.4 MB
+TOTAL_BUDGET = 204 * MB  # 2026-11-13: no model ships a shadow mesh, 220.4 -> 201.2 MB
 FILE_BUDGET = 40 * MB
 # A texture imported lossless (compress/mode=0) ships as a lossless WebP and, on a
 # mesh, uploads uncompressed with no mipmaps: the 23 comics were 1.2-1.5 MB each
@@ -88,6 +95,18 @@ def duplicate_uv_sets(shipped: list) -> list:
         if drop:
             found.append((src, ", ".join("TEXCOORD_%d" % n for n in sorted(drop))))
     return found
+
+
+def shadow_meshes_on(shipped: list) -> list:
+    """Shipped models whose .import still asks for a shadow mesh."""
+    out = []
+    for src in shipped:
+        if not src.lower().endswith((".glb", ".gltf", ".fbx", ".obj")):
+            continue
+        with open(os.path.join(ROOT, src + ".import"), encoding="utf-8") as f:
+            if re.search(r"^meshes/create_shadow_meshes=true\s*$", f.read(), re.M):
+                out.append(src)
+    return out
 
 
 def main() -> int:
@@ -134,6 +153,8 @@ def main() -> int:
                       "2 (VRAM compressed, mipmaps on) for a texture on a mesh" % (src, size / MB))
     for src in unreferenced_models([src for _, src in rows]):
         errors.append("%s ships but no scene, script or resource loads it (git rm it and its .import)" % src)
+    for src in shadow_meshes_on([src for _, src in rows]):
+        errors.append("%s imports a shadow mesh: set meshes/create_shadow_meshes=false in its .import" % src)
     for src, sets in duplicate_uv_sets([src for _, src in rows]):
         errors.append("%s carries %s as a copy of TEXCOORD_0: drop it with tools/glb_drop_dup_uvs.py" % (src, sets))
     for size, src in rows:

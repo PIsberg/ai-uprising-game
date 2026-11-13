@@ -104,6 +104,7 @@ Probe-writing rules learned the hard way:
 ## Housekeeping
 
 - A new GLB with embedded textures gets `import_script/path="res://tools/import/share_textures.gd"` in its `.import`: the importer otherwise stores one texture per material that uses a picture (the RONIN shipped 37 for 8, 26 MB of copies). `shared_textures_probe` fails without it; `godot --headless --path . --script res://tools/scene_weight.gd -- <model>` shows where an import's bytes go.
+- A new model gets `meshes/create_shadow_meshes=false` in its `.import` (`check_import_budget.py` fails on `true`, the importer's default): the shadow mesh was 19 MB of shipped imports and bought no GPU time that `tools/shadow_mesh_ab.tscn` (windowed) could measure.
 - A new GLB must not carry a UV set that copies `TEXCOORD_0` (Tripo's exporter writes two): `check_import_budget.py` fails on it, `python tools/glb_drop_dup_uvs.py <in> <out>` drops it and changes nothing else. Before capping a texture's size, measure it with `tools/texture_cap_ab.tscn` + `tools/texture_cap_report.py`: two separate runs of a shot differ by as much as the cap does.
 
 - `future-improvements.md` is the living backlog: delete items when shipped, note it in the commit.

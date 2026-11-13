@@ -211,3 +211,29 @@ it measured only ~13 us per robot, so it is not the cost.
 
 ~~Open: attribute the ~1 ms per active robot with the editor profiler.~~
 Resolved 2026-10-08: there was no ~1 ms; see "Corrected findings" above.
+
+## Shadow meshes (#56)
+
+The importer stores a second, position-only copy of every mesh for the shadow
+and depth passes. Over the 80 models that was 19.9 MB in memory
+(`tools/scene_weight.gd`) and 19.2 MB of shipped imports. `tools/shadow_mesh_ab.tscn`
+(windowed) renders copies of one model under a shadowed sun and a shadowed lamp
+with the shadow meshes on, off, on, off in one process. Dev laptop (Arc A370M,
+3840x2400), 2026-11-13:
+
+| model | copies | on (GPU ms) | off | same-setting noise |
+|---|---|---|---|---|
+| rusty_claws_robot | 8 | 56.535 | 56.476 | 0.051 |
+| walking_robot_gun | 16 | 50.620 | 50.652 | 0.015 |
+| robot-killer_model | 16 | 49.534 | 49.529 | 0.012 |
+| mech_police | 16 | 48.921 | 48.911 | 0.089 |
+| robot_dog_v2 | 16 | 49.120 | 49.163 | 0.056 |
+| Prop_Crate | 16 | 47.669 | 47.697 | 0.026 |
+
+No difference outside the noise. The tool is not blind to shadow cost: with
+`shadows=0` the BEHEMOTH scene drops from 56.7 to 49.0 ms. The last frames
+compare the same way: on against off differs in 0.14 to 0.24% of pixels, on
+against on in 0.14 to 0.23% (4 models). So no model imports one
+(`meshes/create_shadow_meshes=false`, enforced by `check_import_budget.py`) and
+shipped imports went from 220.4 to 201.2 MB. Not measured: a level in play, and
+any GPU other than this one; a tile-based mobile GPU could answer differently.
