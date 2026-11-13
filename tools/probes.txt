@@ -464,5 +464,7 @@ res://tests/salvo_fire_probe.tscn
 res://tests/arc_mine_probe.tscn
 # NOVA: the Tesla Projector alt-fire shocks and switches off every robot in a ring around the player.
 res://tests/nova_fire_probe.tscn
+# DETONATE: the Cascade alt-fire sets off every primed robot without waiting for a kill.
+res://tests/cascade_detonate_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
