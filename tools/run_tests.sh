@@ -7,6 +7,7 @@
 # add a probe here). Each probe runs with stdout AND stderr captured, under a
 # timeout, so a probe that script-errors or hangs before printing RESULT shows
 # its cause instead of a truncated list of "ok" lines (issues #74, #75, #100).
+# A failed probe prints its script errors, its own FAIL lines, then its tail.
 #
 # A probe that prints RESULT PASS but also logged a SCRIPT ERROR fails too: a
 # runtime error aborts the coroutine it happens in, so the checks after it never
@@ -47,6 +48,10 @@ for p in "${PROBES[@]}"; do
     fi
     # The cause first: script errors are what a dead-before-RESULT probe hides.
     grep -E "SCRIPT ERROR|ERROR:|Parse Error" <<<"$out" | head -n 10 | sed "s/^/      /"
+    # Then the checks that failed. A probe prints them as it goes, so a long one
+    # buries them under later output: brute_rush_levels_probe went red in CI with
+    # its one failing line above the 20-line tail, and the run could not be read.
+    grep -E "^FAIL " <<<"$out" | head -n 20 | sed "s/^/      /"
     echo "      --- last 20 lines ---"
     tail -n 20 <<<"$out" | sed "s/^/      /"
     failed=$((failed + 1))

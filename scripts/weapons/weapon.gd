@@ -655,12 +655,19 @@ const SALVO_GAP := 0.09
 const SALVO_REST := 3.0
 
 var _salvo := false
+## MINE (tap): the Tempest Coil spends MINE_COST rounds on one dead-straight orb
+## that sticks to the world and waits (Projectile.mine), then rests MINE_REST
+## shot intervals.
+const MINE_COST := 2
+const MINE_REST := 1.5
+
+var _alt_mine := false         # the round being fired is a mine (read by _spawn_projectile)
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, one
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, one
 ## for SLUG, FAN and BRACE, 0
 ## on a gun with no alt mode.
 func alt_cost() -> int:
@@ -675,6 +682,8 @@ func alt_cost() -> int:
 			return DOUBLE_ROUNDS
 		WeaponData.AltMode.SALVO:
 			return SALVO_MIN
+		WeaponData.AltMode.MINE:
+			return MINE_COST
 	return 1
 
 ## What holding this gun does to the player's speed: BRACE_MOVE while it is
@@ -732,6 +741,17 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 			if just and not _salvo and _cooldown <= 0.0 and mag >= SALVO_MIN:
 				_fire_salvo(camera, shooter)
 			elif just and not _salvo and mag < SALVO_MIN:
+				_play_empty()
+		WeaponData.AltMode.MINE:
+			if just and _cooldown <= 0.0 and mag >= MINE_COST:
+				_alt_mine = true
+				_alt_tight = true
+				mag -= MINE_COST - 1 # _fire_once spends the last round
+				_fire_once(camera, shooter, true)
+				_alt_mine = false
+				_alt_tight = false
+				_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * MINE_REST
+			elif just and mag < MINE_COST:
 				_play_empty()
 		WeaponData.AltMode.BRACE:
 			if pressed != _braced:
@@ -1143,6 +1163,8 @@ func _spawn_projectile(origin: Vector3, dir: Vector3) -> void:
 		proj.weapon_data = data
 	if "signature" in proj:
 		proj.signature = _sig
+	if _alt_mine and "mine" in proj:
+		proj.mine = true
 	if proj.has_method("launch"):
 		proj.launch(dir * data.projectile_speed, _active_shooter, eff_damage(), data.splash_radius, data.splash_damage)
 	_sig.on_projectile(proj)
