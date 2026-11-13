@@ -1708,6 +1708,7 @@ const MECHANIC_HINTS := {
 	"alt_fan": "◎ ALT-FIRE: FAN — hold [V] to fan the hammer: 3 times the fire rate, wide, each round 20% weaker.",
 	"alt_double": "◎ ALT-FIRE: DOUBLE TAP — tap [V] for 2 dead-straight rounds, hip or aimed, then a short breather.",
 	"alt_brace": "◎ ALT-FIRE: BRACE — hold [V] to plant the gun: every round goes where you aim, but you move at less than half speed.",
+	"alt_salvo": "◎ ALT-FIRE: SALVO — tap [V] to empty the whole magazine in one ripple of missiles. Then the launcher needs a moment.",
 	"alt_punch": "◎ ALT-FIRE: PUNCH-THROUGH — tap [V] to spend 3 rounds on one slug that goes through 2 walls and every robot behind them. Each wall takes a quarter of its damage.",
 }
 
