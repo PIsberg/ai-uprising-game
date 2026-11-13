@@ -661,13 +661,23 @@ var _salvo := false
 const MINE_COST := 2
 const MINE_REST := 1.5
 
+## NOVA (tap): the Tesla Projector dumps NOVA_COST cells into a ring around the
+## player. Every robot within NOVA_RADIUS of the camera, in any direction, that
+## no world geometry hides takes NOVA_DAMAGE and is switched off for NOVA_STUN
+## (EnemyBase.emp_disable). The gun then rests NOVA_REST seconds.
+const NOVA_COST := 30
+const NOVA_RADIUS := 7.0
+const NOVA_DAMAGE := 90.0
+const NOVA_STUN := 1.5
+const NOVA_REST := 1.2
+
 var _alt_mine := false         # the round being fired is a mine (read by _spawn_projectile)
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, one
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, NOVA_COST for NOVA, one
 ## for SLUG, FAN and BRACE, 0
 ## on a gun with no alt mode.
 func alt_cost() -> int:
@@ -684,6 +694,8 @@ func alt_cost() -> int:
 			return SALVO_MIN
 		WeaponData.AltMode.MINE:
 			return MINE_COST
+		WeaponData.AltMode.NOVA:
+			return NOVA_COST
 	return 1
 
 ## What holding this gun does to the player's speed: BRACE_MOVE while it is
@@ -753,6 +765,11 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 				_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * MINE_REST
 			elif just and mag < MINE_COST:
 				_play_empty()
+		WeaponData.AltMode.NOVA:
+			if just and _cooldown <= 0.0 and mag >= NOVA_COST:
+				_fire_nova(camera, shooter)
+			elif just and _cooldown <= 0.0 and mag < NOVA_COST:
+				_play_empty()
 		WeaponData.AltMode.BRACE:
 			if pressed != _braced:
 				_braced = pressed
@@ -811,6 +828,46 @@ func _cancel_charge() -> void:
 	_alt_held = false
 	_alt_charge = 0.0
 	_alt_step = 0
+
+## The Tesla's ring discharge (NOVA). Robots are found by an overlap of the
+## enemy layer around the camera; each is hit once, however many colliders it
+## has, and only if a ray to its chest meets no world geometry.
+func _fire_nova(camera: Camera3D, shooter: Node) -> void:
+	if not is_instance_valid(camera):
+		return
+	mag -= NOVA_COST
+	_cooldown = NOVA_REST
+	var origin := camera.global_position
+	var space := camera.get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = NOVA_RADIUS
+	q.shape = sh
+	q.transform = Transform3D(Basis(), origin)
+	q.collision_mask = 0b0000100 # enemies only
+	var from := muzzle.global_position if is_instance_valid(muzzle) else origin
+	var seen := {}
+	for h in space.intersect_shape(q, 32):
+		var col: Node = h["collider"]
+		var d := _find_damageable(col)
+		if d == null or seen.has(d) or not (col is Node3D):
+			continue
+		seen[d] = true
+		var chest: Vector3 = (col as Node3D).global_position + Vector3.UP * 0.9
+		var ray := PhysicsRayQueryParameters3D.create(origin, chest)
+		ray.collision_mask = 0b0000001 # world
+		if not space.intersect_ray(ray).is_empty():
+			continue
+		KillFx.tag(d, data.kill_fx, data)
+		d.apply_damage(NOVA_DAMAGE, shooter)
+		KillFx.untag(d)
+		if is_instance_valid(col) and col.has_method("emp_disable"):
+			col.emp_disable(NOVA_STUN)
+		_energy_beam_flash(from, chest)
+	_play_fire_sound()
+	_muzzle_shockwave()
+	if is_instance_valid(shooter) and shooter.has_method("shake"):
+		shooter.shake(0.6)
 
 ## Ripple the magazine dry (SALVO). Each round is an ordinary shot in the gun's
 ## own cone; only the pace and the rest after it differ.

@@ -3,10 +3,10 @@ extends Node3D
 ## secondary fire. Through the real player, WeaponManager and HUD:
 ##   - the M9 the player starts with shows DOUBLE TAP, and its hint is the
 ##     first toast of the level;
-##   - on a gun with no alt mode (the Tesla Projector) the HUD's alt tag is hidden;
+##   - on a gun with no alt mode (the CX-4 Cascade) the HUD's alt tag is hidden;
 ##   - on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher it shows the
 ##     mode (VOLLEY, SLUG, FAN, CHARGE) and the key the alt-fire is bound to;
-##   - back on the Tesla Projector it hides again;
+##   - back on the Cascade it hides again;
 ##   - the tag dims while the magazine holds fewer rounds than one use costs,
 ##     and lights again when it holds enough;
 ##   - a rebind of "alt_fire" shows in the tag;
@@ -24,7 +24,7 @@ extends Node3D
 ## Timed on process frames (a toast lasts 2.4 s).
 ##   godot --headless --path . --audio-driver Dummy res://tests/alt_tag_probe.tscn
 
-const NO_ALT := "res://scenes/weapons/tesla.tscn" ## the VK-7 Tesla Projector: no alt mode (the Longshot got PUNCH-THROUGH, #496)
+const NO_ALT := "res://scenes/weapons/cascade.tscn" ## the CX-4 Cascade: no alt mode (the Tesla Projector got NOVA, #496)
 const NO_ALT_BEFORE := "res://scenes/weapons/pistol.tscn" ## the M9: DOUBLE TAP since #496, none before
 
 const GUNS := [
@@ -122,7 +122,7 @@ func _run() -> void:
 		await _draw(NO_ALT)
 	await _frames(3)
 	var plain := wm.current
-	_check("the Tesla Projector is in hand and has no alt mode", plain != null and plain.scene_file_path == NO_ALT and plain.data.alt_mode == WeaponData.AltMode.NONE)
+	_check("the Cascade is in hand and has no alt mode", plain != null and plain.scene_file_path == NO_ALT and plain.data.alt_mode == WeaponData.AltMode.NONE)
 	_check("on a gun with no alt mode the tag is hidden", not _shown(), "'%s'" % _text())
 
 	# 2. Each mode shows its name and the key.
@@ -144,9 +144,9 @@ func _run() -> void:
 				"%d new, '%s', the old toast at alpha %.2f" % [hints.size() - was, (hints[-1] as String).left(40) if hints.size() > was else "", alpha_at_hint[-1] if hints.size() > was else -1.0])
 		await _wait(2.6)
 
-	# 3. Back on the Tesla Projector it hides.
+	# 3. Back on the Cascade it hides.
 	await _draw(NO_ALT)
-	_check("back on the Tesla Projector the tag hides again", not _shown(), "'%s'" % _text())
+	_check("back on the Cascade the tag hides again", not _shown(), "'%s'" % _text())
 
 	# 4. Dim when one use costs more than the magazine holds.
 	var plasma := await _draw("res://scenes/weapons/plasma.tscn")

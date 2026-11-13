@@ -10,6 +10,7 @@ damage_class = 3
 display_name = "VK-7 Tesla Projector"
 kill_fx = 2
 sound_id = "tesla"
+alt_mode = 10
 fire_mode = 3
 damage_type = 0
 damage = 26.0

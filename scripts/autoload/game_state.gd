@@ -1710,6 +1710,7 @@ const MECHANIC_HINTS := {
 	"alt_brace": "◎ ALT-FIRE: BRACE — hold [V] to plant the gun: every round goes where you aim, but you move at less than half speed.",
 	"alt_salvo": "◎ ALT-FIRE: SALVO — tap [V] to empty the whole magazine in one ripple of missiles. Then the launcher needs a moment.",
 	"alt_mine": "◎ ALT-FIRE: ARC MINE — tap [V] to stick a charged orb to a wall or the floor. It waits, and arcs through every robot that comes near.",
+	"alt_nova": "◎ ALT-FIRE: NOVA — tap [V] to dump 30 cells into a ring around you. Every robot close by is shocked and switched off for a moment.",
 	"alt_punch": "◎ ALT-FIRE: PUNCH-THROUGH — tap [V] to spend 3 rounds on one slug that goes through 2 walls and every robot behind them. Each wall takes a quarter of its damage.",
 }
 
