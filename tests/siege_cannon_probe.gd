@@ -3,7 +3,7 @@ extends Node3D
 ## (1) WARMECH (Quaternius Mech, twin shoulder cannons): every shell of a
 ##     salvo leaves within 0.3 m of a cannon's muzzle, the salvo alternates
 ##     cannons, and the charge glows in both;
-## (2) HOWITZER (walking_robot_gun.glb, one long barrel on its back): every
+## (2) HOWITZER (howitzer_walker.glb, one long barrel on its back): every
 ##     shell leaves within 0.3 m of the barrel's muzzle.
 ## Muzzles are found from the model itself at the moment of firing: the front
 ## vertices of each cannon on the POSED (skinned) mesh, or of the static Gun

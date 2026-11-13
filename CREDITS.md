@@ -71,7 +71,6 @@ Blender and lost it, from the downloaded original that the shipped file's nodes 
 - **"Robot arm wip 2"** by **3DHaupt** (https://sketchfab.com/3d-models/robot-arm-wip-2-cb006bfafc20421f9f6f674f127f918b), **CC-BY 4.0**: `robot_arm_wip_2.glb`, the MANUS boss.
 - **"Rusty Humanoid Robot With Claws"** by **Pigcraft** (https://sketchfab.com/3d-models/rusty-humanoid-robot-with-claws-6bb359bacbd046c5b7bc766b8c0e1933), **CC-BY 4.0**: `rusty_claws_robot.glb`, the BEHEMOTH-X boss.
 - **"Another Robot"** by **Lagst** (https://sketchfab.com/3d-models/another-robot-b5187425ddb14676a93ab21f050e0e6f), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `another_robot.glb`, the REAPER.
-- **"Walking Robot Gun"** by **zebra_pozer** (https://sketchfab.com/3d-models/walking-robot-gun-6be6c93c4d954d97be7072adc34926fb), **CC-BY-NC 4.0 (non-commercial)**: `walking_robot_gun.glb`, the HOWITZER. See issue #406: the non-commercial clause limits how the game may be distributed (`python tools/check_licences.py --commercial` fails on it).
 
 The next five lost their metadata on re-export and no original was left on the dev
 machine. Each was matched through the Sketchfab API on its triangle count and
@@ -88,6 +87,7 @@ materials of its materialCount.
 - **"RobotExpressive"** by **Tomás Laulhé** (https://www.patreon.com/quaternius), modifications by **Don McCurdy**, from the three.js examples (https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive), **CC0 1.0**: `RobotExpressive.glb`, the MAULER. The shipped file is byte-identical to that copy (git blob `6fec9cfb`).
 - **"Robot"** by **Polygonal Mind**, from the Trash Polka set of the Polygonal Mind Open Source Initiative (https://github.com/PolygonalMind/initiative-opensource-release), converted to GLB by **ToxSam** (https://github.com/ToxSam/cc0-models-Polygonal-Mind/tree/main/projects/trash-polka, listed at https://www.opensource3dassets.com as `trash-polka-022`), **CC0 1.0**: `Robot.glb`, the WAR-BOT. The file as first committed is byte-identical to `projects/trash-polka/Robot.glb` in that repository (git blob `8726a430`, 528,196 bytes); the shipped file is that mesh cut into body and legs for the walk (#435).
 - `serving_bot.glb` (the SERVER, MAITRE-D') is original to this game, built from primitives by `tools/blender/build_server.py`.
+- `howitzer_walker.glb` (the HOWITZER) is original to this game, built from primitives by `tools/blender/build_howitzer.py`. It replaced a CC-BY-NC download (#406).
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via

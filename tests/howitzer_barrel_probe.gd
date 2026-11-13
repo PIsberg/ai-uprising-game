@@ -1,6 +1,6 @@
 extends Node3D
 ## Probe: the HOWITZER lays and fires the barrel its model carries.
-## walking_robot_gun.glb keeps the 3.6 m barrel as its own node (Gun), so the
+## howitzer_walker.glb keeps the 3.9 m barrel as its own node (Gun), so the
 ## gun can move like artillery instead of staying welded flat to the back:
 ## (1) at the shot the barrel points along the shell's launch pitch (within
 ##     2.5 deg), for a near target (shell dips down at it) and a far one
@@ -9,8 +9,8 @@ extends Node3D
 ## (3) the shot slides the barrel back along its own axis by 0.3 m or more,
 ##     and it runs out again (back within 0.06 m) inside 2 s;
 ## (4) no drawn mesh outside the Gun keeps a copy of the barrel's muzzle end
-##     (the GLB's Cell meshes duplicate the whole model, barrel included, and
-##     left a ghost barrel behind when the real one laid).
+##     (the model this one replaced carried a full duplicate of itself, barrel
+##     included, which left a ghost barrel behind when the real one laid).
 ## The barrel is measured from the Gun mesh's vertices (front-end centroid and
 ## a centroid 1.4 m further back), so the check shares no numbers with the
 ## code under test.

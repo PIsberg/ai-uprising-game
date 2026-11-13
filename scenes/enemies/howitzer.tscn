@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_howitzer.gd" id="1_how"]
 [ext_resource type="Script" path="res://scripts/systems/damageable.gd" id="2_dmg"]
 [ext_resource type="Script" path="res://scripts/enemies/robot_model.gd" id="3_rm"]
-[ext_resource type="PackedScene" path="res://assets/models/robots/walking_robot_gun.glb" id="4_model"]
+[ext_resource type="PackedScene" path="res://assets/models/robots/howitzer_walker.glb" id="4_model"]
 
 [sub_resource type="CapsuleShape3D" id="Shape_how"]
 radius = 1.5
@@ -23,7 +23,6 @@ script = ExtResource("3_rm")
 menace_color = Color(1, 0.55, 0.1, 1)
 anim_walk = ""
 fit_height = 4.3
-fit_yaw_deg = 90.0
 
 [node name="Mesh" parent="Model" instance=ExtResource("4_model")]
 
@@ -31,7 +30,7 @@ fit_yaw_deg = 90.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8, -0.8)
 
 [node name="Muzzle" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.87, -1.97)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.87, -2.2)
 
 [node name="Damageable" type="Node" parent="."]
 script = ExtResource("2_dmg")

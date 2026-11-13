@@ -1,17 +1,17 @@
 extends Node3D
 ## Probe: the HOWITZER walks on its four legs instead of sliding.
-## walking_robot_gun.glb has all four crab legs in one mesh (Legs_Legs_0),
-## hips at the top, feet on the floor. Feet are measured once at rest, in that
-## mesh's own frame (the lowest 3 cm of each quadrant: left/right of x = 0,
-## front/back of z = 0.35), and followed through whichever copy draws that leg
-## (PartRig names them Legs_Legs_0_L_F and so on).
+## howitzer_walker.glb has all four crab legs in one mesh (Legs), hips at the
+## top, feet on the floor. Feet are measured once at rest, in that mesh's own
+## frame (the lowest 3 cm of each quadrant: left/right of x = 0, front/back of
+## EnemyHowitzer.LEGS_SPLIT_Z), and followed through whichever copy draws that
+## leg (PartRig names them Legs_L_F and so on).
 ## (1) walking toward a target: every foot swings fore and aft at least 0.15 m;
 ## (2) a trot: diagonal feet together (front-left with back-right, r > 0.6),
 ##     the two front feet in opposition (r < -0.6);
 ## (3) stopped: every foot back within 0.03 m of rest.
 ##   godot --headless --path . --audio-driver Dummy res://tests/howitzer_gait_probe.tscn
 
-const LEGS := "Legs_Legs_0"
+const LEGS := EnemyHowitzer.LEGS
 
 var ok := true
 var _e: CharacterBody3D
@@ -55,7 +55,7 @@ func _measure_rest() -> void:
 		var front: bool = k[0] == "F"
 		var quad := PackedVector3Array()
 		for q in PartRig.body_points(_e, mi):
-			if signf(q.x) == sx and (q.z < 0.35) == front:
+			if signf(q.x) == sx and (q.z < EnemyHowitzer.LEGS_SPLIT_Z) == front:
 				quad.append(q)
 		var lo := INF
 		for q in quad:
