@@ -19,12 +19,17 @@ extends RigidBody3D
 signal settled
 
 const SETTLE_TIME := 2.2 ## Tumble this long (or until asleep) before the sink.
-## A wreck still moving faster than MOVING at SETTLE_TIME is falling or sliding,
-## not rocking: it keeps going until it slows, or HARD_CAP. Frozen on the dot it
-## hung in the air and sank there: a flyer shot down from about 60 m, or a robot
-## that teetered on a catwalk edge and went over late (the REAPER, 1.84 m up,
-## which failed tests/wreck_physics_probe on CI about one run in several).
+## A wreck is calm while it moves slower than MOVING and turns slower than
+## TURNING. At SETTLE_TIME it settles only if it has been calm for CALM_TIME
+## without a break; otherwise it keeps going until it has, or HARD_CAP. Frozen
+## on the dot it hung in the air and sank there: a flyer shot down from about
+## 60 m. Frozen the moment it was slow, so did a wreck that was only slow in
+## passing: at the top of a bounce, or hanging on a catwalk edge it was about
+## to slide off (the REAPER, 1.82 m up at 2.22 s, which failed
+## tests/wreck_physics_probe on CI now and then).
 const MOVING := 1.5      ## m/s
+const TURNING := 2.0     ## rad/s
+const CALM_TIME := 0.35  ## s
 const HARD_CAP := 4.5    ## s; a fall of some 240 m at the project's gravity of 24
 const MIN_TIME := 1.0    ## Never settle sooner, even if it lands asleep.
 const PUSH := 3.4        ## m/s along the shot.
@@ -36,6 +41,7 @@ var follower: Node3D
 var _scale := Vector3.ONE
 var _top := 1.0
 var _t := 0.0
+var _calm := 0.0 ## seconds it has been calm without a break
 var _carried: Array = [] ## [Node3D, Vector3 offset in this body's frame]
 
 ## Hand `robot` to a new wreck body under `parent` and throw it along `dir`
@@ -95,7 +101,11 @@ func _physics_process(delta: float) -> void:
 		follower.queue_free()
 		queue_free()
 		return
-	var capped := _t >= SETTLE_TIME and (linear_velocity.length() < MOVING or _t >= HARD_CAP)
+	if linear_velocity.length() < MOVING and angular_velocity.length() < TURNING:
+		_calm += delta
+	else:
+		_calm = 0.0
+	var capped := _t >= SETTLE_TIME and (_calm >= CALM_TIME or _t >= HARD_CAP)
 	if capped or (_t >= MIN_TIME and sleeping):
 		set_physics_process(false)
 		freeze = true
