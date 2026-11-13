@@ -460,5 +460,7 @@ res://tests/punch_through_probe.tscn
 res://tests/brace_fire_probe.tscn
 # SALVO: the Swarm Launcher alt-fire ripples the whole magazine on one press, then rests.
 res://tests/salvo_fire_probe.tscn
+# ARC MINE: the Tempest Coil alt-fire sticks an orb to the world that goes off when a robot comes near.
+res://tests/arc_mine_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn

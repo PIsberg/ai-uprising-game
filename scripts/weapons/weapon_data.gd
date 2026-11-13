@@ -11,8 +11,9 @@ enum DamageType { HITSCAN, PROJECTILE }
 ## walls and every robot on its line (the Longshot). BRACE: a stance, not a
 ## shot: held, the gun is planted, its cone is pinned tight and the player
 ## moves slowly (the SIEGE Chaingun). SALVO: one press ripples every round left
-## in the magazine, then a long rest (the Swarm Launcher).
-enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO }
+## in the magazine, then a long rest (the Swarm Launcher). MINE: the round
+## sticks where it lands and goes off when a robot comes near (the Tempest Coil).
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO, MINE }
 ## What the round does to plating: DamageMatrix.TABLE scales every hit by this
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
@@ -37,6 +38,7 @@ const ALT_TAGS := {
 	AltMode.PUNCH: "ALT: PUNCH-THROUGH",
 	AltMode.BRACE: "ALT: BRACE",
 	AltMode.SALVO: "ALT: SALVO",
+	AltMode.MINE: "ALT: ARC MINE",
 }
 const ALT_HINTS := {
 	AltMode.CHARGE: "alt_charge",
@@ -47,6 +49,7 @@ const ALT_HINTS := {
 	AltMode.PUNCH: "alt_punch",
 	AltMode.BRACE: "alt_brace",
 	AltMode.SALVO: "alt_salvo",
+	AltMode.MINE: "alt_mine",
 }
 @export var damage_class: DamageClass = DamageClass.KINETIC
 

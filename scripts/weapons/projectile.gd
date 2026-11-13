@@ -18,6 +18,14 @@ extends Area3D
 @export var chain_range: float = 9.0 ## Max gap each lightning hop can bridge to the next robot.
 @export var chain_damage: float = 0.0 ## Damage per chained robot (0 = half the splash damage).
 
+## A mine (the Tempest Coil's alt-fire; Weapon._spawn_projectile sets `mine`)
+## does not go off on the world: it sticks there, armed, and goes off when a
+## living robot comes within MINE_TRIGGER of it, or after MINE_LIFE. A robot it
+## strikes in flight sets it off at once, like any round.
+const MINE_TRIGGER := 2.5 ## m; inside the Tempest's 2.8 m splash
+const MINE_LIFE := 10.0   ## s armed before it goes off by itself
+const MINE_SCAN := 0.1    ## s between looks for a robot
+
 const SMALL_BLAST := preload("res://scenes/fx/enemy_explosion.tscn")
 const BIG_BLAST := preload("res://scenes/fx/grenade_explosion.tscn")
 
@@ -33,6 +41,9 @@ var _splash_radius: float = 0.0
 var _splash_damage: float = 0.0
 var _age: float = 0.0
 var _dead: bool = false
+var mine: bool = false
+var _armed: bool = false
+var _scan: float = 0.0
 var _homing_target: Node3D = null
 var _reacquire: float = 0.0
 var _exhaust_mat: StandardMaterial3D
@@ -181,6 +192,9 @@ func _physics_process(delta: float) -> void:
 	if _age > lifetime:
 		_explode(global_position)
 		return
+	if _armed:
+		_tick_mine(delta)
+		return
 	if gravity_scale != 0.0:
 		_velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * gravity_scale * delta
 	if homing_turn_rate > 0.0:
@@ -310,6 +324,10 @@ func _on_body_entered(body: Node) -> void:
 	# _explode() sets _dead — so without this guard an enemy rocket would land
 	# its hit on the player twice.
 	if _dead or body == _shooter:
+		return
+	if mine and body != null and _damageable_of(body) == null:
+		if not _armed:
+			_arm_mine()
 		return
 	# Enemy rounds (splash mask excludes the player) land their hit here instead.
 	var world_hit_damageable: Node = null
@@ -450,6 +468,37 @@ func _chain_lightning(origin: Vector3) -> void:
 		_spawn_lightning_arc(scene, from, best_pos)
 		_spawn_zap_flash(scene, best_pos)   # a bright burst on each robot the bolt hits
 		from = best_pos
+
+## A mine has landed on the world: stop, back off the surface a little so the
+## orb is not half inside it, and wait.
+func _arm_mine() -> void:
+	_armed = true
+	if _velocity.length_squared() > 0.01:
+		global_position -= _velocity.normalized() * 0.18
+	_velocity = Vector3.ZERO
+	lifetime = _age + MINE_LIFE
+	AudioBus.play_synth_at("empty_click", global_position, -6.0, 1.6)
+
+## Armed: throb slowly, and every MINE_SCAN look for a living robot in reach.
+func _tick_mine(delta: float) -> void:
+	var m := _energy_mesh()
+	if m:
+		m.scale = Vector3.ONE * (1.25 + 0.3 * sin(_age * 7.0))
+	_scan -= delta
+	if _scan > 0.0:
+		return
+	_scan = MINE_SCAN
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = MINE_TRIGGER
+	q.shape = sh
+	q.transform = Transform3D(Basis(), global_position)
+	q.collision_mask = 0b0000100 # enemies only
+	for h in get_world_3d().direct_space_state.intersect_shape(q, 8):
+		var d = _damageable_of(h["collider"])
+		if d != null and (not ("current_health" in d) or d.current_health > 0.0):
+			_explode(global_position)
+			return
 
 ## Walk up from a collider to the nearest Damageable component (enemies nest it).
 func _damageable_of(col: Node):
