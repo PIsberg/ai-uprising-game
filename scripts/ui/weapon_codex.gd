@@ -26,7 +26,7 @@ const DOSSIER := {
 
 const FIRE_NAMES := ["SEMI", "AUTO", "BURST", "BEAM"]
 const DMG_NAMES := ["HITSCAN", "PROJECTILE"]
-const ALT_NAMES := ["", " · CHARGE alt", " · VOLLEY alt", " · SLUG alt", " · FAN alt", " · DOUBLE TAP alt", " · PUNCH-THROUGH alt", " · BRACE alt"]
+const ALT_NAMES := ["", " · CHARGE alt", " · VOLLEY alt", " · SLUG alt", " · FAN alt", " · DOUBLE TAP alt", " · PUNCH-THROUGH alt", " · BRACE alt", " · SALVO alt"]
 const ACCENT := Color(0.5, 0.8, 1.0)
 
 var _weapons: Array = []   # [{id, data}]

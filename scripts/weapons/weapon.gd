@@ -646,12 +646,22 @@ const BRACE_SPREAD_DEG := 0.5
 const BRACE_MOVE := 0.45
 
 var _braced := false
+## SALVO (tap): the Swarm Launcher ripples every round left in the magazine,
+## SALVO_GAP apart and each in the gun's own cone, then rests SALVO_REST shot
+## intervals. It needs SALVO_MIN rounds (one round is just the trigger).
+## Holstering the gun or starting a reload stops it.
+const SALVO_MIN := 2
+const SALVO_GAP := 0.09
+const SALVO_REST := 3.0
+
+var _salvo := false
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, one for SLUG and FAN, 0
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, one
+## for SLUG, FAN and BRACE, 0
 ## on a gun with no alt mode.
 func alt_cost() -> int:
 	if data == null:
@@ -663,6 +673,8 @@ func alt_cost() -> int:
 			return ALT_COST
 		WeaponData.AltMode.DOUBLE:
 			return DOUBLE_ROUNDS
+		WeaponData.AltMode.SALVO:
+			return SALVO_MIN
 	return 1
 
 ## What holding this gun does to the player's speed: BRACE_MOVE while it is
@@ -715,6 +727,11 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 				if shooter and shooter.has_method("shake"):
 					shooter.shake(0.45)
 			elif just and mag < ALT_COST:
+				_play_empty()
+		WeaponData.AltMode.SALVO:
+			if just and not _salvo and _cooldown <= 0.0 and mag >= SALVO_MIN:
+				_fire_salvo(camera, shooter)
+			elif just and not _salvo and mag < SALVO_MIN:
 				_play_empty()
 		WeaponData.AltMode.BRACE:
 			if pressed != _braced:
@@ -774,6 +791,26 @@ func _cancel_charge() -> void:
 	_alt_held = false
 	_alt_charge = 0.0
 	_alt_step = 0
+
+## Ripple the magazine dry (SALVO). Each round is an ordinary shot in the gun's
+## own cone; only the pace and the rest after it differ.
+func _fire_salvo(camera: Camera3D, shooter: Node) -> void:
+	_salvo = true
+	while mag > 0 and data != null and is_instance_valid(camera):
+		_fire_once(camera, shooter, false)
+		if mag <= 0:
+			break
+		await get_tree().create_timer(SALVO_GAP).timeout
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+		if not visible or _reloading: # holstered, or a reload began
+			_salvo = false
+			return
+	_salvo = false
+	if data != null:
+		_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * SALVO_REST
+	if is_instance_valid(shooter) and shooter.has_method("shake"):
+		shooter.shake(0.5)
 
 ## Instant laser-tight burst of `rounds` (3 for VOLLEY, 2 for DOUBLE), spaced
 ## just enough to read as a volley, then a breather of `rest` shot intervals.

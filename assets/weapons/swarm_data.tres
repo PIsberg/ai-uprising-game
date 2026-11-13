@@ -9,7 +9,7 @@
 script = ExtResource("1_data")
 damage_class = 4
 display_name = "SW-7 Swarm Launcher"
-alt_mode = 0
+alt_mode = 8
 fire_mode = 0
 damage_type = 1
 damage = 22.0

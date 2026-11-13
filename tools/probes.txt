@@ -458,5 +458,7 @@ res://tests/double_tap_probe.tscn
 res://tests/punch_through_probe.tscn
 # BRACE: the SIEGE Chaingun alt-fire is a stance: a 0.5 degree cone and a slow walk while the button is held.
 res://tests/brace_fire_probe.tscn
+# SALVO: the Swarm Launcher alt-fire ripples the whole magazine on one press, then rests.
+res://tests/salvo_fire_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
