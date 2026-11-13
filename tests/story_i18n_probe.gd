@@ -12,6 +12,7 @@ extends Node
 ## text with % and so never matched a row.
 ##   godot --headless --path . --audio-driver Dummy res://tests/story_i18n_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
 
 var _fails: Array[String] = []
@@ -54,7 +55,7 @@ func _run() -> void:
 			"◆ DIE 03:14-SPUR · LOG %d/%d" % [idx + 1, campaign.size()]]:
 		_check(shown.has(want), "briefing shows: %s" % want.left(60))
 	_check(_de(String(beat["tagline"])) != String(beat["tagline"]), "the tagline has a German row")
-	briefing.queue_free()
+	LevelIds.unload(briefing)
 	await get_tree().process_frame
 
 	# 2-3. The HUD.

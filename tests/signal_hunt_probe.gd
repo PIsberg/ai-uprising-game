@@ -14,6 +14,8 @@ extends Node3D
 ## puts the beacon up.
 ##   godot --headless --path . --audio-driver Dummy res://tests/signal_hunt_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _hints: Array[String] = []
 var _toasts: Array[String] = []
@@ -158,7 +160,7 @@ func _campaign() -> void:
 		var sts := level.find_children("*", "SignalTransmitter", true, false)
 		_check(sts.size() == 1, "%s builds its transmitter" % id)
 		if sts.is_empty():
-			level.queue_free()
+			LevelIds.unload(level)
 			continue
 		found += 1
 		var st := sts[0] as SignalTransmitter
@@ -196,6 +198,6 @@ func _campaign() -> void:
 		st.hp.apply_damage(SignalTransmitter.HEALTH + 1.0, null)
 		await _seconds(0.5)
 		_check(not level.find_children("*", "ObjectiveCore", true, false).is_empty(), "%s: destroying it puts the next stage up" % id)
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign level hunts a signal (%d)" % found)

@@ -13,6 +13,8 @@ extends Node3D
 ## and the hack spot beside it is on the navmesh and reachable from spawn.
 ##   godot --headless --path . --audio-driver Dummy res://tests/sentry_turret_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 func _check(ok: bool, what: String) -> void:
@@ -191,6 +193,6 @@ func _campaign() -> void:
 					reach = true
 					break
 			_check(reach, "%s turret at %s can be reached and hacked from spawn" % [id, at])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign level places turrets (%d)" % found)

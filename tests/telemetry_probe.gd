@@ -13,6 +13,7 @@ extends Node3D
 ## (8) with no --telemetry flag a headless run records nothing by default.
 ##   godot --headless --path . --audio-driver Dummy res://tests/telemetry_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const PLAYER := "res://scenes/player/player.tscn"
 const OUT := "user://telemetry_probe.jsonl"
 var ok := true
@@ -103,7 +104,7 @@ func _run() -> void:
 	await _wait_game(0.2)
 	# A second life on the same level that dies and is reloaded (TRY AGAIN): the
 	# level ends "died", not "left" (the first bot session read "1 left").
-	p.queue_free()
+	LevelIds.unload(p)
 	GameState.set_state(GameState.State.PLAYING)
 	await _wait_game(0.2)
 	var p2: CharacterBody3D = (load(PLAYER) as PackedScene).instantiate()

@@ -16,6 +16,7 @@ extends Node3D
 ##            landing: the lift is the only link the navmesh cannot see.
 ##   godot --headless --path . --audio-driver Dummy res://tests/hazard_layout_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const SEA_LEVELS := ["lava_world", "water_world"]
 const MAX_SHARED := 0.25 # fraction of water_world segments allowed to also exist in lava_world
 
@@ -89,7 +90,7 @@ func _check_player_lands_on_spawn_deck(id: String) -> void:
 	var player := get_tree().get_first_node_in_group("player") as Node3D
 	var y: float = player.global_position.y if player else -999.0
 	_check("%s: player rests on the spawn deck" % id, y > 1.4 and y < 2.0, "y=%.2f" % y)
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -136,6 +137,6 @@ func _check_network(id: String) -> void:
 			reached += 1
 		_check("%s: %s @%v reachable from spawn" % [id, g[0], p], gap < 1.6, "gap %.1f" % gap)
 	print("network: %s %d/%d goals reachable" % [id, reached, goals.size()])
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().process_frame
 	await get_tree().process_frame

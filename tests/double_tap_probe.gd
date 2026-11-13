@@ -4,8 +4,8 @@ extends Node3D
 ## fire (#496). Through the real weapon scene, driven the way WeaponManager
 ## drives it:
 ##   - the M9's alt mode is DOUBLE and one use costs 2 rounds;
-##   - a tap fires exactly two rounds, under 0.12 s apart, and takes 2 from the
-##     magazine;
+##   - a tap fires exactly two rounds, the second within 0.07 s and two frames
+##     of the first, and takes 2 from the magazine;
 ##   - both fly dead straight from the hip: 5 taps put 10 of 10 rounds on a
 ##     0.3 m wide plate at 30 m, where 10 hip-fired trigger rounds land fewer;
 ##   - each does the gun's full damage;
@@ -16,6 +16,8 @@ extends Node3D
 ## Timed on summed process deltas.
 ##   godot --headless --path . --audio-driver Dummy res://tests/double_tap_probe.tscn
 
+const PAIR_GAP := 0.07 ## Weapon._fire_volley's pause between rounds
+
 var ok := true
 var w: Weapon
 var cam: Camera3D
@@ -24,6 +26,7 @@ var clock := 0.0
 var tick := 0
 var shots: Array = [] ## [clock, cone in degrees] per round fired
 var hits: Array = [] ## damage per hit on the plate
+var worst := 0.0 ## the longest frame since the last tap began
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
 	print("%s %s %s" % ["PASS" if cond else "FAIL", label, detail])
@@ -35,6 +38,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	clock += delta
+	worst = maxf(worst, delta)
 	if w == null:
 		return
 	w.try_alt_fire(mode == "alt", delta, cam, null)
@@ -50,6 +54,7 @@ func _wait(sec: float) -> void:
 
 ## One press of the alt-fire button, let go again.
 func _tap() -> void:
+	worst = 0.0
 	mode = "alt"
 	await _wait(0.05)
 	mode = ""
@@ -104,7 +109,13 @@ func _run() -> void:
 	await _wait(0.4)
 	_check("a tap fires exactly two rounds and takes 2 from the magazine", shots.size() == 2 and w.mag == d.mag_size - 2, "%d rounds, %d left of %d" % [shots.size(), w.mag, d.mag_size])
 	if shots.size() == 2:
-		_check("under 0.12 s apart", float(shots[1][0]) - float(shots[0][0]) < 0.12, "%.3f s" % (float(shots[1][0]) - float(shots[0][0])))
+		# The second round leaves on the first frame past PAIR_GAP, and the clock
+		# here is summed frames: the gap can be a frame out at each end, and the
+		# first round's frame is the long one (its effects are built then). A
+		# flat 0.12 s failed 2 runs in 24 at 0.121 s on a 50 ms frame (#543).
+		var gap01: float = float(shots[1][0]) - float(shots[0][0])
+		_check("the second round follows within PAIR_GAP and two frames", gap01 > PAIR_GAP * 0.5 and gap01 < PAIR_GAP + 2.0 * worst + 0.002,
+				"%.3f s, longest frame %.3f s" % [gap01, worst])
 		_check("both dead straight from the hip", float(shots[0][1]) == 0.0 and float(shots[1][1]) == 0.0, "%s and %s degrees" % [shots[0][1], shots[1][1]])
 	_check("each does the gun's full damage", hits.size() == 2 and absf(float(hits[0]) - d.damage) < 0.5 and absf(float(hits[1]) - d.damage) < 0.5, "%s against %.0f" % [str(hits), d.damage])
 

@@ -7,8 +7,17 @@ Also checks the sentence above the index table, which quotes a probe count per
 mode. Those four numbers were unenforced and drifted: they read "244 total, 30
 suite" against a table holding 264 rows and 46 suite probes (#108).
 
+Also fails a suite or headless probe that frees a level it built with a bare
+`queue_free()`: robots are parented beside the level, so that leaves them loose
+in every level the probe builds next (15 of 32 multi-level probes did, #522).
+`LevelIds.unload(level)` (tests/level_ids.gd) frees both. The check goes by
+name: a variable called `lvl` or `level`, or one declared from a level scene's
+`instantiate()` a few lines after its path. A level held under another name,
+built from a path set further away, gets past it.
+
     python tools/check_suite_manifest.py
 """
+import glob
 import os
 import re
 import sys
@@ -87,6 +96,27 @@ def readme_rows_by_mode():
     return counts
 
 
+def check_level_unloads(problems):
+    text = open(README, encoding="utf-8").read()
+    checked = set(re.findall(r"^\|\s*([A-Za-z_0-9]+)\s*\|.*\|\s*(?:suite|headless)\s*\|\s*$", text, re.M))
+    for path in sorted(glob.glob(os.path.join(ROOT, "tests", "*.gd"))):
+        name = os.path.basename(path)[:-3]
+        if name not in checked:
+            continue
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+        level_vars = {"lvl", "level"}
+        for i, line in enumerate(lines):
+            m = re.match(r"\s*var (\w+)\b.*instantiate\(\)", line)
+            if m and "scenes/levels/level_" in " ".join(lines[max(0, i - 6):i + 1]):
+                level_vars.add(m.group(1))
+        for i, line in enumerate(lines):
+            m = re.match(r"\s*(\w+)\.queue_free\(\)", line)
+            if m and m.group(1) in level_vars:
+                problems.append(f"tests/{name}.gd:{i + 1} frees a level with {m.group(1)}.queue_free(), which leaves its "
+                                f"robots loose - use LevelIds.unload({m.group(1)})")
+
+
 def main() -> int:
     problems = []
     names = []
@@ -103,6 +133,7 @@ def main() -> int:
         problems.append("manifest lists twice: " + ", ".join(dups))
     suite, indexed = readme_rows()
     check_header(readme_rows_by_mode(), problems)
+    check_level_unloads(problems)
     for n in sorted(set(names) - suite):
         where = "marks it headless/windowed" if n in indexed else "has no row for it"
         problems.append(f"{n} is in tools/probes.txt but tests/README.md {where} - mark it `suite`")

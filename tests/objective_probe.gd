@@ -5,6 +5,8 @@ extends Node
 ## also checks level 1 registers its keycard task. Prints PASS/FAIL, then quits.
 ##   godot --path . --headless res://tests/objective_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -31,7 +33,7 @@ func _run() -> void:
 			print("FROSTBREAK hvt_task_done_on_death=%s" % done)
 			if not done:
 				ok = false
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 
 	# --- Neon: hold_zone ---
@@ -42,7 +44,7 @@ func _run() -> void:
 	print("NEON hold_task=%s tasks=%d" % [has_hold, GameState.level_tasks.size()])
 	if not has_hold:
 		ok = false
-	lvl2.queue_free()
+	LevelIds.unload(lvl2)
 	await _wait(0.3)
 
 	# --- Level 1: single gate-lever task (the simplified tutorial objective) ---

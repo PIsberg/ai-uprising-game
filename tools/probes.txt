@@ -113,6 +113,7 @@ res://tests/task_reach_probe.tscn
 res://tests/pickup_route_probe.tscn
 # Every pickup in every built level is clear of geometry, air and lava, and on the navmesh or on a route the probe above walks (#528).
 res://tests/pickup_reach_sweep.tscn
+res://tests/level_unload_probe.tscn
 # No two crossing route gates wall a quadrant off: a gate stops at an earlier gate that crosses it, and the route still threads every gap.
 res://tests/sealed_floor_probe.tscn
 # POCKET CACHES: every dead-end pocket behind crossing gates holds a supply, two crates and a strip, reachable from the spawn.

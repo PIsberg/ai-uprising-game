@@ -22,6 +22,7 @@ extends Node3D
 ##     facility billboard moves off the screen's wall (claude, guardrails, range).
 ##   godot --headless --path . --audio-driver Dummy res://tests/landmark_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const KINDS := ["spire", "twin", "dish", "stacks", "monolith"]
 var ok := true
 
@@ -183,7 +184,7 @@ func _run() -> void:
 	await get_tree().process_frame
 	var built := lvl.get_node_or_null("Landmark") as Landmark
 	_check("level_gemini builds its landmark", built != null and built.kind == "twin")
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().process_frame
 	var rng := (load("res://scenes/levels/level_range.tscn") as PackedScene).instantiate()
 	add_child(rng)
@@ -193,7 +194,7 @@ func _run() -> void:
 	_check("level_range builds its screen", rs != null and rs.kind == "screen")
 	_check("the billboard is not on the screen's wall", rs != null and board != null
 			and board.global_basis.z.dot(rs.global_basis.z) < 0.5)
-	rng.queue_free()
+	LevelIds.unload(rng)
 	await get_tree().process_frame
 
 	print("RESULT ", "PASS" if ok else "FAIL")

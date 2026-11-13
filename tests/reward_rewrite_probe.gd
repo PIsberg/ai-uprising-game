@@ -12,6 +12,7 @@ extends Node
 ## (6) the builder places the authored consoles on SUBLEVEL and WATER WORLD.
 ##   godot --headless --path . --audio-driver Dummy res://tests/reward_rewrite_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const ENEMY := "res://scenes/enemies/android.tscn"
 
 var _fails := 0
@@ -222,7 +223,7 @@ func _run() -> void:
 			var hits := space.intersect_shape(q, 4)
 			_check(hits.is_empty(), "%s console at %s has clear room %s" % [id, p,
 					str(hits.map(func(h: Dictionary) -> String: return str(h.collider.name)))])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)
 
 	print("RESULT %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))

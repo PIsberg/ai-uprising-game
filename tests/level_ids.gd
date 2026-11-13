@@ -24,3 +24,19 @@ static func all(except: Array = []) -> Array:
 				out.append(id)
 	out.sort()
 	return out
+
+## Free a level a probe built, with the robots it spawned. EnemySpawner parents
+## robots to the current scene, beside the level, so `level.queue_free()` alone
+## leaves them alive, awake and hunting in every level the probe builds next:
+## 15 of 32 multi-level probes carried up to 100 of them into the next level,
+## and VACUUMs ate the pickups pickup_reach_sweep was counting (#514, #522).
+## tools/check_suite_manifest.py fails a suite or headless probe that frees a
+## level with a bare queue_free().
+static func unload(level: Node) -> void:
+	if not is_instance_valid(level):
+		return
+	if level.is_inside_tree():
+		for e in level.get_tree().get_nodes_in_group("enemy"):
+			if not level.is_ancestor_of(e):
+				e.queue_free()
+	level.queue_free()

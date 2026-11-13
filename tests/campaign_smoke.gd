@@ -11,6 +11,7 @@ extends Node3D
 ## Any SCRIPT ERROR lines land on stderr for the caller to grep.
 ## Run: godot --headless --path . --quit-after 200000 res://tests/campaign_smoke.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const IDS := [
 	"01", "gpt", "gemini", "mistral", "suburb", "suburb_boss", "convoy",
 	"claude", "grok", "uplink", "overseer",
@@ -83,7 +84,7 @@ func _run_level(id: String) -> int:
 	print("SMOKE %-12s %-4s enemies=%2d navpoly=%3d shots=%d closed=%.1f %s" % [
 		id, verdict, enemy_ct, polys, shots_seen, closed, " ".join(notes)])
 
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	# Enemies parent to current_scene (the test root here, see enemy_spawner.gd),
 	# not the level subtree, so freeing the level leaves them behind. Sweep them so
 	# each level's census is clean and doesn't inherit the previous level's stragglers.

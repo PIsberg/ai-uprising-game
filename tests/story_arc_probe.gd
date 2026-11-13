@@ -14,6 +14,7 @@ extends Node
 ## (7) the credits open with the whole trace: every level's lead, in order.
 ##   godot --headless --path . --audio-driver Dummy res://tests/story_arc_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const BRIEFING := "res://scenes/cutscene/level_comic_briefing.tscn"
 
 func _ready() -> void:
@@ -151,6 +152,6 @@ func _brief(id: String) -> Dictionary:
 		"thread": briefing.find_child("StoryThread", true, false) != null,
 		"trace_panel": briefing.find_child("TracePanel", true, false) != null,
 	}
-	briefing.queue_free()
+	LevelIds.unload(briefing)
 	await get_tree().process_frame
 	return out

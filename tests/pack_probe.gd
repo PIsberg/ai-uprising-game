@@ -8,6 +8,7 @@ extends Node3D
 ## time; a level with mixed packs of 3-5 gives a fight.
 ##   godot --headless --path . res://tests/pack_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const LEVELS := ["01", "gpt", "gemini", "mistral", "suburb", "claude", "grok", "uplink",
 	"alien", "assembly", "sublevel", "frostbreak", "desert", "neon", "crucible", "lava_world"]
 const WALK_SPEED := 6.0     ## m/s along the spawn->exit line
@@ -122,7 +123,7 @@ func _walk(id: String) -> Array[int]:
 		print("BAD  %s fielded %d robots but authored %d — a pack spawned a duplicate" % [
 			id, seen, authored])
 		_dupe_free = false
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	# EnemySpawner parents its robot to current_scene (this probe's root), NOT to
 	# the level — so freeing the level leaves the whole roster standing, and the
 	# next level's counts start from the last one's leftovers.

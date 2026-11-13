@@ -11,6 +11,7 @@ extends Node3D
 ## (5) in each built level a ride from the tower lands on the deck.
 ##   godot --headless --path . --audio-driver Dummy res://tests/zipline_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const ZIP_LEVELS := ["titan", "archon"]
 
 var ok := true
@@ -153,6 +154,6 @@ func _live_level(id: String) -> void:
 		var land: Vector3 = r[0]
 		print("  %s ride: rest %s after %.1f s" % [id, land, r[1]])
 		_check("%s ride lands on the deck" % id, absf(land.y - zl.b.y) < 0.4 and Vector2(land.x - zl.b.x, land.z - zl.b.z).length() < 2.0, "(%s)" % land)
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	for i in 3:
 		await get_tree().physics_frame

@@ -15,6 +15,7 @@ extends Node
 ## (6) solo play (co-op off) builds no split and leaves the root rendering 3D.
 ##   godot --headless --path . --audio-driver Dummy res://tests/coop_split_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const LEVEL := "res://scenes/levels/level_gpt.tscn"
 var ok := true
 
@@ -150,7 +151,7 @@ func _run() -> void:
 			(cams[0].cull_mask & av1.layers) == 0 and (cams[1].cull_mask & av1.layers) != 0
 			and (cams[1].cull_mask & av2.layers) == 0 and (cams[0].cull_mask & av2.layers) != 0)
 
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _frames(5)
 	_check("leaving the level turns the root's 3D render back on", not get_viewport().disable_3d)
 	_finish()

@@ -10,6 +10,8 @@ extends Node3D
 ## fight the escape is meant to be.
 ##   godot --headless --path . --audio-driver Dummy res://tests/escape_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 class StubPlayer extends CharacterBody3D:
@@ -158,5 +160,5 @@ func _campaign() -> void:
 				length += route[i].distance_to(route[i - 1])
 			var secs: float = float(e.get("seconds", 45.0))
 			_check(length / sprint <= secs * 0.6, "%s escape: %.0f m at %.1f m/s = %.1f s fits 60%% of %.0f s" % [id, length, sprint, length / sprint, secs])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)

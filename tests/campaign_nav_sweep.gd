@@ -25,7 +25,7 @@ func _ready() -> void:
 		var exit: Vector3 = def.get("exit", Vector3.ZERO)
 		if exit == Vector3.ZERO:
 			print("SKIP %s (no authored exit — boss/objective level)" % id)
-			lvl.queue_free()
+			LevelIds.unload(lvl)
 			await get_tree().process_frame
 			continue
 		var map := get_world_3d().get_navigation_map()
@@ -45,7 +45,7 @@ func _ready() -> void:
 		if verdict.begins_with("FAIL") or verdict == "NO-PATH":
 			fails += 1
 		print("NAV %s: %s  (spawn=%s exit=%s)" % [id, verdict, spawn, exit])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 	print("CAMPAIGN_NAV_SWEEP_DONE fails=%d" % fails)
 	get_tree().quit()

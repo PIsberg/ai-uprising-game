@@ -5,6 +5,7 @@ extends Node3D
 ## walking straight across. Also FAILs loudly if a gate ever closes the route.
 ## Run: godot --headless --path . --quit-after 100000 res://tests/route_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const IDS := ["01", "sublevel", "uplink", "claude", "gemini", "neon", "titan", "suburb"]
 
 func _ready() -> void:
@@ -35,7 +36,7 @@ func _ready() -> void:
 			verdict = "PASS gap=%.1f len=%.0f crow=%.0f x%.2f" % [gap, walked, crow, detour] if gap < 5.0 else "FAIL gap=%.1f" % gap
 		if not verdict.begins_with("PASS"): fails += 1
 		print("ROUTE %s: %s" % [id, verdict])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 	print("ROUTE_PROBE_DONE fails=%d" % fails)
 	get_tree().quit()

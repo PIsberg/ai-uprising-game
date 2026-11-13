@@ -52,7 +52,7 @@ func _run() -> void:
 					(hit["collider"] as Node).get_path()])
 		masts += n
 		_check("%s: no light mast stands inside geometry" % id, bad.is_empty(), "%d masts; %s" % [n, "; ".join(bad)])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for i in 2:
 			await get_tree().process_frame
 	_check("outdoor levels still get light masts", masts >= 20, "%d in all" % masts)

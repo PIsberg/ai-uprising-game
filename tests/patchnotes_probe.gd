@@ -7,6 +7,8 @@ extends Node
 ## (3) the comic briefing builds the terminal panel when notes are pending.
 ##   godot --headless --path . res://tests/patchnotes_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -64,7 +66,7 @@ func _run() -> void:
 	print("PANEL: found=%s notes_drained=%s" % [panel_found, drained])
 	if not (panel_found and drained):
 		ok = false
-	briefing.queue_free()
+	LevelIds.unload(briefing)
 
 	print("RESULT ", "PASS" if ok else "FAIL")
 	get_tree().quit()

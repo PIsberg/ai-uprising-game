@@ -15,6 +15,7 @@ extends Node3D
 ##     its top, on an authored sky-bridge).
 ##   godot --headless --path . --audio-driver Dummy res://tests/sealed_floor_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const Sweep := preload("res://tests/sealed_floor_sweep.gd")
 const BIG := 100
 
@@ -117,7 +118,7 @@ func _run() -> void:
 					round_it = "%s gate at %.1f crossed at %.1f, gap at %.1f" % [g.get("axis", "z"), at, along, g.get("gap_pos", 0.0)]
 		var reached := not path.is_empty() and path[path.size() - 1].distance_to(goal) < 2.0
 		_check("%s: the route to the exit crosses every gate through its gap" % id, reached and round_it == "" and crossed >= 1, "%d crossings on the ground %s" % [crossed, round_it])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for i in 5:
 			await get_tree().physics_frame
 	_check("levels with gates checked", levels >= 14, str(levels))

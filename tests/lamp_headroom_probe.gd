@@ -31,6 +31,7 @@ extends Node3D
 ##     be caught here; the suite runner fails any probe that logs one.
 ##   godot --headless --path . --audio-driver Dummy res://tests/lamp_headroom_probe.tscn [-- levels=gpt,assembly]
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const CLEARANCE_M := LevelBuilder.PLAYER_CLEARANCE_M
 
 var ok := true
@@ -245,7 +246,7 @@ func _campaign() -> void:
 				if rod == null or absf(_rod_top(rod) - over_y) > 0.05:
 					unhung.append("%s floats %.2f m under what is over it" % [where, over_y - at.y])
 		print("%s: %d authored, settled %s" % [id, authored, tally])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for i in 5:
 			await get_tree().physics_frame
 	for line in low + inside + unhung + untallied:

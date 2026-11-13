@@ -11,6 +11,8 @@ extends Node3D
 ## can be reached from spawn.
 ##   godot --headless --path . --audio-driver Dummy res://tests/spawn_nest_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _hints: Array[String] = []
 var _toasts: Array[String] = []
@@ -155,6 +157,6 @@ func _campaign() -> void:
 			var path := NavigationServer3D.map_get_path(map, NavigationServer3D.map_get_closest_point(map, spawn), near, true)
 			_check(path.size() > 1 and path[-1].distance_to(near) < 0.6 and Vector2(near.x - at.x, near.z - at.z).length() < 3.0,
 				"%s nest at %s can be reached from spawn" % [id, at])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign level places nests (%d)" % found)

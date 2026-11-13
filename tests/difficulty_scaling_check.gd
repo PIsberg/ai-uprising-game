@@ -4,6 +4,8 @@ extends Node3D
 ## real GameState._scale_enemy_count via apply_level_scaling. Run as a SCENE (so
 ## autoloads exist): godot --headless --path . tests/difficulty_scaling_check.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 func _ready() -> void:
 	var boss_scene := load("res://scenes/enemies/archon.tscn")
 	var grunt_scene := load("res://scenes/enemies/drone.tscn")     # common
@@ -43,6 +45,6 @@ func _ready() -> void:
 					spiders += 1
 		print("%s: total=15 -> survived=%d  spiders_kept=%d/2" % [
 			GameState.difficulty_label(), alive, spiders])
-		level.queue_free()
+		LevelIds.unload(level)
 		await get_tree().process_frame
 	get_tree().quit()

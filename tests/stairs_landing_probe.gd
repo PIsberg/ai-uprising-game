@@ -31,6 +31,7 @@ extends Node
 ## suburb_boss ramps climbed into the house walls (3 of 3 stops).
 ##   godot --headless --path . --audio-driver Dummy res://tests/stairs_landing_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const MAX_LIP := 0.1 ## metres the ramp may sit below the deck where it meets it
 const DECK_TOL := 0.06 ## a platform counts as the landing if its deck is this close to the top
 const STEP_UP := 0.3 ## the player's step-up assist clears this much
@@ -184,7 +185,7 @@ func _built_check() -> void:
 			at_authored += 1
 	_check("the built stair tops out on the roof's edge at roof height", at_landed == 1 and at_authored == 0,
 			"%d at %s, %d at the authored %s" % [at_landed, landed, at_authored, authored])
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	for i in 3:
 		await get_tree().physics_frame
 

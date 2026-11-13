@@ -16,6 +16,7 @@ extends Node3D
 ##   godot --headless --path . --audio-driver Dummy res://tests/crumble_tile_probe.tscn
 
 ## A walking jump: 5.5 m/s for 2 * 7.5 / 24 s of air is 3.4 m; leave margin.
+const LevelIds := preload("res://tests/level_ids.gd")
 const MAX_HOP := 2.6
 
 var _fails: Array[String] = []
@@ -162,6 +163,6 @@ func _campaign() -> void:
 				_check(space.intersect_shape(sq, 1).is_empty(), "%s column over the slab at %s is clear" % [id, ct])
 			var last_hop := Vector2(to.x - prev_edge.x, to.z - prev_edge.z).length()
 			_check(last_hop <= MAX_HOP, "%s last hop onto the deck at %s is %.2f m" % [id, to, last_hop])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign level authors crumble tiles (%d slabs)" % found)

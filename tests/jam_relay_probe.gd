@@ -8,6 +8,8 @@ extends Node3D
 ## are shielded, the HIVE PRIME stays staged until both fall and goes live after.
 ##   godot --headless --path . --audio-driver Dummy res://tests/jam_relay_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 func _check(ok: bool, what: String) -> void:
@@ -132,5 +134,5 @@ func _live() -> void:
 	await _frames(6)
 	_check(GameState.is_task_done("relay_w") and GameState.is_task_done("relay_e"), "jammed relays fall and complete their tasks")
 	_check(not _staged("hvt"), "with both relays down the PRIME goes live")
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _frames(3)

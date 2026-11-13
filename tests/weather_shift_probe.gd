@@ -9,6 +9,8 @@ extends Node3D
 ## particles.
 ##   godot --headless --path . --audio-driver Dummy res://tests/weather_shift_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 func _check(ok: bool, what: String) -> void:
@@ -187,5 +189,5 @@ func _live() -> void:
 			GameState.complete_task("weather_probe_done")
 			await _wait(float(raised.get("lifetime")) + 0.3 + 1.0 if is_instance_valid(raised) else 0.5)
 			_check(not is_instance_valid(raised), "%s live: the raised particles are freed after the storm" % id)
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)

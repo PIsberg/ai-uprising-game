@@ -12,6 +12,7 @@ extends Node
 ## Findings live in docs/PERF_NOTES.md.
 ##   godot --headless --path . --audio-driver Dummy res://tests/cpu_cost_sweep.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const BUILD_WAIT := 2.4
 const SAMPLE_SECONDS := 5.0
 const TickClock := preload("res://tests/tick_clock.gd")
@@ -80,7 +81,7 @@ func _run() -> void:
 			"pairs": Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS),
 			"nav_agents": Performance.get_monitor(Performance.NAVIGATION_AGENT_COUNT),
 			"nav_polys": Performance.get_monitor(Performance.NAVIGATION_POLYGON_COUNT)})
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for e in get_tree().get_nodes_in_group("enemy"):
 			if is_instance_valid(e):
 				e.queue_free()

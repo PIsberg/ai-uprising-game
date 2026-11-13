@@ -9,6 +9,8 @@ extends Node3D
 ## 10.6 m from the ground up through a tower, #499) and through no pickup.
 ##   godot --headless --path . --audio-driver Dummy res://tests/scanner_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _calls: Array = []
 
@@ -183,5 +185,5 @@ func _campaign() -> void:
 				var flyer: bool = String(e.get("type", "")) in ["drone", "seeker", "raptor", "whirlwind"]
 				_check(flyer or (on and ends), "%s scanner %d alarm %s at %s spawns on walkable ground with a route" % [id, k, e.get("type", ""), at])
 			k += 1
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)

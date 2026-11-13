@@ -10,6 +10,8 @@ extends Node3D
 ## navmesh.
 ##   godot --headless --path . --audio-driver Dummy res://tests/haul_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 class StubPlayer extends CharacterBody3D:
@@ -191,5 +193,5 @@ func _campaign() -> void:
 			for i in range(1, route.size()):
 				length += route[i].distance_to(route[i - 1])
 			_check(ends, "%s core reaches the uplink on the navmesh (%.0f m)" % [id, length])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
