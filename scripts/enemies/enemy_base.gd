@@ -235,6 +235,9 @@ func _ready() -> void:
 var _health_mult: float = 1.0
 var _speed_mult: float = 1.0
 var _cooldown_mult: float = 1.0
+## The tier's reaction_mult as EnemySpawner applied it to reaction_time, kept so
+## a robot's own tells can stretch and shrink with it (the BRUTE's rush tell).
+var _reaction_mult: float = 1.0
 
 ## Re-applies the accumulated multipliers onto the subclass's authored base
 ## stats. Runs deferred from _ready so it lands AFTER the subclass body sets its

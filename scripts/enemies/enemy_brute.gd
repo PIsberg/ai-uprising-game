@@ -17,6 +17,11 @@ extends EnemyBase
 ## RUSH_STUN, onto open floor it stumbles for RUSH_MISS_OPEN, and either way the
 ## shield hangs open (no block at all) until it recovers. The first tell of a
 ## run aimed at the player toasts the counter (MECHANIC_HINTS "shield_rush").
+## The tier reaches it through the robot's own multipliers (rush_tell,
+## rush_speed, rush_cooldown): EASY gets a 1.12 s tell, an 8.9 m/s run and
+## 11.2 s between rushes, NORMAL 0.81 s, 10.3 m/s and 7.6 s, HARD 0.6 s,
+## 11.6 m/s and 5.3 s. The bash's damage is the same on every tier, like every
+## other attack's.
 ## It keeps its footing:
 ## the run stops (as a miss) RUSH_LOOK short of a drop, of the navmesh's edge
 ## (how lava and water are carved) or of a hazard bed. Covered by
@@ -42,6 +47,19 @@ var _rush_t := 0.0 ## seconds left in the current phase
 var _rush_cd := 0.0
 var _rush_dir := Vector3.ZERO
 var _provoked := 0.0
+
+## The tell stretches with the tier's reaction time (clamped: never under 0.85
+## of RUSH_TELL, so HARD still shows it; never over 1.6).
+func rush_tell() -> float:
+	return RUSH_TELL * clampf(_reaction_mult, 0.85, 1.6)
+
+## The run takes half of the robot's speed scaling: EASY robots walk at 0.62,
+## and a rush at the full 11 m/s was the one thing on that tier at full pace.
+func rush_speed() -> float:
+	return RUSH_SPEED * lerpf(1.0, clampf(_speed_mult, 0.6, 1.2), 0.5)
+
+func rush_cooldown() -> float:
+	return RUSH_COOLDOWN * clampf(_cooldown_mult, 0.75, 1.6)
 
 ## True while a dodged rush has left the shield hanging aside: nothing is blocked.
 func shield_open() -> bool:
@@ -315,7 +333,7 @@ func _tick_rush(delta: float) -> bool:
 				var d := global_position.distance_to(target.global_position)
 				if d >= RUSH_MIN and d <= RUSH_MAX and _can_see(target):
 					rush = Rush.TELL
-					_rush_t = RUSH_TELL
+					_rush_t = rush_tell()
 					# The glow and the growl say something is coming, not what to
 					# do about it: the first one aimed at the player says so.
 					if target.is_in_group("player"):
@@ -345,8 +363,8 @@ func _tick_rush(delta: float) -> bool:
 			return true
 		Rush.RUSH:
 			_rush_t -= delta
-			velocity.x = _rush_dir.x * RUSH_SPEED
-			velocity.z = _rush_dir.z * RUSH_SPEED
+			velocity.x = _rush_dir.x * rush_speed()
+			velocity.z = _rush_dir.z * rush_speed()
 			_apply_gravity(delta)
 			move_and_slide()
 			_set_shield_glow(1.0, 9.0)
@@ -423,7 +441,7 @@ func _hang_open(seconds: float) -> void:
 
 func _end_rush() -> void:
 	rush = Rush.NONE
-	_rush_cd = RUSH_COOLDOWN
+	_rush_cd = rush_cooldown()
 	_provoked = 0.0
 
 ## The shield arm swings back across the front once it is no longer open.
