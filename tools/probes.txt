@@ -473,3 +473,4 @@ res://tests/palm_shove_probe.tscn
 res://tests/lamp_headroom_probe.tscn
 # Every level scene on disk boots with a live player and a baked navmesh; robots that never see the idle player are noted, not failed (#549).
 res://tests/campaign_smoke.tscn
+res://tests/kick_clip_probe.tscn
