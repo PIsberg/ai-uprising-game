@@ -11,6 +11,7 @@ extends Node
 ## (6) the player walking through ticks the box, which clears after BOX_TIME.
 ##   godot --headless --path . --audio-driver Dummy res://tests/captcha_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const LEVELS := ["gemini", "grok", "mistral"]
 var ok := true
 
@@ -62,7 +63,7 @@ func _run() -> void:
 				if not space.intersect_ray(r).is_empty():
 					walls += 1
 			_check("%s gate walls either side" % id, walls == 2, str(walls))
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)
 
 	# 2-6. Mechanics in an empty room.

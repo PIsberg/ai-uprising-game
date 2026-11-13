@@ -24,6 +24,8 @@ extends Node3D
 ##     clearance and footing with every other supply).
 ##   godot --headless --path . --audio-driver Dummy res://tests/pocket_cache_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var ok := true
 
 func _check(label: String, cond: bool, detail: String = "") -> void:
@@ -201,7 +203,7 @@ func _run() -> void:
 				if space.intersect_ray(q).is_empty():
 					sees.append("%s at %d m" % [target[0], int(eye.distance_to(target[1]))])
 			print("SIGHT %s cache %s sees: %s" % [id, (s["pos"] as Vector3).snapped(Vector3.ONE * 0.1), ", ".join(sees) if not sees.is_empty() else "neither exit nor spawn"])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		# Robots are parented beside the level and outlive it (tests/README.md).
 		for e in get_tree().get_nodes_in_group("enemy"):
 			e.queue_free()

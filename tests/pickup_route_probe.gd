@@ -19,6 +19,7 @@ extends Node
 ## Robots are switched off as in tests/ramp_walker.gd. Physics time only.
 ##   godot --headless --path . --audio-driver Dummy --fixed-fps 60 res://tests/pickup_route_probe.tscn [-- levels=01,gemini]
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const REACH_XZ := 1.2
 
 ## id -> {at: the pickup (world), route}
@@ -112,7 +113,7 @@ func _run() -> void:
 		else:
 			var spot: Dictionary = SPOTS[id]
 			await call("_route_%s" % spot["route"], id, player, spot["at"])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))

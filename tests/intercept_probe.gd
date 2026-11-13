@@ -18,6 +18,7 @@ extends Node3D
 
 ## A route shorter than this many seconds at courier speed is a sprint to a
 ## kill, not a chase (the player starts the task some way off the courier).
+const LevelIds := preload("res://tests/level_ids.gd")
 const MIN_RUN_SECONDS := 12.0
 
 var _fails: Array[String] = []
@@ -334,6 +335,6 @@ func _campaign() -> void:
 			if over_bumper:
 				_check(thrown, "%s courier is thrown by the bumper on its route" % id)
 			_check(ic.uploading, "%s courier runs the real route to the uplink (%.1f s of %.0f; leg %d at %s)" % [id, ran, budget, ic.leg, where])
-			level.queue_free()
+			LevelIds.unload(level)
 			await _frames(4)
 	_check(found >= 1, "at least one campaign level authors an intercept (%d)" % found)

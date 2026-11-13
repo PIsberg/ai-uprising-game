@@ -9,6 +9,8 @@ extends Node3D
 ## real scanners / player.
 ##   godot --headless --path . --audio-driver Dummy res://tests/bonus_objective_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 class StubScanner extends Node:
@@ -189,6 +191,6 @@ func _live() -> void:
 		if bo and bo.kind == "dry":
 			_check(bo._player_hp != null and bo._player_hp.damaged.is_connected(bo._on_player_damaged),
 				"%s live: hooked to the real player's damage" % id)
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)
 		GameState.reset_tasks()

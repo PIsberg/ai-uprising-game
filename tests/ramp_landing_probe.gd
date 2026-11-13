@@ -192,6 +192,6 @@ func _built(id: String) -> void:
 					if not hit.is_empty():
 						blocked = "%s at %s" % [hit.collider.name, hit.position]
 			_check("range: nothing solid stands on the stair", blocked == "", blocked)
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().process_frame
 	await get_tree().physics_frame

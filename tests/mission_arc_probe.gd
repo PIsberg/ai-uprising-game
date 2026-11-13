@@ -157,7 +157,7 @@ func _runtime_overseer() -> void:
 	_check("overseer seize live", not _task_flag("seize", "staged"))
 	_check("overseer deck hold is contested", _alive_enemies() >= before + 3,
 		"%d -> %d" % [before, _alive_enemies()])
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 
 # ---------- runtime: sublevel (key -> hack -> kill_quota chain) ----------
@@ -189,7 +189,7 @@ func _runtime_sublevel() -> void:
 		GameState.enemy_killed.emit(100, "TEST")
 	await _wait(0.2)
 	_check("sublevel shift done", GameState.is_task_done("shift"))
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 
 # ---------- runtime: assembly (sabotage -> reinforce + kill_quota) ----------
@@ -222,7 +222,7 @@ func _runtime_assembly() -> void:
 		GameState.enemy_killed.emit(100, "TEST")
 	await _wait(0.2)
 	_check("assembly batch done", GameState.is_task_done("batch"))
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 
 # ---------- runtime: uplink (hold -> key -> hold chain) ----------
@@ -241,7 +241,7 @@ func _runtime_uplink() -> void:
 	GameState.complete_task("key")
 	await _wait(0.5)
 	_check("uplink boost live", not _task_flag("boost", "staged"))
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 
 ## Every positioned objective must be walkable from the player spawn on the

@@ -13,6 +13,7 @@ extends Node3D
 ## reach of the field's edge.
 ##   godot --headless --path . --audio-driver Dummy res://tests/low_grav_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const JUMP_LIFT := 2.5
 
 var _fails: Array[String] = []
@@ -177,5 +178,5 @@ func _campaign() -> void:
 				var h2 := space.intersect_ray(q2)
 				_check(not h2.is_empty() and absf((h2.position as Vector3).y - ledge.y) < 0.3,
 					"%s ledge at %s is a deck top (hit %s)" % [id, ledge, h2.get("position", "nothing")])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)

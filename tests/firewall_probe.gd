@@ -7,6 +7,8 @@ extends Node3D
 ## firewalls that can already be opened by then.
 ##   godot --headless --path . --audio-driver Dummy res://tests/firewall_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 func _check(ok: bool, what: String) -> void:
@@ -192,7 +194,7 @@ func _check_level(id: String, def: Dictionary) -> void:
 			_reach(level, map, spawn, level._reachable_task_pos(p), passable, "%s task %s" % [id, tid])
 	# The exit: every firewall is openable by then.
 	_reach(level, map, spawn, def.get("exit", Vector3.ZERO), fws, "%s exit" % id)
-	level.queue_free()
+	LevelIds.unload(level)
 	await _frames(4)
 
 func _reach(level: Node3D, map: RID, from: Vector3, to: Vector3, passable: Array, what: String) -> void:

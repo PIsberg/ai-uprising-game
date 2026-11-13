@@ -168,12 +168,7 @@ func _run() -> void:
 			_check("%s: the spot pickup_route_probe walks to, %s, is still a pickup" % [id, spot["at"]], spot_seen, "(route \"%s\" leads to nothing: fix or remove its SPOTS entry)" % spot["route"])
 		print("LEVEL %s: %d pickups" % [id, n])
 		total += n
-		lvl.queue_free()
-		# Spawned robots are parented beside the level, not under it, so freeing
-		# the level leaves them in the tree for every level after it.
-		for e in get_tree().get_nodes_in_group("enemy"):
-			if not lvl.is_ancestor_of(e):
-				e.queue_free()
+		LevelIds.unload(lvl) # with the robots spawned beside it
 		for i in 5:
 			await get_tree().physics_frame
 	print("TOTAL %d pickups, %d bad, %d off the navmesh but walked by pickup_route_probe" % [total, bad, walked])

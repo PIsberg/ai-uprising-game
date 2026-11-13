@@ -10,6 +10,7 @@ extends Node
 ## Player (tests/ramp_walker.gd: walk, no jump, no sprint) to its top.
 ##   godot --headless --path . --audio-driver Dummy res://tests/house_stairs_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const Walker := preload("res://tests/ramp_walker.gd")
 const IDS := ["01", "suburb", "suburb_boss"]
 
@@ -53,7 +54,7 @@ func _run() -> void:
 				live += 1
 		_check("%s: every robot is switched off during the walks" % id, robots.size() > 0 and live == 0,
 			"%d of %d still live" % [live, robots.size()])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 	_check("found the open buildings' stairs", total >= 6, "%d" % total)

@@ -43,7 +43,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-608 probes total: **285** wired into the headless suite (`suite`), **87**
+609 probes total: **286** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -297,7 +297,7 @@ or GPU-timing probes; `--headless` renders these black).
 | dog_gait_probe | The DOG trots: running after a target at 9.2 m/s every paw (the GLB's paw meshes, by side, body frame) swings 0.12+ m fore and aft (0.50; 0.00 before), diagonal paws together (r 1.00) and the front pair in opposition (r -1.00); stopped, every paw back within 0.03 m of rest | suite |
 | dog_pack_probe | The K-9 HUNTER's PACK HUNT (`EnemyDog.pack_hunt`), four real dogs round a stand-in player for 14 s: only one pounce is ever under way, no dog rears until PACK_GAP after the last landing, no two pounce bites land within half a second, every dog gets a turn, and the waiting dogs run a ring round the prey (on the move, 4.5 to 10 m out on average); a lone dog rears at once, closes to bite and pounces again on its own cooldown; a dog killed while rearing does not hold the turn; ORB and ROLLER do not pack hunt (12 checks; 4 failed when every dog pounced on its own timer) | suite |
 | dog_pack_shot | Four K-9 HUNTERs on a stand-in player from above: one rearing with three on the ring, and one in the air | windowed |
-| double_tap_probe | The M9 Sidearm's alt-fire DOUBLE TAP (`WeaponData.AltMode.DOUBLE`), through the real weapon scene: one use costs 2 rounds; a tap fires exactly two, under 0.12 s apart, both dead straight from the hip and at full damage; 5 taps put 10 of 10 rounds on a 0.3 m plate at 30 m where 10 hip-fired trigger rounds land fewer; holding the button fires one pair; the trigger then waits `DOUBLE_REST` shot intervals; with one round left the tap fires nothing (11 checks; 8 failed when the M9 had no alt-fire) | suite |
+| double_tap_probe | The M9 Sidearm's alt-fire DOUBLE TAP (`WeaponData.AltMode.DOUBLE`), through the real weapon scene: one use costs 2 rounds; a tap fires exactly two, the second within 0.07 s and two frames of the first (a flat 0.12 s failed 2 runs in 24, #543), both dead straight from the hip and at full damage; 5 taps put 10 of 10 rounds on a 0.3 m plate at 30 m where 10 hip-fired trigger rounds land fewer; holding the button fires one pair; the trigger then waits `DOUBLE_REST` shot intervals; with one round left the tap fires nothing (11 checks; 8 failed when the M9 had no alt-fire) | suite |
 | punch_through_probe | The MK-VII Longshot's alt-fire PUNCH-THROUGH (`WeaponData.AltMode.PUNCH`, #496), through the real weapon scene at a lane of walls and plates: one use costs 3 rounds; a trigger round stops at the first wall; a tap fires one dead-straight slug that crosses 2 walls (the plate behind the first takes 0.75 of the gun's damage, behind the second 0.5625, behind the third nothing), leaves a hole on the near and far face of each wall it crossed and only the near face of the one that stopped it; a wall 1.5 m over `PUNCH_THICK` stops it and one 0.3 m under does not; it hits 5 of 5 robots in a row where a trigger round hits 3; a held button fires once; the trigger then waits `PUNCH_REST` shot intervals; with 2 rounds left nothing fires. 19 checks, 13 red before the mode existed | suite |
 | brace_fire_probe | The SIEGE Chaingun's alt-fire BRACE (`WeaponData.AltMode.BRACE`, #496), a stance: through the real weapon scene, the button alone fires nothing; hip rounds fly in a cone over 2 degrees and every braced round in `BRACE_SPREAD_DEG` (0.5) with no bloom; 30 braced rounds all land on a 0.5 m plate at 25 m and 30 hip rounds land fewer; rate and damage are unchanged; `Weapon.move_mult` is `BRACE_MOVE` while held, 1 let go and 1 through a reload. Through the real player: `_current_speed` with the braced chaingun in hand is `BRACE_MOVE` of the free speed, and full again once the gun is put away with the button still down. 16 checks, 9 red before the mode existed | suite |
 | salvo_fire_probe | The Swarm Launcher's alt-fire SALVO (`WeaponData.AltMode.SALVO`, #496), through the real weapon scene: one press on a full magazine fires all 9 rounds (27 missiles counted entering the scene) and leaves it empty; they leave in under 1 s where the trigger takes over 3 s; every round keeps the launcher's cone; the gun then rests `SALVO_REST` shot intervals; a press on 4 rounds fires 4 and a press on 1 fires nothing (`SALVO_MIN`); holstering mid-salvo stops it with rounds left. 12 checks, 9 red before the mode existed | suite |
@@ -456,6 +456,7 @@ or GPU-timing probes; `--headless` renders these black).
 | level01_task_probe | Level 1's single checklist task (gate lever) spawns live; completing it unseals the exit | headless |
 | level_def_coverage_probe | Every typed entry in every campaign level def resolves through the builder's own tables: enemy types (enemies, task enemy/reinforce/waves) in ENEMY_SCENES, prop types in PROP_SCENES, pickup kinds in PICKUP_SCENES, task types in the _build_tasks arms, extra_weapons scenes exist; 1404 entries, red on a single injected typo | suite |
 | level_detail_probe | Eye-level views of a campaign level to judge/iterate environmental detail | windowed |
+| level_unload_probe | `LevelIds.unload` (#522), in gpt and neon: the level's robots are outside the level node (4 or 5 each), a bare `queue_free()` leaves every one standing, `unload` leaves none, and it takes a null level | suite |
 | level_shot | Elevated 3/4 view of each campaign level: layout/detail/obstacle fit | windowed |
 | level_sky_probe | Horizon/sky of a real open-sky night level: stars+moon | windowed |
 | lightning_probe | Storm-lightning bolt at real in-game distance with fog/exposure as in play | windowed |
@@ -739,10 +740,13 @@ Learned the hard way (see root `CLAUDE.md` and probe post-mortems):
   saying why.
 - **Robots outlive the level a sweep frees.** `EnemySpawner` parents them to
   `get_tree().current_scene`, which in a probe is the probe, not the level.
-  After `lvl.queue_free()`, free every node in group `enemy` too, and switch
-  robots off while measuring anything they can change: loose VACUUMs ate 2 to
-  7 of the next levels' pickups in `pickup_reach_sweep`, a different set each
-  run (#514).
+  Free a level with `LevelIds.unload(lvl)`, never a bare `lvl.queue_free()`:
+  it frees the robots with it. 15 of 32 multi-level probes carried up to 100
+  robots into the next level (#522), and loose VACUUMs ate 2 to 7 of the next
+  levels' pickups in `pickup_reach_sweep`, a different set each run (#514).
+  `tools/check_suite_manifest.py` fails a suite or headless probe that frees
+  a variable named `lvl` or `level` the old way. Still switch robots off
+  while measuring anything they can change inside one level.
 
 ## Maintenance
 

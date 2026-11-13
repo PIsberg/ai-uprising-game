@@ -9,6 +9,7 @@ extends Node3D
 ## in a bed show the built geometry agrees with the def.
 ##   godot --headless --path . --audio-driver Dummy res://tests/flood_surge_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const SLAB_HALF := 0.8   # LavaHazard damage box is 1.6 tall around the surface
 const SURFACE := 0.06    # LavaHazard.surface_y
 ## Flood levels must leave this many decks dry: a refuge, not a single pillar.
@@ -252,5 +253,5 @@ func _live() -> void:
 			on_exit.queue_free()
 			for st in in_beds:
 				st.queue_free()
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)

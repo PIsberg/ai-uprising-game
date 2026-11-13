@@ -76,7 +76,7 @@ func _run() -> void:
 		if player == null:
 			print("WALK %s: no player" % id)
 			_no_player.append(id)
-			lvl.queue_free()
+			LevelIds.unload(lvl)
 			await get_tree().process_frame
 			continue
 		var n := 0
@@ -113,7 +113,7 @@ func _run() -> void:
 		_stopped += bad
 		_repeatable += real
 		print("WALKS %s: %d ramp(s), %d stopped, %d repeatable" % [id, n, bad, real])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 	print("RAMP_WALK %d ramp(s), %d stopped, %d repeatable" % [_total, _stopped, _repeatable])

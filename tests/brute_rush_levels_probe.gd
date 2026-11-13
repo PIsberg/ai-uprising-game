@@ -25,6 +25,7 @@ extends Node
 ##   godot --headless --path . --audio-driver Dummy res://tests/brute_rush_levels_probe.tscn
 ##   ... -- levels=lava_world,gpt   one or more levels; -- verbose   every run
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const Triage := preload("res://tests/ramp_walk_triage.gd")
 const BRUTE := "res://scenes/enemies/brute.tscn"
 const RANDOM_STARTS := 10
@@ -87,7 +88,7 @@ func _run() -> void:
 			if e is CollisionObject3D:
 				(e as CollisionObject3D).collision_layer = 0
 		await _level(id, lvl, authored)
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 	_check("the rush was run in every level with a navmesh", _levels >= _ids().size() - 2, "%d of %d level(s)" % [_levels, _ids().size()])

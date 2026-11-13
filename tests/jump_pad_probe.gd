@@ -14,6 +14,7 @@ extends Node3D
 ##     (nothing in the way: railings, pillars, the ceiling).
 ##   godot --headless --path . --audio-driver Dummy res://tests/jump_pad_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const PAD_LEVELS := ["neon", "alien"]
 
 var ok := true
@@ -155,6 +156,6 @@ func _live_level(id: String) -> void:
 		var land: Vector3 = r[0]
 		print("  %s pad -> %s: landed %s after %.2f s" % [id, jp.to, land, r[2]])
 		_check("%s ride lands on %s" % [id, jp.to], absf(land.y - jp.to.y) < 0.4 and Vector2(land.x - jp.to.x, land.z - jp.to.z).length() < 1.5, "(%s)" % land)
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	for i in 3:
 		await get_tree().physics_frame

@@ -9,6 +9,7 @@ extends Node
 ## user://savegame.cfg around the whole run.
 ##   godot --headless --path . --audio-driver Dummy res://tests/continue_sweep_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const BUILD_WAIT := 2.4
 const BONUS_A := "res://scenes/weapons/tesla.tscn"
 const BONUS_B := "res://scenes/weapons/gauss.tscn"
@@ -125,7 +126,7 @@ func _run() -> void:
 			_fail.append(id)
 		deployed += 1
 		# --- teardown (awaited: the next level must not see this one's nodes)
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for e in get_tree().get_nodes_in_group("enemy"):
 			if is_instance_valid(e):
 				e.queue_free()

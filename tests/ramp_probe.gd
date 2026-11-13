@@ -15,6 +15,7 @@ extends Node3D
 
 ## Every level scene on disk, the walker's list: a list kept here by hand left
 ## out hivemind and guardrails (#339).
+const LevelIds := preload("res://tests/level_ids.gd")
 const Triage := preload("res://tests/ramp_walk_triage.gd")
 
 const CAPSULE_RADIUS := 0.35
@@ -84,7 +85,7 @@ func _ready() -> void:
 				print("RAMPS %s: %d ramp(s), %d issue(s):" % [id, ramps.size(), issues.size()])
 				for msg in issues:
 					print("      ", msg)
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 

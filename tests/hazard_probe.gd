@@ -5,6 +5,8 @@ extends Node
 ## sea — proves spawn-on-platform works and the player didn't fall through void).
 ##   godot --path . --headless res://tests/hazard_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -41,7 +43,7 @@ func _check(scene_path: String, tag: String, expect_water: bool) -> bool:
 	print("%s hazards=%d water_mode_ok=%s enemies=%d player_y=%.2f hp=%.0f%% -> %s" % [
 		tag, hazards.size(), water_ok, enemies.size(), py, hp_ratio * 100.0,
 		"OK" if (pass_hazard and pass_enemies and pass_player) else "BAD"])
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await _wait(0.3)
 	return pass_hazard and pass_enemies and pass_player
 

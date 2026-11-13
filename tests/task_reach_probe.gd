@@ -28,6 +28,7 @@ extends Node
 ##   godot --headless --path . --audio-driver Dummy res://tests/task_reach_probe.tscn
 
 ## Levels outside GameState.CAMPAIGN that hand out supplies and guns.
+const LevelIds := preload("res://tests/level_ids.gd")
 const EXTRA := ["res://scenes/levels/level_range.tscn", "res://scenes/levels/level_horde.tscn"]
 const SUPPORT := 1.0 ## a pickup hovers at most this far over what it stands on
 const FLOOR_Y := 0.7 ## authored at or under this, a pickup is on the floor
@@ -139,7 +140,7 @@ func _check_level(path: String) -> void:
 		var missing: Array = want.filter(func(g: String) -> bool: return not racked.has(g))
 		_check("range racks every player gun", missing.is_empty() and racked.size() == want.size(),
 			"%d of %d, missing %s" % [racked.size(), want.size(), str(missing)])
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().create_timer(0.3).timeout
 
 ## One supply or gun at `at`: nothing solid in it, something under it, on the
@@ -202,5 +203,5 @@ func _controls() -> void:
 		"(precondition: proves the exclusion below is doing the work)")
 	var c: Vector3 = lvl._reachable_task_pos(open, core)
 	_check("control: core on open floor stays", _flat(c).distance_to(_flat(open)) < 0.01, str(c))
-	lvl.queue_free()
+	LevelIds.unload(lvl)
 	await get_tree().create_timer(0.3).timeout

@@ -15,6 +15,8 @@ extends Node3D
 ## task_reach_probe's job.
 ##   godot --headless --path . --audio-driver Dummy res://tests/decoy_keycard_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _toasts: Array[String] = []
 var _spawned: Array = []
@@ -132,7 +134,7 @@ func _campaign() -> void:
 			# A staged key spawns later: only an unstaged one is live at build.
 			await _frames(30)
 			if t.has("after"):
-				level.queue_free()
+				LevelIds.unload(level)
 				await _frames(4)
 				continue
 			var tid: String = t.get("id", "key")
@@ -147,6 +149,6 @@ func _campaign() -> void:
 				for k in range(1, cards.size()):
 					all_decoys = all_decoys and cards[k].decoy and not (cards[k].ambush as Array).is_empty()
 				_check(all_decoys, "%s every later card is a decoy with an ambush" % id)
-			level.queue_free()
+			LevelIds.unload(level)
 			await _frames(4)
 	_check(found >= 1, "at least one campaign level authors decoys (%d)" % found)

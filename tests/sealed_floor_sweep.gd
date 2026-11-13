@@ -44,7 +44,7 @@ func _run() -> void:
 		var cut_n: int = res["cut"]
 		print("LEVEL %s: %d floor samples on the navmesh, %d cut off, %d groups" % [id, on_nav, cut_n, n])
 		groups += n
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for i in 5:
 			await get_tree().physics_frame
 	print("TOTAL %d sealed groups" % groups)

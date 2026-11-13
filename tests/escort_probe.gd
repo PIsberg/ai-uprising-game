@@ -15,6 +15,8 @@ extends Node3D
 ## at chase speed are printed.
 ##   godot --headless --path . --audio-driver Dummy res://tests/escort_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 
 func _check(ok: bool, what: String) -> void:
@@ -241,6 +243,6 @@ func _campaign() -> void:
 			var spd: float = u.chase_speed() if u.has_method("chase_speed") else 4.0
 			u.free()
 			print("  %s escort route %.0f m, %.0f s at %.1f m/s" % [id, length, length / maxf(spd, 0.1), spd])
-			level.queue_free()
+			LevelIds.unload(level)
 			await _frames(4)
 	_check(found >= 1, "at least one campaign level authors an escort (%d)" % found)

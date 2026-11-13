@@ -11,6 +11,7 @@ extends Node
 ## (4) a jailbroken robot comes back after JAILBREAK_TIME.
 ##   godot --headless --path . --audio-driver Dummy res://tests/injector_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
 const LEVELS := ["gemini", "grok", "uplink", "overseer"]
 var ok := true
 
@@ -50,7 +51,7 @@ func _run() -> void:
 			var hits := space.intersect_shape(q, 4)
 			_check("%s injector at %s has clear room" % [id, p], hits.is_empty(),
 					str(hits.map(func(h: Dictionary) -> String: return str(h.collider.name))))
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await _frames(3)
 
 	# 2-4. Mechanics in an empty room.

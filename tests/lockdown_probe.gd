@@ -14,6 +14,8 @@ extends Node3D
 ## inside seals it, and every wave-1 robot lands inside the house.
 ##   godot --headless --path . --audio-driver Dummy res://tests/lockdown_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _toasts: Array[String] = []
 
@@ -237,6 +239,6 @@ func _campaign() -> void:
 				_check(absf(l.x) <= z.half.x + 0.3 and absf(l.z) <= z.half.z + 0.3 and l.y > -0.5 and l.y < z.half.y * 2.0,
 					"%s wave robot lands inside the house (%s)" % [id, l])
 			z.release(false)
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign house authors a lockdown (%d)" % found)

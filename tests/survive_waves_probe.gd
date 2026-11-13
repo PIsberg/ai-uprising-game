@@ -19,6 +19,7 @@ extends Node3D
 
 ## Holds that are deliberately bare, with the reason. Anything not listed here
 ## must author waves.
+const LevelIds := preload("res://tests/level_ids.gd")
 const EXEMPT := {
 	"convoy": "the ride's own boarder/flyer director is the escalation (convoy_ride.gd)",
 }
@@ -111,7 +112,7 @@ func _check_live() -> void:
 			_check("%s '%s' @%v can reach the player spawn" % [id, wk["type"], p], gap < 5.0,
 				"gap %.1f" % gap)
 		print("live: %s, %d walking wave spawns checked" % [id, walkers.size()])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		await get_tree().process_frame
 		await get_tree().process_frame
 

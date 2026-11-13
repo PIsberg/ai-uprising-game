@@ -22,6 +22,7 @@ extends Node
 
 ## The builder's own clearance: player capsule (1.8 m) + margin. 1.9 m passed
 ## mistral's TwrRamp3 at 1.94 m, where the real walker stopped 3 of 3 times.
+const LevelIds := preload("res://tests/level_ids.gd")
 const CLEARANCE_M := LevelBuilder.PLAYER_CLEARANCE_M
 const SAMPLE_STEP := 0.25
 
@@ -54,7 +55,7 @@ func _run() -> void:
 		levels += 1
 		for line in scan(lvl):
 			bad.append("%s %s" % [id, line])
-		lvl.queue_free()
+		LevelIds.unload(lvl)
 		for i in 5:
 			await get_tree().physics_frame
 	print("levels %d" % levels)

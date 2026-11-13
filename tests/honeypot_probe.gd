@@ -12,6 +12,8 @@ extends Node3D
 ## geometry, out of every hazard bed, and can be reached from spawn.
 ##   godot --headless --path . --audio-driver Dummy res://tests/honeypot_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _hints: Array[String] = []
 var _toasts: Array[String] = []
@@ -226,6 +228,6 @@ func _campaign() -> void:
 			var path := NavigationServer3D.map_get_path(map, NavigationServer3D.map_get_closest_point(map, spawn), near, true)
 			_check(path.size() > 1 and path[-1].distance_to(near) < 0.6 and Vector2(near.x - at.x, near.z - at.z).length() < 1.5,
 				"%s honeypot at %s can be reached from spawn" % [id, at])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 2, "campaign levels place honeypots (%d)" % found)

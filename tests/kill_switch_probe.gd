@@ -17,6 +17,8 @@ extends Node3D
 ## fight the window is meant to be.
 ##   godot --headless --path . --audio-driver Dummy res://tests/kill_switch_probe.tscn
 
+const LevelIds := preload("res://tests/level_ids.gd")
+
 var _fails: Array[String] = []
 var _toasts: Array[String] = []
 
@@ -227,6 +229,6 @@ func _campaign() -> void:
 			var tour := _best_tour(map, pts)
 			var window := float(t.get("window", 20.0))
 			_check(tour / sprint <= window * 0.6, "%s tour %.0f m at %.1f m/s = %.1f s fits 60%% of %.0f s" % [id, tour, sprint, tour / sprint, window])
-		level.queue_free()
+		LevelIds.unload(level)
 		await _frames(4)
 	_check(found >= 1, "at least one campaign level authors a kill_switch (%d)" % found)
