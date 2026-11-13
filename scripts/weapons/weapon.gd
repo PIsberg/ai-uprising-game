@@ -677,13 +677,25 @@ const NOVA_REST := 1.2
 const DETONATE_COST := 4
 const DETONATE_REST := 1.0
 
+## SHOVE (tap): the PALM Cannon spends SHOVE_COST bolts on an open-palm blast.
+## Every robot within SHOVE_RANGE of the camera and SHOVE_HALF_ANGLE (measured
+## on the ground plane) of where it faces, that no world geometry hides, takes
+## SHOVE_DAMAGE and is thrown away from the player by BlastPush.throw: flyers,
+## swimmers and bosses take the damage and stay put. The gun then rests
+## SHOVE_REST seconds.
+const SHOVE_COST := 4
+const SHOVE_RANGE := 6.0
+const SHOVE_HALF_ANGLE := 35.0
+const SHOVE_DAMAGE := 30.0
+const SHOVE_REST := 0.8
+
 var _alt_mine := false         # the round being fired is a mine (read by _spawn_projectile)
 var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, NOVA_COST for NOVA, DETONATE_COST for DETONATE, one
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, SALVO_MIN for SALVO, MINE_COST for MINE, NOVA_COST for NOVA, DETONATE_COST for DETONATE, SHOVE_COST for SHOVE, one
 ## for SLUG, FAN and BRACE, 0
 ## on a gun with no alt mode.
 func alt_cost() -> int:
@@ -704,6 +716,8 @@ func alt_cost() -> int:
 			return NOVA_COST
 		WeaponData.AltMode.DETONATE:
 			return DETONATE_COST
+		WeaponData.AltMode.SHOVE:
+			return SHOVE_COST
 	return 1
 
 ## What holding this gun does to the player's speed: BRACE_MOVE while it is
@@ -788,6 +802,11 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 						shooter.shake(0.3)
 				else:
 					_play_empty()
+		WeaponData.AltMode.SHOVE:
+			if just and _cooldown <= 0.0 and mag >= SHOVE_COST:
+				_fire_shove(camera, shooter)
+			elif just and _cooldown <= 0.0 and mag < SHOVE_COST:
+				_play_empty()
 		WeaponData.AltMode.BRACE:
 			if pressed != _braced:
 				_braced = pressed
@@ -846,6 +865,52 @@ func _cancel_charge() -> void:
 	_alt_held = false
 	_alt_charge = 0.0
 	_alt_step = 0
+
+## The PALM Cannon's open-palm blast (SHOVE).
+func _fire_shove(camera: Camera3D, shooter: Node) -> void:
+	if not is_instance_valid(camera):
+		return
+	mag -= SHOVE_COST
+	_cooldown = SHOVE_REST
+	var origin := camera.global_position
+	var fwd := -camera.global_basis.z
+	fwd.y = 0.0
+	if fwd.length() < 0.01: # looking straight up or down: no cone to speak of
+		fwd = -camera.global_basis.y
+		fwd.y = 0.0
+	fwd = fwd.normalized()
+	var space := camera.get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var sh := SphereShape3D.new()
+	sh.radius = SHOVE_RANGE
+	q.shape = sh
+	q.transform = Transform3D(Basis(), origin)
+	q.collision_mask = 0b0000100 # enemies only
+	var seen := {}
+	for h in space.intersect_shape(q, 32):
+		var col: Node = h["collider"]
+		var d := _find_damageable(col)
+		if d == null or seen.has(d) or not (col is Node3D):
+			continue
+		seen[d] = true
+		var to: Vector3 = (col as Node3D).global_position - origin
+		to.y = 0.0
+		if to.length() > 0.3 and rad_to_deg(fwd.angle_to(to)) > SHOVE_HALF_ANGLE:
+			continue
+		var chest: Vector3 = (col as Node3D).global_position + Vector3.UP * 0.9
+		var ray := PhysicsRayQueryParameters3D.create(origin, chest)
+		ray.collision_mask = 0b0000001 # world
+		if not space.intersect_ray(ray).is_empty():
+			continue
+		KillFx.tag(d, data.kill_fx, data)
+		d.apply_damage(SHOVE_DAMAGE, shooter)
+		KillFx.untag(d)
+		if is_instance_valid(col):
+			BlastPush.throw(col, origin, 1.0, shooter)
+	_play_fire_sound()
+	_muzzle_shockwave()
+	if is_instance_valid(shooter) and shooter.has_method("shake"):
+		shooter.shake(0.5)
 
 ## The Tesla's ring discharge (NOVA). Robots are found by an overlap of the
 ## enemy layer around the camera; each is hit once, however many colliders it

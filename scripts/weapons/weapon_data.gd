@@ -15,8 +15,9 @@ enum DamageType { HITSCAN, PROJECTILE }
 ## sticks where it lands and goes off when a robot comes near (the Tempest Coil).
 ## NOVA: a ring discharge around the player that hurts and switches off every
 ## robot close by (the Tesla Projector). DETONATE: every robot the gun has
-## primed goes off now, still standing (the Cascade).
-enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO, MINE, NOVA, DETONATE }
+## primed goes off now, still standing (the Cascade). SHOVE: an open-palm
+## blast that throws back the robots in front of the player (the PALM Cannon).
+enum AltMode { NONE, CHARGE, VOLLEY, SLUG, FAN, DOUBLE, PUNCH, BRACE, SALVO, MINE, NOVA, DETONATE, SHOVE }
 ## What the round does to plating: DamageMatrix.TABLE scales every hit by this
 ## against the victim's armour class, so each gun is the right tool for some
 ## robots and the wrong one for others.
@@ -44,6 +45,7 @@ const ALT_TAGS := {
 	AltMode.MINE: "ALT: ARC MINE",
 	AltMode.NOVA: "ALT: NOVA",
 	AltMode.DETONATE: "ALT: DETONATE",
+	AltMode.SHOVE: "ALT: SHOVE",
 }
 const ALT_HINTS := {
 	AltMode.CHARGE: "alt_charge",
@@ -57,6 +59,7 @@ const ALT_HINTS := {
 	AltMode.MINE: "alt_mine",
 	AltMode.NOVA: "alt_nova",
 	AltMode.DETONATE: "alt_detonate",
+	AltMode.SHOVE: "alt_shove",
 }
 @export var damage_class: DamageClass = DamageClass.KINETIC
 

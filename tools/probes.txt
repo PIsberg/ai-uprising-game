@@ -466,5 +466,7 @@ res://tests/arc_mine_probe.tscn
 res://tests/nova_fire_probe.tscn
 # DETONATE: the Cascade alt-fire sets off every primed robot without waiting for a kill.
 res://tests/cascade_detonate_probe.tscn
+# SHOVE: the PALM Cannon alt-fire throws back the robots in a cone in front of the player.
+res://tests/palm_shove_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
