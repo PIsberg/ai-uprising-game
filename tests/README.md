@@ -43,7 +43,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-609 probes total: **286** wired into the headless suite (`suite`), **87**
+609 probes total: **287** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -105,7 +105,7 @@ or GPU-timing probes; `--headless` renders these black).
 | campaign_dump | SceneTree script dumping `max_level_reached` + full campaign roster for inspection | headless |
 | campaign_map_probe | Campaign map at a mid-run progress state, screenshotted | windowed |
 | campaign_nav_sweep | Full-campaign softlock guard: every level scene on disk (`level_ids.gd`, 26) with an authored exit has it navmesh-reachable from spawn (24; horde and range have no exit) | headless |
-| campaign_smoke | Full-campaign live smoke test: boots every level scene, bakes navmesh, reports build/player/health per level | headless |
+| campaign_smoke | Boots every level scene on disk (`level_ids`) with the real player and robots, and fails on a level with no living player or no baked navmesh. Robots that neither move nor fire in 3.2 s are a `QUIET` note with the nearest one's starting distance, not a failure: the player never leaves the spawn, and 11 levels start with no robot in sight of it (#549) | suite |
 | cargo_lift_probe | CargoLift: a player standing on the car is carried to the top landing (6.98 of 7.0 m in 3.3 s, never below the car), the car waits up there, an empty car comes down when the player stands by the bottom landing (2.7 s), the car is solid ground at both ends; LAVA WORLD's and WATER WORLD's lifts each land flush at both ends beside a deck nothing else reaches, at least 1 m above any flood their level raises | suite |
 | cargo_lift_shot | A level's cargo lift (LAVA WORLD, or `--level=water_world`): the shaft with the car down, the car at its top deck, the view from the deck; `-- --out=<dir> [--level=<id>]` | windowed |
 | cascade_probe | The CX-4 Cascade, the early horde-clearer: the gun carries cascade damage and radius, ranks between the Breacher and the Maelstrom and is in the warp arsenal; one cascade kill in a ring of six robots under 0.6 of a blast chains through all six, a robot outside the radius and a player inside it are untouched, and GameState reports one chain of six; the same kill from the rifle hurts no neighbour and reports no chain; a primed robot finished by an untagged hit still detonates, an expired prime does not; a 30-robot line at 0.95 of a blast pops at least 2 but not all (each generation is weaker); a boss-sized robot is never primed; a cascade blast sets off an explosive barrel in range while a crate in range and a barrel out of range are left alone (red-checked: with the prime call disabled 6 checks fail; before props joined the blast the barrel check failed) | suite |

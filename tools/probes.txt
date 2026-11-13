@@ -471,3 +471,5 @@ res://tests/cascade_detonate_probe.tscn
 res://tests/palm_shove_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
+# Every level scene on disk boots with a live player and a baked navmesh; robots that never see the idle player are noted, not failed (#549).
+res://tests/campaign_smoke.tscn
