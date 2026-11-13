@@ -1,7 +1,7 @@
 extends Node
 ## Probe: every 3D model the game ships is named in CREDITS.md (#363). Eleven
-## Sketchfab models (CC-BY, one CC-BY-NC, one Sketchfab Standard) shipped with no
-## credit at all; CC-BY requires one. Naming a model is not enough: the WAR-BOT's
+## Sketchfab models (CC-BY, one CC-BY-NC since replaced (#406), one Sketchfab
+## Standard) shipped with no credit at all; CC-BY requires one. Naming a model is not enough: the WAR-BOT's
 ## was named for months under a "source is not identified yet" heading, which passed
 ## this probe while shipping a model with no known licence (#435, found in the end:
 ## CC0). So a file under any heading with UNSOURCED_MARK in it fails too: a model
@@ -78,7 +78,8 @@ func _ready() -> void:
 		crawl += str(e["text"]) + "\n"
 	var artists: Array = cc_by_artists(credits)
 	var uncrawled: Array = artists.filter(func(a: String) -> bool: return not crawl.contains(a))
-	var crawled := uncrawled.is_empty() and artists.size() >= 14
+	# 13 since #406: the HOWITZER's CC-BY-NC model, whose line counted here, is gone.
+	var crawled := uncrawled.is_empty() and artists.size() >= 13
 	print("%s every CC-BY artist is named in the end credits (%d artists) %s" % ["OK  " if crawled else "FAIL", artists.size(), uncrawled])
 	var ok := named and parses and sourced and crawled
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))

@@ -31,7 +31,7 @@ const LINES: Array = [
 	{"text": "Sketchfab robot models (CC-BY 4.0): grabthesky, lenat_1, SkibidiSanya,", "size": 18, "gap": 0},
 	{"text": "Gianmarco, nickheitzman, Moonlightlll, TooManyDemons, 3DHaupt, Pigcraft,", "size": 18, "gap": 0},
 	{"text": "TECHGUY, Andrei Milin, HeiMan Chan", "size": 18, "gap": 4},
-	{"text": "zebra_pozer (CC-BY-NC 4.0)  ·  Lagst (Sketchfab Standard)", "size": 18, "gap": 4},
+	{"text": "Lagst (Sketchfab Standard)", "size": 18, "gap": 4},
 	{"text": "Matt McInerney — Orbitron font (SIL OFL 1.1), Google Fonts", "size": 18, "gap": 4},
 	{"text": "Full attributions in CREDITS.md", "size": 14, "color": Color(0.5, 0.55, 0.65), "gap": 90},
 	{"text": "THANK YOU FOR PLAYING", "size": 30, "color": Color(1.0, 0.85, 0.4), "gap": 220},
