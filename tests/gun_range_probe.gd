@@ -8,12 +8,23 @@ extends Node
 ##   3. cold first-shot accuracy is tighter than warm fire (rifle)
 ##   4. ADS is tighter than hip fire (pistol)
 ##   5. sniper ADS is pinpoint
-##   6. shotgun pellet cone opens wide but stays bounded
+##   6. shotgun pellet cone opens wide but stays bounded, and every pellet of
+##      both blasts marks the floor
 ##   7. recoil climbs then settles back (recoil_return)
 ##   godot --headless --path . res://tests/gun_range_probe.tscn
 
 const AIM_DIST := 18.0        # aim at the range floor this far downrange
 const DECAL_LIFT := 0.02      # _spawn_bullet_hole offsets decals off the surface
+## The shotgun aims this close instead. At AIM_DIST the camera looks about 5
+## degrees down and the cone is 6 wide, so a pellet scattered upward leaves
+## level or rising and meets nothing inside the gun's 35 m: 11 to 18 of 18
+## pellets marked the floor over 24 runs, and CI rolled 9 against a gate of 10
+## with both blasts fired. From here the highest pellet still comes down inside
+## the range, so every pellet of every blast leaves a mark.
+const SHOTGUN_AIM_DIST := 6.0
+
+## How far out _reset_aim points the camera at the floor.
+var _aim_dist := AIM_DIST
 
 var _player: CharacterBody3D
 var _cam: Camera3D
@@ -99,7 +110,7 @@ func _arm(path: String) -> Weapon:
 func _reset_aim() -> void:
 	_player.rotation.y = 0.0
 	if _head:
-		var drop := atan2(_cam.global_position.y, AIM_DIST)
+		var drop := atan2(_cam.global_position.y, _aim_dist)
 		_head.rotation = Vector3(-drop, 0, 0)
 	_cam.rotation = Vector3.ZERO
 
@@ -277,10 +288,13 @@ func _test_shotgun_cone() -> void:
 	var w: Weapon = await _arm("res://scenes/weapons/shotgun.tscn")
 	await _clear_holes()
 	await _wait_game(0.6)
+	_aim_dist = SHOTGUN_AIM_DIST
 	var angles := await _fire_series(w, 2, 0.9, false)
+	_aim_dist = AIM_DIST
 	var d: WeaponData = w.data
 	_check("shotgun fires both blasts", _fired == 2, "fired=%d" % _fired)
-	_check("shotgun pellets land", angles.size() >= 10, "decals=%d fired=%d" % [angles.size(), _fired])
+	_check("every shotgun pellet lands", angles.size() == _fired * d.pellets,
+		"decals=%d fired=%d pellets=%d" % [angles.size(), _fired, d.pellets])
 	_check("shotgun cone bounded", _peak(angles) <= d.spread_deg + 0.3,
 		"peak=%.2f° max=%.2f°" % [_peak(angles), d.spread_deg])
 	_check("shotgun cone opens", _peak(angles) >= d.spread_deg * 0.4,

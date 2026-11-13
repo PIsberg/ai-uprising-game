@@ -6,6 +6,9 @@ extends Node
 ##     goes over the edge and lands on the floor below (the tween toppled it
 ##     in place on the catwalk), for a skinned rig (GUNNER) and a rigid model
 ##     (REAPER);
+## (2b) one still falling at the 2.2 s tumble cap (a 60 m drop) lands first;
+## (2c) one that is slow at the cap only because it is at the top of its arc
+##     comes down first;
 ## (3) the wreck and its physics body are gone within 7 s;
 ## (4) a boss (score >= 1000) keeps the scripted topple its kill-cam frames.
 ##   godot --headless --path . --audio-driver Dummy res://tests/wreck_physics_probe.tscn
@@ -51,6 +54,8 @@ func _spawn(scene: String, pos: Vector3, shooter: Node3D) -> EnemyBase:
 func _kill(e: EnemyBase, shooter: Node3D) -> void:
 	e.hp.apply_damage(99999.0, shooter)
 
+const APEX_LAG := 0.1 ## s; see case 2c
+
 func _tilt_deg(t: Transform3D) -> float:
 	return rad_to_deg(t.basis.orthonormalized().y.angle_to(Vector3.UP))
 
@@ -74,7 +79,8 @@ func _rest(e: EnemyBase) -> Array:
 					wb = b
 					wb.settled.connect(func() -> void:
 						got.append(e.global_transform)
-						print("  (settled after %.2f game s, %s)" % [wb._t, "asleep" if wb.sleeping else "tumble cap"]),
+						print("  (settled after %.2f game s, %s, at %.2f m/s and %.2f rad/s)" % [wb._t, "asleep" if wb.sleeping else "tumble cap",
+								wb.linear_velocity.length(), wb.angular_velocity.length()]),
 						CONNECT_ONE_SHOT)
 		await get_tree().physics_frame
 		t += get_physics_process_delta_time()
@@ -131,6 +137,35 @@ func _run() -> void:
 	else:
 		_check("the 60 m wreck comes to rest", false)
 	wrecks.append(high)
+	await _wait(0.5)
+
+	# 2c. Slow for a moment at the tumble cap, but not at rest. Thrown straight
+	# up 0.8 s in so that the top of its arc is at the cap, the wreck is all but
+	# still there, 23 m up. "Slower than MOVING at the cap" froze it in the air.
+	# The body's damping brings the top 0.1 s early, hence APEX_LAG.
+	# This is what the reaper did on the catwalk edge on CI after 2b's fix
+	# (y 1.82 at 2.22 s, "tumble cap"): slow while it hung on the edge.
+	shooter.global_position = Vector3(-38, 1.5, -30)
+	var toss := await _spawn("gunner", Vector3(-30, 0, -30), shooter)
+	_kill(toss, shooter)
+	var tossed := false
+	for b in get_tree().get_nodes_in_group("wreck_bodies"):
+		if b is WreckBody and (b as WreckBody).follower == toss:
+			var tb := b as WreckBody
+			while is_instance_valid(tb) and tb._t < 0.8:
+				await get_tree().physics_frame
+			if is_instance_valid(tb):
+				tb.sleeping = false
+				tb.angular_velocity = Vector3.ZERO
+				tb.linear_velocity = Vector3.UP * 24.0 * (WreckBody.SETTLE_TIME + APEX_LAG - tb._t)
+				tossed = true
+	var rt := await _rest(toss)
+	if tossed and not rt.is_empty():
+		var ty: float = (rt[0] as Transform3D).origin.y
+		_check("a wreck at the top of its arc at the tumble cap comes down before it settles", ty < 1.5 and ty > -0.6, "rests at y %.2f" % ty)
+	else:
+		_check("the tossed wreck comes to rest", false, "tossed %s" % tossed)
+	wrecks.append(toss)
 	await _wait(0.5)
 
 	# 3. Cleaned up.
