@@ -628,19 +628,30 @@ const FAN_RECOVER := 0.55
 const DOUBLE_ROUNDS := 2
 const DOUBLE_REST := 2.0
 
+## PUNCH (tap): the Longshot's punch-through. One dead-straight slug for
+## ALT_COST rounds that goes through up to PUNCH_WALLS pieces of the world, each
+## no thicker than PUNCH_THICK metres along the shot, and through every robot on
+## its line. Each wall leaves it PUNCH_KEEP of its damage. The gun then rests
+## PUNCH_REST of its own shot intervals.
+const PUNCH_WALLS := 2
+const PUNCH_THICK := 2.5
+const PUNCH_KEEP := 0.75
+const PUNCH_REST := 1.6
+
+var _alt_punch := false        # the round being fired punches through walls (read by _do_hitscan)
 var _alt_wide := 0.0           # fixed cone in degrees read by shot_spread_deg (0 = off)
 var _fanning := false
 
 ## Rounds the magazine must hold for the alt-fire to do anything: ALT_COST for
-## CHARGE and VOLLEY, DOUBLE_ROUNDS for DOUBLE, one for SLUG and FAN, 0 on a
-## gun with no alt mode.
+## CHARGE, VOLLEY and PUNCH, DOUBLE_ROUNDS for DOUBLE, one for SLUG and FAN, 0
+## on a gun with no alt mode.
 func alt_cost() -> int:
 	if data == null:
 		return 0
 	match data.alt_mode:
 		WeaponData.AltMode.NONE:
 			return 0
-		WeaponData.AltMode.CHARGE, WeaponData.AltMode.VOLLEY:
+		WeaponData.AltMode.CHARGE, WeaponData.AltMode.VOLLEY, WeaponData.AltMode.PUNCH:
 			return ALT_COST
 		WeaponData.AltMode.DOUBLE:
 			return DOUBLE_ROUNDS
@@ -678,6 +689,19 @@ func try_alt_fire(pressed: bool, delta: float, camera: Camera3D, shooter: Node) 
 			if just and _cooldown <= 0.0 and mag >= DOUBLE_ROUNDS:
 				_fire_volley(camera, shooter, DOUBLE_ROUNDS, DOUBLE_REST)
 			elif just and mag < DOUBLE_ROUNDS:
+				_play_empty()
+		WeaponData.AltMode.PUNCH:
+			if just and _cooldown <= 0.0 and mag >= ALT_COST:
+				_alt_punch = true
+				_alt_tight = true
+				mag -= ALT_COST - 1 # _fire_once spends the last round
+				_fire_once(camera, shooter, true)
+				_alt_punch = false
+				_alt_tight = false
+				_cooldown = (1.0 / maxf(0.1, eff_fire_rate())) * PUNCH_REST
+				if shooter and shooter.has_method("shake"):
+					shooter.shake(0.45)
+			elif just and mag < ALT_COST:
 				_play_empty()
 
 ## Hold to fan the hammer: one wide, weaker round per fan beat until the
@@ -841,6 +865,12 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 	var cur := origin
 	var remaining := data.range_m
 	var pierces_left := data.pierce
+	# A punch-through slug (PUNCH alt-fire) stops at no robot, and crosses walls.
+	var walls_left := 0
+	var kept := 1.0 # what the walls behind it have left of its damage
+	if _alt_punch:
+		pierces_left = 1 << 20
+		walls_left = PUNCH_WALLS
 	var end_point := origin + dir * data.range_m
 	# Walk the beam forward: punch through enemies up to `pierce`, but stop dead
 	# on world geometry. A single tracer is drawn from origin to the final point.
@@ -865,7 +895,7 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			_spawn_bullet_hole(hpos, hit.normal)
 			_sig.on_world_hit(hpos, hit.normal, dir, surf)
 		if dmg_node:
-			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos))
+			var final_damage := eff_damage() * _range_mult(origin.distance_to(hpos)) * kept
 			# Headshots — and the crit bonus + "headshot" callout — apply ONLY to
 			# enemy robots (the is_headshot method is the enemy marker). Destructible
 			# props/cover never grant a headshot no matter where you hit them.
@@ -905,6 +935,20 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 			end_point = hpos
 			break
 		else:
+			# A punch-through slug comes out of the far side of a wall it can cross.
+			if walls_left > 0 and col is CollisionObject3D:
+				var thick := _wall_thickness(space, col as CollisionObject3D, hpos, dir)
+				if thick >= 0.0 and remaining - cur.distance_to(hpos) - thick > 0.1:
+					walls_left -= 1
+					kept *= PUNCH_KEEP
+					var out := hpos + dir * thick
+					_spawn_impact(out, dir, surf) # the burst out of the back
+					_spawn_bullet_hole(out, dir)
+					AudioBus.play_synth_at(_impact_sound_for(surf), out, -5.0, 0.7)
+					exclude.append((col as CollisionObject3D).get_rid())
+					remaining -= cur.distance_to(out) + 0.02
+					cur = out + dir * 0.02
+					continue
 			end_point = hpos # world geometry stops the beam
 			if mod_id != "":
 				WeaponMods.on_world_hit(self, hpos, hit.normal, dir, eff_damage() * _range_mult(origin.distance_to(hpos)))
@@ -920,6 +964,29 @@ func _do_hitscan(origin: Vector3, dir: Vector3) -> void:
 	# Railguns ionize the air they cross: a coil of light hangs on the shot's path.
 	if data.rail_trail and get_tree().current_scene:
 		RailTrail.spawn(get_tree().current_scene, beam_from, end_point, shot_color())
+
+## How much of `body` a slug that entered it at `at` flying along `dir` has to
+## cross, or -1 when that is more than PUNCH_THICK. Read with a ray fired back
+## at the entry point from PUNCH_THICK further on: it starts inside a body that
+## is too thick, and lands on the far face of one that is not. Anything else it
+## meets on the way (cover standing behind the wall) is stepped over. A body
+## with no far face to find (a flat or one-sided collider) counts as a skin.
+func _wall_thickness(space: PhysicsDirectSpaceState3D, body: CollisionObject3D, at: Vector3, dir: Vector3) -> float:
+	var from := at + dir * PUNCH_THICK
+	var q := PhysicsRayQueryParameters3D.create(from, at + dir * 0.01)
+	q.collision_mask = 1
+	q.hit_from_inside = true
+	var skip: Array = []
+	for _i in 8:
+		q.exclude = skip
+		var hit := space.intersect_ray(q)
+		if hit.is_empty():
+			return 0.05
+		if hit.collider == body:
+			var d := at.distance_to(hit.position)
+			return -1.0 if d >= PUNCH_THICK - 0.01 else d
+		skip.append(hit.rid)
+	return -1.0
 
 ## A bright expanding flash + light when a shot connects with an enemy, plus a
 ## burst of metal embers/debris that scales with how hard the hit landed.

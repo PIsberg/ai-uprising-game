@@ -454,5 +454,7 @@ res://tests/fan_fire_probe.tscn
 res://tests/alt_tag_probe.tscn
 # DOUBLE TAP: the M9 alt-fire is two dead-straight rounds for 2 from the mag, then a breather.
 res://tests/double_tap_probe.tscn
+# PUNCH-THROUGH: the Longshot alt-fire is one slug for 3 rounds through 2 walls and every robot on its line.
+res://tests/punch_through_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn
