@@ -3,7 +3,8 @@ extends Node3D
 ## secondary fire. Through the real player, WeaponManager and HUD:
 ##   - the M9 the player starts with shows DOUBLE TAP, and its hint is the
 ##     first toast of the level;
-##   - on a gun with no alt mode (the PALM Cannon) the HUD's alt tag is hidden;
+##   - on a gun with no alt mode (the PALM Cannon with its alt mode cleared:
+##     every real gun has one) the HUD's alt tag is hidden;
 ##   - on the Pulse Rifle, Breacher, Maelstrom and Plasma Launcher it shows the
 ##     mode (VOLLEY, SLUG, FAN, CHARGE) and the key the alt-fire is bound to;
 ##   - back on the PALM Cannon it hides again;
@@ -24,7 +25,10 @@ extends Node3D
 ## Timed on process frames (a toast lasts 2.4 s).
 ##   godot --headless --path . --audio-driver Dummy res://tests/alt_tag_probe.tscn
 
-const NO_ALT := "res://scenes/weapons/salvage_palm.tscn" ## the PALM Cannon: the one gun with no alt mode (#496)
+## Every gun has an alt mode since #496, so the gun without one is made here:
+## the PALM Cannon, its data copied and the copy's alt mode cleared the moment
+## it is in hand (before its hint could be toasted).
+const NO_ALT := "res://scenes/weapons/salvage_palm.tscn"
 const NO_ALT_BEFORE := "res://scenes/weapons/pistol.tscn" ## the M9: DOUBLE TAP since #496, none before
 
 const GUNS := [
@@ -120,9 +124,13 @@ func _run() -> void:
 	# 1. No alt mode: no tag.
 	if not wm.add_weapon(load(NO_ALT) as PackedScene): # in the starting rack already: draw it
 		await _draw(NO_ALT)
-	await _frames(3)
 	var plain := wm.current
-	_check("the PALM Cannon is in hand and has no alt mode", plain != null and plain.scene_file_path == NO_ALT and plain.data.alt_mode == WeaponData.AltMode.NONE)
+	if plain != null and plain.scene_file_path == NO_ALT:
+		plain.data = plain.data.duplicate()
+		plain.data.alt_mode = WeaponData.AltMode.NONE
+		wm.weapon_changed.emit(plain) # the HUD reads the mode when the gun changes
+	await _frames(3)
+	_check("the PALM Cannon is in hand, its alt mode cleared", plain != null and plain.scene_file_path == NO_ALT and plain.data.alt_mode == WeaponData.AltMode.NONE)
 	_check("on a gun with no alt mode the tag is hidden", not _shown(), "'%s'" % _text())
 
 	# 2. Each mode shows its name and the key.

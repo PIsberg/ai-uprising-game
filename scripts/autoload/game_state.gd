@@ -1712,6 +1712,7 @@ const MECHANIC_HINTS := {
 	"alt_mine": "◎ ALT-FIRE: ARC MINE — tap [V] to stick a charged orb to a wall or the floor. It waits, and arcs through every robot that comes near.",
 	"alt_nova": "◎ ALT-FIRE: NOVA — tap [V] to dump 30 cells into a ring around you. Every robot close by is shocked and switched off for a moment.",
 	"alt_detonate": "◎ ALT-FIRE: DETONATE — tap [V] to set off every robot you have primed, right now. No kill needed.",
+	"alt_shove": "◎ ALT-FIRE: SHOVE — tap [V] for an open-palm blast that throws back the robots in front of you. Into a wall, or off a ledge.",
 	"alt_punch": "◎ ALT-FIRE: PUNCH-THROUGH — tap [V] to spend 3 rounds on one slug that goes through 2 walls and every robot behind them. Each wall takes a quarter of its damage.",
 }
 
