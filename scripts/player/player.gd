@@ -1833,6 +1833,10 @@ func _current_speed() -> float:
 	# probes read the speed off a player that is not in the tree.)
 	if is_inside_tree() and get_tree().get_first_node_in_group("leech_latched") != null:
 		mult *= EnemyLeech.SLOW
+	# A braced gun in hand (the SIEGE Chaingun's alt-fire) plants the feet.
+	var rack := get_node_or_null("Head/Camera3D/WeaponHolder")
+	if rack != null and is_instance_valid(rack.get("current")) and rack.current.has_method("move_mult"):
+		mult *= float(rack.current.move_mult())
 	if _is_crouching:
 		return crouch_speed * mult
 	# Shouldering a haul payload: a heavy walk, sprint ignored.

@@ -456,5 +456,7 @@ res://tests/alt_tag_probe.tscn
 res://tests/double_tap_probe.tscn
 # PUNCH-THROUGH: the Longshot alt-fire is one slug for 3 rounds through 2 walls and every robot on its line.
 res://tests/punch_through_probe.tscn
+# BRACE: the SIEGE Chaingun alt-fire is a stance: a 0.5 degree cone and a slow walk while the button is held.
+res://tests/brace_fire_probe.tscn
 # Indoor luminaires settle after the build: lifted clear of what stands under them, dropped where the room has no height, hung on a rod when not flush; every indoor level swept (#436).
 res://tests/lamp_headroom_probe.tscn

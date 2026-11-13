@@ -38,7 +38,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-602 probes total: **279** wired into the headless suite (`suite`), **87**
+603 probes total: **280** wired into the headless suite (`suite`), **87**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -294,6 +294,7 @@ or GPU-timing probes; `--headless` renders these black).
 | dog_pack_shot | Four K-9 HUNTERs on a stand-in player from above: one rearing with three on the ring, and one in the air | windowed |
 | double_tap_probe | The M9 Sidearm's alt-fire DOUBLE TAP (`WeaponData.AltMode.DOUBLE`), through the real weapon scene: one use costs 2 rounds; a tap fires exactly two, under 0.12 s apart, both dead straight from the hip and at full damage; 5 taps put 10 of 10 rounds on a 0.3 m plate at 30 m where 10 hip-fired trigger rounds land fewer; holding the button fires one pair; the trigger then waits `DOUBLE_REST` shot intervals; with one round left the tap fires nothing (11 checks; 8 failed when the M9 had no alt-fire) | suite |
 | punch_through_probe | The MK-VII Longshot's alt-fire PUNCH-THROUGH (`WeaponData.AltMode.PUNCH`, #496), through the real weapon scene at a lane of walls and plates: one use costs 3 rounds; a trigger round stops at the first wall; a tap fires one dead-straight slug that crosses 2 walls (the plate behind the first takes 0.75 of the gun's damage, behind the second 0.5625, behind the third nothing), leaves a hole on the near and far face of each wall it crossed and only the near face of the one that stopped it; a wall 1.5 m over `PUNCH_THICK` stops it and one 0.3 m under does not; it hits 5 of 5 robots in a row where a trigger round hits 3; a held button fires once; the trigger then waits `PUNCH_REST` shot intervals; with 2 rounds left nothing fires. 19 checks, 13 red before the mode existed | suite |
+| brace_fire_probe | The SIEGE Chaingun's alt-fire BRACE (`WeaponData.AltMode.BRACE`, #496), a stance: through the real weapon scene, the button alone fires nothing; hip rounds fly in a cone over 2 degrees and every braced round in `BRACE_SPREAD_DEG` (0.5) with no bloom; 30 braced rounds all land on a 0.5 m plate at 25 m and 30 hip rounds land fewer; rate and damage are unchanged; `Weapon.move_mult` is `BRACE_MOVE` while held, 1 let go and 1 through a reload. Through the real player: `_current_speed` with the braced chaingun in hand is `BRACE_MOVE` of the free speed, and full again once the gun is put away with the button still down. 16 checks, 9 red before the mode existed | suite |
 | dog_gait_shot | Side view of the DOG at four points of its trot and in the stretched pounce pose; `-- --out=<dir>` | windowed |
 | elite_probe | `Elite.maybe_apply` pre-`add_child` with a forced roll (catches the "get_node from outside tree" regression) | suite |
 | elite_marker_probe | A real elite of each affix gets a marker with its own silhouette (mesh types and sizes under `EliteMarker` all differ), and every pair of marker colours is at least 0.3 apart in RGB: the affix reads by shape for colourblind players | suite |
