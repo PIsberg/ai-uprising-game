@@ -7,11 +7,15 @@ extends Node3D
 ## The V is now a half-width in metres at the target (0.45 m; furious 0.15 m),
 ## so bracketing the body works at every range and base scatter decides hits.
 ## Asserts a warbot at its own preferred range lands materially more than the
-## old geometry's ~10 damage in 12 s (fix measures ~115-135; android ~170).
+## old geometry does. The window is 48 s, not the first version's 12: bursts
+## are scattered and few, so 24 local runs of 12 s ranged 54.5 to 128.7 damage
+## against a bar of 40, and a CI run landed 39.6 and failed (PR #561, a change
+## that does not touch the WARBOT). Over 48 s, 16 runs ranged 282 to 450
+## against the same rate's bar of 160; the old 1.15 m miss lands 14.9.
 ##   godot --headless --path . --audio-driver Dummy res://tests/warbot_crossfire_probe.tscn
 
-const WINDOW := 12.0
-const MIN_DAMAGE := 40.0 ## old 6-degree V: ~10 in 12 s; fixed: ~115-135
+const WINDOW := 48.0
+const MIN_DAMAGE := 160.0 ## the same 3.3 damage a second as the 12 s window's 40; old V: 14.9, fixed: 282-450
 
 var _player: Node3D
 var _taken: float = 0.0
