@@ -13,7 +13,10 @@ extends Node3D
 ##   - a MAULER killed mid-windup leaves no ring and deals nothing;
 ##   - a MAULER that overloads mid-windup drops the pound;
 ##   - an overloading MAULER does not pound at all: its charge ends in the
-##     blast alone (it used to slam on the way in as well, 76 in all).
+##     blast alone (it used to slam on the way in as well, 76 in all);
+##   - the body tells (#502): it coils, both fists go up over its head, they
+##     are down when the ring goes, and after a miss it stays bent over them
+##     until they come free.
 ## Timed in physics frames. Each case is its own MAULER on its own lane.
 ##   godot --headless --path . --audio-driver Dummy res://tests/mauler_pound_probe.tscn
 
@@ -196,6 +199,50 @@ func _run() -> void:
 	for i in 10:
 		await get_tree().physics_frame
 	_check("an overloading MAULER does not pound: only the blast", not ringed and absf(hurt - blast) < 0.5, "ring %s, %.1f damage against %.1f" % [ringed, hurt, blast])
+	if is_instance_valid(m):
+		m.queue_free()
+	await _clear()
+
+	# 6. The body tells (#502). The ring on the floor was the only warning: the
+	# robot stood in its idle pose through the windup, fists at 0.7 m, and a
+	# player watching it and not the floor saw nothing. Heights are the palm
+	# and head bones over the MAULER's feet, read every physics frame.
+	m = await _stage(Vector3(45, 0, -20), 2.2)
+	var sk: Skeleton3D = m.find_child("Skeleton3D", true, false)
+	await _until_ring(m, 600)
+	var stand := _bone_y(m, sk, "Head_2")
+	var sink := 0.0 # how far the head drops while it coils
+	var coil_fists := 0.0 # the higher fist during the coil
+	var raised := 0.0 # the LOWER fist at its highest: both are up
+	for i in frames + 3:
+		await get_tree().physics_frame
+		if i == 20:
+			player.global_position += Vector3(4.5, 0, 0) # out of the ring: it will miss
+		var low := minf(_bone_y(m, sk, "Palm2.L"), _bone_y(m, sk, "Palm2.R"))
+		if i < 20:
+			sink = maxf(sink, stand - _bone_y(m, sk, "Head_2"))
+			coil_fists = maxf(coil_fists, maxf(_bone_y(m, sk, "Palm2.L"), _bone_y(m, sk, "Palm2.R")))
+		raised = maxf(raised, low)
+	_check("it coils first: the head sinks and the fists stay down", sink > 0.12 and coil_fists < stand,
+			"head %.2f m lower, fists at most %.2f m (head stands at %.2f)" % [sink, coil_fists, stand])
+	_check("then both fists go up over its head before they land", raised > stand + 0.3,
+			"lower fist reached %.2f m, head stands at %.2f" % [raised, stand])
+	_check("the fists are down when the ring goes", _rings().is_empty() and maxf(_bone_y(m, sk, "Palm2.L"), _bone_y(m, sk, "Palm2.R")) < 1.2,
+			"%.2f m" % maxf(_bone_y(m, sk, "Palm2.L"), _bone_y(m, sk, "Palm2.R")))
+	var buried_top := 0.0
+	var bent := 99.0
+	for i in int(STUCK * 60.0) - 10:
+		await get_tree().physics_frame
+		if i > 6:
+			buried_top = maxf(buried_top, maxf(_bone_y(m, sk, "Palm2.L"), _bone_y(m, sk, "Palm2.R")))
+			bent = minf(bent, stand - _bone_y(m, sk, "Head_2"))
+	_check("after a miss it stays bent over its buried fists", buried_top < 0.9 and bent > 0.12,
+			"fists at most %.2f m, head at least %.2f m under standing" % [buried_top, bent])
+	var up := 0.0
+	for i in 50:
+		await get_tree().physics_frame
+		up = maxf(up, _bone_y(m, sk, "Head_2"))
+	_check("and stands up again when the fists come free", up > stand - 0.1, "head back at %.2f of %.2f m" % [up, stand])
 
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit(0 if ok else 1)
@@ -227,6 +274,12 @@ func _until_ring(m: EnemyMauler, frames: int) -> Dictionary:
 		if hurt > 0.0:
 			break
 	return {"ring": null, "hurt": hurt}
+
+## Height of a bone over the MAULER's feet.
+func _bone_y(m: Node3D, sk: Skeleton3D, bone: String) -> float:
+	if not is_instance_valid(m) or sk == null:
+		return 0.0
+	return (sk.global_transform * sk.get_bone_global_pose(sk.find_bone(bone)).origin).y - m.global_position.y
 
 func _clear() -> void:
 	for i in 4:

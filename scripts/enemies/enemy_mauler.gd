@@ -7,8 +7,8 @@ extends EnemyBase
 ## takes slam_damage and is thrown outward; if nobody is, the fists stay
 ## buried for POUND_STUCK. It used to land the instant the cooldown ran out, on
 ## anything inside 5 m. tests/mauler_pound_probe.
-## Visuals from a real robot model in mauler.tscn (RobotModel plays its Punch
-## clip on each attack).
+## Visuals from a real robot model in mauler.tscn. Through the windup the body
+## coils and throws both fists overhead (POUND_CLIP, see the constants).
 ##
 ## Signature move: OVERLOAD. Critically damaged it stops fighting fair — the
 ## core glows red-hot, it charges you at speed, and a few seconds later it
@@ -23,12 +23,23 @@ extends EnemyBase
 const POUND_WINDUP := 0.75 ## s between the ring appearing and the fists landing
 const POUND_RADIUS := 2.0 ## m around the mark: a walking player (5.5 m/s) clears it in 0.36 s
 const POUND_STUCK := 0.9 ## s the fists stay buried after a pound that hit nobody
+## The body's tell (#502), cut from the model's Jump clip: it crouches for
+## COIL_END clip seconds, throws both fists up to 3.3 m (its head stands at
+## 2.2) and comes down on them at FISTS_DOWN. The crouch is stretched over the
+## windup's first part and the swing takes its last POUND_SWING seconds, so the
+## fists are overhead about 0.2 s before they land. The ring was the only
+## warning before: the robot stood in its idle pose until the hit.
+const POUND_CLIP := "Jump"
+const COIL_END := 0.133 ## clip s: the bottom of the crouch
+const FISTS_DOWN := 0.576 ## clip s: both palms at 0.5 m, feet back on the floor
+const POUND_SWING := 0.35 ## s before the slam at which the fists start up
 const RING_COLOR := Color(1.0, 0.22, 0.08)
 
 enum Pound { NONE, WINDUP, STUCK }
 var pound := Pound.NONE
 var _pound_t: float = 0.0
 var _pound_at := Vector3.ZERO ## the mark: fixed when the windup starts
+var _swung := false ## this windup's fists have started up
 var _ring: Node3D ## the floor telegraph, a child of the scene so it stays on the mark
 var _ring_fill: MeshInstance3D
 
@@ -115,7 +126,9 @@ func _perform_attack() -> void:
 	_pound_t = POUND_WINDUP
 	_pound_at = _floor_under(target.global_position)
 	_spawn_ring()
-	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.5) # a low growl as the fists go up
+	_swung = false
+	_pose(0.0, COIL_END, POUND_WINDUP - POUND_SWING, 0.1)
+	AudioBus.play_synth_at("mech_step", global_position, 2.0, 0.5) # a low growl as it coils
 	# Rock back onto its heels: the coil before the fists come down.
 	var back := global_position - _pound_at
 	back.y = 0.0
@@ -148,6 +161,10 @@ func _tick_pound(delta: float) -> bool:
 			if is_instance_valid(_ring_fill):
 				var k := clampf(1.0 - _pound_t / POUND_WINDUP, 0.02, 1.0)
 				_ring_fill.scale = Vector3(k, 1.0, k)
+			if not _swung and _pound_t <= POUND_SWING:
+				_swung = true
+				_pose(COIL_END, FISTS_DOWN, POUND_SWING, 0.0)
+				AudioBus.play_synth_at("charge", global_position, -4.0, 1.5) # the fists go up
 			if _pound_t <= 0.0:
 				_slam()
 		Pound.STUCK:
@@ -180,20 +197,30 @@ func _slam() -> void:
 		var v := to.normalized() * attack_lunge_speed
 		velocity.x = v.x
 		velocity.z = v.z
-	recoil = 1.0 # the Punch clip
+	recoil = 1.0
 	spawn_shockwave_ring(POUND_RADIUS, RING_COLOR, _pound_at + Vector3.UP * 0.1, false)
 	AudioBus.play_synth_at("impact_metal", _pound_at, 2.0, 0.55)
 	AudioBus.play_synth_at("explosion", _pound_at, -8.0, 1.4)
 	_attack_timer = attack_cooldown
 	if hit:
-		pound = Pound.NONE
+		pound = Pound.NONE # the clip's last frames stand it back up
 	else:
 		pound = Pound.STUCK
 		_pound_t = POUND_STUCK
+		# Bent over its buried fists: the clip all but stopped where they landed.
+		_pose(FISTS_DOWN, FISTS_DOWN + 0.02, POUND_STUCK + 0.5, 0.0)
 
 func _end_pound() -> void:
 	pound = Pound.NONE
 	_drop_ring()
+	if _visual_root and _visual_root.has_method("release_hold"):
+		_visual_root.release_hold()
+
+## Plays POUND_CLIP from clip second `from` to `to` over `seconds`, held
+## against idle and walk. A model without the clip does nothing.
+func _pose(from: float, to: float, seconds: float, blend: float) -> void:
+	if _visual_root and _visual_root.has_method("play_oneshot"):
+		_visual_root.play_oneshot(POUND_CLIP, blend, (to - from) / maxf(seconds, 0.05), from)
 
 ## The floor under `at` (world layer), or `at` itself over a void.
 func _floor_under(at: Vector3) -> Vector3:

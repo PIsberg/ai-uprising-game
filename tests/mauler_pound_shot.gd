@@ -1,10 +1,11 @@
 extends Node3D
 ## Windowed shot: one real MAULER through its GROUND POUND, photographed early
-## in the windup (the rim on the floor, the disc small), late (the disc near the
-## rim) and just after the fists land (the shockwave). Logic is pinned by
+## in the windup (the rim on the floor, the disc small, the robot coiled), with
+## both fists overhead, late (the disc near the rim, the fists on their way
+## down) and just after the fists land (the shockwave). Logic is pinned by
 ## tests/mauler_pound_probe.
 ##   godot --path . res://tests/mauler_pound_shot.tscn
-## Saves user://mauler_pound_<early|late|slam>.png.
+## Saves user://mauler_pound_<early|raised|late|slam>.png.
 
 var cam: Camera3D
 
@@ -83,6 +84,9 @@ func _run() -> void:
 			if not shot.has("early") and m._pound_t < EnemyMauler.POUND_WINDUP * 0.75:
 				await _snap(m, "early")
 				shot["early"] = true
+			elif not shot.has("raised") and m._pound_t < 0.2:
+				await _snap(m, "raised")
+				shot["raised"] = true
 			elif not shot.has("late") and m._pound_t < EnemyMauler.POUND_WINDUP * 0.12:
 				await _snap(m, "late")
 				shot["late"] = true
