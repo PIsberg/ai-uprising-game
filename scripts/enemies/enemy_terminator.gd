@@ -14,6 +14,10 @@ extends EnemyBase
 ## At half health it OVERCLOCKS (its one phase, `boss_phase_marks`): faster on
 ## its feet, shorter gaps between longer bursts, the lance back sooner, the
 ## barrels spinning harder and the optic burning hot.
+## The lance takes the difficulty tier through the robot's own multipliers
+## (lance_cooldown, lance_windup): EASY rests it 12 s and charges 0.96 s, NORMAL
+## 8.1 s and 0.69 s, HARD the authored 7.5 s and 0.6 s; overclocked that is 7.2,
+## 4.9 and 4.5 s. It took no tier at all before (#369).
 
 @export var hitscan_damage: float = 9.0
 @export var burst_count: int = 6
@@ -100,6 +104,16 @@ const OVERCLOCK_BEAM := 0.6
 const OVERCLOCK_SPIN := 1.5
 var _overclocked := false
 var _beam_dir: Vector3 = Vector3.FORWARD
+
+## The lance's rest on this tier. Only ever longer than authored: HARD's shorter
+## cooldowns (0.75) and an elite's do not bring the lance back sooner.
+func lance_cooldown() -> float:
+	return beam_cooldown * clampf(_cooldown_mult, 1.0, 1.6)
+
+## The green charge before the beam is live, stretched with the tier's reaction
+## time (EASY's 2.0 is clamped to 1.6; never shorter than BEAM_WINDUP).
+func lance_windup() -> float:
+	return BEAM_WINDUP * clampf(_reaction_mult, 1.0, 1.6)
 var _beam_tick_t: float = 0.0
 var _beam_charge: float = 0.0               ## 0..1, drives the eye turning green
 
@@ -110,6 +124,7 @@ func _ready() -> void:
 	# Raise only the HP for a proper boss-length fight; its (already-toned) low
 	# damage is unchanged, so it lasts longer without hitting harder.
 	max_health = 900.0
+	_beam_cd = lance_cooldown() * 0.5 # the tier's mults are set before add_child
 	stagger_threshold = 200.0 # heavy boss: only big/sustained hits stagger it
 	move_speed = 6.8
 	turn_speed = 9.0
@@ -478,7 +493,7 @@ func _beaming() -> bool:
 
 ## Fire up the optic lance: a green charge, then a sweeping death-ray.
 func _begin_beam() -> void:
-	_beam_windup = BEAM_WINDUP
+	_beam_windup = lance_windup()
 	_beam_time = 0.0
 	_beam_tick_t = 0.0
 	if target:
@@ -509,7 +524,7 @@ func _process_beam(delta: float) -> void:
 	# Charge phase: eye spins up green, beam not yet lethal.
 	if _beam_windup > 0.0:
 		_beam_windup -= delta
-		_beam_charge = clampf(1.0 - _beam_windup / BEAM_WINDUP, 0.0, 1.0)
+		_beam_charge = clampf(1.0 - _beam_windup / lance_windup(), 0.0, 1.0)
 		_beam_dir = desired   # lock straight onto the player at ignition
 		if _beam_windup <= 0.0:
 			_beam_time = BEAM_DURATION
@@ -552,7 +567,7 @@ func _end_beam() -> void:
 	_beam_windup = 0.0
 	_beam_time = 0.0
 	_beam_charge = 0.0
-	_beam_cd = beam_cooldown
+	_beam_cd = lance_cooldown()
 	if _beam:
 		_beam.deactivate()
 
@@ -615,7 +630,7 @@ func _check_overclock() -> void:
 	attack_cooldown *= OVERCLOCK_COOLDOWN
 	burst_count += OVERCLOCK_BURST
 	beam_cooldown *= OVERCLOCK_BEAM
-	_beam_cd = minf(_beam_cd, beam_cooldown * 0.5)
+	_beam_cd = minf(_beam_cd, lance_cooldown() * 0.5)
 	spin_max *= OVERCLOCK_SPIN
 	AudioBus.play_synth_at("charge", global_position, 2.0, 1.6) # a rising overclock whine
 
