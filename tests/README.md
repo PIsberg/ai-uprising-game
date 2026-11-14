@@ -43,7 +43,7 @@ probes take extra CLI args after `--` (e.g. `model_view_probe`,
 
 ## Probe index
 
-610 probes total: **288** wired into the headless suite (`suite`), **86**
+611 probes total: **289** wired into the headless suite (`suite`), **86**
 headless-capable but not wired in (`headless` — some print the `RESULT
 PASS`/`FAIL` convention and are strong candidates to add; others are
 report-only diagnostics/telemetry tools with their own print format and are
@@ -577,6 +577,7 @@ or GPU-timing probes; `--headless` renders these black).
 | server_rig_probe | MAITRE-D' (SERVER) fights with its head and arms (serving_bot.glb built in four meshes: Head, ArmL, ArmR, the column): the neck, shoulders and hands land on the model (head bottom, the arms' rear and front ends, within 0.03 m); engaged on a player 50 deg to its left with the body pinned, the face turns onto it (0.87 rad, on the line); a cleaver throw is no pirouette (0 deg), cocks the right hand 0.4+ m up over the shoulder (0.67) and the cleaver appears within 0.45 m of the hand (0.06; the old origin over the column was 0.6+ m off); the tray-bash whirls 300+ deg inside 0.6 s (327) with both hands flung 0.25+ m out (0.48) and the face on the player through the spin (worst 0.13 rad); idle, the head is forward, the hands at rest and the model facing forward | suite |
 | server_rig_shot | SERVER front-left at rest, with the head turned onto a player at its side, with the right arm cocked for a throw, and a third of the way round a tray-bash with both arms flung out; `-- --out=<dir>` | windowed |
 | skitter_probe | SKITTER swarm around a player: rush in, bite, die cleanly | headless |
+| mesh_compression_probe | No model under assets/models stores a static surface with uncompressed vertices (#56). Godot's glTF importer drops vertex compression for a whole surface when one generated tangent is not exactly perpendicular to its normal, and the surface then stores 28 bytes a vertex instead of 16: 857,800 of 1,744,038 vertices in 24 of the 80 models did (red before the re-import, naming each). The post-import script `tools/import/compress_meshes.gd` rebuilds them compressed (`tools/import/mesh_compress.gd`); skinned surfaces and meshes with blend shapes are not counted. The rebuild is also checked on a 441-vertex grid made in the probe with one skewed tangent: it comes out compressed in under 0.7 of the bytes, vertices within 0.01 % of the mesh's size, the tangent squared to its normal with its handedness kept, and indices, LOD, material and name carried over | suite |
 | shared_textures_probe | No model under assets/models stores a texture twice (#56): the textures its materials hold are as many as differ in content (`tools/import/texture_share.gd`). The glTF importer's "embed as Basis Universal" mode makes a texture per material that uses an image; `tools/import/share_textures.gd` (set as `import_script/path`) shares them. Red before on 8 models (the RONIN: 37 stored, 8 distinct); also checks the census sees a copy and that sharing removes it | suite |
 | sky_hdri_probe | Every HDRI sky a level def uses is VRAM-compressed (<= 2.3 MB in the pack; lossless RGBE was 8 MB each, #56) and still HDR: imported peak >= 50% and mean within 10% of the source .hdr decoded directly | suite |
 | sky_screenshot | SkyTraffic system with forced meteors, sky view captured | windowed |

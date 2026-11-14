@@ -124,6 +124,8 @@ res://tests/i18n_label_probe.tscn
 res://tests/sky_hdri_probe.tscn
 # No imported model stores the same texture twice: the importer copies one per material without the post-import script (#56).
 res://tests/shared_textures_probe.tscn
+# No model stores a static surface with uncompressed vertices: one skewed tangent makes the importer drop compression for the surface (#56).
+res://tests/mesh_compression_probe.tscn
 # The per-tick CPU clock reads a typical tick, not the worst tick of each second.
 res://tests/tick_clock_probe.tscn
 # SoundSynth synthesizes off the main thread; every stream still resolves at once.
