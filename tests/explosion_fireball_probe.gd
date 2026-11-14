@@ -61,6 +61,11 @@ func _run() -> void:
 		var last := 0.0
 		var backwards := false
 		var widest := 0.0
+		# Game time, the clock the tween burns on: the sum of the frame deltas.
+		# The wall clock from here missed the part of the spawn frame spent
+		# before this line (the blast's own _ready), which the tween's first
+		# step counts: a 0.42 s ball read 0.28 s on a machine with a slow spawn.
+		var life := 0.0
 		var t0 := Time.get_ticks_msec()
 		while is_instance_valid(ball) and Time.get_ticks_msec() - t0 < 2000:
 			var burn: float = mat.get_shader_parameter("burn")
@@ -70,7 +75,7 @@ func _run() -> void:
 			last = burn
 			widest = maxf(widest, ball.scale.x)
 			await get_tree().process_frame
-		var life := (Time.get_ticks_msec() - t0) / 1000.0
+			life += get_process_delta_time()
 		print("   %s: burn %.2f -> %.2f, widest %.2f m, gone after %.2f s" % [id, first, last, widest, life])
 		_check("%s fireball starts fresh" % id, first < 0.1, "%.2f" % first)
 		_check("%s fireball burns steadily to spent" % id, not backwards and last >= 0.95, "%.2f" % last)
