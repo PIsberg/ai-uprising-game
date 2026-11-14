@@ -49,6 +49,7 @@ func _run() -> void:
 	await _case_emp()
 	await _case_deck_edge()
 	await _case_nav_edge()
+	await _case_tiers()
 	_check("every later tell left the hint alone", _hints.count(GameState.MECHANIC_HINTS.get("shield_rush", "?")) == 1,
 		"%d hint(s) over the run" % _hints.size())
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
@@ -229,6 +230,63 @@ func _case_nav_edge() -> void:
 			"at z %.1f (the navmesh ends at -6)" % brute.global_position.z)
 	region.queue_free()
 	await _clear(s)
+
+## The rush honours the difficulty tier through the multipliers EnemySpawner
+## sets on every robot (#482): on EASY (reaction x2, speed x0.62, cadence x1.6)
+## the tell is longer, the run slower and the next rush further off; on HARD
+## (reaction x0.5) the tell is shorter, but never under 0.85 of RUSH_TELL.
+func _case_tiers() -> void:
+	var s := await _stage(10.0)
+	var brute: EnemyBrute = s[0]
+	var player: CharacterBody3D = s[1]
+	brute.set("_reaction_mult", 2.0)
+	brute.set("_speed_mult", 0.62)
+	brute.set("_cooldown_mult", 1.6)
+	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player)
+	await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.TELL, 30)
+	var tell := await _until(func() -> bool: return brute.rush != EnemyBrute.Rush.TELL, 240)
+	_check("EASY: the tell is longer", tell / 60.0 > EnemyBrute.RUSH_TELL * 1.5 and tell / 60.0 < EnemyBrute.RUSH_TELL * 1.7, "%.2f s" % (tell / 60.0))
+	player.global_position.x += 6.0
+	var top := 0.0
+	for i in 40:
+		await get_tree().physics_frame
+		top = maxf(top, Vector2(brute.velocity.x, brute.velocity.z).length())
+	_check("EASY: the run is slower", top > EnemyBrute.RUSH_SPEED * 0.7 and top < EnemyBrute.RUSH_SPEED * 0.9, "top %.1f m/s" % top)
+	await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.NONE and not brute.shield_open(), 400)
+	# One second past the plain cooldown: on EASY it is not ready yet.
+	await _frames(int((EnemyBrute.RUSH_COOLDOWN + 1.0) * 60.0))
+	player.global_position = brute.global_position - brute.global_basis.z * 10.0
+	await _until(func() -> bool: return brute.target == player and brute._can_see(player), 240)
+	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player, false, brute.global_position - brute.global_basis.z * 3.0)
+	var re := await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.TELL, 45)
+	_check("EASY: the next rush is further off", re < 0)
+	await _clear(s)
+	s = await _stage(10.0)
+	brute = s[0]
+	player = s[1]
+	brute.set("_reaction_mult", 0.5)
+	brute.hp.apply_damage(EnemyBrute.RUSH_PROVOKE + 5.0, player)
+	await _until(func() -> bool: return brute.rush == EnemyBrute.Rush.TELL, 30)
+	tell = await _until(func() -> bool: return brute.rush != EnemyBrute.Rush.TELL, 240)
+	_check("HARD: the tell is shorter, and still a tell", tell / 60.0 < EnemyBrute.RUSH_TELL * 0.95 and tell / 60.0 > EnemyBrute.RUSH_TELL * 0.8, "%.2f s" % (tell / 60.0))
+	await _clear(s)
+	# The cases above set the multipliers by hand; this is the spawner setting them.
+	var was: int = GameState.difficulty
+	GameState.difficulty = GameState.Difficulty.EASY
+	var spawner := EnemySpawner.new()
+	spawner.set_process(false)
+	spawner.set("spawn_on_ready", false)
+	var fresh: EnemyBrute = (load(BRUTE) as PackedScene).instantiate()
+	var cfg: Dictionary = GameState.difficulty_config()
+	add_child(spawner)
+	spawner.call("_apply_difficulty", fresh)
+	GameState.difficulty = was
+	_check("the spawner hands a BRUTE the tier's reaction, speed and cadence",
+			is_equal_approx(fresh.rush_tell(), EnemyBrute.RUSH_TELL * 1.6) and fresh.rush_speed() < EnemyBrute.RUSH_SPEED * 0.9
+			and fresh.rush_cooldown() > EnemyBrute.RUSH_COOLDOWN * 1.4 and float(cfg["reaction_mult"]) == 2.0,
+			"tell %.2f s, %.1f m/s, cooldown %.1f s" % [fresh.rush_tell(), fresh.rush_speed(), fresh.rush_cooldown()])
+	fresh.free()
+	spawner.queue_free()
 
 ## A brute at `at` facing -Z and a player `dist` metres in front of it, once the
 ## brute has the player as its target.
