@@ -5,7 +5,7 @@ extends Node3D
 
 const OUT_DIR := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private/4fbdff7a-4323-435c-af31-9542c7153dc8/scratchpad/"
 const MODELS := [
-	"combat_robot", "reaper_whirlwind", "combat_steampunk", "steampunk_robot",
+	"combat_robot", "reaper_whirlwind", "combat_steampunk",
 	"mech_police", "wheeled_robot", "robot_dog", "robot_shark",
 	"utility_robot", "robot_minigun",
 ]

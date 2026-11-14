@@ -1,7 +1,7 @@
 extends Node3D
 ## Probe: the GUNSLINGER raises its gun-arm onto you and fires from it.
-## steampunk_robot.glb hangs a revolver forearm at its right side (both
-## forearms are one mesh, Object_158), while every slug left from a point in
+## gunslinger_automaton.glb hangs a revolver forearm at its right side (both
+## forearms are one mesh, Forearms); every slug used to leave from a point in
 ## mid-air 0.7 m ahead of its chest. Measured off the model in the body frame,
 ## from the drawn forearm vertices on its right (x > 0): the elbow is their
 ## top band, the gun's tip the vertices farthest from it.
@@ -53,7 +53,7 @@ var _local_elbow := Vector3.ZERO
 var _local_tip := Vector3.ZERO
 
 func _measure_rest() -> void:
-	var mi := _e.find_child("Object_158", true, false) as MeshInstance3D
+	var mi := _e.find_child("Forearms", true, false) as MeshInstance3D
 	var arm := PackedVector3Array()
 	for q in PartRig.body_points(_e, mi):
 		if q.x > 0.0:
@@ -79,9 +79,9 @@ func _measure_rest() -> void:
 
 ## [elbow, tip] in the body frame, through whichever right-forearm mesh is drawn.
 func _rifle() -> Array:
-	var orig := _e.find_child("Object_158", true, false) as MeshInstance3D
+	var orig := _e.find_child("Forearms", true, false) as MeshInstance3D
 	var drawn: MeshInstance3D = orig
-	for m in orig.get_parent().find_children("Object_158_R", "MeshInstance3D", false, false):
+	for m in orig.get_parent().find_children("Forearms_R", "MeshInstance3D", false, false):
 		drawn = m
 	var xf := _e.global_transform.affine_inverse() * drawn.global_transform
 	return [xf * _local_elbow, xf * _local_tip]

@@ -80,7 +80,8 @@ jobs:
       - name: Check every third-party asset section in CREDITS.md states a licence
         # --commercial also fails on an asset a paid build may not carry. The
         # one that did (the HOWITZER's CC-BY-NC model, #406) is replaced; this
-        # keeps another from arriving. Its warnings (#517) do not fail the job.
+        # keeps another from arriving. A licence it only warns about (Sketchfab
+        # Standard; the last two such models were replaced, #517) does not fail it.
         run: |
           python3 tools/check_licences.py --self-test
           python3 tools/check_licences.py --commercial

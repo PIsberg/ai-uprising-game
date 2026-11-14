@@ -476,3 +476,5 @@ res://tests/lamp_headroom_probe.tscn
 # Every level scene on disk boots with a live player and a baked navmesh; robots that never see the idle player are noted, not failed (#549).
 res://tests/campaign_smoke.tscn
 res://tests/kick_clip_probe.tscn
+# A lamp built into a robot's model (a flat emissive colour) stays lit, with triplanar on and off, and dies with the wreck (#517).
+res://tests/authored_glow_probe.tscn

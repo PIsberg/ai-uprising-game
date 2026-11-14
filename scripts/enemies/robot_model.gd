@@ -49,6 +49,10 @@ var _parent: EnemyBase
 var _prev_recoil: float = 0.0
 var _menace_light: OmniLight3D
 var _glow_mats: Array[Material] = []
+## Lamps built into the model (an emissive material in the GLB: the HOWITZER's
+## optics, the REAPER's eye slits, the GUNSLINGER's furnace): kept lit as
+## authored, never tinted or used for the flare, and faded with the wreck.
+var _lamp_mats: Array[BaseMaterial3D] = []
 var _blink_tween: Tween
 var _eye_mats: Array[StandardMaterial3D] = [] ## Always-on optic irises (scan-pulse, death-fade).
 var _eye_tween: Tween
@@ -284,6 +288,7 @@ func play_oneshot_over(anim_name: String, seconds: float, blend: float = 0.12, f
 
 func update_advanced_materials() -> void:
 	_glow_mats.clear()
+	_lamp_mats.clear()
 	for mi in _collect_meshes(self):
 		mi.material_override = null
 		if mi.mesh != null:
@@ -293,8 +298,9 @@ func update_advanced_materials() -> void:
 
 func _apply_materials() -> void:
 	var use_triplanar := bool(GraphicsSettings.get("robot_triplanar_enabled"))
-	if texture == null and tint == Color.WHITE and menace_glow <= 0.0 and not use_triplanar:
-		return
+	# Nothing to restyle: the imported materials stand, but lamps still register
+	# so they fade with the wreck.
+	var restyle := not (texture == null and tint == Color.WHITE and menace_glow <= 0.0 and not use_triplanar)
 	
 	for mi in _collect_meshes(self):
 		if texture != null:
@@ -321,7 +327,16 @@ func _apply_materials() -> void:
 		elif mi.mesh != null:
 			for s in mi.mesh.get_surface_count():
 				var m := mi.mesh.surface_get_material(s)
-				if m is BaseMaterial3D:
+				if m is BaseMaterial3D and _is_lamp(m):
+					# A lamp the model was built with. The flare below would set
+					# its emission to the flare colour at zero energy, and the
+					# triplanar shader has no emission at all: either way it went
+					# dark (tests/authored_glow_probe). A copy, so the death fade
+					# leaves the imported resource alone.
+					var lamp := m.duplicate() as BaseMaterial3D
+					_lamp_mats.append(lamp)
+					mi.set_surface_override_material(s, lamp)
+				elif m is BaseMaterial3D and restyle:
 					if use_triplanar:
 						var sm := ShaderMaterial.new()
 						sm.shader = preload("res://shaders/damaged_robot.gdshader")
@@ -343,6 +358,14 @@ func _apply_materials() -> void:
 						_add_readability_rim(dup)
 						_add_menace_emission(dup, dup.albedo_texture)
 						mi.set_surface_override_material(s, dup)
+
+## An imported material that is a lamp: emission on, with energy, a colour
+## that is not black and no emission map. A flat emissive colour marks a part
+## as a light (an optic, a reactor core); an emission map on a downloaded model
+## lights panels across the whole skin, and the roster's look was tuned with
+## those dark, so they stay on the flare path.
+static func _is_lamp(m: BaseMaterial3D) -> bool:
+	return m.emission_enabled and m.emission_energy_multiplier > 0.0 		and m.emission.get_luminance() > 0.05 and m.emission_texture == null
 
 ## Robots read as neutral machines until hit: the red emission channel is
 ## prepared on every material here but stays dark — `damage_blink()` flares it.
@@ -506,6 +529,8 @@ func _extinguish() -> void:
 		_eye_tween.kill()
 	for em in _eye_mats:
 		create_tween().tween_property(em, "emission_energy_multiplier", 0.0, 0.8)
+	for lm in _lamp_mats:
+		create_tween().tween_property(lm, "emission_energy_multiplier", 0.0, 0.8)
 	if _menace_light:
 		var mt := create_tween()
 		mt.tween_property(_menace_light, "light_energy", 0.0, 0.7)

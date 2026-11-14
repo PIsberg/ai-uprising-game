@@ -1,7 +1,7 @@
 extends Node
 ## Probe: every 3D model the game ships is named in CREDITS.md (#363). Eleven
 ## Sketchfab models (CC-BY, one CC-BY-NC since replaced (#406), one Sketchfab
-## Standard) shipped with no credit at all; CC-BY requires one. Naming a model is not enough: the WAR-BOT's
+## Standard since replaced (#517)) shipped with no credit at all; CC-BY requires one. Naming a model is not enough: the WAR-BOT's
 ## was named for months under a "source is not identified yet" heading, which passed
 ## this probe while shipping a model with no known licence (#435, found in the end:
 ## CC0). So a file under any heading with UNSOURCED_MARK in it fails too: a model
