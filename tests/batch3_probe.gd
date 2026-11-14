@@ -3,7 +3,7 @@ extends Node3D
 ##   godot --path . res://tests/batch3_probe.tscn
 const OUT_DIR := "C:/Users/isber/AppData/Local/Temp/claude/C--dev-private-ai-uprising-game/4f2aa26d-c9cb-4e2f-aeea-a17e19a4e75b/scratchpad/"
 const MODELS := [
-	"robot_arm_wip_2", "robot_ball", "robot-killer_model", "walking_robot_gun",
+	"robot_arm_wip_2", "robot_ball", "robot-killer_model", "howitzer_walker",
 ]
 
 var _cam: Camera3D

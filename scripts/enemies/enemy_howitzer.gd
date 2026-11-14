@@ -1,8 +1,9 @@
 class_name EnemyHowitzer
 extends EnemyBase
 ## HOWITZER — a four-legged artillery walker (assets/models/robots/
-## walking_robot_gun.glb): a long-barrelled cannon slung over four bladed
-## crab-legs, antennae whipping. It stalks the long sightlines, PLANTS, charges
+## howitzer_walker.glb, original to this game: tools/blender/build_howitzer.py
+## builds it from primitives, #406): a long-barrelled cannon slung over four
+## bladed crab-legs, antennae whipping. It stalks the long sightlines, PLANTS, charges
 ## with a rising whine, and sends a heavy ballistic shell arcing at you —
 ## the impact throws splash you have to respect even behind thin cover. Slow,
 ## armoured, and blind up close: get under its barrel and stay there.
@@ -26,12 +27,14 @@ const SHELL := preload("res://scenes/weapons/projectile_howitzer.tscn")
 var _winding: bool = false
 var _windup_t: float = 0.0
 
-# Barrel laying. Measured off walking_robot_gun.glb at fit_height 4.3: the
-# barrel runs z -1.92 (muzzle) to +1.65 (breech) at y 2.87, nose 1.1 deg down,
-# over a body spanning z -0.27..1.56; the trunnion sits over the body.
-const GUN_PIVOT := Vector3(0.0, 2.87, 0.4)  ## body frame
-const GUN_REST_PITCH := -0.019              ## rad, the barrel's own droop
-const ELEV_MIN := -0.21                     ## rad (-12 deg)
+# Barrel laying. As built by tools/blender/build_howitzer.py (the model stands
+# 4.3 m and is centred, so the fit at fit_height 4.3 neither scales nor shifts
+# it): the barrel runs z -2.2 (muzzle) to +1.7 (breech) at y 2.87, level, over a
+# hull spanning z -0.3..1.6; the trunnion sits between two cheeks over the hull's
+# back half, so the breech swings down into the gap behind it.
+const GUN_PIVOT := Vector3(0.0, 2.87, 0.9)  ## body frame
+const GUN_REST_PITCH := 0.0                 ## rad: the barrel is built level
+const ELEV_MIN := -0.21                     ## rad (-12 deg): lower and the gun shield meets the roof
 const ELEV_MAX := 0.35                      ## rad (+20 deg): steeper buries the breech
 const ELEV_RATE := 0.4                      ## rad/s: a heavy gun lays slowly
 const KICK := 0.5                           ## m the barrel slides back on the shot
@@ -44,9 +47,9 @@ var _muzzle_on_gun: Vector3                 ## Muzzle in Gun's frame
 var elevation: float = 0.0                  ## rad above the barrel's rest lay
 
 # Walking. The legs mesh and the gap between its front and back pairs (body
-# frame z, at fit_height 4.3: front legs end at 0.26, back ones start at 0.44).
-const LEGS := "Legs_Legs_0"
-const LEGS_SPLIT_Z := 0.35
+# frame z: the front hips end at 0.22, the back ones start at 1.13).
+const LEGS := "Legs"
+const LEGS_SPLIT_Z := 0.7
 const STRIDE := 1.6     ## m of ground per gait cycle
 const SWING := 0.22     ## rad each leg swings either side at a walk
 const LIFT := 0.1       ## rad a swinging leg rolls outward (lifts)
@@ -74,13 +77,6 @@ func _ready() -> void:
 	hp.max_health = max_health
 	hp.current_health = max_health
 	hp.armor = 6.0
-	# The GLB's Cell_Cell_0 / _001 are a dark full-size duplicate of the whole
-	# model (76k vertices, drawn coincident with it, barely visible). Hidden:
-	# they hold a copy of the barrel that stays put when the real one lays.
-	for n in ["Cell_Cell_0", "Cell_Cell_0_001"]:
-		var dup := find_child(n, true, false) as MeshInstance3D
-		if dup:
-			dup.visible = false
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)

@@ -78,11 +78,12 @@ jobs:
         run: python3 tools/check_screenshot_refs.py
 
       - name: Check every third-party asset section in CREDITS.md states a licence
-        # A paid build must also pass `--commercial` (it fails today on the
-        # HOWITZER's CC-BY-NC model, #406): add that to any job that sells one.
+        # --commercial also fails on an asset a paid build may not carry. The
+        # one that did (the HOWITZER's CC-BY-NC model, #406) is replaced; this
+        # keeps another from arriving. Its warnings (#517) do not fail the job.
         run: |
           python3 tools/check_licences.py --self-test
-          python3 tools/check_licences.py
+          python3 tools/check_licences.py --commercial
 
       - name: Check the imported assets a release ships stay inside the size budget
         # The budget check also fails on a GLB with a UV set that copies set 0; the
@@ -271,7 +272,7 @@ jobs:
   # The "linux"/"windows" channel names map to itch.io platform tags.
   # Steam: once a Steamworks app exists (paid registration + appid/depots),
   # add a sibling job here that pushes the same build/ dirs via steamcmd. It
-  # must run `python3 tools/check_licences.py --commercial` first (#406).
+  # must run `python3 tools/check_licences.py --commercial` first (CI's verify job does).
   publish-itch:
     name: Publish to itch.io
     needs: export

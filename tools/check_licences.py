@@ -5,9 +5,11 @@ things about it were unenforced:
 
   * A section could name no licence at all. The WAR-BOT's model sat under a
     "source is not identified yet" heading for months (#435).
-  * One shipped model is non-commercial: the HOWITZER's `walking_robot_gun.glb`
-    is CC-BY-NC 4.0 (#406). That allows the free itch.io build and forbids a
-    paid one, and nothing would stop a Steam release from carrying it.
+  * One shipped model was non-commercial: the HOWITZER's first model was a
+    CC-BY-NC 4.0 download (#406). That allows the free itch.io build and
+    forbids a paid one, and nothing would have stopped a Steam release from
+    carrying it. The model has since been replaced by one built in this
+    repository; CI runs the commercial check so no such asset comes back.
 
 Default run (CI): every `###` section under "Third-party assets" must state at
 least one licence this script knows, and every bold phrase that reads like a
