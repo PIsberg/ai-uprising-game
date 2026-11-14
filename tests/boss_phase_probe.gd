@@ -8,7 +8,10 @@ extends Node
 ##   TITAN       never phase-blinks fresh, blinks once wounded
 ##   ARCHON      the wave it pours out at 30% is bigger than at full health
 ##   TERMINATOR  the beam sweeps toward the player faster when it is wounded
-##   SMASHER     its smash, slam and rake come back faster when it is wounded
+##   SMASHER     its smash, slam and rake come back faster when it is wounded;
+##               and they take the difficulty tier (#147: they took none, so
+##               EASY met HARD's 1.49 s wounded smash): slower back and longer
+##               wound up on an easier tier, HARD the authored numbers
 ## Each boss's own AI is paused (physics/process off) so only the call under test
 ## acts; the bosses' internal entry points are called directly.
 ##   godot --headless --path . --audio-driver Dummy res://tests/boss_phase_probe.tscn
@@ -263,3 +266,41 @@ func _smasher() -> void:
 		"smash / slam / rake cooldowns at 20%% are under 75%% of fresh (%s -> %s)" % [str(fresh), str(hurt)])
 	s.queue_free()
 	await _frames(3)
+	# The tier, given the way EnemySpawner gives it (multipliers set before
+	# add_child): wounded cooldowns and the three windups, per tier.
+	var cd := {}
+	var wind := {}
+	for tier: int in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		var cfg: Dictionary = GameState.DIFFICULTY_CONFIG[tier]
+		var b: Node = load("res://scenes/enemies/smasher.tscn").instantiate()
+		b.set("_cooldown_mult", float(cfg["cooldown_mult"]))
+		b.set("_reaction_mult", float(cfg["reaction_mult"]))
+		add_child(b)
+		await _frames(3)
+		b.set_physics_process(false)
+		b.set_process(false)
+		b.target = _player
+		_set_frac(b, 0.2)
+		b._begin_smash()
+		var w0: float = b._smash_windup_t
+		b._begin_slam()
+		var w1: float = b._slam_windup_t
+		b._begin_rake()
+		wind[tier] = [w0, w1, b._rake_windup_t]
+		cd[tier] = [b._smash_cd, b._slam_cd, b._rake_cd]
+		print("  %s wounded: smash/slam/rake back in %.2f / %.2f / %.2f s, wound up %.2f / %.2f / %.2f s" % [
+			cfg["label"], cd[tier][0], cd[tier][1], cd[tier][2], wind[tier][0], wind[tier][1], wind[tier][2]])
+		b.queue_free()
+		await _frames(3)
+	var ez: int = GameState.Difficulty.EASY
+	var nm: int = GameState.Difficulty.NORMAL
+	var hd: int = GameState.Difficulty.HARD
+	var slower := true
+	var longer := true
+	for k in 3:
+		slower = slower and cd[ez][k] > cd[nm][k] * 1.2 and cd[nm][k] >= cd[hd][k]
+		longer = longer and wind[ez][k] > wind[nm][k] * 1.2 and wind[nm][k] >= wind[hd][k]
+	_check(slower, "an easier tier's wounded blows come back slower (smash %.2f / %.2f / %.2f s)" % [cd[ez][0], cd[nm][0], cd[hd][0]])
+	_check(longer, "an easier tier's windups last longer (smash %.2f / %.2f / %.2f s)" % [wind[ez][0], wind[nm][0], wind[hd][0]])
+	_check(is_equal_approx(cd[hd][0], 2.4 * 0.62) and is_equal_approx(wind[hd][0], 0.5) and is_equal_approx(wind[hd][2], 0.42),
+		"HARD is the authored BEHEMOTH, not a harder one (smash %.2f s back, %.2f s windup)" % [cd[hd][0], wind[hd][0]])

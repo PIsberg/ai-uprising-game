@@ -169,8 +169,19 @@ func _phase() -> int:
 func boss_phase_marks() -> Array:
 	return [0.66, 0.33]
 
+## The phase's scale times the tier's. The tier only ever lengthens: HARD's
+## shorter cooldowns (0.75) and an elite's do not stack onto the wounded x0.62,
+## so HARD keeps the authored cadence. Until #147 no tier reached these three
+## cooldowns at all (they are the boss's own, not attack_cooldown), and EASY met
+## the same 1.49 s wounded smash as HARD; it is 2.38 s there now, 1.61 on NORMAL.
 func _cd_mult() -> float:
-	return float(PHASE_CD_MULT[_phase() - 1])
+	return float(PHASE_CD_MULT[_phase() - 1]) * clampf(_cooldown_mult, 1.0, 1.6)
+
+## A windup stretched with the tier's reaction time (EASY's 2.0 is clamped to
+## 1.6: a 0.5 s smash windup is 0.8 s there, 0.58 on NORMAL; never shorter than
+## authored). The ground warning and the reared pose last as long.
+func _windup(authored: float) -> float:
+	return authored * clampf(_reaction_mult, 1.0, 1.6)
 
 func _process(delta: float) -> void:
 	if state == State.DEAD:
@@ -291,7 +302,7 @@ func _physics_process(delta: float) -> void:
 		_decelerate()
 		_face_target(delta)
 		if _visual_root:
-			_visual_root.rotation.x = _visual_base_rot.x + 0.4 * minf(1.0, (rake_windup - _rake_windup_t) * 4.0)
+			_visual_root.rotation.x = _visual_base_rot.x + 0.4 * minf(1.0, (_windup(rake_windup) - _rake_windup_t) * 4.0)
 		if _rake_windup_t <= 0.0:
 			_launch_rake()
 		_apply_gravity(delta)
@@ -371,7 +382,7 @@ func _charge(delta: float) -> void:
 # ---------- signature: claw rake lunge ----------
 
 func _begin_rake() -> void:
-	_rake_windup_t = rake_windup
+	_rake_windup_t = _windup(rake_windup)
 	_rake_cd = rake_cooldown * _cd_mult()
 	_rake_hit = false
 	recoil = 1.0
@@ -445,7 +456,7 @@ func _claw_slash_fx() -> void:
 # ---------- overhead fist-smash ----------
 
 func _begin_smash() -> void:
-	_smash_windup_t = smash_windup
+	_smash_windup_t = _windup(smash_windup)
 	_smash_cd = smash_cooldown * _cd_mult()
 	recoil = 1.0  # flares the reactor
 	AudioBus.play_synth_at("charge", global_position, -4.0, 0.7)
@@ -475,7 +486,7 @@ func _do_smash() -> void:
 # ---------- ground slam ----------
 
 func _begin_slam() -> void:
-	_slam_windup_t = slam_windup
+	_slam_windup_t = _windup(slam_windup)
 	_slam_cd = slam_cooldown * _cd_mult()
 	recoil = 1.0
 	AudioBus.play_synth_at("mech_step", global_position, 3.0, 0.4)
