@@ -194,7 +194,7 @@ func _physics_process(delta: float) -> void:
 		_slam_windup_t -= delta
 		# Rear up on the wrist for the slam.
 		if _visual_root:
-			_visual_root.rotation.x = _visual_base_rot.x - 0.5 * minf(1.0, (slam_windup - _slam_windup_t) * 3.0)
+			_visual_root.rotation.x = _visual_base_rot.x - 0.5 * minf(1.0, (_windup(slam_windup) - _slam_windup_t) * 3.0)
 		if _slam_windup_t <= 0.0:
 			_do_slam()
 		_apply_gravity(delta)
@@ -250,8 +250,17 @@ func _phase() -> int:
 func boss_phase_marks() -> Array:
 	return [0.66, 0.33]
 
+## The phase's scale times the tier's, as on BEHEMOTH-X. The tier only ever
+## lengthens (HARD's 0.75 and an elite's do not stack onto the wounded x0.62).
+## Until #73 no tier reached these four cooldowns: a phase-3 sweep came back in
+## 2.11 s on EASY as on HARD; it is 3.37 s there now and 2.28 on NORMAL.
 func _cd_mult() -> float:
-	return float(PHASE_CD_MULT[_phase() - 1])
+	return float(PHASE_CD_MULT[_phase() - 1]) * clampf(_cooldown_mult, 1.0, 1.6)
+
+## A windup stretched with the tier's reaction time (EASY's 2.0 clamped to 1.6;
+## never shorter than authored). The eruption's warning ring lasts as long.
+func _windup(authored: float) -> float:
+	return authored * clampf(_reaction_mult, 1.0, 1.6)
 
 ## FINGER ERUPTION — the rooted arm's ranged answer: it drives power through
 ## the deck it's fused into and servo fingers burst from the floor under the
@@ -277,9 +286,10 @@ func _erupt_at(at: Vector3, delay: float) -> void:
 		await get_tree().create_timer(delay).timeout
 		if state == State.DEAD or not is_inside_tree():
 			return
-	spawn_ground_warning(at, spike_radius, spike_windup, Color(0.72, 0.95, 1.0))
+	var windup := _windup(spike_windup)
+	spawn_ground_warning(at, spike_radius, windup, Color(0.72, 0.95, 1.0))
 	AudioBus.play_synth_at("charge", at, -6.0, 0.7)
-	await get_tree().create_timer(spike_windup).timeout
+	await get_tree().create_timer(windup).timeout
 	if state == State.DEAD or not is_inside_tree():
 		return
 	AudioBus.play_synth_at("mech_step", at, 2.0, 0.4)
@@ -329,7 +339,7 @@ func _spawn_spike_fingers(at: Vector3) -> void:
 		tw.tween_callback(spear.queue_free)
 
 func _begin_sweep() -> void:
-	_sweep_windup_t = sweep_windup
+	_sweep_windup_t = _windup(sweep_windup)
 	_sweep_cd = sweep_cooldown * _cd_mult()
 	recoil = 1.0
 	AudioBus.play_synth_at("charge", global_position, -4.0, 0.6)
@@ -352,7 +362,7 @@ func _do_sweep() -> void:
 				p.shake(0.8)
 
 func _begin_slam() -> void:
-	_slam_windup_t = slam_windup
+	_slam_windup_t = _windup(slam_windup)
 	_slam_cd = slam_cooldown * _cd_mult()
 	recoil = 1.0
 	_slam_point = target.global_position if target else global_position - global_transform.basis.z * 6.0
