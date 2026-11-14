@@ -8,7 +8,12 @@ extends Node3D
 ##     final) and overclocks it: move speed x1.25, burst cooldown x0.7, +2
 ##     rounds a burst, the lance back sooner (cooldown x0.6), barrels spin
 ##     faster; the live (elite/difficulty-scaled) values, not the authored ones;
-## (4) healed back over 50 % and wounded again, it does not overclock twice.
+## (4) healed back over 50 % and wounded again, it does not overclock twice;
+## (5) the lance takes the difficulty tier (#369): it ignored it, so EASY met
+##     HARD's lance, back every 4.5 s once overclocked. A lance that ends on
+##     EASY rests longer than on NORMAL, and its green charge lasts longer;
+##     HARD is not made harder than the authored 7.5 s and 0.6 s; and an
+##     overclocked EASY lance still rests longer than a fresh HARD one.
 ##   godot --headless --path . --audio-driver Dummy res://tests/terminator_overclock_probe.tscn
 
 var ok := true
@@ -76,6 +81,46 @@ func _run() -> void:
 	await get_tree().process_frame
 	var again := _stats(e)
 	_check("it overclocks once", again == oc and _beats.size() == 1, "(%s, %d beats)" % [again, _beats.size()])
+	e.queue_free()
+	# (5) Each tier's boss, given the tier's multipliers the way EnemySpawner
+	# gives them (before add_child), fires one lance and ends it.
+	var rest := {}
+	var charge := {}
+	var rest_oc := {}
+	for tier: int in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		var cfg: Dictionary = GameState.DIFFICULTY_CONFIG[tier]
+		var t: Node3D = (load("res://scenes/enemies/terminator.tscn") as PackedScene).instantiate()
+		t.set("preview", true)
+		t.set("_cooldown_mult", float(cfg["cooldown_mult"]))
+		t.set("_reaction_mult", float(cfg["reaction_mult"]))
+		add_child(t)
+		for i in 4:
+			await get_tree().process_frame
+		t.call("_begin_beam")
+		charge[tier] = float(t.get("_beam_windup"))
+		t.call("_end_beam")
+		rest[tier] = float(t.get("_beam_cd"))
+		var thp: Node = t.get_node("Damageable")
+		thp.set("invulnerable", false)
+		thp.set("armor", 0.0)
+		thp.call("apply_damage", float(thp.get("max_health")) * 0.55, null)
+		await get_tree().process_frame
+		t.call("_end_beam")
+		rest_oc[tier] = float(t.get("_beam_cd"))
+		print("  %s: lance charges %.2f s, rests %.1f s, %.1f s overclocked" % [cfg["label"], charge[tier], rest[tier], rest_oc[tier]])
+		t.queue_free()
+		await get_tree().process_frame
+	var ez: int = GameState.Difficulty.EASY
+	var nm: int = GameState.Difficulty.NORMAL
+	var hd: int = GameState.Difficulty.HARD
+	_check("the lance rests longer on an easier tier", rest[ez] > rest[nm] + 1.0 and rest[nm] >= rest[hd],
+			"(%.1f, %.1f, %.1f s)" % [rest[ez], rest[nm], rest[hd]])
+	_check("its charge lasts longer on an easier tier", charge[ez] > charge[nm] + 0.1 and charge[nm] >= charge[hd],
+			"(%.2f, %.2f, %.2f s)" % [charge[ez], charge[nm], charge[hd]])
+	_check("HARD is the authored lance, not a harder one", absf(rest[hd] - 7.5) < 0.01 and absf(charge[hd] - 0.6) < 0.01,
+			"(%.1f s, %.2f s)" % [rest[hd], charge[hd]])
+	_check("an overclocked EASY lance rests longer than an overclocked HARD one",
+			rest_oc[ez] > rest_oc[hd] + 1.0 and absf(rest_oc[hd] - 4.5) < 0.01, "(%.1f vs %.1f s)" % [rest_oc[ez], rest_oc[hd]])
 	Engine.time_scale = 1.0
 	print("RESULT %s" % ("PASS" if ok else "FAIL"))
 	get_tree().quit()
