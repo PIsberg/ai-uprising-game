@@ -70,9 +70,8 @@ Blender and lost it, from the downloaded original that the shipped file's nodes 
 - **"Reap the Whirlwind"** by **TooManyDemons** (https://sketchfab.com/3d-models/reap-the-whirlwind-297e1595d6cf4466bf5c7803db8c5bd8), **CC-BY 4.0**: `reaper_whirlwind.glb`, the WHIRLWIND.
 - **"Robot arm wip 2"** by **3DHaupt** (https://sketchfab.com/3d-models/robot-arm-wip-2-cb006bfafc20421f9f6f674f127f918b), **CC-BY 4.0**: `robot_arm_wip_2.glb`, the MANUS boss.
 - **"Rusty Humanoid Robot With Claws"** by **Pigcraft** (https://sketchfab.com/3d-models/rusty-humanoid-robot-with-claws-6bb359bacbd046c5b7bc766b8c0e1933), **CC-BY 4.0**: `rusty_claws_robot.glb`, the BEHEMOTH-X boss.
-- **"Another Robot"** by **Lagst** (https://sketchfab.com/3d-models/another-robot-b5187425ddb14676a93ab21f050e0e6f), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `another_robot.glb`, the REAPER.
 
-The next five lost their metadata on re-export and no original was left on the dev
+The next four lost their metadata on re-export and no original was left on the dev
 machine. Each was matched through the Sketchfab API on its triangle count and
 material count, taken from the file as first committed (before any decimation or
 limb cutting). The brackets give our triangles of the listing's faceCount, then our
@@ -81,13 +80,13 @@ materials of its materialCount.
 - **"Combat Steampunk Robot"** by **Andrei Milin (milinam2002)** (https://sketchfab.com/3d-models/combat-steampunk-robot-81914abdc5b64b259d36ec7044118949), **CC-BY 4.0**: `combat_steampunk.glb`, the BREAKER (46,261 of 46,261, 4 of 4).
 - **"Wheeled Robot"** by **Andrei Milin (milinam2002)** (https://sketchfab.com/3d-models/wheeled-robot-6701a4f2603a44bdbd9139967025858b), **CC-BY 4.0**: `wheeled_robot.glb`, the ROLLER (33,343 of 33,344, 1 of 1).
 - **"Mech Robotic Police 3D Model w/ Scifi Gun"** by **HeiMan Chan (HeiManChan)** (https://sketchfab.com/3d-models/mech-robotic-police-3d-model-w-scifi-gun-a748deca84da4f84b90a3436d0783f89), **CC-BY 4.0**: `mech_police.glb`, the ENFORCER (90,956 of 91,168, 15 of 15; the file's root node is `Mech_Robotic_Police.obj`).
-- **"Steampunk Robot"** by **Lagst** (https://sketchfab.com/3d-models/steampunk-robot-f22d82cc3ee3436786bf8a97277ea66c), **Sketchfab Standard licence** (https://sketchfab.com/licenses): `steampunk_robot.glb`, the GUNSLINGER (41,620 of 41,642, 2 of 2).
 
 ### Other robot models (`assets/models/robots/`)
 - **"RobotExpressive"** by **Tomás Laulhé** (https://www.patreon.com/quaternius), modifications by **Don McCurdy**, from the three.js examples (https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive), **CC0 1.0**: `RobotExpressive.glb`, the MAULER. The shipped file is byte-identical to that copy (git blob `6fec9cfb`).
 - **"Robot"** by **Polygonal Mind**, from the Trash Polka set of the Polygonal Mind Open Source Initiative (https://github.com/PolygonalMind/initiative-opensource-release), converted to GLB by **ToxSam** (https://github.com/ToxSam/cc0-models-Polygonal-Mind/tree/main/projects/trash-polka, listed at https://www.opensource3dassets.com as `trash-polka-022`), **CC0 1.0**: `Robot.glb`, the WAR-BOT. The file as first committed is byte-identical to `projects/trash-polka/Robot.glb` in that repository (git blob `8726a430`, 528,196 bytes); the shipped file is that mesh cut into body and legs for the walk (#435).
 - `serving_bot.glb` (the SERVER, MAITRE-D') is original to this game, built from primitives by `tools/blender/build_server.py`.
 - `howitzer_walker.glb` (the HOWITZER) is original to this game, built from primitives by `tools/blender/build_howitzer.py`. It replaced a CC-BY-NC download (#406).
+- `reaper_droid.glb` (the REAPER) and `gunslinger_automaton.glb` (the GUNSLINGER) are original to this game, built from primitives by `tools/blender/build_reaper.py` and `tools/blender/build_gunslinger.py`. They replaced two Sketchfab Standard downloads, whose terms forbid keeping a model as a stand-alone file in a public repository (#517).
 
 ### Weapon models (`assets/models/weapons/`)
 **"Blaster Kit" (2.1)** by **Kenney** (https://kenney.nl), via

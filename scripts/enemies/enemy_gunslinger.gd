@@ -1,19 +1,21 @@
 class_name EnemyGunslinger
 extends EnemyAndroid
-## GUNSLINGER — a brass steampunk automaton with a heavy revolver arm. It fires
+## GUNSLINGER — a brass steampunk automaton in a flat-brimmed hat, with a
+## revolver for a right forearm (gunslinger_automaton.glb, built by
+## tools/blender/build_gunslinger.py). It fires
 ## single, hard-hitting slugs on a slow cadence rather than spraying, and dances
 ## to the side between shots. Punishing if you stand still; easy to bait into a
 ## wasted shot.
 ## Its revolver hangs at the end of its right forearm. Engaged, it raises the
 ## forearm about the elbow onto you (both forearms are one mesh in the GLB,
-## Object_158, split per side by PartRig) and every slug leaves the gun's
+## `Forearms`, split per side by PartRig) and every slug leaves the gun's
 ## tip; disengaged the arm drops back to its side. tests/gunslinger_arm_probe.
-## It walks on its legs (tests/biped_gait_probe): the GLB is cut offline
-## (tools/blender/cfg_steampunk_robot_parts.json) into `Body`, `LegL` and
-## `LegR` below the hips, and a `BipedGait` swings each leg about its hip (the
-## top of its bounds), the two in opposition, at a cadence from ground speed.
+## It walks on its legs (tests/biped_gait_probe): the model is built as
+## `Body`, `Forearms`, `LegL` and `LegR`, and a `BipedGait` swings each leg
+## about its hip (the top of its bounds), the two in opposition, at a cadence
+## from ground speed.
 
-const FOREARMS := "Object_158"
+const FOREARMS := "Forearms"
 const LEGS := ["LegL", "LegR"]
 var _gait := BipedGait.new(1.2, 0.42) ## 1.2 m a stride, 0.42 rad each side at full speed
 var _gait_tried := false

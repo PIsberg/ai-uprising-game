@@ -1,8 +1,9 @@
 extends Node3D
 ## Probe: static bipeds walk on their legs (BipedGait) instead of sliding.
 ## ENFORCER: mech_police.glb keeps both trouser legs in one mesh and the boots
-## in the chest plate's mesh; both are cut by side at spawn. GUNSLINGER and
-## WARBOT and REAPER: their GLBs are cut offline into Body, LegL and LegR. RONIN: the
+## in the chest plate's mesh; both are cut by side at spawn. WARBOT: its GLB is
+## cut offline into Body, LegL and LegR; GUNSLINGER and REAPER: their models
+## are built that way (tools/blender/build_*.py). RONIN: the
 ## shins, ankles and feet under its cloak are a dozen small meshes, each cut
 ## by side at spawn. For each,
 ## the sole of every leg part (its lowest band at rest, in the copy's own
@@ -28,7 +29,7 @@ const SPECS := [
 		"legs": [["Cube_007_Material_006_0_L", "Cube_003_Material_005_0_L"], ["Cube_007_Material_006_0_R", "Cube_003_Material_005_0_R"]],
 		"still": ["Plane_017_Material_048_0"], "quiet": ["_attack_timer", "_slug_cd", "_dash_cd"], "walk": 3.0, "swing": 0.10},
 	{"name": "REAPER", "scene": "res://scenes/enemies/reaper.tscn",
-		"legs": [["LegL"], ["LegR"]], "still": ["Body", "Gun2"], "quiet": ["_attack_timer", "_burst_cd"], "walk": 4.0},
+		"legs": [["LegL"], ["LegR"]], "still": ["Body", "Rifle"], "quiet": ["_attack_timer", "_burst_cd"], "walk": 4.0},
 ]
 
 var ok := true
@@ -130,8 +131,8 @@ func _test(spec: Dictionary) -> void:
 		await get_tree().process_frame
 		frames += 1
 	await get_tree().physics_frame
-	# The gait poses on the tick after it is set up (a rest turn straightens
-	# the REAPER's mid-stride legs), so the rest marks wait for that pose.
+	# The gait poses on the tick after it is set up, so the rest marks wait
+	# for that pose.
 	for i in 3:
 		await get_tree().physics_frame
 	var names: Array = []

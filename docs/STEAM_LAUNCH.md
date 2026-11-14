@@ -139,9 +139,9 @@ platform-specific GDExtension binary that has to match your Godot build):
 
 ## Pre-launch checklist
 
-- [ ] `python tools/check_licences.py --commercial` passes (CI runs it). It
-      warns about the two Sketchfab Standard models (#517): read those terms
-      before selling.
+- [ ] `python tools/check_licences.py --commercial` passes (CI runs it) and
+      prints no warning. A warning names an asset whose licence needs reading
+      before selling (Sketchfab Standard; the two such models were replaced, #517).
 - [ ] `pwsh tools/build_release.ps1` succeeds; both binaries boot to the menu.
 - [ ] App ID + both Depot IDs filled into `tools/steam/app_build.vdf`.
 - [ ] Build uploaded via steamcmd and **set live** on `default`.

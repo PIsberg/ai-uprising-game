@@ -1,33 +1,25 @@
 class_name EnemyReaper
 extends EnemyBase
-## Fast, fragile shock trooper. Its model (another_robot.glb) is a gaunt
-## battle droid carrying a heavy rifle at its right hip, no blades: it closes
-## at a sprint firing short bursts from that rifle without slowing (marching
-## fire), and up close it lunges and drives the rifle into you, a strike that
-## shoves you back. Visuals come from a real robot model in reaper.tscn. It
-## RUNS on its legs: the GLB is cut offline (tools/blender/cfg_another_robot_parts.json)
-## into `Body`, the rifle (`Gun1`, `Gun2`), `LegL` and `LegR`, and a
-## `BipedGait` swings each leg about its hip (the top of its bounds), the two
-## in opposition, on a sprinter's stride. (It used to hover 0.42 m up on an
-## anti-grav cushion because the static model had no walk clip.)
-## tests/biped_gait_probe.
+## Fast, fragile shock trooper. Its model (reaper_droid.glb, built by
+## tools/blender/build_reaper.py) is a gaunt, hooded battle droid carrying a
+## heavy rifle at its right hip, no blades: it closes at a sprint firing short
+## bursts from that rifle without slowing (marching fire), and up close it
+## lunges and drives the rifle into you, a strike that shoves you back. It
+## RUNS on its legs: the model is built as `Body`, `Rifle`, `LegL` and `LegR`,
+## and a `BipedGait` swings each leg about its hip (the top of its bounds), the
+## two in opposition, on a sprinter's stride. tests/biped_gait_probe.
 
 @export var slash_damage: float = 20.0  ## the rifle strike at the end of the lunge
 @export var shot_damage: float = 4.0    ## per round of the marching-fire burst
 
 const LEGS := ["LegL", "LegR"]
-## Each leg's hip (the top band of its part, body frame) and the rest turn
-## that hangs it straight under that hip: the GLB ships posed mid-stride,
-## the left leg reaching 0.34 m back. Measured headless on the cut model.
-const HIPS := [Vector3(-0.144, 0.868, 0.229), Vector3(0.240, 0.801, 0.100)]
-const REST_TURN := [0.382, -0.137]
 var _gait := BipedGait.new(1.8, 0.55) ## 1.8 m a stride, 0.55 rad each side: a sprint
 var _gait_tried := false
 
 const TRACER := preload("res://scenes/fx/tracer_red.tscn")
-## The rifle's barrel end on the static model, in the body's frame
-## (front-most rifle vertices at (0.30, 0.94, -0.78)).
-const RIFLE_TIP := Vector3(0.30, 0.94, -0.84)
+## 2 cm ahead of the rifle's muzzle brake, in the body's frame. build_reaper.py
+## prints the brake's front face: (0.199, 1.002, -0.59).
+const RIFLE_TIP := Vector3(0.2, 1.0, -0.61)
 const BURST_ROUNDS := 3
 const BURST_GAP := 0.09     ## s between rounds
 const BURST_EVERY := 1.7    ## s from one burst to the next
@@ -63,8 +55,8 @@ func _physics_process(delta: float) -> void:
 	if state != State.DEAD:
 		_tick_gait(delta)
 
-## Find the leg parts once RobotModel's fit has landed and hang each from
-## its measured hip, straightened by its rest turn.
+## Find the leg parts once RobotModel's fit has landed; each hip is the top
+## of its leg's bounds on the leg's own centre line.
 func _setup_gait() -> void:
 	var parts: Array = []
 	for n in LEGS:
@@ -76,7 +68,10 @@ func _setup_gait() -> void:
 		return
 	_gait_tried = true
 	for side in 2:
-		_gait.add_leg([PartRig.entry(self, parts[side])], HIPS[side], side, REST_TURN[side])
+		var mi: MeshInstance3D = parts[side]
+		var box: AABB = rig_frame().affine_inverse() * (mi.global_transform * mi.mesh.get_aabb())
+		var c := box.get_center()
+		_gait.add_leg([PartRig.entry(self, mi)], Vector3(c.x, box.end.y - 0.02, c.z), side)
 
 func _tick_gait(delta: float) -> void:
 	if not _gait_tried:
