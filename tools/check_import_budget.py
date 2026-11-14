@@ -52,7 +52,7 @@ import glb_drop_dup_uvs  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MB = 1024 * 1024
-TOTAL_BUDGET = 192 * MB  # 2026-11-13: the HOWITZER is built from primitives (#406), 201.2 -> 189.4 MB
+TOTAL_BUDGET = 187 * MB  # 2026-11-14: static surfaces store compressed vertices (#56), 189.4 -> 184.8 MB
 FILE_BUDGET = 40 * MB
 # A texture imported lossless (compress/mode=0) ships as a lossless WebP and, on a
 # mesh, uploads uncompressed with no mipmaps: the 23 comics were 1.2-1.5 MB each
