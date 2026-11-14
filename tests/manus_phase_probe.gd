@@ -4,7 +4,11 @@ extends Node
 ##       eruption per spike;
 ##   (2) at <=33% HP: phase 3, the phase-change punch fires once, cooldowns
 ##       shrink by PHASE_CD_MULT[2], and the spike erupts TWICE — the second
-##       burst leading the player's velocity.
+##       burst leading the player's velocity;
+##   (3) the difficulty tier (#73): an arm spawned on EASY, NORMAL and HARD is
+##       wounded and starts each attack. Cooldowns come back slower and windups
+##       and the eruption's warning ring last longer on an easier tier; HARD is
+##       the authored arm.
 ##   godot --headless --path . --audio-driver Dummy res://tests/manus_phase_probe.tscn
 
 var _fail: Array[String] = []
@@ -114,6 +118,60 @@ func _run() -> void:
 		if s.global_position.x > px + 2.0:
 			led += 1
 	_check(led >= 3, "second burst leads the player's velocity (%d spears ahead)" % led)
+	manus.queue_free()
+	await _wait(120) # the spears withdraw
+
+	# --- the difficulty tier (#73) ------------------------------------------
+	# No tier reached MANUS's own cooldowns and windups: EASY met HARD's 2.11 s
+	# phase-3 sweep. Each tier's arm, given the tier's multipliers the way
+	# EnemySpawner gives them (before add_child), is wounded and starts each
+	# attack; the eruption's ring is timed from its warning to its spears.
+	var cd := {}
+	var wind := {}
+	var ring := {}
+	for tier: int in [GameState.Difficulty.EASY, GameState.Difficulty.NORMAL, GameState.Difficulty.HARD]:
+		var cfg: Dictionary = GameState.DIFFICULTY_CONFIG[tier]
+		var m: Node3D = load("res://scenes/enemies/manus.tscn").instantiate()
+		m.set("_cooldown_mult", float(cfg["cooldown_mult"]))
+		m.set("_reaction_mult", float(cfg["reaction_mult"]))
+		get_tree().root.add_child(m)
+		m.global_position = Vector3.ZERO
+		await _wait(150)
+		m.set_physics_process(false)
+		m.target = player
+		player.velocity = Vector3.ZERO
+		var hp: Node = m.get_node("Damageable")
+		hp.current_health = hp.max_health * 0.5 # phase 2: one eruption, not two
+		m._begin_spike()
+		var spike_cd: float = m._spike_cd
+		var t := 0
+		while _spears().is_empty() and t < 240:
+			await get_tree().physics_frame
+			t += 1
+		ring[tier] = float(t) / fps
+		hp.current_health = hp.max_health * 0.2
+		m._begin_sweep()
+		m._begin_slam()
+		m._begin_grab()
+		cd[tier] = [m._sweep_cd, m._slam_cd, m._grab_cd, spike_cd]
+		wind[tier] = [m._sweep_windup_t, m._slam_windup_t]
+		print("  %s: wounded sweep/slam/grab back in %.2f / %.2f / %.2f s, wound up %.2f / %.2f s; eruption ring %.2f s" % [
+			cfg["label"], cd[tier][0], cd[tier][1], cd[tier][2], wind[tier][0], wind[tier][1], ring[tier]])
+		m.queue_free()
+		await _wait(120)
+	var ez: int = GameState.Difficulty.EASY
+	var nm: int = GameState.Difficulty.NORMAL
+	var hd: int = GameState.Difficulty.HARD
+	var slower := true
+	for k in 4:
+		slower = slower and cd[ez][k] > cd[nm][k] * 1.2 and cd[nm][k] >= cd[hd][k]
+	_check(slower, "an easier tier's attacks come back slower (wounded sweep %.2f / %.2f / %.2f s)" % [cd[ez][0], cd[nm][0], cd[hd][0]])
+	_check(wind[ez][0] > wind[nm][0] * 1.2 and wind[nm][0] >= wind[hd][0] and wind[ez][1] > wind[nm][1] * 1.2 and wind[nm][1] >= wind[hd][1],
+		"an easier tier's windups last longer (sweep %.2f / %.2f / %.2f s)" % [wind[ez][0], wind[nm][0], wind[hd][0]])
+	_check(ring[ez] > ring[nm] + 0.2 and ring[nm] >= ring[hd],
+		"an easier tier's eruption ring warns longer (%.2f / %.2f / %.2f s)" % [ring[ez], ring[nm], ring[hd]])
+	_check(absf(cd[hd][0] - 3.4 * 0.62) < 0.01 and absf(wind[hd][0] - 0.45) < 0.01 and absf(ring[hd] - 0.75) < 0.06,
+		"HARD is the authored MANUS, not a harder one (sweep %.2f s back, %.2f s windup, ring %.2f s)" % [cd[hd][0], wind[hd][0], ring[hd]])
 
 	print("RESULT ", "FAIL" if _fail.size() > 0 else "PASS")
 	get_tree().quit()
